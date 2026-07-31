@@ -14,11 +14,7 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <igl/write_triangle_mesh.h>
-#include <tbb/concurrent_priority_queue.h>
-#include <tbb/concurrent_vector.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_sort.h>
+#include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <fastenvelope/FastEnvelope.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -104,6 +100,8 @@ public:
     std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
+    std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
+
     using VertAttCol = AttributeCollection<VertexAttributes>;
     using EdgeAttCol = AttributeCollection<EdgeAttributes>;
     using FaceAttCol = AttributeCollection<FaceAttributes>;
@@ -115,7 +113,8 @@ public:
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
-    tbb::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>> m_solver;
+    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
+        m_solver;
 
     // scaling factors
     double m_s_amips = -1;
@@ -183,6 +182,8 @@ public:
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
+
+    void set_sizing_field(const nlohmann::json& sizing_field_json);
 
     bool adjust_sizing_field_serial(double max_energy);
 
@@ -369,7 +370,7 @@ private:
          */
         std::map<size_t, FaceAttributes> faces;
     };
-    tbb::enumerable_thread_specific<SplitInfoCache> split_cache;
+    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
     struct CollapseInfoCache
     {
@@ -385,7 +386,7 @@ private:
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
     };
-    tbb::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
 
     struct SwapInfoCache
@@ -394,7 +395,7 @@ private:
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
         CellTag face_tags;
     };
-    tbb::enumerable_thread_specific<SwapInfoCache> swap_cache;
+    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.

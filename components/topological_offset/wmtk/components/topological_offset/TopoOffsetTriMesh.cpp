@@ -34,9 +34,9 @@ void TopoOffsetTriMesh::init_from_image(
     // initialize connectivity
     init(F);
     assert(check_mesh_connectivity_validity());
-    m_vertex_attribute.m_attributes.resize(V.rows());
-    m_edge_attribute.m_attributes.resize(3 * F.rows());
-    m_face_attribute.m_attributes.resize(F.rows());
+    m_vertex_attribute.resize(V.rows());
+    m_edge_attribute.resize(3 * F.rows());
+    m_face_attribute.resize(F.rows());
 
     // set envelope data
     if (V_env.rows() > 0) {

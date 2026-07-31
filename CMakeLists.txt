@@ -57,7 +57,7 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
-option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
+option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
@@ -73,8 +73,7 @@ include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(nlohmann_json)
 include(eigen)
-include(delaunay_psm)
-include(onetbb)
+include(volumeremesher) # target VolumeRemesher::VolumeRemesher
 include(mshio)
 include(metis)
 include(gmp)
@@ -123,14 +122,18 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 
+# std::thread (used by the concurrency shim that replaced TBB) needs the platform
+# threading library; TBB used to pull this in transitively.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
     igl::predicates
     gmp::gmp
-    geogram::delaunay_psm
-    TBB::tbb
+    VolumeRemesher::VolumeRemesher
     mshio::mshio
     metis::metis
     nlohmann_json::nlohmann_json
@@ -139,6 +142,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
     polysolve::polysolve
+    Threads::Threads
 )
 
 if(MSVC)

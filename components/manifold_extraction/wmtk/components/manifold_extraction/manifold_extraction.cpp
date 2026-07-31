@@ -6,6 +6,7 @@
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/simwild/read_image_msh.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Preallocation.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 #include "ManExtractTetMesh.h"
 #include "ManExtractTriMesh.h"
@@ -77,6 +78,7 @@ void manifold_extraction(nlohmann::json json_params)
 
         // initialize mesh
         ManExtractTriMesh mesh(man_params, offset_params, NUM_THREADS);
+        wmtk::set_preallocation_factor_from_json(mesh, json_params);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,
@@ -149,6 +151,7 @@ void manifold_extraction(nlohmann::json json_params)
 
         // initialize mesh
         ManExtractTetMesh mesh(man_params, offset_params, NUM_THREADS);
+        wmtk::set_preallocation_factor_from_json(mesh, json_params);
         mesh.init_from_image(
             input_data.V_input,
             input_data.T_input,

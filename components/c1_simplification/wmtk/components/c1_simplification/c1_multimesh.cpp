@@ -1057,7 +1057,6 @@ bool MMSurfaceMesh::multimesh_collapse_edge(const Tuple& t)
 
         if (!tetmesh_ptr->collapse_edge_conn(
                 t_e_tuple,
-                tet_new_edges,
                 tet_v1_id,
                 tet_new_loc,
                 tet_rollback_vert_conn,

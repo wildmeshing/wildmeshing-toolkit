@@ -4,8 +4,11 @@
 #include <igl/Timer.h>
 #include <algorithm>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -15,8 +18,26 @@ void SimWildMesh::collapse_all_edges(bool is_limit_length)
     double time;
     timer.start();
 
-    std::vector<std::pair<std::string, Tuple>> all_ops;
+    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](SimWildMesh& m, const Tuple& e, auto& out) {
+            out.emplace_back("edge_collapse", e);
+            out.emplace_back("edge_collapse", e.switch_vertex(m));
+        });
+    time = timer.getElapsedTime();
+    logger().info("#edges = {}", all_ops.size() / 2);
+    logger().info("edge collapse prepare time: {:.4}s", time);
+
     auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
+            std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+            for (const Tuple& t : newts) {
+                op_tups.emplace_back(op, t);
+                op_tups.emplace_back(op, t.switch_vertex(m));
+            }
+            return op_tups;
+        };
         executor.priority = [](const SimWildMesh& m, Op op, const Tuple& t) {
             return -m.get_length2(t);
         };
@@ -33,27 +54,15 @@ void SimWildMesh::collapse_all_edges(bool is_limit_length)
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);
             double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-            if (is_limit_length && length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio)
+            if (is_limit_length && length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
                 return false;
+            }
             return true;
         };
 
-        // Execute!!
-        do {
-            all_ops.clear();
-            const auto all_edges = get_edges();
-            logger().info("#E = {}", all_edges.size());
-            for (const Tuple& loc : all_edges) {
-                // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-                all_ops.emplace_back("edge_collapse", loc);
-                all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-            }
-            executor(*this, all_ops);
-            logger().info(
-                "success: {}, failed: {}",
-                executor.get_cnt_success(),
-                executor.get_cnt_fail());
-        } while (executor.get_cnt_success() > 0);
+        // Retry a failed collapse only where the mesh actually changed this round
+        // (dirty-epoch localized retry), instead of re-testing every failure every pass.
+        wmtk::run_localized_to_convergence(*this, executor, all_ops);
     };
     if (NUM_THREADS > 0) {
         timer.start();
@@ -157,6 +166,12 @@ bool SimWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         cache.changed_energies.emplace_back(q);
     }
     assert(cache.changed_energies.size() == cache.changed_tids.size());
+
+    if (m_params.perform_sanity_checks) {
+        if (!link_condition(loc)) {
+            log_and_throw_error("link condition failed for edge ({}, {})", v1_id, v2_id);
+        }
+    }
 
     //
     const auto n12_locs = get_incident_tids_for_edge(loc);

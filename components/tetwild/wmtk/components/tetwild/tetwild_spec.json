@@ -17,12 +17,28 @@
       "length_rel",
       "stop_energy",
       "preserve_topology",
+      "remove_duplicate_eps",
+      "allow_surface_swap",
+      "check_surface_topology",
       "throw_on_fail",
       "log_file",
       "report",
       "DEBUG_output",
       "DEBUG_sanity_checks",
-      "DEBUG_hausdorff"
+      "DEBUG_hausdorff",
+      "DEBUG_euler",
+      "stuck_refine_stall_eps",
+      "stuck_refine_cooldown",
+      "stuck_refine_num_worst",
+      "stuck_refine_rings",
+      "stuck_refine_factor",
+      "stuck_refine_min_scalar",
+      "stuck_refine_gradation",
+      "stuck_refine_force_split",
+      "stuck_refine_rational_split",
+      "skip_good_regions",
+      "skip_good_regions_margin",
+      "skip_winding_number"
     ]
   },
   {
@@ -92,6 +108,12 @@
     "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
   },
   {
+    "pointer": "/skip_winding_number",
+    "type": "bool",
+    "default": false,
+    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-tet quantities are needed to filter the outside region (filter != 'none') and are otherwise written only as output annotation fields; the (three) winding-number evaluations dominate the finalize phase on large meshes. When set, they are skipped and the corresponding output fields are left at their defaults. Ignored (with a warning) when filter != 'none', which requires them."
+  },
+  {
     "pointer": "/eps_rel",
     "type": "float",
     "default": 2e-3,
@@ -114,6 +136,24 @@
     "type": "bool",
     "default": false,
     "doc": "Preserve the topology of the input surface."
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately."
+  },
+  {
+    "pointer": "/allow_surface_swap",
+    "type": "bool",
+    "default": true,
+    "doc": "Allow surface edge swapping."
+  },
+  {
+    "pointer": "/check_surface_topology",
+    "type": "bool",
+    "default": false,
+    "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
   },
   {
     "pointer": "/throw_on_fail",
@@ -150,5 +190,79 @@
     "type": "bool",
     "default": false,
     "doc": "Sanity Check: Compute and report the Hausdorff distance of the output to the input. Should be always smaller than eps."
+  },
+  {
+    "pointer": "/DEBUG_euler",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Euler characteristic of the input and output surfaces and warn if they differ. Off by default because on meshes with many components it can take tens of seconds. It is computed regardless when preserve_topology is set (the topology check needs it)."
+  },
+  {
+    "pointer": "/stuck_refine_stall_eps",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Refine when the max energy improved by at most this fraction since the previous iteration. 0 => only when it does not improve at all."
+  },
+  {
+    "pointer": "/stuck_refine_cooldown",
+    "type": "int",
+    "default": 1,
+    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
+  },
+  {
+    "pointer": "/stuck_refine_num_worst",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "Number of worst tets whose neighborhoods are refined when stuck. 0 => refine all tets with energy above the filter_energy."
+  },
+  {
+    "pointer": "/stuck_refine_rings",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "Graph rings around each worst tet included in the stuck refinement. 0 => only the worst tet itself, 1 => its neighbors, 2 => neighbors of neighbors, etc."
+  },
+  {
+    "pointer": "/stuck_refine_factor",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Multiplicative reduction of the sizing scalar per stuck refinement (0.5 => halve)."
+  },
+  {
+    "pointer": "/stuck_refine_min_scalar",
+    "type": "float",
+    "default": 0.001,
+    "doc": "Lower bound on the sizing scalar during stuck refinement."
+  },
+  {
+    "pointer": "/stuck_refine_gradation",
+    "type": "float",
+    "default": 2.0,
+    "doc": "Gradation cap for the monotone sizing smoothing: adjacent sizings may differ by at most this factor (smoothing only lowers values)."
+  },
+  {
+    "pointer": "/stuck_refine_force_split",
+    "type": "bool",
+    "default": true,
+    "doc": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall."
+  },
+  {
+    "pointer": "/stuck_refine_rational_split",
+    "type": "bool",
+    "default": true,
+    "doc": "When a split's rounded (double) midpoint would invert an incident tet, allow edges of the current worst-tet set to fall back to the exact rational midpoint (never inverts, keeps the new vertex un-rounded) instead of rejecting the split."
+  },
+  {
+    "pointer": "/skip_good_regions",
+    "type": "bool",
+    "default": true,
+    "doc": "Only smooth vertices incident to a tet whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions."
+  },
+  {
+    "pointer": "/skip_good_regions_margin",
+    "type": "float",
+    "default": 0.9,
+    "doc": "A tet is 'active' (worth smoothing around) when its energy is at least this fraction of stop_energy."
   }
 ]

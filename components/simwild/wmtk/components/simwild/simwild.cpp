@@ -10,6 +10,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <wmtk/utils/Preallocation.hpp>
 #include "Parameters.h"
 #include "SimWildMesh.h"
 #include "SimWildMeshTri.hpp"
@@ -37,9 +38,7 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
 
     const std::string operation = json_params["operation"];
     if (operation == "remeshing") {
-        if constexpr (std::is_same_v<MeshT, SimWildMesh>) {
-            mesh.set_sizing_field(json_params["sizing_field"]);
-        }
+        mesh.set_sizing_field(json_params["sizing_field"]);
         mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
         const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
@@ -160,6 +159,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     timer.start();
 
     simwild::SimWildMesh mesh(params, params.eps, params.NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         bool use_exact = !json_params["use_sample_envelope"];
@@ -199,17 +199,12 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         mesh.simplify();
     }
 
-    const std::string tags_selection_str = json_params["tags_selection"];
-    const auto tags_selection_expr =
-        expression_parser::parse(tags_selection_str, mesh.m_tag_name_to_id);
-    logger().info("Parsed tags_selection expression: {}", tags_selection_expr->to_string());
-
     // /////////apply operation
     apply_operation(mesh, json_params);
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
-    logger().info("total time {}s", time);
+    logger().info("total optimization time {}s", time);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -246,6 +241,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     timer.start();
 
     simwild::tri::SimWildMeshTri mesh(params, params.eps, params.NUM_THREADS);
+    wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
@@ -274,7 +270,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
 
     mesh.consolidate_mesh();
     double time = timer.getElapsedTime();
-    logger().info("total time {}s", time);
+    logger().info("total optimization time {}s", time);
 
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
@@ -348,6 +344,9 @@ void simwild(nlohmann::json json_params)
         return fmt::format("{}_{}", output_filename.string(), vtu_counter++);
     };
 
+    igl::Timer timer;
+    timer.start();
+
     // read image or .msh
     InputData input_data;
     std::string extension = std::filesystem::path(input_paths[0]).extension().string();
@@ -362,6 +361,8 @@ void simwild(nlohmann::json json_params)
     } else {
         run_2D(json_params, input_data);
     }
+    double time = timer.getElapsedTime();
+    logger().info("total runtime {}s", time);
     logger().info("======= finish =========");
 }
 

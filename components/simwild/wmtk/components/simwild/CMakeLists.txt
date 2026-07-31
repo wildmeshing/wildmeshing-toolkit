@@ -1,5 +1,3 @@
-include(volumemesher)
-
 set(COMPONENT_NAME simwild)
 add_component(${COMPONENT_NAME})
 
@@ -20,6 +18,7 @@ set(SRC_FILES
 	EdgeCollapsing.cpp
 	EdgeSwapping.cpp
 	Smooth.cpp
+	SurfaceTopology.cpp
 	
 	VolumemesherInsertion.cpp
 
@@ -46,7 +45,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	wmtk::shortest_edge_collapse
-	VolumeRemesher::VolumeRemesher
 	jse::jse
 )
 

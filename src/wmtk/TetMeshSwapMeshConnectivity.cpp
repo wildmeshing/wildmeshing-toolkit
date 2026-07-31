@@ -42,23 +42,40 @@ void TetMesh::operation_failure_rollback_imp(
  */
 std::map<size_t, TetMesh::VertexConnectivity> TetMesh::operation_update_connectivity_impl(
     std::vector<size_t>& remove_id,
-    const std::vector<std::array<size_t, 4>>& new_tet_conn)
+    const std::vector<std::array<size_t, 4>>& new_tet_conn,
+    bool& ok)
 {
     std::vector<size_t> allocate;
-    auto rollback_vert_conn = operation_update_connectivity_impl(remove_id, new_tet_conn, allocate);
-    remove_id = allocate;
+    auto rollback_vert_conn =
+        operation_update_connectivity_impl(remove_id, new_tet_conn, allocate, ok);
+    if (ok) remove_id = allocate;
     return rollback_vert_conn;
 }
 
 std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_connectivity_impl(
     const std::vector<size_t>& remove_id,
     const std::vector<std::array<size_t, 4>>& new_tet_conn,
-    std::vector<size_t>& allocate_id)
+    std::vector<size_t>& allocate_id,
+    bool& ok)
 {
     // TODO: special case with fixed id.
     assert(allocate_id.empty() || allocate_id.size() == new_tet_conn.size());
     assert(std::is_sorted(remove_id.begin(), remove_id.end()));
 
+    ok = true;
+
+    // Reserve the additional tet slots up-front so that, if the preallocated
+    // capacity is exhausted, we abort *before* mutating any connectivity.
+    long reserved_first = -1;
+    size_t add_size = 0;
+    if (allocate_id.empty() && new_tet_conn.size() > remove_id.size()) {
+        add_size = new_tet_conn.size() - remove_id.size();
+        reserved_first = request_tet_slots(add_size);
+        if (reserved_first < 0) {
+            ok = false; // out of preallocated space; nothing mutated yet
+            return {};
+        }
+    }
 
     auto& tet_conn = this->m_tet_connectivity;
     auto& vert_conn = this->m_vertex_connectivity;
@@ -89,13 +106,11 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
         } else {
             auto hole_size = allocate_id.size();
 
-            auto add_size = new_tet_conn.size() - allocate_id.size();
             allocate_id.resize(new_tet_conn.size(), -1);
 
-            auto new_indices = std::vector<size_t>(add_size);
-            // auto old_tet_size = tet_conn.size();
-            for (auto i = 0; i < add_size; i++) {
-                allocate_id[i + hole_size] = this->get_next_empty_slot_t(); // old_tet_size + i;
+            // consume the slots reserved above (contiguous block)
+            for (size_t i = 0; i < add_size; i++) {
+                allocate_id[i + hole_size] = static_cast<size_t>(reserved_first + (long)i);
             }
         }
     }
@@ -190,7 +205,9 @@ bool TetMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     }
 
     auto new_tet_id = affected;
-    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+    bool conn_ok = true;
+    auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
+    if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
     assert(new_tet_id.size() == 2);
 
     // get eid, fid, tid for return
@@ -278,7 +295,9 @@ bool TetMesh::swap_face(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
 
     {
         auto new_tet_id = affected;
-        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+        bool conn_ok = true;
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
+        if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
 
         assert(affected.size() == old_tets.size());
 
@@ -537,7 +556,9 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     std::vector<size_t> new_tet_id = affected;
     {
         // update tet and vertex connectivity
-        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+        bool conn_ok = true;
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
+        if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
         assert(new_tet_id.size() == 4);
 
         // build return tuple and gather new tet tuples
@@ -751,7 +772,9 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
     bool is_succeed = false;
     {
         // update tet and vertex connectivity
-        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets);
+        bool conn_ok = true;
+        auto rollback_vert_conn = operation_update_connectivity_impl(new_tet_id, new_tets, conn_ok);
+        if (!conn_ok) return false; // out of preallocated tet slots: abort before committing
         assert(new_tet_id.size() == 6);
 
         // build return tuple and gather new tet tuples

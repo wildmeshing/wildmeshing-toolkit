@@ -12,7 +12,6 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <tbb/concurrent_vector.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <igl/predicates/predicates.h>
@@ -53,16 +52,22 @@ void SimWildMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
 
     logger().info("========it pre========");
     local_operations({{0, 1, 0, 0}});
 
     ////operation loops
-    bool is_hit_min_edge_length = false;
-    const int M = 2;
-    int m = 0;
-    double pre_max_energy = 0., pre_avg_energy = 0.;
+    double pre_max_energy = 0.;
+    {
+        auto [max_energy, avg_energy] = get_max_avg_energy();
+        pre_max_energy = max_energy;
+        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+    }
+    int refine_cooldown =
+        m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
@@ -94,34 +99,48 @@ void SimWildMesh::mesh_improvement(int max_its)
             break;
         }
 
-        ///sizing field
-        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
-            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
-            m++;
-            if (m == M) {
-                logger().info(">>>>adjust_sizing_field...");
-                if (is_hit_min_edge_length) {
-                    logger().warn(
-                        "Adjust sizing field although min edge length was already hit. This should "
-                        "not happen.");
-                }
-                is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
-                // is_hit_min_edge_length = adjust_sizing_field(max_energy);
-                logger().info(">>>>adjust_sizing_field finished...");
-                m = 0;
-            }
-        } else {
-            m = 0;
-            /**
-             * Update pre energies only if they are smaller than current energies. This helps to
-             * adjust the sizing field in case the energy alternates between two states.
-             */
-            pre_max_energy = std::min(pre_max_energy, max_energy);
-            pre_avg_energy = std::min(pre_avg_energy, avg_energy);
+        // ///sizing field
+        // if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
+        //     (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
+        //     m++;
+        //     if (m == M) {
+        //         logger().info(">>>>adjust_sizing_field...");
+        //         if (is_hit_min_edge_length) {
+        //             logger().warn(
+        //                 "Adjust sizing field although min edge length was already hit. This
+        //                 should " "not happen.");
+        //         }
+        //         is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
+        //         logger().info(">>>>adjust_sizing_field finished...");
+        //         m = 0;
+        //     }
+        // } else {
+        //     m = 0;
+        //     /**
+        //      * Update pre energies only if they are smaller than current energies. This helps to
+        //      * adjust the sizing field in case the energy alternates between two states.
+        //      */
+        //     pre_max_energy = std::min(pre_max_energy, max_energy);
+        //     pre_avg_energy = std::min(pre_avg_energy, avg_energy);
+        // }
+
+        /// sizing field: when the max energy stalls, refine around the worst
+        /// elements to escape stuck configurations (replaces the old global
+        /// adjust_sizing_field mechanism). After a refinement, wait
+        /// stuck_refine_cooldown iterations so the operations get full passes on
+        /// the new sizing field before more refinement is added.
+        if (refine_cooldown > 0) {
+            --refine_cooldown;
+        } else if (
+            it > 0 && max_energy > m_params.stop_energy &&
+            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
+            refine_sizing_around_worst(max_energy);
+            // adjust_sizing_field_serial(max_energy); // The old update
+            logger().info(">>>>stuck-refine finished...");
+            refine_cooldown = m_params.stuck_refine_cooldown;
         }
-        if (is_hit_min_edge_length) {
-            // todo: maybe to do sth
-        }
+        pre_max_energy = std::min(pre_max_energy, max_energy);
     }
 
     logger().info("========it post========");
@@ -249,6 +268,7 @@ std::tuple<double, double> SimWildMesh::local_operations(
                 auto [max_energy, avg_energy] = get_max_avg_energy();
                 logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
                 logger().info("swap max body energy = {:.6}", get_max_body_energy());
+                logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
                 sanity_checks();
                 if (max_energy < m_params.stop_energy || all_tets_below_stop()) {
                     return std::make_tuple(max_energy, avg_energy);
@@ -353,6 +373,195 @@ void SimWildMesh::set_sizing_field(const nlohmann::json& sizing_field_json)
         for (const size_t& vid : vs) {
             auto& s = m_vertex_attribute[vid].m_sizing_scalar;
             s = std::min(s, sizing);
+        }
+    }
+}
+
+size_t SimWildMesh::refine_sizing_around_worst(double max_energy)
+{
+    const int num_worst = std::max(0, m_params.stuck_refine_num_worst);
+    const int n_rings = std::max(0, m_params.stuck_refine_rings);
+    const double factor = m_params.stuck_refine_factor;
+    const double floor = m_params.stuck_refine_min_scalar;
+
+    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+
+    // Find the num_worst valid tets with the highest energy. `worst` is kept
+    // sorted ascending by quality, size <= num_worst (front = smallest kept).
+    std::vector<std::pair<double, size_t>> worst;
+    worst.reserve(num_worst);
+    for (size_t tid = 0; tid < tet_capacity(); ++tid) {
+        const Tuple t = tuple_from_tet(tid);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const double& q = m_tet_attribute[tid].m_quality;
+        if (std::cbrt(q) < filter_energy) {
+            continue;
+        }
+        if (num_worst > 0) {
+            if (static_cast<int>(worst.size()) < num_worst) {
+                worst.emplace_back(q, tid);
+                std::sort(worst.begin(), worst.end());
+            } else if (q > worst.front().first) {
+                worst.front() = {q, tid};
+                std::sort(worst.begin(), worst.end());
+            }
+        } else {
+            worst.emplace_back(q, tid);
+        }
+    }
+
+    if (num_worst == 0) {
+        std::sort(worst.begin(), worst.end());
+    }
+    if (worst.empty()) {
+        return 0;
+    }
+
+    // compute maximum sizing scalar for each vertex based on the sizing field
+    std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());
+    for (const Tuple& t : get_tets()) {
+        const auto tid = t.tid(*this);
+        double sizing = std::numeric_limits<double>::max();
+        bool tet_has_sizing_field = false;
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_tet_attribute[tid].tags)) {
+                sizing = std::min(sizing, length / m_params.l);
+                tet_has_sizing_field = true;
+            }
+        }
+        if (!tet_has_sizing_field) {
+            sizing = 1.0; // default sizing scalar
+        }
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t& vid : vs) {
+            max_sizing_scalars[vid] = std::min(max_sizing_scalars[vid], sizing);
+        }
+    }
+
+    // Record the worst tets' own vertices (for the exact-rational split fallback)
+    // and, if force-split is on, the LONGEST edge of each worst tet. split_all_edges
+    // force-splits exactly those edges (bypasses the length gate), so a stuck
+    // sliver's long edge is split immediately -- WITHOUT changing the sizing field.
+    m_force_split_edges.clear();
+    for (const auto& [q, tid] : worst) {
+        const auto vs = oriented_tet_vids(tid);
+        if (m_params.stuck_refine_force_split) {
+            double l2max = -1;
+            size_t ea = vs[0];
+            size_t eb = vs[1];
+            for (size_t a = 0; a < 4; ++a) {
+                for (size_t b = a + 1; b < 4; ++b) {
+                    const Vector3d& pa = m_vertex_attribute[vs[a]].m_posf;
+                    const Vector3d& pb = m_vertex_attribute[vs[b]].m_posf;
+                    const double l2 = (pa - pb).squaredNorm();
+                    if (l2 > l2max) {
+                        l2max = l2;
+                        ea = vs[a];
+                        eb = vs[b];
+                    }
+                }
+            }
+            m_force_split_edges.insert(simplex::Edge(ea, eb));
+        }
+    }
+
+    // Seed the region with the worst tets' vertices, then BFS n_rings hops.
+    std::unordered_set<size_t> region;
+    std::vector<size_t> frontier;
+    for (const auto& [_, tid] : worst) {
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t v : vs) {
+            region.insert(v);
+        }
+    }
+    frontier.insert(frontier.end(), region.begin(), region.end());
+
+    // grow region by n rings starting from the worst tets' vertices
+    for (int r = 0; r < n_rings; ++r) {
+        std::vector<size_t> next;
+        for (const size_t v : frontier) {
+            for (const size_t u : get_one_ring_vids_for_vertex_adj(v)) {
+                if (region.insert(u).second) {
+                    next.push_back(u);
+                }
+            }
+        }
+        frontier.swap(next);
+    }
+
+    // Apply the multiplicative refinement, clamped at the floor.
+    std::vector<size_t> refined;
+    refined.reserve(region.size());
+    for (const size_t v : region) {
+        double& s = m_vertex_attribute[v].m_sizing_scalar;
+        const double ns = std::max(floor, s * factor);
+        if (ns < s) {
+            s = ns;
+            refined.push_back(v);
+        }
+    }
+
+    // Grade the refined region into its surroundings (monotone, only lowers).
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+    // restrict sizing scalar according to sizing field
+    for (const Tuple& t : get_tets()) {
+        const auto tid = t.tid(*this);
+        double sizing = std::numeric_limits<double>::max();
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_tet_attribute[tid].tags)) {
+                sizing = std::min(sizing, length / m_params.l);
+            }
+        }
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t& vid : vs) {
+            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+            s = std::min(s, sizing);
+        }
+    }
+
+    // m_quality stores AMIPS^3; report its cube root to match the "max energy".
+    logger().info(
+        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices, "
+        "filter_energy {:.4}",
+        worst.size(),
+        std::cbrt(worst.back().first),
+        refined.size(),
+        region.size(),
+        filter_energy);
+    return refined.size();
+}
+
+void SimWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
+{
+    if (grade <= 1.0) {
+        return;
+    }
+
+    // Min-relaxation (Dijkstra/Bellman-Ford style): vertex u caps each neighbor
+    // at grade * sizing[u]. Only ever decreases sizings, so it spreads more
+    // refinement outward without raising the already-refined (seed) values.
+    // Sizings are always in (0, 1], so once grade*sizing[u] >= 1 the cap can no
+    // longer lower any neighbor and propagation stops -- this bounds the halo.
+    std::queue<size_t> q;
+    for (const size_t v : seeds) {
+        q.push(v);
+    }
+    while (!q.empty()) {
+        const size_t u = q.front();
+        q.pop();
+        const double cap = grade * m_vertex_attribute[u].m_sizing_scalar;
+        if (cap >= 1.0) {
+            continue;
+        }
+        for (const size_t w : get_one_ring_vids_for_vertex_adj(u)) {
+            double& sw = m_vertex_attribute[w].m_sizing_scalar;
+            if (sw > cap) {
+                sw = cap;
+                q.push(w);
+            }
         }
     }
 }
@@ -495,65 +704,6 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
             s = std::min(s, sizing);
         }
     }
-
-    // std::vector<bool> visited(vert_capacity(), false);
-    // std::vector<size_t> cache_one_ring;
-    // // size_t vid;
-
-    // while (!v_queue.empty()) {
-    //     sum++;
-    //     size_t vid = v_queue.front();
-    //     v_queue.pop();
-    //     if (visited[vid]) {
-    //         continue;
-    //     }
-    //     visited[vid] = true;
-    //     adjcnt++;
-
-    //     const Vector3d& pos_v = m_vertex_attribute[vid].m_posf;
-    //     double sq_dist = 0.;
-    //     uint32_t idx;
-    //     knn.nearest_neighbor(pos_v, idx, sq_dist);
-
-    //     const double dist = std::sqrt(sq_dist);
-
-    //     if (dist > R) { // outside R-ball, unmark.
-    //         continue;
-    //     }
-
-    //     scale_multipliers[vid] = std::min(
-    //         scale_multipliers[vid],
-    //         dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
-
-    //     const auto vids = get_one_ring_vids_for_vertex_adj(vid, cache_one_ring);
-    //     for (size_t n_vid : vids) {
-    //         if (visited[n_vid]) {
-    //             continue;
-    //         }
-    //         v_queue.push(n_vid);
-    //     }
-    // }
-
-    // std::cout << sum << " " << adjcnt << std::endl;
-
-    // bool is_hit_min_edge_length = false;
-    // for (int i = 0; i < vert_capacity(); i++) {
-    //     const Tuple v = tuple_from_vertex(i);
-    //     if (!v.is_valid(*this)) {
-    //         continue;
-    //     }
-    //     const size_t vid = v.vid(*this);
-    //     auto& v_attr = m_vertex_attribute[vid];
-
-    //     const double new_scale = v_attr.m_sizing_scalar * scale_multipliers[vid];
-    //     if (new_scale > 1)
-    //         v_attr.m_sizing_scalar = 1;
-    //     else if (new_scale < min_refine_scalar) {
-    //         is_hit_min_edge_length = true;
-    //         v_attr.m_sizing_scalar = min_refine_scalar;
-    //     } else
-    //         v_attr.m_sizing_scalar = new_scale;
-    // }
 
     return is_hit_min_edge_length;
 }
@@ -879,6 +1029,35 @@ std::tuple<double, double> SimWildMesh::get_max_avg_energy()
     avg_energy /= cnt;
 
     return std::make_tuple(std::cbrt(max_energy), avg_energy);
+}
+
+std::vector<size_t> SimWildMesh::active_vertices() const
+{
+    const double thr = active_quality_threshold();
+    std::vector<char> seen(vert_capacity(), 0);
+    std::vector<size_t> out;
+    for (size_t i = 0; i < tet_capacity(); ++i) {
+        if (!tuple_from_tet(i).is_valid(*this)) {
+            continue;
+        }
+        if (m_tet_attribute[i].m_quality < thr) {
+            continue;
+        }
+        for (const size_t v : oriented_tet_vids(i)) {
+            if (!seen[v]) {
+                seen[v] = 1;
+                out.push_back(v);
+            }
+        }
+    }
+    // add surface vertices
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        if (!seen[i] && m_vertex_attribute[i].m_is_on_surface) {
+            seen[i] = 1;
+            out.push_back(i);
+        }
+    }
+    return out;
 }
 
 bool SimWildMesh::is_inverted_f(const Tuple& loc) const
