@@ -34,6 +34,15 @@ class ShortestEdgeCollapse : public wmtk::TriMesh
 public:
     wmtk::SampleEnvelope m_envelope;
     bool m_has_envelope = false;
+
+    // Envelope around the open boundary of the input, used only when the boundary is not
+    // frozen. The surface envelope cannot stand in for it: it is a containment test, so a
+    // boundary sliding inwards along the surface stays inside it and would go unnoticed.
+    // Same construction tetwild uses for its open-boundary edges. Always sampled, never
+    // exact -- SampleEnvelope::is_outside throws for edges when use_exact is set.
+    wmtk::SampleEnvelope m_boundary_envelope;
+    bool m_has_boundary_envelope = false;
+
     wmtk::AttributeCollection<VertexAttributes> vertex_attrs;
 
     int retry_limit = 10;
@@ -44,11 +53,23 @@ public:
 
     void freeze_boundary();
 
+    /**
+     * @param eps         envelope thickness; 0 disables the envelope entirely
+     * @param freeze_bnd  pin the vertices of the open boundary so the outline cannot move.
+     *                    When cleared, the boundary is simplified like the rest of the
+     *                    surface and is kept in place by m_boundary_envelope instead.
+     *
+     * Note freeze_bnd comes after eps rather than before it, unlike the otherwise
+     * equivalent IsotropicRemeshing::create_mesh: every existing caller passes eps
+     * positionally as the fourth argument, and a bool inserted ahead of it would silently
+     * swallow that value (double -> bool) and disable the envelope.
+     */
     void create_mesh(
         size_t n_vertices,
         const std::vector<std::array<size_t, 3>>& tris,
         const std::vector<size_t>& frozen_verts = {},
-        double eps = 0);
+        double eps = 0,
+        bool freeze_bnd = true);
 
     ~ShortestEdgeCollapse() {}
 
