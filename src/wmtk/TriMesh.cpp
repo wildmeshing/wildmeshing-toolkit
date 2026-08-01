@@ -2414,7 +2414,11 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     std::vector<std::pair<size_t, size_t>> lk_e_vid2; // link edges of vid2
 
     for (const Tuple& e_vid : vid1_ring) {
-        if (e_vid.switch_faces(*this).empty()) {
+        // switch_faces(...).empty() asks whether the edge has exactly one face, which
+        // is_boundary_edge now answers with a single array comparison instead of building
+        // two vectors. This runs once per one-ring edge of both endpoints, on every
+        // collapse attempt.
+        if (is_boundary_edge(e_vid)) {
             lk_vid1.push_back(dummy);
             lk_e_vid1.emplace_back(e_vid.vid(*this), dummy);
         }
@@ -2432,7 +2436,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     vector_unique(lk_vid1);
 
     for (const Tuple& e_vid : vid2_ring) {
-        if (e_vid.switch_faces(*this).empty()) {
+        if (is_boundary_edge(e_vid)) {
             lk_vid2.push_back(dummy);
             lk_e_vid2.emplace_back(e_vid.vid(*this), dummy);
         }
@@ -2453,12 +2457,10 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     auto lk_vid12 = set_intersection(lk_vid1, lk_vid2);
     std::vector<size_t> lk_edge;
     lk_edge.push_back((edge.switch_edge(*this)).switch_vertex(*this).vid(*this));
-    const auto edge_opps = edge.switch_faces(*this);
-    if (edge_opps.empty()) {
-        // edge is boundary
+    if (is_boundary_edge(edge)) {
         lk_edge.push_back(dummy);
     } else {
-        for (const Tuple& opp : edge_opps) {
+        for (const Tuple& opp : edge.switch_faces(*this)) {
             lk_edge.push_back(opp.switch_edge(*this).switch_vertex(*this).vid(*this));
         }
     }
