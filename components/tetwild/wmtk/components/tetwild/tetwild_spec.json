@@ -227,13 +227,13 @@
     "pointer": "/preserve_topology",
     "type": "bool",
     "default": false,
-    "doc": "Preserve the topology of the input surface."
+    "doc": "Preserve the topology of the input surface. This forces remove_duplicate_eps to merge only exactly coincident vertices, keeps the link condition enabled during the input simplification, enables the substructure link condition during optimization, and makes the run fail if the output Euler characteristic differs from the input. When unset, all four are relaxed and the topology may change."
   },
   {
     "pointer": "/remove_duplicate_eps",
     "type": "float",
     "default": 0,
-    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the surface connectivity; negative skips the pass entirely."
+    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the surface connectivity; negative skips the pass entirely. Ignored when preserve_topology is set: merging vertices that are merely close welds sheets of the surface together and so removes handles, therefore only exactly coincident vertices are merged in that case."
   },
   {
     "pointer": "/allow_surface_swap",

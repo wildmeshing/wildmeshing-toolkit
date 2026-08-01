@@ -189,13 +189,13 @@ void triwild(nlohmann::json json_params)
     MatrixXi E_in;
     std::vector<MatrixXd> Vs;
     std::vector<MatrixXi> Es;
-    wmtk::utils::read_input_curves(
-        input_paths,
-        json_params["remove_duplicate_eps"],
-        V_in,
-        E_in,
-        Vs,
-        Es);
+    // Merging vertices that are merely *close* is a topology change: it welds curves
+    // that pass near each other and so removes loops and junctions. Under
+    // preserve_topology only exactly coincident vertices may be merged, which is a pure
+    // de-duplication of the file and leaves the topology alone. Same rule as tetwild.
+    const double remove_duplicate_eps =
+        params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
+    wmtk::utils::read_input_curves(input_paths, remove_duplicate_eps, V_in, E_in, Vs, Es);
 
     // Informational input-topology report; gated behind DEBUG_euler because it is only
     // meaningful next to the matching computations later in the run.
