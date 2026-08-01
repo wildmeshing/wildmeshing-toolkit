@@ -446,6 +446,162 @@ bool TriMesh::is_boundary_edge(const Tuple& t) const
     return m_tri_connectivity[t.fid(*this)].m_edge_next[t.local_eid(*this)] == t.fid(*this);
 }
 
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+
+namespace {
+
+/// One face per line, rotated to start at its smallest vid. Rotation keeps the cyclic
+/// order -- and so the orientation -- while removing the choice of starting corner, which
+/// the operations are free to change and which nothing downstream depends on.
+void append_face(std::string& s, std::array<size_t, 3> vids)
+{
+    const size_t start = std::min_element(vids.begin(), vids.end()) - vids.begin();
+    s += "f";
+    for (int k = 0; k < 3; ++k) {
+        s += " " + std::to_string(vids[(start + k) % 3]);
+    }
+    s += "\n";
+}
+
+std::string canonical_form(
+    const std::vector<char>& vert_alive,
+    const std::vector<std::array<size_t, 3>>& faces,
+    const std::vector<char>& face_alive)
+{
+    std::string s;
+    for (size_t v = 0; v < vert_alive.size(); ++v) {
+        if (vert_alive[v]) s += "v " + std::to_string(v) + "\n";
+    }
+    for (size_t f = 0; f < faces.size(); ++f) {
+        if (face_alive[f]) append_face(s, faces[f]);
+    }
+    return s;
+}
+
+} // namespace
+
+std::string TriMesh::debug_canonical_form() const
+{
+    std::vector<char> vert_alive(vert_capacity(), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    std::vector<std::array<size_t, 3>> faces(tri_capacity());
+    std::vector<char> face_alive(tri_capacity(), 0);
+    for (size_t f = 0; f < tri_capacity(); ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+std::string TriMesh::debug_reference_collapse(const size_t v_removed, const size_t v_kept) const
+{
+    std::vector<char> vert_alive(vert_capacity(), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    std::vector<std::array<size_t, 3>> faces(tri_capacity());
+    std::vector<char> face_alive(tri_capacity(), 0);
+    for (size_t f = 0; f < tri_capacity(); ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    // Drop every face carrying both endpoints -- those are the ones the collapse degenerates
+    // -- then rename the removed endpoint everywhere else.
+    for (size_t f = 0; f < faces.size(); ++f) {
+        if (!face_alive[f]) continue;
+        const bool has_removed =
+            std::find(faces[f].begin(), faces[f].end(), v_removed) != faces[f].end();
+        const bool has_kept = std::find(faces[f].begin(), faces[f].end(), v_kept) != faces[f].end();
+        if (has_removed && has_kept) {
+            face_alive[f] = 0;
+        } else if (has_removed) {
+            for (size_t& v : faces[f]) {
+                if (v == v_removed) v = v_kept;
+            }
+        }
+    }
+    vert_alive[v_removed] = 0;
+
+    // Two faces can now carry the same triple. Keep the smallest fid of each group, which
+    // is what collapse_edge_conn does.
+    {
+        std::map<std::array<size_t, 3>, size_t> first_with_key;
+        for (size_t f = 0; f < faces.size(); ++f) {
+            if (!face_alive[f]) continue;
+            std::array<size_t, 3> key = faces[f];
+            std::sort(key.begin(), key.end());
+            if (!first_with_key.try_emplace(key, f).second) face_alive[f] = 0;
+        }
+    }
+
+    // Anything left with no face at all is retired.
+    {
+        std::vector<char> referenced(vert_alive.size(), 0);
+        for (size_t f = 0; f < faces.size(); ++f) {
+            if (!face_alive[f]) continue;
+            for (const size_t v : faces[f]) referenced[v] = 1;
+        }
+        for (size_t v = 0; v < vert_alive.size(); ++v) {
+            if (!referenced[v]) vert_alive[v] = 0;
+        }
+    }
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+std::string TriMesh::debug_reference_split(
+    const size_t v0,
+    const size_t v1,
+    const size_t new_v,
+    const size_t tri_cap) const
+{
+    std::vector<char> vert_alive(std::max(vert_capacity(), new_v + 1), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    vert_alive[new_v] = 1;
+
+    std::vector<std::array<size_t, 3>> faces(tri_cap);
+    std::vector<char> face_alive(tri_cap, 0);
+    for (size_t f = 0; f < tri_cap; ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    // Each face on the edge becomes two: the original with v1 renamed to new_v, and a new
+    // one with v0 renamed to new_v. Same rule split_edge applies, and the new faces are
+    // appended in increasing order of the face they came from, which is the order
+    // get_next_empty_slot_t hands out.
+    std::vector<std::array<size_t, 3>> appended;
+    for (size_t f = 0; f < tri_cap; ++f) {
+        if (!face_alive[f]) continue;
+        const bool has_v0 = std::find(faces[f].begin(), faces[f].end(), v0) != faces[f].end();
+        const bool has_v1 = std::find(faces[f].begin(), faces[f].end(), v1) != faces[f].end();
+        if (!has_v0 || !has_v1) continue;
+
+        std::array<size_t, 3> child = faces[f];
+        for (size_t& v : child) {
+            if (v == v0) v = new_v;
+        }
+        appended.push_back(child);
+
+        for (size_t& v : faces[f]) {
+            if (v == v1) v = new_v;
+        }
+    }
+    for (const auto& child : appended) {
+        faces.push_back(child);
+        face_alive.push_back(1);
+    }
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+#endif // WMTK_DEBUG_BRUTE_FORCE_OPS
+
 size_t TriMesh::vertex_component_count(const size_t vid) const
 {
     const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
@@ -596,6 +752,12 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         old_tris.emplace_back(fids[i], m_tri_connectivity[fids[i]]);
     }
 
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    // Before the slots are reserved: past this point tri_capacity() counts them, and they
+    // are live but unfilled.
+    const size_t bf_tri_cap = tri_capacity();
+#endif
+
     const size_t new_vid = get_next_empty_slot_v();
     std::vector<size_t> new_fids(fids.size());
     for (size_t i = 0; i < fids.size(); ++i) {
@@ -616,6 +778,10 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
             return false;
         }
     }
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    const std::string brute_force_expected = debug_reference_split(vid1, vid2, new_vid, bf_tri_cap);
+#endif
 
     // first work on the vids
     // the old triangles are connected to the vertex of t
@@ -676,6 +842,17 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     std::vector<size_t> touched = fids;
     touched.insert(touched.end(), new_fids.begin(), new_fids.end());
     rebuild_cycles_around(touched);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "split_edge({},{}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:\n{}",
+            vid1,
+            vid2,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
 
     // make the new tuple
     size_t min_fid = m_vertex_connectivity[new_vid].m_conn_tris[0]; // making use of sorted vector
@@ -907,6 +1084,13 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     std::vector<std::pair<size_t, size_t>> same_edge_vid_fid;
     std::vector<size_t> n12_intersect_fids;
 
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    // collapse_edge_conn retires the tuple's own vertex and keeps the other.
+    const size_t bf_removed = loc0.vid(*this);
+    const size_t bf_kept = loc0.switch_vertex(*this).vid(*this);
+    const std::string brute_force_expected = debug_reference_collapse(bf_removed, bf_kept);
+#endif
+
     collapse_edge_conn(
         loc0,
         new_tris,
@@ -916,6 +1100,18 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         old_vertices,
         same_edge_vid_fid,
         n12_intersect_fids);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "collapse_edge({}->{}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:"
+            "\n{}",
+            bf_removed,
+            bf_kept,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
 
     start_protect_attributes();
 
@@ -1036,8 +1232,15 @@ void TriMesh::collapse_edge_conn(
     } else {
         const SmartTuple inc_edge = smart_loc0.switch_edge();
         const auto inc_edge_opp_faces = inc_edge.tuple().switch_faces(*this);
-        assert(!inc_edge_opp_faces.empty()); // should exist due to link condition
-        new_fid = inc_edge_opp_faces[0].fid(*this);
+        if (!inc_edge_opp_faces.empty()) {
+            new_fid = inc_edge_opp_faces[0].fid(*this);
+        }
+        // Otherwise both of loc0's other edges are on the boundary, so no face of the
+        // collapsed edge's star survives to carry the return tuple. That is reachable
+        // whenever the collapsed triangle is only attached to the rest of the mesh through
+        // its vertices -- one wing of a bowtie, say. The link condition used to make it
+        // unreachable, which is why this arm used to be an assert. Resolved below, once the
+        // survivor's face list is known.
     }
 
     // get the vids
@@ -1245,9 +1448,10 @@ void TriMesh::collapse_edge_conn(
     const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
     int j = m_tri_connectivity[gfid].find(new_vid);
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
-    // new_fid was picked before the mutation and may since have been merged away as a
-    // duplicate; fall back to the survivor's first face when it has.
-    if (m_tri_connectivity[new_fid].m_is_removed) {
+    // new_fid was picked before the mutation. It may have been left unset because nothing
+    // in the star survives, or it may since have been merged away as a duplicate; either
+    // way the survivor's own first face is a valid home for the return tuple.
+    if (new_fid == size_t(-1) || m_tri_connectivity[new_fid].m_is_removed) {
         new_fid = gfid;
     }
     int j_ret = m_tri_connectivity[new_fid].find(new_vid);

@@ -657,6 +657,37 @@ public:
      */
     std::optional<Tuple> switch_component(const TriMesh::Tuple& t) const;
 
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    /**
+     * Cross-check of the incremental operations against a brute-force reference.
+     *
+     * Compiled only under -DWMTK_DEBUG_BRUTE_FORCE_OPS=ON. The reference rebuilds the whole
+     * mesh as a plain list of vertex triples -- the OFF view of it -- applies the operation
+     * there in the obvious way, and re-emits. split_edge and collapse_edge then compare
+     * that string against their own result and throw on any difference.
+     *
+     * Two conventions have to match for the comparison to mean anything, and both are the
+     * real operation's: a collapse keeps the *second* endpoint of the edge and retires the
+     * first, and a duplicate group keeps its smallest fid.
+     */
+
+    /// Alive vids, then alive faces in fid order, each rotated to start at its smallest vid
+    /// so that orientation survives but the arbitrary starting corner does not.
+    std::string debug_canonical_form() const;
+
+    /// The mesh as it would be after collapsing (v_removed, v_kept), as a canonical form.
+    std::string debug_reference_collapse(size_t v_removed, size_t v_kept) const;
+
+    /**
+     * The mesh as it would be after splitting edge (v0,v1) with `new_v` in the middle.
+     *
+     * `tri_cap` is tri_capacity() as it was *before* the split reserved its new slots.
+     * Those slots are live but unfilled at the point the caller needs the reference, so
+     * reading them would put phantom (0,0,0) faces in the expected string.
+     */
+    std::string debug_reference_split(size_t v0, size_t v1, size_t new_v, size_t tri_cap) const;
+#endif
+
     /**
      * @brief check if the vertex that's represented by a Tuple is at the boundary of the mesh
      *

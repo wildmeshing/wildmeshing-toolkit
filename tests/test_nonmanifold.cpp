@@ -1,8 +1,10 @@
 #include <wmtk/TriMesh.h>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <algorithm>
+#include <functional>
 #include <set>
 
 using namespace wmtk;
@@ -528,13 +530,19 @@ TEST_CASE("nonmanifold_collapse_of_the_shared_edge", "[nonmanifold]")
 
 TEST_CASE("nonmanifold_collapse_next_to_the_shared_edge", "[nonmanifold]")
 {
-    // Collapse (0,2), an ordinary manifold boundary edge of the fan. Face (0,1,2) goes
-    // away; the two remaining faces keep the now-manifold edge (0,1).
+    // Collapse the boundary edge (0,2) of the fan. A collapse retires the vertex the tuple
+    // points at and keeps the other one, so vertex 0 goes and vertex 2 stays: face (0,1,2)
+    // degenerates and disappears, and the other two become (2,3,1) and (2,1,4).
+    //
+    // Which leaves a fan of three collapsed down to an ordinary manifold pair -- the edge
+    // that had three faces has one of them removed, so (2,1) now has exactly two.
     TriMesh m;
     const auto tris = meshes::fan3();
     m.init(max_vid(tris), tris);
 
     const Tuple e = m.tuple_from_edge(0, 2, 0);
+    REQUIRE(e.vid(m) == 0);
+    REQUIRE(e.switch_vertex(m).vid(m) == 2);
     REQUIRE(m.check_link_condition(e));
 
     std::vector<Tuple> dummy;
@@ -542,9 +550,138 @@ TEST_CASE("nonmanifold_collapse_next_to_the_shared_edge", "[nonmanifold]")
     REQUIRE(m.check_mesh_connectivity_validity());
 
     CHECK(m.get_faces().size() == 2);
-    const Tuple survivor = m.tuple_from_vids(0, 3, 1);
-    CHECK(brute_force_edge_valence(m, survivor) == 1);
+    CHECK(m.get_vertices().size() == 4); // vertex 0 is gone
+
+    // the formerly non-manifold edge is now manifold
+    const Tuple shared = m.tuple_from_vids(2, 1, 3);
+    CHECK(m.edge_valence(shared) == 2);
+    CHECK(m.is_manifold_edge(shared));
+
+    // and the rim edge that vertex 0 used to carry is a plain boundary edge
+    const Tuple rim = m.tuple_from_vids(2, 3, 1);
+    CHECK(m.is_boundary_edge(rim));
 }
+
+TEST_CASE("nonmanifold_collapse_merges_duplicate_triangles", "[nonmanifold]")
+{
+    // Two triangles on the shared edge (0,1) whose apexes are joined by the edge (2,3).
+    // Collapsing (2,3) makes both faces (0,1,x) -- the same triangle twice, which is not a
+    // simplicial complex. The link condition forbids exactly this, so the test needs it off.
+    //
+    //      2 --- 3
+    //      |\   /|
+    //      | \ / |
+    //      0---1
+    TriMesh m;
+    const std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}, {{0, 3, 1}}, {{2, 1, 3}}};
+    m.init(4, tris);
+
+    const Tuple e = m.tuple_from_vids(2, 3, 1);
+    REQUIRE(e.vid(m) == 2);
+    REQUIRE(e.switch_vertex(m).vid(m) == 3);
+
+    SECTION("with the link condition on, the collapse is refused")
+    {
+        REQUIRE(m.use_link_condition());
+        CHECK_FALSE(m.check_link_condition(e));
+        std::vector<Tuple> dummy;
+        CHECK_FALSE(m.collapse_edge(e, dummy));
+    }
+
+    SECTION("with it off, the collapse runs and the duplicate is merged")
+    {
+        m.set_use_link_condition(false);
+        REQUIRE_FALSE(m.use_link_condition());
+
+        std::vector<Tuple> dummy;
+        REQUIRE(m.collapse_edge(e, dummy));
+        REQUIRE(m.check_mesh_connectivity_validity());
+
+        // (0,1,2) and (0,3,1) both became a triangle on {0,1,3}; one of the pair is dropped,
+        // and (2,1,3) degenerated and went with the collapsed edge. One face left.
+        CHECK(m.get_faces().size() == 1);
+        CHECK(m.get_vertices().size() == 3);
+        for (const Tuple& edge : m.get_edges()) {
+            CHECK(m.is_boundary_edge(edge));
+        }
+    }
+}
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+TEST_CASE("nonmanifold_operations_match_brute_force", "[nonmanifold]")
+{
+    // split_edge and collapse_edge assert against debug_reference_* internally, so simply
+    // running every operation on every edge is the test. Both link-condition settings, so
+    // the permissive path -- the one that can produce duplicates and isolated vertices --
+    // gets the same scrutiny.
+    auto exercise = [](const std::vector<std::array<size_t, 3>>& tris, bool link) {
+        // collapse: one fresh mesh per edge, since the operation changes what follows
+        {
+            TriMesh probe;
+            probe.init(max_vid(tris), tris);
+            const size_t n_edges = probe.get_edges().size();
+
+            for (size_t i = 0; i < n_edges; ++i) {
+                TriMesh m;
+                m.init(max_vid(tris), tris);
+                m.set_use_link_condition(link);
+                std::vector<Tuple> dummy;
+                // throws inside collapse_edge if the reference disagrees
+                if (m.collapse_edge(m.get_edges()[i], dummy)) {
+                    CHECK(m.check_mesh_connectivity_validity());
+                }
+            }
+        }
+        // split: never refused, so the same sweep applies
+        {
+            TriMesh probe;
+            probe.init(max_vid(tris), tris);
+            const size_t n_edges = probe.get_edges().size();
+
+            for (size_t i = 0; i < n_edges; ++i) {
+                TriMesh m;
+                m.init(max_vid(tris), tris);
+                m.set_use_link_condition(link);
+                std::vector<Tuple> dummy;
+                if (m.split_edge(m.get_edges()[i], dummy)) {
+                    CHECK(m.check_mesh_connectivity_validity());
+                }
+            }
+        }
+    };
+
+    const bool link = GENERATE(true, false);
+
+    SECTION("two_triangles")
+    {
+        exercise(meshes::two_triangles(), link);
+    }
+    SECTION("single_triangle")
+    {
+        exercise(meshes::single_triangle(), link);
+    }
+    SECTION("fan3")
+    {
+        exercise(meshes::fan3(), link);
+    }
+    SECTION("fan5")
+    {
+        exercise(meshes::fan5(), link);
+    }
+    SECTION("bowtie")
+    {
+        exercise(meshes::bowtie(), link);
+    }
+    SECTION("bowtie3")
+    {
+        exercise(meshes::bowtie3(), link);
+    }
+    SECTION("disk_plus_pinch")
+    {
+        exercise(meshes::disk_plus_pinch(), link);
+    }
+}
+#endif
 
 TEST_CASE("nonmanifold_consolidate_round_trip", "[nonmanifold]")
 {
