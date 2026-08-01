@@ -155,6 +155,198 @@ size_t brute_force_vertex_components(const TriMesh& m, size_t vid)
 
 } // namespace
 
+TEST_CASE("nonmanifold_cycles_agree_with_brute_force", "[nonmanifold]")
+{
+    // The stored cycles are a cache over connectivity that is computed independently here.
+    // Any disagreement means an operation, or init, failed to maintain them.
+    auto check_all = [](const std::vector<std::array<size_t, 3>>& tris) {
+        TriMesh m;
+        m.init(max_vid(tris), tris);
+        REQUIRE(m.check_mesh_connectivity_validity());
+
+        for (const Tuple& e : m.get_edges()) {
+            CHECK(m.edge_valence(e) == brute_force_edge_valence(m, e));
+            CHECK(m.is_boundary_edge(e) == (brute_force_edge_valence(m, e) == 1));
+            CHECK(m.is_manifold_edge(e) == (brute_force_edge_valence(m, e) == 2));
+        }
+        for (const Tuple& v : m.get_vertices()) {
+            const size_t vid = v.vid(m);
+            CHECK(m.vertex_component_count(vid) == brute_force_vertex_components(m, vid));
+        }
+    };
+
+    SECTION("two_triangles")
+    {
+        check_all(meshes::two_triangles());
+    }
+    SECTION("single_triangle")
+    {
+        check_all(meshes::single_triangle());
+    }
+    SECTION("fan3")
+    {
+        check_all(meshes::fan3());
+    }
+    SECTION("fan5")
+    {
+        check_all(meshes::fan5());
+    }
+    SECTION("bowtie")
+    {
+        check_all(meshes::bowtie());
+    }
+    SECTION("bowtie3")
+    {
+        check_all(meshes::bowtie3());
+    }
+    SECTION("disk_plus_pinch")
+    {
+        check_all(meshes::disk_plus_pinch());
+    }
+}
+
+TEST_CASE("nonmanifold_switch_face_cycles", "[nonmanifold]")
+{
+    // Walking switch_face k times around a k-fan edge is the identity, and every step lands
+    // on a distinct face. This is the property the radial cycle exists to provide.
+    auto walk = [](const std::vector<std::array<size_t, 3>>& tris, size_t v0, size_t v1) {
+        TriMesh m;
+        m.init(max_vid(tris), tris);
+
+        const Tuple start = m.tuple_from_edge(v0, v1, m.get_incident_fids_for_edge(v0, v1)[0]);
+        const size_t k = m.edge_valence(start);
+
+        std::set<size_t> seen;
+        Tuple t = start;
+        for (size_t i = 0; i < k; ++i) {
+            CHECK(seen.insert(t.fid(m)).second); // no face visited twice
+            CHECK(t.vid(m) == start.vid(m)); // the vertex is fixed
+            CHECK(t.switch_vertex(m).vid(m) == start.switch_vertex(m).vid(m));
+            CHECK(t.eid(m) == start.eid(m)); // and so is the edge
+            const auto next = t.switch_face(m);
+            REQUIRE(next.has_value());
+            t = next.value();
+        }
+        CHECK(t.fid(m) == start.fid(m)); // k steps is the identity
+        CHECK(seen.size() == k);
+    };
+
+    SECTION("manifold edge, k = 2")
+    {
+        walk(meshes::two_triangles(), 0, 1);
+    }
+    SECTION("fan of three, k = 3")
+    {
+        walk(meshes::fan3(), 0, 1);
+    }
+    SECTION("fan of five, k = 5")
+    {
+        walk(meshes::fan5(), 0, 1);
+    }
+
+    SECTION("boundary edge has no other side")
+    {
+        TriMesh m;
+        const auto tris = meshes::single_triangle();
+        m.init(max_vid(tris), tris);
+        for (const Tuple& e : m.get_edges()) {
+            CHECK(m.edge_valence(e) == 1);
+            CHECK_FALSE(e.switch_face(m).has_value());
+        }
+    }
+}
+
+TEST_CASE("nonmanifold_switch_component", "[nonmanifold]")
+{
+    SECTION("manifold vertex has nowhere to jump")
+    {
+        TriMesh m;
+        const auto tris = meshes::two_triangles();
+        m.init(max_vid(tris), tris);
+
+        for (const Tuple& v : m.get_vertices()) {
+            CHECK(m.is_manifold_vertex(v.vid(m)));
+            CHECK_FALSE(m.switch_component(v).has_value());
+        }
+    }
+
+    SECTION("a non-manifold edge does not split the fan")
+    {
+        // All three faces are joined through the shared edge, so vertices 0 and 1 have a
+        // single component even though the edge is not manifold.
+        TriMesh m;
+        const auto tris = meshes::fan3();
+        m.init(max_vid(tris), tris);
+
+        for (const size_t vid : {size_t(0), size_t(1)}) {
+            CHECK(m.vertex_component_count(vid) == 1);
+            CHECK_FALSE(m.switch_component(m.tuple_from_vertex(vid)).has_value());
+        }
+    }
+
+    auto walk_components = [](const std::vector<std::array<size_t, 3>>& tris, size_t vid) {
+        TriMesh m;
+        m.init(max_vid(tris), tris);
+
+        const size_t k = m.vertex_component_count(vid);
+        REQUIRE(k > 1);
+
+        Tuple t = m.tuple_from_vertex(vid);
+        std::set<size_t> seen;
+        for (size_t i = 0; i < k; ++i) {
+            CHECK(t.vid(m) == vid); // the vertex is fixed
+            CHECK(seen.insert(t.fid(m)).second);
+            const auto next = m.switch_component(t);
+            REQUIRE(next.has_value());
+            t = next.value();
+        }
+        // k jumps return to the component we started the walk in
+        CHECK(seen.size() == k);
+        CHECK(m.switch_component(t).has_value());
+    };
+
+    SECTION("bowtie, 2 components")
+    {
+        walk_components(meshes::bowtie(), 0);
+    }
+    SECTION("bowtie3, 3 components")
+    {
+        walk_components(meshes::bowtie3(), 0);
+    }
+    SECTION("disk plus pinch, 2 components")
+    {
+        walk_components(meshes::disk_plus_pinch(), 0);
+    }
+
+    SECTION("the jump really does leave the component")
+    {
+        // The destination must be unreachable by switch_edge/switch_face from the start,
+        // which is what "different edge-connected component" means.
+        TriMesh m;
+        const auto tris = meshes::disk_plus_pinch();
+        m.init(max_vid(tris), tris);
+
+        const Tuple start = m.tuple_from_vertex(0);
+        const auto jumped = m.switch_component(start);
+        REQUIRE(jumped.has_value());
+
+        // flood the start's component through edges at vertex 0
+        std::set<size_t> reachable;
+        std::vector<Tuple> stack = {start};
+        while (!stack.empty()) {
+            Tuple t = stack.back();
+            stack.pop_back();
+            if (!reachable.insert(t.fid(m)).second) continue;
+            for (const Tuple& e : {t, t.switch_edge(m)}) {
+                for (const Tuple& opp : e.switch_faces(m)) {
+                    stack.push_back(opp.vid(m) == 0 ? opp : opp.switch_vertex(m));
+                }
+            }
+        }
+        CHECK(reachable.count(jumped.value().fid(m)) == 0);
+    }
+}
+
 TEST_CASE("nonmanifold_edge_valence", "[nonmanifold]")
 {
     SECTION("manifold edge has two faces")
@@ -370,9 +562,24 @@ TEST_CASE("nonmanifold_consolidate_round_trip", "[nonmanifold]")
         CHECK(m.get_faces().size() == nf_before);
     };
 
-    SECTION("fan3") { round_trip(meshes::fan3()); }
-    SECTION("fan5") { round_trip(meshes::fan5()); }
-    SECTION("bowtie") { round_trip(meshes::bowtie()); }
-    SECTION("bowtie3") { round_trip(meshes::bowtie3()); }
-    SECTION("disk_plus_pinch") { round_trip(meshes::disk_plus_pinch()); }
+    SECTION("fan3")
+    {
+        round_trip(meshes::fan3());
+    }
+    SECTION("fan5")
+    {
+        round_trip(meshes::fan5());
+    }
+    SECTION("bowtie")
+    {
+        round_trip(meshes::bowtie());
+    }
+    SECTION("bowtie3")
+    {
+        round_trip(meshes::bowtie3());
+    }
+    SECTION("disk_plus_pinch")
+    {
+        round_trip(meshes::disk_plus_pinch());
+    }
 }

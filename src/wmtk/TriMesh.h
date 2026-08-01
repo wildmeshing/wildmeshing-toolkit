@@ -17,6 +17,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <vector>
 
 namespace wmtk {
@@ -237,6 +238,37 @@ public:
          */
         size_t hash = 0;
 
+        /**
+         * @brief Radial cycle: for local edge e, the next face around that edge.
+         *
+         * The faces incident to an edge form a cycle visited in strictly increasing fid
+         * order, wrapping exactly once. A boundary edge is a cycle of length one, so the
+         * entry points at this triangle itself; a manifold edge is a cycle of length two,
+         * so the two faces point at each other, which is the classical "opposite face".
+         *
+         * The order is combinatorial, not geometric -- TriMesh holds no vertex positions.
+         * It is therefore a canonical function of the connectivity, which is what lets
+         * check_mesh_connectivity_validity() verify it by recomputing rather than by
+         * trusting it.
+         */
+        std::array<size_t, 3> m_edge_next = {{size_t(-1), size_t(-1), size_t(-1)}};
+
+        /**
+         * @brief Component cycle: for local vertex v, the representative of the next
+         * edge-connected component of v's fan.
+         *
+         * The triangles incident to a vertex split into edge-connected components (two
+         * triangles are in the same component when they share an edge containing the
+         * vertex). Each component is named by its smallest fid, and the representatives
+         * form a cycle in increasing order. Every corner of every face in a component
+         * stores the same successor, so the entry can be read from whichever face the
+         * caller happens to hold.
+         *
+         * A manifold vertex has a single component, so the entry is that component's own
+         * representative and the cycle is a self-loop.
+         */
+        std::array<size_t, 3> m_vert_next_component = {{size_t(-1), size_t(-1), size_t(-1)}};
+
         inline size_t& operator[](size_t index)
         {
             assert(index < 3);
@@ -377,6 +409,50 @@ private:
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
     double m_preallocation_factor = 6.0;
+    bool m_use_link_condition = true;
+
+protected:
+    /**
+     * Maintenance of the radial and component cycles.
+     *
+     * Both are a canonical function of (m_tri_connectivity, m_vertex_connectivity), so
+     * operations recompute them over the region they touched rather than splicing. That is
+     * correct by construction and costs O(k log k) on a star of size k, which is small; the
+     * alternative would trade a real class of aliasing bugs for a constant factor nobody
+     * would notice.
+     */
+
+    /// Relink the faces around edge (v0,v1) in increasing fid order.
+    void rebuild_edge_cycle(size_t v0, size_t v1);
+    /// Relink the components of the fan of `vid` in increasing representative order.
+    void rebuild_vertex_cycle(size_t vid);
+    /// Rebuild every cycle that the given faces participate in. Duplicates are fine.
+    void rebuild_cycles_around(const std::vector<size_t>& fids);
+    /**
+     * Rebuild only the component cycles of the given vertices.
+     *
+     * A collapse can drop the last face joining a vertex to the collapsed edge while
+     * leaving that vertex with faces elsewhere. Its fan then changes without any surviving
+     * face of its own being touched, so rebuild_cycles_around() would not reach it.
+     */
+    void rebuild_vertex_cycles_for(const std::set<size_t>& vids);
+    /// Rebuild every cycle in the mesh. Used by init() and consolidate_mesh().
+    void rebuild_all_cycles();
+
+    /**
+     * From-scratch computation of both cycles, indexed by fid, without touching the mesh.
+     *
+     * rebuild_all_cycles() copies the result in; check_mesh_connectivity_validity()
+     * compares against it. Sharing one implementation between the two is deliberate: the
+     * check is then a genuine test of the incremental rebuilds done by the operations,
+     * rather than of a second transcription of the same rules.
+     */
+    void compute_edge_cycles(std::vector<std::array<size_t, 3>>& out) const;
+    void compute_vertex_cycles(std::vector<std::array<size_t, 3>>& out) const;
+    /// Component cycle of a single vertex, written into `out` at the fids of its fan.
+    void write_vertex_cycle(size_t vid, std::vector<std::array<size_t, 3>>& out) const;
+
+private:
     /**
      * @brief Get the next avaiblie global index for the triangle
      *
@@ -419,6 +495,7 @@ public:
      */
     virtual bool collapse_edge_before(const Tuple& t)
     {
+        if (!m_use_link_condition) return true;
         if (check_link_condition(t)) return true;
         return false;
     }
@@ -509,6 +586,21 @@ public:
      * @returns true is the link check is passed
      */
     bool check_link_condition(const Tuple& t) const;
+
+    /**
+     * @brief Should collapse_edge_before enforce the link condition?
+     *
+     * The link condition guarantees a collapse preserves the homotopy type and keeps the
+     * mesh a simplicial complex. Turning it off allows collapses that change topology and
+     * that create non-manifold edges and vertices, which the data structure now
+     * represents; the collapse itself still merges any duplicate triangles it produces so
+     * the result stays a simplicial complex.
+     *
+     * Defaults to true, which is the historical behaviour of every caller.
+     */
+    void set_use_link_condition(bool use_it) { m_use_link_condition = use_it; }
+    bool use_link_condition() const { return m_use_link_condition; }
+
     /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have triangles that are is_removed == true
@@ -520,11 +612,50 @@ public:
     bool check_edge_manifold() const;
 
     /**
-     * @brief check if edge that's represented by a Tuple is at the boundary of the mesh
+     * @brief Number of triangles incident to the edge the Tuple points at.
+     *
+     * 1 on the boundary, 2 when manifold, more when not. O(valence).
+     */
+    size_t edge_valence(const TriMesh::Tuple& t) const;
+
+    /**
+     * @brief Does exactly one triangle share this edge?
      *
      * @param t Tuple refering to an edge
      */
-    bool is_boundary_edge(const TriMesh::Tuple& t) const { return t.switch_faces(*this).empty(); }
+    bool is_boundary_edge(const TriMesh::Tuple& t) const;
+
+    /**
+     * @brief Do exactly two triangles share this edge?
+     *
+     * Note that a boundary edge is not manifold by this definition; callers that need
+     * "manifold or boundary" should test is_manifold_edge(t) || is_boundary_edge(t).
+     */
+    bool is_manifold_edge(const TriMesh::Tuple& t) const { return edge_valence(t) == 2; }
+
+    /**
+     * @brief Number of edge-connected components in the fan of a vertex.
+     *
+     * 1 for a manifold vertex (and for a vertex on a non-manifold edge, whose faces are
+     * still joined through that edge), more for a pinch point. 0 for an isolated vertex.
+     */
+    size_t vertex_component_count(const size_t vid) const;
+    size_t vertex_component_count(const TriMesh::Tuple& t) const
+    {
+        return vertex_component_count(t.vid(*this));
+    }
+
+    bool is_manifold_vertex(const size_t vid) const { return vertex_component_count(vid) <= 1; }
+
+    /**
+     * @brief Jump to the next edge-connected component of the fan of the Tuple's vertex.
+     *
+     * The returned Tuple points at the same vertex but at a face that no sequence of
+     * switch_edge/switch_face can reach from `t`. Applying it once per component returns
+     * to the starting component. Returns nullopt when the vertex is manifold, i.e. when
+     * there is no other component to jump to.
+     */
+    std::optional<Tuple> switch_component(const TriMesh::Tuple& t) const;
 
     /**
      * @brief check if the vertex that's represented by a Tuple is at the boundary of the mesh
