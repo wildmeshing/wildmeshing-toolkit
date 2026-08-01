@@ -282,14 +282,26 @@ void TriMesh::compute_vertex_cycles(std::vector<std::array<size_t, 3>>& out) con
 {
     out.assign(m_tri_connectivity.size(), {{size_t(-1), size_t(-1), size_t(-1)}});
 
+    std::vector<size_t> successors;
+    std::vector<int> local_vids;
     for (size_t vid = 0; vid < vert_capacity(); ++vid) {
         if (m_vertex_connectivity[vid].m_is_removed) continue;
-        write_vertex_cycle(vid, out);
+        vertex_cycle_successors(vid, successors, local_vids);
+        const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
+        for (size_t i = 0; i < fan.size(); ++i) {
+            out[fan[i]][local_vids[i]] = successors[i];
+        }
     }
 }
 
-void TriMesh::write_vertex_cycle(const size_t vid, std::vector<std::array<size_t, 3>>& out) const
+void TriMesh::vertex_cycle_successors(
+    const size_t vid,
+    std::vector<size_t>& successors,
+    std::vector<int>& lv) const
 {
+    successors.clear();
+    lv.clear();
+
     const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
     if (fan.empty()) return;
 
@@ -308,7 +320,7 @@ void TriMesh::write_vertex_cycle(const size_t vid, std::vector<std::array<size_t
     };
 
     std::map<size_t, size_t> first_seen_at; // other endpoint -> fan position
-    std::vector<int> lv(fan.size());
+    lv.resize(fan.size());
     for (size_t i = 0; i < fan.size(); ++i) {
         lv[i] = m_tri_connectivity[fan[i]].find(vid);
         assert(lv[i] != -1);
@@ -342,8 +354,9 @@ void TriMesh::write_vertex_cycle(const size_t vid, std::vector<std::array<size_t
         successor_of[reps[i]] = reps[(i + 1) % reps.size()];
     }
 
+    successors.resize(fan.size());
     for (size_t i = 0; i < fan.size(); ++i) {
-        out[fan[i]][lv[i]] = successor_of[rep_of_root[find_root(i)]];
+        successors[i] = successor_of[rep_of_root[find_root(i)]];
     }
 }
 
@@ -363,20 +376,15 @@ void TriMesh::rebuild_edge_cycle(const size_t v0, const size_t v1)
 
 void TriMesh::rebuild_vertex_cycle(const size_t vid)
 {
-    // write_vertex_cycle addresses its output by fid, so hand it a scratch buffer of the
-    // right shape and copy back only the entries it touched.
     const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
     if (fan.empty()) return;
 
-    std::vector<std::array<size_t, 3>> scratch(
-        m_tri_connectivity.size(),
-        {{size_t(-1), size_t(-1), size_t(-1)}});
-    write_vertex_cycle(vid, scratch);
+    std::vector<size_t> successors;
+    std::vector<int> lv;
+    vertex_cycle_successors(vid, successors, lv);
 
-    for (const size_t fid : fan) {
-        const int lv = m_tri_connectivity[fid].find(vid);
-        assert(lv != -1);
-        m_tri_connectivity[fid].m_vert_next_component[lv] = scratch[fid][lv];
+    for (size_t i = 0; i < fan.size(); ++i) {
+        m_tri_connectivity[fan[i]].m_vert_next_component[lv[i]] = successors[i];
     }
 }
 

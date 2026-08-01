@@ -449,8 +449,19 @@ protected:
      */
     void compute_edge_cycles(std::vector<std::array<size_t, 3>>& out) const;
     void compute_vertex_cycles(std::vector<std::array<size_t, 3>>& out) const;
-    /// Component cycle of a single vertex, written into `out` at the fids of its fan.
-    void write_vertex_cycle(size_t vid, std::vector<std::array<size_t, 3>>& out) const;
+
+    /**
+     * Component cycle of a single vertex.
+     *
+     * `successors` and `local_vids` come back indexed by position in the fan of `vid`, not
+     * by fid, so the cost is the size of the fan rather than the size of the mesh. Both
+     * callers -- the global recompute and the per-operation rebuild -- scatter the result
+     * to wherever they keep it.
+     */
+    void vertex_cycle_successors(
+        size_t vid,
+        std::vector<size_t>& successors,
+        std::vector<int>& local_vids) const;
 
 private:
     /**
