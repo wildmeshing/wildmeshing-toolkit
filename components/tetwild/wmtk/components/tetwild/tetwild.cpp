@@ -159,7 +159,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     double t_load = 0, t_simplify = 0, t_optimize = 0, t_finalize = 0, t_output = 0;
     phase_timer.start();
     {
-        double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+        // Merging vertices that are merely *close* is a topology change: it welds sheets
+        // of the surface that pass near each other and so removes handles and tunnels.
+        // Under preserve_topology only exactly coincident vertices may be merged, which is
+        // a pure de-duplication of the file and leaves the topology alone. simwild makes
+        // the same distinction (see read_image_msh.cpp).
+        const double remove_duplicate_eps =
+            params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
         MatrixXd V;
         MatrixXi F;
         io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps);
@@ -172,8 +178,12 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Informational input-topology report; gated behind DEBUG_euler because the
     // Euler-characteristic computation is expensive on meshes with many components.
+    // It is also needed by the preserve_topology check at the end, which compares it
+    // against the output -- without this the comparison is between two empty vectors and
+    // silently passes whatever happened to the topology.
+    const bool compute_euler = json_params["DEBUG_euler"] || params.preserve_topology;
     std::vector<int> ecs_input;
-    if (json_params["DEBUG_euler"]) {
+    if (compute_euler) {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
             F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
@@ -194,8 +204,16 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     if (skip_simplify == false) {
         logger().info("input {} simplification", input_paths);
+        if (!params.preserve_topology) {
+            logger().warn(
+                "TODO the simplification still preserves topology as the toolkit does not "
+                "support non-manifold meshes, to fix");
+        }
         surf_mesh.collapse_shortest(0);
         surf_mesh.consolidate_mesh();
+        if (!surf_mesh.check_mesh_connectivity_validity()) {
+            log_and_throw_error("Simplification produced an invalid mesh connectivity.");
+        }
     } else {
         logger().info("skip simplification");
     }
@@ -519,7 +537,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         // meshes with many components (tens of seconds), so it is off by default and only
         // computed when explicitly requested (DEBUG_euler) or when it is actually needed
         // for the preserve_topology throw check below.
-        if (json_params["DEBUG_euler"]) {
+        if (compute_euler) {
             logger().info("Input euler characteristic: {}", ecs_input);
             ecs_output = compute_euler_characteristics(matF);
             logger().info("Output euler characteristic: {}", ecs_output);

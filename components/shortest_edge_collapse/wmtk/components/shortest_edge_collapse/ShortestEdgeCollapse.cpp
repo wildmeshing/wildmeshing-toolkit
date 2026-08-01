@@ -137,6 +137,19 @@ void ShortestEdgeCollapse::write_vtu(const std::string& path)
 
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
+    // TriMesh::collapse_edge_before is the classical link condition, and it is applied
+    // unconditionally -- it is not gated on preserve_topology.
+    //
+    // It does stop the simplification from changing the surface topology, so on the face of
+    // it it belongs under that flag. But it is not only a topology guard: it is the only
+    // check standing between collapse_edge_conn and a connectivity that wmtk::TriMesh
+    // cannot represent, since nothing downstream re-checks it (invariants() only tests the
+    // envelope). Relaxing it does not produce a valid mesh with different topology, it
+    // produces a corrupt one.
+    //
+    // TODO: the simplification therefore still preserves topology even when
+    // preserve_topology is off, because the toolkit does not support non-manifold meshes.
+    // Lifting this needs a mesh data structure that can represent them.
     if (!TriMesh::collapse_edge_before(t)) return false;
 
     // v1 is removed by the collapse, v2 survives (TriMesh::collapse_edge_conn keeps vid2).

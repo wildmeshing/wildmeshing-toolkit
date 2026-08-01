@@ -24,11 +24,12 @@ namespace wmtk::utils {
  * - Vertices of valence != 2 are frozen: open endpoints, T/Y junctions, and (because they
  *   have valence >= 4) any vertex shared between two different input curves. A segment with
  *   one frozen endpoint still collapses, onto the frozen vertex's exact position, so the
- *   junction geometry is preserved bit-exactly; only both-endpoints-frozen is rejected,
- *   because merging two frozen vertices has to move one of them. Same rule as the 3D
- *   ShortestEdgeCollapse. Rejecting whenever *either* endpoint is frozen would strand one
- *   un-collapsible vertex on every chain between two frozen ones -- twice the segments on a
- *   network of short chains.
+ *   junction geometry is preserved bit-exactly. Rejecting whenever *either* endpoint is
+ *   frozen would strand one un-collapsible vertex on every chain between two frozen ones --
+ *   twice the segments on a network of short chains.
+ * - Merging two frozen vertices fuses two junctions, or closes an open curve: that is the
+ *   1D topology change, and `preserve_topology` decides whether it is allowed. It is the
+ *   counterpart of the link condition in the 3D ShortestEdgeCollapse.
  * - Otherwise the two endpoints merge at their midpoint, as in 3D.
  * - Collapses that would leave a degenerate or duplicated segment are rejected.
  *
@@ -39,8 +40,13 @@ namespace wmtk::utils {
  * @param[in,out] E  Mx2 segment endpoint indices; compacted in place
  * @param envelope   must already be initialised around the *input* (V, E) with the desired
  *                   thickness -- the caller owns that choice
+ * @param preserve_topology  reject collapses that merge two frozen vertices
  * @return the number of vertices removed
  */
-size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope);
+size_t simplify_segments(
+    MatrixXd& V,
+    MatrixXi& E,
+    const SampleEnvelope& envelope,
+    bool preserve_topology = true);
 
 } // namespace wmtk::utils
