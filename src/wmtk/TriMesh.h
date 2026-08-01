@@ -429,13 +429,16 @@ protected:
     /// Rebuild every cycle that the given faces participate in. Duplicates are fine.
     void rebuild_cycles_around(const std::vector<size_t>& fids);
     /**
-     * Rebuild only the component cycles of the given vertices.
+     * Rebuild exactly the listed edges and vertices. Both lists are sorted and deduplicated
+     * in place; entries naming something that no longer exists are skipped.
      *
-     * A collapse can drop the last face joining a vertex to the collapsed edge while
-     * leaving that vertex with faces elsewhere. Its fan then changes without any surviving
-     * face of its own being touched, so rebuild_cycles_around() would not reach it.
+     * Used by collapse, which knows precisely what it changed and would otherwise walk the
+     * vertices twice: once for the faces that survived, and again for the vertices whose
+     * only link to the collapsed edge was a face that did not.
      */
-    void rebuild_vertex_cycles_for(const std::set<size_t>& vids);
+    void rebuild_cycles_for(
+        std::vector<std::pair<size_t, size_t>>& edges,
+        std::vector<size_t>& vids);
     /// Rebuild every cycle in the mesh. Used by init() and consolidate_mesh().
     void rebuild_all_cycles();
 
