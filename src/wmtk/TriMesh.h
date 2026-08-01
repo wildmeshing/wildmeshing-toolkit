@@ -110,16 +110,26 @@ public:
          */
         Tuple switch_edge(const TriMesh& m) const;
         /**
-         * Switch operation for the adjacent triangle.
+         * Step to the next triangle around this edge.
          *
-         * This operation only works for manifold meshes!!!
+         * On a manifold edge that is the triangle on the other side, which is what this
+         * has always returned. On a non-manifold edge it advances one place around the
+         * fan, so applying it edge_valence() times is the identity; it no longer picks an
+         * arbitrary member, as it did before the radial cycle existed. Callers that
+         * genuinely need the manifold case -- a swap, say -- should test is_manifold_edge()
+         * rather than assume it.
          *
          * @param m Mesh
-         * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
-         * @note nullopt if the Tuple of the switch goes off the boundary.
+         * @return Tuple for the next triangle, sharing the same edge and vertex.
+         * @note nullopt on a boundary edge, whose cycle has length one.
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
 
+        /**
+         * Every other triangle around this edge, in increasing face id order.
+         *
+         * Empty on a boundary edge, one entry when manifold.
+         */
         std::vector<Tuple> switch_faces(const TriMesh& m) const;
 
         /**
