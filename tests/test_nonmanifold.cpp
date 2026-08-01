@@ -651,6 +651,39 @@ TEST_CASE("nonmanifold_operations_match_brute_force", "[nonmanifold]")
                 }
             }
         }
+        // swap: refused on boundary and non-manifold edges, so most of these do nothing --
+        // the point is that the ones which do run are checked too
+        {
+            TriMesh probe;
+            probe.init(max_vid(tris), tris);
+            const size_t n_edges = probe.get_edges().size();
+
+            for (size_t i = 0; i < n_edges; ++i) {
+                TriMesh m;
+                m.init(max_vid(tris), tris);
+                m.set_use_link_condition(link);
+                std::vector<Tuple> dummy;
+                if (m.swap_edge(m.get_edges()[i], dummy)) {
+                    CHECK(m.check_mesh_connectivity_validity());
+                }
+            }
+        }
+        // face split: one per face
+        {
+            TriMesh probe;
+            probe.init(max_vid(tris), tris);
+            const size_t n_faces = probe.get_faces().size();
+
+            for (size_t i = 0; i < n_faces; ++i) {
+                TriMesh m;
+                m.init(max_vid(tris), tris);
+                m.set_use_link_condition(link);
+                std::vector<Tuple> dummy;
+                if (m.split_face(m.get_faces()[i], dummy)) {
+                    CHECK(m.check_mesh_connectivity_validity());
+                }
+            }
+        }
     };
 
     const bool link = GENERATE(true, false);
@@ -788,6 +821,27 @@ TEST_CASE("nonmanifold_real_meshes", "[nonmanifold]")
                 if (w.split_edge(w.get_edges()[i], dummy)) {
                     REQUIRE(w.check_mesh_connectivity_validity());
                 }
+            }
+            size_t n_swapped = 0;
+            for (size_t i = 0; i < n_edges; ++i) {
+                TriMesh w;
+                w.init(V.rows(), tris);
+                std::vector<Tuple> dummy;
+                if (w.swap_edge(w.get_edges()[i], dummy)) {
+                    ++n_swapped;
+                    REQUIRE(w.check_mesh_connectivity_validity());
+                }
+            }
+            // the swap sweep is only meaningful if some of them actually ran
+            CHECK(n_swapped > 0);
+
+            const size_t n_faces = m.get_faces().size();
+            for (size_t i = 0; i < n_faces; ++i) {
+                TriMesh w;
+                w.init(V.rows(), tris);
+                std::vector<Tuple> dummy;
+                REQUIRE(w.split_face(w.get_faces()[i], dummy));
+                REQUIRE(w.check_mesh_connectivity_validity());
             }
         }
     }

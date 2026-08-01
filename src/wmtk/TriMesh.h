@@ -703,6 +703,30 @@ public:
     std::string debug_reference_collapse(size_t v_removed, size_t v_kept) const;
 
     /**
+     * The mesh as it would be after swapping edge (v0,v1).
+     *
+     * `fa` is the face the operation's tuple sits on and `fb` the one across the edge. The
+     * swap replaces v1 by fb's apex in fa, and v0 by fa's apex in fb, which is the pair of
+     * triangles on the other diagonal.
+     */
+    std::string debug_reference_swap(size_t v0, size_t v1, size_t fa, size_t fb) const;
+
+    /**
+     * The mesh as it would be after splitting face `fid` at `new_v`.
+     *
+     * v0, v1 and v2 are the face's vertices in the operation's own order, which fixes which
+     * child lands in which slot; `tri_cap` is tri_capacity() before the split reserved its
+     * slots, for the same reason as debug_reference_split.
+     */
+    std::string debug_reference_split_face(
+        size_t fid,
+        size_t v0,
+        size_t v1,
+        size_t v2,
+        size_t new_v,
+        size_t tri_cap) const;
+
+    /**
      * The mesh as it would be after splitting edge (v0,v1) with `new_v` in the middle.
      *
      * `tri_cap` is tri_capacity() as it was *before* the split reserved its new slots.

@@ -627,6 +627,88 @@ std::string TriMesh::debug_reference_collapse(const size_t v_removed, const size
     return canonical_form(vert_alive, faces, face_alive);
 }
 
+std::string TriMesh::debug_reference_swap(
+    const size_t v0,
+    const size_t v1,
+    const size_t fa,
+    const size_t fb) const
+{
+    std::vector<char> vert_alive(vert_capacity(), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    std::vector<std::array<size_t, 3>> faces(tri_capacity());
+    std::vector<char> face_alive(tri_capacity(), 0);
+    for (size_t f = 0; f < tri_capacity(); ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    const auto apex = [&](size_t f) {
+        for (const size_t v : faces[f]) {
+            if (v != v0 && v != v1) return v;
+        }
+        assert(false);
+        return size_t(-1);
+    };
+    const size_t a = apex(fa);
+    const size_t b = apex(fb);
+
+    // Substituting in place keeps each vertex in the slot it occupied, which is how
+    // swap_edge does it and is what preserves the orientation of both triangles.
+    for (size_t& v : faces[fa]) {
+        if (v == v1) v = b;
+    }
+    for (size_t& v : faces[fb]) {
+        if (v == v0) v = a;
+    }
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+std::string TriMesh::debug_reference_split_face(
+    const size_t fid,
+    const size_t v0,
+    const size_t v1,
+    const size_t v2,
+    const size_t new_v,
+    const size_t tri_cap) const
+{
+    std::vector<char> vert_alive(std::max(vert_capacity(), new_v + 1), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    vert_alive[new_v] = 1;
+
+    std::vector<std::array<size_t, 3>> faces(tri_cap);
+    std::vector<char> face_alive(tri_cap, 0);
+    for (size_t f = 0; f < tri_cap; ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    // The face becomes three, each the original with one vertex replaced by the new one.
+    // Replacing in place preserves orientation. The slot order matters: split_face keeps
+    // the v0 child in the original fid and appends the v1 and v2 children in that order,
+    // which is the order get_next_empty_slot_t hands out.
+    const std::array<size_t, 3> original = faces[fid];
+    const auto child = [&original](size_t replaced, size_t with) {
+        std::array<size_t, 3> c = original;
+        for (size_t& v : c) {
+            if (v == replaced) v = with;
+        }
+        return c;
+    };
+
+    faces[fid] = child(v0, new_v);
+    faces.push_back(child(v1, new_v));
+    face_alive.push_back(1);
+    faces.push_back(child(v2, new_v));
+    face_alive.push_back(1);
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
 std::string TriMesh::debug_reference_split(
     const size_t v0,
     const size_t v1,
@@ -828,6 +910,9 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     }
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("split_edge: connectivity was already invalid on entry");
+    }
     // Before the slots are reserved: past this point tri_capacity() counts them, and they
     // are live but unfilled.
     const size_t bf_tri_cap = tri_capacity();
@@ -1160,6 +1245,9 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
     std::vector<size_t> n12_intersect_fids;
 
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("collapse_edge: connectivity was already invalid on entry");
+    }
     // collapse_edge_conn retires the tuple's own vertex and keeps the other.
     const size_t bf_removed = loc0.vid(*this);
     const size_t bf_kept = loc0.switch_vertex(*this).vid(*this);
@@ -1585,6 +1673,13 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // check if the triangles intersection is the one adjcent to the edge
     size_t test_fid1 = t.fid(*this);
     size_t test_fid2 = t_opps[0].fid(*this);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("swap_edge: connectivity was already invalid on entry");
+    }
+    const std::string brute_force_expected = debug_reference_swap(vid1, vid2, test_fid1, test_fid2);
+#endif
     // record the fids that will be changed for roll backs on failure
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(2);
     old_tris[0] = std::make_pair(test_fid1, m_tri_connectivity[test_fid1]);
@@ -1611,6 +1706,17 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // which face carries them.
     const std::vector<size_t> swapped = {test_fid1, test_fid2};
     rebuild_cycles_around(swapped);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "swap_edge({},{}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:\n{}",
+            vid1,
+            vid2,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
 
     // change the tuple to the new edge tuple
     auto new_t = tuple_from_edge(vid4, vid3, test_fid2);
@@ -1640,12 +1746,34 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    // Smoothing moves a vertex without touching connectivity, so the reference is simply
+    // that nothing about the mesh changed. Worth checking: a subclass whose smooth_after
+    // reached into the topology would be caught here rather than much later.
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("smooth_vertex: connectivity was already invalid on entry");
+    }
+    const std::string brute_force_expected = debug_canonical_form();
+#endif
+
     start_protect_attributes();
     if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
         rollback_protected_attributes();
         return false;
     }
     release_protect_attributes();
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "smooth_vertex({}) changed the connectivity, which it must not.\nexpected:\n{}\ngot:"
+            "\n{}",
+            loc0.vid(*this),
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
     return true;
 }
 
@@ -1694,6 +1822,14 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
         return m_vertex_connectivity[vid[i]].m_conn_tris;
     };
 
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("split_face: connectivity was already invalid on entry");
+    }
+    // Before the slots are reserved, for the same reason as split_edge.
+    const size_t bf_tri_cap = tri_capacity();
+#endif
+
     // update vertex connectivity
     const size_t new_vid = get_next_empty_slot_v();
     const size_t new_fid1 = get_next_empty_slot_t();
@@ -1710,6 +1846,12 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
             return false;
         }
     }
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    // After the slots are known, before any of the connectivity moves.
+    const std::string brute_force_expected =
+        debug_reference_split_face(fid, vid[0], vid[1], vid[2], new_vid, bf_tri_cap);
+#endif
 
     vector_erase(conn_tris(0), fid);
     conn_tris(0).emplace_back(new_fid1);
@@ -1747,6 +1889,16 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     // three spokes to new_vid are new.
     const std::vector<size_t> split_fids = {fid, new_fid1, new_fid2};
     rebuild_cycles_around(split_fids);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "split_face({}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:\n{}",
+            fid,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
 
     // make the new tuple
     Tuple new_vertex_tuple(new_vid, (k + 2) % 3, new_fid2, *this);
