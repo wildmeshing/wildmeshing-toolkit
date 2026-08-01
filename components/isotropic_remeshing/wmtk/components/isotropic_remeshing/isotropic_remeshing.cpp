@@ -74,6 +74,8 @@ void isotropic_remeshing(nlohmann::json json_params)
     const int itrs = json_params["max_iterations"];
     const bool sample_envelope = json_params["use_sample_envelope"];
     const bool freeze_boundary = json_params["freeze_boundary"];
+    const bool use_link_condition = json_params["use_link_condition"];
+    const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
     double length_abs = json_params["length_abs"];
 
     wmtk::logger().info("remeshing on {}", input_path);
@@ -83,7 +85,6 @@ void isotropic_remeshing(nlohmann::json json_params)
     std::pair<Eigen::Vector3d, Eigen::Vector3d> box_minmax;
     std::vector<size_t> modified_nonmanifold_v;
     {
-        double remove_duplicate_eps = 1e-5;
         MatrixXd V;
         MatrixXi F;
         wmtk::io::read_triangle_mesh(input_path, V, F, remove_duplicate_eps);
@@ -98,7 +99,24 @@ void isotropic_remeshing(nlohmann::json json_params)
 
     IsotropicRemeshing m(verts, num_threads, !sample_envelope);
     wmtk::set_preallocation_factor_from_json(m, json_params);
+    m.set_use_link_condition(use_link_condition);
     m.create_mesh(verts.size(), tris, modified_nonmanifold_v, freeze_boundary, envelope_size);
+
+    {
+        size_t nm_e = 0;
+        for (const auto& e : m.get_edges()) {
+            if (m.edge_valence(e) > 2) ++nm_e;
+        }
+        size_t nm_v = 0;
+        for (const auto& t : m.get_vertices()) {
+            if (!m.is_manifold_vertex(t.vid(m))) ++nm_v;
+        }
+        logger().info(
+            "Input non-manifold: {} edges, {} vertices. Link condition {}.",
+            nm_e,
+            nm_v,
+            use_link_condition ? "on" : "off");
+    }
 
     {
         std::vector<double> properties = m.average_len_valen();
@@ -115,6 +133,21 @@ void isotropic_remeshing(nlohmann::json json_params)
 
     const double runtime = run_remeshing(input_path, length_abs, output, m, itrs);
 
+    if (!m.check_mesh_connectivity_validity()) {
+        log_and_throw_error("Mesh connectivity is invalid after remeshing!");
+    }
+    size_t out_nm_e = 0;
+    size_t out_nm_v = 0;
+    {
+        for (const auto& e : m.get_edges()) {
+            if (m.edge_valence(e) > 2) ++out_nm_e;
+        }
+        for (const auto& t : m.get_vertices()) {
+            if (!m.is_manifold_vertex(t.vid(m))) ++out_nm_v;
+        }
+        logger().info("Output non-manifold: {} edges, {} vertices.", out_nm_e, out_nm_v);
+    }
+
     const std::string report_file = json_params["report"];
     if (!report_file.empty()) {
         std::ofstream fout(report_file);
@@ -128,6 +161,11 @@ void isotropic_remeshing(nlohmann::json json_params)
         report["min_valence"] = properties[5];
         report["target_length"] = length_abs;
         report["time_sec"] = runtime;
+        report["#v"] = m.get_vertices().size();
+        report["#f"] = m.get_faces().size();
+        report["nonmanifold_edges"] = out_nm_e;
+        report["nonmanifold_vertices"] = out_nm_v;
+        report["use_link_condition"] = use_link_condition;
         fout << std::setw(4) << report;
         fout.close();
     }

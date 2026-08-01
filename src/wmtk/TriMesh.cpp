@@ -527,10 +527,16 @@ std::string TriMesh::debug_reference_collapse(const size_t v_removed, const size
 
     // Two faces can now carry the same triple. Keep the smallest fid of each group, which
     // is what collapse_edge_conn does.
+    //
+    // Restricted to faces at the surviving vertex, and not the whole mesh, because that is
+    // the contract: a collapse merges the duplicates it creates, it does not garbage-collect
+    // ones that were already there. A pre-existing duplicate pair elsewhere must survive
+    // untouched -- Thingi10K 314748 has exactly one, which is how this came up.
     {
         std::map<std::array<size_t, 3>, size_t> first_with_key;
         for (size_t f = 0; f < faces.size(); ++f) {
             if (!face_alive[f]) continue;
+            if (std::find(faces[f].begin(), faces[f].end(), v_kept) == faces[f].end()) continue;
             std::array<size_t, 3> key = faces[f];
             std::sort(key.begin(), key.end());
             if (!first_with_key.try_emplace(key, f).second) face_alive[f] = 0;

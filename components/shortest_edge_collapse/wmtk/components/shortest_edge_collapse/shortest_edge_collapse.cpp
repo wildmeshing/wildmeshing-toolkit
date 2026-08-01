@@ -66,10 +66,12 @@ void shortest_edge_collapse(nlohmann::json json_params)
     const bool use_sample_envelope = json_params["use_sample_envelope"];
     const double target_pec = json_params["target_rel"];
     const int num_threads = json_params["num_threads"];
+    const bool use_link_condition = json_params["use_link_condition"];
+    const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
 
     MatrixXd V;
     MatrixXi F;
-    io::read_triangle_mesh(path, V, F, -1, -1);
+    io::read_triangle_mesh(path, V, F, remove_duplicate_eps, -1);
     logger().info("Input: #V = {}, #F = {}", V.rows(), F.rows());
 
 
@@ -94,13 +96,47 @@ void shortest_edge_collapse(nlohmann::json json_params)
 
     ShortestEdgeCollapse m(v, num_threads, !use_sample_envelope);
     wmtk::set_preallocation_factor_from_json(m, json_params);
+    m.set_use_link_condition(use_link_condition);
     m.create_mesh(v.size(), tri, modified_v, envelope_size);
     if (!m.check_mesh_connectivity_validity()) {
         log_and_throw_error("Mesh connectivity is invalid!");
     }
+    {
+        size_t n_nonmanifold_edges = 0;
+        for (const auto& e : m.get_edges()) {
+            if (m.edge_valence(e) > 2) ++n_nonmanifold_edges;
+        }
+        size_t n_nonmanifold_verts = 0;
+        for (const auto& t : m.get_vertices()) {
+            if (!m.is_manifold_vertex(t.vid(m))) ++n_nonmanifold_verts;
+        }
+        logger().info(
+            "Input non-manifold: {} edges, {} vertices. Link condition {}.",
+            n_nonmanifold_edges,
+            n_nonmanifold_verts,
+            use_link_condition ? "on" : "off");
+    }
     logger().info("collapsing mesh {}", path);
     int target_verts = v.size() * target_pec;
     run_shortest_collapse(path, target_verts, output, m);
+
+    if (!m.check_mesh_connectivity_validity()) {
+        log_and_throw_error("Mesh connectivity is invalid after collapsing!");
+    }
+    {
+        size_t n_nonmanifold_edges = 0;
+        for (const auto& e : m.get_edges()) {
+            if (m.edge_valence(e) > 2) ++n_nonmanifold_edges;
+        }
+        size_t n_nonmanifold_verts = 0;
+        for (const auto& t : m.get_vertices()) {
+            if (!m.is_manifold_vertex(t.vid(m))) ++n_nonmanifold_verts;
+        }
+        logger().info(
+            "Output non-manifold: {} edges, {} vertices.",
+            n_nonmanifold_edges,
+            n_nonmanifold_verts);
+    }
 
     if (json_params["throw_on_fail"]) {
         const size_t nv = m.get_vertices().size();

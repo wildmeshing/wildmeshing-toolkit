@@ -15,7 +15,9 @@
       "length_abs",
       "freeze_boundary",
       "log_file",
-      "report"
+      "report",
+      "use_link_condition",
+      "remove_duplicate_eps"
     ]
   },
   {
@@ -94,5 +96,17 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/use_link_condition",
+    "type": "bool",
+    "default": true,
+    "doc": "Require the link condition before collapsing an edge. When true a collapse cannot change the topology, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed -- TriMesh represents the result, and any duplicate triangles the collapse produces are merged. Swaps are refused on non-manifold edges either way."
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": 1e-5,
+    "doc": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing. The default was previously hard-coded to this value."
   }
 ]

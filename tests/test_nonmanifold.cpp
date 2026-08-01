@@ -1,4 +1,6 @@
 #include <wmtk/TriMesh.h>
+#include <wmtk/Types.hpp>
+#include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -6,6 +8,7 @@
 #include <algorithm>
 #include <functional>
 #include <set>
+#include <string>
 
 using namespace wmtk;
 using Tuple = TriMesh::Tuple;
@@ -682,6 +685,113 @@ TEST_CASE("nonmanifold_operations_match_brute_force", "[nonmanifold]")
     }
 }
 #endif
+
+TEST_CASE("nonmanifold_real_meshes", "[nonmanifold]")
+{
+    // The five Thingi10K meshes, exact-welded to OBJ. Counts are the ones measured when the
+    // files were picked, so a mismatch means the file changed, not that the code is wrong.
+    //
+    // 314748 additionally carries one pair of identical triangles in the source data, so it
+    // is not a simplicial complex to begin with. That is deliberate: it pins down that a
+    // collapse merges only the duplicates it creates and leaves pre-existing ones alone.
+    struct Case
+    {
+        const char* name;
+        size_t n_verts;
+        size_t n_faces;
+        size_t n_nonmanifold_edges;
+        size_t n_boundary_edges;
+        size_t n_nonmanifold_verts;
+    };
+    const Case cases[] = {
+        {"49883", 20, 44, 4, 0, 0},
+        {"91143", 74, 146, 2, 2, 0},
+        {"188018", 128, 448, 224, 0, 0},
+        {"229953", 135, 250, 18, 32, 2},
+        {"314748", 293, 761, 101, 5, 7}};
+
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(c.name)
+        {
+            // WMTK_DATA_DIR is a CMake cache PATH, so the trailing slash is normalised away.
+            const std::string path =
+                std::string(WMTK_DATA_DIR) + "/models/nonmanifold/" + c.name + ".obj";
+
+            MatrixXd V;
+            MatrixXi F;
+            // no welding: the file is already exact-welded, and welding again could quietly
+            // repair the non-manifoldness the mesh is here to exercise
+            io::read_triangle_mesh(path, V, F, -1, -1);
+
+            std::vector<std::array<size_t, 3>> tris(F.rows());
+            for (int i = 0; i < F.rows(); ++i) {
+                for (int j = 0; j < 3; ++j) tris[i][j] = size_t(F(i, j));
+            }
+
+            TriMesh m;
+            m.init(V.rows(), tris);
+            REQUIRE(m.check_mesh_connectivity_validity());
+
+            CHECK(m.get_vertices().size() == c.n_verts);
+            CHECK(m.get_faces().size() == c.n_faces);
+
+            size_t nm_e = 0;
+            size_t bnd_e = 0;
+            for (const Tuple& e : m.get_edges()) {
+                const size_t k = m.edge_valence(e);
+                CHECK(k == brute_force_edge_valence(m, e));
+                if (k > 2) ++nm_e;
+                if (k == 1) ++bnd_e;
+            }
+            CHECK(nm_e == c.n_nonmanifold_edges);
+            CHECK(bnd_e == c.n_boundary_edges);
+
+            size_t nm_v = 0;
+            for (const Tuple& v : m.get_vertices()) {
+                const size_t vid = v.vid(m);
+                CHECK(m.vertex_component_count(vid) == brute_force_vertex_components(m, vid));
+                if (!m.is_manifold_vertex(vid)) ++nm_v;
+            }
+            CHECK(nm_v == c.n_nonmanifold_verts);
+
+            // consolidate must not disturb any of it
+            m.consolidate_mesh();
+            REQUIRE(m.check_mesh_connectivity_validity());
+            CHECK(m.get_vertices().size() == c.n_verts);
+            CHECK(m.get_faces().size() == c.n_faces);
+            {
+                size_t nm_e2 = 0;
+                for (const Tuple& e : m.get_edges()) {
+                    if (m.edge_valence(e) > 2) ++nm_e2;
+                }
+                CHECK(nm_e2 == c.n_nonmanifold_edges);
+            }
+
+            // Every edge collapsed and split on a fresh copy. Under
+            // WMTK_DEBUG_BRUTE_FORCE_OPS each operation also compares itself against the
+            // reference and throws on any difference.
+            const bool link = GENERATE(true, false);
+            const size_t n_edges = m.get_edges().size();
+            for (size_t i = 0; i < n_edges; ++i) {
+                TriMesh w;
+                w.init(V.rows(), tris);
+                w.set_use_link_condition(link);
+                std::vector<Tuple> dummy;
+                if (w.collapse_edge(w.get_edges()[i], dummy)) {
+                    REQUIRE(w.check_mesh_connectivity_validity());
+                }
+            }
+            for (size_t i = 0; i < n_edges; ++i) {
+                TriMesh w;
+                w.init(V.rows(), tris);
+                std::vector<Tuple> dummy;
+                if (w.split_edge(w.get_edges()[i], dummy)) {
+                    REQUIRE(w.check_mesh_connectivity_validity());
+                }
+            }
+        }
+    }
+}
 
 TEST_CASE("nonmanifold_consolidate_round_trip", "[nonmanifold]")
 {
