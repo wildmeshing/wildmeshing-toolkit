@@ -120,7 +120,7 @@
     "pointer": "/remove_duplicate_eps",
     "type": "float",
     "default": 2e-3,
-    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. Negative disables it."
+    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. Negative disables it. Ignored when preserve_topology is set: merging vertices that are merely close welds curves together and so removes loops and junctions, therefore only exactly coincident vertices are merged in that case."
   },
   {
     "pointer": "/DEBUG_hausdorff",
@@ -144,7 +144,7 @@
     "pointer": "/preserve_topology",
     "type": "bool",
     "default": false,
-    "doc": "Preserve the topology of the input surface."
+    "doc": "Preserve the topology of the input curve network. This forces remove_duplicate_eps to merge only exactly coincident vertices, stops the input simplification from merging two junctions or endpoints, and enables the substructure link condition during optimization. When unset, all three are relaxed and the topology may change."
   },
   {
     "pointer": "/throw_on_fail",

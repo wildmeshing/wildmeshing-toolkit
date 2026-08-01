@@ -23,7 +23,8 @@ Key key_of(int a, int b)
 
 } // namespace
 
-size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope)
+size_t
+simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope, bool preserve_topology)
 {
     const int nv = static_cast<int>(V.rows());
     const int ne = static_cast<int>(E.rows());
@@ -81,33 +82,32 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
 
         const int a = seg[e][0];
         const int b = seg[e][1];
-        if (frozen[a] && frozen[b]) {
+        // Merging two frozen vertices is the 1D topology change: it fuses two junctions,
+        // or closes off an open curve. This is the counterpart of the link condition in
+        // the 3D ShortestEdgeCollapse, and is gated the same way.
+        if (frozen[a] && frozen[b] && preserve_topology) {
             continue;
         }
 
-        // Collapse onto the frozen endpoint when there is one, so junctions and open ends
-        // keep their exact position; onto the midpoint otherwise. Same rule as the 3D
-        // ShortestEdgeCollapse.
+        // Collapse onto the frozen endpoint when there is exactly one, so junctions and
+        // open ends keep their exact position; onto the midpoint otherwise. Same rule as
+        // the 3D ShortestEdgeCollapse.
         int keep, drop;
         Vector2d m;
-        if (frozen[a]) {
+        if (frozen[a] && !frozen[b]) {
             keep = a;
             drop = b;
             m = pos[a];
-        } else if (frozen[b]) {
+        } else if (frozen[b] && !frozen[a]) {
             keep = b;
             drop = a;
             m = pos[b];
         } else {
+            // Neither frozen, or (topology changes allowed) both are: no position to
+            // preserve, so meet in the middle.
             keep = std::min(a, b);
             drop = std::max(a, b);
             m = 0.5 * (pos[a] + pos[b]);
-        }
-        // `drop` is never frozen, so it has valence exactly 2: it loses e and hands its
-        // other segment to `keep`, which is why the collapse leaves `keep`'s valence -- and
-        // hence every frozen flag -- unchanged, and why they never need recomputing.
-        if (v2e[drop].size() != 2) {
-            continue; // defensive: the invariant above should make this unreachable
         }
 
         // Every segment incident to either endpoint changes geometry: those on `drop` are
@@ -183,6 +183,11 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
                 v2e[keep].end(),
                 [&](int f) { return !edge_alive[f]; }),
             v2e[keep].end());
+        // When `drop` had valence 2 -- always the case under preserve_topology, since only
+        // a non-frozen vertex can be dropped -- it hands over its one other segment and
+        // `keep`'s valence is unchanged. Merging two frozen vertices does change it, so
+        // recompute rather than rely on that invariant.
+        frozen[keep] = v2e[keep].size() != 2;
         ++n_removed;
 
         for (const int f : v2e[keep]) {
