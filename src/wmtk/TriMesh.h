@@ -587,8 +587,11 @@ public:
      *
      * Note that a boundary edge is not manifold by this definition; callers that need
      * "manifold or boundary" should test is_manifold_edge(t) || is_boundary_edge(t).
+     *
+     * Stops counting at three, so a pole with a large fan costs no more than a normal
+     * edge. swap_edge_before() asks this of every candidate edge.
      */
-    bool is_manifold_edge(const TriMesh::Tuple& t) const { return edge_valence(t) == 2; }
+    bool is_manifold_edge(const TriMesh::Tuple& t) const;
 
     /**
      * @brief Number of edge-connected components in the fan of a vertex.

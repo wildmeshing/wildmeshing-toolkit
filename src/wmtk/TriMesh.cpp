@@ -419,6 +419,20 @@ bool TriMesh::is_boundary_edge(const Tuple& t) const
                2)
                .count == 1;
 }
+
+bool TriMesh::is_manifold_edge(const Tuple& t) const
+{
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+    // Three is enough to answer "exactly two", so a pole never costs more than an
+    // ordinary edge here.
+    return scan_edge_fan(
+               m_vertex_connectivity[v0].m_conn_tris,
+               m_vertex_connectivity[v1].m_conn_tris,
+               size_t(-1),
+               3)
+               .count == 2;
+}
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
 
 namespace {
