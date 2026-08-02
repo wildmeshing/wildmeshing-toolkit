@@ -304,10 +304,10 @@ bool TetWildMesh::swap_edge_after(const Tuple& t)
         // The two new surface faces (a,c,d),(b,c,d) must stay within the
         // Hausdorff envelope, exactly like a surface-edge collapse.
         const auto& VA = m_vertex_attribute;
-        if (m_envelope.is_outside(
+        if (m_envelope->is_outside(
                 {{VA[cache.sf_a].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
             return false;
-        if (m_envelope.is_outside(
+        if (m_envelope->is_outside(
                 {{VA[cache.sf_b].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
             return false;
     }

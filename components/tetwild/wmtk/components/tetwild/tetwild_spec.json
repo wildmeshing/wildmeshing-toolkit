@@ -22,6 +22,7 @@
       "eps_rel",
       "length_rel",
       "stop_energy",
+      "w_amips",
       "num_smoothing_passes",
       "preserve_topology",
       "remove_duplicate_eps",
@@ -180,6 +181,12 @@
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 0.0001,
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing; the envelope weight is 1 - w_amips. The small default makes smoothing primarily about staying on the surface, with quality as a secondary preference."
   },
   {
     "pointer": "/num_smoothing_passes",

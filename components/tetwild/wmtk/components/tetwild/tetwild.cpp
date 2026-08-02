@@ -130,6 +130,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
+    params.w_amips = json_params["w_amips"];
 
     params.preserve_topology = json_params["preserve_topology"];
 
@@ -291,7 +292,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Built around the ORIGINAL input, like the simplification one, but at the full tet eps.
     // A separate object because surf_mesh's is deliberately tighter now.
-    wmtk::SampleEnvelope tet_envelope(!use_sample_envelope);
+    auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
     {
         std::vector<Eigen::Vector3d> env_V(verts.size());
         std::vector<Eigen::Vector3i> env_F(tris.size());
@@ -299,19 +300,19 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         for (size_t i = 0; i < tris.size(); ++i) {
             env_F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
         }
-        tet_envelope.init(env_V, env_F, tet_eps);
+        tet_envelope->init(env_V, env_F, tet_eps);
     }
 
     logger().info(
         "tetrahedralisation envelope: {} (eps {:.6})",
-        tet_envelope.use_exact ? "EXACT" : "sampled",
-        std::sqrt(tet_envelope.eps2));
+        tet_envelope->use_exact ? "EXACT" : "sampled",
+        std::sqrt(tet_envelope->eps2));
 
     if (json_params["DEBUG_disable_envelope"]) {
         logger().warn(
             "DEBUG_disable_envelope: envelope checks are OFF for the tetrahedralisation. "
             "The output has no containment guarantee and is for diagnosis only.");
-        tet_envelope.disabled = true;
+        tet_envelope->disabled = true;
     }
 
     tetwild::TetWildMesh mesh(params, tet_envelope, NUM_THREADS);
