@@ -1,4 +1,6 @@
 #include "SimWildMeshTri.hpp"
+
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 
@@ -1479,123 +1481,46 @@ bool SimWildMeshTri::smooth_before(const Tuple& t)
 
 bool SimWildMeshTri::smooth_after(const Tuple& t)
 {
-    // Newton iterations are encapsulated here.
-    logger().trace("Newton iteration for vertex smoothing.");
-    const size_t vid = t.vid(*this);
+    // The body lives in wmtk::optimization::smooth_vertex_2d, shared with triwild.
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = m_params.w_amips;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = true;
+    opts.quality_veto_on_surface = false;
 
-    const auto& VA = m_vertex_attribute;
-
-    const auto& locs = get_one_ring_fids_for_vertex(t);
-    assert(locs.size() > 0);
-
-    double max_quality = 0.;
-    for (const size_t fid : locs) {
-        max_quality = std::max(max_quality, m_face_attribute[fid].m_quality);
-    }
-
-    auto& solver = m_solver.local();
-    if (!solver) {
-        solver = optimization::create_basic_solver();
-    }
-
-    std::vector<std::array<double, 6>> assembles = get_amips_assembles(t);
-
-    const Vector2d old_pos = VA[vid].m_pos;
-
-    // call to polysolve
-    std::shared_ptr<polysolve::nonlinear::Problem> total_energy;
-
-    auto amips_energy = get_amips_energy(t);
-
-    const auto surf_assembles = get_surface_assembles(t);
-    if (VA[vid].m_is_on_surface) {
-        assert(!surf_assembles.empty());
-
-        auto energy_sum = std::make_shared<optimization::EnergySum>();
-
-        if (m_params.w_amips > 0) {
-            energy_sum->add_energy(amips_energy);
-        }
-        if (m_params.w_envelope > 0) {
-            energy_sum->add_energy(get_envelope_energy(t));
-        }
-
-        total_energy = energy_sum;
-    } else {
-        total_energy = amips_energy;
-    }
-
-    // solve
-    {
-        VectorXd x = old_pos;
-        try {
-            solver->minimize(*total_energy, x);
-        } catch (const std::exception&) {
-            // polysolve might throw errors that we want to ignore (e.g., line search failed)
-        }
-        m_vertex_attribute[vid].m_pos = x;
-    }
-
-    logger().trace("old pos {} -> new pos {}", old_pos.transpose(), VA[vid].m_pos.transpose());
-
-    // check surface containment
-    if (VA[vid].m_is_on_surface) {
-        // write_vtu_with_energies(fmt::format("debug_smooth_{}", m_debug_print_counter++));
-
-        for (size_t i = 1; i < surf_assembles.size(); ++i) {
-            std::array<Eigen::Vector2d, 2> edge;
-            edge[0] = VA[vid].m_pos;
-            edge[1] = surf_assembles[i];
-            if (m_envelope->is_outside(edge)) {
-                return false;
-            }
-        }
-    }
-
-    // quality (only check if not on surface)
-    auto max_after_quality = 0.;
-    for (const size_t fid : locs) {
-        if (is_inverted(fid)) {
-            return false;
-        }
-        const double q = get_quality(fid);
-        m_face_attribute[fid].m_quality = q;
-        max_after_quality = std::max(max_after_quality, q);
-    }
-    if (!VA[vid].m_is_on_surface) {
-        if (max_after_quality > max_quality) {
-            return false;
-        }
-    }
-
-    return true;
+    return optimization::smooth_vertex_2d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }
 
-std::vector<Vector2d> SimWildMeshTri::get_surface_assembles(const Tuple& t) const
+Vector2d SimWildMeshTri::smoothing_position(const size_t vid) const
 {
-    const auto& VA = m_vertex_attribute;
-    const size_t vid = t.vid(*this);
-
-    std::vector<Vector2d> surface_pts;
-
-    if (!VA[vid].m_is_on_surface) {
-        return surface_pts;
-    }
-
-    const auto es = get_surface_edges_for_vertex(vid);
-
-    surface_pts.resize(es.size() + 1);
-    surface_pts[0] = VA[vid].m_pos;
-
-    for (size_t i = 0; i < es.edges().size(); ++i) {
-        const auto& vs = es.edges()[i].vertices();
-        size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-        surface_pts[i + 1] = VA[neighbor_id].m_pos;
-    }
-
-    return surface_pts;
+    return m_vertex_attribute[vid].m_pos;
 }
 
+void SimWildMeshTri::set_smoothing_position(const size_t vid, const Vector2d& p)
+{
+    // No exact position to keep in step here: this mesh stores only the double one.
+    m_vertex_attribute[vid].m_pos = p;
+}
+
+bool SimWildMeshTri::is_inverted_f(const size_t fid) const
+{
+    // Positions are doubles throughout, so the exact and floating predicates coincide.
+    return is_inverted(fid);
+}
+
+std::shared_ptr<SampleEnvelope> SimWildMeshTri::smoothing_energy_envelope(const size_t) const
+{
+    return m_envelope_orig;
+}
+
+std::shared_ptr<SampleEnvelope> SimWildMeshTri::smoothing_containment_envelope(const size_t) const
+{
+    // Not m_envelope_orig: the pull target and the containment test are different objects,
+    // the same split the 3D mesh has.
+    return m_envelope;
+}
 
 std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_envelope_energy(
     const Tuple& t) const
@@ -1657,6 +1582,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_amips_energy(
     assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_pos);
     return amips_energy;
 }
+
 
 void SimWildMeshTri::log_total_surface_energy()
 {
