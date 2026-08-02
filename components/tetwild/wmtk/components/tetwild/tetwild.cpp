@@ -118,6 +118,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     std::string output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
+    const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
@@ -189,13 +191,49 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         verts,
         NUM_THREADS,
         !use_sample_envelope);
+    surf_mesh.set_use_link_condition(simplify_use_link_condition);
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
         logger().info("input {} simplification", input_paths);
+        {
+            size_t nm_e = 0;
+            for (const auto& e : surf_mesh.get_edges()) {
+                if (surf_mesh.edge_valence(e) > 2) ++nm_e;
+            }
+            size_t nm_v = 0;
+            for (const auto& t : surf_mesh.get_vertices()) {
+                if (!surf_mesh.is_manifold_vertex(t.vid(surf_mesh))) ++nm_v;
+            }
+            logger().info(
+                "simplification input non-manifold: {} edges, {} vertices. Link condition {}.",
+                nm_e,
+                nm_v,
+                simplify_use_link_condition ? "on" : "off");
+        }
+        // SampleEnvelope::init builds both the exact structure and the sampled BVH, and
+        // is_outside picks between them per query, so switching predicates for the
+        // simplification alone is a flag flip with nothing to rebuild. It has to be put
+        // back afterwards: this same envelope object is handed to TetWildMesh below, and
+        // the tet phase must keep whatever the user asked for.
+        const bool saved_use_exact = surf_mesh.m_envelope.use_exact;
+        if (simplify_use_sample_envelope) {
+            logger().info("simplification uses the sampled envelope; tet phase unaffected");
+            surf_mesh.m_envelope.use_exact = false;
+        }
+
         surf_mesh.collapse_shortest(0);
+
+        surf_mesh.m_envelope.use_exact = saved_use_exact;
         surf_mesh.consolidate_mesh();
+        if (!surf_mesh.check_mesh_connectivity_validity()) {
+            log_and_throw_error("Simplification produced an invalid mesh connectivity.");
+        }
+        logger().info(
+            "simplified: #v = {}, #f = {}",
+            surf_mesh.get_vertices().size(),
+            surf_mesh.get_faces().size());
     } else {
         logger().info("skip simplification");
     }
