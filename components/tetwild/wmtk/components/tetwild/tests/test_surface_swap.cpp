@@ -113,8 +113,8 @@ TEST_CASE("surface-flip-topology-signature", "[tetwild_operation][surface_swap]"
 {
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
-    SampleEnvelope env;
-    init_loose_envelope(env);
+    auto env = std::make_shared<SampleEnvelope>();
+    init_loose_envelope(*env);
     TetWildMesh mesh(params, env, 1);
     build_ring(mesh);
     set_surface(mesh, A, B, C, true);
@@ -135,8 +135,8 @@ TEST_CASE("surface-flip-correctness", "[tetwild_operation][surface_swap]")
 {
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
-    SampleEnvelope env;
-    init_loose_envelope(env);
+    auto env = std::make_shared<SampleEnvelope>();
+    init_loose_envelope(*env);
     TetWildMesh mesh(params, env, 1);
     build_ring(mesh);
     set_surface(mesh, A, B, C, true);
@@ -193,8 +193,8 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
     SECTION("disabled by param -> no surface swap")
     {
         params.allow_surface_swap = false;
-        SampleEnvelope env;
-        init_loose_envelope(env);
+        auto env = std::make_shared<SampleEnvelope>();
+        init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
         set_surface(mesh, A, B, C, true);
@@ -212,8 +212,8 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("non-manifold edge (3 surface faces) -> rejected")
     {
-        SampleEnvelope env;
-        init_loose_envelope(env);
+        auto env = std::make_shared<SampleEnvelope>();
+        init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
         set_surface(mesh, A, B, C, true);
@@ -230,8 +230,8 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("new surface face already tagged -> rejected")
     {
-        SampleEnvelope env;
-        init_loose_envelope(env);
+        auto env = std::make_shared<SampleEnvelope>();
+        init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
         set_surface(mesh, A, B, C, true);
@@ -247,8 +247,8 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("energy would not improve -> rejected")
     {
-        SampleEnvelope env;
-        init_loose_envelope(env);
+        auto env = std::make_shared<SampleEnvelope>();
+        init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
         set_surface(mesh, A, B, C, true);
@@ -282,8 +282,8 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
         // flag is only written in four places and the collapse rule ORs it, so it
         // cannot silently drop. Poking the attribute by hand therefore built a state
         // the code cannot reach, and the test failed against correct behaviour.
-        SampleEnvelope env;
-        init_loose_envelope(env);
+        auto env = std::make_shared<SampleEnvelope>();
+        init_loose_envelope(*env);
         TetWildMesh mesh(params, env, 1);
 
         constexpr size_t F = 5;
@@ -327,7 +327,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
 
     SECTION("new surface outside envelope -> rejected")
     {
-        SampleEnvelope env;
+        auto env = std::make_shared<SampleEnvelope>();
         // Tight envelope around the *original* surface (a,b,c),(a,b,d). The
         // flipped faces (a,c,d),(b,c,d) deviate from it by ~0.29 (their interiors
         // leave the y=0 / (a,b,d) planes), far more than eps, so they are
@@ -335,7 +335,7 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
         std::vector<Vector3d> v =
             {{0, 0, -1}, {0, 0, 1}, {1, 0, 0}, {-0.5, 0.8660254, 0}, {-0.5, -0.8660254, 0}};
         std::vector<Eigen::Vector3i> f = {{A, B, C}, {A, B, D}};
-        env.init(v, f, 1e-3);
+        env->init(v, f, 1e-3);
         TetWildMesh mesh(params, env, 1);
         build_ring(mesh);
         set_surface(mesh, A, B, C, true);

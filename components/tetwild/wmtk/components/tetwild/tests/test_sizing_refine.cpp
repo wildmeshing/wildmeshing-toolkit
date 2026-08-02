@@ -58,7 +58,7 @@ TEST_CASE("stuck-refine-region-and-factor", "[tetwild_operation][stuck_refine]")
     params.stuck_refine_min_scalar = 0.1;
     params.stuck_refine_gradation = 1.0; // disable smoothing to isolate the refinement
 
-    SampleEnvelope env;
+    auto env = std::make_shared<SampleEnvelope>();
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     // Make tet 0 the single worst element.
@@ -86,7 +86,7 @@ TEST_CASE("stuck-refine-floor-clamp", "[tetwild_operation][stuck_refine]")
     params.stuck_refine_min_scalar = 0.7; // floor above factor*1.0 => clamps
     params.stuck_refine_gradation = 1.0;
 
-    SampleEnvelope env;
+    auto env = std::make_shared<SampleEnvelope>();
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     mesh.m_tet_attribute[0].m_quality = 1e40;
@@ -107,7 +107,7 @@ TEST_CASE("stuck-refine-num-worst", "[tetwild_operation][stuck_refine]")
     params.stuck_refine_min_scalar = 0.01;
     params.stuck_refine_gradation = 1.0;
 
-    SampleEnvelope env;
+    auto env = std::make_shared<SampleEnvelope>();
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     mesh.m_tet_attribute[0].m_quality = 1e40;
@@ -125,7 +125,7 @@ TEST_CASE("stuck-refine-gradation-monotone", "[tetwild_operation][stuck_refine]"
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(12, 2, 2));
 
-    SampleEnvelope env;
+    auto env = std::make_shared<SampleEnvelope>();
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
 
@@ -156,7 +156,7 @@ TEST_CASE("stuck-refine-disabled-noop", "[tetwild_operation][stuck_refine]")
     // grade <= 1 disables the smoothing entirely.
     Parameters params;
     params.init(Vector3d(-1, -1, -1), Vector3d(12, 2, 2));
-    SampleEnvelope env;
+    auto env = std::make_shared<SampleEnvelope>();
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
     mesh.m_vertex_attribute[0].m_sizing_scalar = 0.1;
@@ -173,7 +173,7 @@ TEST_CASE("skip-good-regions-active-vertices", "[tetwild_operation][skip_good_re
     params.stop_energy = 100;
     params.skip_good_regions_margin = 0.9; // active energy >= 90 -> m_quality >= 90^3 = 729000
 
-    SampleEnvelope env;
+    auto env = std::make_shared<SampleEnvelope>();
     TetWildMesh mesh(params, env, 1);
     build_two_tets(mesh);
 
