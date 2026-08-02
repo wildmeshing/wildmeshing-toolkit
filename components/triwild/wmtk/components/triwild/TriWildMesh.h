@@ -6,6 +6,7 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 
@@ -103,6 +104,16 @@ public:
 
     wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
         m_solver;
+
+    /// Why smoothing attempts were refused, reported once per pass.
+    optimization::SmoothRejectCounters m_smooth_rejects;
+
+    /// Position hooks for the shared 2D smoothing driver. triwild keeps both a working
+    /// double position and an exact rational one, so writing goes through here.
+    Vector2d smoothing_position(const size_t vid) const;
+    void set_smoothing_position(const size_t vid, const Vector2d& p);
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
     // scaling factors
     double m_s_amips = -1;
@@ -258,11 +269,7 @@ public:
      *
      * Returns an empty vector if vertex is not on the surface.
      */
-    std::vector<Vector2d> get_surface_assembles(const Tuple& t) const;
-    std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
 
-    std::vector<std::array<double, 6>> get_amips_assembles(const Tuple& t) const;
-    std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
 
     /**
      * @brief Inversion check using only floating point numbers.
