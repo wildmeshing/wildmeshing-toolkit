@@ -5,6 +5,7 @@
 #include <wmtk/utils/PartitionMesh.h>
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -149,6 +150,14 @@ public:
     // scaling factors
     double m_s_amips = -1;
     double m_s_envelope = -1;
+
+    /// Why smoothing attempts were refused, reported once per pass.
+    optimization::SmoothRejectCounters m_smooth_rejects;
+
+    /// Envelope a vertex is pulled toward while smoothing.
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    /// Envelope the resulting surface triangles are checked against.
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
@@ -358,11 +367,6 @@ public:
     bool is_inverted(const Tuple& loc) const;
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
-
-    std::vector<std::array<double, 12>> get_amips_assembles(const Tuple& t) const;
-
-    std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
-    std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
 
     /**
      * @brief Round a vertex position to floating point.
