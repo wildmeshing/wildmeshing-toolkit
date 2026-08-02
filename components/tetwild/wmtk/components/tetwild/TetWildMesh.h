@@ -210,6 +210,7 @@ public:
     bool split_edge_after(const Tuple& loc) override;
 
     void smooth_all_vertices();
+    void debug_report_surface_drift(const char* when);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 

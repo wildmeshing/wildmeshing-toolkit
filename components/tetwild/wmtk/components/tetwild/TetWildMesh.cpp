@@ -76,7 +76,8 @@ void TetWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        auto [max_energy, avg_energy] =
+            local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);

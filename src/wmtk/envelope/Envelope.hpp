@@ -55,6 +55,20 @@ public:
     double eps2 = 1e-6;
     double sampling_dist = 1e-3;
     bool use_exact = false;
+
+    /**
+     * Debug escape hatch: when set, every is_outside() answers "inside".
+     *
+     * The envelope is the only thing that can reject an operation for geometric rather
+     * than combinatorial reasons, so turning it off tells you whether a stalled
+     * optimization is blocked by the envelope or by the mesh itself. It removes the
+     * containment guarantee entirely -- the output is not usable, only diagnostic.
+     *
+     * Note nearest_point() is unaffected: smoothing still projects surface vertices onto
+     * the envelope surface, because that is a constraint on where a vertex goes rather
+     * than a veto on the operation.
+     */
+    bool disabled = false;
     void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,

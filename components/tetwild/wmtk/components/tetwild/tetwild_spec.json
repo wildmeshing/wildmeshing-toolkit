@@ -13,6 +13,7 @@
       "skip_simplify",
       "simplify_use_link_condition",
       "simplify_use_sample_envelope",
+      "simplify_envelope_ratio",
       "use_sample_envelope",
       "use_legacy_code",
       "num_threads",
@@ -21,6 +22,7 @@
       "eps_rel",
       "length_rel",
       "stop_energy",
+      "num_smoothing_passes",
       "preserve_topology",
       "remove_duplicate_eps",
       "allow_surface_swap",
@@ -32,6 +34,7 @@
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
       "DEBUG_euler",
+      "DEBUG_disable_envelope",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -118,6 +121,12 @@
     "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
   },
   {
+    "pointer": "/simplify_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+  },
+  {
     "pointer": "/use_sample_envelope",
     "type": "bool",
     "default": false,
@@ -171,6 +180,12 @@
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/num_smoothing_passes",
+    "type": "int",
+    "default": 50,
+    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy."
   },
   {
     "pointer": "/preserve_topology",
@@ -237,6 +252,12 @@
     "type": "bool",
     "default": false,
     "doc": "Sanity Check: Compute and report the Euler characteristic of the input and output surfaces and warn if they differ. Off by default because on meshes with many components it can take tens of seconds. It is computed regardless when preserve_topology is set (the topology check needs it)."
+  },
+  {
+    "pointer": "/DEBUG_disable_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Diagnostic only. Disables every envelope containment check during the tetrahedralisation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used."
   },
   {
     "pointer": "/stuck_refine_stall_eps",

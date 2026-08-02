@@ -251,6 +251,61 @@ bool TetWildMesh::smooth_after(const Tuple& t)
     return true;
 }
 
+// DIAGNOSTIC (uncommitted): how far are surface vertices from the input surface?
+//
+// Surface vertices are projected back onto the surface by smooth_after -- but only when
+// they are NOT on an open boundary, and the open-boundary envelope check that would have
+// constrained the rest is commented out. So the question is whether open-boundary vertices
+// drift outward with nothing pulling them back.
+void TetWildMesh::debug_report_surface_drift(const char* when)
+{
+    const double eps = std::sqrt(m_envelope.eps2);
+    struct Acc
+    {
+        size_t n = 0, near90 = 0, over = 0;
+        double maxd = 0, sumd = 0;
+        void add(double d, double eps)
+        {
+            ++n;
+            sumd += d;
+            maxd = std::max(maxd, d);
+            if (d > 0.9 * eps) ++near90;
+            if (d > eps) ++over;
+        }
+    };
+    Acc interior_surf, open_bnd;
+
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!m_vertex_attribute[vid].m_is_on_surface) continue;
+        const double d = std::sqrt(m_envelope.squared_distance(m_vertex_attribute[vid].m_posf));
+        if (m_vertex_attribute[vid].m_is_on_open_boundary) {
+            open_bnd.add(d, eps);
+        } else {
+            interior_surf.add(d, eps);
+        }
+    }
+
+    auto line = [&](const char* label, const Acc& a) {
+        if (a.n == 0) {
+            logger().info("[drift {}] {}: none", when, label);
+            return;
+        }
+        logger().info(
+            "[drift {}] {}: n={} maxd={:.5} meand={:.5} (eps={:.5}) | >0.9eps: {} | >eps: {}",
+            when,
+            label,
+            a.n,
+            a.maxd,
+            a.sumd / a.n,
+            eps,
+            a.near90,
+            a.over);
+    };
+    line("surface, projected  ", interior_surf);
+    line("surface, OPEN BOUND ", open_bnd);
+}
+
 void TetWildMesh::smooth_all_vertices()
 {
     // the order is randomized in every iteration but deterministic when executed sequentially
@@ -277,6 +332,7 @@ void TetWildMesh::smooth_all_vertices()
     time = timer.getElapsedTime();
     wmtk::logger().info("vertex smoothing prepare time: {:.4}s", time);
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
+    debug_report_surface_drift("before smooth");
     if (NUM_THREADS > 0) {
         timer.start();
         auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
@@ -295,6 +351,7 @@ void TetWildMesh::smooth_all_vertices()
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing operation time serial: {:.4}s", time);
     }
+    debug_report_surface_drift("after  smooth");
 }
 
 } // namespace wmtk::components::tetwild

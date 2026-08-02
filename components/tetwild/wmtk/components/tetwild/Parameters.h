@@ -81,6 +81,16 @@ struct Parameters
 
     double stop_energy = 10;
 
+    /**
+     * How many smoothing passes each optimization iteration runs.
+     *
+     * This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was
+     * hard-coded to 1. Smoothing is the only phase that improves element quality without
+     * changing connectivity, so on meshes where split/collapse/swap have run out of useful
+     * moves it is the only thing left that can lower the energy.
+     */
+    int num_smoothing_passes = 50;
+
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
