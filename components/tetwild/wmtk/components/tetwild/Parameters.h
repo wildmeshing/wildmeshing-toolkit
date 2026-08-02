@@ -98,7 +98,7 @@ struct Parameters
      * changing connectivity, so on meshes where split/collapse/swap have run out of useful
      * moves it is the only thing left that can lower the energy.
      */
-    int num_smoothing_passes = 50;
+    int num_smoothing_passes = 10;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;

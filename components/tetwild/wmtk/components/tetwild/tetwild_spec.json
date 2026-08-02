@@ -191,7 +191,7 @@
   {
     "pointer": "/num_smoothing_passes",
     "type": "int",
-    "default": 50,
+    "default": 10,
     "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy."
   },
   {
