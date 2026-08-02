@@ -123,8 +123,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
     // open boundary
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
-        if (!VA[v2_id].m_is_on_open_boundary &&
-            m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
+        if (!VA[v2_id].m_is_on_open_boundary && m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
             return false;
         }
     }
