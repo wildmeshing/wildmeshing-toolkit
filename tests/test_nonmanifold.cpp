@@ -104,10 +104,26 @@ size_t max_vid(const std::vector<std::array<size_t, 3>>& tris)
 }
 
 /// Number of distinct faces incident to the edge the tuple points at, counting the tuple's
-/// own face. Computed from scratch, independently of whatever the mesh caches.
+/// own face.
+///
+/// Deliberately a scan of every live face rather than a call to get_incident_fids_for_edge:
+/// that helper intersects the two endpoint fans, which is exactly how edge_valence() itself
+/// answers the question, so using it here would compare the implementation against itself.
 size_t brute_force_edge_valence(const TriMesh& m, const Tuple& t)
 {
-    return m.get_incident_fids_for_edge(t).size();
+    const size_t v0 = t.vid(m);
+    const size_t v1 = t.switch_vertex(m).vid(m);
+
+    size_t count = 0;
+    for (size_t fid = 0; fid < m.tri_capacity(); ++fid) {
+        const auto tri = m.tuple_from_tri(fid);
+        if (!tri.is_valid(m)) continue;
+        const std::array<size_t, 3> vids = m.oriented_tri_vids(fid);
+        const bool has_v0 = std::find(vids.begin(), vids.end(), v0) != vids.end();
+        const bool has_v1 = std::find(vids.begin(), vids.end(), v1) != vids.end();
+        if (has_v0 && has_v1) ++count;
+    }
+    return count;
 }
 
 /// Number of edge-connected components of the fan of `vid`, computed from scratch.

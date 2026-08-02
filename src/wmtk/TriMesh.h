@@ -112,16 +112,17 @@ public:
         /**
          * Step to the next triangle around this edge.
          *
-         * On a manifold edge that is the triangle on the other side, which is what this
-         * has always returned. On a non-manifold edge it advances one place around the
-         * fan, so applying it edge_valence() times is the identity; it no longer picks an
-         * arbitrary member, as it did before the radial cycle existed. Callers that
-         * genuinely need the manifold case -- a swap, say -- should test is_manifold_edge()
-         * rather than assume it.
+         * The faces incident to an edge are ordered by fid, and this advances one place
+         * along that order, wrapping exactly once. On a manifold edge that is the triangle
+         * on the other side, which is what this has always returned. On a non-manifold
+         * edge, applying it edge_valence() times is the identity; it no longer picks an
+         * arbitrary fan member, as it did when the fan was assumed to hold at most two
+         * faces. Callers that genuinely need the manifold case -- a swap, say -- should
+         * test is_manifold_edge() rather than assume it.
          *
          * @param m Mesh
          * @return Tuple for the next triangle, sharing the same edge and vertex.
-         * @note nullopt on a boundary edge, whose cycle has length one.
+         * @note nullopt on a boundary edge, which has nowhere to step to.
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
 
@@ -247,37 +248,6 @@ public:
          *
          */
         size_t hash = 0;
-
-        /**
-         * @brief Radial cycle: for local edge e, the next face around that edge.
-         *
-         * The faces incident to an edge form a cycle visited in strictly increasing fid
-         * order, wrapping exactly once. A boundary edge is a cycle of length one, so the
-         * entry points at this triangle itself; a manifold edge is a cycle of length two,
-         * so the two faces point at each other, which is the classical "opposite face".
-         *
-         * The order is combinatorial, not geometric -- TriMesh holds no vertex positions.
-         * It is therefore a canonical function of the connectivity, which is what lets
-         * check_mesh_connectivity_validity() verify it by recomputing rather than by
-         * trusting it.
-         */
-        std::array<size_t, 3> m_edge_next = {{size_t(-1), size_t(-1), size_t(-1)}};
-
-        /**
-         * @brief Component cycle: for local vertex v, the representative of the next
-         * edge-connected component of v's fan.
-         *
-         * The triangles incident to a vertex split into edge-connected components (two
-         * triangles are in the same component when they share an edge containing the
-         * vertex). Each component is named by its smallest fid, and the representatives
-         * form a cycle in increasing order. Every corner of every face in a component
-         * stores the same successor, so the entry can be read from whichever face the
-         * caller happens to hold.
-         *
-         * A manifold vertex has a single component, so the entry is that component's own
-         * representative and the cycle is a self-loop.
-         */
-        std::array<size_t, 3> m_vert_next_component = {{size_t(-1), size_t(-1), size_t(-1)}};
 
         inline size_t& operator[](size_t index)
         {
@@ -423,58 +393,21 @@ private:
 
 protected:
     /**
-     * Maintenance of the radial and component cycles.
+     * Edge-connected components of the fan of `vid`, as positions into that fan.
      *
-     * Both are a canonical function of (m_tri_connectivity, m_vertex_connectivity), so
-     * operations recompute them over the region they touched rather than splicing. That is
-     * correct by construction and costs O(k log k) on a star of size k, which is small; the
-     * alternative would trade a real class of aliasing bugs for a constant factor nobody
-     * would notice.
-     */
-
-    /// Relink the faces around edge (v0,v1) in increasing fid order.
-    void rebuild_edge_cycle(size_t v0, size_t v1);
-    /// Relink the components of the fan of `vid` in increasing representative order.
-    void rebuild_vertex_cycle(size_t vid);
-    /// Rebuild every cycle that the given faces participate in. Duplicates are fine.
-    void rebuild_cycles_around(const std::vector<size_t>& fids);
-    /**
-     * Rebuild exactly the listed edges and vertices. Both lists are sorted and deduplicated
-     * in place; entries naming something that no longer exists are skipped.
+     * `component_of[i]` is the index into `representatives` of the component containing
+     * `m_vertex_connectivity[vid].m_conn_tris[i]`, and `representatives` holds each
+     * component's smallest fid in increasing order. Two faces are in the same component
+     * when they share an edge containing `vid`.
      *
-     * Used by collapse, which knows precisely what it changed and would otherwise walk the
-     * vertices twice: once for the faces that survived, and again for the vertices whose
-     * only link to the collapsed edge was a face that did not.
+     * Both outputs are sized by the fan rather than by the mesh, and nothing is cached:
+     * the fan is already the whole input, so recomputing costs the same as reading a
+     * stored answer would, minus the obligation to keep it current.
      */
-    void rebuild_cycles_for(
-        std::vector<std::pair<size_t, size_t>>& edges,
-        std::vector<size_t>& vids);
-    /// Rebuild every cycle in the mesh. Used by init() and consolidate_mesh().
-    void rebuild_all_cycles();
-
-    /**
-     * From-scratch computation of both cycles, indexed by fid, without touching the mesh.
-     *
-     * rebuild_all_cycles() copies the result in; check_mesh_connectivity_validity()
-     * compares against it. Sharing one implementation between the two is deliberate: the
-     * check is then a genuine test of the incremental rebuilds done by the operations,
-     * rather than of a second transcription of the same rules.
-     */
-    void compute_edge_cycles(std::vector<std::array<size_t, 3>>& out) const;
-    void compute_vertex_cycles(std::vector<std::array<size_t, 3>>& out) const;
-
-    /**
-     * Component cycle of a single vertex.
-     *
-     * `successors` and `local_vids` come back indexed by position in the fan of `vid`, not
-     * by fid, so the cost is the size of the fan rather than the size of the mesh. Both
-     * callers -- the global recompute and the per-operation rebuild -- scatter the result
-     * to wherever they keep it.
-     */
-    void vertex_cycle_successors(
+    void vertex_fan_components(
         size_t vid,
-        std::vector<size_t>& successors,
-        std::vector<int>& local_vids) const;
+        std::vector<size_t>& component_of,
+        std::vector<size_t>& representatives) const;
 
 private:
     /**

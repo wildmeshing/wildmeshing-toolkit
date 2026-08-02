@@ -9,6 +9,70 @@
 
 using namespace wmtk;
 
+namespace {
+
+/// Local edge index of the edge whose endpoints sit at local vertex indices a and b.
+/// The local edge is the one opposite the third local vertex, so the indices sum to 3.
+inline size_t local_eid_from(int a, int b)
+{
+    assert(a >= 0 && a <= 2 && b >= 0 && b <= 2 && a != b);
+    return static_cast<size_t>(3 - a - b);
+}
+
+/// What one pass over an edge's two endpoint fans found. See scan_edge_fan().
+struct EdgeFanScan
+{
+    size_t count = 0;
+    size_t first = size_t(-1); ///< smallest incident fid
+    size_t succ = size_t(-1); ///< smallest incident fid strictly greater than `after`
+};
+
+/**
+ * The faces incident to an edge, without materialising them.
+ *
+ * A face is incident to (v0,v1) exactly when it appears in both endpoints' fans, and
+ * m_conn_tris is kept sorted, so a single lockstep pass visits those faces in increasing
+ * fid order -- which is the order that defines "the next face around this edge". Reporting
+ * the count, the smallest, and the smallest above `after` is everything switch_face,
+ * edge_valence and is_boundary_edge need, so none of them allocates.
+ *
+ * `after` defaults to size_t(-1), for which `succ` is never set: callers that only want a
+ * count leave it alone. `stop_at` bounds the scan for the same reason -- is_boundary_edge
+ * only cares whether a second face exists, and a fan can be large at a pole.
+ */
+inline EdgeFanScan scan_edge_fan(
+    const std::vector<size_t>& a,
+    const std::vector<size_t>& b,
+    const size_t after = size_t(-1),
+    const size_t stop_at = std::numeric_limits<size_t>::max())
+{
+    assert(std::is_sorted(a.begin(), a.end()));
+    assert(std::is_sorted(b.begin(), b.end()));
+
+    EdgeFanScan s;
+    size_t i = 0, j = 0;
+    while (i < a.size() && j < b.size()) {
+        if (a[i] < b[j]) {
+            ++i;
+            continue;
+        }
+        if (b[j] < a[i]) {
+            ++j;
+            continue;
+        }
+        const size_t f = a[i];
+        ++s.count;
+        if (s.first == size_t(-1)) s.first = f;
+        if (s.succ == size_t(-1) && f > after) s.succ = f;
+        if (s.count >= stop_at) break;
+        ++i;
+        ++j;
+    }
+    return s;
+}
+
+} // namespace
+
 void TriMesh::Tuple::update_hash(const TriMesh& m)
 {
     m_hash = m.m_tri_connectivity[m_fid].hash;
@@ -134,14 +198,22 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
 {
     assert(is_valid(m));
 
-    const size_t next_fid = m.m_tri_connectivity[m_fid].m_edge_next[m_eid];
-    assert(next_fid != size_t(-1) && "radial cycle not built for this edge");
-
-    // A boundary edge is a cycle of length one.
-    if (next_fid == m_fid) return {};
-
     const size_t loc_v0 = m_vid;
     const size_t v1 = this->switch_vertex(m).m_vid;
+
+    // Step one place along the edge's fan in increasing fid order, wrapping once. The fan
+    // never has to be built: one lockstep pass over the two endpoint fans yields both the
+    // next fid above this one and the smallest, which is where the wrap lands.
+    const auto s = scan_edge_fan(
+        m.m_vertex_connectivity[loc_v0].m_conn_tris,
+        m.m_vertex_connectivity[v1].m_conn_tris,
+        m_fid);
+
+    assert(s.count >= 1 && "a tuple's own face is incident to its own edge");
+    if (s.count == 1) return {}; // boundary
+
+    const size_t next_fid = (s.succ != size_t(-1)) ? s.succ : s.first;
+    assert(next_fid != m_fid);
 
     Tuple loc = *this;
     loc.m_fid = next_fid;
@@ -149,7 +221,7 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
     const int lv0_2 = m.m_tri_connectivity[next_fid].find(loc_v0);
     const int lv1_2 = m.m_tri_connectivity[next_fid].find(v1);
     assert(lv0_2 != -1 && lv1_2 != -1);
-    loc.m_eid = 3 - (lv0_2 + lv1_2);
+    loc.m_eid = local_eid_from(lv0_2, lv1_2);
 
     loc.update_hash(m);
     assert(loc.is_valid(m));
@@ -160,33 +232,45 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
 {
     assert(is_valid(m));
 
-    const size_t loc_v0 = m_vid;
-    const size_t v1 = this->switch_vertex(m).m_vid;
-
-    // Walk the radial cycle, collecting every other face.
-    std::vector<size_t> fids;
-    for (size_t f = m.m_tri_connectivity[m_fid].m_edge_next[m_eid]; f != m_fid;) {
-        assert(f != size_t(-1));
-        fids.push_back(f);
-        const int la = m.m_tri_connectivity[f].find(loc_v0);
-        const int lb = m.m_tri_connectivity[f].find(v1);
-        assert(la != -1 && lb != -1);
-        f = m.m_tri_connectivity[f].m_edge_next[3 - la - lb];
-    }
-
-    // The cycle is in increasing fid order, so starting at the successor of m_fid yields
-    // the faces above m_fid and then those below it. Rotate back to increasing order: that
-    // is what this function has always returned, and callers such as collapse_edge_conn
-    // take fids[0] and would otherwise pick a different face on a non-manifold edge.
-    std::rotate(fids.begin(), std::min_element(fids.begin(), fids.end()), fids.end());
-
     std::vector<Tuple> faces;
-    faces.reserve(fids.size());
+
+    size_t loc_v0 = m_vid;
+    size_t v1 = this->switch_vertex(m).m_vid;
+
+    const std::vector<size_t>& v0_fids = m.m_vertex_connectivity[loc_v0].m_conn_tris;
+    const std::vector<size_t>& v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
+    // get the smaller vector of the two
+    const std::vector<size_t>& fids = v0_fids.size() <= v1_fids.size() ? v0_fids : v1_fids;
+
+    // Both fans are sorted, so scanning one of them and keeping the faces that also carry
+    // the other endpoint yields the edge's fan in increasing fid order, minus this face.
+    // Callers such as collapse_edge_conn take fids[0], so that order is part of the
+    // contract rather than an accident.
+    assert(std::is_sorted(fids.begin(), fids.end()));
+
+    // find faces that contain v0 and v1
     for (const size_t f : fids) {
-        const int la = m.m_tri_connectivity[f].find(loc_v0);
-        const int lb = m.m_tri_connectivity[f].find(v1);
-        faces.emplace_back(loc_v0, 3 - la - lb, f, m);
+        if (f == m_fid) {
+            continue;
+        }
+
+        const auto& f_vids = m.m_tri_connectivity[f].m_indices;
+
+        int local_v0 = -1;
+        int local_v1 = -1;
+        for (size_t i = 0; i < f_vids.size(); ++i) {
+            if (f_vids[i] == loc_v0) {
+                local_v0 = (int)i;
+            } else if (f_vids[i] == v1) {
+                local_v1 = (int)i;
+            }
+        }
+        if (local_v0 == -1 || local_v1 == -1) {
+            continue;
+        }
+        faces.emplace_back(loc_v0, local_eid_from(local_v0, local_v1), f, m);
     }
+
     return faces;
 }
 
@@ -227,80 +311,13 @@ bool TriMesh::Tuple::is_valid(const TriMesh& m) const
     return true;
 }
 
-namespace {
-
-/// Local edge index of the edge whose endpoints sit at local vertex indices a and b.
-/// The local edge is the one opposite the third local vertex, so the indices sum to 3.
-inline size_t local_eid_from(int a, int b)
-{
-    assert(a >= 0 && a <= 2 && b >= 0 && b <= 2 && a != b);
-    return static_cast<size_t>(3 - a - b);
-}
-
-} // namespace
-
-void TriMesh::compute_edge_cycles(std::vector<std::array<size_t, 3>>& out) const
-{
-    out.assign(m_tri_connectivity.size(), {{size_t(-1), size_t(-1), size_t(-1)}});
-
-    // (v_min, v_max, fid) for every corner of every live face, sorted. Grouping the sorted
-    // run gives each edge's fan already in increasing fid order, which is the invariant the
-    // cycle encodes. A sort beats a map here: one allocation, no node chasing, and the
-    // result does not depend on any hash seed.
-    std::vector<std::array<size_t, 3>> corners;
-    corners.reserve(tri_capacity() * 3);
-    for (size_t fid = 0; fid < tri_capacity(); ++fid) {
-        if (m_tri_connectivity[fid].m_is_removed) continue;
-        const auto& idx = m_tri_connectivity[fid].m_indices;
-        for (int j = 0; j < 3; ++j) {
-            const size_t a = idx[(j + 1) % 3];
-            const size_t b = idx[(j + 2) % 3];
-            corners.push_back({{std::min(a, b), std::max(a, b), fid}});
-        }
-    }
-    std::sort(corners.begin(), corners.end());
-
-    for (size_t i = 0; i < corners.size();) {
-        size_t j = i;
-        while (j < corners.size() && corners[j][0] == corners[i][0] &&
-               corners[j][1] == corners[i][1]) {
-            ++j;
-        }
-        // corners[i..j) is one edge's fan, in increasing fid order
-        for (size_t k = i; k < j; ++k) {
-            const size_t fid = corners[k][2];
-            const size_t next = corners[(k + 1 == j) ? i : (k + 1)][2];
-            const int la = m_tri_connectivity[fid].find(corners[k][0]);
-            const int lb = m_tri_connectivity[fid].find(corners[k][1]);
-            out[fid][local_eid_from(la, lb)] = next;
-        }
-        i = j;
-    }
-}
-
-void TriMesh::compute_vertex_cycles(std::vector<std::array<size_t, 3>>& out) const
-{
-    out.assign(m_tri_connectivity.size(), {{size_t(-1), size_t(-1), size_t(-1)}});
-
-    std::vector<size_t> successors;
-    std::vector<int> local_vids;
-    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
-        if (m_vertex_connectivity[vid].m_is_removed) continue;
-        vertex_cycle_successors(vid, successors, local_vids);
-        const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
-        for (size_t i = 0; i < fan.size(); ++i) {
-            out[fan[i]][local_vids[i]] = successors[i];
-        }
-    }
-}
-
-void TriMesh::vertex_cycle_successors(
+void TriMesh::vertex_fan_components(
     const size_t vid,
-    std::vector<size_t>& successors,
-    std::vector<int>& lv) const
+    std::vector<size_t>& component_of,
+    std::vector<size_t>& representatives) const
 {
-    successors.clear();
-    lv.clear();
+    component_of.clear();
+    representatives.clear();
 
     const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
     if (fan.empty()) return;
@@ -310,22 +327,12 @@ void TriMesh::vertex_cycle_successors(
     // vertex in both -- so grouping by that other vertex is enough, and it handles a
     // non-manifold edge correctly since all its faces land in the same group.
     //
-    // A fan is a handful of faces, so every lookup below is a linear scan of a flat vector.
-    // std::map here costs a node allocation per insert and this runs several times per
-    // mesh operation, which measured as roughly a 2.5x slowdown of a whole simplification
-    // pass -- far more than the scans it was saving.
-    // thread_local, not members: this is a const method and the executors run operations on
-    // several threads at once.
-    thread_local std::vector<size_t> parent;
-    thread_local std::vector<std::pair<size_t, size_t>> seen;
-    thread_local std::vector<std::pair<size_t, size_t>> root_rep;
-    thread_local std::vector<size_t> reps;
-
-    parent.resize(fan.size());
+    // A fan is a handful of faces, so every lookup below is a linear scan of a flat
+    // vector; a std::map would cost a node allocation per insert to save scans of three
+    // or four elements.
+    std::vector<size_t> parent(fan.size());
     for (size_t i = 0; i < fan.size(); ++i) parent[i] = i;
-    // `parent` has static storage duration, so it cannot be captured -- it is simply in
-    // scope, which is all the lambda needs.
-    const auto find_root = [](size_t x) {
+    const auto find_root = [&parent](size_t x) {
         while (parent[x] != x) {
             parent[x] = parent[parent[x]];
             x = parent[x];
@@ -333,14 +340,14 @@ void TriMesh::vertex_cycle_successors(
         return x;
     };
 
-    seen.clear(); // (other endpoint, fan position of the first face carrying it)
-    lv.resize(fan.size());
+    std::vector<std::pair<size_t, size_t>> seen; // (other endpoint, first fan position)
+    seen.reserve(2 * fan.size());
     for (size_t i = 0; i < fan.size(); ++i) {
-        lv[i] = m_tri_connectivity[fan[i]].find(vid);
-        assert(lv[i] != -1);
+        const int lv = m_tri_connectivity[fan[i]].find(vid);
+        assert(lv != -1);
         const auto& idx = m_tri_connectivity[fan[i]].m_indices;
         for (int k = 1; k <= 2; ++k) {
-            const size_t other = idx[(lv[i] + k) % 3];
+            const size_t other = idx[(lv + k) % 3];
             bool found = false;
             for (const auto& [o, pos] : seen) {
                 if (o != other) continue;
@@ -355,8 +362,9 @@ void TriMesh::vertex_cycle_successors(
     }
 
     // Each component is named by its smallest fid. fan is sorted, so the first face seen
-    // for a root is already the smallest.
-    root_rep.clear(); // (root, representative fid)
+    // for a root is already the smallest, and the representatives come out in increasing
+    // order without a sort.
+    std::vector<std::pair<size_t, size_t>> root_rep; // (root, representative fid)
     for (size_t i = 0; i < fan.size(); ++i) {
         const size_t r = find_root(i);
         bool found = false;
@@ -368,153 +376,49 @@ void TriMesh::vertex_cycle_successors(
         }
         if (!found) root_rep.emplace_back(r, fan[i]);
     }
+    assert(std::is_sorted(root_rep.begin(), root_rep.end(), [](const auto& a, const auto& b) {
+        return a.second < b.second;
+    }));
 
-    reps.clear();
-    for (const auto& [root, rep] : root_rep) reps.push_back(rep);
-    std::sort(reps.begin(), reps.end());
+    representatives.reserve(root_rep.size());
+    for (const auto& [root, rep] : root_rep) representatives.push_back(rep);
 
-    successors.resize(fan.size());
+    component_of.resize(fan.size());
     for (size_t i = 0; i < fan.size(); ++i) {
         const size_t r = find_root(i);
-        size_t rep = size_t(-1);
-        for (const auto& [root, rp] : root_rep) {
-            if (root == r) {
-                rep = rp;
+        for (size_t c = 0; c < root_rep.size(); ++c) {
+            if (root_rep[c].first == r) {
+                component_of[i] = c;
                 break;
             }
         }
-        assert(rep != size_t(-1));
-        const auto it = std::lower_bound(reps.begin(), reps.end(), rep);
-        assert(it != reps.end() && *it == rep);
-        const size_t pos = size_t(it - reps.begin());
-        successors[i] = reps[(pos + 1) % reps.size()];
-    }
-}
-
-void TriMesh::rebuild_edge_cycle(const size_t v0, const size_t v1)
-{
-    // Intersect the two endpoint fans, which are sorted, so the result comes out in
-    // increasing fid order already. Done by hand into a reused buffer rather than through
-    // get_incident_fids_for_edge, which returns a fresh vector -- this runs a few dozen
-    // times per mesh operation.
-    thread_local std::vector<size_t> fids;
-    fids.clear();
-    {
-        const std::vector<size_t>& a = m_vertex_connectivity[v0].m_conn_tris;
-        const std::vector<size_t>& b = m_vertex_connectivity[v1].m_conn_tris;
-        std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(fids));
-    }
-    for (size_t i = 0; i < fids.size(); ++i) {
-        const size_t fid = fids[i];
-        const int la = m_tri_connectivity[fid].find(v0);
-        const int lb = m_tri_connectivity[fid].find(v1);
-        assert(la != -1 && lb != -1);
-        m_tri_connectivity[fid].m_edge_next[local_eid_from(la, lb)] = fids[(i + 1) % fids.size()];
-    }
-}
-
-void TriMesh::rebuild_vertex_cycle(const size_t vid)
-{
-    const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
-    if (fan.empty()) return;
-
-    thread_local std::vector<size_t> successors;
-    thread_local std::vector<int> lv;
-    vertex_cycle_successors(vid, successors, lv);
-
-    for (size_t i = 0; i < fan.size(); ++i) {
-        m_tri_connectivity[fan[i]].m_vert_next_component[lv[i]] = successors[i];
-    }
-}
-
-void TriMesh::rebuild_cycles_around(const std::vector<size_t>& fids)
-{
-    // Flat vectors deduplicated by sort+unique rather than std::set: a star is a handful of
-    // faces, and a node allocation per insert dominated everything else here.
-    thread_local std::vector<std::pair<size_t, size_t>> edges;
-    thread_local std::vector<size_t> verts;
-    edges.clear();
-    verts.clear();
-
-    for (const size_t fid : fids) {
-        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed) continue;
-        const auto& idx = m_tri_connectivity[fid].m_indices;
-        for (int j = 0; j < 3; ++j) {
-            verts.push_back(idx[j]);
-            const size_t a = idx[(j + 1) % 3];
-            const size_t b = idx[(j + 2) % 3];
-            edges.emplace_back(std::min(a, b), std::max(a, b));
-        }
-    }
-    std::sort(edges.begin(), edges.end());
-    edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
-    std::sort(verts.begin(), verts.end());
-    verts.erase(std::unique(verts.begin(), verts.end()), verts.end());
-
-    // The callees reuse buffers of their own, distinct from these two, so iterating in
-    // place is safe.
-    for (const auto& [a, b] : edges) rebuild_edge_cycle(a, b);
-    for (const size_t vid : verts) rebuild_vertex_cycle(vid);
-}
-
-void TriMesh::rebuild_cycles_for(
-    std::vector<std::pair<size_t, size_t>>& edges,
-    std::vector<size_t>& vids)
-{
-    std::sort(edges.begin(), edges.end());
-    edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
-    std::sort(vids.begin(), vids.end());
-    vids.erase(std::unique(vids.begin(), vids.end()), vids.end());
-
-    // An edge with no incident faces left simply writes nothing, and a removed or faceless
-    // vertex returns immediately, so stale entries need no filtering here.
-    for (const auto& [a, b] : edges) rebuild_edge_cycle(a, b);
-    for (const size_t vid : vids) {
-        if (vid >= m_vertex_connectivity.size() || m_vertex_connectivity[vid].m_is_removed) {
-            continue;
-        }
-        rebuild_vertex_cycle(vid);
-    }
-}
-
-void TriMesh::rebuild_all_cycles()
-{
-    std::vector<std::array<size_t, 3>> edge_next;
-    std::vector<std::array<size_t, 3>> vert_next;
-    compute_edge_cycles(edge_next);
-    compute_vertex_cycles(vert_next);
-
-    for (size_t fid = 0; fid < m_tri_connectivity.size(); ++fid) {
-        m_tri_connectivity[fid].m_edge_next = edge_next[fid];
-        m_tri_connectivity[fid].m_vert_next_component = vert_next[fid];
     }
 }
 
 size_t TriMesh::edge_valence(const Tuple& t) const
 {
-    const size_t fid = t.fid(*this);
-    const size_t eid = t.local_eid(*this);
-    assert(m_tri_connectivity[fid].m_edge_next[eid] != size_t(-1));
-
     const size_t v0 = t.vid(*this);
     const size_t v1 = t.switch_vertex(*this).vid(*this);
-
-    size_t count = 1;
-    for (size_t f = m_tri_connectivity[fid].m_edge_next[eid]; f != fid; ++count) {
-        const int la = m_tri_connectivity[f].find(v0);
-        const int lb = m_tri_connectivity[f].find(v1);
-        assert(la != -1 && lb != -1);
-        f = m_tri_connectivity[f].m_edge_next[local_eid_from(la, lb)];
-    }
-    return count;
+    return scan_edge_fan(
+               m_vertex_connectivity[v0].m_conn_tris,
+               m_vertex_connectivity[v1].m_conn_tris)
+        .count;
 }
 
 bool TriMesh::is_boundary_edge(const Tuple& t) const
 {
-    // A boundary edge is a cycle of length one, so its successor is the face itself.
-    return m_tri_connectivity[t.fid(*this)].m_edge_next[t.local_eid(*this)] == t.fid(*this);
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+    // Stop as soon as a second face turns up: this runs once per one-ring edge of both
+    // endpoints on every collapse attempt, and the answer never depends on how many faces
+    // there are beyond two.
+    return scan_edge_fan(
+               m_vertex_connectivity[v0].m_conn_tris,
+               m_vertex_connectivity[v1].m_conn_tris,
+               size_t(-1),
+               2)
+               .count == 1;
 }
-
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
 
 namespace {
@@ -761,25 +665,9 @@ std::string TriMesh::debug_reference_split(
 
 size_t TriMesh::vertex_component_count(const size_t vid) const
 {
-    const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
-    if (fan.empty()) return 0;
-
-    // Any face's entry names the representative of the *next* component, so walking from
-    // there visits every representative exactly once.
-    const int lv0 = m_tri_connectivity[fan[0]].find(vid);
-    assert(lv0 != -1);
-    const size_t first = m_tri_connectivity[fan[0]].m_vert_next_component[lv0];
-    assert(first != size_t(-1));
-
-    size_t count = 0;
-    size_t f = first;
-    do {
-        ++count;
-        const int lv = m_tri_connectivity[f].find(vid);
-        assert(lv != -1);
-        f = m_tri_connectivity[f].m_vert_next_component[lv];
-    } while (f != first);
-    return count;
+    std::vector<size_t> component_of, representatives;
+    vertex_fan_components(vid, component_of, representatives);
+    return representatives.size();
 }
 
 std::optional<TriMesh::Tuple> TriMesh::switch_component(const Tuple& t) const
@@ -787,18 +675,23 @@ std::optional<TriMesh::Tuple> TriMesh::switch_component(const Tuple& t) const
     assert(t.is_valid(*this));
 
     const size_t vid = t.vid(*this);
-    const int lv = m_tri_connectivity[t.fid(*this)].find(vid);
-    assert(lv != -1);
-    const size_t next_rep = m_tri_connectivity[t.fid(*this)].m_vert_next_component[lv];
-    assert(next_rep != size_t(-1));
 
-    // With a single component the cycle is a self-loop on its representative, and there is
-    // nowhere else to go.
+    std::vector<size_t> component_of, representatives;
+    vertex_fan_components(vid, component_of, representatives);
+
+    // Nowhere to go when the fan is one piece.
+    if (representatives.size() <= 1) return {};
+
+    const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
+    const size_t here = std::lower_bound(fan.begin(), fan.end(), t.fid(*this)) - fan.begin();
+    assert(here < fan.size() && fan[here] == t.fid(*this));
+
+    // Representatives are in increasing order, so "the next component" is the next one
+    // along, wrapping once -- the same traversal the caller gets from repeated calls.
+    const size_t next_rep = representatives[(component_of[here] + 1) % representatives.size()];
+
     const int lv_next = m_tri_connectivity[next_rep].find(vid);
     assert(lv_next != -1);
-    if (m_tri_connectivity[next_rep].m_vert_next_component[lv_next] == next_rep) {
-        return {};
-    }
 
     // Same convention as get_one_ring_tris_for_vertex: the tuple owns `vid`.
     return Tuple(vid, (lv_next + 2) % 3, next_rep, *this);
@@ -826,27 +719,11 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
         if (m_vertex_connectivity[i].m_conn_tris != conn_tris[i]) return false;
     }
 
-    // The radial and component cycles are a canonical function of the connectivity above,
-    // so recomputing them from scratch and comparing catches any operation that failed to
-    // maintain them. This is the drift detector for the whole non-manifold machinery.
-    {
-        std::vector<std::array<size_t, 3>> edge_next;
-        std::vector<std::array<size_t, 3>> vert_next;
-        compute_edge_cycles(edge_next);
-        compute_vertex_cycles(vert_next);
-
-        for (size_t fid = 0; fid < tri_capacity(); ++fid) {
-            if (m_tri_connectivity[fid].m_is_removed) continue;
-            assert(
-                m_tri_connectivity[fid].m_edge_next == edge_next[fid] &&
-                "stale radial cycle: an operation did not rebuild it");
-            assert(
-                m_tri_connectivity[fid].m_vert_next_component == vert_next[fid] &&
-                "stale component cycle: an operation did not rebuild it");
-            if (m_tri_connectivity[fid].m_edge_next != edge_next[fid]) return false;
-            if (m_tri_connectivity[fid].m_vert_next_component != vert_next[fid]) return false;
-        }
-    }
+    // Edge adjacency and vertex fan components are derived from m_conn_tris on demand
+    // rather than stored, so there is no second structure here that could fall out of step
+    // with the one checked above. What the operations get wrong instead is the
+    // connectivity itself, which WMTK_DEBUG_BRUTE_FORCE_OPS catches by comparing each
+    // split, collapse and swap against a from-scratch reference.
     return true;
 }
 
@@ -995,14 +872,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         m_tri_connectivity[new_fid].hash++;
     }
 
-    // The two halves of the split edge inherit the parent's fan, and each spoke to a vid3
-    // is a fresh manifold edge -- but the pre-existing edge (vid2,vid3) also changed
-    // membership, since the face carrying it was renamed from fid to new_fid. Rebuilding
-    // over the whole affected star covers all of that without case analysis.
-    std::vector<size_t> touched = fids;
-    touched.insert(touched.end(), new_fids.begin(), new_fids.end());
-    rebuild_cycles_around(touched);
-
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
     if (debug_canonical_form() != brute_force_expected) {
         log_and_throw_error(
@@ -1043,11 +912,6 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         for (size_t i = 0; i < fids.size(); ++i) {
             m_tri_connectivity[new_fids[i]].m_is_removed = true;
         }
-        // Restoring old_tris brings back their own cycles, but the forward pass also
-        // rewrote the cycles of faces outside that set -- the far side of every (vid2,vid3)
-        // edge, for one. Recomputing over the same region against the restored connectivity
-        // puts all of them back.
-        rebuild_cycles_around(touched);
         rollback_protected_attributes();
         return false;
     }
@@ -1352,26 +1216,6 @@ void TriMesh::collapse_edge_rollback(
         m_tri_connectivity[fid].m_is_removed = false;
     }
 
-    // old_tris restores each face's own cycles, but the forward pass also rewrote the
-    // cycles of faces outside that set -- the far side of every edge whose fan it touched.
-    // Recomputing over the restored connectivity puts all of them back; the cycles are a
-    // function of the connectivity, so this is exact rather than approximate.
-    {
-        thread_local std::vector<std::pair<size_t, size_t>> edges;
-        thread_local std::vector<size_t> verts;
-        edges.clear();
-        verts.clear();
-        for (const auto& [fid, conn] : old_tris) {
-            for (int j = 0; j < 3; ++j) {
-                verts.push_back(conn.m_indices[j]);
-                const size_t a = conn.m_indices[(j + 1) % 3];
-                const size_t b = conn.m_indices[(j + 2) % 3];
-                if (a != b) edges.emplace_back(std::min(a, b), std::max(a, b));
-            }
-        }
-        rebuild_cycles_for(edges, verts);
-    }
-
     rollback_protected_attributes();
 }
 
@@ -1584,34 +1428,6 @@ void TriMesh::collapse_edge_conn(
         }
     }
 
-    // Rebuild the cycles over everything the collapse touched.
-    //
-    // Every changed face is in old_tris, which holds their vertices as they were *before*
-    // the relabel; renaming vid1 to vid2 there gives exactly the edges and vertices whose
-    // fans can have moved. Nothing outside that set is affected, and every vertex is
-    // visited once -- including one whose only face at the collapsed edge was removed,
-    // which none of the surviving faces would lead to.
-    {
-        thread_local std::vector<std::pair<size_t, size_t>> edges;
-        thread_local std::vector<size_t> verts;
-        edges.clear();
-        verts.clear();
-        for (const auto& [fid, old_conn] : old_tris) {
-            std::array<size_t, 3> v = old_conn.m_indices;
-            for (size_t& x : v) {
-                if (x == vid1) x = vid2;
-            }
-            for (int j = 0; j < 3; ++j) {
-                verts.push_back(v[j]);
-                const size_t a = v[(j + 1) % 3];
-                const size_t b = v[(j + 2) % 3];
-                // the face carrying both endpoints collapses to a degenerate edge
-                if (a != b) edges.emplace_back(std::min(a, b), std::max(a, b));
-            }
-        }
-        rebuild_cycles_for(edges, verts);
-    }
-
     // ? ? tuples changes. this needs to be done before post check since checked are done on tuples
     // update the old tuple version number
     // create an edge tuple for each changed edge
@@ -1702,11 +1518,6 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2);
     vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
 
-    // (vid1,vid2) is gone and (vid3,vid4) is new; the four surviving rim edges each changed
-    // which face carries them.
-    const std::vector<size_t> swapped = {test_fid1, test_fid2};
-    rebuild_cycles_around(swapped);
-
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
     if (debug_canonical_form() != brute_force_expected) {
         log_and_throw_error(
@@ -1734,7 +1545,6 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         for (const auto& old_tri : old_tris) {
             m_tri_connectivity[old_tri.first] = old_tri.second;
         }
-        rebuild_cycles_around(swapped);
         rollback_protected_attributes();
 
         return false;
@@ -1885,11 +1695,6 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     m_tri_connectivity[new_fid2].m_indices[j] = vid[1];
     m_tri_connectivity[new_fid2].m_indices[k] = new_vid;
 
-    // The three outer edges keep their fans but change which face carries them, and the
-    // three spokes to new_vid are new.
-    const std::vector<size_t> split_fids = {fid, new_fid1, new_fid2};
-    rebuild_cycles_around(split_fids);
-
 #ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
     if (debug_canonical_form() != brute_force_expected) {
         log_and_throw_error(
@@ -1922,7 +1727,6 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
         m_vertex_connectivity[new_vid].m_is_removed = true;
         m_tri_connectivity[new_fid1].m_is_removed = true;
         m_tri_connectivity[new_fid2].m_is_removed = true;
-        rebuild_cycles_around(split_fids);
         rollback_protected_attributes();
         return false;
     }
@@ -1986,10 +1790,6 @@ void TriMesh::consolidate_mesh()
     m_vertex_connectivity.shrink_to_fit();
     m_tri_connectivity.resize(tcap);
     m_tri_connectivity.shrink_to_fit();
-
-    // Every fid moved, so the stored successors are stale. Cheaper to redo them all than to
-    // remap in place, and this runs once per pass.
-    rebuild_all_cycles();
 
     resize_mutex(vcap);
 
@@ -2229,8 +2029,6 @@ void TriMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 3>>& 
     }
     current_vert_size = (long)n_vertices;
     current_tri_size = (long)tris.size();
-
-    rebuild_all_cycles();
 
     resize_mutex(vcap);
 
