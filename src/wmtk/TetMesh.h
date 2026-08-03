@@ -808,8 +808,8 @@ protected:
      * override this to force a specific retetrahedralization (e.g. tetwild forces the case that
      * realizes a surface diagonal flip).
      *
-     * @param new_edge The unordered pair of vertices of the candidate's new edge.
-     * @return true if this candidate case is allowed.
+     * @param new_edge The two vertices of the candidate's new edge. The ordering is
+     * implementation-defined (currently new_edge[0] is the case-selector vertex).
      */
     virtual bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) { return true; }
     /**
