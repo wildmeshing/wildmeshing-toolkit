@@ -259,6 +259,9 @@ OPT_DEFAULTS = {
     "alpha_n":             _SPEC["alpha_n"],
     "alpha_t":             _SPEC["alpha_t"],
     "dhat_growth":        _SPEC["dhat_growth"],
+    "use_nh_body":        _SPEC["use_nh_body"],
+    "nh_youngs":          _SPEC["nh_youngs"],
+    "nh_poisson":         _SPEC["nh_poisson"],
     "save_vtu":           _SPEC["save_vtu"],
     # ---- engine-only knobs (no spec counterpart) ----
     "amips_weight_bg":    1e-6,   # tag 0 (background)
@@ -482,6 +485,9 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
     # resolution-invariant. The legacy by-count mode only divides by
     # element count (resolution-stable but not scale-comparable) and
     # applies when volume normalization is off.
+    use_nh_body = cfg.get("use_nh_body", OPT_DEFAULTS["use_nh_body"])
+    nh_youngs = cfg.get("nh_youngs", OPT_DEFAULTS["nh_youngs"])
+    nh_poisson = cfg.get("nh_poisson", OPT_DEFAULTS["nh_poisson"])
     amips_norm_by_volume = cfg.get("amips_normalize_by_volume",
                                     OPT_DEFAULTS["amips_normalize_by_volume"])
     amips_norm_by_count = cfg.get("amips_normalize_by_count",
@@ -503,17 +509,34 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
                   amips_weights_cfg.get(name) if name else None))
         if w is None:
             w = OPT_DEFAULTS["amips_weight_bg"] if tag == 0 else OPT_DEFAULTS["amips_weight_body"]
+        vol_solver = tag_to_volume.get(int(tag), 0.0) * scale ** mesh_dim
         if amips_norm_by_volume:
-            vol_solver = tag_to_volume.get(int(tag), 0.0) * scale ** mesh_dim
             if vol_solver > 0:
                 w = w / vol_solver
         elif amips_norm_by_count:
             n_elems = tag_to_count.get(int(tag), 0)
             if n_elems > 0:
                 w = w / n_elems
-        materials.append({
-            "id": tag, "type": "AMIPS", "weight": w, "use_rest_pose": True
-        })
+
+        # AMIPS measures element SHAPE only: it is invariant under uniform
+        # scaling, so a body can inflate for free. NeoHookean adds the
+        # missing volumetric term, which is what keeps a body moving rigidly
+        # instead of swelling when contact pushes on all of its sides.
+        # Ambient always stays AMIPS — its job is only to remain well-shaped
+        # while it absorbs the motion; making it elastic would fight the
+        # separation itself.
+        if use_nh_body and tag != 0:
+            E = nh_youngs
+            if amips_norm_by_volume and vol_solver > 0:
+                E = E / vol_solver      # same currency as the other penalties
+            materials.append({
+                "id": tag, "type": "NeoHookean", "E": E, "nu": nh_poisson,
+                "rho": 1.0,
+            })
+        else:
+            materials.append({
+                "id": tag, "type": "AMIPS", "weight": w, "use_rest_pose": True
+            })
 
     weight_fitting = cfg.get("weight_fitting", OPT_DEFAULTS["weight_fitting"])
     weight_laplacian = cfg.get("weight_laplacian", OPT_DEFAULTS["weight_laplacian"])
