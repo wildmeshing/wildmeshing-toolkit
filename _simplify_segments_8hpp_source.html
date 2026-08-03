@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/triwild/wmtk/components/triwild/init_from_delaunay.hpp Source File</title>
+<title>Wildmeshing Toolkit: /home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/SimplifySegments.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -74,35 +74,25 @@ $(document).ready(function() { init_codefold(0); });
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_f5fb614ae3179ed99f69c2bd4a66b98a.html">triwild</a></li><li class="navelem"><a class="el" href="dir_7a3a5030662cadbea36cef6323efb9b0.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_13cbbc9e804117d7f8cfe624ebf56fac.html">components</a></li><li class="navelem"><a class="el" href="dir_6f4f68c850672458a73659eba4f1fb32.html">triwild</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_9f42d488f21f30bdc75c62948fa574ea.html">utils</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
-  <div class="headertitle"><div class="title">init_from_delaunay.hpp</div></div>
+  <div class="headertitle"><div class="title">SimplifySegments.hpp</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;wmtk/Types.hpp&gt;</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="keyword">namespace </span>wmtk::components::triwild {</div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span> </div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="keywordtype">void</span> init_from_delaunay_box_mesh(</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>    <span class="keyword">const</span> MatrixXd&amp; V,</div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <span class="keyword">const</span> MatrixXi&amp; E,</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    MatrixXd&amp; V_out,</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    MatrixXi&amp; F_out,</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    MatrixXi&amp; E_out);</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="keywordtype">void</span> read_input_curves(</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keyword">const</span> std::vector&lt;std::string&gt;&amp; input_paths,</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="keywordtype">double</span> remove_duplicate_eps,</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    MatrixXd&amp; V_all,</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    MatrixXi&amp; E_all,</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    std::vector&lt;MatrixXd&gt;&amp; Vs_out,</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    std::vector&lt;MatrixXi&gt;&amp; Es_out);</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>} <span class="comment">// namespace wmtk::components::triwild</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;wmtk/envelope/Envelope.hpp&gt;</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span> </div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;cstddef&gt;</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="keyword">namespace </span>wmtk::utils {</div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="keywordtype">size_t</span> simplify_segments(MatrixXd&amp; V, MatrixXi&amp; E, <span class="keyword">const</span> SampleEnvelope&amp; envelope);</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>} <span class="comment">// namespace wmtk::utils</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
