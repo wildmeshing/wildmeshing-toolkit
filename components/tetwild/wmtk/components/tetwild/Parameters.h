@@ -16,9 +16,10 @@ struct Parameters
     bool preserve_topology = false;
     std::string output_path;
 
-    // Allow the 3->2 edge swap to operate on surface edges (a surface diagonal
-    // flip) instead of forbidding them outright. Enabled by default; can be
-    // turned off to reproduce the old surface-frozen behavior for A/B testing.
+    // Allow the edge swaps (3->2, 4-4, 5-6) to operate on surface edges as a
+    // topology-preserving surface diagonal flip, instead of forbidding them
+    // outright. Enabled by default; can be turned off to reproduce the old
+    // surface-frozen behavior for A/B testing.
     bool allow_surface_swap = true;
     // Expensive debug check: verify the global surface topology signature
     // (connected components, Euler characteristic, boundary loops) is unchanged

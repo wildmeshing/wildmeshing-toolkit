@@ -306,12 +306,14 @@ public:
     bool swap_edge_44_before(const Tuple& t) override;
     double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
+    bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) override;
     bool swap_edge_44_after(const Tuple& t) override;
 
     size_t swap_all_edges_56();
     bool swap_edge_56_before(const Tuple& t) override;
     double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
+    bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) override;
     bool swap_edge_56_after(const Tuple& t) override;
 
     size_t swap_all_edges_32();
@@ -319,17 +321,29 @@ public:
     bool swap_edge_after(const Tuple& t) override;
 
     /**
-     * @brief Prepare a surface 3->2 edge swap (a surface diagonal flip).
+     * @brief Prepare a surface edge swap (a surface diagonal flip), any ring size.
      *
-     * Called from swap_edge_before when the swapped edge (a,b) is on the surface
-     * and has exactly 3 incident tets. Verifies the local guards that guarantee
-     * the flip preserves surface manifoldness / topology, and fills the
-     * surface-flip fields of swap_cache. Returns false (rejecting the swap) if
-     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface
-     * faces), or one of the two would-be new surface faces already tagged
-     * surface. The tets sharing (a,b) are passed in to avoid recomputation.
+     * Called from swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped
+     * edge (a,b) is on the surface. Regardless of how many tets share (a,b), the surface change is
+     * always the 2D diagonal flip of the two incident surface faces (a,b,c),(a,b,d) into
+     * (a,c,d),(b,c,d). This verifies the ring-size-independent guards that guarantee the flip
+     * preserves surface manifoldness / topology and fills the surface-flip fields of swap_cache.
+     * The specific retetrahedralization that realizes (c,d) is selected later by
+     * swap_edge_44_accept_case / swap_edge_56_accept_case (the 3->2 path always realizes it).
+     * Returns false (rejecting the swap) if any guard fails: open-boundary edge, non-manifold edge
+     * (!= 2 surface faces incident to (a,b)), the target edge (c,d) already carries a surface face,
+     * or one of the two would-be new surface faces (a,c,d),(b,c,d) is already tagged surface. The
+     * tets sharing (a,b) are passed in to avoid recomputation.
      */
-    bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
+    bool prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets);
+
+    /**
+     * @brief Number of surface faces incident to edge (a,b), counted directly over the edge's
+     * incident tets. Unlike is_edge_on_surface(), this does NOT short-circuit on the (possibly
+     * stale) m_is_on_surface vertex flags, so a genuine manifold surface edge is never mistaken
+     * for an interior edge (== 2) nor a non-manifold one (> 2). Used to route swaps.
+     */
+    int edge_incident_surface_face_count(const Tuple& e);
 
     /**
      * @brief A topological fingerprint of the tracked surface (m_is_surface_fs).
@@ -457,7 +471,10 @@ public:
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
     // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
+    // cnt_surface_swap is the grand total; the per-type counters break it down by the swap that
+    // realized the flip (3->2, 4-4, 5-6).
     std::atomic<int> cnt_surface_swap = 0;
+    std::atomic<int> cnt_surface_swap_32 = 0, cnt_surface_swap_44 = 0, cnt_surface_swap_56 = 0;
 
 private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
@@ -528,13 +545,14 @@ private:
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
 
-        // Surface 3->2 flip bookkeeping (filled by swap_edge_before when the
-        // swapped edge (a,b) lies on the surface). a,b are the removed-edge
-        // endpoints, c,d are the new surface-edge endpoints, e is the interior
-        // apex. sf_face_attr is copied onto the two new surface faces (a,c,d),
-        // (b,c,d). is_surface_flip gates the extra handling in swap_edge_after.
+        // Surface diagonal-flip bookkeeping (filled by prepare_surface_flip from
+        // swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped edge (a,b)
+        // lies on the surface). a,b are the removed-edge endpoints, c,d are the new surface-edge
+        // endpoints (the apexes of the two incident surface faces). sf_face_attr is copied onto the
+        // two new surface faces (a,c,d),(b,c,d). is_surface_flip gates the accept-case case-forcing
+        // and the extra retag/envelope handling in the swap *_after callbacks.
         bool is_surface_flip = false;
-        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0, sf_e = 0;
+        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
         FaceAttributes sf_face_attr;
     };
     wmtk::enumerable_thread_specific<SwapInfoCache> swap_cache;
