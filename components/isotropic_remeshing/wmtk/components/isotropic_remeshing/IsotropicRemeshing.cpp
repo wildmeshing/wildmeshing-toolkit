@@ -429,9 +429,8 @@ std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after_swap(const TriMe
     // edge a swap just produced -- swap_edge only runs on a manifold edge and leaves the
     // two triangles in place -- and this function has no other valid caller.
     assert(is_manifold_edge(t));
-    assert(is_manifold_edge(t.switch_vertex(*this)));
 
-    std::vector<TriMesh::Tuple> new_edges;
+    std::vector<Tuple> new_edges;
 
     new_edges.push_back(t.switch_edge(*this));
     new_edges.push_back((t.switch_face(*this).value()).switch_edge(*this));

@@ -46,6 +46,7 @@ void run_shortest_collapse(
 void shortest_edge_collapse(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
+    using Tuple = TriMesh::Tuple;
 
     // verify input and inject defaults
     {
@@ -103,12 +104,16 @@ void shortest_edge_collapse(nlohmann::json json_params)
     }
     {
         size_t n_nonmanifold_edges = 0;
-        for (const auto& e : m.get_edges()) {
-            if (m.edge_valence(e) > 2) ++n_nonmanifold_edges;
+        for (const Tuple& e : m.get_edges()) {
+            if (m.edge_valence(e) > 2) {
+                ++n_nonmanifold_edges;
+            }
         }
         size_t n_nonmanifold_verts = 0;
-        for (const auto& t : m.get_vertices()) {
-            if (!m.is_manifold_vertex(t.vid(m))) ++n_nonmanifold_verts;
+        for (const Tuple& t : m.get_vertices()) {
+            if (!m.is_manifold_vertex(t.vid(m))) {
+                ++n_nonmanifold_verts;
+            }
         }
         logger().info(
             "Input non-manifold: {} edges, {} vertices. Link condition {}.",
@@ -125,11 +130,11 @@ void shortest_edge_collapse(nlohmann::json json_params)
     }
     {
         size_t n_nonmanifold_edges = 0;
-        for (const auto& e : m.get_edges()) {
+        for (const Tuple& e : m.get_edges()) {
             if (m.edge_valence(e) > 2) ++n_nonmanifold_edges;
         }
         size_t n_nonmanifold_verts = 0;
-        for (const auto& t : m.get_vertices()) {
+        for (const Tuple& t : m.get_vertices()) {
             if (!m.is_manifold_vertex(t.vid(m))) ++n_nonmanifold_verts;
         }
         logger().info(

@@ -107,6 +107,6 @@
     "pointer": "/remove_duplicate_eps",
     "type": "float",
     "default": 1e-5,
-    "doc": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing. The default was previously hard-coded to this value."
+    "doc": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing."
   }
 ]

@@ -200,11 +200,15 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         {
             size_t nm_e = 0;
             for (const auto& e : surf_mesh.get_edges()) {
-                if (surf_mesh.edge_valence(e) > 2) ++nm_e;
+                if (surf_mesh.edge_valence(e) > 2) {
+                    ++nm_e;
+                }
             }
             size_t nm_v = 0;
             for (const auto& t : surf_mesh.get_vertices()) {
-                if (!surf_mesh.is_manifold_vertex(t.vid(surf_mesh))) ++nm_v;
+                if (!surf_mesh.is_manifold_vertex(t.vid(surf_mesh))) {
+                    ++nm_v;
+                }
             }
             logger().info(
                 "simplification input non-manifold: {} edges, {} vertices. Link condition {}.",

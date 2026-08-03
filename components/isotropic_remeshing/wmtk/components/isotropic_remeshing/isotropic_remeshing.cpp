@@ -41,6 +41,7 @@ run_remeshing(std::string input, double len, std::string output, IsotropicRemesh
 void isotropic_remeshing(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
+    using Tuple = IsotropicRemeshing::Tuple;
 
     // verify input and inject defaults
     {
@@ -104,12 +105,16 @@ void isotropic_remeshing(nlohmann::json json_params)
 
     {
         size_t nm_e = 0;
-        for (const auto& e : m.get_edges()) {
-            if (m.edge_valence(e) > 2) ++nm_e;
+        for (const Tuple& e : m.get_edges()) {
+            if (m.edge_valence(e) > 2) {
+                ++nm_e;
+            }
         }
         size_t nm_v = 0;
-        for (const auto& t : m.get_vertices()) {
-            if (!m.is_manifold_vertex(t.vid(m))) ++nm_v;
+        for (const Tuple& t : m.get_vertices()) {
+            if (!m.is_manifold_vertex(t.vid(m))) {
+                ++nm_v;
+            }
         }
         logger().info(
             "Input non-manifold: {} edges, {} vertices. Link condition {}.",
@@ -139,11 +144,15 @@ void isotropic_remeshing(nlohmann::json json_params)
     size_t out_nm_e = 0;
     size_t out_nm_v = 0;
     {
-        for (const auto& e : m.get_edges()) {
-            if (m.edge_valence(e) > 2) ++out_nm_e;
+        for (const Tuple& e : m.get_edges()) {
+            if (m.edge_valence(e) > 2) {
+                ++out_nm_e;
+            }
         }
-        for (const auto& t : m.get_vertices()) {
-            if (!m.is_manifold_vertex(t.vid(m))) ++out_nm_v;
+        for (const Tuple& t : m.get_vertices()) {
+            if (!m.is_manifold_vertex(t.vid(m))) {
+                ++out_nm_v;
+            }
         }
         logger().info("Output non-manifold: {} edges, {} vertices.", out_nm_e, out_nm_v);
     }

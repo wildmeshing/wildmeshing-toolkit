@@ -452,9 +452,10 @@ public:
      */
     virtual bool collapse_edge_before(const Tuple& t)
     {
-        if (!m_use_link_condition) return true;
-        if (check_link_condition(t)) return true;
-        return false;
+        if (!m_use_link_condition) {
+            return true;
+        }
+        return check_link_condition(t);
     }
     /**
      * @brief User specified modifications and desideratas after an edge collapse

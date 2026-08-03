@@ -62,9 +62,15 @@ inline EdgeFanScan scan_edge_fan(
         }
         const size_t f = a[i];
         ++s.count;
-        if (s.first == size_t(-1)) s.first = f;
-        if (s.succ == size_t(-1) && f > after) s.succ = f;
-        if (s.count >= stop_at) break;
+        if (s.first == size_t(-1)) {
+            s.first = f;
+        }
+        if (s.succ == size_t(-1) && f > after) {
+            s.succ = f;
+        }
+        if (s.count >= stop_at) {
+            break;
+        }
         ++i;
         ++j;
     }
@@ -210,7 +216,9 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
         m_fid);
 
     assert(s.count >= 1 && "a tuple's own face is incident to its own edge");
-    if (s.count == 1) return {}; // boundary
+    if (s.count == 1) {
+        return {}; // boundary
+    }
 
     const size_t next_fid = (s.succ != size_t(-1)) ? s.succ : s.first;
     assert(next_fid != m_fid);
@@ -276,7 +284,9 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
 
 bool TriMesh::Tuple::is_valid(const TriMesh& m) const
 {
-    if (m_fid + 1 == 0) return false;
+    if (m_fid + 1 == 0) {
+        return false;
+    }
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
         // assert(false);
         return false;
@@ -320,7 +330,9 @@ void TriMesh::vertex_fan_components(
     representatives.clear();
 
     const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
-    if (fan.empty()) return;
+    if (fan.empty()) {
+        return;
+    }
 
     // Union-find over positions in the fan. Two faces belong to the same component when
     // they share an edge containing vid, i.e. when vid is adjacent to the same other
@@ -331,7 +343,9 @@ void TriMesh::vertex_fan_components(
     // vector; a std::map would cost a node allocation per insert to save scans of three
     // or four elements.
     std::vector<size_t> parent(fan.size());
-    for (size_t i = 0; i < fan.size(); ++i) parent[i] = i;
+    for (size_t i = 0; i < fan.size(); ++i) {
+        parent[i] = i;
+    }
     const auto find_root = [&parent](size_t x) {
         while (parent[x] != x) {
             parent[x] = parent[parent[x]];
@@ -346,18 +360,26 @@ void TriMesh::vertex_fan_components(
         const int lv = m_tri_connectivity[fan[i]].find(vid);
         assert(lv != -1);
         const auto& idx = m_tri_connectivity[fan[i]].m_indices;
+        // TODO: This is more complex than necessary. Directly iterate through a triangle and
+        // continue if idx[k] == vid. The `find` call can be avoided.
         for (int k = 1; k <= 2; ++k) {
             const size_t other = idx[(lv + k) % 3];
             bool found = false;
             for (const auto& [o, pos] : seen) {
-                if (o != other) continue;
+                if (o != other) {
+                    continue;
+                }
                 found = true;
                 const size_t ra = find_root(i);
                 const size_t rb = find_root(pos);
-                if (ra != rb) parent[ra] = rb;
+                if (ra != rb) {
+                    parent[ra] = rb;
+                }
                 break;
             }
-            if (!found) seen.emplace_back(other, i);
+            if (!found) {
+                seen.emplace_back(other, i);
+            }
         }
     }
 
@@ -374,14 +396,18 @@ void TriMesh::vertex_fan_components(
                 break;
             }
         }
-        if (!found) root_rep.emplace_back(r, fan[i]);
+        if (!found) {
+            root_rep.emplace_back(r, fan[i]);
+        }
     }
     assert(std::is_sorted(root_rep.begin(), root_rep.end(), [](const auto& a, const auto& b) {
         return a.second < b.second;
     }));
 
     representatives.reserve(root_rep.size());
-    for (const auto& [root, rep] : root_rep) representatives.push_back(rep);
+    for (const auto& [root, rep] : root_rep) {
+        representatives.push_back(rep);
+    }
 
     component_of.resize(fan.size());
     for (size_t i = 0; i < fan.size(); ++i) {
@@ -2338,15 +2364,10 @@ size_t TriMesh::get_next_empty_slot_v()
 
 bool TriMesh::swap_edge_before(const Tuple& t)
 {
-    // A swap replaces the edge by the one joining the two opposite vertices, which needs
-    // exactly two of them: a boundary edge has none and a non-manifold edge has no
-    // canonical pair. Rejecting is the only sensible answer for both, and it is what keeps
-    // swap from having to reason about fans at all.
-    if (!is_manifold_edge(t)) {
+    const auto opps = t.switch_faces(*this);
+    if (opps.size() != 1) {
         return false;
     }
-    const auto opps = t.switch_faces(*this);
-    assert(opps.size() == 1);
 
     const size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
     const size_t v4 = opps[0].switch_edge(*this).switch_vertex(*this).vid(*this);
