@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..constraints import write_pin_constraint_hdf5
+from ..constraints import parse_axes, write_pin_constraint_hdf5
 from ..mesh_core import TaggedMesh, assign_selection_ids, select_region_nodes
 from ..polyfem_utils import (OPT_DEFAULTS, build_polyfem_json,
                              check_polyfem_success, get_mesh_info,
@@ -390,10 +390,37 @@ def run(cfg: dict, out_dir=None) -> None:
     # only the unprotected side and protected geometry stays bit-identical.
     protected = cfg.get("protected_regions", [])
     if protected:
-        pin_ids = select_region_nodes(TaggedMesh(str(msh_path)), protected)
-        pin_path = (sim_in_dir / "protected_pin.hdf5").resolve()
-        write_pin_constraint_hdf5(str(pin_path), pin_ids, mesh_dim)
-        sep_json.setdefault("constraints", {})["hard"] = [str(pin_path)]
+        # Entries are either a bare expression (pin every component) or
+        # {"region": expr, "axes": "z"} to hold only some components, which
+        # leaves the region free to slide along the others. Regions sharing
+        # an axes spec go into one constraint file; polyfem takes a list.
+        groups: dict = {}
+        for entry in protected:
+            if isinstance(entry, dict):
+                expr = entry.get("region")
+                if expr is None:
+                    raise ValueError(
+                        f"protected_regions entry {entry!r} needs 'region'")
+                extra = set(entry) - {"region", "axes"}
+                if extra:
+                    raise ValueError(
+                        f"protected_regions entry {entry!r}: unknown key(s) "
+                        f"{sorted(extra)}")
+                axes = parse_axes(entry.get("axes"), mesh_dim)
+            else:
+                expr, axes = entry, None
+            groups.setdefault(axes, []).append(expr)
+
+        mesh_for_pins = TaggedMesh(str(msh_path))
+        pin_paths = []
+        for axes, exprs in groups.items():
+            pin_ids = select_region_nodes(mesh_for_pins, exprs)
+            suffix = "" if axes is None else "_" + "".join("xyz"[a] for a in axes)
+            pin_path = (sim_in_dir / f"protected_pin{suffix}.hdf5").resolve()
+            write_pin_constraint_hdf5(str(pin_path), pin_ids, mesh_dim,
+                                      axes=axes)
+            pin_paths.append(str(pin_path))
+        sep_json.setdefault("constraints", {})["hard"] = pin_paths
 
     if strategy == "dhat":
         step_run_polyfem(polyfem, sep_json, sep_json_path, sim_out_dir, cfg)

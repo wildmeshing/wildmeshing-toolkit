@@ -318,21 +318,64 @@ def write_fitting_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int = 2,
         grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
         f.create_dataset("b", data=np.zeros((n, dim), dtype=np.float64))
 
-def write_pin_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int) -> None:
-    """Write a pin constraint (A = I on node_ids, b = 0): as a polyfem HARD
-    constraint (constraints/hard) it holds those nodes exactly at rest via
-    the augmented Lagrangian — used for min-sep protected_regions."""
+def write_pin_constraint_hdf5(path: str, node_ids: np.ndarray, dim: int,
+                              axes=None) -> None:
+    """Write a pin constraint (A u = 0 on node_ids): as a polyfem HARD
+    constraint (constraints/hard) it holds those nodes at rest via the
+    augmented Lagrangian — used for min-sep protected_regions.
+
+    axes=None pins every component. Otherwise `axes` is a subset of the
+    component indices (0=x, 1=y, 2=z) and only those are held, leaving the
+    node free to slide along the rest.
+
+    The two cases use polyfem's two scatter_matrix modes: with b of `dim`
+    columns each triplet is replicated across all components (node-wise);
+    with b of ONE column the triplet's column index is a flattened DOF
+    (node * dim + component), which is what lets a single axis be pinned.
+    """
     n = len(node_ids)
+    ids = np.asarray(node_ids, dtype=np.int32)
     with h5py.File(path, "w") as f:
         # h5pp reads local2global as vector<int> — must be int32 on disk
-        f.create_dataset("local2global", data=np.asarray(node_ids, dtype=np.int32))
+        f.create_dataset("local2global", data=ids)
         grp = f.create_group("A_triplets")
-        grp.create_dataset("rows",   data=np.arange(n, dtype=np.int32))
-        grp.create_dataset("cols",   data=np.arange(n, dtype=np.int32))
-        grp.create_dataset("values", data=np.ones(n, dtype=np.float64))
-        grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
-        f.create_dataset("b", data=np.zeros((n, dim), dtype=np.float64))
-    print(f"  pinned     : {path}  ({n} nodes)")
+        if axes is None:
+            grp.create_dataset("rows",   data=np.arange(n, dtype=np.int32))
+            grp.create_dataset("cols",   data=np.arange(n, dtype=np.int32))
+            grp.create_dataset("values", data=np.ones(n, dtype=np.float64))
+            grp.create_dataset("shape",  data=np.array([n, n], dtype=np.int64))
+            f.create_dataset("b", data=np.zeros((n, dim), dtype=np.float64))
+            what = "all axes"
+        else:
+            ax = sorted({int(a) for a in axes})
+            if not ax or any(a < 0 or a >= dim for a in ax):
+                raise ValueError(
+                    f"axes {axes!r} out of range for a {dim}D mesh")
+            m = n * len(ax)
+            cols = np.array([i * dim + a for i in range(n) for a in ax],
+                            dtype=np.int32)
+            grp.create_dataset("rows",   data=np.arange(m, dtype=np.int32))
+            grp.create_dataset("cols",   data=cols)
+            grp.create_dataset("values", data=np.ones(m, dtype=np.float64))
+            grp.create_dataset("shape",
+                               data=np.array([m, n * dim], dtype=np.int64))
+            f.create_dataset("b", data=np.zeros((m, 1), dtype=np.float64))
+            what = "".join("xyz"[a] for a in ax)
+    print(f"  pinned     : {path}  ({n} nodes, {what})")
+
+
+def parse_axes(spec, dim: int):
+    """'z' | 'xy' | [2] | None -> a tuple of component indices (None = all)."""
+    if spec is None:
+        return None
+    if isinstance(spec, str):
+        out = []
+        for ch in spec.lower():
+            if ch not in "xyz"[:dim]:
+                raise ValueError(f"axis {ch!r} invalid for a {dim}D mesh")
+            out.append("xyz".index(ch))
+        return tuple(sorted(set(out)))
+    return tuple(sorted({int(a) for a in spec}))
 
 
 def get_mass_matrix(coords: np.ndarray, interface_edges: list, node_ids: np.ndarray, graph: bool,
