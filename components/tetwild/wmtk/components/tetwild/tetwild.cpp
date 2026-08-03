@@ -118,6 +118,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     std::string output_path = json_params["output"];
     bool skip_simplify = json_params["skip_simplify"];
+    const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
+    const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
@@ -189,13 +191,53 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         verts,
         NUM_THREADS,
         !use_sample_envelope);
+    surf_mesh.set_use_link_condition(simplify_use_link_condition);
     surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
         logger().info("input {} simplification", input_paths);
+        {
+            size_t nm_e = 0;
+            for (const auto& e : surf_mesh.get_edges()) {
+                if (surf_mesh.edge_valence(e) > 2) {
+                    ++nm_e;
+                }
+            }
+            size_t nm_v = 0;
+            for (const auto& t : surf_mesh.get_vertices()) {
+                if (!surf_mesh.is_manifold_vertex(t.vid(surf_mesh))) {
+                    ++nm_v;
+                }
+            }
+            logger().info(
+                "simplification input non-manifold: {} edges, {} vertices. Link condition {}.",
+                nm_e,
+                nm_v,
+                simplify_use_link_condition ? "on" : "off");
+        }
+        // SampleEnvelope::init builds both the exact structure and the sampled BVH, and
+        // is_outside picks between them per query, so switching predicates for the
+        // simplification alone is a flag flip with nothing to rebuild. It has to be put
+        // back afterwards: this same envelope object is handed to TetWildMesh below, and
+        // the tet phase must keep whatever the user asked for.
+        const bool saved_use_exact = surf_mesh.m_envelope.use_exact;
+        if (simplify_use_sample_envelope) {
+            logger().info("simplification uses the sampled envelope; tet phase unaffected");
+            surf_mesh.m_envelope.use_exact = false;
+        }
+
         surf_mesh.collapse_shortest(0);
+
+        surf_mesh.m_envelope.use_exact = saved_use_exact;
         surf_mesh.consolidate_mesh();
+        if (!surf_mesh.check_mesh_connectivity_validity()) {
+            log_and_throw_error("Simplification produced an invalid mesh connectivity.");
+        }
+        logger().info(
+            "simplified: #v = {}, #f = {}",
+            surf_mesh.get_vertices().size(),
+            surf_mesh.get_faces().size());
     } else {
         logger().info("skip simplification");
     }
@@ -463,8 +505,34 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         t_finalize,
         t_output);
 
-    // Hausdorff + Euler Characteristic
-    double hausdorff_distance = -1;
+    // Surface deviation + Euler Characteristic
+    //
+    // Two one-sided distances, which are easy to confuse and mean very different things:
+    //
+    //   d(output -> input)  every point of the output surface is within eps of the input.
+    //                       This is the envelope invariant the optimizer enforces, so it is
+    //                       the one worth comparing against eps and the one throw_on_fail
+    //                       reacts to.
+    //
+    //   d(input -> output)  every point of the input is within eps of the output, i.e.
+    //                       whether the output still *covers* the input. Nothing in the
+    //                       pipeline promises this. Simplification is allowed to remove
+    //                       features and the arrangement can drop thin sheets, either of
+    //                       which makes it large while containment is untouched. Reported
+    //                       as a diagnostic, never gated on.
+    //
+    // This used to compute only the second one, compare it to eps, and warn that "Hausdorff
+    // distance is larger than the envelope" -- which the envelope never promised. On a
+    // Thingi10K sponge whose output legitimately holds 116k of the input's 282k faces that
+    // read 53x eps while containment was at 0.34x.
+    //
+    // Both are measured against `verts`/`tris`, i.e. the input *after* the load-time weld at
+    // remove_duplicate_eps, which is the same mesh the envelope itself was built from. That
+    // matters: the weld tolerance is relative to the diagonal and can be the same order as
+    // eps, so measuring against the file on disk instead would fold the welding displacement
+    // into the number and overstate the drift.
+    double hausdorff_distance = -1; // d(output -> input), the invariant
+    double coverage_distance = -1; // d(input -> output), diagnostic only
     std::vector<int> ecs_output;
     {
         Eigen::MatrixXd V(verts.size(), 3);
@@ -476,43 +544,72 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
         }
 
-        // create envelope for output
-        SampleEnvelope env(true);
-        std::vector<Eigen::Vector3d> v_out;
-        std::vector<Eigen::Vector3i> f_out;
-        for (int i = 0; i < matV.rows(); ++i) {
-            v_out.push_back(matV.row(i));
-        }
-        for (int i = 0; i < matF.rows(); ++i) {
-            f_out.push_back(matF.row(i));
-        }
-        env.init(v_out, f_out, params.eps);
-
-        // Hausdorff
         if (json_params["DEBUG_hausdorff"]) {
-            const int n_samples = 10000;
-            Eigen::MatrixXd B;
-            Eigen::VectorX<int64_t> FI; // must be int64 for new MSVC compiler
-            Eigen::MatrixXd X;
+            // Both directions are estimated by sampling, and a max over samples converges
+            // slowly: the old count of 10000 under-reported by 21x on one of the models
+            // above (0.027 against a true 0.58), which is enough to turn a bad result into
+            // an apparent pass. This is opt-in diagnostic code, so pay for a stable answer.
+            const int n_samples = 100000;
 
-            igl::random_points_on_mesh(n_samples, V, F, B, FI, X);
-
-            for (int i = 0; i < X.rows(); ++i) {
-                Eigen::Vector3d p = X.row(i);
-                Eigen::Vector3d r;
-                double d = env.nearest_point(p, r);
-                hausdorff_distance = std::max(hausdorff_distance, d);
+            SampleEnvelope env_in(true);
+            {
+                std::vector<Eigen::Vector3d> v_in;
+                std::vector<Eigen::Vector3i> f_in;
+                v_in.reserve(V.rows());
+                f_in.reserve(F.rows());
+                for (int i = 0; i < V.rows(); ++i) v_in.push_back(V.row(i));
+                for (int i = 0; i < F.rows(); ++i) f_in.push_back(F.row(i));
+                env_in.init(v_in, f_in, params.eps);
             }
-            hausdorff_distance = std::sqrt(hausdorff_distance);
+
+            SampleEnvelope env_out(true);
+            {
+                std::vector<Eigen::Vector3d> v_out;
+                std::vector<Eigen::Vector3i> f_out;
+                v_out.reserve(matV.rows());
+                f_out.reserve(matF.rows());
+                for (int i = 0; i < matV.rows(); ++i) v_out.push_back(matV.row(i));
+                for (int i = 0; i < matF.rows(); ++i) f_out.push_back(matF.row(i));
+                env_out.init(v_out, f_out, params.eps);
+            }
+
+            // Max distance from points sampled on (Vs,Fs) to the surface behind `target`.
+            const auto max_deviation = [&](const Eigen::MatrixXd& Vs,
+                                           const Eigen::MatrixXi& Fs,
+                                           const SampleEnvelope& target) {
+                Eigen::MatrixXd B;
+                Eigen::VectorX<int64_t> FI; // must be int64 for new MSVC compiler
+                Eigen::MatrixXd X;
+                igl::random_points_on_mesh(n_samples, Vs, Fs, B, FI, X);
+
+                double worst = -1;
+                for (int i = 0; i < X.rows(); ++i) {
+                    const Eigen::Vector3d p = X.row(i);
+                    Eigen::Vector3d r;
+                    worst = std::max(worst, target.nearest_point(p, r));
+                }
+                return worst < 0 ? worst : std::sqrt(worst);
+            };
+
+            hausdorff_distance = max_deviation(matV, matF, env_in);
+            coverage_distance = max_deviation(V, F, env_out);
+
             logger().info(
-                "Hausdorff distance = {:.4} | Envelope = {:.4}",
+                "surface deviation: containment d(output->input) = {:.4} | envelope = {:.4}",
                 hausdorff_distance,
                 params.eps);
             if (hausdorff_distance > params.eps) {
-                logger().warn("Hausdorff distance is larger than the envelope!");
+                logger().warn(
+                    "Output is outside the envelope; the containment invariant "
+                    "was violated.");
             } else {
-                logger().info("Hausdorff distance is smaller than envelope (as expected).");
+                logger().info("Output is inside the envelope (as expected).");
             }
+            // No comparison against eps: the pipeline does not promise this direction.
+            logger().info(
+                "surface deviation: coverage d(input->output) = {:.4} (diagnostic; large "
+                "means the output no longer covers part of the input)",
+                coverage_distance);
         }
 
         // The Euler-characteristic check is a topology sanity check. It is expensive on
@@ -544,7 +641,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
         report["time"] = time;
+        // d(output -> input); the key kept its name so existing consumers keep working,
+        // but it now holds the containment direction rather than the coverage one.
         report["hausdorff"] = hausdorff_distance;
+        report["coverage"] = coverage_distance;
         report["all_rounded"] = all_rounded;
         report["input_euler_characteristic"] = ecs_input;
         report["output_euler_characteristic"] = ecs_output;
@@ -561,8 +661,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         if (max_energy > params.stop_energy) {
             log_and_throw_error("Max energy is too large.");
         }
+        // Containment only. Coverage is deliberately not checked here: a run that
+        // legitimately simplifies away a feature would otherwise be reported as a failure.
         if (hausdorff_distance > params.eps) {
-            log_and_throw_error("Hausdorff distance is larger than the envelope!");
+            log_and_throw_error(
+                "Output is outside the envelope by {} (eps {}).",
+                hausdorff_distance,
+                params.eps);
         }
         if (params.preserve_topology && ecs_input != ecs_output) {
             log_and_throw_error("Input topology was not preserved.");
