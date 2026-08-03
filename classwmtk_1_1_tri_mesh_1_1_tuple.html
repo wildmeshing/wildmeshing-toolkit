@@ -107,8 +107,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>print_info</b> ()</td
 <tr class="separator:a45bfe41ecf0f323c3b74452526aca8fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a683f9597a1eef47b6b64ee818484c510" id="r_a683f9597a1eef47b6b64ee818484c510"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a683f9597a1eef47b6b64ee818484c510">switch_face</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a683f9597a1eef47b6b64ee818484c510"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41ce2e6415568b630f7000e3dd04e358" id="r_a41ce2e6415568b630f7000e3dd04e358"><td class="memItemLeft" align="right" valign="top"><a id="a41ce2e6415568b630f7000e3dd04e358" name="a41ce2e6415568b630f7000e3dd04e358"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>switch_faces</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:a41ce2e6415568b630f7000e3dd04e358" id="r_a41ce2e6415568b630f7000e3dd04e358"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a41ce2e6415568b630f7000e3dd04e358">switch_faces</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a41ce2e6415568b630f7000e3dd04e358"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3856af55a040259ae692b680515913d6" id="r_a3856af55a040259ae692b680515913d6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a3856af55a040259ae692b680515913d6">is_valid</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="memdesc:a3856af55a040259ae692b680515913d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> is valid  <br /></td></tr>
@@ -362,16 +361,36 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator&lt;</b> (con
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Switch operation for the adjacent triangle.</p>
-<p>This operation only works for manifold meshes!!!</p>
+<p>Step to the next triangle around this edge.</p>
+<p>The faces incident to an edge are ordered by fid, and this advances one place along that order, wrapping exactly once. On a manifold edge that is the triangle on the other side, which is what this has always returned. On a non-manifold edge, applying it <a class="el" href="classwmtk_1_1_tri_mesh.html#a0de24576c0907fb1dadbbea2df454e2e" title="Number of triangles incident to the edge the Tuple points at.">edge_valence()</a> times is the identity; it no longer picks an arbitrary fan member, as it did when the fan was assumed to hold at most two faces. Callers that genuinely need the manifold case &ndash; a swap, say &ndash; should test <a class="el" href="classwmtk_1_1_tri_mesh.html#a9df9b2f3226d51cc078b64c8082a645d" title="Do exactly two triangles share this edge?">is_manifold_edge()</a> rather than assume it.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">m</td><td>Mesh </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> for the edge-adjacent triangle, sharing same edge, and vertex. </dd></dl>
-<dl class="section note"><dt>Note</dt><dd>nullopt if the <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> of the switch goes off the boundary. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> for the next triangle, sharing the same edge and vertex. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>nullopt on a boundary edge, which has nowhere to step to. </dd></dl>
+
+</div>
+</div>
+<a id="a41ce2e6415568b630f7000e3dd04e358" name="a41ce2e6415568b630f7000e3dd04e358"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41ce2e6415568b630f7000e3dd04e358">&#9670;&#160;</a></span>switch_faces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TriMesh::Tuple</a> &gt; TriMesh::Tuple::switch_faces </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Every other triangle around this edge, in increasing face id order.</p>
+<p>Empty on a boundary edge, one entry when manifold. </p>
 
 </div>
 </div>
