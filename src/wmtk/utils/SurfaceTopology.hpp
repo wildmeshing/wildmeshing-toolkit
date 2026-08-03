@@ -1,20 +1,38 @@
-#include "SimWildMesh.h"
+#pragma once
 
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-#include <algorithm>
-#include <array>
+#include <cstddef>
 #include <map>
 #include <set>
-#include <utility>
 #include <vector>
 
-namespace wmtk::components::simwild {
+namespace wmtk::utils {
 
-namespace {
-// A tiny union-find over dense [0, n) indices, used to count connected
-// components of the surface and of its boundary-edge subgraph.
+/**
+ * @brief A topological fingerprint of a tracked surface inside a tet mesh.
+ *
+ * Cheap-to-compare summary used to assert that surface-modifying operations (surface edge
+ * flips) do not change the surface topology: number of connected components, surface V/E/F,
+ * Euler characteristic, and number of boundary loops. A valid surface diagonal flip leaves
+ * all of these invariant. O(#surface faces); only used by tests and by the
+ * check_surface_topology debug option.
+ */
+struct SurfaceTopoSignature
+{
+    long long components = 0;
+    long long V = 0;
+    long long E = 0;
+    long long F = 0;
+    long long euler = 0; // V - E + F
+    long long boundary_loops = 0;
+    bool operator==(const SurfaceTopoSignature&) const = default;
+};
+
+namespace detail {
+// A tiny union-find over dense [0, n) indices, used to count connected components of the
+// surface and of its boundary-edge subgraph.
 struct DSU
 {
     std::vector<long long> parent;
@@ -35,29 +53,38 @@ struct DSU
     }
     void unite(long long a, long long b) { parent[find(a)] = find(b); }
 };
+} // namespace detail
 
-} // namespace
-
-SimWildMesh::SurfaceTopoSignature SimWildMesh::surface_topology_signature() const
+/**
+ * @brief Compute the signature of the surface tracked by `is_surface`.
+ *
+ * @param m          a TetMesh-like mesh (cell_capacity / tuple_from_cell / tuple_from_face /
+ *                   simplex_from_face / FACES_PER_CELL)
+ * @param is_surface `bool(size_t fid)` -- whether the global face fid is on the surface
+ */
+template <class Mesh, class IsSurfaceFace>
+SurfaceTopoSignature surface_topology_signature(const Mesh& m, IsSurfaceFace is_surface)
 {
-    // Collect the tracked surface triangles (canonical faces, deduplicated by
-    // global fid), each as a sorted vertex triple.
+    using Tuple = typename Mesh::Tuple;
+    constexpr size_t n_faces = Mesh::FACES_PER_CELL;
+
+    // Collect the tracked surface triangles (canonical faces, deduplicated by global fid),
+    // each as a sorted vertex triple.
     std::vector<simplex::Face> faces;
-    for (size_t i = 0; i < tet_capacity(); ++i) {
-        const Tuple tt = tuple_from_tet(i);
-        if (!tt.is_valid(*this)) {
+    for (size_t i = 0; i < m.cell_capacity(); ++i) {
+        if (!m.tuple_from_cell(i).is_valid(m)) {
             continue;
         }
-        for (int j = 0; j < 4; ++j) {
-            const Tuple f = tuple_from_face(i, j);
-            const size_t fid = f.fid(*this);
-            if (fid != 4 * i + j) {
+        for (size_t j = 0; j < n_faces; ++j) {
+            const Tuple f = m.tuple_from_face(i, j);
+            const size_t fid = f.fid(m);
+            if (fid != n_faces * i + j) {
                 continue; // visit each face once (canonical)
             }
-            if (!m_face_attribute[fid].m_is_surface_fs) {
+            if (!is_surface(fid)) {
                 continue;
             }
-            faces.emplace_back(simplex_from_face(f));
+            faces.emplace_back(m.simplex_from_face(f));
         }
     }
 
@@ -91,7 +118,7 @@ SimWildMesh::SurfaceTopoSignature SimWildMesh::surface_topology_signature() cons
 
     // Connected components of the surface (vertices joined by any surface edge).
     {
-        DSU dsu;
+        detail::DSU dsu;
         dsu.init(sig.V);
         for (const simplex::Face& f : faces) {
             const auto& vs = f.vertices();
@@ -106,11 +133,11 @@ SimWildMesh::SurfaceTopoSignature SimWildMesh::surface_topology_signature() cons
         sig.components = static_cast<long long>(roots.size());
     }
 
-    // Boundary loops: a boundary edge is incident to exactly one surface face.
-    // On a manifold-with-boundary surface each connected component of the
-    // boundary-edge subgraph is a simple cycle, so #components == #loops.
+    // Boundary loops: a boundary edge is incident to exactly one surface face. On a
+    // manifold-with-boundary surface each connected component of the boundary-edge subgraph
+    // is a simple cycle, so #components == #loops.
     {
-        DSU bd;
+        detail::DSU bd;
         bd.init(sig.V);
         std::set<long long> bverts;
         for (const auto& [e, cnt] : edge_count) {
@@ -132,11 +159,15 @@ SimWildMesh::SurfaceTopoSignature SimWildMesh::surface_topology_signature() cons
     return sig;
 }
 
-void SimWildMesh::warn_if_surface_topology_changed(
+/**
+ * @brief Compare two surface signatures and log an error if they differ. Used to guard
+ * swap passes that can flip surface edges.
+ */
+inline void warn_if_surface_topology_changed(
     const SurfaceTopoSignature& before,
-    const char* where) const
+    const SurfaceTopoSignature& after,
+    const char* where)
 {
-    const SurfaceTopoSignature after = surface_topology_signature();
     if (after == before) {
         return;
     }
@@ -158,4 +189,4 @@ void SimWildMesh::warn_if_surface_topology_changed(
         after.boundary_loops);
 }
 
-} // namespace wmtk::components::simwild
+} // namespace wmtk::utils
