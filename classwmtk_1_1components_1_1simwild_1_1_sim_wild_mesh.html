@@ -99,9 +99,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_split_info_cache.html">SplitInfoCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html">SurfaceTopoSignature</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A topological fingerprint of the tracked surface (m_is_surface_fs).  <a href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_info_cache.html">SwapInfoCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -119,6 +116,8 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a 
 <tr class="memitem:a13084733f5f26590144907d9efa2b9aa" id="r_a13084733f5f26590144907d9efa2b9aa"><td class="memItemLeft" align="right" valign="top"><a id="a13084733f5f26590144907d9efa2b9aa" name="a13084733f5f26590144907d9efa2b9aa"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>TetAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_tet_attributes.html">TetAttributes</a> &gt;</td></tr>
 <tr class="separator:a13084733f5f26590144907d9efa2b9aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11fcc190b48a189f3ca13104d8253e49" id="r_a11fcc190b48a189f3ca13104d8253e49"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a11fcc190b48a189f3ca13104d8253e49">SurfaceTopoSignature</a> = <a class="el" href="structwmtk_1_1utils_1_1_surface_topo_signature.html">wmtk::utils::SurfaceTopoSignature</a></td></tr>
+<tr class="separator:a11fcc190b48a189f3ca13104d8253e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1 inherit pub_types_classwmtk_1_1_tet_mesh" id="r_a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memTemplParams" colspan="2">
 template&lt;typename T &gt; </td></tr>
@@ -226,11 +225,11 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>swap_all_edges_32</
 <tr class="memitem:ada4b8c34dfe58e3b3f47c7c8343247e9" id="r_ada4b8c34dfe58e3b3f47c7c8343247e9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ada4b8c34dfe58e3b3f47c7c8343247e9">prepare_surface_flip_32</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t, const std::vector&lt; size_t &gt; &amp;incident_tets)</td></tr>
 <tr class="memdesc:ada4b8c34dfe58e3b3f47c7c8343247e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prepare a surface 3-&gt;2 edge swap (a surface diagonal flip).  <br /></td></tr>
 <tr class="separator:ada4b8c34dfe58e3b3f47c7c8343247e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb4c20d1e5f7dcb1e80b569820243514" id="r_acb4c20d1e5f7dcb1e80b569820243514"><td class="memItemLeft" align="right" valign="top"><a id="acb4c20d1e5f7dcb1e80b569820243514" name="acb4c20d1e5f7dcb1e80b569820243514"></a>
-<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html">SurfaceTopoSignature</a>&#160;</td><td class="memItemRight" valign="bottom"><b>surface_topology_signature</b> () const</td></tr>
-<tr class="separator:acb4c20d1e5f7dcb1e80b569820243514"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0ce386f1ca533ba6f17737f683d3a0b" id="r_ae0ce386f1ca533ba6f17737f683d3a0b"><td class="memItemLeft" align="right" valign="top"><a id="ae0ce386f1ca533ba6f17737f683d3a0b" name="ae0ce386f1ca533ba6f17737f683d3a0b"></a>
+<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a11fcc190b48a189f3ca13104d8253e49">SurfaceTopoSignature</a>&#160;</td><td class="memItemRight" valign="bottom"><b>surface_topology_signature</b> () const</td></tr>
+<tr class="separator:ae0ce386f1ca533ba6f17737f683d3a0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a744dc40816511be0c2997e28796f2f1b" id="r_a744dc40816511be0c2997e28796f2f1b"><td class="memItemLeft" align="right" valign="top"><a id="a744dc40816511be0c2997e28796f2f1b" name="a744dc40816511be0c2997e28796f2f1b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topology_changed</b> (const <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_surface_topo_signature.html">SurfaceTopoSignature</a> &amp;before, const char *where) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>warn_if_surface_topology_changed</b> (const <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a11fcc190b48a189f3ca13104d8253e49">SurfaceTopoSignature</a> &amp;before, const char *where) const</td></tr>
 <tr class="memdesc:a744dc40816511be0c2997e28796f2f1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compare a surface signature against the current one and log an error if it changed. Used (when m_params.check_surface_topology is set) to guard swap passes that can flip surface edges. <br /></td></tr>
 <tr class="separator:a744dc40816511be0c2997e28796f2f1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a739b4fdcfb148bcf17623dfb37b60a33" id="r_a739b4fdcfb148bcf17623dfb37b60a33"><td class="memItemLeft" align="right" valign="top"><a id="a739b4fdcfb148bcf17623dfb37b60a33" name="a739b4fdcfb148bcf17623dfb37b60a33"></a>
@@ -299,9 +298,6 @@ std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bo
 <tr class="memitem:a56c9521eed8886612b477407116f72f2" id="r_a56c9521eed8886612b477407116f72f2"><td class="memItemLeft" align="right" valign="top"><a id="a56c9521eed8886612b477407116f72f2" name="a56c9521eed8886612b477407116f72f2"></a>
 std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_max_avg_energy</b> ()</td></tr>
 <tr class="separator:a56c9521eed8886612b477407116f72f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad08cbf97659455c926022c581c9d3b7c" id="r_ad08cbf97659455c926022c581c9d3b7c"><td class="memItemLeft" align="right" valign="top"><a id="ad08cbf97659455c926022c581c9d3b7c" name="ad08cbf97659455c926022c581c9d3b7c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_attributes</b> ()</td></tr>
-<tr class="separator:ad08cbf97659455c926022c581c9d3b7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21a497dc9bc80b9185f55f8ea330b735" id="r_a21a497dc9bc80b9185f55f8ea330b735"><td class="memItemLeft" align="right" valign="top"><a id="a21a497dc9bc80b9185f55f8ea330b735" name="a21a497dc9bc80b9185f55f8ea330b735"></a>
 std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_faces_by_condition</b> (std::function&lt; bool(const <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_face_attributes.html">FaceAttributes</a> &amp;)&gt; cond) const</td></tr>
 <tr class="separator:a21a497dc9bc80b9185f55f8ea330b735"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -851,6 +847,22 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_inse
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ad9d6052a670ae32551b614f1e291429c inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a11fcc190b48a189f3ca13104d8253e49" name="a11fcc190b48a189f3ca13104d8253e49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11fcc190b48a189f3ca13104d8253e49">&#9670;&#160;</a></span>SurfaceTopoSignature</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a11fcc190b48a189f3ca13104d8253e49">wmtk::components::simwild::SimWildMesh::SurfaceTopoSignature</a> =  <a class="el" href="structwmtk_1_1utils_1_1_surface_topo_signature.html">wmtk::utils::SurfaceTopoSignature</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>A topological fingerprint of the tracked surface (m_is_surface_fs). See <a class="el" href="_surface_topology_8hpp_source.html">wmtk/utils/SurfaceTopology.hpp</a>. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a01fc2c729b708994b8e57b5e43db5c1c" name="a01fc2c729b708994b8e57b5e43db5c1c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a01fc2c729b708994b8e57b5e43db5c1c">&#9670;&#160;</a></span>adjust_sizing_field_serial()</h2>
@@ -2021,7 +2033,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>EdgeSwapping.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>SimWildMesh.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>Smooth.cpp</b></li>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>SurfaceTopology.cpp</b></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<b>VolumemesherInsertion.cpp</b></li>
 </ul>
 </div><!-- contents -->
