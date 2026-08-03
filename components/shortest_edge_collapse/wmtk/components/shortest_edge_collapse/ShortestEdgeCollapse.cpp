@@ -39,7 +39,8 @@ void ShortestEdgeCollapse::create_mesh(
     size_t n_vertices,
     const std::vector<std::array<size_t, 3>>& tris,
     const std::vector<size_t>& frozen_verts,
-    double eps)
+    double eps,
+    bool freeze_bnd)
 {
     wmtk::TriMesh::init(n_vertices, tris);
 
@@ -54,12 +55,59 @@ void ShortestEdgeCollapse::create_mesh(
         }
         m_envelope.init(V, F, eps);
         m_has_envelope = true;
+
+        // Only needed when the boundary is allowed to move; a frozen boundary cannot
+        // leave its own envelope, so building the BVH for it would be wasted work.
+        if (!freeze_bnd) {
+            std::vector<Eigen::Vector2i> boundary_edges;
+            for (const Tuple& e : get_edges()) {
+                if (is_boundary_edge(e)) {
+                    boundary_edges.emplace_back(
+                        (int)e.vid(*this),
+                        (int)e.switch_vertex(*this).vid(*this));
+                }
+            }
+            if (!boundary_edges.empty()) {
+                m_boundary_envelope.init(V, boundary_edges, eps);
+                m_has_boundary_envelope = true;
+
+                // Pin the ends and junctions of the boundary curves. The envelope keeps the
+                // boundary from leaving the input outline but not from sliding along it, so
+                // an open boundary chain would otherwise be free to retract from its ends.
+                // Boundary valence != 2 is the same endpoint/junction test simplify_segments
+                // uses in 2D.
+                //
+                // On a manifold surface the boundary is a union of closed loops and every
+                // boundary vertex has valence exactly 2, so this freezes nothing; a closed
+                // loop cannot retract along itself in any case, only shrink, which the
+                // envelope already catches. It matters for input that is not manifold along
+                // its boundary.
+                std::vector<int> bnd_valence(n_vertices, 0);
+                for (const Eigen::Vector2i& be : boundary_edges) {
+                    bnd_valence[be[0]]++;
+                    bnd_valence[be[1]]++;
+                }
+                size_t n_pinned = 0;
+                for (size_t v = 0; v < n_vertices; v++) {
+                    if (bnd_valence[v] != 0 && bnd_valence[v] != 2) {
+                        vertex_attrs[v].freeze = true;
+                        n_pinned++;
+                    }
+                }
+                logger().info(
+                    "boundary envelope: {} edges, {} boundary ends/junctions pinned",
+                    boundary_edges.size(),
+                    n_pinned);
+            }
+        }
     }
     partition_mesh();
     for (size_t v : frozen_verts) {
         vertex_attrs[v].freeze = true;
     }
-    freeze_boundary();
+    if (freeze_bnd) {
+        freeze_boundary();
+    }
 }
 
 void ShortestEdgeCollapse::partition_mesh()
@@ -79,6 +127,25 @@ bool ShortestEdgeCollapse::invariants(const std::vector<Tuple>& new_tris)
             for (auto j = 0; j < 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;
             bool outside = m_envelope.is_outside(tris);
             if (outside) return false;
+        }
+    }
+    // The surface envelope contains the boundary but says nothing about where along the
+    // surface it sits, so an unfrozen boundary needs its own check against the input
+    // outline -- otherwise it is free to retract inwards without ever leaving the surface
+    // envelope. This mirrors is_open_boundary_edge in tetwild.
+    if (m_has_boundary_envelope) {
+        for (auto& t : new_tris) {
+            for (int j = 0; j < 3; j++) {
+                const Tuple e = tuple_from_edge(t.fid(*this), j);
+                if (!is_boundary_edge(e)) continue;
+                const size_t v1 = e.vid(*this);
+                const size_t v2 = e.switch_vertex(*this).vid(*this);
+                if (m_boundary_envelope.is_outside(
+                        std::array<Eigen::Vector3d, 2>{
+                            {vertex_attrs[v1].pos, vertex_attrs[v2].pos}})) {
+                    return false;
+                }
+            }
         }
     }
     return true;

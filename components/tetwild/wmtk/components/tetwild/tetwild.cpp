@@ -199,7 +199,12 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         verts,
         NUM_THREADS,
         !use_sample_envelope);
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
+    surf_mesh.create_mesh(
+        verts.size(),
+        tris,
+        modified_nonmanifold_v,
+        envelope_size / 2,
+        json_params["freeze_boundary"]);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
