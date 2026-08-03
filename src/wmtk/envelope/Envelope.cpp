@@ -100,8 +100,29 @@ void SampleEnvelope::init(
     }
     exact_envelope.init(V, F, _eps);
 
-    eps2 = _eps * _eps;
-    sampling_dist = std::sqrt(eps2);
+    // sampleTriangle lays samples on a triangular lattice of spacing `sampling_dist`, whose
+    // covering radius is sampling_dist / sqrt(3): every point of the triangle is within that
+    // distance of some sample. So for "every sample is inside" to imply "the whole triangle
+    // is inside the true eps-envelope", the per-sample test has to use the shrunk radius
+    //
+    //     real_envelope = _eps - sampling_dist / sqrt(3)
+    //
+    // Testing against the unshrunk _eps made this anti-conservative: a triangle straying up
+    // to _eps * (1 + 1/sqrt(3)) ~= 1.577 * _eps outside the input could still pass every
+    // sample and be accepted.
+    //
+    // This is what both reference implementations do. TetWild, src/tetwild/State.cpp:
+    //     sampling_dist = eps_input / args.stage;
+    //     eps = eps_input - sampling_dist / std::sqrt(3) * (args.stage + 1 - sub_stage);
+    // and fTetWild, src/Parameters.h, on the sampled (non-NEW_ENVELOPE) path:
+    //     dd = eps_input / 1.5;
+    //     eps_usable = eps_input - dd / std::sqrt(3);
+    // Neither shrinks on its exact-envelope path, because the shrink exists purely to pay
+    // for the sampling. The two edge overloads below already did this; only the triangle
+    // one did not.
+    sampling_dist = _eps;
+    const double real_envelope = _eps - _eps / std::sqrt(3);
+    eps2 = real_envelope * real_envelope;
 
     MatrixXd VV;
     VV.resize(V.size(), 3);
