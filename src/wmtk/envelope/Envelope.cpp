@@ -96,7 +96,7 @@ void SampleEnvelope::init(
     const double _eps)
 {
     if (!use_exact) {
-        logger().warn("Sample envelope is probably broken! Better to use the exact one.");
+        logger().info("Using sample envelope.");
     }
     exact_envelope.init(V, F, _eps);
 
