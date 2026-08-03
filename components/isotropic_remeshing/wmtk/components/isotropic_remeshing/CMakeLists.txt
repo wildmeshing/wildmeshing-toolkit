@@ -11,7 +11,6 @@ set(SRC_FILES
 
 	isotropic_remeshing.hpp
 	isotropic_remeshing.cpp
-	isotropic_remeshing_spec.hpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

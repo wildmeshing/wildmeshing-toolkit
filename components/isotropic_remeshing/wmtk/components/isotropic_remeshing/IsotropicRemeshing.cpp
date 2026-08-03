@@ -360,7 +360,11 @@ double IsotropicRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
     auto t3 = (t.switch_edge(*this)).switch_vertex(*this);
     valences[2] = std::make_pair(t3, get_valence_for_vertex(t3));
 
-    if ((t.switch_face(*this)).has_value()) {
+    // This is the valence cost of swapping `t`, so it only makes sense for an edge that can
+    // be swapped at all -- which means exactly two incident faces. On a non-manifold edge
+    // switch_face would hand back one arbitrary member of the fan and the cost would depend
+    // on which; swap_edge_before refuses those anyway, so there is nothing to weigh.
+    if (is_manifold_edge(t)) {
         auto t4 = (((t.switch_face(*this)).value()).switch_edge(*this)).switch_vertex(*this);
         valences.emplace_back(t4, get_valence_for_vertex(t4));
     }
@@ -421,7 +425,12 @@ std::vector<double> IsotropicRemeshing::average_len_valen()
 
 std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
 {
-    std::vector<TriMesh::Tuple> new_edges;
+    // Both edges dereferenced below must have a face on the other side. That holds for the
+    // edge a swap just produced -- swap_edge only runs on a manifold edge and leaves the
+    // two triangles in place -- and this function has no other valid caller.
+    assert(is_manifold_edge(t));
+
+    std::vector<Tuple> new_edges;
 
     new_edges.push_back(t.switch_edge(*this));
     new_edges.push_back((t.switch_face(*this).value()).switch_edge(*this));
