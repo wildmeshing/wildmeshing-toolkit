@@ -64,9 +64,10 @@ public:
      * optimization is blocked by the envelope or by the mesh itself. It removes the
      * containment guarantee entirely -- the output is not usable, only diagnostic.
      *
-     * Note nearest_point() is unaffected: smoothing still projects surface vertices onto
-     * the envelope surface, because that is a constraint on where a vertex goes rather
-     * than a veto on the operation.
+     * Note nearest_point() is unaffected, so EnvelopeEnergy still pulls surface vertices
+     * toward the input while smoothing. Only the veto goes away, which is the point: it
+     * separates "the optimizer cannot move because the envelope forbids it" from "the
+     * optimizer cannot move at all".
      */
     bool disabled = false;
     void init(

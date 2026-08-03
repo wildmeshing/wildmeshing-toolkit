@@ -237,9 +237,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         // SampleEnvelope::init builds both the exact structure and the sampled BVH, and
         // is_outside picks between them per query, so switching predicates for the
-        // simplification alone is a flag flip with nothing to rebuild. It has to be put
-        // back afterwards: this same envelope object is handed to TetWildMesh below, and
-        // the tet phase must keep whatever the user asked for.
+        // simplification alone is a flag flip with nothing to rebuild. Restoring it
+        // afterwards no longer matters to the tet phase -- that now gets its own
+        // envelope object at the full eps, built below -- but surf_mesh outlives this
+        // block and is written out, so leave it as the caller asked for.
         const bool saved_use_exact = surf_mesh.m_envelope.use_exact;
         if (simplify_use_sample_envelope) {
             logger().info("simplification uses the sampled envelope; tet phase unaffected");
