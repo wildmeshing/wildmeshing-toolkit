@@ -26,21 +26,28 @@ void init_from_delaunay_box_mesh(
     MatrixXi& E_out);
 
 /**
- * @brief Read every input edge mesh and build the initial triangulation from their union.
+ * @brief Read every input edge mesh and concatenate them into one segment network.
+ *
+ * Reading is separate from the arrangement because the bounding box, the envelope and the
+ * simplification all have to happen in between: the tolerance is relative to the input's
+ * bounding box, and the simplification runs before the arrangement so the arrangement only
+ * ever sees the coarsened curves.
+ *
+ * The union is what gets simplified and arranged, so curves sharing a boundary stay
+ * coincident. The per-input copies are handed back untouched for the winding-number pass.
  *
  * @param input_paths        files to read
  * @param remove_duplicate_eps  merge input vertices closer than this fraction of the
  *                           bounding-box diagonal (negative disables)
- * @param V_out, F_out, E_out the initial mesh and its constrained edges
- * @param Vs_out, Es_out     the per-input meshes as read, handed back so the winding-number
- *                           pass can reuse them instead of re-reading every file from disk
+ * @param V_all, E_all       the concatenated segment network
+ * @param Vs_out, Es_out     the per-input meshes as read, so the winding-number pass does
+ *                           not have to re-read every file from disk
  */
-void init_from_paths(
+void read_input_curves(
     const std::vector<std::string>& input_paths,
     double remove_duplicate_eps,
-    MatrixXd& V_out,
-    MatrixXi& F_out,
-    MatrixXi& E_out,
+    MatrixXd& V_all,
+    MatrixXi& E_all,
     std::vector<MatrixXd>& Vs_out,
     std::vector<MatrixXi>& Es_out);
 

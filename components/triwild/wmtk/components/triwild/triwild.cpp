@@ -5,6 +5,7 @@
 #include <igl/write_triangle_mesh.h>
 #include <jse/jse.h>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SimplifySegments.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
 #include "Parameters.h"
@@ -119,14 +120,57 @@ void triwild(nlohmann::json json_params)
 
     const std::string filter_option = json_params["filter"];
 
-    // Arrangement of all input meshes. Vs/Es keep the inputs as read so the winding-number
-    // pass below does not have to parse every file a second time.
+    // Read the inputs. Vs/Es keep them per input, as read, so the winding-number pass below
+    // does not have to parse every file a second time; V_in/E_in is their union, which is
+    // what gets simplified and arranged.
+    MatrixXd V_in;
+    MatrixXi E_in;
+    std::vector<MatrixXd> Vs;
+    std::vector<MatrixXi> Es;
+    read_input_curves(input_paths, json_params["remove_duplicate_eps"], V_in, E_in, Vs, Es);
+
+    // The bounding box comes from the input curves, as in tetwild -- eps has to be known
+    // before the arrangement runs, because the simplification happens first. (It used to be
+    // taken from the arrangement output, which includes the background grid and is about
+    // 13% larger.)
+    params.init(V_in.colwise().minCoeff(), V_in.colwise().maxCoeff());
+
+    // One envelope at eps/2 around the original input, shared by the simplification and by
+    // the optimizer -- tetwild's arrangement, which is what leaves room for both to move.
+    const double envelope_eps = params.eps / 2;
+
+    MatrixXd V_simp = V_in;
+    MatrixXi E_simp = E_in;
+    if (json_params["skip_simplify"]) {
+        logger().info("skip simplification");
+    } else {
+        SampleEnvelope simplify_envelope;
+        {
+            std::vector<Vector2d> v(V_in.rows());
+            for (int i = 0; i < V_in.rows(); ++i) {
+                v[i] = V_in.row(i);
+            }
+            std::vector<Vector2i> e(E_in.rows());
+            for (int i = 0; i < E_in.rows(); ++i) {
+                e[i] = E_in.row(i);
+            }
+            simplify_envelope.init(v, e, envelope_eps);
+        }
+        const size_t removed = wmtk::utils::simplify_segments(V_simp, E_simp, simplify_envelope);
+        logger().info(
+            "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed)",
+            V_in.rows(),
+            V_simp.rows(),
+            E_in.rows(),
+            E_simp.rows(),
+            removed);
+    }
+
+    // Exact arrangement of the (simplified) segment network.
     MatrixXd V;
     MatrixXi F;
     MatrixXi E; // constraint edges in the arrangement
-    std::vector<MatrixXd> Vs;
-    std::vector<MatrixXi> Es;
-    init_from_paths(input_paths, json_params["remove_duplicate_eps"], V, F, E, Vs, Es);
+    init_from_delaunay_box_mesh(V_simp, E_simp, V, F, E);
 
     if (params.debug_output) {
         MatrixXd V3(V.rows(), 3);
@@ -142,17 +186,23 @@ void triwild(nlohmann::json json_params)
             edge_out << "l " << 2 * i + 1 << " " << 2 * i + 2 << "\n";
         }
         edge_out.close();
-    }
 
-    Vector2d box_min = V.colwise().minCoeff();
-    Vector2d box_max = V.colwise().maxCoeff();
-    params.init(box_min, box_max);
+        // and the simplified input, the counterpart of tetwild's _simplified_input.obj
+        std::ofstream simp_out(output_path + "_simplified_input.obj");
+        for (int i = 0; i < V_simp.rows(); i++) {
+            simp_out << "v " << V_simp(i, 0) << " " << V_simp(i, 1) << " 0\n";
+        }
+        for (int i = 0; i < E_simp.rows(); i++) {
+            simp_out << "l " << E_simp(i, 0) + 1 << " " << E_simp(i, 1) + 1 << "\n";
+        }
+        simp_out.close();
+    }
 
     const std::vector<std::string> tag_names = json_params["input_names"];
 
-    TriWildMesh mesh(params, params.eps, NUM_THREADS);
+    TriWildMesh mesh(params, envelope_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, F, E, tag_names);
+    mesh.init_mesh(V, F, E, tag_names, V_in, E_in);
 
     if (params.debug_output) {
         mesh.write_vtu(output_path + "_initial");

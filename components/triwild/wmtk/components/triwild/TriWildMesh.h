@@ -152,16 +152,23 @@ public:
     /**
      * @brief Init mesh from IGL-style matrices.
      *
-     * @param V #Vx3 vertices of the tet mesh
+     * @param V #Vx2 vertices of the initial mesh
      * @param F #Fx3 vertex IDs for all faces
      * @param E #Ex2 vertex IDs for all constraint edges
      * @param tag_names Names for each tag.
+     * @param V_env,E_env the curves the envelope is built around. These are the *original*
+     *        input curves, not the arrangement's constrained edges: the optimizer has to
+     *        stay near what the user gave us, not near the simplified version of it. Same
+     *        arrangement as tetwild, which hands its optimizer the envelope built on the
+     *        unsimplified input surface.
      */
     void init_mesh(
         const MatrixXd& V,
         const MatrixXi& F,
         const MatrixXi& E,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const MatrixXd& V_env,
+        const MatrixXi& E_env);
 
     void init_surfaces_and_boundaries();
 

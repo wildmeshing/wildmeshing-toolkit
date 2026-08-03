@@ -10,6 +10,7 @@
       "input_dir",
       "num_threads",
       "max_iterations",
+      "skip_simplify",
       "filter",
       "skip_winding_number",
       "eps_rel",
@@ -89,6 +90,12 @@
     "type": "int",
     "default": 80,
     "doc": "Maximum iterations before stopping."
+  },
+  {
+    "pointer": "/skip_simplify",
+    "type": "bool",
+    "default": false,
+    "doc": "If true, input simplification will be skipped. The input curves are otherwise coarsened first, by collapsing their shortest segments while staying inside half the envelope, so the exact arrangement and the initial mesh do not carry input detail far below the target edge length."
   },
   {
     "pointer": "/filter",

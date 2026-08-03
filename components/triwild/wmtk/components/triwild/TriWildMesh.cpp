@@ -210,7 +210,9 @@ void TriWildMesh::init_mesh(
     const MatrixXd& V,
     const MatrixXi& F,
     const MatrixXi& E,
-    const std::vector<std::string>& tag_names)
+    const std::vector<std::string>& tag_names,
+    const MatrixXd& V_env,
+    const MatrixXi& E_env)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -264,13 +266,17 @@ void TriWildMesh::init_mesh(
     }
     assert(m_V_envelope.empty() && m_E_envelope.empty());
 
-    m_V_envelope.resize(V.rows());
+    // Around the original input curves, not around the arrangement's constrained edges:
+    // after simplification those are the coarsened curves, and the optimizer must stay near
+    // what the user gave us. The sanity check below then genuinely verifies that the
+    // simplified curves are still inside the envelope.
+    m_V_envelope.resize(V_env.rows());
     for (size_t i = 0; i < m_V_envelope.size(); ++i) {
-        m_V_envelope[i] = V.row(i);
+        m_V_envelope[i] = V_env.row(i);
     }
-    m_E_envelope.resize(E.rows());
+    m_E_envelope.resize(E_env.rows());
     for (size_t i = 0; i < m_E_envelope.size(); ++i) {
-        m_E_envelope[i] = E.row(i);
+        m_E_envelope[i] = E_env.row(i);
     }
 
     m_envelope = std::make_shared<SampleEnvelope>();
@@ -290,19 +296,25 @@ void TriWildMesh::init_mesh(
         logger().info("Envelope sanity check done");
     }
 
-    // track bounding box
+    // Track the bounding box. This is the box of the *domain* -- the arrangement covers the
+    // input's bounding box grown by the background grid -- which is not m_params.box_min /
+    // box_max: those come from the input curves and set the tolerances. Deriving it from V
+    // keeps this check self-consistent whatever the input box is.
+    const Vector2d domain_min = V.colwise().minCoeff();
+    const Vector2d domain_max = V.colwise().maxCoeff();
+
     const auto edges = get_edges();
     for (size_t i = 0; i < edges.size(); i++) {
         const auto vids = get_edge_vids(edges[i]);
         int on_bbox = -1;
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == domain_min[k]) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == domain_max[k]) {
                 on_bbox = k * 2 + 1;
                 break;
             }
