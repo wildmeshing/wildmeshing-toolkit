@@ -581,8 +581,8 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span> </div>
 <div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>    <span class="keywordtype">bool</span> try_set_vertex_mutex(<span class="keyword">const</span> <a class="code hl_class" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&amp; v, <span class="keywordtype">int</span> threadid)</div>
 <div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>    {</div>
-<div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>        <span class="keywordtype">bool</span> got = m_vertex_mutex[v.vid(*<span class="keyword">this</span>)].trylock();</div>
-<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>        <span class="keywordflow">if</span> (got) m_vertex_mutex[v.vid(*<span class="keyword">this</span>)].set_owner(threadid);</div>
+<div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>        <span class="keywordtype">bool</span> got = m_vertex_mutex[v.<a class="code hl_function" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#aca27bf9b696588c5eebcd06b45f05f05">vid</a>(*<span class="keyword">this</span>)].trylock();</div>
+<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>        <span class="keywordflow">if</span> (got) m_vertex_mutex[v.<a class="code hl_function" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#aca27bf9b696588c5eebcd06b45f05f05">vid</a>(*<span class="keyword">this</span>)].set_owner(threadid);</div>
 <div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>        <span class="keywordflow">return</span> got;</div>
 <div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>    }</div>
 <div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>    <span class="keywordtype">bool</span> try_set_vertex_mutex(<span class="keywordtype">size_t</span> vid, <span class="keywordtype">int</span> threadid)</div>
