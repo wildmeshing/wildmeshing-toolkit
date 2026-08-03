@@ -11,7 +11,9 @@
       "target_rel",
       "eps_rel",
       "use_sample_envelope",
-      "throw_on_fail"
+      "throw_on_fail",
+      "use_link_condition",
+      "remove_duplicate_eps"
     ]
   },
   {
@@ -66,5 +68,17 @@
     "type": "bool",
     "default": false,
     "doc": "Throw exception if the output does not fulfil the desired criteria. No output will be generated."
+  },
+  {
+    "pointer": "/use_link_condition",
+    "type": "bool",
+    "default": true,
+    "doc": "Require the link condition before collapsing an edge. When true a collapse cannot change the topology, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed -- TriMesh represents the result, and any duplicate triangles the collapse produces are merged -- so the mesh can usually be simplified further."
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": -1,
+    "doc": "Merge input vertices closer than this fraction of the bounding box diagonal. 0 merges only exactly coincident vertices; a negative value merges nothing. Needed for formats that carry no connectivity, such as STL, which otherwise arrive as a disconnected triangle soup."
   }
 ]
