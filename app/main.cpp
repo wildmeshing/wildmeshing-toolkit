@@ -52,5 +52,14 @@ int main(int argc, char** argv)
     }
 
     // execute
-    components_map[app_str](j);
+    try {
+        components_map[app_str](j);
+    } catch (const std::exception& e) {
+        // Without this, any error a component throws -- an empty or unreadable input mesh, a
+        // failed invariant, and so on -- escapes main, so the runtime calls std::terminate()
+        // and the process aborts. Catch it and exit nonzero with a readable message instead
+        // of crashing (and, on macOS, spraying a crash report per failure).
+        logger().error("Application '{}' failed: {}", app_str, e.what());
+        return 1;
+    }
 }
