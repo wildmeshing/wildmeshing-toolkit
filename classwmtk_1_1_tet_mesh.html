@@ -615,6 +615,22 @@ static constexpr std::array&lt; int, 6 &gt;&#160;</td><td class="memItemRight" v
 <tr class="separator:a2049276cbfc281fb3baed6c94e04c41f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a418d0b8ccd85deca81660674bb27b460" id="r_a418d0b8ccd85deca81660674bb27b460"><td class="memItemLeft" align="right" valign="top">static constexpr std::array&lt; std::array&lt; int, 3 &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a418d0b8ccd85deca81660674bb27b460">m_local_edges_in_a_face</a></td></tr>
 <tr class="separator:a418d0b8ccd85deca81660674bb27b460"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Dimension-generic cell accessors</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>A "cell" is the top-dimensional element: a tet here, a triangle in <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>. These three members plus EDGES_PER_CELL are the whole interface the dimension-generic helpers in wmtk/utils (ParallelCollect, SizingField) need, so the same helper works on both meshes without traits or overloads. </p>
+</td></tr>
+<tr class="memitem:a37d7aa1a21e836379f48aaa608f82de2" id="r_a37d7aa1a21e836379f48aaa608f82de2"><td class="memItemLeft" align="right" valign="top"><a id="a37d7aa1a21e836379f48aaa608f82de2" name="a37d7aa1a21e836379f48aaa608f82de2"></a>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES_PER_CELL</b> = 6</td></tr>
+<tr class="separator:a37d7aa1a21e836379f48aaa608f82de2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02765ba8ad43dc9fec162a405e0e3ad6" id="r_a02765ba8ad43dc9fec162a405e0e3ad6"><td class="memItemLeft" align="right" valign="top"><a id="a02765ba8ad43dc9fec162a405e0e3ad6" name="a02765ba8ad43dc9fec162a405e0e3ad6"></a>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES_PER_CELL</b> = 4</td></tr>
+<tr class="separator:a02765ba8ad43dc9fec162a405e0e3ad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04cfb9bfa4bbca13962b1c2682e46aad" id="r_a04cfb9bfa4bbca13962b1c2682e46aad"><td class="memItemLeft" align="right" valign="top"><a id="a04cfb9bfa4bbca13962b1c2682e46aad" name="a04cfb9bfa4bbca13962b1c2682e46aad"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> () const</td></tr>
+<tr class="separator:a04cfb9bfa4bbca13962b1c2682e46aad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c21956bfa1c739eb303ff02b999460f" id="r_a1c21956bfa1c739eb303ff02b999460f"><td class="memItemLeft" align="right" valign="top"><a id="a1c21956bfa1c739eb303ff02b999460f" name="a1c21956bfa1c739eb303ff02b999460f"></a>
+<a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
+<tr class="separator:a1c21956bfa1c739eb303ff02b999460f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a96119301d2b8a9d5c34e52cac42ac7d6" name="a96119301d2b8a9d5c34e52cac42ac7d6"></a>

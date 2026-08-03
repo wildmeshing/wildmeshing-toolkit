@@ -225,6 +225,9 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b
 <tr class="memitem:a9939b4491bd9afc357468072368ab392" id="r_a9939b4491bd9afc357468072368ab392"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392">consolidate_mesh</a> ()</td></tr>
 <tr class="memdesc:a9939b4491bd9afc357468072368ab392"><td class="mdescLeft">&#160;</td><td class="mdescRight">removing the elements that are removed  <br /></td></tr>
 <tr class="separator:a9939b4491bd9afc357468072368ab392"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90be1ec37c03c2ed25ee11d65784e627" id="r_a90be1ec37c03c2ed25ee11d65784e627"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a90be1ec37c03c2ed25ee11d65784e627">remove_tris_by_ids</a> (const std::vector&lt; size_t &gt; &amp;fids)</td></tr>
+<tr class="memdesc:a90be1ec37c03c2ed25ee11d65784e627"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark the given triangles, and any vertex left without an incident triangle, as removed.  <br /></td></tr>
+<tr class="separator:a90be1ec37c03c2ed25ee11d65784e627"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af239b4f32ec1733261c301c351283dbc" id="r_af239b4f32ec1733261c301c351283dbc"><td class="memItemLeft" align="right" valign="top"><a id="af239b4f32ec1733261c301c351283dbc" name="af239b4f32ec1733261c301c351283dbc"></a>
 <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>switch_vertex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:af239b4f32ec1733261c301c351283dbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a2fe6f785e3cd6443b9f2b8b923a3be13">Tuple::switch_vertex</a> funciton <br /></td></tr>
@@ -476,6 +479,19 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_use_link_condition<
 <tr class="memitem:a852800c3ada3a82e38a4d955ff2e6794" id="r_a852800c3ada3a82e38a4d955ff2e6794"><td class="memItemLeft" align="right" valign="top"><a id="a852800c3ada3a82e38a4d955ff2e6794" name="a852800c3ada3a82e38a4d955ff2e6794"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
 <tr class="separator:a852800c3ada3a82e38a4d955ff2e6794"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Dimension-generic cell accessors</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p>A "cell" is the top-dimensional element: a triangle here, a tet in <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>. These three members plus EDGES_PER_CELL are the whole interface the dimension-generic helpers in wmtk/utils (ParallelCollect, SizingField) need, so the same helper works on both meshes without traits or overloads. </p>
+</td></tr>
+<tr class="memitem:ab9497bf06e5d322c0b0b3959cc401efc" id="r_ab9497bf06e5d322c0b0b3959cc401efc"><td class="memItemLeft" align="right" valign="top"><a id="ab9497bf06e5d322c0b0b3959cc401efc" name="ab9497bf06e5d322c0b0b3959cc401efc"></a>
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES_PER_CELL</b> = 3</td></tr>
+<tr class="separator:ab9497bf06e5d322c0b0b3959cc401efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4eb9235bf581b8bd21f107a009d64f2" id="r_aa4eb9235bf581b8bd21f107a009d64f2"><td class="memItemLeft" align="right" valign="top"><a id="aa4eb9235bf581b8bd21f107a009d64f2" name="aa4eb9235bf581b8bd21f107a009d64f2"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> () const</td></tr>
+<tr class="separator:aa4eb9235bf581b8bd21f107a009d64f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfb1ab1ee5ce24afbeedab25a13e917b" id="r_acfb1ab1ee5ce24afbeedab25a13e917b"><td class="memItemLeft" align="right" valign="top"><a id="acfb1ab1ee5ce24afbeedab25a13e917b" name="acfb1ab1ee5ce24afbeedab25a13e917b"></a>
+<a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
+<tr class="separator:acfb1ab1ee5ce24afbeedab25a13e917b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ae3dca4cc8f5751b15375589789c14a9e" name="ae3dca4cc8f5751b15375589789c14a9e"></a>
@@ -1381,6 +1397,35 @@ std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>global vids of incident vertices </dd></dl>
+
+</div>
+</div>
+<a id="a90be1ec37c03c2ed25ee11d65784e627" name="a90be1ec37c03c2ed25ee11d65784e627"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90be1ec37c03c2ed25ee11d65784e627">&#9670;&#160;</a></span>remove_tris_by_ids()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::remove_tris_by_ids </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>fids</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Mark the given triangles, and any vertex left without an incident triangle, as removed. </p>
+<p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_mesh.html#afcb8ea0a43e2a2063af41b6a2ba8c91f" title="remove the tetrahedrons in the mesh that have given tet ids">TetMesh::remove_tets_by_ids</a>, used by the output filters to drop the region outside the input. Call <a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392" title="removing the elements that are removed">consolidate_mesh()</a> afterwards to compact. </p>
 
 </div>
 </div>

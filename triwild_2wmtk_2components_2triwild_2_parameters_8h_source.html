@@ -83,81 +83,169 @@ $(document).ready(function() { init_codefold(0); });
 <div class="contents">
 <div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
-<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="keyword">namespace </span>wmtk::components::triwild {</div>
-<div class="foldopen" id="foldopen00004" data-start="{" data-end="};">
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">    4</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a></div>
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span>{</div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span>    <span class="keywordtype">double</span> epsr = 2e-3; <span class="comment">// relative error bound (wrt diagonal)</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span>    <span class="keywordtype">double</span> eps = -1.; <span class="comment">// absolute error bound</span></div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span>    <span class="keywordtype">double</span> lr = 5e-2; <span class="comment">// target edge length (relative)</span></div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>    <span class="keywordtype">double</span> l = -1.;</div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>    <span class="keywordtype">double</span> l_min = -1;</div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span>    <span class="keywordtype">double</span> diag_l = -1.;</div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span>    Vector2d box_min = Vector2d::Zero();</div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>    Vector2d box_max = Vector2d::Ones();</div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>    <span class="keywordtype">bool</span> preserve_topology = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>    std::string output_path;</div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span> </div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>    <span class="keywordtype">double</span> splitting_l2 = -1.; <span class="comment">// the lower bound length (squared) for edge split</span></div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    <span class="keywordtype">double</span> collapsing_l2 =</div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>        std::numeric_limits&lt;double&gt;::max(); <span class="comment">// the upper bound length (squared) for edge collapse</span></div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <span class="keywordtype">double</span> stop_energy = 10;</div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="keyword">namespace </span>wmtk::components::triwild {</div>
+<div class="foldopen" id="foldopen00006" data-start="{" data-end="};">
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">    6</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span>{</div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span>    <span class="keywordtype">double</span> epsr = 2e-3; <span class="comment">// relative error bound (wrt diagonal)</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>    <span class="keywordtype">double</span> eps = -1.; <span class="comment">// absolute error bound</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>    <span class="keywordtype">double</span> lr = 5e-2; <span class="comment">// target edge length (relative)</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span>    <span class="keywordtype">double</span> l = -1.;</div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span>    <span class="keywordtype">double</span> l_min = -1;</div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>    <span class="keywordtype">double</span> diag_l = -1.;</div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>    Vector2d box_min = Vector2d::Zero();</div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>    Vector2d box_max = Vector2d::Ones();</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>    <span class="keywordtype">bool</span> preserve_topology = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>    std::string output_path;</div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span> </div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    <span class="keywordtype">double</span> splitting_l2 = -1.; <span class="comment">// the lower bound length (squared) for edge split</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <span class="keywordtype">double</span> collapsing_l2 =</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>        std::numeric_limits&lt;double&gt;::max(); <span class="comment">// the upper bound length (squared) for edge collapse</span></div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <span class="keywordtype">bool</span> debug_output = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>    <span class="keywordtype">bool</span> perform_sanity_checks = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    <span class="keywordtype">double</span> w_amips = 1e-4;</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    <span class="keywordtype">double</span> w_envelope = 0;</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector2d&amp; min_, <span class="keyword">const</span> Vector2d&amp; max_)</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    {</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>        box_min = min_;</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        box_max = max_;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        diag_l = (box_max - box_min).norm();</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        <span class="keywordflow">if</span> (l &gt; 0) {</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>            lr = l / diag_l;</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>            l = lr * diag_l;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        }</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        splitting_l2 = l * l * (16 / 9.);</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        collapsing_l2 = l * l * (16 / 25.);</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <span class="keywordflow">if</span> (eps &gt; 0) {</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>            epsr = eps / diag_l;</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            eps = epsr * diag_l;</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        }</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        l_min = eps;</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    }</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="keywordtype">void</span> init(</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        <span class="keyword">const</span> std::vector&lt;Vector2d&gt;&amp; vertices,</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    {</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        Vector2d min_, max_;</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            <span class="keywordflow">if</span> (i == 0) {</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>                min_ = vertices[i];</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>                max_ = vertices[i];</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            }</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 2; j++) {</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) {</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>                    min_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>                }</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) {</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>                    max_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                }</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>            }</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        }</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    <span class="keywordtype">double</span> stop_energy = 10;</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <span class="keywordtype">bool</span> debug_output = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    <span class="keywordtype">bool</span> perform_sanity_checks = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordtype">double</span> w_amips = 1e-4;</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <span class="keywordtype">double</span> w_envelope = 0;</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="comment">// ---- Stuck-element sizing refinement --------------------------------</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="comment">// Same names, defaults and meaning as tetwild/simwild -- see the specs.</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <span class="comment">//</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="comment">// Trigger threshold: fire when the max energy did not improve by more than</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="comment">// this *fraction* since the previous iteration, i.e. refine when</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="comment">// (prev_max - max) &lt;= stall_eps * prev_max. 0 =&gt; only when it does not</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="comment">// improve at all (or gets worse).</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordtype">double</span> stuck_refine_stall_eps = 0.01;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="comment">// Cooldown: after a refinement, skip this many improvement iterations before</span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="comment">// refining again, so the operations get full passes to act on the new sizing</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="comment">// field before more refinement is added. 0 =&gt; may refine every iteration.</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordtype">int</span> stuck_refine_cooldown = 1;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="comment">// Number of worst triangles (by energy) whose neighborhoods are refined.</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="comment">// 0 =&gt; every triangle above the filter energy, max(max_energy / 100, stop_energy).</span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="comment">// Beware in 2D: the AMIPS2D energy of an equilateral triangle is 2, so a stop_energy</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="comment">// close to that makes the filter catch nearly the whole mesh, and with force_split on</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="comment">// that means thousands of gate-bypassing splits per stall.</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="keywordtype">int</span> stuck_refine_num_worst = 0;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="comment">// Graph rings around each worst triangle&#39;s vertices included in the refinement.</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="keywordtype">int</span> stuck_refine_rings = 0;</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    <span class="comment">// Multiplicative reduction of m_sizing_scalar per refinement (0.5 =&gt; /2).</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <span class="keywordtype">double</span> stuck_refine_factor = 0.5;</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="comment">// Lower bound on m_sizing_scalar.</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordtype">double</span> stuck_refine_min_scalar = 1e-3;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="comment">// Gradation cap for the monotone sizing smoothing: neighboring sizings may</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="comment">// differ by at most this factor. The smoothing only ever *lowers* sizings</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="comment">// (spreads refinement outward), never raises the refined values, avoiding</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="comment">// sharp resolution jumps that make operations ill-conditioned.</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keywordtype">double</span> stuck_refine_gradation = 2.0;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="comment">// Force-split: when the max energy stalls, split each worst triangle&#39;s longest edge</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="comment">// once, bypassing the split length gate. This unsticks a sliver whose edges are</span></div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="comment">// too short to be split-eligible, WITHOUT touching the sizing field.</span></div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keywordtype">bool</span> stuck_refine_force_split = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="comment">// When a split&#39;s rounded (double) midpoint would invert an incident triangle, the</span></div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="comment">// split is normally rejected. If this is on, splits of edges that belong to the</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="comment">// current worst-triangle set instead fall back to the EXACT rational midpoint</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="comment">// (never inverts) and keep the new vertex un-rounded, so the worst region can</span></div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="comment">// still be refined.</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="keywordtype">bool</span> stuck_refine_rational_split = <span class="keyword">true</span>;</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        init(min_, max_);</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    }</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>};</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="comment">// ---- Skip good regions ----------------------------------------------</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="comment">// Only smooth vertices incident to a triangle whose energy is &gt;=</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="comment">// skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by</span></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="comment">// good triangles does nothing, so skipping it is free. Only smoothing is</span></div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="comment">// gated: gating the topology/sizing ops (split/collapse/swap) starves the</span></div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="comment">// optimizer and blows up the element count, so those always run over the</span></div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="comment">// whole mesh.</span></div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keywordtype">bool</span> skip_good_regions = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="comment">// Safety margin on the &quot;active&quot; threshold: a triangle is active when its</span></div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="comment">// energy is &gt;= this fraction of stop_energy, so vertices near triangles</span></div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="comment">// sitting just below the target are still smoothed.</span></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keywordtype">double</span> skip_good_regions_margin = 0.9;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
+<div class="foldopen" id="foldopen00091" data-start="{" data-end="}">
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">   91</a></span>    <a class="code hl_function" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">Parameters</a>(<span class="keyword">const</span> nlohmann::json&amp; json_params)</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    {</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        output_path = json_params[<span class="stringliteral">&quot;output&quot;</span>];</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>        epsr = json_params[<span class="stringliteral">&quot;eps_rel&quot;</span>];</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>        lr = json_params[<span class="stringliteral">&quot;length_rel&quot;</span>];</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        stop_energy = json_params[<span class="stringliteral">&quot;stop_energy&quot;</span>];</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        preserve_topology = json_params[<span class="stringliteral">&quot;preserve_topology&quot;</span>];</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        debug_output = json_params[<span class="stringliteral">&quot;DEBUG_output&quot;</span>];</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        perform_sanity_checks = json_params[<span class="stringliteral">&quot;DEBUG_sanity_checks&quot;</span>];</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> </div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>        <span class="comment">// Stuck-element sizing refinement.</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        stuck_refine_stall_eps = json_params[<span class="stringliteral">&quot;stuck_refine_stall_eps&quot;</span>];</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        stuck_refine_cooldown = json_params[<span class="stringliteral">&quot;stuck_refine_cooldown&quot;</span>];</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        stuck_refine_num_worst = json_params[<span class="stringliteral">&quot;stuck_refine_num_worst&quot;</span>];</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        stuck_refine_rings = json_params[<span class="stringliteral">&quot;stuck_refine_rings&quot;</span>];</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        stuck_refine_factor = json_params[<span class="stringliteral">&quot;stuck_refine_factor&quot;</span>];</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        stuck_refine_min_scalar = json_params[<span class="stringliteral">&quot;stuck_refine_min_scalar&quot;</span>];</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        stuck_refine_gradation = json_params[<span class="stringliteral">&quot;stuck_refine_gradation&quot;</span>];</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>        stuck_refine_force_split = json_params[<span class="stringliteral">&quot;stuck_refine_force_split&quot;</span>];</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        stuck_refine_rational_split = json_params[<span class="stringliteral">&quot;stuck_refine_rational_split&quot;</span>];</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        <span class="comment">// Skip good regions.</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        skip_good_regions = json_params[<span class="stringliteral">&quot;skip_good_regions&quot;</span>];</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        skip_good_regions_margin = json_params[<span class="stringliteral">&quot;skip_good_regions_margin&quot;</span>];</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    }</div>
 </div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>} <span class="comment">// namespace wmtk::components::triwild</span></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">wmtk::components::triwild::Parameters</a></div><div class="ttdef"><b>Definition</b> Parameters.h:5</div></div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector2d&amp; min_, <span class="keyword">const</span> Vector2d&amp; max_)</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    {</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        box_min = min_;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        box_max = max_;</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        diag_l = (box_max - box_min).norm();</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keywordflow">if</span> (l &gt; 0) {</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            lr = l / diag_l;</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            l = lr * diag_l;</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        }</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        splitting_l2 = l * l * (16 / 9.);</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        collapsing_l2 = l * l * (16 / 25.);</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        <span class="keywordflow">if</span> (eps &gt; 0) {</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            epsr = eps / diag_l;</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            eps = epsr * diag_l;</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        }</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        l_min = eps;</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>    }</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    <span class="keywordtype">void</span> init(</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        <span class="keyword">const</span> std::vector&lt;Vector2d&gt;&amp; vertices,</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    {</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        Vector2d min_, max_;</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>            <span class="keywordflow">if</span> (i == 0) {</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>                min_ = vertices[i];</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>                max_ = vertices[i];</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>            }</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 2; j++) {</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) {</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                    min_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                }</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) {</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                    max_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>                }</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>            }</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        }</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>        init(min_, max_);</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    }</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>};</div>
+</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>} <span class="comment">// namespace wmtk::components::triwild</span></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">wmtk::components::triwild::Parameters</a></div><div class="ttdef"><b>Definition</b> Parameters.h:7</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a28f57ac286ea9a1dab06783b4b194933"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">wmtk::components::triwild::Parameters::Parameters</a></div><div class="ttdeci">Parameters(const nlohmann::json &amp;json_params)</div><div class="ttdoc">Read every optimizer knob out of the (defaults-injected) JSON.</div><div class="ttdef"><b>Definition</b> Parameters.h:91</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

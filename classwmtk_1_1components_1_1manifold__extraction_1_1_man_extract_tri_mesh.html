@@ -320,6 +320,9 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b
 <tr class="memitem:a9939b4491bd9afc357468072368ab392 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a9939b4491bd9afc357468072368ab392"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a9939b4491bd9afc357468072368ab392">consolidate_mesh</a> ()</td></tr>
 <tr class="memdesc:a9939b4491bd9afc357468072368ab392 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">removing the elements that are removed  <br /></td></tr>
 <tr class="separator:a9939b4491bd9afc357468072368ab392 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90be1ec37c03c2ed25ee11d65784e627 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a90be1ec37c03c2ed25ee11d65784e627"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a90be1ec37c03c2ed25ee11d65784e627">remove_tris_by_ids</a> (const std::vector&lt; size_t &gt; &amp;fids)</td></tr>
+<tr class="memdesc:a90be1ec37c03c2ed25ee11d65784e627 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark the given triangles, and any vertex left without an incident triangle, as removed.  <br /></td></tr>
+<tr class="separator:a90be1ec37c03c2ed25ee11d65784e627 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af239b4f32ec1733261c301c351283dbc inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_af239b4f32ec1733261c301c351283dbc"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>switch_vertex</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:af239b4f32ec1733261c301c351283dbc inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html#a2fe6f785e3cd6443b9f2b8b923a3be13">Tuple::switch_vertex</a> funciton <br /></td></tr>
@@ -497,6 +500,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_vertex</b> (
 <tr class="memitem:abc3ccbd86a79b382228ef9f33b127b5b inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_abc3ccbd86a79b382228ef9f33b127b5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#abc3ccbd86a79b382228ef9f33b127b5b">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:abc3ccbd86a79b382228ef9f33b127b5b inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:abc3ccbd86a79b382228ef9f33b127b5b inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4eb9235bf581b8bd21f107a009d64f2 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_aa4eb9235bf581b8bd21f107a009d64f2"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> () const</td></tr>
+<tr class="separator:aa4eb9235bf581b8bd21f107a009d64f2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfb1ab1ee5ce24afbeedab25a13e917b inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_acfb1ab1ee5ce24afbeedab25a13e917b"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
+<tr class="separator:acfb1ab1ee5ce24afbeedab25a13e917b inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -620,6 +629,10 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a 
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
 <tr class="separator:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_static_attribs_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
+<tr class="memitem:ab9497bf06e5d322c0b0b3959cc401efc inherit pub_static_attribs_classwmtk_1_1_tri_mesh" id="r_ab9497bf06e5d322c0b0b3959cc401efc"><td class="memItemLeft" align="right" valign="top">
+static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES_PER_CELL</b> = 3</td></tr>
+<tr class="separator:ab9497bf06e5d322c0b0b3959cc401efc inherit pub_static_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a144cf2df60cc0a6aeb76916d24931ebb inherit pro_methods_classwmtk_1_1_tri_mesh" id="r_a144cf2df60cc0a6aeb76916d24931ebb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a144cf2df60cc0a6aeb76916d24931ebb">vertex_fan_components</a> (size_t vid, std::vector&lt; size_t &gt; &amp;component_of, std::vector&lt; size_t &gt; &amp;representatives) const</td></tr>
 <tr class="separator:a144cf2df60cc0a6aeb76916d24931ebb inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
