@@ -104,6 +104,10 @@ public:
     Parameters& m_params;
     SampleEnvelope& m_envelope;
 
+    /// Optional per-input names (JSON "input_names"), used to label the per-input
+    /// winding-number output fields. Empty => the fields are numbered.
+    std::vector<std::string> m_input_names;
+
     // for open boundary
     SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nlohmann/json.hpp>
+
 namespace wmtk::components::triwild {
 struct Parameters
 {
@@ -25,6 +27,94 @@ struct Parameters
 
     double w_amips = 1e-4;
     double w_envelope = 0;
+
+    // ---- Stuck-element sizing refinement --------------------------------
+    // Same names, defaults and meaning as tetwild/simwild -- see the specs.
+    //
+    // Trigger threshold: fire when the max energy did not improve by more than
+    // this *fraction* since the previous iteration, i.e. refine when
+    // (prev_max - max) <= stall_eps * prev_max. 0 => only when it does not
+    // improve at all (or gets worse).
+    double stuck_refine_stall_eps = 0.01;
+    // Cooldown: after a refinement, skip this many improvement iterations before
+    // refining again, so the operations get full passes to act on the new sizing
+    // field before more refinement is added. 0 => may refine every iteration.
+    int stuck_refine_cooldown = 1;
+    // Number of worst triangles (by energy) whose neighborhoods are refined.
+    // 0 => every triangle above the filter energy, max(max_energy / 100, stop_energy).
+    // Beware in 2D: the AMIPS2D energy of an equilateral triangle is 2, so a stop_energy
+    // close to that makes the filter catch nearly the whole mesh, and with force_split on
+    // that means thousands of gate-bypassing splits per stall.
+    int stuck_refine_num_worst = 0;
+    // Graph rings around each worst triangle's vertices included in the refinement.
+    int stuck_refine_rings = 0;
+    // Multiplicative reduction of m_sizing_scalar per refinement (0.5 => /2).
+    double stuck_refine_factor = 0.5;
+    // Lower bound on m_sizing_scalar.
+    double stuck_refine_min_scalar = 1e-3;
+    // Gradation cap for the monotone sizing smoothing: neighboring sizings may
+    // differ by at most this factor. The smoothing only ever *lowers* sizings
+    // (spreads refinement outward), never raises the refined values, avoiding
+    // sharp resolution jumps that make operations ill-conditioned.
+    double stuck_refine_gradation = 2.0;
+    // Force-split: when the max energy stalls, split each worst triangle's longest edge
+    // once, bypassing the split length gate. This unsticks a sliver whose edges are
+    // too short to be split-eligible, WITHOUT touching the sizing field.
+    bool stuck_refine_force_split = true;
+    // When a split's rounded (double) midpoint would invert an incident triangle, the
+    // split is normally rejected. If this is on, splits of edges that belong to the
+    // current worst-triangle set instead fall back to the EXACT rational midpoint
+    // (never inverts) and keep the new vertex un-rounded, so the worst region can
+    // still be refined.
+    bool stuck_refine_rational_split = true;
+
+    // ---- Skip good regions ----------------------------------------------
+    // Only smooth vertices incident to a triangle whose energy is >=
+    // skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by
+    // good triangles does nothing, so skipping it is free. Only smoothing is
+    // gated: gating the topology/sizing ops (split/collapse/swap) starves the
+    // optimizer and blows up the element count, so those always run over the
+    // whole mesh.
+    bool skip_good_regions = true;
+    // Safety margin on the "active" threshold: a triangle is active when its
+    // energy is >= this fraction of stop_energy, so vertices near triangles
+    // sitting just below the target are still smoothed.
+    double skip_good_regions_margin = 0.9;
+
+    Parameters() = default;
+
+    /**
+     * @brief Read every optimizer knob out of the (defaults-injected) JSON.
+     *
+     * Mirrors simwild's Parameters(json) so the three applications stay in step.
+     */
+    Parameters(const nlohmann::json& json_params)
+    {
+        output_path = json_params["output"];
+
+        epsr = json_params["eps_rel"];
+        lr = json_params["length_rel"];
+        stop_energy = json_params["stop_energy"];
+        preserve_topology = json_params["preserve_topology"];
+
+        debug_output = json_params["DEBUG_output"];
+        perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+
+        // Stuck-element sizing refinement.
+        stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
+        stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
+        stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
+        stuck_refine_rings = json_params["stuck_refine_rings"];
+        stuck_refine_factor = json_params["stuck_refine_factor"];
+        stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
+        stuck_refine_gradation = json_params["stuck_refine_gradation"];
+        stuck_refine_force_split = json_params["stuck_refine_force_split"];
+        stuck_refine_rational_split = json_params["stuck_refine_rational_split"];
+
+        // Skip good regions.
+        skip_good_regions = json_params["skip_good_regions"];
+        skip_good_regions_margin = json_params["skip_good_regions_margin"];
+    }
 
     void init(const Vector2d& min_, const Vector2d& max_)
     {

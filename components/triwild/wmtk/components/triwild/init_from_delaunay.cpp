@@ -221,17 +221,22 @@ void init_from_delaunay_box_mesh(
 
 void init_from_paths(
     const std::vector<std::string>& input_paths,
+    double remove_duplicate_eps,
     MatrixXd& V_out,
     MatrixXi& F_out,
-    MatrixXi& E_out)
+    MatrixXi& E_out,
+    std::vector<MatrixXd>& Vs_out,
+    std::vector<MatrixXi>& Es_out)
 {
-    std::vector<MatrixXd> Vs;
-    std::vector<MatrixXi> Es;
+    std::vector<MatrixXd>& Vs = Vs_out;
+    std::vector<MatrixXi>& Es = Es_out;
+    Vs.clear();
+    Es.clear();
     // read input edge meshes
     for (const std::string& path : input_paths) {
         MatrixXd V;
         MatrixXi E;
-        io::read_edge_mesh(path, V, E);
+        io::read_edge_mesh(path, V, E, remove_duplicate_eps);
         logger().info("Read edge mesh {}: #V = {}, #E = {}", path, V.rows(), E.rows());
         V = V.block(0, 0, V.rows(), 2).eval(); // only keep x, y
         Vs.push_back(V);

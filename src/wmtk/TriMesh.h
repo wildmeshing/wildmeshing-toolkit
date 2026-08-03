@@ -518,12 +518,47 @@ public:
      * @return size_t
      */
     size_t vert_capacity() const { return current_vert_size; }
+
+    /**
+     * @name Dimension-generic cell accessors
+     *
+     * A "cell" is the top-dimensional element: a triangle here, a tet in TetMesh. These
+     * three members plus EDGES_PER_CELL are the whole interface the dimension-generic
+     * helpers in wmtk/utils (ParallelCollect, SizingField) need, so the same helper works
+     * on both meshes without traits or overloads.
+     * @{
+     */
+    static constexpr int EDGES_PER_CELL = 3;
+    size_t cell_capacity() const { return tri_capacity(); }
+    Tuple tuple_from_cell(size_t cid) const { return tuple_from_tri(cid); }
+    /** @} */
     /**
      * @brief removing the elements that are removed
      *
      * @param bnd_output when turn on will write the boundary vertices to "bdn_table.dmat"
      */
     void consolidate_mesh();
+
+    /**
+     * @brief Mark the given triangles, and any vertex left without an incident triangle,
+     * as removed.
+     *
+     * The 2D counterpart of TetMesh::remove_tets_by_ids, used by the output filters to
+     * drop the region outside the input. Call consolidate_mesh() afterwards to compact.
+     */
+    void remove_tris_by_ids(const std::vector<size_t>& fids)
+    {
+        for (const size_t fid : fids) {
+            m_tri_connectivity[fid].m_is_removed = true;
+            for (int j = 0; j < 3; j++) {
+                vector_erase(m_vertex_connectivity[m_tri_connectivity[fid][j]].m_conn_tris, fid);
+            }
+        }
+        for (auto& v : m_vertex_connectivity) {
+            if (v.m_is_removed) continue;
+            if (v.m_conn_tris.empty()) v.m_is_removed = true;
+        }
+    }
     /**
      * @brief a duplicate of Tuple::switch_vertex funciton
      */

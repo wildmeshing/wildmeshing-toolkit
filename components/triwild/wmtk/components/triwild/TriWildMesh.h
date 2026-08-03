@@ -17,6 +17,8 @@
 
 #include "Parameters.h"
 
+#include <set>
+
 namespace wmtk::components::triwild {
 
 // TODO: missing comments on what these attributes are
@@ -165,7 +167,54 @@ public:
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
+    /**
+     * @brief The old global sizing-field update (KNN R-ball around every low-quality
+     * triangle). Superseded by refine_sizing_around_worst, but kept compiled and callable
+     * so the two can be compared -- tetwild and simwild keep theirs for the same reason.
+     */
     bool adjust_sizing_field_serial(double max_energy);
+
+    /**
+     * @brief Escape a stuck max energy by refining the sizing field around the worst
+     * elements.
+     *
+     * Finds the m_params.stuck_refine_num_worst triangles with the highest energy (0 =>
+     * all of them above the filter energy), gathers all vertices within
+     * m_params.stuck_refine_rings graph rings of them, and multiplies each such vertex's
+     * m_sizing_scalar by m_params.stuck_refine_factor (clamped at
+     * m_params.stuck_refine_min_scalar). Then runs gradation_smooth_sizing so the refined
+     * region blends smoothly into the surrounding resolution.
+     *
+     * @return the number of vertices refined.
+     */
+    size_t refine_sizing_around_worst(double max_energy);
+
+    /**
+     * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
+     *
+     * Enforces m_sizing_scalar[v] <= grade * m_sizing_scalar[u] for every edge (u,v),
+     * propagating outward from `seeds` with a min-relaxation. It never raises a sizing
+     * value, so it only ever spreads more refinement into the halo around already-refined
+     * vertices, avoiding sharp resolution jumps.
+     */
+    void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
+
+    /// The longest edge of each current worst triangle. split_all_edges force-splits
+    /// exactly these edges (bypassing the length gate), so a stuck sliver's long edge is
+    /// split immediately without changing the sizing field. Populated serially by
+    /// refine_sizing_around_worst; read-only during the parallel split pass, then cleared
+    /// once split_all_edges has consumed it.
+    std::set<simplex::Edge> m_force_split_edges;
+
+    /// Count of force-splits taken in the current split pass (atomic_ref from the parallel
+    /// split; reset + logged by split_all_edges). Diagnostic only.
+    size_t m_force_split_count = 0;
+
+    /// True iff edge (v1,v2) is a worst triangle's longest edge queued for force-split.
+    bool is_force_split_edge(size_t v1, size_t v2) const
+    {
+        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
+    }
 
     void write_msh_groups(std::string file, const bool write_envelope = true);
 
@@ -234,7 +283,39 @@ public:
         bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
-    void compute_winding_numbers(const std::vector<std::string>& input_paths);
+    /**
+     * @brief m_quality threshold above which a face is "active" (worth operating on) for
+     * the skip-good-regions filter.
+     *
+     * Unlike the tet applications, m_quality here *is* the AMIPS2D energy (tetwild stores
+     * AMIPS^3 and cube-roots it), so the threshold is the energy directly.
+     */
+    double active_quality_threshold() const
+    {
+        return m_params.skip_good_regions_margin * m_params.stop_energy;
+    }
+
+    /**
+     * @brief vids of the vertices incident to at least one "active" face
+     * (m_quality >= active_quality_threshold()). Used by the skip-good-regions filter to
+     * restrict smoothing to non-good regions (smoothing a vertex surrounded by good faces
+     * does nothing).
+     */
+    std::vector<size_t> active_vertices() const;
+
+    /**
+     * @brief Tag every face with the inputs it lies inside, by winding number.
+     *
+     * `Vs`/`Es` are the per-input meshes as read when the initial mesh was built (2D, x/y
+     * only) -- they are passed in rather than re-read from disk.
+     */
+    void compute_winding_numbers(const std::vector<MatrixXd>& Vs, const std::vector<MatrixXi>& Es);
+
+    /// Remove the faces that lie inside no input (needs compute_winding_numbers).
+    void filter_with_input_winding_number();
+    /// Remove the flood-fill region that dominates the mesh boundary (needs flood_fill).
+    void filter_with_flood_fill();
+
     int flood_fill();
 
     bool vertex_is_on_surface(const size_t vid) const override

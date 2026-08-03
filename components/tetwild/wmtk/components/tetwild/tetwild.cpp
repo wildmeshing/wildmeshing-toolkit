@@ -318,6 +318,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // generate new mesh
     tetwild::TetWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
+    mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
 
     mesh_new.init_from_Volumeremesher(
         v_rational,
@@ -674,7 +675,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     }
 
 
-    mesh_new.save_paraview(output_path, false);
+    if (json_params["write_vtu"]) {
+        mesh_new.save_paraview(output_path, false);
+    }
 
     mesh_new.output_mesh(output_path + "_final.msh");
 
