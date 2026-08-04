@@ -389,6 +389,54 @@ TetMesh::Tuple TetMesh::tuple_from_face(size_t tid, int local_fid) const
     return Tuple(*this, vid, eid, local_fid, tid);
 }
 
+size_t TetMesh::lowest_common_tet(const size_t v0_id, const size_t v1_id, const size_t v2_id) const
+{
+    const auto& t0 = m_vertex_connectivity[v0_id].m_conn_tets;
+    const auto& t1 = m_vertex_connectivity[v1_id].m_conn_tets;
+    const auto& t2 = m_vertex_connectivity[v2_id].m_conn_tets;
+
+    // Scan the SMALLEST of the three fans and test the other two vertices against each
+    // candidate tet, rather than merging all three in lockstep.
+    //
+    // The lockstep merge advances every pointer, so it costs O(|t0| + |t1| + |t2|) --
+    // set by the LARGEST fan. That is fine when the fans are all ~20-30, which is the
+    // valence of a well-shaped tet mesh, and it is why the merge was written that way.
+    // It collapses when the fans are skewed. On Thingi10K model 71263 a split cascade
+    // drove two vertices to 5494 and 10896 incident tets while the third had 10: the
+    // merge walked ~16k entries to find a tet that 10 candidates would have located.
+    // split_edge_before calls this four times per incident tet, so the pass stopped
+    // making visible progress -- 98.5% of samples sat in this function.
+    //
+    // Scanning the smallest fan costs O(min fan) with a four-element check per candidate,
+    // so it is comparable at normal valence and bounded by the *best* vertex rather than
+    // the worst when the mesh degenerates.
+    //
+    // m_conn_tets is sorted, so scanning upward returns the lowest common tet id -- the
+    // canonicalisation the global face id depends on, since a face shared by two tets
+    // must get the same id from either side.
+    const std::vector<size_t>* fan = &t0;
+    size_t other_a = v1_id;
+    size_t other_b = v2_id;
+    if (t1.size() < fan->size()) {
+        fan = &t1;
+        other_a = v0_id;
+        other_b = v2_id;
+    }
+    if (t2.size() < fan->size()) {
+        fan = &t2;
+        other_a = v0_id;
+        other_b = v1_id;
+    }
+
+    for (const size_t tid : *fan) {
+        const auto& conn = m_tet_connectivity[tid];
+        if (conn.find(other_a) >= 0 && conn.find(other_b) >= 0) {
+            return tid;
+        }
+    }
+    return std::numeric_limits<size_t>::max();
+}
+
 std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<size_t, 3>& vids) const
 {
     size_t v0_id = vids[0];
@@ -402,41 +450,16 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
         const auto& t0 = m_vertex_connectivity[v0_id].m_conn_tets;
         const auto& t1 = m_vertex_connectivity[v1_id].m_conn_tets;
         const auto& t2 = m_vertex_connectivity[v2_id].m_conn_tets;
-        size_t i0 = 0;
-        size_t i1 = 0;
-        size_t i2 = 0;
 
         if (t0.empty() || t1.empty() || t2.empty()) {
             assert(false && "tuple_from_face: one of the vertices has no incident tets");
             return {Tuple(), -1};
         }
 
-        while (true) {
-            if (t0[i0] < t1[i1] || t0[i0] < t2[i2]) {
-                i0++;
-                if (i0 == t0.size()) {
-                    assert(false && "tuple_from_face: no common tet found for the three vertices");
-                    return {Tuple(), -1};
-                }
-            }
-            if (t1[i1] < t2[i2] || t1[i1] < t0[i0]) {
-                i1++;
-                if (i1 == t1.size()) {
-                    assert(false && "tuple_from_face: no common tet found for the three vertices");
-                    return {Tuple(), -1};
-                }
-            }
-            if (t2[i2] < t0[i0] || t2[i2] < t1[i1]) {
-                i2++;
-                if (i2 == t2.size()) {
-                    assert(false && "tuple_from_face: no common tet found for the three vertices");
-                    return {Tuple(), -1};
-                }
-            }
-            if (t0[i0] == t1[i1] && t0[i0] == t2[i2]) {
-                global_tid = t0[i0];
-                break;
-            }
+        global_tid = lowest_common_tet(v0_id, v1_id, v2_id);
+        if (global_tid == std::numeric_limits<size_t>::max()) {
+            assert(false && "tuple_from_face: no common tet found for the three vertices");
+            return {Tuple(), -1};
         }
     }
 

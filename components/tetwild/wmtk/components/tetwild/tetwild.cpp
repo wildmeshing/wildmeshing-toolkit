@@ -129,6 +129,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
+    params.split_high_valence_threshold = json_params["split_high_valence_threshold"];
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
     params.w_amips = json_params["w_amips"];
 

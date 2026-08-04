@@ -82,6 +82,22 @@ struct Parameters
     double stop_energy = 10;
 
     /**
+     * Incident-tet count above which a vertex is treated as pathological, or 0 to
+     * disable the gate.
+     *
+     * A well-shaped tet mesh has vertex valence around 20-30. When a split cascade
+     * concentrates on one vertex the valence runs away -- Thingi10K model 71263 reached
+     * 10896 -- and every operation touching it becomes O(valence): the one-ring walks in
+     * split_edge_after alone stall the pass. Above this threshold a vertex accepts only
+     * one valence-increasing split per split pass, which lets the refinement spread out
+     * instead of piling onto the same vertex.
+     *
+     * Splitting edge (a,b) leaves a's and b's own counts unchanged and adds one to every
+     * vertex in the edge's link, so the gate is applied to the link, not the endpoints.
+     */
+    int split_high_valence_threshold = 200;
+
+    /**
      * Relative weight of the AMIPS (quality) term against the envelope (stay-on-surface)
      * term during smoothing. w_envelope is derived as 1 - w_amips in the TetWildMesh
      * constructor, so the small default means the envelope dominates and AMIPS acts as a
