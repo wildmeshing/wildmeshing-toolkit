@@ -89,13 +89,15 @@ PYBIND11_MODULE(wildmeshing, m, py::mod_gil_not_used())
     m.def("wildmeshing", &wmtk_wrapper, "Wildmeshing-Toolkit application");
 
     py::class_<PyExpression>(m, "Expression")
-        .def(py::init<const std::string&, const std::vector<std::string>&>(),
-             "expr"_a,
-             "known_names"_a,
-             "Parse a tag expression (names, &, |, !, parentheses, _) "
-             "against the given known names.")
-        .def("eval", &PyExpression::eval, "tags"_a,
-             "Evaluate against a set of tag names.")
-        .def("has_unknown_names", &PyExpression::has_unknown_names,
-             "True if the expression references names outside known_names.");
+        .def(
+            py::init<const std::string&, const std::vector<std::string>&>(),
+            "expr"_a,
+            "known_names"_a,
+            "Parse a tag expression (names, &, |, !, parentheses, _) "
+            "against the given known names.")
+        .def("eval", &PyExpression::eval, "tags"_a, "Evaluate against a set of tag names.")
+        .def(
+            "has_unknown_names",
+            &PyExpression::has_unknown_names,
+            "True if the expression references names outside known_names.");
 }
