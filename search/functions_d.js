@@ -12,5 +12,6 @@ var searchData=
   ['resize_9',['resize',['../classwmtk_1_1threading_1_1collector.html#ae42cf15f595eef9a39c83ff189759995',1,'wmtk::threading::collector']]],
   ['rollback_10',['rollback',['../structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287',1,'wmtk::AttributeCollection']]],
   ['rollback_5fprotected_5fattributes_11',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1',1,'wmtk::TriMesh']]],
-  ['round_12',['round',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad7558616aa2479ba9c410d55911e8bdb',1,'wmtk::components::simwild::SimWildMesh']]]
+  ['round_12',['round',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad7558616aa2479ba9c410d55911e8bdb',1,'wmtk::components::simwild::SimWildMesh']]],
+  ['round_5fall_5fvertices_13',['round_all_vertices',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ab3485063a512c867b01cef85e1331e73',1,'wmtk::components::tetwild::TetWildMesh']]]
 ];

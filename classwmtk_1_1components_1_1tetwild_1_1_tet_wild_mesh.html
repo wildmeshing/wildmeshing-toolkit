@@ -269,6 +269,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (co
 <tr class="memitem:a468dad5296d0a596e2f6716eabab1c2e" id="r_a468dad5296d0a596e2f6716eabab1c2e"><td class="memItemLeft" align="right" valign="top"><a id="a468dad5296d0a596e2f6716eabab1c2e" name="a468dad5296d0a596e2f6716eabab1c2e"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>round</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc)</td></tr>
 <tr class="separator:a468dad5296d0a596e2f6716eabab1c2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3485063a512c867b01cef85e1331e73" id="r_ab3485063a512c867b01cef85e1331e73"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ab3485063a512c867b01cef85e1331e73">round_all_vertices</a> ()</td></tr>
+<tr class="memdesc:ab3485063a512c867b01cef85e1331e73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try to round every un-rounded vertex; returns the number reclaimed.  <br /></td></tr>
+<tr class="separator:ab3485063a512c867b01cef85e1331e73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0879aa197dc0bab8aed9ddaf94bb759d" id="r_a0879aa197dc0bab8aed9ddaf94bb759d"><td class="memItemLeft" align="right" valign="top"><a id="a0879aa197dc0bab8aed9ddaf94bb759d" name="a0879aa197dc0bab8aed9ddaf94bb759d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_surface</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc)</td></tr>
 <tr class="separator:a0879aa197dc0bab8aed9ddaf94bb759d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -751,6 +754,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_envelope</b> = 
 <tr class="memitem:ad885c1a1b4a77963391ca91cf4e06c7c" id="r_ad885c1a1b4a77963391ca91cf4e06c7c"><td class="memItemLeft" align="right" valign="top"><a id="ad885c1a1b4a77963391ca91cf4e06c7c" name="ad885c1a1b4a77963391ca91cf4e06c7c"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">TetAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_attribute</b></td></tr>
 <tr class="separator:ad885c1a1b4a77963391ca91cf4e06c7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7180d895246da57feb0edb3c7059d131" id="r_a7180d895246da57feb0edb3c7059d131"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a7180d895246da57feb0edb3c7059d131">m_all_rounded</a> = false</td></tr>
+<tr class="memdesc:a7180d895246da57feb0edb3c7059d131"><td class="mdescLeft">&#160;</td><td class="mdescRight">True when every vertex is known to be rounded.  <br /></td></tr>
+<tr class="separator:a7180d895246da57feb0edb3c7059d131"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1acddac0eab1d4361316d6b01d4190f" id="r_ac1acddac0eab1d4361316d6b01d4190f"><td class="memItemLeft" align="right" valign="top"><a id="ac1acddac0eab1d4361316d6b01d4190f" name="ac1acddac0eab1d4361316d6b01d4190f"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_split</b> = 0</td></tr>
 <tr class="separator:ac1acddac0eab1d4361316d6b01d4190f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1337,6 +1343,27 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 
 <p>Escape a stuck max energy by refining the sizing field around the worst elements. </p>
 <p>Finds the m_params.stuck_refine_num_worst tets with the highest energy, gathers all vertices within m_params.stuck_refine_rings graph rings of them, and multiplies each such vertex's m_sizing_scalar by m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar). Then runs gradation_smooth_sizing so the refined region blends smoothly into the surrounding resolution. Replaces the old global adjust_sizing_field mechanism. Returns the number of vertices refined. </p>
+
+</div>
+</div>
+<a id="ab3485063a512c867b01cef85e1331e73" name="ab3485063a512c867b01cef85e1331e73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3485063a512c867b01cef85e1331e73">&#9670;&#160;</a></span>round_all_vertices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::tetwild::TetWildMesh::round_all_vertices </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Try to round every un-rounded vertex; returns the number reclaimed. </p>
+<p>round() is otherwise only attempted as a side effect of another operation (smooth_before on the vertex being smoothed, collapse_edge_after on the merged one), and neither reaches a vertex that only becomes roundable later: smoothing skips "good" regions by default. Without a sweep such a vertex keeps exact coordinates into the output for no geometric reason.</p>
+<p>Skipped outright when m_all_rounded says there is nothing to do. </p>
 
 </div>
 </div>
@@ -2005,6 +2032,23 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a7180d895246da57feb0edb3c7059d131" name="a7180d895246da57feb0edb3c7059d131"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7180d895246da57feb0edb3c7059d131">&#9670;&#160;</a></span>m_all_rounded</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;bool&gt; wmtk::components::tetwild::TetWildMesh::m_all_rounded = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>True when every vertex is known to be rounded. </p>
+<p>Only trusted when true, and only <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ab3485063a512c867b01cef85e1331e73" title="Try to round every un-rounded vertex; returns the number reclaimed.">round_all_vertices()</a> sets it that way. Any code that leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever. Atomic because operations that clear it run in parallel. </p>
+
+</div>
+</div>
 <a id="a4ba743cfa5c3f896570c9b183b908c75" name="a4ba743cfa5c3f896570c9b183b908c75"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ba743cfa5c3f896570c9b183b908c75">&#9670;&#160;</a></span>m_force_split_count</h2>
 
