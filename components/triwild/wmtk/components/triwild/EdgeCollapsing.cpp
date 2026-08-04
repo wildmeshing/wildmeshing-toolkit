@@ -7,15 +7,39 @@
 #include <unordered_set>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
 
 namespace wmtk::components::triwild {
 
 void TriWildMesh::collapse_all_edges(bool is_limit_length)
 {
-    std::vector<std::pair<std::string, Tuple>> all_ops;
+    igl::Timer timer;
+    timer.start();
+
+    // Build the collapse op list in parallel (both edge directions). Filtering of
+    // too-long edges still happens in is_weight_up_to_date.
+    auto all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TriWildMesh& m, const Tuple& e, auto& out) {
+            out.emplace_back("edge_collapse", e);
+            out.emplace_back("edge_collapse", e.switch_vertex(m));
+        });
+    logger().info("#E = {}", all_ops.size() / 2);
+    logger().info("edge collapse prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
     auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = [](const TriWildMesh& m, Op op, const auto& newts) {
+            std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
+            op_tups.reserve(2 * newts.size());
+            for (const Tuple& t : newts) {
+                op_tups.emplace_back(op, t);
+                op_tups.emplace_back(op, t.switch_vertex(m));
+            }
+            return op_tups;
+        };
         executor.priority = [](const TriWildMesh& m, Op op, const Tuple& t) {
             return -m.get_length2(t);
         };
@@ -37,25 +61,14 @@ void TriWildMesh::collapse_all_edges(bool is_limit_length)
             return true;
         };
 
-        // Execute!!
-        do {
-            all_ops.clear();
-            const auto all_edges = get_edges();
-            logger().info("#E = {}", all_edges.size());
-            for (const Tuple& loc : all_edges) {
-                // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-                all_ops.emplace_back("edge_collapse", loc);
-                all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-            }
-            executor(*this, all_ops);
-            logger().info(
-                "success: {}, failed: {}",
-                executor.get_cnt_success(),
-                executor.get_cnt_fail());
-        } while (executor.get_cnt_success() > 0);
+        // Retry a failed collapse only where the mesh actually changed this round
+        // (dirty-epoch localized retry). This replaces the loop that rebuilt the whole op
+        // list from get_edges() after every pass and re-ran the expensive geometric
+        // pre-checks on every failure, even where nothing could have changed.
+        const size_t total_success = wmtk::run_localized_to_convergence(*this, executor, all_ops);
+        logger().info("collapse success: {}", total_success);
     };
 
-    igl::Timer timer;
     timer.start();
     if (NUM_THREADS > 0) {
         auto executor = ExecutePass<TriWildMesh>(ExecutionPolicy::kPartition);

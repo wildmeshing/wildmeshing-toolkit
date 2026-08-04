@@ -57,6 +57,11 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very long to run)" OFF) # off by default
+
+# Cross-checks every TriMesh split and collapse against a brute-force reference built from
+# the whole mesh, so it is O(#F) per operation. Tests only -- off by default, and gated at
+# compile time rather than by a runtime flag so a normal build carries none of it.
+option(WMTK_DEBUG_BRUTE_FORCE_OPS "Validate each TriMesh operation against a brute-force reference (very slow)" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -115,6 +120,12 @@ target_include_directories(wildmeshing_toolkit PUBLIC src)
 # Compile definitions
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
 target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
+
+if(WMTK_DEBUG_BRUTE_FORCE_OPS)
+    message(STATUS "TriMesh operations will be cross-checked against a brute-force reference. This is very slow.")
+    # PUBLIC: tests #ifdef on the same macro to decide whether to exercise the validator.
+    target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_DEBUG_BRUTE_FORCE_OPS)
+endif()
 
 # C++ standard
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)

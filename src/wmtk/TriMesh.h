@@ -17,6 +17,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <vector>
 
 namespace wmtk {
@@ -109,16 +110,27 @@ public:
          */
         Tuple switch_edge(const TriMesh& m) const;
         /**
-         * Switch operation for the adjacent triangle.
+         * Step to the next triangle around this edge.
          *
-         * This operation only works for manifold meshes!!!
+         * The faces incident to an edge are ordered by fid, and this advances one place
+         * along that order, wrapping exactly once. On a manifold edge that is the triangle
+         * on the other side, which is what this has always returned. On a non-manifold
+         * edge, applying it edge_valence() times is the identity; it no longer picks an
+         * arbitrary fan member, as it did when the fan was assumed to hold at most two
+         * faces. Callers that genuinely need the manifold case -- a swap, say -- should
+         * test is_manifold_edge() rather than assume it.
          *
          * @param m Mesh
-         * @return Tuple for the edge-adjacent triangle, sharing same edge, and vertex.
-         * @note nullopt if the Tuple of the switch goes off the boundary.
+         * @return Tuple for the next triangle, sharing the same edge and vertex.
+         * @note nullopt on a boundary edge, which has nowhere to step to.
          */
         std::optional<Tuple> switch_face(const TriMesh& m) const;
 
+        /**
+         * Every other triangle around this edge, in increasing face id order.
+         *
+         * Empty on a boundary edge, one entry when manifold.
+         */
         std::vector<Tuple> switch_faces(const TriMesh& m) const;
 
         /**
@@ -377,6 +389,27 @@ private:
     std::atomic_long current_vert_size;
     std::atomic_long current_tri_size;
     double m_preallocation_factor = 6.0;
+    bool m_use_link_condition = true;
+
+protected:
+    /**
+     * Edge-connected components of the fan of `vid`, as positions into that fan.
+     *
+     * `component_of[i]` is the index into `representatives` of the component containing
+     * `m_vertex_connectivity[vid].m_conn_tris[i]`, and `representatives` holds each
+     * component's smallest fid in increasing order. Two faces are in the same component
+     * when they share an edge containing `vid`.
+     *
+     * Both outputs are sized by the fan rather than by the mesh, and nothing is cached:
+     * the fan is already the whole input, so recomputing costs the same as reading a
+     * stored answer would, minus the obligation to keep it current.
+     */
+    void vertex_fan_components(
+        size_t vid,
+        std::vector<size_t>& component_of,
+        std::vector<size_t>& representatives) const;
+
+private:
     /**
      * @brief Get the next avaiblie global index for the triangle
      *
@@ -419,8 +452,10 @@ public:
      */
     virtual bool collapse_edge_before(const Tuple& t)
     {
-        if (check_link_condition(t)) return true;
-        return false;
+        if (!m_use_link_condition) {
+            return true;
+        }
+        return check_link_condition(t);
     }
     /**
      * @brief User specified modifications and desideratas after an edge collapse
@@ -483,12 +518,47 @@ public:
      * @return size_t
      */
     size_t vert_capacity() const { return current_vert_size; }
+
+    /**
+     * @name Dimension-generic cell accessors
+     *
+     * A "cell" is the top-dimensional element: a triangle here, a tet in TetMesh. These
+     * three members plus EDGES_PER_CELL are the whole interface the dimension-generic
+     * helpers in wmtk/utils (ParallelCollect, SizingField) need, so the same helper works
+     * on both meshes without traits or overloads.
+     * @{
+     */
+    static constexpr int EDGES_PER_CELL = 3;
+    size_t cell_capacity() const { return tri_capacity(); }
+    Tuple tuple_from_cell(size_t cid) const { return tuple_from_tri(cid); }
+    /** @} */
     /**
      * @brief removing the elements that are removed
      *
      * @param bnd_output when turn on will write the boundary vertices to "bdn_table.dmat"
      */
     void consolidate_mesh();
+
+    /**
+     * @brief Mark the given triangles, and any vertex left without an incident triangle,
+     * as removed.
+     *
+     * The 2D counterpart of TetMesh::remove_tets_by_ids, used by the output filters to
+     * drop the region outside the input. Call consolidate_mesh() afterwards to compact.
+     */
+    void remove_tris_by_ids(const std::vector<size_t>& fids)
+    {
+        for (const size_t fid : fids) {
+            m_tri_connectivity[fid].m_is_removed = true;
+            for (int j = 0; j < 3; j++) {
+                vector_erase(m_vertex_connectivity[m_tri_connectivity[fid][j]].m_conn_tris, fid);
+            }
+        }
+        for (auto& v : m_vertex_connectivity) {
+            if (v.m_is_removed) continue;
+            if (v.m_conn_tris.empty()) v.m_is_removed = true;
+        }
+    }
     /**
      * @brief a duplicate of Tuple::switch_vertex funciton
      */
@@ -509,6 +579,21 @@ public:
      * @returns true is the link check is passed
      */
     bool check_link_condition(const Tuple& t) const;
+
+    /**
+     * @brief Should collapse_edge_before enforce the link condition?
+     *
+     * The link condition guarantees a collapse preserves the homotopy type and keeps the
+     * mesh a simplicial complex. Turning it off allows collapses that change topology and
+     * that create non-manifold edges and vertices, which the data structure now
+     * represents; the collapse itself still merges any duplicate triangles it produces so
+     * the result stays a simplicial complex.
+     *
+     * Defaults to true, which is the historical behaviour of every caller.
+     */
+    void set_use_link_condition(bool use_it) { m_use_link_condition = use_it; }
+    bool use_link_condition() const { return m_use_link_condition; }
+
     /**
      * @brief verify the connectivity validity of the mesh
      * @note a valid mesh can have triangles that are is_removed == true
@@ -520,11 +605,108 @@ public:
     bool check_edge_manifold() const;
 
     /**
-     * @brief check if edge that's represented by a Tuple is at the boundary of the mesh
+     * @brief Number of triangles incident to the edge the Tuple points at.
+     *
+     * 1 on the boundary, 2 when manifold, more when not. O(valence).
+     */
+    size_t edge_valence(const TriMesh::Tuple& t) const;
+
+    /**
+     * @brief Does exactly one triangle share this edge?
      *
      * @param t Tuple refering to an edge
      */
-    bool is_boundary_edge(const TriMesh::Tuple& t) const { return t.switch_faces(*this).empty(); }
+    bool is_boundary_edge(const TriMesh::Tuple& t) const;
+
+    /**
+     * @brief Do exactly two triangles share this edge?
+     *
+     * Note that a boundary edge is not manifold by this definition; callers that need
+     * "manifold or boundary" should test is_manifold_edge(t) || is_boundary_edge(t).
+     *
+     * Stops counting at three, so a pole with a large fan costs no more than a normal
+     * edge. swap_edge_before() asks this of every candidate edge.
+     */
+    bool is_manifold_edge(const TriMesh::Tuple& t) const;
+
+    /**
+     * @brief Number of edge-connected components in the fan of a vertex.
+     *
+     * 1 for a manifold vertex (and for a vertex on a non-manifold edge, whose faces are
+     * still joined through that edge), more for a pinch point. 0 for an isolated vertex.
+     */
+    size_t vertex_component_count(const size_t vid) const;
+    size_t vertex_component_count(const TriMesh::Tuple& t) const
+    {
+        return vertex_component_count(t.vid(*this));
+    }
+
+    bool is_manifold_vertex(const size_t vid) const { return vertex_component_count(vid) <= 1; }
+
+    /**
+     * @brief Jump to the next edge-connected component of the fan of the Tuple's vertex.
+     *
+     * The returned Tuple points at the same vertex but at a face that no sequence of
+     * switch_edge/switch_face can reach from `t`. Applying it once per component returns
+     * to the starting component. Returns nullopt when the vertex is manifold, i.e. when
+     * there is no other component to jump to.
+     */
+    std::optional<Tuple> switch_component(const TriMesh::Tuple& t) const;
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    /**
+     * Cross-check of the incremental operations against a brute-force reference.
+     *
+     * Compiled only under -DWMTK_DEBUG_BRUTE_FORCE_OPS=ON. The reference rebuilds the whole
+     * mesh as a plain list of vertex triples -- the OFF view of it -- applies the operation
+     * there in the obvious way, and re-emits. split_edge and collapse_edge then compare
+     * that string against their own result and throw on any difference.
+     *
+     * Two conventions have to match for the comparison to mean anything, and both are the
+     * real operation's: a collapse keeps the *second* endpoint of the edge and retires the
+     * first, and a duplicate group keeps its smallest fid.
+     */
+
+    /// Alive vids, then alive faces in fid order, each rotated to start at its smallest vid
+    /// so that orientation survives but the arbitrary starting corner does not.
+    std::string debug_canonical_form() const;
+
+    /// The mesh as it would be after collapsing (v_removed, v_kept), as a canonical form.
+    std::string debug_reference_collapse(size_t v_removed, size_t v_kept) const;
+
+    /**
+     * The mesh as it would be after swapping edge (v0,v1).
+     *
+     * `fa` is the face the operation's tuple sits on and `fb` the one across the edge. The
+     * swap replaces v1 by fb's apex in fa, and v0 by fa's apex in fb, which is the pair of
+     * triangles on the other diagonal.
+     */
+    std::string debug_reference_swap(size_t v0, size_t v1, size_t fa, size_t fb) const;
+
+    /**
+     * The mesh as it would be after splitting face `fid` at `new_v`.
+     *
+     * v0, v1 and v2 are the face's vertices in the operation's own order, which fixes which
+     * child lands in which slot; `tri_cap` is tri_capacity() before the split reserved its
+     * slots, for the same reason as debug_reference_split.
+     */
+    std::string debug_reference_split_face(
+        size_t fid,
+        size_t v0,
+        size_t v1,
+        size_t v2,
+        size_t new_v,
+        size_t tri_cap) const;
+
+    /**
+     * The mesh as it would be after splitting edge (v0,v1) with `new_v` in the middle.
+     *
+     * `tri_cap` is tri_capacity() as it was *before* the split reserved its new slots.
+     * Those slots are live but unfilled at the point the caller needs the reference, so
+     * reading them would put phantom (0,0,0) faces in the expected string.
+     */
+    std::string debug_reference_split(size_t v0, size_t v1, size_t new_v, size_t tri_cap) const;
+#endif
 
     /**
      * @brief check if the vertex that's represented by a Tuple is at the boundary of the mesh

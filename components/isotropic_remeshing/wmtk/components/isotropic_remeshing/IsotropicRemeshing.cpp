@@ -13,6 +13,7 @@
 #include <atomic>
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
+#include <wmtk/utils/partition_utils.hpp>
 
 namespace wmtk::components::isotropic_remeshing {
 
@@ -119,99 +120,16 @@ void IsotropicRemeshing::partition_mesh_morton()
     }
     logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    std::vector<Eigen::Vector3d> V_v(vert_capacity());
+    std::vector<size_t> partition_id;
+    wmtk::partition_vertex_morton(
+        vert_capacity(),
+        [this](size_t i) { return vertex_attrs[i].pos; },
+        NUM_THREADS,
+        partition_id);
 
-    threading::parallel_for(
-        threading::range(0, V_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V_v[i] = vertex_attrs[i].pos;
-            }
-        },
-        NUM_THREADS);
-
-    struct sortstruct
-    {
-        size_t order;
-        Resorting::MortonCode64 morton;
-    };
-
-    std::vector<sortstruct> list_v;
-    list_v.resize(V_v.size());
-    const int multi = 1000;
-    // since the morton code requires a correct scale of input vertices,
-    //  we need to scale the vertices if their coordinates are out of range
-    std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
-    Eigen::Vector3d vmin, vmax;
-    vmin = V.front();
-    vmax = V.front();
-
-    for (size_t j = 0; j < V.size(); j++) {
-        for (int i = 0; i < 3; i++) {
-            vmin(i) = std::min(vmin(i), V[j](i));
-            vmax(i) = std::max(vmax(i), V[j](i));
-        }
+    for (size_t i = 0; i < partition_id.size(); i++) {
+        vertex_attrs[i].partition_id = partition_id[i];
     }
-
-    Eigen::Vector3d center = (vmin + vmax) / 2;
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V[i] = V[i] - center;
-            }
-        },
-        NUM_THREADS);
-
-    Eigen::Vector3d scale_point =
-        vmax - center; // after placing box at origin, vmax and vmin are symetric.
-
-    double xscale, yscale, zscale;
-    xscale = fabs(scale_point[0]);
-    yscale = fabs(scale_point[1]);
-    zscale = fabs(scale_point[2]);
-    double scale = std::max(std::max(xscale, yscale), zscale);
-    if (scale > 300) {
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] / scale;
-                }
-            },
-            NUM_THREADS);
-    }
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                list_v[i].morton = Resorting::MortonCode64(
-                    int(V[i][0] * multi),
-                    int(V[i][1] * multi),
-                    int(V[i][2] * multi));
-                list_v[i].order = i;
-            }
-        },
-        NUM_THREADS);
-
-    const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-        return (a.morton < b.morton);
-    };
-
-    std::sort(list_v.begin(), list_v.end(), morton_compare);
-
-    size_t interval = list_v.size() / NUM_THREADS + 1;
-
-    threading::parallel_for(
-        threading::range(0, list_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                vertex_attrs[list_v[i].order].partition_id = i / interval;
-            }
-        },
-        NUM_THREADS);
 }
 
 std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after(
@@ -360,7 +278,11 @@ double IsotropicRemeshing::compute_vertex_valence(const TriMesh::Tuple& t) const
     auto t3 = (t.switch_edge(*this)).switch_vertex(*this);
     valences[2] = std::make_pair(t3, get_valence_for_vertex(t3));
 
-    if ((t.switch_face(*this)).has_value()) {
+    // This is the valence cost of swapping `t`, so it only makes sense for an edge that can
+    // be swapped at all -- which means exactly two incident faces. On a non-manifold edge
+    // switch_face would hand back one arbitrary member of the fan and the cost would depend
+    // on which; swap_edge_before refuses those anyway, so there is nothing to weigh.
+    if (is_manifold_edge(t)) {
         auto t4 = (((t.switch_face(*this)).value()).switch_edge(*this)).switch_vertex(*this);
         valences.emplace_back(t4, get_valence_for_vertex(t4));
     }
@@ -421,7 +343,12 @@ std::vector<double> IsotropicRemeshing::average_len_valen()
 
 std::vector<TriMesh::Tuple> IsotropicRemeshing::new_edges_after_swap(const TriMesh::Tuple& t) const
 {
-    std::vector<TriMesh::Tuple> new_edges;
+    // Both edges dereferenced below must have a face on the other side. That holds for the
+    // edge a swap just produced -- swap_edge only runs on a manifold edge and leaves the
+    // two triangles in place -- and this function has no other valid caller.
+    assert(is_manifold_edge(t));
+
+    std::vector<Tuple> new_edges;
 
     new_edges.push_back(t.switch_edge(*this));
     new_edges.push_back((t.switch_face(*this).value()).switch_edge(*this));

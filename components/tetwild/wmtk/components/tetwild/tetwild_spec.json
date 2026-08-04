@@ -6,8 +6,13 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_names",
       "input_dir",
+      "write_vtu",
+      "preallocation_factor",
       "skip_simplify",
+      "simplify_use_link_condition",
+      "simplify_use_sample_envelope",
       "use_sample_envelope",
       "use_legacy_code",
       "num_threads",
@@ -65,16 +70,52 @@
     "doc": "Output file name (without extension)."
   },
   {
+    "pointer": "/input_names",
+    "type": "list",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "default": []
+  },
+  {
+    "pointer": "/input_names/*",
+    "type": "string",
+    "doc": "Name for one input mesh."
+  },
+  {
     "pointer": "/input_dir",
     "type": "string",
     "default": "",
     "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
+    "pointer": "/write_vtu",
+    "type": "bool",
+    "default": true,
+    "doc": "Write the VTU output next to the MSH."
+  },
+  {
+    "pointer": "/preallocation_factor",
+    "type": "float",
+    "default": 6.0,
+    "min": 1.0,
+    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
+  },
+  {
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
     "doc": "If true, input simplification will be skipped."
+  },
+  {
+    "pointer": "/simplify_use_link_condition",
+    "type": "bool",
+    "default": true,
+    "doc": "Require the link condition when simplifying the input surface. When true the simplification cannot change the topology of the input, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed, so the input simplifies further, but the surface handed to the arrangement may differ topologically from the input."
+  },
+  {
+    "pointer": "/simplify_use_sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
   },
   {
     "pointer": "/use_sample_envelope",

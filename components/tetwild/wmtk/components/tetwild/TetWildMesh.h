@@ -2,7 +2,6 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/threading/concurrent_map.hpp>
@@ -23,6 +22,8 @@
 #include <set>
 #include <unordered_set>
 #include <utility>
+#include <wmtk/utils/SurfaceTopology.hpp>
+#include <wmtk/utils/partition_utils.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -104,6 +105,10 @@ public:
     Parameters& m_params;
     SampleEnvelope& m_envelope;
 
+    /// Optional per-input names (JSON "input_names"), used to label the per-input
+    /// winding-number output fields. Empty => the fields are numbered.
+    std::vector<std::string> m_input_names;
+
     // for open boundary
     SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
 
@@ -158,7 +163,6 @@ public:
             m_vertex_attribute[i].partition_id = partition_id[i];
     }
 
-    // TODO This should not be here but inside wmtk
     void compute_vertex_partition_morton()
     {
         if (NUM_THREADS == 0) {
@@ -167,101 +171,16 @@ public:
 
         logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-        std::vector<Eigen::Vector3d> V_v(vert_capacity());
+        std::vector<size_t> partition_id;
+        wmtk::partition_vertex_morton(
+            vert_capacity(),
+            [this](size_t i) { return m_vertex_attribute[i].m_posf; },
+            NUM_THREADS,
+            partition_id);
 
-        threading::parallel_for(
-            threading::range(0, V_v.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V_v[i] = m_vertex_attribute[i].m_posf;
-                }
-            },
-            NUM_THREADS);
-
-
-        struct sortstruct
-        {
-            size_t order;
-            Resorting::MortonCode64 morton;
-        };
-
-        std::vector<sortstruct> list_v;
-        list_v.resize(V_v.size());
-        // since the morton code requires a correct scale of input vertices,
-        //  we need to scale the vertices if their coordinates are out of range
-        std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
-        Eigen::Vector3d vmin, vmax;
-        vmin = V.front();
-        vmax = V.front();
-
-        for (size_t j = 0; j < V.size(); j++) {
-            for (int i = 0; i < 3; i++) {
-                vmin(i) = std::min(vmin(i), V[j](i));
-                vmax(i) = std::max(vmax(i), V[j](i));
-            }
+        for (size_t i = 0; i < partition_id.size(); i++) {
+            m_vertex_attribute[i].partition_id = partition_id[i];
         }
-
-        // get_bb_corners(V, vmin, vmax);
-        Eigen::Vector3d center = (vmin + vmax) / 2;
-
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] - center;
-                }
-            },
-            NUM_THREADS);
-
-        Eigen::Vector3d scale_point =
-            vmax - center; // after placing box at origin, vmax and vmin are symetric.
-
-        double xscale, yscale, zscale;
-        xscale = fabs(scale_point[0]);
-        yscale = fabs(scale_point[1]);
-        zscale = fabs(scale_point[2]);
-        double scale = std::max(std::max(xscale, yscale), zscale);
-        if (scale > 300) {
-            threading::parallel_for(
-                threading::range(0, V.size()),
-                [&](const threading::range& r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        V[i] = V[i] / scale;
-                    }
-                },
-                NUM_THREADS);
-        }
-
-        constexpr int multi = 1000;
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    list_v[i].morton = Resorting::MortonCode64(
-                        int(V[i][0] * multi),
-                        int(V[i][1] * multi),
-                        int(V[i][2] * multi));
-                    list_v[i].order = i;
-                }
-            },
-            NUM_THREADS);
-
-        const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-            return (a.morton < b.morton);
-        };
-
-        std::sort(list_v.begin(), list_v.end(), morton_compare);
-
-        size_t interval = list_v.size() / NUM_THREADS + 1;
-
-        threading::parallel_for(
-            threading::range(0, list_v.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-                }
-            },
-            NUM_THREADS);
     }
 
     size_t get_partition_id(const Tuple& loc) const
@@ -327,26 +246,16 @@ public:
      */
     bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
 
-    /**
-     * @brief A topological fingerprint of the tracked surface (m_is_surface_fs).
-     *
-     * Cheap-to-compare summary used to assert that surface-modifying operations
-     * (surface edge flips) do not change the surface topology: number of
-     * connected components, surface V/E/F, Euler characteristic, and number of
-     * boundary loops. A valid surface diagonal flip leaves all of these
-     * invariant. O(#surface faces); only used by tests / check_surface_topology.
-     */
-    struct SurfaceTopoSignature
+    /// A topological fingerprint of the tracked surface (m_is_surface_fs). See
+    /// wmtk/utils/SurfaceTopology.hpp.
+    using SurfaceTopoSignature = wmtk::utils::SurfaceTopoSignature;
+
+    SurfaceTopoSignature surface_topology_signature() const
     {
-        long long components = 0;
-        long long V = 0;
-        long long E = 0;
-        long long F = 0;
-        long long euler = 0; // V - E + F
-        long long boundary_loops = 0;
-        bool operator==(const SurfaceTopoSignature&) const = default;
-    };
-    SurfaceTopoSignature surface_topology_signature() const;
+        return wmtk::utils::surface_topology_signature(*this, [this](size_t fid) {
+            return m_face_attribute[fid].m_is_surface_fs;
+        });
+    }
 
     /**
      * @brief Compare a surface signature against the current one and log an
@@ -354,7 +263,10 @@ public:
      * guard swap passes that can flip surface edges.
      */
     void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
-        const;
+        const
+    {
+        wmtk::utils::warn_if_surface_topology_changed(before, surface_topology_signature(), where);
+    }
 
     size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
@@ -442,7 +354,6 @@ public:
     void filter_with_tracked_surface_winding_number();
     void filter_with_flood_fill();
 
-    bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond) const;

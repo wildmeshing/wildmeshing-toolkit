@@ -9,7 +9,9 @@
 #include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+#include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
 
 // clang-format off
@@ -30,6 +32,7 @@
 #include <bitset>
 #include <limits>
 #include <paraviewo/VTUWriter.hpp>
+#include <wmtk/utils/partition_utils.hpp>
 
 namespace wmtk::components::triwild {
 
@@ -48,10 +51,15 @@ void TriWildMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}}, false);
 
     ////operation loops
-    bool is_hit_min_edge_length = false;
-    const int M = 2;
-    int m = 0;
-    double pre_max_energy = 0., pre_avg_energy = 0.;
+    double pre_max_energy = 0.;
+    {
+        auto [max_energy, avg_energy] = get_max_avg_energy();
+        pre_max_energy = max_energy;
+        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+    }
+    int refine_cooldown =
+        m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
+
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
@@ -77,25 +85,23 @@ void TriWildMesh::mesh_improvement(int max_its)
             logger().info("All rounded!", cnt_round, cnt_verts);
         }
 
-        ///sizing field
-        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
-            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
-            m++;
-            if (m == M) {
-                logger().info(">>>>adjust_sizing_field...");
-                is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
-                // is_hit_min_edge_length = adjust_sizing_field(max_energy);
-                logger().info(">>>>adjust_sizing_field finished...");
-                m = 0;
-            }
-        } else {
-            m = 0;
-            pre_max_energy = max_energy;
-            pre_avg_energy = avg_energy;
+        /// sizing field: when the max energy stalls, refine around the worst
+        /// elements to escape stuck configurations (replaces the old global
+        /// adjust_sizing_field mechanism). After a refinement, wait
+        /// stuck_refine_cooldown iterations so the operations get full passes on
+        /// the new sizing field before more refinement is added.
+        if (refine_cooldown > 0) {
+            --refine_cooldown;
+        } else if (
+            it > 0 && max_energy > m_params.stop_energy &&
+            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
+            refine_sizing_around_worst(max_energy);
+            // adjust_sizing_field_serial(max_energy); // The old update
+            logger().info(">>>>stuck-refine finished...");
+            refine_cooldown = m_params.stuck_refine_cooldown;
         }
-        if (is_hit_min_edge_length) {
-            // todo: maybe to do sth
-        }
+        pre_max_energy = max_energy;
     }
 
     logger().info("========it post========");
@@ -137,8 +143,8 @@ std::tuple<double, double> TriWildMesh::local_operations(
 
     sanity_checks();
 
-    timer.start();
     for (int i = 0; i < ops.size(); i++) {
+        timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==splitting {}==", n);
@@ -204,7 +210,9 @@ void TriWildMesh::init_mesh(
     const MatrixXd& V,
     const MatrixXi& F,
     const MatrixXi& E,
-    const std::vector<std::string>& tag_names)
+    const std::vector<std::string>& tag_names,
+    const MatrixXd& V_env,
+    const MatrixXi& E_env)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -258,13 +266,17 @@ void TriWildMesh::init_mesh(
     }
     assert(m_V_envelope.empty() && m_E_envelope.empty());
 
-    m_V_envelope.resize(V.rows());
+    // Around the original input curves, not around the arrangement's constrained edges:
+    // after simplification those are the coarsened curves, and the optimizer must stay near
+    // what the user gave us. The sanity check below then genuinely verifies that the
+    // simplified curves are still inside the envelope.
+    m_V_envelope.resize(V_env.rows());
     for (size_t i = 0; i < m_V_envelope.size(); ++i) {
-        m_V_envelope[i] = V.row(i);
+        m_V_envelope[i] = V_env.row(i);
     }
-    m_E_envelope.resize(E.rows());
+    m_E_envelope.resize(E_env.rows());
     for (size_t i = 0; i < m_E_envelope.size(); ++i) {
-        m_E_envelope[i] = E.row(i);
+        m_E_envelope[i] = E_env.row(i);
     }
 
     m_envelope = std::make_shared<SampleEnvelope>();
@@ -284,19 +296,25 @@ void TriWildMesh::init_mesh(
         logger().info("Envelope sanity check done");
     }
 
-    // track bounding box
+    // Track the bounding box. This is the box of the *domain* -- the arrangement covers the
+    // input's bounding box grown by the background grid -- which is not m_params.box_min /
+    // box_max: those come from the input curves and set the tolerances. Deriving it from V
+    // keeps this check self-consistent whatever the input box is.
+    const Vector2d domain_min = V.colwise().minCoeff();
+    const Vector2d domain_max = V.colwise().maxCoeff();
+
     const auto edges = get_edges();
     for (size_t i = 0; i < edges.size(); i++) {
         const auto vids = get_edge_vids(edges[i]);
         int on_bbox = -1;
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == domain_min[k]) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == domain_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == domain_max[k]) {
                 on_bbox = k * 2 + 1;
                 break;
             }
@@ -340,6 +358,79 @@ void TriWildMesh::init_mesh(
     } else {
         logger().info("All rounded!", cnt_round, vert_capacity());
     }
+}
+
+size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
+{
+    const int n_rings = std::max(0, m_params.stuck_refine_rings);
+    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+
+    // m_quality is the AMIPS2D energy itself here, so no cube root (unlike tetwild/simwild).
+    const auto worst = utils::select_worst_cells(
+        tri_capacity(),
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) { return m_face_attribute[fid].m_quality; },
+        [](double q) { return q; },
+        filter_energy,
+        m_params.stuck_refine_num_worst);
+
+    if (worst.empty()) {
+        return 0;
+    }
+
+    // If force-split is on, record the LONGEST edge of each worst triangle.
+    // split_all_edges force-splits exactly those edges (bypasses the length gate), so a
+    // stuck sliver's long edge is split immediately -- WITHOUT changing the sizing field.
+    m_force_split_edges.clear();
+    if (m_params.stuck_refine_force_split) {
+        for (const auto& [q, fid] : worst) {
+            m_force_split_edges.insert(
+                utils::longest_edge(oriented_tri_vids(fid), [this](size_t vid) -> const Vector2d& {
+                    return m_vertex_attribute[vid].m_posf;
+                }));
+        }
+    }
+
+    // Seed the region with the worst triangles' vertices, then BFS n_rings hops.
+    std::vector<size_t> seeds;
+    seeds.reserve(3 * worst.size());
+    for (const auto& [_, fid] : worst) {
+        for (const size_t v : oriented_tri_vids(fid)) {
+            seeds.push_back(v);
+        }
+    }
+    const auto region = utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
+        return get_one_ring_vids_for_vertex_duplicate(v);
+    });
+
+    // Apply the multiplicative refinement, clamped at the floor.
+    const auto refined = utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        m_params.stuck_refine_min_scalar,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+
+    // Grade the refined region into its surroundings (monotone, only lowers).
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+    logger().info(
+        "[stuck-refine] worst {} tris (maxE {:.4}), refined {} of {} region vertices, "
+        "filter_energy {:.4}",
+        worst.size(),
+        worst.back().first,
+        refined.size(),
+        region.size(),
+        filter_energy);
+    return refined.size();
+}
+
+void TriWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
+{
+    utils::gradation_smooth_sizing(
+        grade,
+        seeds,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
+        [this](size_t v) { return get_one_ring_vids_for_vertex_duplicate(v); });
 }
 
 bool TriWildMesh::adjust_sizing_field_serial(double max_energy)
@@ -557,8 +648,12 @@ void TriWildMesh::write_msh_groups(std::string file, const bool write_envelope)
     msh.save(file, true);
 }
 
-void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_paths)
+void TriWildMesh::compute_winding_numbers(
+    const std::vector<MatrixXd>& Vs,
+    const std::vector<MatrixXi>& Es)
 {
+    assert(Vs.size() == Es.size());
+
     const auto& faces = get_faces();
     MatrixXd C = MatrixXd::Zero(faces.size(), 2);
     for (size_t i = 0; i < faces.size(); i++) {
@@ -569,20 +664,17 @@ void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
         C.row(i) /= 3;
     }
 
-    m_tags_count = input_paths.size();
-    int64_t input_idx = 0;
-    for (const std::string& input_path : input_paths) {
-        MatrixXd V;
-        MatrixXi E;
-        io::read_edge_mesh(input_path, V, E);
-        assert(V.cols() == 3);
+    m_tags_count = Vs.size();
+    for (int64_t input_idx = 0; input_idx < static_cast<int64_t>(Vs.size()); ++input_idx) {
+        // The inputs were already read (and their x,y extracted) when the initial mesh was
+        // built; reuse them instead of parsing every file a second time.
+        const MatrixXd& V = Vs[input_idx];
+        MatrixXi E = Es[input_idx];
+        assert(V.cols() == 2);
         assert(E.cols() == 2);
 
-        V = V.block(0, 0, V.rows(), 2).eval(); // only use x,y for winding number
-
-        // compute winding number for V,F
         Eigen::VectorXd W;
-        igl::winding_number(V, E, C, W);
+        utils::winding_number_2d(V, E, C, W, NUM_THREADS);
 
         if (W.maxCoeff() <= 0.5) {
             // all removed, let's invert.
@@ -592,11 +684,11 @@ void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
                 E(i, 0) = E(i, 1);
                 E(i, 1) = temp;
             }
-            igl::winding_number(V, E, C, W);
+            utils::winding_number_2d(V, E, C, W, NUM_THREADS);
         }
 
         if (W.maxCoeff() <= 0.5) {
-            logger().warn("No winding number above 0.5 for input_path {}", input_path);
+            logger().warn("No winding number above 0.5 for input {}", input_idx);
         }
 
         // store winding number in mesh
@@ -606,23 +698,83 @@ void TriWildMesh::compute_winding_numbers(const std::vector<std::string>& input_
                 m_face_attribute[fid].tags.insert(input_idx);
             }
         }
-        ++input_idx;
     }
+}
+
+void TriWildMesh::filter_with_input_winding_number()
+{
+    // A face is inside when it is inside at least one input, i.e. when it carries a tag.
+    std::vector<size_t> rm_fids;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute[fid].tags.empty()) {
+            rm_fids.emplace_back(fid);
+        }
+    }
+    logger().info("Filter with input winding number: removing {} faces", rm_fids.size());
+    remove_tris_by_ids(rm_fids);
+}
+
+void TriWildMesh::filter_with_flood_fill()
+{
+    // Find the flood-fill region that appears the most on the mesh boundary: that is the
+    // one outside the input. Mirrors TetWildMesh::filter_with_flood_fill.
+    std::map<int, size_t> id_counter;
+    for (const Tuple& e : get_edges()) {
+        if (e.switch_face(*this)) {
+            continue; // interior edge
+        }
+        ++id_counter[m_face_attribute[e.fid(*this)].part_id];
+    }
+
+    if (id_counter.empty()) {
+        logger().warn("Flood fill filter found no boundary edges. Nothing removed.");
+        return;
+    }
+    if (id_counter.size() != 1) {
+        logger().warn(
+            "There were {} flood fill IDs found at the boundary. Using the one with most "
+            "occurances.",
+            id_counter.size());
+    }
+
+    int best_id = id_counter.begin()->first;
+    size_t best_count = id_counter.begin()->second;
+    for (const auto& [id, count] : id_counter) {
+        if (count > best_count) {
+            best_id = id;
+            best_count = count;
+        }
+    }
+
+    logger().info("Filter with flood fill ID {}", best_id);
+
+    std::vector<size_t> rm_fids;
+    for (const Tuple& t : get_faces()) {
+        const size_t fid = t.fid(*this);
+        if (m_face_attribute[fid].part_id == best_id) {
+            rm_fids.emplace_back(fid);
+        }
+    }
+    remove_tris_by_ids(rm_fids);
 }
 
 int TriWildMesh::flood_fill()
 {
     int current_id = 0;
     const auto faces = get_faces();
-    std::map<size_t, bool> visited;
+    // Indexed by fid, not a std::map: this is a BFS over every face, so the per-lookup
+    // red-black tree cost dominated the pass on large meshes.
+    std::vector<char> visited(tri_capacity(), 0);
+    const auto seen = [&visited](size_t fid) { return visited[fid] != 0; };
 
     for (const Tuple& t : faces) {
         size_t fid = t.fid(*this);
-        if (visited.find(fid) != visited.end()) {
+        if (seen(fid)) {
             continue;
         }
 
-        visited[fid] = true;
+        visited[fid] = 1;
         m_face_attribute[fid].part_id = current_id;
 
         const Tuple f1 = t;
@@ -634,7 +786,7 @@ int TriWildMesh::flood_fill()
         if (!m_edge_attribute[f1.eid(*this)].m_is_surface_fs) {
             auto oppo_t = f1.switch_face(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                if (!seen((*oppo_t).fid(*this))) {
                     bfs_queue.push(*oppo_t);
                 }
             }
@@ -642,7 +794,7 @@ int TriWildMesh::flood_fill()
         if (!m_edge_attribute[f2.eid(*this)].m_is_surface_fs) {
             auto oppo_t = f2.switch_face(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                if (!seen((*oppo_t).fid(*this))) {
                     bfs_queue.push(*oppo_t);
                 }
             }
@@ -650,7 +802,7 @@ int TriWildMesh::flood_fill()
         if (!m_edge_attribute[f3.eid(*this)].m_is_surface_fs) {
             auto oppo_t = f3.switch_face(*this);
             if (oppo_t.has_value()) {
-                if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                if (!seen((*oppo_t).fid(*this))) {
                     bfs_queue.push(*oppo_t);
                 }
             }
@@ -660,9 +812,9 @@ int TriWildMesh::flood_fill()
             auto tmp = bfs_queue.front();
             bfs_queue.pop();
             size_t tmp_id = tmp.fid(*this);
-            if (visited.find(tmp_id) != visited.end()) continue;
+            if (seen(tmp_id)) continue;
 
-            visited[tmp_id] = true;
+            visited[tmp_id] = 1;
 
             m_face_attribute[tmp_id].part_id = current_id;
 
@@ -673,7 +825,7 @@ int TriWildMesh::flood_fill()
             if (!m_edge_attribute[f_tmp1.eid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp1.switch_face(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    if (!seen((*oppo_t).fid(*this))) {
                         bfs_queue.push(*oppo_t);
                     }
                 }
@@ -681,7 +833,7 @@ int TriWildMesh::flood_fill()
             if (!m_edge_attribute[f_tmp2.eid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp2.switch_face(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    if (!seen((*oppo_t).fid(*this))) {
                         bfs_queue.push(*oppo_t);
                     }
                 }
@@ -689,7 +841,7 @@ int TriWildMesh::flood_fill()
             if (!m_edge_attribute[f_tmp3.eid(*this)].m_is_surface_fs) {
                 auto oppo_t = f_tmp3.switch_face(*this);
                 if (oppo_t.has_value()) {
-                    if (visited.find((*oppo_t).fid(*this)) == visited.end()) {
+                    if (!seen((*oppo_t).fid(*this))) {
                         bfs_queue.push(*oppo_t);
                     }
                 }
@@ -716,96 +868,21 @@ void TriWildMesh::partition_mesh_morton()
     }
     logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    std::vector<Vector2d> V_v(vert_capacity());
-
-    threading::parallel_for(
-        threading::range(0, V_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V_v[i] = m_vertex_attribute[i].m_posf;
-            }
+    // The shared partitioner is 3D; a zero z leaves the bounding box, the scale and the
+    // Morton code exactly where a 2D-specific version would put them.
+    std::vector<size_t> partition_id;
+    wmtk::partition_vertex_morton(
+        vert_capacity(),
+        [this](size_t i) {
+            const Vector2d& p = m_vertex_attribute[i].m_posf;
+            return Eigen::Vector3d(p[0], p[1], 0);
         },
-        NUM_THREADS);
+        NUM_THREADS,
+        partition_id);
 
-    struct sortstruct
-    {
-        size_t order;
-        Resorting::MortonCode64 morton;
-    };
-
-    std::vector<sortstruct> list_v;
-    list_v.resize(V_v.size());
-    const int multi = 1000;
-    // since the morton code requires a correct scale of input vertices,
-    //  we need to scale the vertices if their coordinates are out of range
-    std::vector<Vector2d> V = V_v; // this is for rescaling vertices
-    Vector2d vmin, vmax;
-    vmin = V.front();
-    vmax = V.front();
-
-    for (size_t j = 0; j < V.size(); j++) {
-        for (int i = 0; i < 2; i++) {
-            vmin(i) = std::min(vmin(i), V[j](i));
-            vmax(i) = std::max(vmax(i), V[j](i));
-        }
+    for (size_t i = 0; i < partition_id.size(); i++) {
+        m_vertex_attribute[i].partition_id = partition_id[i];
     }
-
-    Vector2d center = (vmin + vmax) / 2;
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V[i] = V[i] - center;
-            }
-        },
-        NUM_THREADS);
-
-    Vector2d scale_point =
-        vmax - center; // after placing box at origin, vmax and vmin are symetric.
-
-    double xscale, yscale;
-    xscale = fabs(scale_point[0]);
-    yscale = fabs(scale_point[1]);
-    double scale = std::max(xscale, yscale);
-    if (scale > 300) {
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] / scale;
-                }
-            },
-            NUM_THREADS);
-    }
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                list_v[i].morton =
-                    Resorting::MortonCode64(int(V[i][0] * multi), int(V[i][1] * multi), 0);
-                list_v[i].order = i;
-            }
-        },
-        NUM_THREADS);
-
-    const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-        return (a.morton < b.morton);
-    };
-
-    std::sort(list_v.begin(), list_v.end(), morton_compare);
-
-    size_t interval = list_v.size() / NUM_THREADS + 1;
-
-    threading::parallel_for(
-        threading::range(0, list_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-            }
-        },
-        NUM_THREADS);
 }
 
 double TriWildMesh::get_length2(const Tuple& l) const
@@ -841,6 +918,16 @@ std::tuple<double, double> TriWildMesh::get_max_avg_energy()
     return std::make_tuple(max_energy, avg_energy);
 }
 
+std::vector<size_t> TriWildMesh::active_vertices() const
+{
+    return utils::active_vertices(
+        vert_capacity(),
+        tri_capacity(),
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) { return m_face_attribute[fid].m_quality; },
+        [this](size_t fid) { return oriented_tri_vids(fid); },
+        active_quality_threshold());
+}
 
 bool TriWildMesh::is_inverted_f(const Tuple& loc) const
 {
