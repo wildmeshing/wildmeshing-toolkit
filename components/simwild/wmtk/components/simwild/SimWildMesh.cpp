@@ -426,9 +426,11 @@ size_t SimWildMesh::refine_sizing_around_worst()
     const auto worst = utils::select_worst_cells(
         tet_capacity(),
         [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
-        [this](size_t tid) { return m_tet_attribute[tid].m_quality; },
-        [](double q) { return std::cbrt(q); },
-        filter_energy,
+        [this](size_t tid) {
+            const double target = target_quality(tid);
+            return std::cbrt(m_tet_attribute[tid].m_quality) / target; // relative quality
+        },
+        1.0,
         m_params.stuck_refine_num_worst);
 
     if (worst.empty()) {
