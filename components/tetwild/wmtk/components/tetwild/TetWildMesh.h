@@ -311,6 +311,27 @@ public:
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
+    /**
+     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
+     *
+     * round() is otherwise only attempted as a side effect of another operation
+     * (smooth_before on the vertex being smoothed, collapse_edge_after on the merged
+     * one), and neither reaches a vertex that only becomes roundable later: smoothing
+     * skips "good" regions by default. Without a sweep such a vertex keeps exact
+     * coordinates into the output for no geometric reason.
+     *
+     * Skipped outright when m_all_rounded says there is nothing to do.
+     */
+    size_t round_all_vertices();
+
+    /**
+     * @brief True when every vertex is known to be rounded.
+     *
+     * Only trusted when true, and only round_all_vertices() sets it that way. Any code
+     * that leaves a vertex un-rounded must clear it, or the sweep will skip the vertex
+     * forever. Atomic because operations that clear it run in parallel.
+     */
+    std::atomic<bool> m_all_rounded = false;
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
