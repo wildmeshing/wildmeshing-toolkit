@@ -139,7 +139,7 @@
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
-    "doc": "If true, input simplification will be skipped."
+    "doc": "If true, input simplification will be skipped. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
   },
   {
     "pointer": "/use_sample_envelope",
@@ -175,13 +175,13 @@
     "pointer": "/eps_simplify_rel",
     "type": "float",
     "default": 2e-4,
-    "doc": "Envelope thickness relative to the bounding box for the initial simplification."
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh."
   },
   {
     "pointer": "/eps_simplify",
     "type": "float",
     "default": -1,
-    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
   },
   {
     "pointer": "/length",

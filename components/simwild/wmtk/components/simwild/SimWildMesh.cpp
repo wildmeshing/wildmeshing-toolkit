@@ -132,7 +132,7 @@ void SimWildMesh::mesh_improvement(int max_its)
             (pre_quality_rel - quality_rel) <= m_params.stuck_refine_stall_eps * pre_quality_rel) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
             refine_sizing_around_worst();
-            // adjust_sizing_field_serial(max_energy); // The old update
+            // adjust_sizing_field_serial(); // The old update
             logger().info(">>>>stuck-refine finished...");
             refine_cooldown = m_params.stuck_refine_cooldown;
         }
@@ -507,13 +507,13 @@ void SimWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t
         [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
 }
 
-bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
+bool SimWildMesh::adjust_sizing_field_serial()
 {
     logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
-    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
-    filter_energy = std::min(filter_energy, 100.);
+    // const double stop_filter_energy = m_params.stop_energy * 0.8;
+    // double filter_energy = std::max(max_energy / 100, stop_filter_energy);
+    // filter_energy = std::min(filter_energy, 100.);
 
     const double recover_scalar = 1.5;
     const double refine_scalar = 0.5;
@@ -532,7 +532,7 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < target_quality(tid)) {
             continue;
         }
         const auto vs = oriented_tet_vids(t);
@@ -547,7 +547,7 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
         pts.emplace_back(c / 4);
     }
 
-    logger().info("filter energy = {}; Number of low quality tets {}", filter_energy, pts.size());
+    logger().info("Number of low quality tets {}", pts.size());
 
     // compute maximum sizing scalar for each vertex based on the sizing field
     std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());

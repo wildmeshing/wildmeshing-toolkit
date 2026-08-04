@@ -514,7 +514,7 @@ public:
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
-    bool adjust_sizing_field_serial(double max_energy);
+    bool adjust_sizing_field_serial();
 
     /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
     /// split_all_edges force-splits exactly these edges (bypasses the length gate),
