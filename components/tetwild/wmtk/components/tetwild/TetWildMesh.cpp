@@ -88,19 +88,43 @@ void TetWildMesh::mesh_improvement(int max_its)
         // iteration, and finalize could then still fail with "Not all vertices rounded!".
         // The log was not wrong, it was one iteration stale, which reads exactly like a
         // contradiction.
-        auto cnt_round = 0, cnt_verts = 0;
+        // Atomic because for_each_vertex runs threading::parallel_for whenever
+        // NUM_THREADS != 0. These were plain ints, which raced: octocat reported counts
+        // like "-37 of 4149 un-rounded", i.e. cnt_round > cnt_verts. Harmless while this
+        // only fed a log line, not harmless now that it decides whether to stop.
+        std::atomic<int> n_round = 0, n_verts = 0;
         TetMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-            cnt_verts++;
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+                n_round.fetch_add(1, std::memory_order_relaxed);
+            }
+            n_verts.fetch_add(1, std::memory_order_relaxed);
         });
+        const int cnt_round = n_round.load(std::memory_order_relaxed);
+        const int cnt_verts = n_verts.load(std::memory_order_relaxed);
         if (cnt_round < cnt_verts) {
             logger().info("rounded {}/{}", cnt_round, cnt_verts);
         } else {
             logger().info("All rounded!");
         }
 
+        // Energy alone is not a sufficient termination condition. A mesh that hits the
+        // quality target while some vertex still carries exact coordinates is not
+        // finished: the output is what the caller consumes, and rational coordinates in
+        // it are a defect regardless of how good the elements are. So keep iterating
+        // while anything is un-rounded, and let max_its bound the run as before.
+        //
+        // The exact count is used rather than m_all_rounded, which is only maintained
+        // where the sweep runs (after smoothing) and would stay stale at
+        // num_smoothing_passes == 0, stranding the loop at max_its for no reason.
         if (max_energy < m_params.stop_energy) {
-            break;
+            if (cnt_round == cnt_verts) {
+                break;
+            }
+            logger().info(
+                "energy target reached, but {} of {} vertices are still un-rounded; "
+                "continuing",
+                cnt_verts - cnt_round,
+                cnt_verts);
         }
         consolidate_mesh();
 
