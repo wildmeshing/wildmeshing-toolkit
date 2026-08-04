@@ -137,6 +137,7 @@ public:
     double m_envelope_eps = -1;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
+    std::vector<std::tuple<ExprPtr, double>> m_quality_field;
 
     bool m_collapse_check_quality = true;
 
@@ -249,6 +250,14 @@ public:
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
+
+    void set_quality_field(const nlohmann::json& quality_field_json);
+
+    double target_quality(const size_t tid) const;
+    double target_quality(const Tuple& t) const;
+    double quality_rel(const size_t tid) const;
+    double quality_rel(const Tuple& t) const;
+    bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
 
     double get_length2(const Tuple& l) const;
 
@@ -384,20 +393,8 @@ public:
     bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
+    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
-    // true iff the tet's tag set is empty or exactly {ambient}
-    bool is_pure_ambient_tet(size_t tid) const;
-    // per-tet stop energy (cbrt units, like stop_energy); pure-ambient tets
-    // may use the looser stop_energy_ambient (<= 0 means: follow stop_energy)
-    double stop_energy_for(size_t tid) const;
-    // true iff every valid tet satisfies its per-tet stop energy
-    bool all_tets_below_stop() const;
-    // max cbrt-quality over non-pure-ambient tets (0 if there are none)
-    double get_max_body_energy() const;
-
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond) const;
@@ -504,7 +501,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst(double max_energy);
+    size_t refine_sizing_around_worst();
 
     /**
      * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
@@ -516,7 +513,7 @@ public:
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
-    bool adjust_sizing_field_serial(double max_energy);
+    bool adjust_sizing_field_serial();
 
     /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
     /// split_all_edges force-splits exactly these edges (bypasses the length gate),

@@ -18,7 +18,7 @@ Install the wildmeshing package first, as described in the [README](../../README
 To install the SimWild wrapper, execute (from the repository root):
 
 ```bash
-python -m pip install -e components/simwild/wmtk/components/simwild/pysimwild
+python -m pip install -e ./components/simwild/wmtk/components/simwild/pysimwild
 ```
 
 Development alternative — reuse an existing CMake build of the bindings
@@ -190,8 +190,8 @@ export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin
 `-DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld"` — a binutils bug with debug-info
 merging.)
 
-Selections everywhere are *the boundary of `region`, kept where the outside
-cell satisfies `filter`* — both are Boolean tag expressions (`&`, `|`, `!`,
+Selections everywhere are _the boundary of `region`, kept where the outside
+cell satisfies `filter`_ — both are Boolean tag expressions (`&`, `|`, `!`,
 parentheses); a bare string is a region (whole boundary).
 
 #### 9. Minimum Separation

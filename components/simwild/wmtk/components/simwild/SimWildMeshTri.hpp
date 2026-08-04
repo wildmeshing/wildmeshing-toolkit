@@ -101,6 +101,7 @@ public:
     double m_envelope_eps = -1;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
+    std::vector<std::tuple<ExprPtr, double>> m_quality_field;
 
     using VertAttCol = AttributeCollection<VertexAttributes>;
     using EdgeAttCol = AttributeCollection<EdgeAttributes>;
@@ -185,6 +186,38 @@ public:
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
 
+    void set_quality_field(const nlohmann::json& quality_field_json);
+
+    double target_quality(const size_t tid) const;
+    double target_quality(const Tuple& t) const;
+    double quality_rel(const size_t tid) const;
+    double quality_rel(const Tuple& t) const;
+    bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+
+    /**
+     * @brief Escape a stuck max energy by refining the sizing field around the
+     * worst elements.
+     *
+     * Finds the m_params.stuck_refine_num_worst tets with the highest energy,
+     * gathers all vertices within m_params.stuck_refine_rings graph rings of
+     * them, and multiplies each such vertex's m_sizing_scalar by
+     * m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar).
+     * Then runs gradation_smooth_sizing so the refined region blends smoothly
+     * into the surrounding resolution. Replaces the old global
+     * adjust_sizing_field mechanism. Returns the number of vertices refined.
+     */
+    size_t refine_sizing_around_worst();
+
+    /**
+     * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
+     *
+     * Enforces m_sizing_scalar[v] <= grade * m_sizing_scalar[u] for every edge
+     * (u,v), propagating outward from `seeds` with a min-relaxation. It never
+     * raises a sizing value, so it only ever spreads more refinement into the
+     * halo around already-refined vertices, avoiding sharp resolution jumps.
+     */
+    void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
+
     bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file, const bool write_envelope = true);
@@ -201,15 +234,6 @@ public:
     bool split_edge_after(const Tuple& loc) override;
 
     void collapse_all_edges(bool is_limit_length = true);
-    // true iff the face's tag set is empty or exactly {ambient}
-    bool is_pure_ambient_face(size_t fid) const;
-    // per-face stop energy: pure-ambient faces may use the looser
-    // stop_energy_ambient (<= 0 means: follow stop_energy)
-    double stop_energy_for(size_t fid) const;
-    // true iff every valid face satisfies its per-face stop energy
-    bool all_faces_below_stop() const;
-    // max quality over non-pure-ambient faces (0 if there are none)
-    double get_max_body_energy() const;
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
@@ -262,9 +286,7 @@ public:
     bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;
     //
     void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
+    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
     /**

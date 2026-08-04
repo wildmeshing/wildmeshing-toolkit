@@ -39,6 +39,7 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
     const std::string operation = json_params["operation"];
     if (operation == "remeshing") {
         mesh.set_sizing_field(json_params["sizing_field"]);
+        mesh.set_quality_field(json_params["quality_field"]);
         mesh.mesh_improvement(json_params["max_iterations"]); // <-- tetwild
     } else if (operation == "fill_holes_topo") {
         const std::vector<std::string> fill_holes_tags_names = json_params["fill_holes_tags"];
@@ -224,7 +225,6 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    logger().info("final max body energy = {}", mesh.get_max_body_energy());
     mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
     if (params.write_vtu) {
@@ -290,7 +290,6 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     }
 
     logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
-    logger().info("final max body energy = {}", mesh.get_max_body_energy());
     mesh.write_msh(params.output_path + ".msh", params.write_envelope);
     write_unique_vtu();
 }
@@ -303,6 +302,7 @@ void simwild(nlohmann::json json_params)
     {
         const auto spec = jse::embed::wmtk_simwild_spec::simwild_spec::spec();
         jse::JSE spec_engine;
+        spec_engine.strict = true; // detect unknown parameters in the input json
         bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
