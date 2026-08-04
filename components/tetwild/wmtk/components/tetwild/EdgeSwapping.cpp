@@ -244,9 +244,17 @@ bool TetWildMesh::prepare_surface_flip_32(const Tuple& t, const std::vector<size
 
     // The flip adds two surface faces (a,c,d),(b,c,d) on edge (c,d). If any
     // surface face is already incident to edge (c,d), the result is a
-    // non-manifold surface edge (> 2 surface faces) -> reject. This counts the
-    // incident surface faces directly and does NOT rely on the m_is_on_surface
-    // vertex flags (which can be stale), unlike is_edge_on_surface().
+    // non-manifold surface edge (> 2 surface faces) -> reject.
+    //
+    // get_surface_faces_for_edge() opens with
+    //     if (!vertex_is_on_surface(v0) || !vertex_is_on_surface(v1)) return {};
+    // so this answer does depend on the m_is_on_surface vertex flags being in step with
+    // the face tags. They are: the flag is written in only four places and the collapse
+    // rule ORs it, so a vertex cannot silently lose it, and instrumenting this guard to
+    // compare against a direct count over (c,d)'s incident faces finds no disagreement on
+    // any tetwild or simwild integration config. If that ever stops holding, this guard is
+    // one of the places that would silently start passing bad flips, so prefer fixing the
+    // flag over working around it here.
     {
         std::array<size_t, 2> cd{{c, d}};
         assert(tuple_from_edge(cd).is_valid(*this));

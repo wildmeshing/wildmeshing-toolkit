@@ -6,11 +6,13 @@ include(Catch)
 
 # Sources
 set(TEST_SOURCES
+    2d_tests.cpp
     test_delaunay.cpp
     test_geom.cpp
     test_io.cpp
     test_knn.cpp
     test_link_condition.cpp
+    test_nonmanifold.cpp
     test_operations.cpp
     test_raw_simplex_collection.cpp
     test_simplex_navigation.cpp

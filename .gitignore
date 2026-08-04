@@ -26,3 +26,6 @@ app/components_map.hpp
 *.egg-info
 CMakePresets.json
 CMakeCache.txt
+
+# Artifacts written into the working directory by the paraviewo unit tests
+/*_paraviewo_*.vtu

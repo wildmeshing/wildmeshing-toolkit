@@ -4,6 +4,8 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <chrono>
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <paraviewo/VTUWriter.hpp>
@@ -138,19 +140,42 @@ void ShortestEdgeCollapse::write_vtu(const std::string& path)
 bool ShortestEdgeCollapse::collapse_edge_before(const Tuple& t)
 {
     if (!TriMesh::collapse_edge_before(t)) return false;
-    if (vertex_attrs[t.vid(*this)].freeze || vertex_attrs[t.switch_vertex(*this).vid(*this)].freeze)
+
+    // v1 is removed by the collapse, v2 survives (TriMesh::collapse_edge_conn keeps vid2).
+    const size_t v1 = t.vid(*this);
+    const size_t v2 = t.switch_vertex(*this).vid(*this);
+    auto& cache = position_cache.local();
+    cache.v1_frozen = vertex_attrs[v1].freeze;
+    cache.v2_frozen = vertex_attrs[v2].freeze;
+
+    // Two frozen endpoints cannot be merged without moving one of them. In particular this
+    // is what keeps the outline of an open surface from retracting: the envelope is a
+    // containment test, so it would not notice a boundary sliding inwards along itself.
+    if (cache.v1_frozen && cache.v2_frozen) {
         return false;
-    position_cache.local().v1p = vertex_attrs[t.vid(*this)].pos;
-    position_cache.local().v2p = vertex_attrs[t.switch_vertex(*this).vid(*this)].pos;
+    }
+
+    cache.v1p = vertex_attrs[v1].pos;
+    cache.v2p = vertex_attrs[v2].pos;
     return true;
 }
 
 
 bool ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple& t)
 {
-    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;
-    auto vid = t.vid(*this);
+    const auto& cache = position_cache.local();
+    // Collapse onto the frozen endpoint when exactly one is frozen, so its position is
+    // preserved exactly and the collapse is still allowed; onto the midpoint otherwise.
+    // Rejecting these outright, as this used to, froze not just the boundary but every
+    // vertex adjacent to it.
+    const Eigen::Vector3d p = cache.v1_frozen   ? cache.v1p
+                              : cache.v2_frozen ? cache.v2p
+                                                : (cache.v1p + cache.v2p) / 2.0;
+    const size_t vid = t.vid(*this);
     vertex_attrs[vid].pos = p;
+    // The survivor now stands exactly where the frozen vertex stood, so it takes over its
+    // frozen role -- otherwise a later collapse could move that position after all.
+    vertex_attrs[vid].freeze = cache.v1_frozen || cache.v2_frozen;
 
     return true;
 }
@@ -177,7 +202,43 @@ bool ShortestEdgeCollapse::collapse_shortest(int target_vert_number)
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (auto& loc : get_edges()) collect_all_ops.emplace_back("edge_collapse", loc);
 
-    auto renew = [](auto& m, auto op, auto& tris) {
+    // Progress reporting.
+    //
+    // collapse_shortest is one call that can run for many minutes with nothing to show for
+    // it: with an exact envelope essentially all the time goes into the envelope predicate,
+    // and from outside that is indistinguishable from a hang. The renew hook fires once per
+    // successful collapse, which is the cheapest place to count from without touching the
+    // scheduler.
+    //
+    // Timed rather than counted, because the two are not interchangeable here: simplifying
+    // the crown takes 68k collapses with the link condition off and 64k with it on, but the
+    // wall clock differs by orders of magnitude depending on whether an envelope is
+    // configured. Any fixed count is silent on one run and chatty on another; a time budget
+    // is quiet for passes that finish quickly and talks steadily for ones that do not.
+    std::atomic<size_t> n_collapsed{0};
+    std::atomic<long long> last_report_ms{0};
+    const auto started = std::chrono::steady_clock::now();
+    constexpr long long REPORT_EVERY_MS = 10000;
+    constexpr size_t CLOCK_CHECK_STRIDE = 1024; // reading the clock per collapse is wasteful
+
+    auto renew = [&](auto& m, auto op, auto& tris) {
+        const size_t done = ++n_collapsed;
+        if (done % CLOCK_CHECK_STRIDE == 0) {
+            const long long ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                     std::chrono::steady_clock::now() - started)
+                                     .count();
+            long long last = last_report_ms.load(std::memory_order_relaxed);
+            // one thread wins the slot, the rest carry on
+            if (ms - last >= REPORT_EVERY_MS && last_report_ms.compare_exchange_strong(last, ms)) {
+                const double secs = double(ms) / 1000.0;
+                logger().info(
+                    "\tcollapsed {} edges, ~{} vertices left, {:.0f}/s, {:.0f}s",
+                    done,
+                    initial_size > done ? initial_size - done : 0,
+                    secs > 0 ? done / secs : 0.0,
+                    secs);
+            }
+        }
         auto edges = m.new_edges_after(tris);
         auto optup = std::vector<std::pair<std::string, Tuple>>();
         for (auto& e : edges) optup.emplace_back("edge_collapse", e);

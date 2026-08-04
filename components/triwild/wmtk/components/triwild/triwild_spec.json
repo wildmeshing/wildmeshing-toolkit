@@ -10,16 +10,33 @@
       "input_dir",
       "num_threads",
       "max_iterations",
+      "skip_simplify",
+      "filter",
+      "skip_winding_number",
       "eps_rel",
       "length_rel",
       "stop_energy",
       "preserve_topology",
+      "remove_duplicate_eps",
       "throw_on_fail",
       "log_file",
       "report",
       "write_vtu",
+      "preallocation_factor",
       "DEBUG_output",
-      "DEBUG_sanity_checks"
+      "DEBUG_sanity_checks",
+      "DEBUG_hausdorff",
+      "stuck_refine_stall_eps",
+      "stuck_refine_cooldown",
+      "stuck_refine_num_worst",
+      "stuck_refine_rings",
+      "stuck_refine_factor",
+      "stuck_refine_min_scalar",
+      "stuck_refine_gradation",
+      "stuck_refine_force_split",
+      "stuck_refine_rational_split",
+      "skip_good_regions",
+      "skip_good_regions_margin"
     ]
   },
   {
@@ -75,10 +92,41 @@
     "doc": "Maximum iterations before stopping."
   },
   {
+    "pointer": "/skip_simplify",
+    "type": "bool",
+    "default": false,
+    "doc": "If true, input simplification will be skipped. The input curves are otherwise coarsened first, by collapsing their shortest segments while staying inside half the envelope, so the exact arrangement and the initial mesh do not carry input detail far below the target edge length."
+  },
+  {
+    "pointer": "/filter",
+    "type": "string",
+    "options": ["flood", "input", "none"],
+    "default": "none",
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'none': Do not filter. Both filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary."
+  },
+  {
+    "pointer": "/skip_winding_number",
+    "type": "bool",
+    "default": false,
+    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-face quantities are needed to filter the outside region (filter != 'none') and to tag the faces per input, which is what the MSH groups are built from -- so skipping them also empties the output groups. Ignored (with a warning) when filter != 'none', which requires them."
+  },
+  {
     "pointer": "/eps_rel",
     "type": "float",
     "default": 2e-3,
     "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": 2e-3,
+    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. Negative disables it."
+  },
+  {
+    "pointer": "/DEBUG_hausdorff",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Hausdorff distance of the input to the output. Should always be smaller than eps."
   },
   {
     "pointer": "/length_rel",
@@ -133,5 +181,80 @@
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/preallocation_factor",
+    "type": "float",
+    "default": 6.0,
+    "min": 1.0,
+    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
+  },
+  {
+    "pointer": "/stuck_refine_stall_eps",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Refine when the max energy improved by at most this fraction since the previous iteration. 0 => only when it does not improve at all."
+  },
+  {
+    "pointer": "/stuck_refine_cooldown",
+    "type": "int",
+    "default": 1,
+    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
+  },
+  {
+    "pointer": "/stuck_refine_num_worst",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "Number of worst triangles whose neighborhoods are refined when stuck. 0 => refine all triangles with energy above the filter_energy, which is max(max_energy / 100, stop_energy). Note that the AMIPS2D energy of an equilateral triangle is 2, so with a small stop_energy the filter catches nearly the whole mesh; set this to a positive value there."
+  },
+  {
+    "pointer": "/stuck_refine_rings",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "Graph rings around each worst triangle included in the stuck refinement. 0 => only the worst triangle itself, 1 => its neighbors, 2 => neighbors of neighbors, etc."
+  },
+  {
+    "pointer": "/stuck_refine_factor",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Multiplicative reduction of the sizing scalar per stuck refinement (0.5 => halve)."
+  },
+  {
+    "pointer": "/stuck_refine_min_scalar",
+    "type": "float",
+    "default": 0.001,
+    "doc": "Lower bound on the sizing scalar during stuck refinement."
+  },
+  {
+    "pointer": "/stuck_refine_gradation",
+    "type": "float",
+    "default": 2.0,
+    "doc": "Gradation cap for the monotone sizing smoothing: adjacent sizings may differ by at most this factor (smoothing only lowers values)."
+  },
+  {
+    "pointer": "/stuck_refine_force_split",
+    "type": "bool",
+    "default": true,
+    "doc": "When the max energy stalls, split each worst triangle's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst triangle per stall -- but 'worst' means every triangle above the filter energy when stuck_refine_num_worst is 0, so on a mesh whose stop_energy sits close to the AMIPS2D floor of 2 this can force thousands of splits in one pass and blow up the element count. Bound stuck_refine_num_worst or turn this off in that regime."
+  },
+  {
+    "pointer": "/stuck_refine_rational_split",
+    "type": "bool",
+    "default": true,
+    "doc": "When a split's rounded (double) midpoint would invert an incident triangle, allow edges of the current worst-triangle set to fall back to the exact rational midpoint (never inverts, keeps the new vertex un-rounded) instead of rejecting the split."
+  },
+  {
+    "pointer": "/skip_good_regions",
+    "type": "bool",
+    "default": true,
+    "doc": "Only smooth vertices incident to a triangle whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions."
+  },
+  {
+    "pointer": "/skip_good_regions_margin",
+    "type": "float",
+    "default": 0.9,
+    "doc": "A triangle is 'active' (worth smoothing around) when its energy is at least this fraction of stop_energy. The AMIPS2D energy of an equilateral triangle is 2, so the filter only skips anything once skip_good_regions_margin * stop_energy exceeds 2."
   }
 ]

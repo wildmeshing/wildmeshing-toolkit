@@ -9,6 +9,76 @@
 
 using namespace wmtk;
 
+namespace {
+
+/// Local edge index of the edge whose endpoints sit at local vertex indices a and b.
+/// The local edge is the one opposite the third local vertex, so the indices sum to 3.
+inline size_t local_eid_from(int a, int b)
+{
+    assert(a >= 0 && a <= 2 && b >= 0 && b <= 2 && a != b);
+    return static_cast<size_t>(3 - a - b);
+}
+
+/// What one pass over an edge's two endpoint fans found. See scan_edge_fan().
+struct EdgeFanScan
+{
+    size_t count = 0;
+    size_t first = size_t(-1); ///< smallest incident fid
+    size_t succ = size_t(-1); ///< smallest incident fid strictly greater than `after`
+};
+
+/**
+ * The faces incident to an edge, without materialising them.
+ *
+ * A face is incident to (v0,v1) exactly when it appears in both endpoints' fans, and
+ * m_conn_tris is kept sorted, so a single lockstep pass visits those faces in increasing
+ * fid order -- which is the order that defines "the next face around this edge". Reporting
+ * the count, the smallest, and the smallest above `after` is everything switch_face,
+ * edge_valence and is_boundary_edge need, so none of them allocates.
+ *
+ * `after` defaults to size_t(-1), for which `succ` is never set: callers that only want a
+ * count leave it alone. `stop_at` bounds the scan for the same reason -- is_boundary_edge
+ * only cares whether a second face exists, and a fan can be large at a pole.
+ */
+inline EdgeFanScan scan_edge_fan(
+    const std::vector<size_t>& a,
+    const std::vector<size_t>& b,
+    const size_t after = size_t(-1),
+    const size_t stop_at = std::numeric_limits<size_t>::max())
+{
+    assert(std::is_sorted(a.begin(), a.end()));
+    assert(std::is_sorted(b.begin(), b.end()));
+
+    EdgeFanScan s;
+    size_t i = 0, j = 0;
+    while (i < a.size() && j < b.size()) {
+        if (a[i] < b[j]) {
+            ++i;
+            continue;
+        }
+        if (b[j] < a[i]) {
+            ++j;
+            continue;
+        }
+        const size_t f = a[i];
+        ++s.count;
+        if (s.first == size_t(-1)) {
+            s.first = f;
+        }
+        if (s.succ == size_t(-1) && f > after) {
+            s.succ = f;
+        }
+        if (s.count >= stop_at) {
+            break;
+        }
+        ++i;
+        ++j;
+    }
+    return s;
+}
+
+} // namespace
+
 void TriMesh::Tuple::update_hash(const TriMesh& m)
 {
     m_hash = m.m_tri_connectivity[m_fid].hash;
@@ -137,52 +207,31 @@ std::optional<TriMesh::Tuple> TriMesh::Tuple::switch_face(const TriMesh& m) cons
     const size_t loc_v0 = m_vid;
     const size_t v1 = this->switch_vertex(m).m_vid;
 
-    // Intersect the 1-ring of the two vertices in the edge pointed by the tuple
-    std::vector<size_t> v0_fids = m.m_vertex_connectivity[loc_v0].m_conn_tris;
-    std::vector<size_t> v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
+    // Step one place along the edge's fan in increasing fid order, wrapping once. The fan
+    // never has to be built: one lockstep pass over the two endpoint fans yields both the
+    // next fid above this one and the smallest, which is where the wrap lands.
+    const auto s = scan_edge_fan(
+        m.m_vertex_connectivity[loc_v0].m_conn_tris,
+        m.m_vertex_connectivity[v1].m_conn_tris,
+        m_fid);
 
-    std::sort(v0_fids.begin(), v0_fids.end());
-    std::sort(v1_fids.begin(), v1_fids.end());
-    std::vector<int> fids;
-    std::set_intersection(
-        v0_fids.begin(),
-        v0_fids.end(),
-        v1_fids.begin(),
-        v1_fids.end(),
-        std::back_inserter(fids)); // make sure this is correct
-    assert(fids.size() == 1 || fids.size() == 2);
+    assert(s.count >= 1 && "a tuple's own face is incident to its own edge");
+    if (s.count == 1) {
+        return {}; // boundary
+    }
 
-    if (fids.size() == 1) return {};
+    const size_t next_fid = (s.succ != size_t(-1)) ? s.succ : s.first;
+    assert(next_fid != m_fid);
 
     Tuple loc = *this;
+    loc.m_fid = next_fid;
 
-    // There is a triangle on the other side
-    if (fids.size() == 2) {
-        // Find the fid of the triangle on the other side
-        size_t fid2 = fids[0] == m_fid ? fids[1] : fids[0];
-        loc.m_fid = fid2;
+    const int lv0_2 = m.m_tri_connectivity[next_fid].find(loc_v0);
+    const int lv1_2 = m.m_tri_connectivity[next_fid].find(v1);
+    assert(lv0_2 != -1 && lv1_2 != -1);
+    loc.m_eid = local_eid_from(lv0_2, lv1_2);
 
-        // Get sorted local indices of the two vertices in the new triangle
-        size_t lv0_2 = m.m_tri_connectivity[fid2].find(loc_v0);
-        assert(lv0_2 == 0 || lv0_2 == 1 || lv0_2 == 2);
-        size_t lv1_2 = m.m_tri_connectivity[fid2].find(v1);
-        assert(lv1_2 == 0 || lv1_2 == 1 || lv1_2 == 2);
-
-        if (lv0_2 > lv1_2) std::swap(lv0_2, lv1_2);
-
-        // Assign the edge id depending on the table
-        if (lv0_2 == 0 && lv1_2 == 1) {
-            loc.m_eid = 2;
-        } else if (lv0_2 == 1 && lv1_2 == 2) {
-            loc.m_eid = 0;
-        } else if (lv0_2 == 0 && lv1_2 == 2) {
-            loc.m_eid = 1;
-        } else {
-            assert(false);
-        }
-
-        loc.update_hash(m);
-    }
+    loc.update_hash(m);
     assert(loc.is_valid(m));
     return loc;
 }
@@ -200,6 +249,12 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
     const std::vector<size_t>& v1_fids = m.m_vertex_connectivity[v1].m_conn_tris;
     // get the smaller vector of the two
     const std::vector<size_t>& fids = v0_fids.size() <= v1_fids.size() ? v0_fids : v1_fids;
+
+    // Both fans are sorted, so scanning one of them and keeping the faces that also carry
+    // the other endpoint yields the edge's fan in increasing fid order, minus this face.
+    // Callers such as collapse_edge_conn take fids[0], so that order is part of the
+    // contract rather than an accident.
+    assert(std::is_sorted(fids.begin(), fids.end()));
 
     // find faces that contain v0 and v1
     for (const size_t f : fids) {
@@ -221,9 +276,7 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
         if (local_v0 == -1 || local_v1 == -1) {
             continue;
         }
-        assert(local_v0 != -1);
-        size_t local_eid = 3 - (local_v0 + local_v1);
-        faces.emplace_back(loc_v0, local_eid, f, m);
+        faces.emplace_back(loc_v0, local_eid_from(local_v0, local_v1), f, m);
     }
 
     return faces;
@@ -231,7 +284,9 @@ std::vector<TriMesh::Tuple> TriMesh::Tuple::switch_faces(const TriMesh& m) const
 
 bool TriMesh::Tuple::is_valid(const TriMesh& m) const
 {
-    if (m_fid + 1 == 0) return false;
+    if (m_fid + 1 == 0) {
+        return false;
+    }
     if (m.m_vertex_connectivity[m_vid].m_is_removed || m.m_tri_connectivity[m_fid].m_is_removed) {
         // assert(false);
         return false;
@@ -266,6 +321,422 @@ bool TriMesh::Tuple::is_valid(const TriMesh& m) const
     return true;
 }
 
+void TriMesh::vertex_fan_components(
+    const size_t vid,
+    std::vector<size_t>& component_of,
+    std::vector<size_t>& representatives) const
+{
+    component_of.clear();
+    representatives.clear();
+
+    const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
+    if (fan.empty()) {
+        return;
+    }
+
+    // Union-find over positions in the fan. Two faces belong to the same component when
+    // they share an edge containing vid, i.e. when vid is adjacent to the same other
+    // vertex in both -- so grouping by that other vertex is enough, and it handles a
+    // non-manifold edge correctly since all its faces land in the same group.
+    //
+    // A fan is a handful of faces, so every lookup below is a linear scan of a flat
+    // vector; a std::map would cost a node allocation per insert to save scans of three
+    // or four elements.
+    std::vector<size_t> parent(fan.size());
+    for (size_t i = 0; i < fan.size(); ++i) {
+        parent[i] = i;
+    }
+    const auto find_root = [&parent](size_t x) {
+        while (parent[x] != x) {
+            parent[x] = parent[parent[x]];
+            x = parent[x];
+        }
+        return x;
+    };
+
+    std::vector<std::pair<size_t, size_t>> seen; // (other endpoint, first fan position)
+    seen.reserve(2 * fan.size());
+    for (size_t i = 0; i < fan.size(); ++i) {
+        const int lv = m_tri_connectivity[fan[i]].find(vid);
+        assert(lv != -1);
+        const auto& idx = m_tri_connectivity[fan[i]].m_indices;
+        // TODO: This is more complex than necessary. Directly iterate through a triangle and
+        // continue if idx[k] == vid. The `find` call can be avoided.
+        for (int k = 1; k <= 2; ++k) {
+            const size_t other = idx[(lv + k) % 3];
+            bool found = false;
+            for (const auto& [o, pos] : seen) {
+                if (o != other) {
+                    continue;
+                }
+                found = true;
+                const size_t ra = find_root(i);
+                const size_t rb = find_root(pos);
+                if (ra != rb) {
+                    parent[ra] = rb;
+                }
+                break;
+            }
+            if (!found) {
+                seen.emplace_back(other, i);
+            }
+        }
+    }
+
+    // Each component is named by its smallest fid. fan is sorted, so the first face seen
+    // for a root is already the smallest, and the representatives come out in increasing
+    // order without a sort.
+    std::vector<std::pair<size_t, size_t>> root_rep; // (root, representative fid)
+    for (size_t i = 0; i < fan.size(); ++i) {
+        const size_t r = find_root(i);
+        bool found = false;
+        for (const auto& [root, rep] : root_rep) {
+            if (root == r) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            root_rep.emplace_back(r, fan[i]);
+        }
+    }
+    assert(std::is_sorted(root_rep.begin(), root_rep.end(), [](const auto& a, const auto& b) {
+        return a.second < b.second;
+    }));
+
+    representatives.reserve(root_rep.size());
+    for (const auto& [root, rep] : root_rep) {
+        representatives.push_back(rep);
+    }
+
+    component_of.resize(fan.size());
+    for (size_t i = 0; i < fan.size(); ++i) {
+        const size_t r = find_root(i);
+        for (size_t c = 0; c < root_rep.size(); ++c) {
+            if (root_rep[c].first == r) {
+                component_of[i] = c;
+                break;
+            }
+        }
+    }
+}
+
+size_t TriMesh::edge_valence(const Tuple& t) const
+{
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+    return scan_edge_fan(
+               m_vertex_connectivity[v0].m_conn_tris,
+               m_vertex_connectivity[v1].m_conn_tris)
+        .count;
+}
+
+bool TriMesh::is_boundary_edge(const Tuple& t) const
+{
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+    // Stop as soon as a second face turns up: this runs once per one-ring edge of both
+    // endpoints on every collapse attempt, and the answer never depends on how many faces
+    // there are beyond two.
+    return scan_edge_fan(
+               m_vertex_connectivity[v0].m_conn_tris,
+               m_vertex_connectivity[v1].m_conn_tris,
+               size_t(-1),
+               2)
+               .count == 1;
+}
+
+bool TriMesh::is_manifold_edge(const Tuple& t) const
+{
+    const size_t v0 = t.vid(*this);
+    const size_t v1 = t.switch_vertex(*this).vid(*this);
+    // Three is enough to answer "exactly two", so a pole never costs more than an
+    // ordinary edge here.
+    return scan_edge_fan(
+               m_vertex_connectivity[v0].m_conn_tris,
+               m_vertex_connectivity[v1].m_conn_tris,
+               size_t(-1),
+               3)
+               .count == 2;
+}
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+
+namespace {
+
+/// One face per line, rotated to start at its smallest vid. Rotation keeps the cyclic
+/// order -- and so the orientation -- while removing the choice of starting corner, which
+/// the operations are free to change and which nothing downstream depends on.
+void append_face(std::string& s, std::array<size_t, 3> vids)
+{
+    const size_t start = std::min_element(vids.begin(), vids.end()) - vids.begin();
+    s += "f";
+    for (int k = 0; k < 3; ++k) {
+        s += " " + std::to_string(vids[(start + k) % 3]);
+    }
+    s += "\n";
+}
+
+std::string canonical_form(
+    const std::vector<char>& vert_alive,
+    const std::vector<std::array<size_t, 3>>& faces,
+    const std::vector<char>& face_alive)
+{
+    std::string s;
+    for (size_t v = 0; v < vert_alive.size(); ++v) {
+        if (vert_alive[v]) s += "v " + std::to_string(v) + "\n";
+    }
+    for (size_t f = 0; f < faces.size(); ++f) {
+        if (face_alive[f]) append_face(s, faces[f]);
+    }
+    return s;
+}
+
+} // namespace
+
+std::string TriMesh::debug_canonical_form() const
+{
+    std::vector<char> vert_alive(vert_capacity(), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    std::vector<std::array<size_t, 3>> faces(tri_capacity());
+    std::vector<char> face_alive(tri_capacity(), 0);
+    for (size_t f = 0; f < tri_capacity(); ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+std::string TriMesh::debug_reference_collapse(const size_t v_removed, const size_t v_kept) const
+{
+    std::vector<char> vert_alive(vert_capacity(), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    std::vector<std::array<size_t, 3>> faces(tri_capacity());
+    std::vector<char> face_alive(tri_capacity(), 0);
+    for (size_t f = 0; f < tri_capacity(); ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    // Drop every face carrying both endpoints -- those are the ones the collapse degenerates
+    // -- then rename the removed endpoint everywhere else.
+    for (size_t f = 0; f < faces.size(); ++f) {
+        if (!face_alive[f]) continue;
+        const bool has_removed =
+            std::find(faces[f].begin(), faces[f].end(), v_removed) != faces[f].end();
+        const bool has_kept = std::find(faces[f].begin(), faces[f].end(), v_kept) != faces[f].end();
+        if (has_removed && has_kept) {
+            face_alive[f] = 0;
+        } else if (has_removed) {
+            for (size_t& v : faces[f]) {
+                if (v == v_removed) v = v_kept;
+            }
+        }
+    }
+    vert_alive[v_removed] = 0;
+
+    // Two faces can now carry the same triple. Keep the smallest fid of each group, which
+    // is what collapse_edge_conn does.
+    //
+    // Restricted to faces at the surviving vertex, and not the whole mesh, because that is
+    // the contract: a collapse merges the duplicates it creates, it does not garbage-collect
+    // ones that were already there. A pre-existing duplicate pair elsewhere must survive
+    // untouched -- Thingi10K 314748 has exactly one, which is how this came up.
+    {
+        std::map<std::array<size_t, 3>, size_t> first_with_key;
+        for (size_t f = 0; f < faces.size(); ++f) {
+            if (!face_alive[f]) continue;
+            if (std::find(faces[f].begin(), faces[f].end(), v_kept) == faces[f].end()) continue;
+            std::array<size_t, 3> key = faces[f];
+            std::sort(key.begin(), key.end());
+            if (!first_with_key.try_emplace(key, f).second) face_alive[f] = 0;
+        }
+    }
+
+    // Anything left with no face at all is retired.
+    {
+        std::vector<char> referenced(vert_alive.size(), 0);
+        for (size_t f = 0; f < faces.size(); ++f) {
+            if (!face_alive[f]) continue;
+            for (const size_t v : faces[f]) referenced[v] = 1;
+        }
+        for (size_t v = 0; v < vert_alive.size(); ++v) {
+            if (!referenced[v]) vert_alive[v] = 0;
+        }
+    }
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+std::string TriMesh::debug_reference_swap(
+    const size_t v0,
+    const size_t v1,
+    const size_t fa,
+    const size_t fb) const
+{
+    std::vector<char> vert_alive(vert_capacity(), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    std::vector<std::array<size_t, 3>> faces(tri_capacity());
+    std::vector<char> face_alive(tri_capacity(), 0);
+    for (size_t f = 0; f < tri_capacity(); ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    const auto apex = [&](size_t f) {
+        for (const size_t v : faces[f]) {
+            if (v != v0 && v != v1) return v;
+        }
+        assert(false);
+        return size_t(-1);
+    };
+    const size_t a = apex(fa);
+    const size_t b = apex(fb);
+
+    // Substituting in place keeps each vertex in the slot it occupied, which is how
+    // swap_edge does it and is what preserves the orientation of both triangles.
+    for (size_t& v : faces[fa]) {
+        if (v == v1) v = b;
+    }
+    for (size_t& v : faces[fb]) {
+        if (v == v0) v = a;
+    }
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+std::string TriMesh::debug_reference_split_face(
+    const size_t fid,
+    const size_t v0,
+    const size_t v1,
+    const size_t v2,
+    const size_t new_v,
+    const size_t tri_cap) const
+{
+    std::vector<char> vert_alive(std::max(vert_capacity(), new_v + 1), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    vert_alive[new_v] = 1;
+
+    std::vector<std::array<size_t, 3>> faces(tri_cap);
+    std::vector<char> face_alive(tri_cap, 0);
+    for (size_t f = 0; f < tri_cap; ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    // The face becomes three, each the original with one vertex replaced by the new one.
+    // Replacing in place preserves orientation. The slot order matters: split_face keeps
+    // the v0 child in the original fid and appends the v1 and v2 children in that order,
+    // which is the order get_next_empty_slot_t hands out.
+    const std::array<size_t, 3> original = faces[fid];
+    const auto child = [&original](size_t replaced, size_t with) {
+        std::array<size_t, 3> c = original;
+        for (size_t& v : c) {
+            if (v == replaced) v = with;
+        }
+        return c;
+    };
+
+    faces[fid] = child(v0, new_v);
+    faces.push_back(child(v1, new_v));
+    face_alive.push_back(1);
+    faces.push_back(child(v2, new_v));
+    face_alive.push_back(1);
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+std::string TriMesh::debug_reference_split(
+    const size_t v0,
+    const size_t v1,
+    const size_t new_v,
+    const size_t tri_cap) const
+{
+    std::vector<char> vert_alive(std::max(vert_capacity(), new_v + 1), 0);
+    for (size_t v = 0; v < vert_capacity(); ++v) {
+        vert_alive[v] = !m_vertex_connectivity[v].m_is_removed;
+    }
+    vert_alive[new_v] = 1;
+
+    std::vector<std::array<size_t, 3>> faces(tri_cap);
+    std::vector<char> face_alive(tri_cap, 0);
+    for (size_t f = 0; f < tri_cap; ++f) {
+        faces[f] = m_tri_connectivity[f].m_indices;
+        face_alive[f] = !m_tri_connectivity[f].m_is_removed;
+    }
+
+    // Each face on the edge becomes two: the original with v1 renamed to new_v, and a new
+    // one with v0 renamed to new_v. Same rule split_edge applies, and the new faces are
+    // appended in increasing order of the face they came from, which is the order
+    // get_next_empty_slot_t hands out.
+    std::vector<std::array<size_t, 3>> appended;
+    for (size_t f = 0; f < tri_cap; ++f) {
+        if (!face_alive[f]) continue;
+        const bool has_v0 = std::find(faces[f].begin(), faces[f].end(), v0) != faces[f].end();
+        const bool has_v1 = std::find(faces[f].begin(), faces[f].end(), v1) != faces[f].end();
+        if (!has_v0 || !has_v1) continue;
+
+        std::array<size_t, 3> child = faces[f];
+        for (size_t& v : child) {
+            if (v == v0) v = new_v;
+        }
+        appended.push_back(child);
+
+        for (size_t& v : faces[f]) {
+            if (v == v1) v = new_v;
+        }
+    }
+    for (const auto& child : appended) {
+        faces.push_back(child);
+        face_alive.push_back(1);
+    }
+
+    return canonical_form(vert_alive, faces, face_alive);
+}
+
+#endif // WMTK_DEBUG_BRUTE_FORCE_OPS
+
+size_t TriMesh::vertex_component_count(const size_t vid) const
+{
+    std::vector<size_t> component_of, representatives;
+    vertex_fan_components(vid, component_of, representatives);
+    return representatives.size();
+}
+
+std::optional<TriMesh::Tuple> TriMesh::switch_component(const Tuple& t) const
+{
+    assert(t.is_valid(*this));
+
+    const size_t vid = t.vid(*this);
+
+    std::vector<size_t> component_of, representatives;
+    vertex_fan_components(vid, component_of, representatives);
+
+    // Nowhere to go when the fan is one piece.
+    if (representatives.size() <= 1) return {};
+
+    const std::vector<size_t>& fan = m_vertex_connectivity[vid].m_conn_tris;
+    const size_t here = std::lower_bound(fan.begin(), fan.end(), t.fid(*this)) - fan.begin();
+    assert(here < fan.size() && fan[here] == t.fid(*this));
+
+    // Representatives are in increasing order, so "the next component" is the next one
+    // along, wrapping once -- the same traversal the caller gets from repeated calls.
+    const size_t next_rep = representatives[(component_of[here] + 1) % representatives.size()];
+
+    const int lv_next = m_tri_connectivity[next_rep].find(vid);
+    assert(lv_next != -1);
+
+    // Same convention as get_one_ring_tris_for_vertex: the tuple owns `vid`.
+    return Tuple(vid, (lv_next + 2) % 3, next_rep, *this);
+}
+
 // a valid mesh can have triangles that are is_removed == true
 bool wmtk::TriMesh::check_mesh_connectivity_validity() const
 {
@@ -285,25 +756,21 @@ bool wmtk::TriMesh::check_mesh_connectivity_validity() const
         assert(
             m_vertex_connectivity[i].m_conn_tris == conn_tris[i] &&
             "m_vertex_connectivity[i].m_conn_tris!=conn_tris[i]");
+        if (m_vertex_connectivity[i].m_conn_tris != conn_tris[i]) return false;
     }
+
+    // Edge adjacency and vertex fan components are derived from m_conn_tris on demand
+    // rather than stored, so there is no second structure here that could fall out of step
+    // with the one checked above. What the operations get wrong instead is the
+    // connectivity itself, which WMTK_DEBUG_BRUTE_FORCE_OPS catches by comparing each
+    // split, collapse and swap against a from-scratch reference.
     return true;
 }
 
 bool wmtk::TriMesh::check_edge_manifold() const
 {
-    std::vector<size_t> count(tri_capacity() * 3, 0);
-    auto faces = get_faces();
-    for (auto f : faces) {
-        for (int i = 0; i < 3; i++) {
-            count[f.eid(*this)]++;
-            if (count[f.eid(*this)] > 2) return false;
-            f = (f.switch_vertex(*this)).switch_edge(*this);
-        }
-    }
-    for (auto idx = 0; idx < tri_capacity() * 3; idx++) {
-        if (count[idx] > 2) {
-            return false;
-        }
+    for (const Tuple& e : get_edges()) {
+        if (edge_valence(e) > 2) return false;
     }
     return true;
 }
@@ -359,6 +826,15 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         old_tris.emplace_back(fids[i], m_tri_connectivity[fids[i]]);
     }
 
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("split_edge: connectivity was already invalid on entry");
+    }
+    // Before the slots are reserved: past this point tri_capacity() counts them, and they
+    // are live but unfilled.
+    const size_t bf_tri_cap = tri_capacity();
+#endif
+
     const size_t new_vid = get_next_empty_slot_v();
     std::vector<size_t> new_fids(fids.size());
     for (size_t i = 0; i < fids.size(); ++i) {
@@ -379,6 +855,10 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
             return false;
         }
     }
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    const std::string brute_force_expected = debug_reference_split(vid1, vid2, new_vid, bf_tri_cap);
+#endif
 
     // first work on the vids
     // the old triangles are connected to the vertex of t
@@ -431,6 +911,17 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         m_tri_connectivity[new_fid].m_indices[tk] = vid3;
         m_tri_connectivity[new_fid].hash++;
     }
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "split_edge({},{}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:\n{}",
+            vid1,
+            vid2,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
 
     // make the new tuple
     size_t min_fid = m_vertex_connectivity[new_vid].m_conn_tris[0]; // making use of sorted vector
@@ -635,12 +1126,37 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         return false;
     }
 
+    // A collapse consuming every face at both endpoints -- the two edges of a lone triangle,
+    // say -- would leave the surviving vertex live but faceless, which no tuple can point
+    // at. The link condition used to rule this out on the way in; refuse it explicitly so
+    // it stays ruled out when the link condition is off.
+    {
+        const size_t vid1 = loc0.vid(*this);
+        const size_t vid2 = loc0.switch_vertex(*this).vid(*this);
+        const auto& n1 = m_vertex_connectivity[vid1].m_conn_tris;
+        const auto& n2 = m_vertex_connectivity[vid2].m_conn_tris;
+        const size_t shared = set_intersection(n1, n2).size();
+        if (shared == n1.size() && shared == n2.size()) {
+            return false;
+        }
+    }
+
     Tuple return_t;
     size_t new_vid;
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris;
     std::vector<std::pair<size_t, VertexConnectivity>> old_vertices;
     std::vector<std::pair<size_t, size_t>> same_edge_vid_fid;
     std::vector<size_t> n12_intersect_fids;
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("collapse_edge: connectivity was already invalid on entry");
+    }
+    // collapse_edge_conn retires the tuple's own vertex and keeps the other.
+    const size_t bf_removed = loc0.vid(*this);
+    const size_t bf_kept = loc0.switch_vertex(*this).vid(*this);
+    const std::string brute_force_expected = debug_reference_collapse(bf_removed, bf_kept);
+#endif
 
     collapse_edge_conn(
         loc0,
@@ -651,6 +1167,18 @@ bool TriMesh::collapse_edge(const Tuple& loc0, std::vector<Tuple>& new_tris)
         old_vertices,
         same_edge_vid_fid,
         n12_intersect_fids);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "collapse_edge({}->{}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:"
+            "\n{}",
+            bf_removed,
+            bf_kept,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
 
     start_protect_attributes();
 
@@ -755,8 +1283,15 @@ void TriMesh::collapse_edge_conn(
     } else {
         const SmartTuple inc_edge = smart_loc0.switch_edge();
         const auto inc_edge_opp_faces = inc_edge.tuple().switch_faces(*this);
-        assert(!inc_edge_opp_faces.empty()); // should exist due to link condition
-        new_fid = inc_edge_opp_faces[0].fid(*this);
+        if (!inc_edge_opp_faces.empty()) {
+            new_fid = inc_edge_opp_faces[0].fid(*this);
+        }
+        // Otherwise both of loc0's other edges are on the boundary, so no face of the
+        // collapsed edge's star survives to carry the return tuple. That is reachable
+        // whenever the collapsed triangle is only attached to the rest of the mesh through
+        // its vertices -- one wing of a bowtie, say. The link condition used to make it
+        // unreachable, which is why this arm used to be an assert. Resolved below, once the
+        // survivor's face list is known.
     }
 
     // get the vids
@@ -882,6 +1417,57 @@ void TriMesh::collapse_edge_conn(
         }
     }
 
+    // Merge duplicate triangles.
+    //
+    // Two faces end up with the same vertex triple exactly when some edge {x,y} was in the
+    // link of both endpoints -- which is what the second half of check_link_condition()
+    // forbids. With the link condition off that can happen, and a simplicial complex cannot
+    // hold the same triangle twice: tuple_from_vids() would throw and every fan-based
+    // routine would have to tolerate the pair. Keep the smallest fid of each group and drop
+    // the rest. The dropped faces' own attributes go with them.
+    {
+        std::map<std::array<size_t, 3>, size_t> first_with_key;
+        std::vector<size_t> merged_away;
+        // m_conn_tris is sorted, so the first face seen for a key is the smallest fid.
+        for (const size_t fid : m_vertex_connectivity[vid2].m_conn_tris) {
+            std::array<size_t, 3> key = m_tri_connectivity[fid].m_indices;
+            std::sort(key.begin(), key.end());
+            if (!first_with_key.try_emplace(key, fid).second) {
+                merged_away.push_back(fid);
+            }
+        }
+        for (const size_t fid : merged_away) {
+            m_tri_connectivity[fid].m_is_removed = true;
+            for (const size_t f_vid : m_tri_connectivity[fid].m_indices) {
+                if (f_vid == vid1 || f_vid == vid2) continue;
+                // Recorded the same way as the faces at the collapsed edge, so the existing
+                // rollback path restores them without knowing why they went away.
+                same_edge_vid_fid.emplace_back(f_vid, fid);
+                vector_erase(m_vertex_connectivity[f_vid].m_conn_tris, fid);
+            }
+            vector_erase(m_vertex_connectivity[vid2].m_conn_tris, fid);
+        }
+    }
+
+    // Retire vertices left with no incident face.
+    //
+    // A vertex joined to the collapsed edge by a single triangle loses it here; if it has
+    // nothing else it is live but faceless, which no navigation can express. Capturing it
+    // in old_vertices first means the existing rollback un-removes it: the restore puts
+    // back m_is_removed == false, and the same_edge_vid_fid replay that follows refills its
+    // face list.
+    {
+        std::set<size_t> candidates;
+        for (const auto& [v, f] : same_edge_vid_fid) candidates.insert(v);
+        for (const size_t v : candidates) {
+            if (!m_vertex_connectivity[v].m_is_removed &&
+                m_vertex_connectivity[v].m_conn_tris.empty()) {
+                old_vertices.emplace_back(v, m_vertex_connectivity[v]);
+                m_vertex_connectivity[v].m_is_removed = true;
+            }
+        }
+    }
+
     // ? ? tuples changes. this needs to be done before post check since checked are done on tuples
     // update the old tuple version number
     // create an edge tuple for each changed edge
@@ -895,6 +1481,12 @@ void TriMesh::collapse_edge_conn(
     const size_t gfid = m_vertex_connectivity[new_vid].m_conn_tris[0];
     int j = m_tri_connectivity[gfid].find(new_vid);
     auto new_t = Tuple(new_vid, (j + 2) % 3, gfid, *this);
+    // new_fid was picked before the mutation. It may have been left unset because nothing
+    // in the star survives, or it may since have been merged away as a duplicate; either
+    // way the survivor's own first face is a valid home for the return tuple.
+    if (new_fid == size_t(-1) || m_tri_connectivity[new_fid].m_is_removed) {
+        new_fid = gfid;
+    }
     int j_ret = m_tri_connectivity[new_fid].find(new_vid);
     return_t = Tuple(new_vid, (j_ret + 2) % 3, new_fid, *this);
     assert(new_t.is_valid(*this));
@@ -937,6 +1529,13 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     // check if the triangles intersection is the one adjcent to the edge
     size_t test_fid1 = t.fid(*this);
     size_t test_fid2 = t_opps[0].fid(*this);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("swap_edge: connectivity was already invalid on entry");
+    }
+    const std::string brute_force_expected = debug_reference_swap(vid1, vid2, test_fid1, test_fid2);
+#endif
     // record the fids that will be changed for roll backs on failure
     std::vector<std::pair<size_t, TriangleConnectivity>> old_tris(2);
     old_tris[0] = std::make_pair(test_fid1, m_tri_connectivity[test_fid1]);
@@ -958,6 +1557,18 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
     vector_unique(m_vertex_connectivity[vid3].m_conn_tris);
     m_vertex_connectivity[vid4].m_conn_tris.push_back(test_fid2);
     vector_unique(m_vertex_connectivity[vid4].m_conn_tris);
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "swap_edge({},{}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:\n{}",
+            vid1,
+            vid2,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
+
     // change the tuple to the new edge tuple
     auto new_t = tuple_from_edge(vid4, vid3, test_fid2);
 
@@ -985,12 +1596,34 @@ bool TriMesh::swap_edge(const Tuple& t, std::vector<Tuple>& new_tris)
 bool TriMesh::smooth_vertex(const Tuple& loc0)
 {
     if (!smooth_before(loc0)) return false;
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    // Smoothing moves a vertex without touching connectivity, so the reference is simply
+    // that nothing about the mesh changed. Worth checking: a subclass whose smooth_after
+    // reached into the topology would be caught here rather than much later.
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("smooth_vertex: connectivity was already invalid on entry");
+    }
+    const std::string brute_force_expected = debug_canonical_form();
+#endif
+
     start_protect_attributes();
     if (!smooth_after(loc0) || !invariants(get_one_ring_tris_for_vertex(loc0))) {
         rollback_protected_attributes();
         return false;
     }
     release_protect_attributes();
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "smooth_vertex({}) changed the connectivity, which it must not.\nexpected:\n{}\ngot:"
+            "\n{}",
+            loc0.vid(*this),
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
     return true;
 }
 
@@ -1039,6 +1672,14 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
         return m_vertex_connectivity[vid[i]].m_conn_tris;
     };
 
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (!check_mesh_connectivity_validity()) {
+        log_and_throw_error("split_face: connectivity was already invalid on entry");
+    }
+    // Before the slots are reserved, for the same reason as split_edge.
+    const size_t bf_tri_cap = tri_capacity();
+#endif
+
     // update vertex connectivity
     const size_t new_vid = get_next_empty_slot_v();
     const size_t new_fid1 = get_next_empty_slot_t();
@@ -1055,6 +1696,12 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
             return false;
         }
     }
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    // After the slots are known, before any of the connectivity moves.
+    const std::string brute_force_expected =
+        debug_reference_split_face(fid, vid[0], vid[1], vid[2], new_vid, bf_tri_cap);
+#endif
 
     vector_erase(conn_tris(0), fid);
     conn_tris(0).emplace_back(new_fid1);
@@ -1087,6 +1734,16 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     m_tri_connectivity[new_fid2].m_indices[i] = vid[0];
     m_tri_connectivity[new_fid2].m_indices[j] = vid[1];
     m_tri_connectivity[new_fid2].m_indices[k] = new_vid;
+
+#ifdef WMTK_DEBUG_BRUTE_FORCE_OPS
+    if (debug_canonical_form() != brute_force_expected) {
+        log_and_throw_error(
+            "split_face({}) disagrees with the brute-force reference.\nexpected:\n{}\ngot:\n{}",
+            fid,
+            brute_force_expected,
+            debug_canonical_form());
+    }
+#endif
 
     // make the new tuple
     Tuple new_vertex_tuple(new_vid, (k + 2) % 3, new_fid2, *this);
@@ -1711,9 +2368,7 @@ bool TriMesh::swap_edge_before(const Tuple& t)
     if (opps.size() != 1) {
         return false;
     }
-    // if (!t.switch_face(*this).has_value()) return false;
-    // size_t v4 =
-    // ((t.switch_face(*this).value()).switch_edge(*this)).switch_vertex(*this).vid(*this);
+
     const size_t v3 = ((t.switch_edge(*this)).switch_vertex(*this)).vid(*this);
     const size_t v4 = opps[0].switch_edge(*this).switch_vertex(*this).vid(*this);
     if (!set_intersection(
@@ -1744,7 +2399,11 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     std::vector<std::pair<size_t, size_t>> lk_e_vid2; // link edges of vid2
 
     for (const Tuple& e_vid : vid1_ring) {
-        if (e_vid.switch_faces(*this).empty()) {
+        // switch_faces(...).empty() asks whether the edge has exactly one face, which
+        // is_boundary_edge now answers with a single array comparison instead of building
+        // two vectors. This runs once per one-ring edge of both endpoints, on every
+        // collapse attempt.
+        if (is_boundary_edge(e_vid)) {
             lk_vid1.push_back(dummy);
             lk_e_vid1.emplace_back(e_vid.vid(*this), dummy);
         }
@@ -1762,7 +2421,7 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     vector_unique(lk_vid1);
 
     for (const Tuple& e_vid : vid2_ring) {
-        if (e_vid.switch_faces(*this).empty()) {
+        if (is_boundary_edge(e_vid)) {
             lk_vid2.push_back(dummy);
             lk_e_vid2.emplace_back(e_vid.vid(*this), dummy);
         }
@@ -1783,12 +2442,10 @@ bool wmtk::TriMesh::check_link_condition(const Tuple& edge) const
     auto lk_vid12 = set_intersection(lk_vid1, lk_vid2);
     std::vector<size_t> lk_edge;
     lk_edge.push_back((edge.switch_edge(*this)).switch_vertex(*this).vid(*this));
-    const auto edge_opps = edge.switch_faces(*this);
-    if (edge_opps.empty()) {
-        // edge is boundary
+    if (is_boundary_edge(edge)) {
         lk_edge.push_back(dummy);
     } else {
-        for (const Tuple& opp : edge_opps) {
+        for (const Tuple& opp : edge.switch_faces(*this)) {
             lk_edge.push_back(opp.switch_edge(*this).switch_vertex(*this).vid(*this));
         }
     }

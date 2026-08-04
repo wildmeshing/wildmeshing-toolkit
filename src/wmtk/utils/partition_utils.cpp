@@ -9,6 +9,12 @@ void wmtk::partition_vertex_morton(
     int num_partition,
     std::vector<size_t>& result)
 {
+    result.clear();
+    result.resize(vert_size);
+    if (vert_size == 0 || num_partition <= 0) {
+        return; // V.front() below would be out of bounds
+    }
+
     std::vector<Eigen::Vector3d> V_v(vert_size);
 
     threading::parallel_for(

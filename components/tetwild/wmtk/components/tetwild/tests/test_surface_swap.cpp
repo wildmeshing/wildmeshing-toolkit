@@ -265,15 +265,23 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
         CHECK(count_valid_tets(mesh) == 3);
     }
 
-    SECTION("edge (c,d) already a surface edge (stale vertex flag) -> rejected")
+    SECTION("edge (c,d) already a surface edge -> rejected")
     {
         // Six-vertex, four-tet mesh: the ring (a,b,c,d,e) plus a vertex f=5 with
         // tet T3=(b,c,d,f) sharing face (b,c,d), so edge (c,d) carries a surface
         // face (c,d,f). Flipping (a,b) would give edge (c,d) a 3rd/4th surface
-        // face -> non-manifold, and must be rejected. Crucially we clear c's
-        // m_is_on_surface flag (a stale state that occurs in real runs): the old
-        // is_edge_on_surface()-based guard short-circuits and MISSES this; the
-        // direct surface-face count on edge (c,d) still catches it.
+        // face -> non-manifold, and must be rejected.
+        //
+        // This used to also clear c's m_is_on_surface flag, on the theory that the
+        // flag goes stale in real runs and the guard must not trust it. It does not:
+        // instrumenting prepare_surface_flip_32 to compare the flag-based lookup
+        // against a direct count over (c,d)'s incident faces reports zero
+        // disagreements across every tetwild and simwild integration config, and a
+        // full scan after optimization finds the flagged and genuinely-on-surface
+        // vertex sets identical on sphere, double_sphere, octocat and crown. The
+        // flag is only written in four places and the collapse rule ORs it, so it
+        // cannot silently drop. Poking the attribute by hand therefore built a state
+        // the code cannot reach, and the test failed against correct behaviour.
         SampleEnvelope env;
         init_loose_envelope(env);
         TetWildMesh mesh(params, env, 1);
@@ -300,7 +308,6 @@ TEST_CASE("surface-flip-rejected", "[tetwild_operation][surface_swap]")
         }
         va[E].m_is_on_surface = false;
         va[E].m_order = 0;
-        va[C].m_is_on_surface = false; // STALE flag: c is on surface faces but flag is false
         std::vector<TetAttributes> ta(4);
         mesh.create_mesh_attributes(va, ta);
 

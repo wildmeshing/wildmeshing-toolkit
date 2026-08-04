@@ -26,6 +26,7 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
+#include <wmtk/utils/partition_utils.hpp>
 #include "expression_parser/Parser.hpp"
 
 namespace wmtk::components::simwild::tri {
@@ -70,96 +71,21 @@ void SimWildMeshTri::partition_mesh_morton()
     }
     logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    std::vector<Vector2d> V_v(vert_capacity());
-
-    threading::parallel_for(
-        threading::range(0, V_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V_v[i] = m_vertex_attribute[i].m_pos;
-            }
+    // The shared partitioner is 3D; a zero z leaves the bounding box, the scale and the
+    // Morton code exactly where a 2D-specific version would put them.
+    std::vector<size_t> partition_id;
+    wmtk::partition_vertex_morton(
+        vert_capacity(),
+        [this](size_t i) {
+            const Vector2d& p = m_vertex_attribute[i].m_pos;
+            return Eigen::Vector3d(p[0], p[1], 0);
         },
-        NUM_THREADS);
+        NUM_THREADS,
+        partition_id);
 
-    struct sortstruct
-    {
-        size_t order;
-        Resorting::MortonCode64 morton;
-    };
-
-    std::vector<sortstruct> list_v;
-    list_v.resize(V_v.size());
-    const int multi = 1000;
-    // since the morton code requires a correct scale of input vertices,
-    //  we need to scale the vertices if their coordinates are out of range
-    std::vector<Vector2d> V = V_v; // this is for rescaling vertices
-    Vector2d vmin, vmax;
-    vmin = V.front();
-    vmax = V.front();
-
-    for (size_t j = 0; j < V.size(); j++) {
-        for (int i = 0; i < 2; i++) {
-            vmin(i) = std::min(vmin(i), V[j](i));
-            vmax(i) = std::max(vmax(i), V[j](i));
-        }
+    for (size_t i = 0; i < partition_id.size(); i++) {
+        m_vertex_attribute[i].partition_id = partition_id[i];
     }
-
-    Vector2d center = (vmin + vmax) / 2;
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V[i] = V[i] - center;
-            }
-        },
-        NUM_THREADS);
-
-    Vector2d scale_point =
-        vmax - center; // after placing box at origin, vmax and vmin are symetric.
-
-    double xscale, yscale;
-    xscale = fabs(scale_point[0]);
-    yscale = fabs(scale_point[1]);
-    double scale = std::max(xscale, yscale);
-    if (scale > 300) {
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] / scale;
-                }
-            },
-            NUM_THREADS);
-    }
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                list_v[i].morton =
-                    Resorting::MortonCode64(int(V[i][0] * multi), int(V[i][1] * multi), 0);
-                list_v[i].order = i;
-            }
-        },
-        NUM_THREADS);
-
-    const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-        return (a.morton < b.morton);
-    };
-
-    std::sort(list_v.begin(), list_v.end(), morton_compare);
-
-    size_t interval = list_v.size() / NUM_THREADS + 1;
-
-    threading::parallel_for(
-        threading::range(0, list_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-            }
-        },
-        NUM_THREADS);
 }
 
 double SimWildMeshTri::get_length2(const Tuple& l) const
