@@ -18,7 +18,7 @@ Install the wildmeshing package first, as described in the [README](../../README
 To install the SimWild wrapper, execute:
 
 ```bash
-python -m pip install -e /components/simwild/wmtk/components/simwild/pysimwild
+python -m pip install -e ./components/simwild/wmtk/components/simwild/pysimwild
 ```
 
 For a full documentation of the wrapper functions call `help(simwild)` in Python after importing the module.
