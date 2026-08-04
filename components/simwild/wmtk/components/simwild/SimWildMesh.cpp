@@ -1,6 +1,5 @@
 
 #include "SimWildMesh.h"
-#include <algorithm>
 
 #include "wmtk/utils/Rational.hpp"
 

@@ -1,5 +1,4 @@
 #include "SimWildMeshTri.hpp"
-#include <algorithm>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 
@@ -584,11 +583,7 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
 
-    // default 1.0: only seed genuinely failing faces (the legacy 0.8
-    // TetWild hysteresis causes a refinement spiral on stalls — see
-    // Parameters::adjust_filter_rel; the 3D/TriWild/TetWild copies still
-    // hardcode 0.8).
-    const double stop_filter_energy = m_params.stop_energy * m_params.adjust_filter_rel;
+    const double stop_filter_energy = m_params.stop_energy * 0.8;
     double filter_energy = std::max(max_energy / 100, stop_filter_energy);
     filter_energy = std::min(filter_energy, 100.);
 
