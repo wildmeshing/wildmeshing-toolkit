@@ -119,7 +119,11 @@ void SimWildMesh::mesh_improvement(int max_its)
         /// adjust_sizing_field mechanism). After a refinement, wait
         /// stuck_refine_cooldown iterations so the operations get full passes on
         /// the new sizing field before more refinement is added.
-        logger().info("pre_quality_rel = {:.6}, quality_rel = {:.6}", pre_quality_rel, quality_rel);
+        logger().info(
+            "pre_quality_rel = {:.6}, quality_rel = {:.6}, ratio = {:.4}",
+            pre_quality_rel,
+            quality_rel,
+            (pre_quality_rel - quality_rel) / pre_quality_rel);
         if (refine_cooldown > 0) {
             --refine_cooldown;
         } else if (
@@ -221,9 +225,6 @@ double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collaps
                 logger().info("==swapping {}==", n);
                 int cnt_success = 0;
                 cnt_success += swap_all_edges_all();
-                // cnt_success += swap_all_edges_56();
-                // cnt_success += swap_all_edges_44();
-                // cnt_success += swap_all_edges();
                 cnt_success += swap_all_faces();
                 if (m_params.debug_output) {
                     write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
@@ -404,7 +405,7 @@ bool SimWildMesh::check_mesh_quality(double& max_rel_quality, const bool verbose
             num_bad++;
         }
     }
-    if (verbose && num_bad > 0) {
+    if (verbose) {
         logger().info(
             "Bad elements: {} of {}, max relative quality: {:.6}",
             num_bad,

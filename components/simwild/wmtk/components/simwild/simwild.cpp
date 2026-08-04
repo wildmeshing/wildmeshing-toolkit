@@ -302,6 +302,7 @@ void simwild(nlohmann::json json_params)
     {
         const auto spec = jse::embed::wmtk_simwild_spec::simwild_spec::spec();
         jse::JSE spec_engine;
+        spec_engine.strict = true; // detect unknown parameters in the input json
         bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());
