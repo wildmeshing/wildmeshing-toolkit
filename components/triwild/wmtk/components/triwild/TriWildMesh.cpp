@@ -370,7 +370,6 @@ size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
         tri_capacity(),
         [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
         [this](size_t fid) { return m_face_attribute[fid].m_quality; },
-        [](double q) { return q; },
         filter_energy,
         m_params.stuck_refine_num_worst);
 
