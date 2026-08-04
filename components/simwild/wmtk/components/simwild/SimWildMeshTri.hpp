@@ -9,6 +9,7 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 
 // clang-format off
@@ -116,6 +117,17 @@ public:
 
     wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
         m_solver;
+
+    /// Why smoothing attempts were refused, reported once per pass.
+    optimization::SmoothRejectCounters m_smooth_rejects;
+
+    /// Hooks for the shared 2D smoothing driver. This mesh stores only a double position,
+    /// so is_inverted_f coincides with is_inverted.
+    Vector2d smoothing_position(const size_t vid) const;
+    void set_smoothing_position(const size_t vid, const Vector2d& p);
+    bool is_inverted_f(const size_t fid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
     // scaling factors
     double m_s_amips = -1;

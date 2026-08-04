@@ -120,6 +120,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     bool skip_simplify = json_params["skip_simplify"];
     const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
     const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
+    const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
     bool use_sample_envelope = json_params["use_sample_envelope"];
     int NUM_THREADS = json_params["num_threads"];
     int max_its = json_params["max_iterations"];
@@ -128,6 +129,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
     params.stop_energy = json_params["stop_energy"];
+    params.num_smoothing_passes = json_params["num_smoothing_passes"];
+    params.w_amips = json_params["w_amips"];
 
     params.preserve_topology = json_params["preserve_topology"];
 
@@ -192,7 +195,23 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         NUM_THREADS,
         !use_sample_envelope);
     surf_mesh.set_use_link_condition(simplify_use_link_condition);
-    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, envelope_size / 2);
+    // The simplification and the tetrahedralisation used to share one envelope object at
+    // the same eps, which leaves the optimizer no room: a simplification free to place a
+    // vertex right at the limit hands the optimizer a mesh where almost every move is
+    // already outside. Measured on crown.obj, a third of the simplified vertices sat
+    // outside the envelope before the tet phase began, and ~94% of smoothing attempts were
+    // then vetoed.
+    //
+    // Simplifying inside a fraction of the envelope reserves the rest as headroom.
+    const double tet_eps = envelope_size / 2;
+    const double simplify_eps = tet_eps * simplify_envelope_ratio;
+    logger().info(
+        "envelope eps: simplification {:.6} ({:.0f}% of tetrahedralisation {:.6})",
+        simplify_eps,
+        100 * simplify_envelope_ratio,
+        tet_eps);
+
+    surf_mesh.create_mesh(verts.size(), tris, modified_nonmanifold_v, simplify_eps);
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     if (skip_simplify == false) {
@@ -218,9 +237,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         // SampleEnvelope::init builds both the exact structure and the sampled BVH, and
         // is_outside picks between them per query, so switching predicates for the
-        // simplification alone is a flag flip with nothing to rebuild. It has to be put
-        // back afterwards: this same envelope object is handed to TetWildMesh below, and
-        // the tet phase must keep whatever the user asked for.
+        // simplification alone is a flag flip with nothing to rebuild. Restoring it
+        // afterwards no longer matters to the tet phase -- that now gets its own
+        // envelope object at the full eps, built below -- but surf_mesh outlives this
+        // block and is written out, so leave it as the caller asked for.
         const bool saved_use_exact = surf_mesh.m_envelope.use_exact;
         if (simplify_use_sample_envelope) {
             logger().info("simplification uses the sampled envelope; tet phase unaffected");
@@ -271,7 +291,32 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.init(box_minmax.first, box_minmax.second);
     wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
 
-    tetwild::TetWildMesh mesh(params, surf_mesh.m_envelope, NUM_THREADS);
+    // Built around the ORIGINAL input, like the simplification one, but at the full tet eps.
+    // A separate object because surf_mesh's is deliberately tighter now.
+    auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
+    {
+        std::vector<Eigen::Vector3d> env_V(verts.size());
+        std::vector<Eigen::Vector3i> env_F(tris.size());
+        for (size_t i = 0; i < verts.size(); ++i) env_V[i] = verts[i];
+        for (size_t i = 0; i < tris.size(); ++i) {
+            env_F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
+        }
+        tet_envelope->init(env_V, env_F, tet_eps);
+    }
+
+    logger().info(
+        "tetrahedralisation envelope: {} (eps {:.6})",
+        tet_envelope->use_exact ? "EXACT" : "sampled",
+        std::sqrt(tet_envelope->eps2));
+
+    if (json_params["DEBUG_disable_envelope"]) {
+        logger().warn(
+            "DEBUG_disable_envelope: envelope checks are OFF for the tetrahedralisation. "
+            "The output has no containment guarantee and is for diagnosis only.");
+        tet_envelope->disabled = true;
+    }
+
+    tetwild::TetWildMesh mesh(params, tet_envelope, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
 
     /////////////////////////////////////////////////////
@@ -316,7 +361,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     logger().info("=== finished insertion");
 
     // generate new mesh
-    tetwild::TetWildMesh mesh_new(params, surf_mesh.m_envelope, NUM_THREADS);
+    tetwild::TetWildMesh mesh_new(params, tet_envelope, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
     mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
 

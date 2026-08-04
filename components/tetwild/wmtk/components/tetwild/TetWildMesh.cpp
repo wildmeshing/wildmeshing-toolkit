@@ -76,7 +76,8 @@ void TetWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        auto [max_energy, avg_energy] =
+            local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
@@ -126,16 +127,11 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
     logger().set_level(spdlog::level::level_enum::debug);
 
-    SampleEnvelope* env;
-    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
-        env = d;
-    } else {
-        log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
-    }
-    SampleEnvelope* env_b;
-    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
-        env_b = d;
-    } else {
+    // m_envelope is a SampleEnvelope already; the dynamic_cast these lines used to do was
+    // a no-op left over from when it was held as the Envelope base.
+    SampleEnvelope* env = m_envelope.get();
+    SampleEnvelope* env_b = m_envelope.get();
+    if (env == nullptr) {
         log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
     }
 
@@ -379,7 +375,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             const auto p0 = m_vertex_attribute[verts[0]].m_posf;
             const auto p1 = m_vertex_attribute[verts[1]].m_posf;
             const auto p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope.is_outside({{p0, p1, p2}})) {
+            if (m_envelope->is_outside({{p0, p1, p2}})) {
                 logger().error("Face {} is outside!", verts);
             }
         }

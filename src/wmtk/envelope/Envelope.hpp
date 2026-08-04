@@ -55,6 +55,21 @@ public:
     double eps2 = 1e-6;
     double sampling_dist = 1e-3;
     bool use_exact = false;
+
+    /**
+     * Debug escape hatch: when set, every is_outside() answers "inside".
+     *
+     * The envelope is the only thing that can reject an operation for geometric rather
+     * than combinatorial reasons, so turning it off tells you whether a stalled
+     * optimization is blocked by the envelope or by the mesh itself. It removes the
+     * containment guarantee entirely -- the output is not usable, only diagnostic.
+     *
+     * Note nearest_point() is unaffected, so EnvelopeEnergy still pulls surface vertices
+     * toward the input while smoothing. Only the veto goes away, which is the point: it
+     * separates "the optimizer cannot move because the envelope forbids it" from "the
+     * optimizer cannot move at all".
+     */
+    bool disabled = false;
     void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
