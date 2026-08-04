@@ -126,6 +126,14 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a611c4f059f6f0acc4e339c80d0a936e5" id="r_a611c4f059f6f0acc4e339c80d0a936e5"><td class="memItemLeft" align="right" valign="top"><a id="a611c4f059f6f0acc4e339c80d0a936e5" name="a611c4f059f6f0acc4e339c80d0a936e5"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_energy_envelope</b> (const size_t vid) const</td></tr>
+<tr class="memdesc:a611c4f059f6f0acc4e339c80d0a936e5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> a vertex is pulled toward while smoothing. <br /></td></tr>
+<tr class="separator:a611c4f059f6f0acc4e339c80d0a936e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41f7050028679ea600f43324679a82ed" id="r_a41f7050028679ea600f43324679a82ed"><td class="memItemLeft" align="right" valign="top"><a id="a41f7050028679ea600f43324679a82ed" name="a41f7050028679ea600f43324679a82ed"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_containment_envelope</b> (const size_t vid) const</td></tr>
+<tr class="memdesc:a41f7050028679ea600f43324679a82ed"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against. <br /></td></tr>
+<tr class="separator:a41f7050028679ea600f43324679a82ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3eae47a5fbf4b147ab6752c37eedfb1d" id="r_a3eae47a5fbf4b147ab6752c37eedfb1d"><td class="memItemLeft" align="right" valign="top"><a id="a3eae47a5fbf4b147ab6752c37eedfb1d" name="a3eae47a5fbf4b147ab6752c37eedfb1d"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>SimWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a3eae47a5fbf4b147ab6752c37eedfb1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -286,15 +294,6 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (co
 <tr class="memitem:a97923f82861b507deef9a5d78257bac2" id="r_a97923f82861b507deef9a5d78257bac2"><td class="memItemLeft" align="right" valign="top"><a id="a97923f82861b507deef9a5d78257bac2" name="a97923f82861b507deef9a5d78257bac2"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
 <tr class="separator:a97923f82861b507deef9a5d78257bac2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3af523120261e7e83afa24c68abec9de" id="r_a3af523120261e7e83afa24c68abec9de"><td class="memItemLeft" align="right" valign="top"><a id="a3af523120261e7e83afa24c68abec9de" name="a3af523120261e7e83afa24c68abec9de"></a>
-std::vector&lt; std::array&lt; double, 12 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_amips_assembles</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a3af523120261e7e83afa24c68abec9de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94394d2e6b5ec0766932c174e338a745" id="r_a94394d2e6b5ec0766932c174e338a745"><td class="memItemLeft" align="right" valign="top"><a id="a94394d2e6b5ec0766932c174e338a745" name="a94394d2e6b5ec0766932c174e338a745"></a>
-std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_amips_energy</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a94394d2e6b5ec0766932c174e338a745"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b5c273de83bd39616978c249855b2d2" id="r_a7b5c273de83bd39616978c249855b2d2"><td class="memItemLeft" align="right" valign="top"><a id="a7b5c273de83bd39616978c249855b2d2" name="a7b5c273de83bd39616978c249855b2d2"></a>
-std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_envelope_energy</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a7b5c273de83bd39616978c249855b2d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7558616aa2479ba9c410d55911e8bdb" id="r_ad7558616aa2479ba9c410d55911e8bdb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad7558616aa2479ba9c410d55911e8bdb">round</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;loc)</td></tr>
 <tr class="memdesc:ad7558616aa2479ba9c410d55911e8bdb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Round a vertex position to floating point.  <br /></td></tr>
 <tr class="separator:ad7558616aa2479ba9c410d55911e8bdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -765,6 +764,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_amips</b> = -1<
 <tr class="memitem:a82cbda65c4885e17dfec178dffc0064e" id="r_a82cbda65c4885e17dfec178dffc0064e"><td class="memItemLeft" align="right" valign="top"><a id="a82cbda65c4885e17dfec178dffc0064e" name="a82cbda65c4885e17dfec178dffc0064e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_envelope</b> = -1</td></tr>
 <tr class="separator:a82cbda65c4885e17dfec178dffc0064e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a048a5fde21055b81d9ed003be9f7e4cc" id="r_a048a5fde21055b81d9ed003be9f7e4cc"><td class="memItemLeft" align="right" valign="top"><a id="a048a5fde21055b81d9ed003be9f7e4cc" name="a048a5fde21055b81d9ed003be9f7e4cc"></a>
+<a class="el" href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html">optimization::SmoothRejectCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_rejects</b></td></tr>
+<tr class="memdesc:a048a5fde21055b81d9ed003be9f7e4cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Why smoothing attempts were refused, reported once per pass. <br /></td></tr>
+<tr class="separator:a048a5fde21055b81d9ed003be9f7e4cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a759ef11651c012b5d352c6de8d06c635" id="r_a759ef11651c012b5d352c6de8d06c635"><td class="memItemLeft" align="right" valign="top"><a id="a759ef11651c012b5d352c6de8d06c635" name="a759ef11651c012b5d352c6de8d06c635"></a>
 std::function&lt; double(const Vector3d &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_voronoi_split_fn</b> = nullptr</td></tr>
 <tr class="separator:a759ef11651c012b5d352c6de8d06c635"><td class="memSeparator" colspan="2">&#160;</td></tr>

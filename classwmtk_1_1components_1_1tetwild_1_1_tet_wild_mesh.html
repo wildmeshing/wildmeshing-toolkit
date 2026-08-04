@@ -127,9 +127,17 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:accc859dfba85027a8a0551295c0323fa" id="r_accc859dfba85027a8a0551295c0323fa"><td class="memItemLeft" align="right" valign="top"><a id="accc859dfba85027a8a0551295c0323fa" name="accc859dfba85027a8a0551295c0323fa"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>TetWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">Parameters</a> &amp;_m_params, <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &amp;_m_envelope, int _num_threads=1)</td></tr>
-<tr class="separator:accc859dfba85027a8a0551295c0323fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99c74cc5a4b45a0a4f883d59c68cfcc3" id="r_a99c74cc5a4b45a0a4f883d59c68cfcc3"><td class="memItemLeft" align="right" valign="top"><a id="a99c74cc5a4b45a0a4f883d59c68cfcc3" name="a99c74cc5a4b45a0a4f883d59c68cfcc3"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_energy_envelope</b> (const size_t vid) const</td></tr>
+<tr class="memdesc:a99c74cc5a4b45a0a4f883d59c68cfcc3"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> a vertex is pulled toward while smoothing. <br /></td></tr>
+<tr class="separator:a99c74cc5a4b45a0a4f883d59c68cfcc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae54207617c971820d6951350a24e0404" id="r_ae54207617c971820d6951350a24e0404"><td class="memItemLeft" align="right" valign="top"><a id="ae54207617c971820d6951350a24e0404" name="ae54207617c971820d6951350a24e0404"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_containment_envelope</b> (const size_t vid) const</td></tr>
+<tr class="memdesc:ae54207617c971820d6951350a24e0404"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against. <br /></td></tr>
+<tr class="separator:ae54207617c971820d6951350a24e0404"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea8c2fcbe13476002d94164a08094d14" id="r_aea8c2fcbe13476002d94164a08094d14"><td class="memItemLeft" align="right" valign="top"><a id="aea8c2fcbe13476002d94164a08094d14" name="aea8c2fcbe13476002d94164a08094d14"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TetWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">Parameters</a> &amp;_m_params, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; _m_envelope, int _num_threads=1)</td></tr>
+<tr class="separator:aea8c2fcbe13476002d94164a08094d14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c5a00a48426e6fcf606280a8c40eab7" id="r_a6c5a00a48426e6fcf606280a8c40eab7"><td class="memItemLeft" align="right" valign="top"><a id="a6c5a00a48426e6fcf606280a8c40eab7" name="a6c5a00a48426e6fcf606280a8c40eab7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>create_mesh_attributes</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_vertex_attributes.html">VertexAttributes</a> &gt; &amp;_vertex_attribute, const std::vector&lt; <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_attributes.html">TetAttributes</a> &gt; &amp;_tet_attribute)</td></tr>
 <tr class="separator:a6c5a00a48426e6fcf606280a8c40eab7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -713,14 +721,27 @@ const double&#160;</td><td class="memItemRight" valign="bottom"><b>MAX_ENERGY</b
 <tr class="memitem:ab36799e354c4beb99e969b66934f84e8" id="r_ab36799e354c4beb99e969b66934f84e8"><td class="memItemLeft" align="right" valign="top"><a id="ab36799e354c4beb99e969b66934f84e8" name="ab36799e354c4beb99e969b66934f84e8"></a>
 <a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_params</b></td></tr>
 <tr class="separator:ab36799e354c4beb99e969b66934f84e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a091ff12aafe0f6c859ddd4fbc67465d7" id="r_a091ff12aafe0f6c859ddd4fbc67465d7"><td class="memItemLeft" align="right" valign="top"><a id="a091ff12aafe0f6c859ddd4fbc67465d7" name="a091ff12aafe0f6c859ddd4fbc67465d7"></a>
-<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
-<tr class="separator:a091ff12aafe0f6c859ddd4fbc67465d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b361d3e5568aac6a3baf54b26d605aa" id="r_a6b361d3e5568aac6a3baf54b26d605aa"><td class="memItemLeft" align="right" valign="top"><a id="a6b361d3e5568aac6a3baf54b26d605aa" name="a6b361d3e5568aac6a3baf54b26d605aa"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
+<tr class="memdesc:a6b361d3e5568aac6a3baf54b26d605aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Surface envelope: what a surface vertex is pulled toward and checked against. <br /></td></tr>
+<tr class="separator:a6b361d3e5568aac6a3baf54b26d605aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11e9c56b325da77876b01bab5a1385f9" id="r_a11e9c56b325da77876b01bab5a1385f9"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a11e9c56b325da77876b01bab5a1385f9">m_order2_envelope</a></td></tr>
+<tr class="separator:a11e9c56b325da77876b01bab5a1385f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8063005bfb61ba0b4baba33950db2d46" id="r_a8063005bfb61ba0b4baba33950db2d46"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a8063005bfb61ba0b4baba33950db2d46">m_input_names</a></td></tr>
 <tr class="separator:a8063005bfb61ba0b4baba33950db2d46"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f20aca74a8eb5e93beed9c9deef24a2" id="r_a0f20aca74a8eb5e93beed9c9deef24a2"><td class="memItemLeft" align="right" valign="top"><a id="a0f20aca74a8eb5e93beed9c9deef24a2" name="a0f20aca74a8eb5e93beed9c9deef24a2"></a>
-<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_open_boundary_envelope</b></td></tr>
-<tr class="separator:a0f20aca74a8eb5e93beed9c9deef24a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a484c57e1a4fff8efbdc411dc8df3c6d5" id="r_a484c57e1a4fff8efbdc411dc8df3c6d5"><td class="memItemLeft" align="right" valign="top"><a id="a484c57e1a4fff8efbdc411dc8df3c6d5" name="a484c57e1a4fff8efbdc411dc8df3c6d5"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::unique_ptr&lt; polysolve::nonlinear::Solver &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_solver</b></td></tr>
+<tr class="memdesc:a484c57e1a4fff8efbdc411dc8df3c6d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-thread Newton solver for smoothing; created on first use. <br /></td></tr>
+<tr class="separator:a484c57e1a4fff8efbdc411dc8df3c6d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46280d9ae58818061b8a34c8ccbc8f13" id="r_a46280d9ae58818061b8a34c8ccbc8f13"><td class="memItemLeft" align="right" valign="top"><a id="a46280d9ae58818061b8a34c8ccbc8f13" name="a46280d9ae58818061b8a34c8ccbc8f13"></a>
+<a class="el" href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html">optimization::SmoothRejectCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_rejects</b></td></tr>
+<tr class="memdesc:a46280d9ae58818061b8a34c8ccbc8f13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Why smoothing attempts were refused, reported once per pass. <br /></td></tr>
+<tr class="separator:a46280d9ae58818061b8a34c8ccbc8f13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4c303bfaf40c8732d5c697073fd6845" id="r_af4c303bfaf40c8732d5c697073fd6845"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#af4c303bfaf40c8732d5c697073fd6845">m_s_amips</a> = 1.</td></tr>
+<tr class="separator:af4c303bfaf40c8732d5c697073fd6845"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7ea27f7d6c4d6622dd688028802f856" id="r_aa7ea27f7d6c4d6622dd688028802f856"><td class="memItemLeft" align="right" valign="top"><a id="aa7ea27f7d6c4d6622dd688028802f856" name="aa7ea27f7d6c4d6622dd688028802f856"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_envelope</b> = -1.</td></tr>
+<tr class="separator:aa7ea27f7d6c4d6622dd688028802f856"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a799a88db30e8c45c2c236d0560e23ef4" id="r_a799a88db30e8c45c2c236d0560e23ef4"><td class="memItemLeft" align="right" valign="top"><a id="a799a88db30e8c45c2c236d0560e23ef4" name="a799a88db30e8c45c2c236d0560e23ef4"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_attribute</b></td></tr>
 <tr class="separator:a799a88db30e8c45c2c236d0560e23ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2026,6 +2047,36 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
       </table>
 </div><div class="memdoc">
 <p>Optional per-input names (JSON "input_names"), used to label the per-input winding-number output fields. Empty =&gt; the fields are numbered. </p>
+
+</div>
+</div>
+<a id="a11e9c56b325da77876b01bab5a1385f9" name="a11e9c56b325da77876b01bab5a1385f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11e9c56b325da77876b01bab5a1385f9">&#9670;&#160;</a></span>m_order2_envelope</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a>&gt; wmtk::components::tetwild::TetWildMesh::m_order2_envelope</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> for order-2 vertices, i.e. those on a surface boundary or a non-manifold edge. Named for the order rather than for "open boundary" because that is what <a class="el" href="classwmtk_1_1_tet_mesh.html#a00f6ccb1bf8f444f2f9faa580ca027fe" title="Compute the vertex order for a single vertex.">TetMesh::compute_vertex_order</a> actually reports, and it is the broader set. </p>
+
+</div>
+</div>
+<a id="af4c303bfaf40c8732d5c697073fd6845" name="af4c303bfaf40c8732d5c697073fd6845"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4c303bfaf40c8732d5c697073fd6845">&#9670;&#160;</a></span>m_s_amips</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::tetwild::TetWildMesh::m_s_amips = 1.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared distance) on a comparable footing. </p>
 
 </div>
 </div>

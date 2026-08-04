@@ -8,5 +8,6 @@ var searchData=
   ['design_5',['Explicit Invariant Design',['../index.html#autotoc_md31',1,'']]],
   ['difference_20wmtk_20and_20original_20tetwild_6',['Difference WMTK and original TetWild',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html#autotoc_md19',1,'']]],
   ['dirichletenergy2d_7',['dirichletenergy2d',['../classwmtk_1_1optimization_1_1_dirichlet_energy2_d.html',1,'wmtk::optimization::DirichletEnergy2D'],['../classwmtk_1_1optimization_1_1_dirichlet_energy2_d.html#a2b7dc2a306ad9a529f4cb62256755413',1,'wmtk::optimization::DirichletEnergy2D::DirichletEnergy2D()']]],
-  ['dsu_8',['DSU',['../structwmtk_1_1utils_1_1detail_1_1_d_s_u.html',1,'wmtk::utils::detail']]]
+  ['disabled_8',['disabled',['../classwmtk_1_1_sample_envelope.html#a02b553658ee2d7a77bbdc652321f7191',1,'wmtk::SampleEnvelope']]],
+  ['dsu_9',['DSU',['../structwmtk_1_1utils_1_1detail_1_1_d_s_u.html',1,'wmtk::utils::detail']]]
 ];

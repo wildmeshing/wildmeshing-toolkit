@@ -121,6 +121,17 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a3169dc241de4b030976671c00e93c221" id="r_a3169dc241de4b030976671c00e93c221"><td class="memItemLeft" align="right" valign="top">Vector2d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a3169dc241de4b030976671c00e93c221">smoothing_position</a> (const size_t vid) const</td></tr>
+<tr class="separator:a3169dc241de4b030976671c00e93c221"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a678955b325a2c2da01e08c20b48ea1c6" id="r_a678955b325a2c2da01e08c20b48ea1c6"><td class="memItemLeft" align="right" valign="top"><a id="a678955b325a2c2da01e08c20b48ea1c6" name="a678955b325a2c2da01e08c20b48ea1c6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_smoothing_position</b> (const size_t vid, const Vector2d &amp;p)</td></tr>
+<tr class="separator:a678955b325a2c2da01e08c20b48ea1c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb58db501d2f45ae0c98ea4b164ed612" id="r_afb58db501d2f45ae0c98ea4b164ed612"><td class="memItemLeft" align="right" valign="top"><a id="afb58db501d2f45ae0c98ea4b164ed612" name="afb58db501d2f45ae0c98ea4b164ed612"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_energy_envelope</b> (const size_t vid) const</td></tr>
+<tr class="separator:afb58db501d2f45ae0c98ea4b164ed612"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1dc890d09a69dccbadd33adcb6979171" id="r_a1dc890d09a69dccbadd33adcb6979171"><td class="memItemLeft" align="right" valign="top"><a id="a1dc890d09a69dccbadd33adcb6979171" name="a1dc890d09a69dccbadd33adcb6979171"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_containment_envelope</b> (const size_t vid) const</td></tr>
+<tr class="separator:a1dc890d09a69dccbadd33adcb6979171"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7cdd3374bab4310909003eb79004eb76" id="r_a7cdd3374bab4310909003eb79004eb76"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a7cdd3374bab4310909003eb79004eb76">TriWildMesh</a> (<a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a7cdd3374bab4310909003eb79004eb76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa22d854859b8f39c75da564daf32bb84" id="r_aa22d854859b8f39c75da564daf32bb84"><td class="memItemLeft" align="right" valign="top"><a id="aa22d854859b8f39c75da564daf32bb84" name="aa22d854859b8f39c75da564daf32bb84"></a>
@@ -206,21 +217,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_all_vertices</
 <tr class="memitem:aa00095781ead36d3e354c5ecd1dd564e" id="r_aa00095781ead36d3e354c5ecd1dd564e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#aa00095781ead36d3e354c5ecd1dd564e">smooth_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:aa00095781ead36d3e354c5ecd1dd564e"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge smooth.  <br /></td></tr>
 <tr class="separator:aa00095781ead36d3e354c5ecd1dd564e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae665c8f9ecdd5a57241cd2cdc2b688e8" id="r_ae665c8f9ecdd5a57241cd2cdc2b688e8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae665c8f9ecdd5a57241cd2cdc2b688e8">get_surface_assembles</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="memdesc:ae665c8f9ecdd5a57241cd2cdc2b688e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">A vector containing the vertex position and all positions of the surface neighbors.  <br /></td></tr>
-<tr class="separator:ae665c8f9ecdd5a57241cd2cdc2b688e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a281a70898e29872784066142c535700d" id="r_a281a70898e29872784066142c535700d"><td class="memItemLeft" align="right" valign="top"><a id="a281a70898e29872784066142c535700d" name="a281a70898e29872784066142c535700d"></a>
-std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_envelope_energy</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a281a70898e29872784066142c535700d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a631e2ba2dc2b6703018526b44c06e827" id="r_a631e2ba2dc2b6703018526b44c06e827"><td class="memItemLeft" align="right" valign="top"><a id="a631e2ba2dc2b6703018526b44c06e827" name="a631e2ba2dc2b6703018526b44c06e827"></a>
-std::vector&lt; std::array&lt; double, 6 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_amips_assembles</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a631e2ba2dc2b6703018526b44c06e827"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08e213ca622c706a238d04ee1103fc42" id="r_a08e213ca622c706a238d04ee1103fc42"><td class="memItemLeft" align="right" valign="top"><a id="a08e213ca622c706a238d04ee1103fc42" name="a08e213ca622c706a238d04ee1103fc42"></a>
-std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_amips_energy</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
-<tr class="separator:a08e213ca622c706a238d04ee1103fc42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a615385cd7bd69656676ab114de996bcf" id="r_a615385cd7bd69656676ab114de996bcf"><td class="memItemLeft" align="right" valign="top"><a id="a615385cd7bd69656676ab114de996bcf" name="a615385cd7bd69656676ab114de996bcf"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted_f</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
-<tr class="memdesc:a615385cd7bd69656676ab114de996bcf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inversion check using only floating point numbers. <br /></td></tr>
+<tr class="memitem:a615385cd7bd69656676ab114de996bcf" id="r_a615385cd7bd69656676ab114de996bcf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a615385cd7bd69656676ab114de996bcf">is_inverted_f</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
+<tr class="memdesc:a615385cd7bd69656676ab114de996bcf"><td class="mdescLeft">&#160;</td><td class="mdescRight">A vector containing the vertex position and all positions of the surface neighbors.  <br /></td></tr>
 <tr class="separator:a615385cd7bd69656676ab114de996bcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97f8a212b245f26a1b309c78487f82f6" id="r_a97f8a212b245f26a1b309c78487f82f6"><td class="memItemLeft" align="right" valign="top"><a id="a97f8a212b245f26a1b309c78487f82f6" name="a97f8a212b245f26a1b309c78487f82f6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted_f</b> (const size_t fid) const</td></tr>
@@ -596,6 +594,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> 
 <tr class="memitem:af508d04ee1ebef77090cdaa7fa8c8245" id="r_af508d04ee1ebef77090cdaa7fa8c8245"><td class="memItemLeft" align="right" valign="top"><a id="af508d04ee1ebef77090cdaa7fa8c8245" name="af508d04ee1ebef77090cdaa7fa8c8245"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::unique_ptr&lt; polysolve::nonlinear::Solver &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_solver</b></td></tr>
 <tr class="separator:af508d04ee1ebef77090cdaa7fa8c8245"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85fcb1e1cd2a2208636e7ace79d9f686" id="r_a85fcb1e1cd2a2208636e7ace79d9f686"><td class="memItemLeft" align="right" valign="top"><a id="a85fcb1e1cd2a2208636e7ace79d9f686" name="a85fcb1e1cd2a2208636e7ace79d9f686"></a>
+<a class="el" href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html">optimization::SmoothRejectCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_rejects</b></td></tr>
+<tr class="memdesc:a85fcb1e1cd2a2208636e7ace79d9f686"><td class="mdescLeft">&#160;</td><td class="mdescRight">Why smoothing attempts were refused, reported once per pass. <br /></td></tr>
+<tr class="separator:a85fcb1e1cd2a2208636e7ace79d9f686"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afffe80959abd56cf2326f4f2765ce5cc" id="r_afffe80959abd56cf2326f4f2765ce5cc"><td class="memItemLeft" align="right" valign="top"><a id="afffe80959abd56cf2326f4f2765ce5cc" name="afffe80959abd56cf2326f4f2765ce5cc"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_amips</b> = -1</td></tr>
 <tr class="separator:afffe80959abd56cf2326f4f2765ce5cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -864,27 +866,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
-<a id="ae665c8f9ecdd5a57241cd2cdc2b688e8" name="ae665c8f9ecdd5a57241cd2cdc2b688e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae665c8f9ecdd5a57241cd2cdc2b688e8">&#9670;&#160;</a></span>get_surface_assembles()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; Vector2d &gt; wmtk::components::triwild::TriWildMesh::get_surface_assembles </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>A vector containing the vertex position and all positions of the surface neighbors. </p>
-<p>Returns an empty vector if vertex is not on the surface. </p>
-
-</div>
-</div>
 <a id="ab7eaf28b826f4e95f20360644d320018" name="ab7eaf28b826f4e95f20360644d320018"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab7eaf28b826f4e95f20360644d320018">&#9670;&#160;</a></span>gradation_smooth_sizing()</h2>
 
@@ -977,6 +958,28 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a615385cd7bd69656676ab114de996bcf" name="a615385cd7bd69656676ab114de996bcf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a615385cd7bd69656676ab114de996bcf">&#9670;&#160;</a></span>is_inverted_f()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::triwild::TriWildMesh::is_inverted_f </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>loc</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>A vector containing the vertex position and all positions of the surface neighbors. </p>
+<p>Returns an empty vector if vertex is not on the surface.</p>
+<p>Inversion check using only floating point numbers. </p>
 
 </div>
 </div>
@@ -1094,6 +1097,25 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#aaeb1f51faeb8d72947bfb60bc0599cde">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<a id="a3169dc241de4b030976671c00e93c221" name="a3169dc241de4b030976671c00e93c221"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3169dc241de4b030976671c00e93c221">&#9670;&#160;</a></span>smoothing_position()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vector2d wmtk::components::triwild::TriWildMesh::smoothing_position </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Position hooks for the shared 2D smoothing driver. triwild keeps both a working double position and an exact rational one, so writing goes through here. </p>
 
 </div>
 </div>
