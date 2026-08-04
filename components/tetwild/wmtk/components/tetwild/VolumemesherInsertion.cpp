@@ -1514,6 +1514,7 @@ void TetWildMesh::init_from_Volumeremesher(
             if (m_vertex_attribute[vid].m_is_rounded) {
                 m_vertex_attribute[vid].m_pos = v_rational[vid];
                 m_vertex_attribute[vid].m_is_rounded = false;
+                m_all_rounded.store(false, std::memory_order_relaxed);
             }
         }
     }

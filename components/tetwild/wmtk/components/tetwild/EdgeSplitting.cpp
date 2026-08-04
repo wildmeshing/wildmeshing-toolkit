@@ -163,14 +163,23 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         // The rounded (double) midpoint inverts an incident tet. By default reject
-        // the split. But if this edge belongs to the current worst-tet set (the
-        // seeds picked by refine_sizing_around_worst) and the rational fallback is
-        // enabled, place the new vertex at the EXACT rational midpoint of the two
-        // endpoints instead. That midpoint lies on the shared edge, so it can never
-        // invert a previously-valid incident tet -- the split always succeeds and
-        // the worst region can keep being refined. The vertex stays un-rounded
-        // (m_pos exact, m_is_rounded=false) until a later round() reclaims it.
-        if (!m_params.stuck_refine_rational_split) {
+        // the split. But if the rational fallback is enabled, place the new vertex at
+        // the EXACT rational midpoint of the two endpoints instead. That midpoint lies
+        // on the shared edge, so it can never invert a previously-valid incident tet --
+        // the split always succeeds and a stuck region can keep being refined. The
+        // vertex stays un-rounded (m_pos exact, m_is_rounded=false) until a later
+        // round() reclaims it.
+        //
+        // Only when an endpoint is already rational, though. Splitting between two
+        // rounded endpoints would manufacture a brand-new rational vertex out of a
+        // fully-rounded neighbourhood, so a mesh that had reached "All rounded!" could
+        // go back to carrying exact coordinates -- and did: model 73435 finished with
+        // unrounded vertices having reported all-rounded one iteration earlier. With
+        // this rule rationals only ever propagate from existing rationals, so the
+        // rounded set cannot shrink and the invariant is monotone.
+        const bool endpoint_is_rational =
+            !m_vertex_attribute[v1_id].m_is_rounded || !m_vertex_attribute[v2_id].m_is_rounded;
+        if (!m_params.stuck_refine_rational_split || !endpoint_is_rational) {
             return false;
         }
 
@@ -183,6 +192,9 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
                 return false;
             }
         }
+        // This split keeps an un-rounded vertex, so the sweep must not skip the next
+        // pass. Set after the rollback checks above, which leave the mesh unchanged.
+        m_all_rounded.store(false, std::memory_order_relaxed);
     }
 
     /// update quality

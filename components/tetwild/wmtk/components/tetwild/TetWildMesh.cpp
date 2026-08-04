@@ -82,13 +82,12 @@ void TetWildMesh::mesh_improvement(int max_its)
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
 
-        if (max_energy < m_params.stop_energy) {
-            break;
-        }
-        consolidate_mesh();
-
-        logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
-
+        // Count the rounded vertices BEFORE the stop check. This used to sit after the
+        // break, so the iteration that actually reached the energy target never reported
+        // its rounding: the last thing the log said was "All rounded!" from the previous
+        // iteration, and finalize could then still fail with "Not all vertices rounded!".
+        // The log was not wrong, it was one iteration stale, which reads exactly like a
+        // contradiction.
         auto cnt_round = 0, cnt_verts = 0;
         TetMesh::for_each_vertex([&](auto& v) {
             if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
@@ -97,8 +96,15 @@ void TetWildMesh::mesh_improvement(int max_its)
         if (cnt_round < cnt_verts) {
             logger().info("rounded {}/{}", cnt_round, cnt_verts);
         } else {
-            logger().info("All rounded!", cnt_round, cnt_verts);
+            logger().info("All rounded!");
         }
+
+        if (max_energy < m_params.stop_energy) {
+            break;
+        }
+        consolidate_mesh();
+
+        logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
         /// sizing field: when the max energy stalls, refine around the worst
         /// elements to escape stuck configurations (replaces the old global
@@ -121,6 +127,36 @@ void TetWildMesh::mesh_improvement(int max_its)
 
     logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
+}
+
+size_t TetWildMesh::round_all_vertices()
+{
+    if (m_all_rounded.load(std::memory_order_relaxed)) {
+        return 0;
+    }
+
+    size_t reclaimed = 0, still_unrounded = 0;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+            continue;
+        }
+        if (round(v)) {
+            ++reclaimed;
+        } else {
+            ++still_unrounded;
+        }
+    }
+
+    if (still_unrounded == 0) {
+        m_all_rounded.store(true, std::memory_order_relaxed);
+    }
+    if (reclaimed > 0 || still_unrounded > 0) {
+        logger().info(
+            "rounding sweep: reclaimed {}, still unrounded {}",
+            reclaimed,
+            still_unrounded);
+    }
+    return reclaimed;
 }
 
 void TetWildMesh::mesh_improvement_legacy(int max_its)
@@ -505,6 +541,20 @@ std::tuple<double, double> TetWildMesh::local_operations(
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
+            }
+            // Reclaim whatever smoothing just made roundable: once per iteration, after
+            // all of its smoothing passes. Here rather than at the end of the run because
+            // smoothing is what frees a stuck vertex, and because a vertex left rational
+            // makes every incident tet take the exact-arithmetic path in get_quality --
+            // so rounding early keeps the following passes on doubles.
+            //
+            // Guarded on ops[i] so it really is once per iteration: this branch is also
+            // entered by the collapse-only pre and post passes, which pass ops[3] == 0
+            // and have no smoothing for the sweep to follow.
+            //
+            // Skipped entirely once m_all_rounded is set.
+            if (ops[i] > 0) {
+                round_all_vertices();
             }
             if (m_params.debug_output) {
                 save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
