@@ -636,8 +636,7 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
     const auto worst = utils::select_worst_cells(
         tet_capacity(),
         [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
-        [this](size_t tid) { return m_tet_attribute[tid].m_quality; },
-        [](double q) { return std::cbrt(q); },
+        [this](size_t tid) { return std::cbrt(m_tet_attribute[tid].m_quality); },
         filter_energy,
         m_params.stuck_refine_num_worst);
 
@@ -688,7 +687,7 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
         "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices, "
         "filter_energy {:.4}",
         worst.size(),
-        std::cbrt(worst.back().first),
+        worst.back().first,
         refined.size(),
         region.size(),
         filter_energy);

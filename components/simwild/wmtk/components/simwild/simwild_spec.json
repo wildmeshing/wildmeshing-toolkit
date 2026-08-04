@@ -21,6 +21,7 @@
       "length",
       "length_rel",
       "sizing_field",
+      "quality_field",
       "stop_energy",
       "stop_at_float",
       "preserve_topology",
@@ -125,7 +126,7 @@
     "max": 4
   },
   {
-    "pointer": "/input_transform/*/*",
+    "pointer": "/input_transform/*/*/*",
     "type": "float"
   },
   {
@@ -138,7 +139,7 @@
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
-    "doc": "If true, input simplification will be skipped."
+    "doc": "If true, input simplification will be skipped. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
   },
   {
     "pointer": "/use_sample_envelope",
@@ -174,13 +175,13 @@
     "pointer": "/eps_simplify_rel",
     "type": "float",
     "default": 2e-4,
-    "doc": "Envelope thickness relative to the bounding box for the initial simplification."
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh."
   },
   {
     "pointer": "/eps_simplify",
     "type": "float",
     "default": -1,
-    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
   },
   {
     "pointer": "/length",
@@ -222,7 +223,30 @@
     "pointer": "/sizing_field/*/length_rel",
     "type": "float",
     "default": 5e-2,
-    "doc": "Relative target edge length for the region."
+    "doc": "Target edge length relative to the bounding box for the region."
+  },
+  {
+    "pointer": "/quality_field",
+    "type": "list",
+    "default": [],
+    "doc": "Prescribe a target quality for a specific region defined by tags. The last prescibed quality will be used for each element. Example: [{\"tags\": \"tag_0 & tag_1\", \"quality\": 100}, {\"tags\": \"tag_2\", \"quality\": 50}]"
+  },
+  {
+    "pointer": "/quality_field/*",
+    "type": "object",
+    "required": ["tags", "quality"],
+    "doc": "A region and its target quality."
+  },
+  {
+    "pointer": "/quality_field/*/tags",
+    "type": "string",
+    "doc": "A region of tags."
+  },
+  {
+    "pointer": "/quality_field/*/quality",
+    "type": "float",
+    "min": 0,
+    "doc": "Target quality for the region."
   },
   {
     "pointer": "/stop_energy",
