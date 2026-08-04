@@ -153,6 +153,30 @@ CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell
 <tr class="memitem:a07f906eddb22a866866c3169954a9ec3" id="r_a07f906eddb22a866866c3169954a9ec3"><td class="memItemLeft" align="right" valign="top"><a id="a07f906eddb22a866866c3169954a9ec3" name="a07f906eddb22a866866c3169954a9ec3"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_field</b> (const nlohmann::json &amp;sizing_field_json)</td></tr>
 <tr class="separator:a07f906eddb22a866866c3169954a9ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba0668aab8bea22c3160bc72a8eaca91" id="r_aba0668aab8bea22c3160bc72a8eaca91"><td class="memItemLeft" align="right" valign="top"><a id="aba0668aab8bea22c3160bc72a8eaca91" name="aba0668aab8bea22c3160bc72a8eaca91"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_quality_field</b> (const nlohmann::json &amp;quality_field_json)</td></tr>
+<tr class="separator:aba0668aab8bea22c3160bc72a8eaca91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4edbcddca86a75ce67437648b29d8c1" id="r_ac4edbcddca86a75ce67437648b29d8c1"><td class="memItemLeft" align="right" valign="top"><a id="ac4edbcddca86a75ce67437648b29d8c1" name="ac4edbcddca86a75ce67437648b29d8c1"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>target_quality</b> (const size_t tid) const</td></tr>
+<tr class="separator:ac4edbcddca86a75ce67437648b29d8c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a422220d8cc90cb495560b92d65620f31" id="r_a422220d8cc90cb495560b92d65620f31"><td class="memItemLeft" align="right" valign="top"><a id="a422220d8cc90cb495560b92d65620f31" name="a422220d8cc90cb495560b92d65620f31"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>target_quality</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:a422220d8cc90cb495560b92d65620f31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94fccf1b477f9143d2b22fc0504d51d8" id="r_a94fccf1b477f9143d2b22fc0504d51d8"><td class="memItemLeft" align="right" valign="top"><a id="a94fccf1b477f9143d2b22fc0504d51d8" name="a94fccf1b477f9143d2b22fc0504d51d8"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>quality_rel</b> (const size_t tid) const</td></tr>
+<tr class="separator:a94fccf1b477f9143d2b22fc0504d51d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfc3dc430d80b52988fba75ae4ce2e0e" id="r_acfc3dc430d80b52988fba75ae4ce2e0e"><td class="memItemLeft" align="right" valign="top"><a id="acfc3dc430d80b52988fba75ae4ce2e0e" name="acfc3dc430d80b52988fba75ae4ce2e0e"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>quality_rel</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:acfc3dc430d80b52988fba75ae4ce2e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3fd285eaf70ad24c37ee0ccb243b84c" id="r_af3fd285eaf70ad24c37ee0ccb243b84c"><td class="memItemLeft" align="right" valign="top"><a id="af3fd285eaf70ad24c37ee0ccb243b84c" name="af3fd285eaf70ad24c37ee0ccb243b84c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_mesh_quality</b> (double &amp;max_rel_quality, const bool verbose=false) const</td></tr>
+<tr class="separator:af3fd285eaf70ad24c37ee0ccb243b84c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78059c48bfedb89597212ab7609e09be" id="r_a78059c48bfedb89597212ab7609e09be"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a78059c48bfedb89597212ab7609e09be">refine_sizing_around_worst</a> ()</td></tr>
+<tr class="memdesc:a78059c48bfedb89597212ab7609e09be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Escape a stuck max energy by refining the sizing field around the worst elements.  <br /></td></tr>
+<tr class="separator:a78059c48bfedb89597212ab7609e09be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaad7c8dfccea4b1ce109c26c3eb71372" id="r_aaad7c8dfccea4b1ce109c26c3eb71372"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#aaad7c8dfccea4b1ce109c26c3eb71372">gradation_smooth_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
+<tr class="memdesc:aaad7c8dfccea4b1ce109c26c3eb71372"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotone (only-decreasing) gradation smoothing of the sizing field.  <br /></td></tr>
+<tr class="separator:aaad7c8dfccea4b1ce109c26c3eb71372"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7397c36e3aa69e3f116a3e47a068d1c" id="r_ae7397c36e3aa69e3f116a3e47a068d1c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae7397c36e3aa69e3f116a3e47a068d1c">adjust_sizing_field_serial</a> (double max_energy)</td></tr>
 <tr class="separator:ae7397c36e3aa69e3f116a3e47a068d1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5cc4a1c0e2b8864b452afdfc3cb2d43d" id="r_a5cc4a1c0e2b8864b452afdfc3cb2d43d"><td class="memItemLeft" align="right" valign="top"><a id="a5cc4a1c0e2b8864b452afdfc3cb2d43d" name="a5cc4a1c0e2b8864b452afdfc3cb2d43d"></a>
@@ -256,9 +280,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="separator:a5bc2153c178b9283e931164e203bd1d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7548203ee599c199a01dfd6288f4632f" id="r_a7548203ee599c199a01dfd6288f4632f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a7548203ee599c199a01dfd6288f4632f">mesh_improvement</a> (int max_its=80)</td></tr>
 <tr class="separator:a7548203ee599c199a01dfd6288f4632f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac20e1ac42c7716b567cb98723458a8ec" id="r_ac20e1ac42c7716b567cb98723458a8ec"><td class="memItemLeft" align="right" valign="top"><a id="ac20e1ac42c7716b567cb98723458a8ec" name="ac20e1ac42c7716b567cb98723458a8ec"></a>
-std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>local_operations</b> (const std::array&lt; int, 4 &gt; &amp;ops, bool collapse_limit_length=true)</td></tr>
-<tr class="separator:ac20e1ac42c7716b567cb98723458a8ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af112696caa02f1258ee0f90d697bbc66" id="r_af112696caa02f1258ee0f90d697bbc66"><td class="memItemLeft" align="right" valign="top"><a id="af112696caa02f1258ee0f90d697bbc66" name="af112696caa02f1258ee0f90d697bbc66"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>local_operations</b> (const std::array&lt; int, 4 &gt; &amp;ops, bool collapse_limit_length=true)</td></tr>
+<tr class="separator:af112696caa02f1258ee0f90d697bbc66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94e1e9a21cd72574a2e62566e9bc89e7" id="r_a94e1e9a21cd72574a2e62566e9bc89e7"><td class="memItemLeft" align="right" valign="top"><a id="a94e1e9a21cd72574a2e62566e9bc89e7" name="a94e1e9a21cd72574a2e62566e9bc89e7"></a>
 std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_max_avg_energy</b> ()</td></tr>
 <tr class="separator:a94e1e9a21cd72574a2e62566e9bc89e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -599,6 +623,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> 
 <tr class="memitem:a7146618cd54dc54923f3f80dabde5e70" id="r_a7146618cd54dc54923f3f80dabde5e70"><td class="memItemLeft" align="right" valign="top"><a id="a7146618cd54dc54923f3f80dabde5e70" name="a7146618cd54dc54923f3f80dabde5e70"></a>
 std::vector&lt; std::tuple&lt; ExprPtr, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_field</b></td></tr>
 <tr class="separator:a7146618cd54dc54923f3f80dabde5e70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d39f87ef1c475073069c12163897e86" id="r_a9d39f87ef1c475073069c12163897e86"><td class="memItemLeft" align="right" valign="top"><a id="a9d39f87ef1c475073069c12163897e86" name="a9d39f87ef1c475073069c12163897e86"></a>
+std::vector&lt; std::tuple&lt; ExprPtr, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_quality_field</b></td></tr>
+<tr class="separator:a9d39f87ef1c475073069c12163897e86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a316dcb8a6f8b5b108dc33d1db1d23a3b" id="r_a316dcb8a6f8b5b108dc33d1db1d23a3b"><td class="memItemLeft" align="right" valign="top"><a id="a316dcb8a6f8b5b108dc33d1db1d23a3b" name="a316dcb8a6f8b5b108dc33d1db1d23a3b"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_attribute</b></td></tr>
 <tr class="separator:a316dcb8a6f8b5b108dc33d1db1d23a3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -934,6 +961,37 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
+<a id="aaad7c8dfccea4b1ce109c26c3eb71372" name="aaad7c8dfccea4b1ce109c26c3eb71372"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaad7c8dfccea4b1ce109c26c3eb71372">&#9670;&#160;</a></span>gradation_smooth_sizing()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::tri::SimWildMeshTri::gradation_smooth_sizing </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>grade</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>seeds</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Monotone (only-decreasing) gradation smoothing of the sizing field. </p>
+<p>Enforces m_sizing_scalar[v] &lt;= grade * m_sizing_scalar[u] for every edge (u,v), propagating outward from <code>seeds</code> with a min-relaxation. It never raises a sizing value, so it only ever spreads more refinement into the halo around already-refined vertices, avoiding sharp resolution jumps. </p>
+
+</div>
+</div>
 <a id="a11ed85d09abc5ee2ed03a4837094b745" name="a11ed85d09abc5ee2ed03a4837094b745"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a11ed85d09abc5ee2ed03a4837094b745">&#9670;&#160;</a></span>init_from_image()</h2>
 
@@ -1057,7 +1115,27 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 </div><div class="memdoc">
 <p>ops</p>
 <p>energy check</p>
-<p>sizing field</p>
+<p>sizing field: when the max energy stalls, refine around the worst elements to escape stuck configurations (replaces the old global adjust_sizing_field mechanism). After a refinement, wait stuck_refine_cooldown iterations so the operations get full passes on the new sizing field before more refinement is added.</p>
+
+</div>
+</div>
+<a id="a78059c48bfedb89597212ab7609e09be" name="a78059c48bfedb89597212ab7609e09be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78059c48bfedb89597212ab7609e09be">&#9670;&#160;</a></span>refine_sizing_around_worst()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::simwild::tri::SimWildMeshTri::refine_sizing_around_worst </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Escape a stuck max energy by refining the sizing field around the worst elements. </p>
+<p>Finds the m_params.stuck_refine_num_worst tets with the highest energy, gathers all vertices within m_params.stuck_refine_rings graph rings of them, and multiplies each such vertex's m_sizing_scalar by m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar). Then runs gradation_smooth_sizing so the refined region blends smoothly into the surrounding resolution. Replaces the old global adjust_sizing_field mechanism. Returns the number of vertices refined. </p>
 
 </div>
 </div>

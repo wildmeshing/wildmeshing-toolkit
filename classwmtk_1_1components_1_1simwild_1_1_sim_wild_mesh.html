@@ -150,6 +150,24 @@ CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>string_set_to_cell
 <tr class="memitem:a6b3f6bd2fd3ef88cdbbaa7dce00e4674" id="r_a6b3f6bd2fd3ef88cdbbaa7dce00e4674"><td class="memItemLeft" align="right" valign="top"><a id="a6b3f6bd2fd3ef88cdbbaa7dce00e4674" name="a6b3f6bd2fd3ef88cdbbaa7dce00e4674"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_sizing_field</b> (const nlohmann::json &amp;sizing_field_json)</td></tr>
 <tr class="separator:a6b3f6bd2fd3ef88cdbbaa7dce00e4674"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a890844c718763eeeeb1948bf7367f1f2" id="r_a890844c718763eeeeb1948bf7367f1f2"><td class="memItemLeft" align="right" valign="top"><a id="a890844c718763eeeeb1948bf7367f1f2" name="a890844c718763eeeeb1948bf7367f1f2"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_quality_field</b> (const nlohmann::json &amp;quality_field_json)</td></tr>
+<tr class="separator:a890844c718763eeeeb1948bf7367f1f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ce8c8e8cfe0df5b8375a28d71a39b2d" id="r_a8ce8c8e8cfe0df5b8375a28d71a39b2d"><td class="memItemLeft" align="right" valign="top"><a id="a8ce8c8e8cfe0df5b8375a28d71a39b2d" name="a8ce8c8e8cfe0df5b8375a28d71a39b2d"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>target_quality</b> (const size_t tid) const</td></tr>
+<tr class="separator:a8ce8c8e8cfe0df5b8375a28d71a39b2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23e0208ab15935983270116f6a7a91b8" id="r_a23e0208ab15935983270116f6a7a91b8"><td class="memItemLeft" align="right" valign="top"><a id="a23e0208ab15935983270116f6a7a91b8" name="a23e0208ab15935983270116f6a7a91b8"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>target_quality</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:a23e0208ab15935983270116f6a7a91b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa96717429e8c5b5f37044f2ae5a6b26c" id="r_aa96717429e8c5b5f37044f2ae5a6b26c"><td class="memItemLeft" align="right" valign="top"><a id="aa96717429e8c5b5f37044f2ae5a6b26c" name="aa96717429e8c5b5f37044f2ae5a6b26c"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>quality_rel</b> (const size_t tid) const</td></tr>
+<tr class="separator:aa96717429e8c5b5f37044f2ae5a6b26c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab24b2dd3b4e3f56cd4689adc477a8906" id="r_ab24b2dd3b4e3f56cd4689adc477a8906"><td class="memItemLeft" align="right" valign="top"><a id="ab24b2dd3b4e3f56cd4689adc477a8906" name="ab24b2dd3b4e3f56cd4689adc477a8906"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>quality_rel</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
+<tr class="separator:ab24b2dd3b4e3f56cd4689adc477a8906"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad444a9f5171db005d3e92cdc315fb224" id="r_ad444a9f5171db005d3e92cdc315fb224"><td class="memItemLeft" align="right" valign="top"><a id="ad444a9f5171db005d3e92cdc315fb224" name="ad444a9f5171db005d3e92cdc315fb224"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_mesh_quality</b> (double &amp;max_rel_quality, const bool verbose=false) const</td></tr>
+<tr class="separator:ad444a9f5171db005d3e92cdc315fb224"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33a766f40112f85bba2d4bedb64e8f01" id="r_a33a766f40112f85bba2d4bedb64e8f01"><td class="memItemLeft" align="right" valign="top"><a id="a33a766f40112f85bba2d4bedb64e8f01" name="a33a766f40112f85bba2d4bedb64e8f01"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>get_length2</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;l) const</td></tr>
 <tr class="separator:a33a766f40112f85bba2d4bedb64e8f01"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -292,9 +310,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="separator:a8e4e0068e8a8d12d33b6b84a7c320f6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07c25a907b89df039cc2b6458d7906ff" id="r_a07c25a907b89df039cc2b6458d7906ff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a07c25a907b89df039cc2b6458d7906ff">mesh_improvement</a> (int max_its=80)</td></tr>
 <tr class="separator:a07c25a907b89df039cc2b6458d7906ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac806f63b2977962d6650151e72269db9" id="r_ac806f63b2977962d6650151e72269db9"><td class="memItemLeft" align="right" valign="top"><a id="ac806f63b2977962d6650151e72269db9" name="ac806f63b2977962d6650151e72269db9"></a>
-std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>local_operations</b> (const std::array&lt; int, 4 &gt; &amp;ops, bool collapse_limit_length=true)</td></tr>
-<tr class="separator:ac806f63b2977962d6650151e72269db9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad7e85baac3e8bef50c1c95ff7ddf9cc" id="r_aad7e85baac3e8bef50c1c95ff7ddf9cc"><td class="memItemLeft" align="right" valign="top"><a id="aad7e85baac3e8bef50c1c95ff7ddf9cc" name="aad7e85baac3e8bef50c1c95ff7ddf9cc"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>local_operations</b> (const std::array&lt; int, 4 &gt; &amp;ops, bool collapse_limit_length=true)</td></tr>
+<tr class="separator:aad7e85baac3e8bef50c1c95ff7ddf9cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56c9521eed8886612b477407116f72f2" id="r_a56c9521eed8886612b477407116f72f2"><td class="memItemLeft" align="right" valign="top"><a id="a56c9521eed8886612b477407116f72f2" name="a56c9521eed8886612b477407116f72f2"></a>
 std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_max_avg_energy</b> ()</td></tr>
 <tr class="separator:a56c9521eed8886612b477407116f72f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -315,14 +333,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_bou
 <tr class="memitem:aa7db77af32609f3eb71b5f98d500caf1" id="r_aa7db77af32609f3eb71b5f98d500caf1"><td class="memItemLeft" align="right" valign="top"><a id="aa7db77af32609f3eb71b5f98d500caf1" name="aa7db77af32609f3eb71b5f98d500caf1"></a>
 std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>triangulate_polygon_face</b> (std::vector&lt; Vector3r &gt; points)</td></tr>
 <tr class="separator:aa7db77af32609f3eb71b5f98d500caf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1436bc586077e4103e0a21061801831a" id="r_a1436bc586077e4103e0a21061801831a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a1436bc586077e4103e0a21061801831a">refine_sizing_around_worst</a> (double max_energy)</td></tr>
-<tr class="memdesc:a1436bc586077e4103e0a21061801831a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Escape a stuck max energy by refining the sizing field around the worst elements.  <br /></td></tr>
-<tr class="separator:a1436bc586077e4103e0a21061801831a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f62b6b153e68e6cd90c205759aafa1d" id="r_a0f62b6b153e68e6cd90c205759aafa1d"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a0f62b6b153e68e6cd90c205759aafa1d">refine_sizing_around_worst</a> ()</td></tr>
+<tr class="memdesc:a0f62b6b153e68e6cd90c205759aafa1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Escape a stuck max energy by refining the sizing field around the worst elements.  <br /></td></tr>
+<tr class="separator:a0f62b6b153e68e6cd90c205759aafa1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3379f946dce240a703ced67af2ada07" id="r_ae3379f946dce240a703ced67af2ada07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae3379f946dce240a703ced67af2ada07">gradation_smooth_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
 <tr class="memdesc:ae3379f946dce240a703ced67af2ada07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotone (only-decreasing) gradation smoothing of the sizing field.  <br /></td></tr>
 <tr class="separator:ae3379f946dce240a703ced67af2ada07"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01fc2c729b708994b8e57b5e43db5c1c" id="r_a01fc2c729b708994b8e57b5e43db5c1c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a01fc2c729b708994b8e57b5e43db5c1c">adjust_sizing_field_serial</a> (double max_energy)</td></tr>
-<tr class="separator:a01fc2c729b708994b8e57b5e43db5c1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6dbc86dc2cde4909042be9c815c88f0" id="r_ab6dbc86dc2cde4909042be9c815c88f0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab6dbc86dc2cde4909042be9c815c88f0">adjust_sizing_field_serial</a> ()</td></tr>
+<tr class="separator:ab6dbc86dc2cde4909042be9c815c88f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86f557f048620ee10314cd476f817513" id="r_a86f557f048620ee10314cd476f817513"><td class="memItemLeft" align="right" valign="top"><a id="a86f557f048620ee10314cd476f817513" name="a86f557f048620ee10314cd476f817513"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (size_t v1, size_t v2) const</td></tr>
 <tr class="memdesc:a86f557f048620ee10314cd476f817513"><td class="mdescLeft">&#160;</td><td class="mdescRight">True iff edge (v1,v2) is a worst tet's longest edge queued for force-split. <br /></td></tr>
@@ -729,6 +747,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> 
 <tr class="memitem:a873f692799afe9aeb2891ec95357fbd5" id="r_a873f692799afe9aeb2891ec95357fbd5"><td class="memItemLeft" align="right" valign="top"><a id="a873f692799afe9aeb2891ec95357fbd5" name="a873f692799afe9aeb2891ec95357fbd5"></a>
 std::vector&lt; std::tuple&lt; ExprPtr, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_field</b></td></tr>
 <tr class="separator:a873f692799afe9aeb2891ec95357fbd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14703e7bfa4d8529c37f50c4db9d620d" id="r_a14703e7bfa4d8529c37f50c4db9d620d"><td class="memItemLeft" align="right" valign="top"><a id="a14703e7bfa4d8529c37f50c4db9d620d" name="a14703e7bfa4d8529c37f50c4db9d620d"></a>
+std::vector&lt; std::tuple&lt; ExprPtr, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_quality_field</b></td></tr>
+<tr class="separator:a14703e7bfa4d8529c37f50c4db9d620d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8e229220222f1c536879090d59d52f5" id="r_ad8e229220222f1c536879090d59d52f5"><td class="memItemLeft" align="right" valign="top"><a id="ad8e229220222f1c536879090d59d52f5" name="ad8e229220222f1c536879090d59d52f5"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_check_quality</b> = true</td></tr>
 <tr class="separator:ad8e229220222f1c536879090d59d52f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -864,8 +885,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a01fc2c729b708994b8e57b5e43db5c1c" name="a01fc2c729b708994b8e57b5e43db5c1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01fc2c729b708994b8e57b5e43db5c1c">&#9670;&#160;</a></span>adjust_sizing_field_serial()</h2>
+<a id="ab6dbc86dc2cde4909042be9c815c88f0" name="ab6dbc86dc2cde4909042be9c815c88f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6dbc86dc2cde4909042be9c815c88f0">&#9670;&#160;</a></span>adjust_sizing_field_serial()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -873,8 +894,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
         <tr>
           <td class="memname">bool wmtk::components::simwild::SimWildMesh::adjust_sizing_field_serial </td>
           <td>(</td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>max_energy</em></td><td>)</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1339,8 +1359,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 
 </div>
 </div>
-<a id="a1436bc586077e4103e0a21061801831a" name="a1436bc586077e4103e0a21061801831a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1436bc586077e4103e0a21061801831a">&#9670;&#160;</a></span>refine_sizing_around_worst()</h2>
+<a id="a0f62b6b153e68e6cd90c205759aafa1d" name="a0f62b6b153e68e6cd90c205759aafa1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f62b6b153e68e6cd90c205759aafa1d">&#9670;&#160;</a></span>refine_sizing_around_worst()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1348,8 +1368,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
         <tr>
           <td class="memname">size_t wmtk::components::simwild::SimWildMesh::refine_sizing_around_worst </td>
           <td>(</td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>max_energy</em></td><td>)</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
