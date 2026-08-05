@@ -1,4 +1,6 @@
 import gmsh
+
+from ..mesh_core import assign_selection_ids, parse_expression
 import numpy as np
 import json
 import os
@@ -9,6 +11,8 @@ from itertools import combinations
 
 
 def analyze_mesh(input_path: str) -> None:
+    """Print a summary of a .msh (entities, physical groups, elements, views)
+    to stdout."""
     gmsh.initialize()
     gmsh.open(input_path)
 
@@ -53,6 +57,14 @@ def analyze_mesh(input_path: str) -> None:
     gmsh.finalize()
 
 
+def _sel_desc(sel: dict) -> str:
+    """id_map / log rendering of a selection: region='...' [filter='...']."""
+    desc = f"region='{sel['region']}'"
+    if sel.get("filter") is not None:
+        desc += f" filter='{sel['filter']}'"
+    return desc
+
+
 def extract_boundary_selection_from_groups(
         input_path: str,
         boundary_output: str,
@@ -61,43 +73,42 @@ def extract_boundary_selection_from_groups(
         output_mesh: str = None,
         output_groups: list = None,
         skip_tags: list = None) -> None:
-    """Extract interface boundary selection from a physical-groups .msh file.
+    """Extract interface boundary selections from a physical-groups .msh.
 
-    For each selection S of group names, finds all interior mesh faces (edges
-    in 2D) that lie on the boundary of S using the boundary-of-S rule: a face
-    between adjacent tag-sets A and B is selected iff
-        S ⊆ (A ∪ B)  AND  NOT (S ⊆ (A ∩ B))
-    i.e. S's coverage spans the face but is not present on both sides.
+    Each selection is {"region": expr, "filter": expr?, "id": int} (see
+    mesh_core: the boundary of `region`, kept where the outside cell
+    satisfies `filter`; a bare region string is not allowed here because the
+    BC surface id must be explicit). Interior faces only. A face between
+    adjacent cells is selected iff the inside satisfies `region`, the
+    outside does not, and (when given) the outside satisfies `filter`.
+    Cells sharing a
+    node-set across groups (WMTK's write_msh_groups duplicate-tet pattern) are
+    merged into one logical tet carrying the union of their tags, so interface
+    faces aren't dropped as non-manifold.
 
-    Faces on the outer mesh boundary (only one adjacent tet) are excluded.
-    Tets sharing a node-set across multiple groups (WMTK's write_msh_groups
-    duplicate-tet pattern) are merged into a single logical tet whose tag-set
-    is the union of those groups, so interface faces aren't dropped as
-    non-manifold.
-
-    If output_mesh + output_groups are provided, a stripped mesh is written
-    containing only the listed groups, with nodes renumbered to be consecutive.
-    The boundary selection node IDs are consistent with this stripped mesh.
-
-    Output format (0-indexed node IDs):
-        {id} v1 v2 v3    (3D facets)
-        {id} v1 v2       (2D edges)
-
-    Args:
-        input_path:    Path to _groups.msh.
-        boundary_output: Output boundary selection .txt path.
-        selections:    List of {"groups": [str, ...], "id": int}, each with 2+ groups.
-        is_2d:         True for 2D meshes (Triangle / edge boundaries).
-        output_mesh:   Optional path for stripped output .msh.
-        output_groups: Required with output_mesh. List of {"group": str, "id": int}.
-        skip_tags:     Group names to skip if not referenced in any selection or
-                       output_group (default: ["ambient"]).
+    Writes one face per line to boundary_output — "{id} v1 v2 v3" (2D edges:
+    "{id} v1 v2"), 0-indexed node IDs — plus an *_id_map.txt alongside. If
+    output_mesh is given (requires output_groups: [{"group": str, "id": int}]),
+    also writes a stripped mesh with consecutively renumbered nodes that the
+    boundary node IDs are consistent with. Groups in skip_tags (default
+    ["ambient"]) are dropped unless a selection or output_group needs them.
     """
     if not selections:
         print("Warning: no selections specified, nothing to do.")
         return
     if output_mesh and not output_groups:
         raise ValueError("output_groups is required when output_mesh is specified")
+
+    # Normalize {"region", "filter", "id"} specs (ids required for BCs) and
+    # pre-compile the expressions.
+    selections, _ = assign_selection_ids(selections, require_ids=True)
+    for sel in selections:
+        sel["_region"], region_names = parse_expression(sel["region"])
+        if sel["filter"] is not None:
+            sel["_filter"], filter_names = parse_expression(sel["filter"])
+        else:
+            sel["_filter"], filter_names = None, set()
+        sel["_names"] = region_names | filter_names
 
     skip_tags = set(skip_tags) if skip_tags else {"ambient"}
 
@@ -106,8 +117,13 @@ def extract_boundary_selection_from_groups(
     nodes_per_face = 2 if is_2d else 3
     boundary_type = "edges" if is_2d else "facets"
 
-    # All group names we actually need to load
-    needed_groups = set(g for sel in selections for g in sel["groups"])
+    # Group names we must load. Unfiltered or negated selections can touch
+    # any group's cells on the outside, so load everything in those cases;
+    # otherwise the named groups suffice (skip_tags may drop the rest).
+    load_all = any(sel["_filter"] is None
+                   or "!" in sel["region"] + (sel["filter"] or "")
+                   for sel in selections)
+    needed_groups = set(n for sel in selections for n in sel["_names"])
     if output_groups:
         needed_groups |= {og["group"] for og in output_groups}
 
@@ -123,6 +139,8 @@ def extract_boundary_selection_from_groups(
         name = gmsh.model.getPhysicalName(dim, ptag)
         name_to_entities[name] = list(gmsh.model.getEntitiesForPhysicalGroup(dim, ptag))
 
+    if load_all:
+        needed_groups |= set(name_to_entities)
     unused_skipped = [n for n in name_to_entities if n in skip_tags and n not in needed_groups]
     if unused_skipped:
         print(f"  Skipping unused groups: {unused_skipped}")
@@ -273,19 +291,21 @@ def extract_boundary_selection_from_groups(
     output_lines = []
 
     for sel in selections:
-        out_id   = sel["id"]
-        sel_tags = sel["groups"]
-        S        = frozenset(sel_tags)
+        out_id = sel["id"]
+        region, filt = sel["_region"], sel["_filter"]
 
         interface_keys = set()
         for face_key, (a_key, b_key) in (
                 (k, (v[0], v[1])) for k, v in interior_faces.items()):
             A = logical_tags[a_key]
             B = logical_tags[b_key]
-            if S <= (A | B) and not (S <= (A & B)):
-                interface_keys.add(face_key)
+            for inside, outside in ((A, B), (B, A)):
+                if region(inside) and not region(outside) and (
+                        filt is None or filt(outside)):
+                    interface_keys.add(face_key)
+                    break
 
-        desc = " ∩ ".join(f"'{g}'" for g in sel_tags)
+        desc = _sel_desc(sel)
         print(f"  Selection id={out_id} ({desc}): {len(interface_keys)} {boundary_type}")
 
         for key in interface_keys:
@@ -316,10 +336,9 @@ def extract_boundary_selection_from_groups(
         for og in output_groups:
             lines.append(f"  {og['id']:>4}  ←  '{og['group']}'\n")
         lines.append("\n")
-    lines.append("# Surface selection IDs  (polyfem boundary_conditions[].id  ←  groups)\n")
+    lines.append("# Surface selection IDs  (polyfem boundary_conditions[].id  ←  selection)\n")
     for sel in selections:
-        desc = " ∩ ".join(f"'{g}'" for g in sel["groups"])
-        lines.append(f"  {sel['id']:>4}  ←  {desc}\n")
+        lines.append(f"  {sel['id']:>4}  ←  {_sel_desc(sel)}\n")
     with open(map_path, "w") as f:
         f.writelines(lines)
     print(f"Wrote ID map to: {map_path}")
@@ -343,18 +362,19 @@ Example JSON config:
     {"group": "tag_1", "id": 2}
   ],
   "selections": [
-    {"groups": ["tag_0", "ambient"], "id": 1},
-    {"groups": ["tag_1", "ambient"], "id": 2},
-    {"groups": ["tag_0", "tag_1"],   "id": 3}
+    {"region": "tag_0", "filter": "ambient", "id": 1},
+    {"region": "tag_1", "filter": "ambient", "id": 2},
+    {"region": "tag_0", "filter": "tag_1",   "id": 3}
   ],
   "skip_tags": ["ambient"],
   "is_2d": false,
   "analyze": false
 }
 
-Each selection needs 2+ groups. The extracted faces are interior mesh faces
-where adjacent tets carry complementary subsets of the selection's tag set.
-Outer mesh boundary faces (with only one adjacent tet) are always excluded.
+Each selection is the boundary of `region`, kept where the outside cell
+satisfies `filter` (wmtk Boolean expressions; filter optional = whole
+boundary). Outer mesh boundary faces (with only one adjacent tet) are
+always excluded.
 """)
     parser.add_argument("-j", "--json", required=True, help="JSON config file")
     args = parser.parse_args()
@@ -383,14 +403,11 @@ Outer mesh boundary faces (with only one adjacent tet) are always excluded.
         sys.exit(1)
 
     for i, sel in enumerate(config["selections"]):
-        if "groups" not in sel or "id" not in sel:
-            print(f"Error: selections[{i}] needs 'groups' and 'id'", file=sys.stderr)
+        if "region" not in sel or "id" not in sel:
+            print(f"Error: selections[{i}] needs 'region' and 'id'", file=sys.stderr)
             sys.exit(1)
         if not isinstance(sel["id"], int):
             print(f"Error: selections[{i}].id must be int", file=sys.stderr); sys.exit(1)
-        if len(sel["groups"]) < 2:
-            print(f"Error: selections[{i}].groups needs at least 2 groups", file=sys.stderr)
-            sys.exit(1)
 
     input_path = config["input"]
     if not os.path.isabs(input_path):
@@ -421,7 +438,7 @@ Outer mesh boundary faces (with only one adjacent tet) are always excluded.
     print(f"  Mesh dimension:   {'2D' if is_2d else '3D'}")
     print(f"  Selections:")
     for sel in config["selections"]:
-        print(f"    id={sel['id']}  groups={sel['groups']}")
+        print(f"    id={sel['id']}  {_sel_desc(sel)}")
 
     if config.get("analyze", False):
         analyze_mesh(input_path)

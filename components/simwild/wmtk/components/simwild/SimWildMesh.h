@@ -400,7 +400,6 @@ public:
     double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
-
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond) const;
 
