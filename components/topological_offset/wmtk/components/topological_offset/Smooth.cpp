@@ -2,8 +2,8 @@
 #include "Quadrics.hpp"
 #include "TopoOffsetTetMesh.h"
 
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/AMIPS.h>
+#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
