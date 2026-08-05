@@ -41,11 +41,13 @@ void write_empty_binary_stl(const fs::path& path)
 
 TEST_CASE("read_triangle_mesh_rejects_empty_mesh", "[io][read_triangle_mesh]")
 {
-    // libigl reads this file happily and hands back a 0x3 V whose data pointer is
-    // null. Every bounding-box reduction on it -- V.colwise().minCoeff(), both in
-    // clean_triangle_mesh and later in the tetwild component -- then dereferences
-    // null, so a Release build segfaulted before writing a single line of log. The
-    // reader now rejects an empty result instead, which is a diagnosable failure.
+    // libigl reads this file happily and hands back V and F as 0x0 -- not 0x3, which
+    // is what the rest of the reader assumes. In Release that produced a segfault:
+    // the bounding-box reductions (V.colwise().minCoeff(), in clean_triangle_mesh and
+    // again in the tetwild component) dereference the null data pointer of an empty
+    // matrix, before a single line of log was written. In Debug the missing third
+    // column tripped the reader's own asserts first. The reader now rejects an empty
+    // mesh straight after reading it, ahead of both.
     const fs::path path = fs::temp_directory_path() / "wmtk_test_empty_binary_stl_84_bytes.stl";
     write_empty_binary_stl(path);
 

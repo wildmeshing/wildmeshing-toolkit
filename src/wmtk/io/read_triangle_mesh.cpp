@@ -107,10 +107,18 @@ void read_triangle_mesh(
         log_and_throw_error("Could not read mesh {}", path);
     }
 
+    // Reject before cleaning, not after: libigl reports an empty mesh as 0x0, not 0x3,
+    // so anything that assumes three columns -- the asserts below in the multi-mesh
+    // overload, Eigen's block assignments, the bounding-box reductions -- is already
+    // out of contract by this point.
+    if (F.rows() == 0) {
+        log_and_throw_error("Input mesh {} has no faces", path);
+    }
+
     clean_triangle_mesh(V, F, tol_rel, tol_abs);
 
     if (F.rows() == 0) {
-        log_and_throw_error("Input mesh {} has no faces", path);
+        log_and_throw_error("Input mesh {} has no faces left after cleaning", path);
     }
 }
 
@@ -131,6 +139,12 @@ void read_triangle_mesh(
         MatrixXi F_single;
         if (!igl::read_triangle_mesh(p, V_single, F_single)) {
             log_and_throw_error("Could not read mesh {}", p);
+        }
+        // Must come before the asserts: libigl hands back a 0x0 matrix for an empty
+        // mesh, so both of them fire on one in a Debug build, and the block
+        // assignment below would be a dimension mismatch besides.
+        if (F_single.rows() == 0) {
+            log_and_throw_error("Input mesh {} has no faces", p);
         }
         assert(V_single.cols() == 3);
         assert(F_single.cols() == 3);
@@ -156,7 +170,7 @@ void read_triangle_mesh(
             }
             joined += p;
         }
-        log_and_throw_error("Input meshes have no faces: {}", joined);
+        log_and_throw_error("Input meshes have no faces left after cleaning: {}", joined);
     }
 }
 
