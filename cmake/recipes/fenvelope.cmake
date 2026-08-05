@@ -43,7 +43,8 @@ CPMAddPackage(
     # and reintroduces none of the duplicate expansion definitions that #2 existed to
     # remove.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    GIT_TAG eda933b6fab8e89e5f43271ebafc397761da1563
+    # master. A commit rather than the branch name, so the build stays reproducible.
+    GIT_TAG a9f488f81cda91fe3e3099aa4f98b9ee90d4502d
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
     "FAST_ENVELOPE_ENABLE_TBB OFF"
