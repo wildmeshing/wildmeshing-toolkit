@@ -196,6 +196,7 @@ void SampleEnvelope::init(
 
 bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
 {
+    if (disabled) return false;
     if (use_exact) {
         return exact_envelope.is_outside(pts);
     }
@@ -211,6 +212,7 @@ bool SampleEnvelope::is_outside(const Eigen::Vector2d& pts) const
 
 bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 {
+    if (disabled) return false;
     if (use_exact) {
         return exact_envelope.is_outside(tri);
     }
@@ -267,6 +269,7 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 
 bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
 {
+    if (disabled) return false;
     if (use_exact) {
         log_and_throw_error("Cannot use an exact envelope for edges.");
     }

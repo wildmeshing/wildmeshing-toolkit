@@ -81,6 +81,25 @@ struct Parameters
 
     double stop_energy = 10;
 
+    /**
+     * Relative weight of the AMIPS (quality) term against the envelope (stay-on-surface)
+     * term during smoothing. w_envelope is derived as 1 - w_amips in the TetWildMesh
+     * constructor, so the small default means the envelope dominates and AMIPS acts as a
+     * light quality preference. Matches simwild.
+     */
+    double w_amips = 1e-4;
+    double w_envelope = 1. - 1e-4; // derived; not read from json
+
+    /**
+     * How many smoothing passes each optimization iteration runs.
+     *
+     * This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was
+     * hard-coded to 1. Smoothing is the only phase that improves element quality without
+     * changing connectivity, so on meshes where split/collapse/swap have run out of useful
+     * moves it is the only thing left that can lower the energy.
+     */
+    int num_smoothing_passes = 10;
+
     bool debug_output = false;
     bool perform_sanity_checks = false;
 

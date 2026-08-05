@@ -76,28 +76,59 @@ void TetWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        auto [max_energy, avg_energy] =
+            local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
 
+        // Count the rounded vertices BEFORE the stop check. This used to sit after the
+        // break, so the iteration that actually reached the energy target never reported
+        // its rounding: the last thing the log said was "All rounded!" from the previous
+        // iteration, and finalize could then still fail with "Not all vertices rounded!".
+        // The log was not wrong, it was one iteration stale, which reads exactly like a
+        // contradiction.
+        // Atomic because for_each_vertex runs threading::parallel_for whenever
+        // NUM_THREADS != 0. These were plain ints, which raced: octocat reported counts
+        // like "-37 of 4149 un-rounded", i.e. cnt_round > cnt_verts. Harmless while this
+        // only fed a log line, not harmless now that it decides whether to stop.
+        std::atomic<int> n_round = 0, n_verts = 0;
+        TetMesh::for_each_vertex([&](auto& v) {
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+                n_round.fetch_add(1, std::memory_order_relaxed);
+            }
+            n_verts.fetch_add(1, std::memory_order_relaxed);
+        });
+        const int cnt_round = n_round.load(std::memory_order_relaxed);
+        const int cnt_verts = n_verts.load(std::memory_order_relaxed);
+        if (cnt_round < cnt_verts) {
+            logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        } else {
+            logger().info("All rounded!");
+        }
+
+        // Energy alone is not a sufficient termination condition. A mesh that hits the
+        // quality target while some vertex still carries exact coordinates is not
+        // finished: the output is what the caller consumes, and rational coordinates in
+        // it are a defect regardless of how good the elements are. So keep iterating
+        // while anything is un-rounded, and let max_its bound the run as before.
+        //
+        // The exact count is used rather than m_all_rounded, which is only maintained
+        // where the sweep runs (after smoothing) and would stay stale at
+        // num_smoothing_passes == 0, stranding the loop at max_its for no reason.
         if (max_energy < m_params.stop_energy) {
-            break;
+            if (cnt_round == cnt_verts) {
+                break;
+            }
+            logger().info(
+                "energy target reached, but {} of {} vertices are still un-rounded; "
+                "continuing",
+                cnt_verts - cnt_round,
+                cnt_verts);
         }
         consolidate_mesh();
 
         logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
-
-        auto cnt_round = 0, cnt_verts = 0;
-        TetMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-            cnt_verts++;
-        });
-        if (cnt_round < cnt_verts) {
-            logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        } else {
-            logger().info("All rounded!", cnt_round, cnt_verts);
-        }
 
         /// sizing field: when the max energy stalls, refine around the worst
         /// elements to escape stuck configurations (replaces the old global
@@ -122,20 +153,45 @@ void TetWildMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 }
 
+size_t TetWildMesh::round_all_vertices()
+{
+    if (m_all_rounded.load(std::memory_order_relaxed)) {
+        return 0;
+    }
+
+    size_t reclaimed = 0, still_unrounded = 0;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+            continue;
+        }
+        if (round(v)) {
+            ++reclaimed;
+        } else {
+            ++still_unrounded;
+        }
+    }
+
+    if (still_unrounded == 0) {
+        m_all_rounded.store(true, std::memory_order_relaxed);
+    }
+    if (reclaimed > 0 || still_unrounded > 0) {
+        logger().info(
+            "rounding sweep: reclaimed {}, still unrounded {}",
+            reclaimed,
+            still_unrounded);
+    }
+    return reclaimed;
+}
+
 void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
     logger().set_level(spdlog::level::level_enum::debug);
 
-    SampleEnvelope* env;
-    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
-        env = d;
-    } else {
-        log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
-    }
-    SampleEnvelope* env_b;
-    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
-        env_b = d;
-    } else {
+    // m_envelope is a SampleEnvelope already; the dynamic_cast these lines used to do was
+    // a no-op left over from when it was held as the Envelope base.
+    SampleEnvelope* env = m_envelope.get();
+    SampleEnvelope* env_b = m_envelope.get();
+    if (env == nullptr) {
         log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
     }
 
@@ -379,7 +435,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             const auto p0 = m_vertex_attribute[verts[0]].m_posf;
             const auto p1 = m_vertex_attribute[verts[1]].m_posf;
             const auto p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope.is_outside({{p0, p1, p2}})) {
+            if (m_envelope->is_outside({{p0, p1, p2}})) {
                 logger().error("Face {} is outside!", verts);
             }
         }
@@ -509,6 +565,20 @@ std::tuple<double, double> TetWildMesh::local_operations(
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
+            }
+            // Reclaim whatever smoothing just made roundable: once per iteration, after
+            // all of its smoothing passes. Here rather than at the end of the run because
+            // smoothing is what frees a stuck vertex, and because a vertex left rational
+            // makes every incident tet take the exact-arithmetic path in get_quality --
+            // so rounding early keeps the following passes on doubles.
+            //
+            // Guarded on ops[i] so it really is once per iteration: this branch is also
+            // entered by the collapse-only pre and post passes, which pass ops[3] == 0
+            // and have no smoothing for the sweep to follow.
+            //
+            // Skipped entirely once m_all_rounded is set.
+            if (ops[i] > 0) {
+                round_all_vertices();
             }
             if (m_params.debug_output) {
                 save_paraview(fmt::format("debug_{}", debug_print_counter++), false);

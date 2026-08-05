@@ -116,15 +116,14 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface && m_envelope.is_outside(VA[v2_id].m_posf)) {
+        if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_posf)) {
             return false;
         }
     }
 
     // open boundary
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
-        if (!VA[v2_id].m_is_on_open_boundary &&
-            m_open_boundary_envelope.is_outside(VA[v2_id].m_posf)) {
+        if (!VA[v2_id].m_is_on_open_boundary && m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
             return false;
         }
     }
@@ -316,7 +315,7 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_faces) {
             // surface envelope
-            bool is_out = m_envelope.is_outside(
+            bool is_out = m_envelope->is_outside(
                 {{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf, VA.at(vids[2]).m_posf}});
             if (is_out) {
                 return false;
@@ -325,17 +324,17 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
             // // open boundary envelope
             // // by checking each edge on cached surface
             // if (VA[vids[0]].m_is_on_open_boundary && VA[vids[1]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
+            //     if (m_order2_envelope->is_outside(
             //             {{VA[vids[0]].m_posf, VA[vids[1]].m_posf, VA[vids[0]].m_posf}}))
             //         return false;
             // }
             // if (VA[vids[1]].m_is_on_open_boundary && VA[vids[2]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
+            //     if (m_order2_envelope->is_outside(
             //             {{VA[vids[1]].m_posf, VA[vids[2]].m_posf, VA[vids[1]].m_posf}}))
             //         return false;
             // }
             // if (VA[vids[2]].m_is_on_open_boundary && VA[vids[0]].m_is_on_open_boundary) {
-            //     if (m_open_boundary_envelope.is_outside(
+            //     if (m_order2_envelope->is_outside(
             //             {{VA[vids[2]].m_posf, VA[vids[0]].m_posf, VA[vids[2]].m_posf}}))
             //         return false;
             // }

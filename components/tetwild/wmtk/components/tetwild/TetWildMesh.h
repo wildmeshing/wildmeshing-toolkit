@@ -4,6 +4,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/concurrent_map.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
@@ -103,18 +104,40 @@ public:
     const double MAX_ENERGY = 1e50;
 
     Parameters& m_params;
-    SampleEnvelope& m_envelope;
+    /// Surface envelope: what a surface vertex is pulled toward and checked against.
+    std::shared_ptr<SampleEnvelope> m_envelope;
+    /// Envelope for order-2 vertices, i.e. those on a surface boundary or a non-manifold
+    /// edge. Named for the order rather than for "open boundary" because that is what
+    /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
+    std::shared_ptr<SampleEnvelope> m_order2_envelope;
 
     /// Optional per-input names (JSON "input_names"), used to label the per-input
     /// winding-number output fields. Empty => the fields are numbered.
     std::vector<std::string> m_input_names;
 
-    // for open boundary
-    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    /// Per-thread Newton solver for smoothing; created on first use.
+    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
+        m_solver;
 
-    TetWildMesh(Parameters& _m_params, SampleEnvelope& _m_envelope, int _num_threads = 1)
+    /// Why smoothing attempts were refused, reported once per pass.
+    optimization::SmoothRejectCounters m_smooth_rejects;
+
+    /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
+    /// distance) on a comparable footing.
+    double m_s_amips = 1.;
+    double m_s_envelope = -1.;
+
+    /// Envelope a vertex is pulled toward while smoothing.
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    /// Envelope the resulting surface triangles are checked against.
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
+
+    TetWildMesh(
+        Parameters& _m_params,
+        std::shared_ptr<SampleEnvelope> _m_envelope,
+        int _num_threads = 1)
         : m_params(_m_params)
-        , m_envelope(_m_envelope)
+        , m_envelope(std::move(_m_envelope))
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
@@ -122,6 +145,11 @@ public:
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
+
+        optimization::deactivate_opt_logger();
+        m_s_amips = 1.;
+        m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
+        m_params.w_envelope = 1. - m_params.w_amips;
     }
 
     ~TetWildMesh() {}
@@ -283,6 +311,27 @@ public:
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
+    /**
+     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
+     *
+     * round() is otherwise only attempted as a side effect of another operation
+     * (smooth_before on the vertex being smoothed, collapse_edge_after on the merged
+     * one), and neither reaches a vertex that only becomes roundable later: smoothing
+     * skips "good" regions by default. Without a sweep such a vertex keeps exact
+     * coordinates into the output for no geometric reason.
+     *
+     * Skipped outright when m_all_rounded says there is nothing to do.
+     */
+    size_t round_all_vertices();
+
+    /**
+     * @brief True when every vertex is known to be rounded.
+     *
+     * Only trusted when true, and only round_all_vertices() sets it that way. Any code
+     * that leaves a vertex un-rounded must clear it, or the sweep will skip the vertex
+     * forever. Atomic because operations that clear it run in parallel.
+     */
+    std::atomic<bool> m_all_rounded = false;
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);

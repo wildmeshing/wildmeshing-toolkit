@@ -1514,6 +1514,7 @@ void TetWildMesh::init_from_Volumeremesher(
             if (m_vertex_attribute[vid].m_is_rounded) {
                 m_vertex_attribute[vid].m_pos = v_rational[vid];
                 m_vertex_attribute[vid].m_is_rounded = false;
+                m_all_rounded.store(false, std::memory_order_relaxed);
             }
         }
     }
@@ -1619,8 +1620,11 @@ void TetWildMesh::find_open_boundary()
         return;
     }
 
-    // init open boundary envelope
-    m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+    // init the order-2 envelope (surface boundaries and non-manifold edges)
+    if (!m_order2_envelope) {
+        m_order2_envelope = std::make_shared<SampleEnvelope>();
+    }
+    m_order2_envelope->init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
 }
 
 bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
@@ -1631,7 +1635,7 @@ bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;
 
-    return !m_open_boundary_envelope.is_outside(
+    return !m_order2_envelope->is_outside(
         std::array<Eigen::Vector3d, 2>{
             {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
@@ -1644,7 +1648,7 @@ bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;
 
-    return !m_open_boundary_envelope.is_outside(
+    return !m_order2_envelope->is_outside(
         std::array<Eigen::Vector3d, 2>{
             {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
