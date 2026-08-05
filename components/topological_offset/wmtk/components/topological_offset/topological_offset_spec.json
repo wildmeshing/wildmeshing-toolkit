@@ -19,6 +19,7 @@
       "edge_search_termination_len",
       "sorted_marching",
       "check_manifoldness",
+      "optimize",
       "save_vtu",
       "DEBUG_output",
       "log_file",
@@ -129,6 +130,12 @@
     "type": "bool",
     "default": true,
     "doc": "After performing offset, check if offset region is manifold"
+  },
+  {
+    "pointer": "/optimize",
+    "type": "bool",
+    "default": false,
+    "doc": "Run optimization on the offset."
   },
   {
     "pointer": "/save_vtu",
