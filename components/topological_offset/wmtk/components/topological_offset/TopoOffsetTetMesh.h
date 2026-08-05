@@ -147,7 +147,11 @@ public:
     Parameters& m_params;
 
     // smoothing
-    std::unique_ptr<polysolve::nonlinear::Solver> m_smooth_solver;
+    // thread-specific: a polysolve solver is not safe to call concurrently from multiple
+    // threads (smooth_all_vertices() runs with num_threads > 0 via ExecutePass), so each
+    // thread needs its own instance -- matching SimWildMesh::m_solver.
+    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
+        m_smooth_solver;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;

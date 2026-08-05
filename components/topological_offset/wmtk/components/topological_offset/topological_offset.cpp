@@ -62,7 +62,7 @@ void topological_offset(nlohmann::json json_params)
     }
     output_filename.replace_extension(""); // extension is added back later
 
-    int NUM_THREADS = 0;
+    int NUM_THREADS = params.num_threads;
 
     // input must be .msh
     if (std::filesystem::path(input_path).extension() != ".msh") {
