@@ -24,9 +24,13 @@ namespace {
 /**
  * @brief Merge vertices closer than `tol` and remap the edges onto the survivors.
  *
- * Degenerate edges (both endpoints merged together) and duplicated edges are dropped;
- * the surviving edge order follows the sorted endpoint pairs, so the result does not
- * depend on the input order of coincident edges.
+ * Degenerate edges (both endpoints merged together) and duplicated edges are dropped.
+ * Duplicates are detected on the sorted endpoint pair, so a segment and its reverse
+ * count as one, but each surviving edge keeps the ORIENTATION IT WAS GIVEN and the
+ * edges keep their input order. Both matter: a curve's orientation is what makes the
+ * winding number +/-1 inside it, and normalizing endpoints to (min, max) silently
+ * turns every closed loop into an inconsistently oriented one, so the winding-number
+ * tagging that decides which faces belong to an input degenerates into noise.
  */
 void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol)
 {
@@ -43,20 +47,21 @@ void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol)
         return;
     }
 
-    std::set<std::pair<int, int>> unique_edges;
+    std::set<std::pair<int, int>> seen; // keyed on the sorted pair, for dedup only
+    std::vector<std::pair<int, int>> kept; // the edges themselves, as oriented
+    kept.reserve(static_cast<size_t>(E.rows()));
     for (int i = 0; i < E.rows(); ++i) {
-        int a = SVJ(E(i, 0));
-        int b = SVJ(E(i, 1));
+        const int a = SVJ(E(i, 0));
+        const int b = SVJ(E(i, 1));
         if (a == b) {
             continue; // collapsed to a point
         }
-        if (a > b) {
-            std::swap(a, b);
+        if (seen.insert(std::minmax(a, b)).second) {
+            kept.emplace_back(a, b);
         }
-        unique_edges.insert({a, b});
     }
 
-    const int n_dropped = static_cast<int>(E.rows()) - static_cast<int>(unique_edges.size());
+    const int n_dropped = static_cast<int>(E.rows()) - static_cast<int>(kept.size());
     if (V.rows() != SV.rows() || n_dropped > 0) {
         logger().info(
             "Merged {} duplicate vertices and dropped {} degenerate/duplicate edges",
@@ -65,9 +70,9 @@ void merge_duplicate_vertices(MatrixXd& V, MatrixXi& E, double tol)
     }
 
     V = SV;
-    E.resize(unique_edges.size(), 2);
+    E.resize(kept.size(), 2);
     int idx = 0;
-    for (const auto& [a, b] : unique_edges) {
+    for (const auto& [a, b] : kept) {
         E(idx, 0) = a;
         E(idx, 1) = b;
         ++idx;

@@ -4,6 +4,7 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/io/TetVTUWriter.hpp>
 #include <wmtk/io/TriVTUWriter.hpp>
+#include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk/utils/examples/TetMesh_examples.hpp>
 #include <wmtk/utils/examples/TriMesh_examples.hpp>
@@ -12,6 +13,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 
 using namespace wmtk;
@@ -172,4 +175,43 @@ TEST_CASE("io-pysical-groups", "[io][mshio][.]")
     msh.add_physical_group("testgroup"); // does not work with binary for now
 
     msh.save("test-io-pysical-groups.msh", true);
+}
+TEST_CASE("read-edge-mesh-orientation", "[io][edge_mesh]")
+{
+    // A closed loop read with a merge tolerance must come back closed AND
+    // consistently oriented: the winding number that decides which faces belong
+    // to an input is a sum of SIGNED angles, so normalizing endpoints to
+    // (min, max) turns every region into noise.
+    namespace fs = std::filesystem;
+    const fs::path path = fs::temp_directory_path() / "wmtk_edge_loop_test.obj";
+    {
+        std::ofstream f(path);
+        f << "v 0 0 0\nv 1 0 0\nv 1 1 0\nv 0 1 0\n";
+        // deliberately traversed so that the closing segment runs high -> low
+        f << "l 1 2\nl 2 3\nl 3 4\nl 4 1\n";
+    }
+
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi E;
+    wmtk::io::read_edge_mesh(path.string(), V, E, 1e-10);
+    fs::remove(path);
+
+    REQUIRE(V.rows() == 4);
+    REQUIRE(E.rows() == 4);
+
+    // every vertex is entered once and left once
+    Eigen::VectorXi out_deg = Eigen::VectorXi::Zero(V.rows());
+    Eigen::VectorXi in_deg = Eigen::VectorXi::Zero(V.rows());
+    Eigen::Vector3d closure = Eigen::Vector3d::Zero();
+    for (int i = 0; i < E.rows(); ++i) {
+        ++out_deg(E(i, 0));
+        ++in_deg(E(i, 1));
+        closure += (V.row(E(i, 1)) - V.row(E(i, 0))).transpose();
+    }
+    CHECK(out_deg.minCoeff() == 1);
+    CHECK(out_deg.maxCoeff() == 1);
+    CHECK(in_deg.minCoeff() == 1);
+    CHECK(in_deg.maxCoeff() == 1);
+    // a consistently oriented closed loop's edge vectors sum to zero
+    CHECK(closure.norm() < 1e-12);
 }
