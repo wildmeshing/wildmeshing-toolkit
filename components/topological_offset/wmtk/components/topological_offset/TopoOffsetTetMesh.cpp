@@ -608,6 +608,17 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     assert(ambient_assert());
 }
 
+void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
+{
+    logger().info("Optimizing offset...");
+
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    // just try smoothing for now
+}
+
 
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {

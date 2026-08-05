@@ -196,6 +196,11 @@ public:
     void execute_offset(const std::filesystem::path& output_file);
 
     /**
+     * @brief optimize the offset
+     */
+    void optimize_offset(const std::filesystem::path& output_file);
+
+    /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
      * are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field
      * and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint,
