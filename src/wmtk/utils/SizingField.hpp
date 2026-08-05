@@ -33,21 +33,17 @@ using WorstCell = std::pair<double, size_t>;
  *
  * @param n_cells        cell capacity (ids 0..n_cells-1 are probed)
  * @param is_valid       `bool(size_t cid)` -- whether the cell is live
- * @param quality        `double(size_t cid)` -- the raw stored quality
- * @param to_energy      `double(double q)` -- quality to energy. The applications do not
- *                       agree here: tetwild/simwild store AMIPS^3 so this is std::cbrt,
- *                       triwild stores the AMIPS2D energy itself so it is the identity.
+ * @param energy         `double(size_t cid)` -- energy of a cell
  * @param filter_energy  cells below this energy are never refined
  * @param num_worst      how many to keep; <= 0 keeps every cell above filter_energy
  *
  * @return the selected cells sorted ascending by quality (so back() is the worst).
  */
-template <class IsValid, class Quality, class ToEnergy>
+template <class IsValid, class Energy>
 std::vector<WorstCell> select_worst_cells(
     size_t n_cells,
     IsValid is_valid,
-    Quality quality,
-    ToEnergy to_energy,
+    Energy energy,
     double filter_energy,
     int num_worst)
 {
@@ -61,8 +57,8 @@ std::vector<WorstCell> select_worst_cells(
         if (!is_valid(cid)) {
             continue;
         }
-        const double q = quality(cid);
-        if (to_energy(q) < filter_energy) {
+        const double q = energy(cid);
+        if (q < filter_energy) {
             continue;
         }
         if (num_worst > 0) {
