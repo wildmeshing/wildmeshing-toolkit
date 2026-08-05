@@ -1,9 +1,15 @@
 
 #include "TopoOffsetTetMesh.h"
 
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <set>
+#include <tuple>
 
 namespace wmtk::components::topological_offset {
 
@@ -67,25 +73,119 @@ double TopoOffsetTetMesh::collapse_normal_deviation(const Tuple& edge, size_t re
     return max_angle - min_angle;
 }
 
-bool TopoOffsetTetMesh::is_offset_surface_edge(const Tuple& e) const
+namespace {
+using Tet4 = std::array<size_t, 4>;
+
+/**
+ * @brief link of the simplex spanned by `excluded`, within a sub-complex given as a list of
+ * (possibly virtual) tets: for each vertex/edge/face of each tet that avoids every vertex in
+ * `excluded`, add it to the corresponding output set.
+ */
+std::tuple<std::set<simplex::Vertex>, std::set<simplex::Edge>, std::set<simplex::Face>> link_of(
+    const std::vector<size_t>& excluded,
+    const std::vector<Tet4>& tets)
 {
-    const size_t v0 = e.vid(*this);
-    const size_t v1 = e.switch_vertex(*this).vid(*this);
+    std::set<simplex::Vertex> verts;
+    std::set<simplex::Edge> edges;
+    std::set<simplex::Face> faces;
 
-    for (const Tuple& tet : get_incident_tets_for_edge(e)) {
-        const std::array<size_t, 4> vs = oriented_tet_vids(tet);
+    auto is_excluded = [&excluded](size_t v) {
+        return std::find(excluded.begin(), excluded.end(), v) != excluded.end();
+    };
 
-        // the two vertices of the tet that are not part of the edge are each the third
-        // corner of one of the two faces of this tet that contain the edge
-        for (const size_t w : vs) {
-            if (w == v0 || w == v1) continue;
-            const auto [face_tuple, unused_fid] = tuple_from_face({{v0, v1, w}});
-            if (is_offset_surface_face(face_tuple)) {
-                return true;
+    for (const Tet4& tet : tets) {
+        for (const size_t v : tet) {
+            if (!is_excluded(v)) verts.insert(simplex::Vertex(v));
+        }
+        for (int i = 0; i < 3; ++i) {
+            for (int j = i + 1; j < 4; ++j) {
+                if (is_excluded(tet[i]) || is_excluded(tet[j])) continue;
+                edges.insert(simplex::Edge(tet[i], tet[j]));
             }
         }
+        for (int skip = 0; skip < 4; ++skip) {
+            std::array<size_t, 3> f;
+            int k = 0;
+            bool ok = true;
+            for (int j = 0; j < 4; ++j) {
+                if (j == skip) continue;
+                if (is_excluded(tet[j])) {
+                    ok = false;
+                    break;
+                }
+                f[k++] = tet[j];
+            }
+            if (ok) faces.insert(simplex::Face(f[0], f[1], f[2]));
+        }
     }
-    return false;
+    return {verts, edges, faces};
+}
+
+/**
+ * @brief true if every element of `expected` is exactly the intersection of `a` and `b`
+ * (all three pre-sorted, unique -- i.e. std::set-backed)
+ */
+template <class Set>
+bool is_exact_intersection(const Set& a, const Set& b, const Set& expected)
+{
+    std::vector<typename Set::value_type> inter;
+    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(inter));
+    return inter.size() == expected.size() &&
+           std::equal(inter.begin(), inter.end(), expected.begin());
+}
+} // namespace
+
+bool TopoOffsetTetMesh::offset_link_condition(const Tuple& edge) const
+{
+    // shared by every "coned off" boundary face, so the sub-complex behaves as closed
+    constexpr size_t DUMMY = std::numeric_limits<size_t>::max();
+
+    const size_t v0 = edge.vid(*this);
+    const size_t v1 = edge.switch_vertex(*this).vid(*this);
+
+    auto offset_star = [this](size_t v) {
+        std::vector<Tet4> tets;
+        for (const size_t tid : get_one_ring_tids_for_vertex(v)) {
+            if (m_tet_attribute[tid].label == 2) tets.push_back(oriented_tet_vids(tid));
+        }
+        // the sub-complex's own boundary (offset-surface faces) coned off to DUMMY, so it is
+        // treated as one more (virtual) tet incident to v -- the standard trick for applying
+        // the closed-complex link condition to a complex that actually has a boundary
+        for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v))) {
+            const std::array<Tuple, 3> fv = get_face_vertices(f);
+            tets.push_back({{fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this), DUMMY}});
+        }
+        return tets;
+    };
+
+    const std::vector<Tet4> star0 = offset_star(v0);
+    const std::vector<Tet4> star1 = offset_star(v1);
+    if (star0.empty() && star1.empty()) {
+        return true; // neither endpoint touches the offset region: nothing to check
+    }
+
+    auto contains_both = [v0, v1](const Tet4& tet) {
+        bool has0 = false, has1 = false;
+        for (const size_t v : tet) {
+            has0 |= (v == v0);
+            has1 |= (v == v1);
+        }
+        return has0 && has1;
+    };
+    std::vector<Tet4> star01;
+    for (const Tet4& tet : star0) {
+        if (contains_both(tet)) star01.push_back(tet);
+    }
+
+    const auto [v_lk0, e_lk0, f_lk0] = link_of({v0}, star0);
+    const auto [v_lk1, e_lk1, f_lk1] = link_of({v1}, star1);
+    const auto [v_lk01, e_lk01, f_lk01] = link_of({v0, v1}, star01);
+
+    // link(v0) intersect link(v1) == link(edge v0-v1), the standard edge-collapse link
+    // condition, checked component-wise for vertices/edges/faces
+    return is_exact_intersection(v_lk0, v_lk1, v_lk01) &&
+           is_exact_intersection(e_lk0, e_lk1, e_lk01) &&
+           is_exact_intersection(f_lk0, f_lk1, f_lk01);
 }
 
 bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
@@ -95,6 +195,15 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
 
     if (m_vertex_attribute[v1_id].m_is_on_surface || m_vertex_attribute[v2_id].m_is_on_surface) {
         // don't touch the input surface
+        return false;
+    }
+
+    if (!get_offset_surface_faces_for_vertex(t).empty() &&
+        get_offset_surface_faces_for_vertex(t.switch_vertex(*this)).empty()) {
+        // never remove a vertex that sits on the offset surface -- v2 keeps its own, different
+        // position, so collapsing v1 away would move/erase this point of the offset surface.
+        // Collapsing the *other* direction (v2 on the surface, v1 interior) is unaffected: v2
+        // never moves either way, so nothing about the surface changes there.
         return false;
     }
 
@@ -113,25 +222,12 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
             }
     }
 
-    const int v1_label = VA[v1_id].label;
-    const int v2_label = VA[v2_id].label;
-    const int e_label = m_edge_attribute[t.eid(*this)].label;
-    // if (v1_label == 2 && v2_label == 2 && e_label != 2) {
-    //     // if the edge is between two vertices of the same label, then the edge must have the same
-    //     // label as well. Otherwise, don't collapse it.
-    //     return false;
-    // }
-    if (v1_label == 2 && e_label != 2) {
-        // do not collapse away from the offset
-        return false;
-    }
-    const bool v1_on_offset_surface = !get_offset_surface_faces_for_vertex(t).empty();
-    const bool v2_on_offset_surface =
-        !get_offset_surface_faces_for_vertex(t.switch_vertex(*this)).empty();
-    if (v1_on_offset_surface && v2_on_offset_surface && !is_offset_surface_edge(t)) {
-        // both endpoints are on the offset surface, but the edge connecting them isn't -- it
-        // cuts across the surface rather than running along it, so collapsing it would pinch
-        // two separate patches of the offset boundary together
+    // link condition restricted to the offset region (label 2): rejects collapses that would
+    // pinch or split the offset surface's own boundary, which the whole-mesh link condition
+    // inside collapse_edge_conn() cannot catch (there is generally enough surrounding label-0
+    // material to keep the *whole* tet complex manifold even when the label-2 sub-complex's
+    // boundary would not be).
+    if (!offset_link_condition(t)) {
         return false;
     }
 
@@ -279,23 +375,47 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
 
 void TopoOffsetTetMesh::collapse_all_edges()
 {
-    const std::vector<Tuple> edges = get_edges();
-    std::vector<Tuple> new_edges; // required out-param, unused after the call
+    // mirrors SimWild::collapse_all_edges (EdgeCollapsing.cpp): collect both directions of
+    // every edge, then let the executor sort out which one collapse_edge_before() accepts.
+    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TopoOffsetTetMesh& m, const Tuple& e, auto& out) {
+            out.emplace_back("edge_collapse", e);
+            out.emplace_back("edge_collapse", e.switch_vertex(m));
+        });
 
-    for (const Tuple& e : edges) {
-        if (!e.is_valid(*this)) {
-            continue; // may already be gone from an earlier collapse
-        }
+    auto setup_and_execute = [&](auto& executor) {
+        // re-try the (possibly new) edges around a successful collapse, in both directions
+        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
+            std::vector<std::pair<std::string, Tuple>> op_tups;
+            for (const Tuple& t : newts) {
+                op_tups.emplace_back(op, t);
+                op_tups.emplace_back(op, t.switch_vertex(m));
+            }
+            return op_tups;
+        };
+        // shortest edges first: squared length is monotonic with length and avoids the sqrt
+        executor.priority = [](const TopoOffsetTetMesh& m, wmtk::Op, const Tuple& t) {
+            const size_t v0 = t.vid(m);
+            const size_t v1 = t.switch_vertex(m).vid(m);
+            return -(m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf)
+                        .squaredNorm();
+        };
+        wmtk::run_localized_to_convergence(*this, executor, all_ops);
+    };
 
-        new_edges.clear();
-        if (collapse_edge(e, new_edges)) {
-            continue; // removed v0, kept v1
-        }
-
-        // v0 could not be removed (e.g. it is an input-complex vertex) -- try collapsing the
-        // other way instead, which removes v1 and keeps v0
-        new_edges.clear();
-        collapse_edge(e.switch_vertex(*this), new_edges);
+    if (NUM_THREADS > 0) {
+        compute_vertex_partition();
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
+        executor.lock_vertices = [](TopoOffsetTetMesh& m, const Tuple& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
+        setup_and_execute(executor);
     }
 }
 

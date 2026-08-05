@@ -33,6 +33,7 @@ public:
     size_t component_id = 0;
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces;
+    size_t partition_id = 0; // for parallel execution, see TopoOffsetTetMesh::compute_vertex_partition()
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
@@ -365,11 +366,22 @@ public:
     double collapse_normal_deviation(const Tuple& edge, size_t remove_vid) const;
 
     /**
-     * @brief true if edge e is incident to an offset-surface face (see
-     * is_offset_surface_face()), i.e. the edge itself runs along the offset surface rather
-     * than merely touching it at one endpoint
+     * @brief link condition for edge collapse, restricted to the offset region (tets labelled
+     * 2), using the coning trick: the offset sub-complex's own boundary (its offset-surface
+     * faces) is treated as attached to one shared virtual vertex, closing it into a complex
+     * without boundary so the standard link condition applies to it directly.
+     *
+     * TetMesh::collapse_edge already runs the *whole-mesh* link condition (via
+     * m_collapse_check_link_condition), which only guarantees the full tet complex (all
+     * labels) stays manifold -- it says nothing about whether the offset region's own boundary
+     * stays manifold, since there is generally enough surrounding label-0 material to keep the
+     * whole mesh's link condition satisfied even when the label-2 sub-complex's boundary would
+     * be pinched or split by the collapse. This is the analogue of offset_tet_consistent_topology()
+     * (used when *growing* the region) for the collapse direction.
+     *
+     * A no-op (always returns true) for edges that don't touch any label-2 tet.
      */
-    bool is_offset_surface_edge(const Tuple& e) const;
+    bool offset_link_condition(const Tuple& edge) const;
     //// collapse
 
     /**
@@ -582,6 +594,18 @@ private: // helpers
     }
 
 public: // helpers
+    /**
+     * @brief assign each vertex a partition id (by spatial Morton order) for the parallel
+     * ExecutePass policies (kPartition/kColor) used by smooth_all_vertices()/
+     * collapse_all_edges(). A no-op if NUM_THREADS == 0.
+     */
+    void compute_vertex_partition();
+
+    size_t get_partition_id(const Tuple& loc) const
+    {
+        return m_vertex_attribute[loc.vid(*this)].partition_id;
+    }
+
     /**
      * @brief get tets (as Tuples) that are face-adjacent to the given tet (as Tuple)
      */

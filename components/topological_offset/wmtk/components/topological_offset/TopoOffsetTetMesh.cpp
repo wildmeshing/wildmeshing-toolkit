@@ -3,6 +3,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/partition_utils.hpp>
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -635,6 +636,24 @@ size_t TopoOffsetTetMesh::flood_fill()
     return current_id;
 }
 
+void TopoOffsetTetMesh::compute_vertex_partition()
+{
+    if (NUM_THREADS == 0) {
+        return;
+    }
+
+    std::vector<size_t> partition_id;
+    wmtk::partition_vertex_morton(
+        vert_capacity(),
+        [this](size_t i) { return m_vertex_attribute[i].m_posf; },
+        NUM_THREADS,
+        partition_id);
+
+    for (size_t i = 0; i < partition_id.size(); ++i) {
+        m_vertex_attribute[i].partition_id = partition_id[i];
+    }
+}
+
 std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::get_faces_by_condition(
     std::function<bool(const FaceAttributes&)> cond) const
 {
@@ -748,27 +767,20 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    // // smoothing
-    // logger().info("\tSmoothing all vertices...");
-    // for (size_t i = 0; i < 10; i++) {
-    //     smooth_all_vertices();
-    //     if (m_params.debug_output) { // intermediate output
-    //         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    //     }
-    // }
-
 
     // collapse
     logger().info("\tCollapsing short edges...");
-    for (size_t i = 0; i < 10; i++) {
-        collapse_all_edges();
+    collapse_all_edges();
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+    // smoothing
+    logger().info("\tSmoothing all vertices...");
+    for (size_t i = 0; i < 3; i++) {
+        smooth_all_vertices();
         if (m_params.debug_output) { // intermediate output
             write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
         }
-    }
-
-    if (m_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
     for (const Tuple& v : get_vertices()) {

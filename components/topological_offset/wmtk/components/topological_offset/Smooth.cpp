@@ -2,6 +2,7 @@
 #include "Quadrics.hpp"
 #include "TopoOffsetTetMesh.h"
 
+#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/solver.hpp>
@@ -230,11 +231,24 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
 
 void TopoOffsetTetMesh::smooth_all_vertices(size_t n_iters)
 {
-    // skeleton: plain serial loop. SimWild's smooth_all_vertices uses ExecutePass for
-    // multi-threading, which additionally requires a get_partition_id() hook -- left out here.
+    // mirrors SimWild::smooth_all_vertices (Smooth.cpp)
     for (size_t i = 0; i < n_iters; ++i) {
+        std::vector<std::pair<std::string, Tuple>> ops;
         for (const Tuple& v : get_vertices()) {
-            smooth_vertex(v);
+            ops.emplace_back("vertex_smooth", v);
+        }
+
+        if (NUM_THREADS > 0) {
+            compute_vertex_partition();
+            auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
+            executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
+                return m.try_set_vertex_mutex_one_ring(e, task_id);
+            };
+            executor.num_threads = NUM_THREADS;
+            executor(*this, ops);
+        } else {
+            auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
+            executor(*this, ops);
         }
     }
 }
