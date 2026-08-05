@@ -31,8 +31,8 @@ struct Parameters
     double length_rel; // target edge length (relative to bbox diagonal)
     double length; // target edge length (absolute). If < 0, computed from length_rel in init()
     double stop_energy; // target AMIPS quality (see TopoOffsetTetMesh::get_quality()); a
-                         // collapse that would push an already-on-target region's quality back
-                         // above this is rejected
+                        // collapse that would push an already-on-target region's quality back
+                        // above this is rejected
 
     VectorXd box_min;
     VectorXd box_max;
