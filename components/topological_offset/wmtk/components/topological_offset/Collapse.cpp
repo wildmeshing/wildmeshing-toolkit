@@ -42,6 +42,27 @@ double TopoOffsetTetMesh::max_offset_surface_normal_deviation_at_vertex(size_t v
     return max_nd;
 }
 
+bool TopoOffsetTetMesh::is_offset_surface_edge(const Tuple& e) const
+{
+    const size_t v0 = e.vid(*this);
+    const size_t v1 = e.switch_vertex(*this).vid(*this);
+
+    for (const Tuple& tet : get_incident_tets_for_edge(e)) {
+        const std::array<size_t, 4> vs = oriented_tet_vids(tet);
+
+        // the two vertices of the tet that are not part of the edge are each the third
+        // corner of one of the two faces of this tet that contain the edge
+        for (const size_t w : vs) {
+            if (w == v0 || w == v1) continue;
+            const auto [face_tuple, unused_fid] = tuple_from_face({{v0, v1, w}});
+            if (is_offset_surface_face(face_tuple)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
 {
     const size_t v1_id = t.vid(*this); // removed by the collapse
@@ -52,15 +73,40 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         return false;
     }
 
-    const int v1_label = m_vertex_attribute[v1_id].label;
-    const int v2_label = m_vertex_attribute[v2_id].label;
+    const auto& VA = m_vertex_attribute;
+
+    ///check if on bbox/surface/boundary
+    // bbox
+    if (!VA[v1_id].on_bbox_faces.empty()) {
+        if (VA[v2_id].on_bbox_faces.size() < VA[v1_id].on_bbox_faces.size()) return false;
+        for (int on_bbox : VA[v1_id].on_bbox_faces)
+            if (std::find(
+                    VA[v2_id].on_bbox_faces.begin(),
+                    VA[v2_id].on_bbox_faces.end(),
+                    on_bbox) == VA[v2_id].on_bbox_faces.end()) {
+                return false;
+            }
+    }
+
+    const int v1_label = VA[v1_id].label;
+    const int v2_label = VA[v2_id].label;
     const int e_label = m_edge_attribute[t.eid(*this)].label;
-    if (v1_label == v2_label && v1_label != e_label) {
-        // if the edge is between two vertices of the same label, then the edge must have the same
-        // label as well. Otherwise, don't collapse it.
+    // if (v1_label == 2 && v2_label == 2 && e_label != 2) {
+    //     // if the edge is between two vertices of the same label, then the edge must have the same
+    //     // label as well. Otherwise, don't collapse it.
+    //     return false;
+    // }
+    if (v1_label == 2 && e_label != 2) {
+        // do not collapse away from the offset
         return false;
     }
-    if (v1_label == 2 && e_label != 2) {
+    const bool v1_on_offset_surface = !get_offset_surface_faces_for_vertex(t).empty();
+    const bool v2_on_offset_surface =
+        !get_offset_surface_faces_for_vertex(t.switch_vertex(*this)).empty();
+    if (v1_on_offset_surface && v2_on_offset_surface && !is_offset_surface_edge(t)) {
+        // both endpoints are on the offset surface, but the edge connecting them isn't -- it
+        // cuts across the surface rather than running along it, so collapsing it would pinch
+        // two separate patches of the offset boundary together
         return false;
     }
 
@@ -145,11 +191,8 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
     return true;
 }
 
-void TopoOffsetTetMesh::collapse_all_edges(double min_edge_len_ratio)
+void TopoOffsetTetMesh::collapse_all_edges()
 {
-    const double min_len = min_edge_len_ratio * m_params.target_distance;
-    const double min_len_sq = min_len * min_len;
-
     const std::vector<Tuple> edges = get_edges();
     std::vector<Tuple> new_edges; // required out-param, unused after the call
 
@@ -157,14 +200,6 @@ void TopoOffsetTetMesh::collapse_all_edges(double min_edge_len_ratio)
         if (!e.is_valid(*this)) {
             continue; // may already be gone from an earlier collapse
         }
-
-        const size_t v0 = e.vid(*this);
-        const size_t v1 = e.switch_vertex(*this).vid(*this);
-        const double len_sq =
-            (m_vertex_attribute[v0].m_posf - m_vertex_attribute[v1].m_posf).squaredNorm();
-        // if (len_sq >= min_len_sq) {
-        //     continue;
-        // }
 
         new_edges.clear();
         if (collapse_edge(e, new_edges)) {
