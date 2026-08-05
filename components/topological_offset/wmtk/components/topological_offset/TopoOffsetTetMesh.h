@@ -33,7 +33,8 @@ public:
     size_t component_id = 0;
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces;
-    size_t partition_id = 0; // for parallel execution, see TopoOffsetTetMesh::compute_vertex_partition()
+    size_t partition_id =
+        0; // for parallel execution, see TopoOffsetTetMesh::compute_vertex_partition()
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
