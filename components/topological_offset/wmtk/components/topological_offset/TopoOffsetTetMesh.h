@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/TetMesh.h>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -30,6 +31,8 @@ public:
     Vector3d m_posf;
     int label = 0;
     size_t component_id = 0;
+    bool m_is_on_surface = false;
+    std::vector<int> on_bbox_faces;
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
@@ -39,21 +42,48 @@ public:
 class EdgeAttributes
 {
 public:
-    int label = 0;
+    int label = 0; // label: 0=default, 1=input, 2=offset
 };
 
 
 class FaceAttributes
 {
 public:
-    int label = 0;
+    int label = 0; // label: 0=default, 1=input, 2=offset
+    /**
+     * Is this face a part of the input surfaces.
+     */
+    bool m_is_surface_fs = false;
+
+    /**
+     * Keep track which bbox side the face is on
+     * -1: none
+     * 0/1: x min/max
+     * 2/3: y min/max
+     * 4/5: z min/max
+     *
+     * This bbox side ID is used to keep the bbox from collapsing.
+     */
+    int m_is_bbox_fs = -1; //-1; 0~5
+
+    void reset()
+    {
+        m_is_surface_fs = false;
+        m_is_bbox_fs = -1;
+    }
+
+    void merge(const FaceAttributes& attr)
+    {
+        m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
+        if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
+    }
 };
 
 
 class TetAttributes
 {
 public:
-    int label = 0;
+    int label = 0; // label: 0=default, 1=input, 2=offset
     CellTag tag;
     double m_quality = 0; // AMIPS energy, kept up to date by smoothing
 };
@@ -90,8 +120,10 @@ public:
 
     // dont actually use, just for retaining in output
     bool m_has_envelope;
-    MatrixXd m_V_envelope;
-    MatrixXi m_F_envelope;
+    std::vector<Vector3d> m_V_envelope;
+    std::vector<Vector3i> m_F_envelope;
+    std::shared_ptr<SampleEnvelope> m_envelope;
+    double m_envelope_eps = -1;
 
     Parameters& m_params;
 
@@ -115,6 +147,8 @@ public:
         p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
+
+        optimization::deactivate_opt_logger();
     }
 
     ~TopoOffsetTetMesh() {}
@@ -134,6 +168,8 @@ public:
         const MatrixXd& V_env,
         const MatrixXi F_env,
         const std::vector<std::string>& tag_names);
+
+    void init_surfaces_and_boundaries();
 
     /**
      * @brief check that the ambient tag does not overlap with any other tags
@@ -185,6 +221,9 @@ public:
      */
     size_t flood_fill();
 
+    std::vector<std::array<size_t, 3>> get_faces_by_condition(
+        std::function<bool(const FaceAttributes&)> cond) const;
+
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
@@ -195,6 +234,8 @@ public:
     bool invariants(const std::vector<Tuple>& tets) override;
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
+    bool collapse_edge_before(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
     //// overriden splits/invariants
 
     /**
@@ -250,6 +291,16 @@ public:
      */
     bool smooth_after_offset_surface(const Tuple& t);
     //// smoothing
+
+    //// collapse
+    /**
+     * @brief collapse edges shorter than min_edge_len_ratio * target_distance once, over the
+     * whole mesh
+     * @note skeleton: single-threaded, single pass (no repeated sweeps until convergence, no
+     * priority queue -- just one pass over get_edges() in whatever order it returns)
+     */
+    void collapse_all_edges(double min_edge_len_ratio = 0.25);
+    //// collapse
 
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
@@ -353,12 +404,13 @@ private:
         EdgeAttributes split_e;
         std::map<size_t, EdgeAttributes> internal_e;
         std::map<simplex::Edge, EdgeAttributes> external_e; // edge is boundary edge (not link)
-        std::map<simplex::Edge, EdgeAttributes> link_e;
+        std::map<simplex::Edge, EdgeAttributes> link_e; // link edge around splitted edge
 
         // cache face attributes
-        std::map<size_t, FaceAttributes> split_f;
-        std::map<simplex::Edge, FaceAttributes> internal_f;
-        std::map<std::pair<simplex::Edge, size_t>, FaceAttributes> external_f;
+        std::map<size_t, FaceAttributes> split_f; // splitted faces
+        std::map<simplex::Edge, FaceAttributes> internal_f; // new faces created by split
+        std::map<std::pair<simplex::Edge, size_t>, FaceAttributes>
+            external_f; // closed star boundary faces of splitted edge
 
         // cache tet attributes
         std::map<simplex::Edge, TetAttributes> tets;
@@ -397,6 +449,20 @@ private:
         TetAttributes tet;
     };
     wmtk::threading::enumerable_thread_specific<TetSplitCache> tet_split_cache;
+
+    /**
+     * @brief snapshot of edge/face labels around the collapsed vertex, keyed by vertex ids
+     * rather than eid()/fid() -- those are derived from the lowest-id incident tet, which can
+     * change once the tets touching the collapsed edge are removed, so a label read back
+     * through eid()/fid() after the collapse is not reliably the one that was there before
+     */
+    struct EdgeCollapseCache
+    {
+        size_t v1_id; // removed by the collapse
+        std::map<simplex::Edge, int> edge_labels;
+        std::map<simplex::Face, int> face_labels;
+    };
+    wmtk::threading::enumerable_thread_specific<EdgeCollapseCache> edge_collapse_cache;
 
 private: // helpers
     /**

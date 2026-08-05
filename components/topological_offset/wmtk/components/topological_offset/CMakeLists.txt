@@ -11,6 +11,7 @@ set(SRC_FILES
 	TopoOffsetTetMesh.h
 	TopoOffsetTetMesh.cpp
 	Smooth.cpp
+	Collapse.cpp
 	Quadrics.hpp
 	Quadrics.cpp
 
@@ -19,7 +20,8 @@ set(SRC_FILES
 
 	Parameters.h
 
-	ComponentSplitting.cpp
+	EdgeSplittingTet.cpp
+	EdgeSplittingTri.cpp
 	SimplicialComplexBVH.hpp
 	Spatial.cpp
 	Circle.hpp

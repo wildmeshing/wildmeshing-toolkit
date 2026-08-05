@@ -29,9 +29,8 @@ double TopoOffsetTetMesh::get_quality(const Tuple& t) const
 
 bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
-    // the input complex is the shape being offset -- it must stay fixed
-    const int label = m_vertex_attribute[t.vid(*this)].label;
-    return label == 0 || label == 2; // only move offset and interior vertices
+    // the input surfaces must stay fixed
+    return !m_vertex_attribute[t.vid(*this)].m_is_on_surface;
 }
 
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)

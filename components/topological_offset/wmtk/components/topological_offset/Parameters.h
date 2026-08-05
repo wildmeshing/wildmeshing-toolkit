@@ -24,6 +24,9 @@ struct Parameters
     bool save_vtu;
     bool debug_output;
 
+    VectorXd box_min;
+    VectorXd box_max;
+
     Parameters() = default;
 
     Parameters(const nlohmann::json& json_params)
@@ -66,6 +69,9 @@ struct Parameters
 
     void init(const VectorXd& min_, const VectorXd& max_)
     {
+        box_min = min_;
+        box_max = max_;
+
         double diag_l = (max_ - min_).norm();
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;
