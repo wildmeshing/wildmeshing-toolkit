@@ -20,6 +20,7 @@ struct Parameters
     double edge_search_term_len;
     bool sorted_marching;
     std::string output_path; // no extension
+    bool optimize; // whether to run optimization on the offset
     bool save_vtu;
     bool debug_output;
 
@@ -58,6 +59,7 @@ struct Parameters
         edge_search_term_len = json_params["edge_search_termination_len"];
         sorted_marching = json_params["sorted_marching"];
         output_path = json_params["output"];
+        optimize = json_params["optimize"];
         save_vtu = json_params["save_vtu"];
         debug_output = json_params["DEBUG_output"];
     }

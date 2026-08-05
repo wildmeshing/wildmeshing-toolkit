@@ -257,6 +257,9 @@ void topological_offset(nlohmann::json json_params)
         igl::Timer timer;
         timer.start();
         mesh.execute_offset(output_filename);
+        if (mesh.m_params.optimize) {
+            mesh.optimize_offset(output_filename);
+        }
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
 
