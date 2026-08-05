@@ -81,8 +81,12 @@ Python Wrapper</h1>
 <h3><a class="anchor" id="autotoc_md7"></a>
 Python Wrapper Installation</h3>
 <p>Install the wildmeshing package first, as described in the <a class="el" href="index.html#md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2_r_e_a_d_m_e">README</a>.</p>
-<p>To install the SimWild wrapper, execute:</p>
+<p>To install the SimWild wrapper, execute (from the repository root):</p>
 <div class="fragment"><div class="line">python -m pip install -e ./components/simwild/wmtk/components/simwild/pysimwild</div>
+</div><!-- fragment --><p>Development alternative — reuse an existing CMake build of the bindings instead of installing a wheel:</p>
+<div class="fragment"><div class="line">cmake -S . -B build -DWMTK_PYBIND=ON</div>
+<div class="line">cmake --build build -j --target wildmeshing</div>
+<div class="line">export PYTHONPATH=/path/to/wildmeshing-toolkit/build/bin</div>
 </div><!-- fragment --><p>For a full documentation of the wrapper functions call <code>help(simwild)</code> in Python after importing the module.</p>
 <h1><a class="anchor" id="autotoc_md8"></a>
 Operations</h1>
@@ -99,11 +103,9 @@ Python Example</summary>
 <div class="line">meshes = [<span class="stringliteral">&quot;circle.obj&quot;</span>,<span class="stringliteral">&quot;ellipse.obj&quot;</span>,<span class="stringliteral">&quot;rectangle.obj&quot;</span>]</div>
 <div class="line">tags = [<span class="stringliteral">&quot;circle&quot;</span>, <span class="stringliteral">&quot;ellipse&quot;</span>, <span class="stringliteral">&quot;rectangle&quot;</span>]</div>
 <div class="line"><span class="comment"># for 2D input use:</span></div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#affc0664c1b1eb07cc87cef9c2e5044f3">simwild.lines_to_tri</a>(meshes=meshes, tags=tags, output=<span class="stringliteral">&quot;m1&quot;</span>)</div>
+<div class="line">simwild.lines_to_tri(meshes=meshes, tags=tags, output=<span class="stringliteral">&quot;m1&quot;</span>)</div>
 <div class="line"><span class="comment"># for 3D input use:</span></div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#a595318567045624d78dc79e5f21f84d9">simwild.surf_to_tet</a>(meshes=meshes, tags=tags, output=<span class="stringliteral">&quot;m1&quot;</span>)</div>
-<div class="ttc" id="asimwild_8py_html_a595318567045624d78dc79e5f21f84d9"><div class="ttname"><a href="simwild_8py.html#a595318567045624d78dc79e5f21f84d9">simwild.surf_to_tet</a></div><div class="ttdeci">surf_to_tet(meshes=[], tags=[], output=&quot;out&quot;, stop_energy=100, eps_rel=2e-3, eps_simplify_rel=2e-4, skip_simplify=False, preserve_topology=False, num_threads=0, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:156</div></div>
-<div class="ttc" id="asimwild_8py_html_affc0664c1b1eb07cc87cef9c2e5044f3"><div class="ttname"><a href="simwild_8py.html#affc0664c1b1eb07cc87cef9c2e5044f3">simwild.lines_to_tri</a></div><div class="ttdeci">lines_to_tri(meshes=[], tags=[], output=&quot;out&quot;, stop_energy=10, eps_rel=2e-3, preserve_topology=False, num_threads=0, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:201</div></div>
+<div class="line">simwild.surf_to_tet(meshes=meshes, tags=tags, output=<span class="stringliteral">&quot;m1&quot;</span>)</div>
 </div><!-- fragment --><p></p>
 </details>
 <p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_double_sphere_notop_3d.json">JSON Example</a></p>
@@ -119,8 +121,7 @@ Python Example</summary>
 <div class="line">    {<span class="stringliteral">&quot;tags&quot;</span>: <span class="stringliteral">&quot;overlap&quot;</span>, <span class="stringliteral">&quot;length_rel&quot;</span>: 3e-2},  <span class="comment"># finer in overlap region</span></div>
 <div class="line">    {<span class="stringliteral">&quot;tags&quot;</span>: <span class="stringliteral">&quot;_&quot;</span>, <span class="stringliteral">&quot;length_rel&quot;</span>: 2e-1}  <span class="comment"># coarser in ambient region</span></div>
 <div class="line">]</div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#aca19cfd2b69a16928cc51c188546a3de">simwild.remeshing</a>(mesh=mesh, output=<span class="stringliteral">&quot;m7&quot;</span>, sizing_field=sizing_field, num_threads=10)</div>
-<div class="ttc" id="asimwild_8py_html_aca19cfd2b69a16928cc51c188546a3de"><div class="ttname"><a href="simwild_8py.html#aca19cfd2b69a16928cc51c188546a3de">simwild.remeshing</a></div><div class="ttdeci">remeshing(mesh, output=&quot;out&quot;, stop_energy=10, eps_rel=2e-3, length_rel=5e-2, sizing_field=[], preserve_topology=True, keep_envelope=False, num_threads=0, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:242</div></div>
+<div class="line">simwild.remeshing(mesh=mesh, output=<span class="stringliteral">&quot;m7&quot;</span>, sizing_field=sizing_field, num_threads=10)</div>
 </div><!-- fragment --><p></p>
 </details>
 <p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_remeshing_2d.json">JSON Example</a></p>
@@ -134,8 +135,7 @@ Python Example</summary>
 <div class="fragment"><div class="line">mesh = <span class="stringliteral">&quot;m1&quot;</span></div>
 <div class="line">tags_in = [<span class="stringliteral">&quot;blob1&quot;</span>, <span class="stringliteral">&quot;blob2&quot;</span>, <span class="stringliteral">&quot;ellipse &amp; rectangle&quot;</span>]</div>
 <div class="line">tags_out = [<span class="stringliteral">&quot;blob&quot;</span>, <span class="stringliteral">&quot;blob&quot;</span>, <span class="stringliteral">&quot;_&quot;</span>]</div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#a0e60ce0a8a006f35e579044d13e39dfd">simwild.replace_tags</a>(mesh=mesh, tags_in=tags_in, tags_out=tags_out, output=<span class="stringliteral">&quot;m2&quot;</span>)</div>
-<div class="ttc" id="asimwild_8py_html_a0e60ce0a8a006f35e579044d13e39dfd"><div class="ttname"><a href="simwild_8py.html#a0e60ce0a8a006f35e579044d13e39dfd">simwild.replace_tags</a></div><div class="ttdeci">replace_tags(mesh, tags_in, tags_out, output=&quot;out&quot;, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:315</div></div>
+<div class="line">simwild.replace_tags(mesh=mesh, tags_in=tags_in, tags_out=tags_out, output=<span class="stringliteral">&quot;m2&quot;</span>)</div>
 </div><!-- fragment --><p></p>
 </details>
 <p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_replace_tags_3d.json">JSON Example</a></p>
@@ -148,8 +148,7 @@ Python Example</summary>
 <p></p>
 <div class="fragment"><div class="line">mesh = <span class="stringliteral">&quot;m2&quot;</span></div>
 <div class="line">tags = [[<span class="stringliteral">&quot;rectangle&quot;</span>, <span class="stringliteral">&quot;circle&quot;</span>], [<span class="stringliteral">&quot;rectangle&quot;</span>, <span class="stringliteral">&quot;blob&quot;</span>]]</div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#a56b48dce595dac040b2d93f8dbc195c3">simwild.resolve_overlaps</a>(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m3&quot;</span>)</div>
-<div class="ttc" id="asimwild_8py_html_a56b48dce595dac040b2d93f8dbc195c3"><div class="ttname"><a href="simwild_8py.html#a56b48dce595dac040b2d93f8dbc195c3">simwild.resolve_overlaps</a></div><div class="ttdeci">resolve_overlaps(mesh, tags, output=&quot;out&quot;, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:284</div></div>
+<div class="line">simwild.resolve_overlaps(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m3&quot;</span>)</div>
 </div><!-- fragment --><p></p>
 </details>
 <p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_resolve_overlaps_3d.json">JSON Example</a></p>
@@ -162,8 +161,7 @@ Python Example</summary>
 <p></p>
 <div class="fragment"><div class="line">mesh = <span class="stringliteral">&quot;m4&quot;</span></div>
 <div class="line">tags = [<span class="stringliteral">&quot;overlap&quot;</span>, <span class="stringliteral">&quot;gap&quot;</span>, <span class="stringliteral">&quot;L&quot;</span>, <span class="stringliteral">&quot;R&quot;</span>]</div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#aa76bd0742faa14081d9ee03443280f67">simwild.tag_priority</a>(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m5&quot;</span>)</div>
-<div class="ttc" id="asimwild_8py_html_aa76bd0742faa14081d9ee03443280f67"><div class="ttname"><a href="simwild_8py.html#aa76bd0742faa14081d9ee03443280f67">simwild.tag_priority</a></div><div class="ttdeci">tag_priority(mesh, tags, output=&quot;out&quot;, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:348</div></div>
+<div class="line">simwild.tag_priority(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m5&quot;</span>)</div>
 </div><!-- fragment --><p></p>
 </details>
 <h3><a class="anchor" id="autotoc_md14"></a>
@@ -175,8 +173,7 @@ Python Example</summary>
 <p></p>
 <div class="fragment"><div class="line">mesh = <span class="stringliteral">&quot;m2&quot;</span></div>
 <div class="line">tags = [[<span class="stringliteral">&quot;L&quot;</span>, <span class="stringliteral">&quot;R&quot;</span>]]</div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#a2b47effd30d8bbc60994432ff66a4234">simwild.tight_seal_topo</a>(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m3&quot;</span>)</div>
-<div class="ttc" id="asimwild_8py_html_a2b47effd30d8bbc60994432ff66a4234"><div class="ttname"><a href="simwild_8py.html#a2b47effd30d8bbc60994432ff66a4234">simwild.tight_seal_topo</a></div><div class="ttdeci">tight_seal_topo(mesh, tags, output=&quot;out&quot;, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:379</div></div>
+<div class="line">simwild.tight_seal_topo(mesh=mesh, tags=tags, output=<span class="stringliteral">&quot;m3&quot;</span>)</div>
 </div><!-- fragment --><p></p>
 </details>
 <p><a href="https://github.com/wildmeshing/data2/blob/main/integration_tests/simwild_tight_seal_3d.json">JSON Example</a></p>
@@ -195,14 +192,53 @@ Python Example</summary>
 <div class="line">offset_selection = <span class="stringliteral">&quot;L &amp; R&quot;</span>  <span class="comment"># interface between L and R</span></div>
 <div class="line">offset_output_tags = [<span class="stringliteral">&quot;gap&quot;</span>]  <span class="comment"># create a region called &quot;gap&quot;</span></div>
 <div class="line">target_distance = 0.1</div>
-<div class="line"><a class="code hl_function" href="simwild_8py.html#a40a2bc7612f9be4d5572733d1649c56e">simwild.topological_offset</a>(</div>
+<div class="line">simwild.topological_offset(</div>
 <div class="line">    mesh=mesh, offset_selection=offset_selection,</div>
 <div class="line">    offset_output_tags=offset_output_tags,overwrite_tags=<span class="keyword">False</span>,</div>
 <div class="line">    target_distance=target_distance, output=<span class="stringliteral">&quot;m4&quot;</span></div>
 <div class="line">    )</div>
-<div class="ttc" id="asimwild_8py_html_a40a2bc7612f9be4d5572733d1649c56e"><div class="ttname"><a href="simwild_8py.html#a40a2bc7612f9be4d5572733d1649c56e">simwild.topological_offset</a></div><div class="ttdeci">topological_offset(mesh, offset_selection, target_distance, offset_output_tags, offset_in=False, offset_out=True, protected_tags=[], rel_ball_threshold=0.01, output=&quot;out&quot;, others={})</div><div class="ttdef"><b>Definition</b> simwild.py:502</div></div>
 </div><!-- fragment --><p></p>
 </details>
+<h1><a class="anchor" id="autotoc_md17"></a>
+PolyFEM Operations</h1>
+<p>The wrapper also provides PolyFEM-backed operations: <code>minimum_separation</code>, <code>laplacian_smoothing</code>, and <code>polyfem_sim</code> (full simulation). They share the same .msh-in/.msh-out interface; parameters are validated against the <code>spec.json</code> packaged with each op.</p>
+<p>These ops locate the PolyFEM binary <b>only</b> through the <code>POLYFEM_BIN</code> environment variable and raise if it is unset:</p>
+<div class="fragment"><div class="line">export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin</div>
+</div><!-- fragment --><p>(If the PolyFEM link fails with <code>access beyond end of merged section</code>, add <code>-DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld"</code> — a binutils bug with debug-info merging.)</p>
+<p>Selections everywhere are <em>the boundary of <code>region</code>, kept where the outside cell satisfies <code>filter</code></em> — both are Boolean tag expressions (<code>&amp;</code>, <code>|</code>, <code>!</code>, parentheses); a bare string is a region (whole boundary).</p>
+<h3><a class="anchor" id="autotoc_md18"></a>
+9. Minimum Separation</h3>
+<p>Deform regions apart until a target minimum distance <code>sep</code> is reached (GCP-based contact solve; <code>sep</code> is a hard floor, <code>rtol</code> bounds the overshoot).</p>
+<details >
+<summary >
+Python Example</summary>
+<p></p>
+<div class="fragment"><div class="line">mesh = <span class="stringliteral">&quot;m5&quot;</span></div>
+<div class="line">collision_pairs = [[{<span class="stringliteral">&quot;region&quot;</span>: <span class="stringliteral">&quot;L&quot;</span>, <span class="stringliteral">&quot;filter&quot;</span>: <span class="stringliteral">&quot;ambient&quot;</span>},</div>
+<div class="line">                    {<span class="stringliteral">&quot;region&quot;</span>: <span class="stringliteral">&quot;R&quot;</span>, <span class="stringliteral">&quot;filter&quot;</span>: <span class="stringliteral">&quot;ambient&quot;</span>}]]</div>
+<div class="line">simwild.minimum_separation(mesh=mesh, collision_pairs=collision_pairs,</div>
+<div class="line">                           sep=1.5e-3, output=<span class="stringliteral">&quot;m6&quot;</span>)</div>
+</div><!-- fragment --><p></p>
+</details>
+<h3><a class="anchor" id="autotoc_md19"></a>
+10. Laplacian Interface Smoothing</h3>
+<p>Fair material interfaces with a single PolyFEM solve (AMIPS + fitting + Laplacian; no contact).</p>
+<details >
+<summary >
+Python Example</summary>
+<p></p>
+<div class="fragment"><div class="line">mesh = <span class="stringliteral">&quot;m6&quot;</span></div>
+<div class="line">simwild.laplacian_smoothing(mesh=mesh, interfaces=[<span class="stringliteral">&quot;L&quot;</span>], output=<span class="stringliteral">&quot;m7&quot;</span>)</div>
+</div><!-- fragment --><p></p>
+</details>
+<h3><a class="anchor" id="autotoc_md20"></a>
+11. Simulation</h3>
+<p>Run a full PolyFEM simulation on an extracted simulation mesh (materials and boundary conditions selected by tag name); see <code><a class="el" href="namespacesimwild_1_1polyfem__ops_1_1polyfem__sim.html">simwild.polyfem_ops.polyfem_sim</a></code> and its <code>msh_boundary_extractor</code>.</p>
+<h1><a class="anchor" id="autotoc_md21"></a>
+Tests</h1>
+<p>From <code>pysimwild/</code>:</p>
+<div class="fragment"><div class="line">python -m pytest tests</div>
+</div><!-- fragment --><p>Tier-1 runs anywhere (the bindings are found in <code>&lt;toolkit&gt;/build/bin</code> automatically if not installed). The end-to-end tests (measured minimum separation, smoothing roughness decrease) run iff <code>POLYFEM_BIN</code> is exported. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->

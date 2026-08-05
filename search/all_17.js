@@ -1,7 +1,26 @@
 var searchData=
 [
-  ['qslimmesh_0',['QSlimMesh',['../classwmtk_1_1components_1_1qslim_1_1_q_slim_mesh.html',1,'wmtk::components::qslim']]],
-  ['quadrics_1',['Quadrics',['../structwmtk_1_1components_1_1qslim_1_1_quadrics.html',1,'wmtk::components::qslim']]],
-  ['quality_2',['quality',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a9087a21df96d74f676b79e7f16707853',1,'wmtk::optimization::SmoothRejectCounters']]],
-  ['quality_5fveto_5fon_5fsurface_3',['quality_veto_on_surface',['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#a406d6b9e8f9ec0cf33de7bdd1f1db4dc',1,'wmtk::optimization::SmoothVertexOptions']]]
+  ['offset_20region_20tags_0',['Offset region tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs89360d0c8b426dd4f0f6509cf6b9f065.html#autotoc_md28',1,'']]],
+  ['offset_5fis_5fmanifold_1',['offset_is_manifold',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6d9859872eee73b99d0f762cc4acdd5d',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::offset_is_manifold()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2b3c7ca40684046e26339df736452893',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::offset_is_manifold()']]],
+  ['offset_5ftet_5fconsistent_5ftopology_2',['offset_tet_consistent_topology',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abee643e4bd49e8a892df0a5efd493391',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['offset_5ftri_5fconsistent_5ftopology_3',['offset_tri_consistent_topology',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aac4b5dd47ed5f8ad7cb46d4584290bae',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
+  ['offsets_4',['offsets',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md16',1,'8. Topological Offsets'],['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs89360d0c8b426dd4f0f6509cf6b9f065.html',1,'Topological Offsets']]],
+  ['on_5ffail_5',['on_fail',['../structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937',1,'wmtk::ExecutePass']]],
+  ['on_5ffixed_5fvertex_6',['on_fixed_vertex',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a1cffaee94b7cbdb831c469eafb9b3f03',1,'wmtk::components::tetwild::orig::TetVertex']]],
+  ['operation_20demonstration_7',['Operation Demonstration',['../index.html#autotoc_md40',1,'']]],
+  ['operation_20rollback_8',['Operation Rollback',['../index.html#autotoc_md39',1,'']]],
+  ['operation_5fupdate_5fconnectivity_5fimpl_9',['operation_update_connectivity_impl',['../classwmtk_1_1_tet_mesh.html#a902b1af12dde3976b41041a8abee44c0',1,'wmtk::TetMesh']]],
+  ['operations_10',['operations',['../index.html#autotoc_md41',1,'2D operations'],['../index.html#autotoc_md42',1,'3D operations'],['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md8',1,'Operations'],['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md17',1,'PolyFEM Operations']]],
+  ['operator_28_29_11',['operator()',['../structwmtk_1_1components_1_1tetwild_1_1orig_1_1cmp__er.html#a9e5dc0c6924e807f982b245cd41cc48f',1,'wmtk::components::tetwild::orig::cmp_er::operator()()'],['../structwmtk_1_1_execute_pass.html#ac7d73ef75b92299972f3fb90c5ef048b',1,'wmtk::ExecutePass::operator()()']]],
+  ['operator_5b_5d_12',['operator[]',['../classwmtk_1_1threading_1_1collector.html#a4a3e69f6d652e0b23c5158887f4a410d',1,'wmtk::threading::collector']]],
+  ['orexpr_13',['OrExpr',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_or_expr.html',1,'wmtk::components::simwild::expression_parser']]],
+  ['oriented_5ftet_5fvertices_14',['oriented_tet_vertices',['../classwmtk_1_1_tet_mesh.html#a3bd670ddb854a278d5760bdde3e9cda3',1,'wmtk::TetMesh']]],
+  ['oriented_5ftet_5fvids_15',['oriented_tet_vids',['../classwmtk_1_1_tet_mesh.html#a448bea95db3c98b8bae56c9c2edc0589',1,'wmtk::TetMesh']]],
+  ['oriented_5ftri_5fvertices_16',['oriented_tri_vertices',['../classwmtk_1_1_tri_mesh.html#aaab31eef8e025f6185a4760ed80be722',1,'wmtk::TriMesh::oriented_tri_vertices()'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html#a5ccb6872291134383402772bb8234101',1,'wmtk::TriMesh::Tuple::oriented_tri_vertices()']]],
+  ['oriented_5ftri_5fvids_17',['oriented_tri_vids',['../classwmtk_1_1_tri_mesh.html#a07f1bdac973f713076d7ea8073082ef5',1,'wmtk::TriMesh']]],
+  ['original_18',['TetWild (original)',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html',1,'']]],
+  ['original_20tetwild_19',['Difference WMTK and original TetWild',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html#autotoc_md25',1,'']]],
+  ['overlaps_20',['4. Resolve Overlaps',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md12',1,'']]],
+  ['overlaps_5ftet_21',['overlaps_tet',['../classwmtk_1_1components_1_1topological__offset_1_1_sphere.html#a2a694e6ed8ca258a1ff91f7e57da381d',1,'wmtk::components::topological_offset::Sphere']]],
+  ['overlaps_5ftri_22',['overlaps_tri',['../classwmtk_1_1components_1_1topological__offset_1_1_circle.html#ade6d25996c7d81b8df6584b185c4a819',1,'wmtk::components::topological_offset::Circle']]]
 ];

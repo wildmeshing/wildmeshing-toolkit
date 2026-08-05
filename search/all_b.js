@@ -1,13 +1,8 @@
 var searchData=
 [
-  ['data_0',['data',['../classwmtk_1_1threading_1_1collector.html#a641ee7ff44b9fd25dd59f6e7c31a587a',1,'wmtk::threading::collector']]],
-  ['declarative_20specification_20for_20unstructured_20mesh_20editing_20algorithms_1',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],
-  ['defining_20input_2',['Defining input',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs89360d0c8b426dd4f0f6509cf6b9f065.html#autotoc_md21',1,'']]],
-  ['demonstration_3',['Operation Demonstration',['../index.html#autotoc_md34',1,'']]],
-  ['deprecated_20list_4',['Deprecated List',['../deprecated.html',1,'']]],
-  ['design_5',['Explicit Invariant Design',['../index.html#autotoc_md31',1,'']]],
-  ['difference_20wmtk_20and_20original_20tetwild_6',['Difference WMTK and original TetWild',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2co1405dc598c001876e505c2a179a9ed8f.html#autotoc_md19',1,'']]],
-  ['dirichletenergy2d_7',['dirichletenergy2d',['../classwmtk_1_1optimization_1_1_dirichlet_energy2_d.html',1,'wmtk::optimization::DirichletEnergy2D'],['../classwmtk_1_1optimization_1_1_dirichlet_energy2_d.html#a2b7dc2a306ad9a529f4cb62256755413',1,'wmtk::optimization::DirichletEnergy2D::DirichletEnergy2D()']]],
-  ['disabled_8',['disabled',['../classwmtk_1_1_sample_envelope.html#a02b553658ee2d7a77bbdc652321f7191',1,'wmtk::SampleEnvelope']]],
-  ['dsu_9',['DSU',['../structwmtk_1_1utils_1_1detail_1_1_d_s_u.html',1,'wmtk::utils::detail']]]
+  ['basic_20algorithm_0',['Basic Algorithm',['../index.html#autotoc_md36',1,'']]],
+  ['begin_5fprotect_1',['begin_protect',['../structwmtk_1_1_attribute_collection.html#ae0505eb2677a9eb03e9a76fe03ccf770',1,'wmtk::AttributeCollection']]],
+  ['biharmonicenergy2d_2',['biharmonicenergy2d',['../classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html',1,'wmtk::optimization::BiharmonicEnergy2D'],['../classwmtk_1_1optimization_1_1_biharmonic_energy2_d.html#ab51dd8588beb68812381e95dc6da2d22',1,'wmtk::optimization::BiharmonicEnergy2D::BiharmonicEnergy2D()']]],
+  ['biharmonicenergy3d_3',['biharmonicenergy3d',['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html',1,'wmtk::optimization::BiharmonicEnergy3D'],['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#ac0cab2a77a5c37bc37fa126b02e62d76',1,'wmtk::optimization::BiharmonicEnergy3D::BiharmonicEnergy3D()']]],
+  ['bindings_4',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]]
 ];
