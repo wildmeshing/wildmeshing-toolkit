@@ -137,14 +137,15 @@ bool TopoOffsetTetMesh::smooth_after_interior(const Tuple& t)
         }
     }
 
-    if (!m_smooth_solver) {
-        m_smooth_solver = optimization::create_basic_solver();
+    auto& solver = m_smooth_solver.local();
+    if (!solver) {
+        solver = optimization::create_basic_solver();
     }
 
     optimization::AMIPSEnergy3D amips_energy(assembles);
     VectorXd x = m_vertex_attribute[vid].m_posf;
     try {
-        m_smooth_solver->minimize(amips_energy, x);
+        solver->minimize(amips_energy, x);
     } catch (const std::exception&) {
         // polysolve reports a failed line search by throwing; the position it reached is
         // still the best it found, and the checks below decide whether to keep it.

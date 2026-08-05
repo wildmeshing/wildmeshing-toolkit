@@ -776,7 +776,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     }
     // smoothing
     logger().info("\tSmoothing all vertices...");
-    for (size_t i = 0; i < 3; i++) {
+    for (int i = 0; i < m_params.smoothing_iterations; i++) {
         smooth_all_vertices();
         if (m_params.debug_output) { // intermediate output
             write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));

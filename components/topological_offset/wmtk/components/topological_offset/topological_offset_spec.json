@@ -23,7 +23,9 @@
       "save_vtu",
       "DEBUG_output",
       "log_file",
-      "report"
+      "report",
+      "num_threads",
+      "smoothing_iterations"
     ]
   },
   {
@@ -160,5 +162,17 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/num_threads",
+    "type": "int",
+    "default": 0,
+    "doc": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded."
+  },
+  {
+    "pointer": "/smoothing_iterations",
+    "type": "int",
+    "default": 3,
+    "doc": "Number of smoothing passes run during offset optimization (only used if optimize is true)."
   }
 ]
