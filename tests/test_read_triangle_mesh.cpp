@@ -46,8 +46,7 @@ TEST_CASE("read_triangle_mesh_rejects_empty_mesh", "[io][read_triangle_mesh]")
     // clean_triangle_mesh and later in the tetwild component -- then dereferences
     // null, so a Release build segfaulted before writing a single line of log. The
     // reader now rejects an empty result instead, which is a diagnosable failure.
-    const fs::path path =
-        fs::temp_directory_path() / "wmtk_test_empty_binary_stl_84_bytes.stl";
+    const fs::path path = fs::temp_directory_path() / "wmtk_test_empty_binary_stl_84_bytes.stl";
     write_empty_binary_stl(path);
 
     Eigen::MatrixXd V;
