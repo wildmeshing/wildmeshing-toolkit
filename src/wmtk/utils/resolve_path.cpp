@@ -13,7 +13,15 @@ fs::path resolve_path(const fs::path& root, const fs::path& path)
         return path;
     }
 
-    const fs::path root_abs = fs::absolute(root);
+    // An empty root means "resolve against the current directory". Spelling that out
+    // rather than leaving it to fs::absolute() is not pedantry: fs::absolute("") is
+    // not portable -- libstdc++ throws filesystem_error(EINVAL), libc++ returns the
+    // current path. Components take root from json_params["input_dir"], which
+    // app/main.cpp derives from the config file's parent_path(), and that is empty
+    // for a bare relative config name (`wmtk_app -j config.json`). Without this,
+    // every component aborts on Linux for a config invoked that way, while the same
+    // command works on macOS.
+    const fs::path root_abs = root.empty() ? fs::current_path() : fs::absolute(root);
 
     const fs::path root_dir =
         fs::exists(root_abs) && !fs::is_directory(root_abs) ? root_abs.parent_path() : root_abs;
