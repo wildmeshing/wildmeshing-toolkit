@@ -24,6 +24,9 @@ struct Parameters
     bool save_vtu;
     bool debug_output;
 
+    int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
+    int smoothing_iterations; // number of smoothing passes run during optimize_offset()
+
     VectorXd box_min;
     VectorXd box_max;
 
@@ -65,6 +68,9 @@ struct Parameters
         optimize = json_params["optimize"];
         save_vtu = json_params["save_vtu"];
         debug_output = json_params["DEBUG_output"];
+
+        num_threads = json_params["num_threads"];
+        smoothing_iterations = json_params["smoothing_iterations"];
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)
