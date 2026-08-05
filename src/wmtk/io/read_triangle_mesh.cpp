@@ -34,7 +34,12 @@ void clean_triangle_mesh(MatrixXd& V, MatrixXi& F, double tol_rel = -1, double t
             tol_rel);
     }
 
-    if (tol_abs < 0 && tol_rel >= 0) {
+    // The V.rows() > 0 guard is load-bearing, not defensive: Eigen's colwise()
+    // reductions on a 0-row matrix dereference its (null) data pointer instead of
+    // yielding an empty result, so this segfaults on a mesh with no vertices in a
+    // Release build and trips an assert in Debug. read_edge_mesh guards the same
+    // expression the same way.
+    if (tol_abs < 0 && tol_rel >= 0 && V.rows() > 0) {
         const MatrixXd box_min = V.colwise().minCoeff();
         const MatrixXd box_max = V.colwise().maxCoeff();
         const double diag = (box_max - box_min).norm();
@@ -103,6 +108,10 @@ void read_triangle_mesh(
     }
 
     clean_triangle_mesh(V, F, tol_rel, tol_abs);
+
+    if (F.rows() == 0) {
+        log_and_throw_error("Input mesh {} has no faces", path);
+    }
 }
 
 void read_triangle_mesh(
@@ -138,6 +147,17 @@ void read_triangle_mesh(
     }
 
     clean_triangle_mesh(V, F, tol_rel, tol_abs);
+
+    if (F.rows() == 0) {
+        std::string joined;
+        for (const std::string& p : paths) {
+            if (!joined.empty()) {
+                joined += ", ";
+            }
+            joined += p;
+        }
+        log_and_throw_error("Input meshes have no faces: {}", joined);
+    }
 }
 
 } // namespace wmtk::io
