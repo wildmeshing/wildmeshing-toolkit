@@ -1,11 +1,19 @@
 #include "read_triangle_mesh.hpp"
 
+#include "read_stl.hpp"
+
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_duplicate_vertices.h>
 #include <igl/remove_unreferenced.h>
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <cstdint>
+#include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::io {
@@ -96,6 +104,41 @@ void clean_triangle_mesh(MatrixXd& V, MatrixXi& F, double tol_rel = -1, double t
     }
 }
 
+/**
+ * @brief Read one mesh, routing STL through the toolkit's own reader.
+ *
+ * STL goes to wmtk::io::read_stl rather than libigl. libigl's reader asserts on malformed
+ * facet data, which aborts a Debug build from inside it -- uncatchable, so no amount of care
+ * here helps -- and it hands back a 0x0 matrix for an empty mesh instead of 0x3. See
+ * read_stl.cpp for the full list.
+ *
+ * Everything else still goes to libigl, which reports failure two ways: false for a file it
+ * cannot open or whose format it does not recognise, and an exception for one that is
+ * structurally broken. Neither names the file, so both are wrapped here.
+ */
+void read_one_triangle_mesh(const std::string& path, MatrixXd& V, MatrixXi& F)
+{
+    std::string ext = std::filesystem::path(path).extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    if (ext == ".stl") {
+        read_stl(path, V, F);
+        return;
+    }
+
+    bool ok = false;
+    try {
+        ok = igl::read_triangle_mesh(path, V, F);
+    } catch (const std::exception& e) {
+        log_and_throw_error("Could not read mesh {}: {}", path, e.what());
+    }
+
+    if (!ok) {
+        log_and_throw_error("Could not read mesh {}", path);
+    }
+}
+
 void read_triangle_mesh(
     const std::string& path,
     Eigen::MatrixXd& V,
@@ -103,9 +146,7 @@ void read_triangle_mesh(
     double tol_rel,
     double tol_abs)
 {
-    if (!igl::read_triangle_mesh(path, V, F)) {
-        log_and_throw_error("Could not read mesh {}", path);
-    }
+    read_one_triangle_mesh(path, V, F);
 
     // Reject before cleaning, not after: libigl reports an empty mesh as 0x0, not 0x3,
     // so anything that assumes three columns -- the asserts below in the multi-mesh
@@ -137,9 +178,7 @@ void read_triangle_mesh(
         }
         MatrixXd V_single;
         MatrixXi F_single;
-        if (!igl::read_triangle_mesh(p, V_single, F_single)) {
-            log_and_throw_error("Could not read mesh {}", p);
-        }
+        read_one_triangle_mesh(p, V_single, F_single);
         // Must come before the asserts: libigl hands back a 0x0 matrix for an empty
         // mesh, so both of them fire on one in a Debug build, and the block
         // assignment below would be a dimension mismatch besides.
