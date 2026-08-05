@@ -1,5 +1,6 @@
 
 #include "TopoOffsetTetMesh.h"
+#include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -612,13 +613,19 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
 {
     logger().info("Optimizing offset...");
 
-    if (m_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    optimization::deactivate_opt_logger();
+
+    for (const Tuple& t : get_tets()) {
+        m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
     }
 
     // just try smoothing for now
-}
+    smooth_all_vertices();
 
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+}
 
 bool TopoOffsetTetMesh::is_simplicially_embedded() const
 {
