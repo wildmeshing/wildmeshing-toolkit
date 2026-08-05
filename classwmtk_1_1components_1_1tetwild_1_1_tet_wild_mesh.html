@@ -529,6 +529,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capa
 <tr class="memitem:a0d213a73673c8351f2cf63f9c8f4cfc4 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a0d213a73673c8351f2cf63f9c8f4cfc4"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a0d213a73673c8351f2cf63f9c8f4cfc4">tuple_from_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
 <tr class="memdesc:a0d213a73673c8351f2cf63f9c8f4cfc4 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> and the global face index from global vertex index of the face.  <br /></td></tr>
 <tr class="separator:a0d213a73673c8351f2cf63f9c8f4cfc4 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a110594e16e75a527eedde84b1d4d3133 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a110594e16e75a527eedde84b1d4d3133"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133">lowest_common_tet</a> (size_t v0_id, size_t v1_id, size_t v2_id) const</td></tr>
+<tr class="memdesc:a110594e16e75a527eedde84b1d4d3133 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lowest tet id incident to all three vertices, or size_t(-1) if there is none.  <br /></td></tr>
+<tr class="separator:a110594e16e75a527eedde84b1d4d3133 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04aeacc07696eef19e9fa23bc814fb37 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a04aeacc07696eef19e9fa23bc814fb37"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a04aeacc07696eef19e9fa23bc814fb37">vertex_valence</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a04aeacc07696eef19e9fa23bc814fb37 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of tets incident to a vertex, in O(1).  <br /></td></tr>
+<tr class="separator:a04aeacc07696eef19e9fa23bc814fb37 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6777ff0d2cf9e97a05dfe6798e387655 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a6777ff0d2cf9e97a05dfe6798e387655"><td class="memItemLeft" align="right" valign="top">
 std::tuple&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_face</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_face.html">simplex::Face</a> &amp;f) const</td></tr>
 <tr class="separator:a6777ff0d2cf9e97a05dfe6798e387655 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -773,6 +779,15 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>c
 <tr class="separator:ac3efaef67baf9a8157b39849813cf5c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ba743cfa5c3f896570c9b183b908c75" id="r_a4ba743cfa5c3f896570c9b183b908c75"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4ba743cfa5c3f896570c9b183b908c75">m_force_split_count</a> = 0</td></tr>
 <tr class="separator:a4ba743cfa5c3f896570c9b183b908c75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3f8ca1f0a165fb1fe21fc60d857d218" id="r_ab3f8ca1f0a165fb1fe21fc60d857d218"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; std::atomic&lt; int &gt;[]&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ab3f8ca1f0a165fb1fe21fc60d857d218">m_high_valence_claim</a></td></tr>
+<tr class="separator:ab3f8ca1f0a165fb1fe21fc60d857d218"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbf6ca557065d8dac5d9767dac9abd2e" id="r_acbf6ca557065d8dac5d9767dac9abd2e"><td class="memItemLeft" align="right" valign="top"><a id="acbf6ca557065d8dac5d9767dac9abd2e" name="acbf6ca557065d8dac5d9767dac9abd2e"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_claim_size</b> = 0</td></tr>
+<tr class="separator:acbf6ca557065d8dac5d9767dac9abd2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae710af4116106b995eeea1913e960ef0" id="r_ae710af4116106b995eeea1913e960ef0"><td class="memItemLeft" align="right" valign="top"><a id="ae710af4116106b995eeea1913e960ef0" name="ae710af4116106b995eeea1913e960ef0"></a>
+std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_rejects</b> = 0</td></tr>
+<tr class="memdesc:ae710af4116106b995eeea1913e960ef0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Splits refused by that gate in the current pass, reported once per pass. <br /></td></tr>
+<tr class="separator:ae710af4116106b995eeea1913e960ef0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a261adc9caf17372cca2270e876ac7b7b inherit pub_attribs_classwmtk_1_1_tet_mesh" id="r_a261adc9caf17372cca2270e876ac7b7b"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
@@ -2076,6 +2091,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
       </table>
 </div><div class="memdoc">
 <p>The longest edge of each current worst tet (as a sorted {min,max} vid pair). split_all_edges force-splits exactly these edges (bypasses the length gate), so a stuck sliver's long edge is split immediately without changing the sizing field. Populated serially by refine_sizing_around_worst; read-only during the parallel split pass, then cleared once split_all_edges has consumed it. </p>
+
+</div>
+</div>
+<a id="ab3f8ca1f0a165fb1fe21fc60d857d218" name="ab3f8ca1f0a165fb1fe21fc60d857d218"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3f8ca1f0a165fb1fe21fc60d857d218">&#9670;&#160;</a></span>m_high_valence_claim</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;std::atomic&lt;int&gt;[]&gt; wmtk::components::tetwild::TetWildMesh::m_high_valence_claim</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per-pass claim for the high-valence split gate: one slot per vertex, reset at the start of every split pass. A high-valence vertex accepts the first valence-increasing split of the pass and refuses the rest, so refinement spreads instead of piling onto the same vertex. Atomic because splits run in parallel; a plain array of unique_ptr rather than a vector because std::atomic is not movable. </p>
 
 </div>
 </div>

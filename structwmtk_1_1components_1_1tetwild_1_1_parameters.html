@@ -175,6 +175,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>splitting_l2</b> = 
 <tr class="memitem:a5ec9551e8c57095e84dcfddf88370b28" id="r_a5ec9551e8c57095e84dcfddf88370b28"><td class="memItemLeft" align="right" valign="top"><a id="a5ec9551e8c57095e84dcfddf88370b28" name="a5ec9551e8c57095e84dcfddf88370b28"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>stop_energy</b> = 10</td></tr>
 <tr class="separator:a5ec9551e8c57095e84dcfddf88370b28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdbf8d5cc07818ff6b808bc5019bd688" id="r_acdbf8d5cc07818ff6b808bc5019bd688"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">split_high_valence_threshold</a> = 200</td></tr>
+<tr class="separator:acdbf8d5cc07818ff6b808bc5019bd688"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a704d7da438a3e127505e7bb645125232" id="r_a704d7da438a3e127505e7bb645125232"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">w_amips</a> = 1e-4</td></tr>
 <tr class="separator:a704d7da438a3e127505e7bb645125232"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0073586a8d6e25e34342ed7b4c8a53d1" id="r_a0073586a8d6e25e34342ed7b4c8a53d1"><td class="memItemLeft" align="right" valign="top"><a id="a0073586a8d6e25e34342ed7b4c8a53d1" name="a0073586a8d6e25e34342ed7b4c8a53d1"></a>
@@ -219,6 +221,23 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 </div><div class="memdoc">
 <p>How many smoothing passes each optimization iteration runs.</p>
 <p>This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was hard-coded to 1. Smoothing is the only phase that improves element quality without changing connectivity, so on meshes where split/collapse/swap have run out of useful moves it is the only thing left that can lower the energy. </p>
+
+</div>
+</div>
+<a id="acdbf8d5cc07818ff6b808bc5019bd688" name="acdbf8d5cc07818ff6b808bc5019bd688"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acdbf8d5cc07818ff6b808bc5019bd688">&#9670;&#160;</a></span>split_high_valence_threshold</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::tetwild::Parameters::split_high_valence_threshold = 200</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Incident-tet count above which a vertex is treated as pathological, or 0 to disable the gate.</p>
+<p>A well-shaped tet mesh has vertex valence around 20-30. When a split cascade concentrates on one vertex the valence runs away &ndash; Thingi10K model 71263 reached 10896 &ndash; and every operation touching it becomes O(valence): the one-ring walks in split_edge_after alone stall the pass. Above this threshold a vertex accepts only one valence-increasing split per split pass, which lets the refinement spread out instead of piling onto the same vertex.</p>
+<p>Splitting edge (a,b) leaves a's and b's own counts unchanged and adds one to every vertex in the edge's link, so the gate is applied to the link, not the endpoints. </p>
 
 </div>
 </div>

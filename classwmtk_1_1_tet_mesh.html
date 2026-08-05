@@ -240,6 +240,12 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b
 <tr class="memitem:a0d213a73673c8351f2cf63f9c8f4cfc4" id="r_a0d213a73673c8351f2cf63f9c8f4cfc4"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a0d213a73673c8351f2cf63f9c8f4cfc4">tuple_from_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
 <tr class="memdesc:a0d213a73673c8351f2cf63f9c8f4cfc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> and the global face index from global vertex index of the face.  <br /></td></tr>
 <tr class="separator:a0d213a73673c8351f2cf63f9c8f4cfc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a110594e16e75a527eedde84b1d4d3133" id="r_a110594e16e75a527eedde84b1d4d3133"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133">lowest_common_tet</a> (size_t v0_id, size_t v1_id, size_t v2_id) const</td></tr>
+<tr class="memdesc:a110594e16e75a527eedde84b1d4d3133"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lowest tet id incident to all three vertices, or size_t(-1) if there is none.  <br /></td></tr>
+<tr class="separator:a110594e16e75a527eedde84b1d4d3133"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04aeacc07696eef19e9fa23bc814fb37" id="r_a04aeacc07696eef19e9fa23bc814fb37"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a04aeacc07696eef19e9fa23bc814fb37">vertex_valence</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a04aeacc07696eef19e9fa23bc814fb37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of tets incident to a vertex, in O(1).  <br /></td></tr>
+<tr class="separator:a04aeacc07696eef19e9fa23bc814fb37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6777ff0d2cf9e97a05dfe6798e387655" id="r_a6777ff0d2cf9e97a05dfe6798e387655"><td class="memItemLeft" align="right" valign="top"><a id="a6777ff0d2cf9e97a05dfe6798e387655" name="a6777ff0d2cf9e97a05dfe6798e387655"></a>
 std::tuple&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_face</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_face.html">simplex::Face</a> &amp;f) const</td></tr>
 <tr class="separator:a6777ff0d2cf9e97a05dfe6798e387655"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1610,6 +1616,43 @@ false </dd></dl>
       </table>
 </div><div class="memdoc">
 <p>Compute the link of a given simplex Return a tuple of sets for 1. vertices, 2. edges, and 3. faces.</p>
+
+</div>
+</div>
+<a id="a110594e16e75a527eedde84b1d4d3133" name="a110594e16e75a527eedde84b1d4d3133"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a110594e16e75a527eedde84b1d4d3133">&#9670;&#160;</a></span>lowest_common_tet()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetMesh::lowest_common_tet </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v0_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v1_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v2_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Lowest tet id incident to all three vertices, or size_t(-1) if there is none. </p>
+<p>Costs O(smallest incident-tet fan) rather than O(largest), which matters when the fans are skewed &ndash; see the implementation for the case that motivated it. </p>
 
 </div>
 </div>
@@ -3646,6 +3689,35 @@ false </dd></dl>
 </dl>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#afe9f679344a6b1fd0367cb5e711bbc84">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a8353e84af471799bb96fc29f70c0fbc3">wmtk::components::tetwild::TetWildMesh</a>.</p>
+
+</div>
+</div>
+<a id="a04aeacc07696eef19e9fa23bc814fb37" name="a04aeacc07696eef19e9fa23bc814fb37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04aeacc07696eef19e9fa23bc814fb37">&#9670;&#160;</a></span>vertex_valence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetMesh::vertex_valence </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Number of tets incident to a vertex, in O(1). </p>
+<p>Around 20-30 on a well-shaped mesh. Worth checking before anything that walks the one ring, since a degenerate mesh can push it into the thousands. </p>
 
 </div>
 </div>

@@ -6,5 +6,6 @@ var searchData=
   ['load_5fmesh_3',['load_mesh',['../namespacesimwild_1_1polyfem__ops_1_1constraints.html#aaa04c45c11e33c6a7e4b19c8bc84cdbe',1,'simwild::polyfem_ops::constraints']]],
   ['load_5fspec_4',['load_spec',['../namespacesimwild_1_1polyfem__ops_1_1spec.html#a504b7be205f90a4bc6b999dbc0fe2e65',1,'simwild::polyfem_ops::spec']]],
   ['local_5feid_5',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]],
-  ['log_5ftotal_5fsurface_5fenergy_6',['log_total_surface_energy',['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a42414110473cbf3b104e02c3105ecee5',1,'wmtk::components::simwild::tri::SimWildMeshTri']]]
+  ['log_5ftotal_5fsurface_5fenergy_6',['log_total_surface_energy',['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a42414110473cbf3b104e02c3105ecee5',1,'wmtk::components::simwild::tri::SimWildMeshTri']]],
+  ['lowest_5fcommon_5ftet_7',['lowest_common_tet',['../classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133',1,'wmtk::TetMesh']]]
 ];
