@@ -217,7 +217,7 @@
     "pointer": "/allow_surface_swap",
     "type": "bool",
     "default": true,
-    "doc": "Allow surface edge swapping."
+    "doc": "Allow the edge swaps (3-2, 4-4, 5-6) to operate on surface edges, as a topology-preserving surface diagonal flip. When false, every surface edge is left alone."
   },
   {
     "pointer": "/check_surface_topology",

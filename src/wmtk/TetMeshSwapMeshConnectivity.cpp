@@ -540,6 +540,13 @@ bool TetMesh::swap_edge_44(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         auto tets = swap_4_4(old_tets_conn, v1_id, v2_id, v0, edge_vids);
         assert(v0 == edge_vids[0]);
 
+        // Let the app veto a candidate case (e.g. tetwild forces the diagonal that
+        // realizes a surface flip). Default accepts all, so interior edges are unchanged.
+        if (!swap_edge_44_accept_case(edge_vids)) {
+            ++op_case;
+            continue;
+        }
+
         double energy = swap_edge_44_energy(tets, op_case);
         if (energy < min_energy) {
             min_energy = energy;
@@ -754,6 +761,13 @@ bool TetMesh::swap_edge_56(const Tuple& t, std::vector<Tuple>& new_tet_tuples)
         std::array<size_t, 3> edge_vids;
         auto tets = swap_5_6(old_tets_conn, v1_id, v2_id, v0, edge_vids);
         assert(v0 == edge_vids[0]);
+
+        // Let the app veto a candidate case (e.g. tetwild forces the fan that
+        // realizes a surface flip). Default accepts all, so interior edges are unchanged.
+        if (!swap_edge_56_accept_case(edge_vids)) {
+            ++op_case;
+            continue;
+        }
 
         double energy = swap_edge_56_energy(tets, op_case);
         if (energy < min_energy) {
