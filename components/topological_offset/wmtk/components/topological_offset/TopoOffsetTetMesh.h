@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/TetMesh.h>
+#include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "Parameters.h"
@@ -54,6 +55,7 @@ class TetAttributes
 public:
     int label = 0;
     CellTag tag;
+    double m_quality = 0; // AMIPS energy, kept up to date by smoothing
 };
 
 
@@ -92,6 +94,9 @@ public:
     MatrixXi m_F_envelope;
 
     Parameters& m_params;
+
+    // smoothing
+    std::unique_ptr<polysolve::nonlinear::Solver> m_smooth_solver;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
@@ -188,6 +193,8 @@ public:
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
     bool invariants(const std::vector<Tuple>& tets) override;
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
     //// overriden splits/invariants
 
     /**
@@ -199,6 +206,22 @@ public:
      * @brief optimize the offset
      */
     void optimize_offset(const std::filesystem::path& output_file);
+
+    //// smoothing
+    /**
+     * @brief AMIPS quality of a tet, given its (unordered) vertex ids
+     * @note skeleton: plain double AMIPS, no rational fallback for near-degenerate tets
+     */
+    double get_quality(const std::array<size_t, 4>& vids) const;
+    double get_quality(const Tuple& t) const;
+
+    /**
+     * @brief run vertex smoothing over the whole mesh for n_iters passes
+     * @note skeleton: single-threaded, AMIPS-only (no envelope pull, no quality veto beyond
+     * rejecting moves that worsen the one-ring's worst tet). Extend smooth_after() to add more.
+     */
+    void smooth_all_vertices(size_t n_iters = 1);
+    //// smoothing
 
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
