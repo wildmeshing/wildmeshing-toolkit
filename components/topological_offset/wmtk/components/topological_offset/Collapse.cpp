@@ -137,19 +137,35 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // to a different surviving tet whose slot in m_edge_attribute/m_face_attribute was never
     // written for this particular edge/face. Restoring by vertex-id key in
     // collapse_edge_after() below fixes that back up.
+    //
+    // Edges/faces that touch v1 are additionally dropped when their tet is a "wing" tet (one
+    // that also contains v2): those tets are removed by the collapse entirely, so a v1-w
+    // edge/face coming only from a wing tet has no valid v2-w counterpart to reparent onto --
+    // it just vanishes with the tet. Skipping them here keeps collapse_edge_after() from
+    // reparenting them onto the *different*, already-correct edge/face that happens to share
+    // the same vertex set (the wing tet's face opposite v1, for instance, is exactly {v2, w0,
+    // w1} and is cached separately below since it does not touch v1).
     for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
         const size_t tid = tet.tid(*this);
+        const std::array<size_t, 4> tet_vids = oriented_tet_vids(tid);
+        const bool is_wing_tet =
+            std::find(tet_vids.begin(), tet_vids.end(), v2_id) != tet_vids.end();
+
         for (int i = 0; i < 6; ++i) {
             const Tuple e = tuple_from_edge(tid, i);
             const size_t ev0 = e.vid(*this);
             const size_t ev1 = e.switch_vertex(*this).vid(*this);
+            if (is_wing_tet && (ev0 == v1_id || ev1 == v1_id)) continue;
             cache.edge_labels[simplex::Edge(ev0, ev1)] = m_edge_attribute[e.eid(*this)].label;
         }
         for (int i = 0; i < 4; ++i) {
             const Tuple f = tuple_from_face(tid, i);
             const std::array<Tuple, 3> fv = get_face_vertices(f);
-            cache.face_labels[simplex::Face(fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this))] =
-                m_face_attribute[f.fid(*this)].label;
+            const size_t fv0 = fv[0].vid(*this);
+            const size_t fv1 = fv[1].vid(*this);
+            const size_t fv2 = fv[2].vid(*this);
+            if (is_wing_tet && (fv0 == v1_id || fv1 == v1_id || fv2 == v1_id)) continue;
+            cache.face_labels[simplex::Face(fv0, fv1, fv2)] = m_face_attribute[f.fid(*this)].label;
         }
     }
 
@@ -160,22 +176,67 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
 {
     auto& cache = edge_collapse_cache.local();
     const size_t v1_id = cache.v1_id;
+    const size_t v2_id = t.vid(*this); // survivor
 
+    // Pass 1: edges/faces that never touched v1 -- restore directly. This must run before
+    // pass 2 below, since pass 2 only fills in slots pass 1 left untouched.
     for (const auto& [edge, label] : cache.edge_labels) {
         if (edge.vertices()[0] == v1_id || edge.vertices()[1] == v1_id) {
-            continue; // incident to the removed vertex -- this edge no longer exists
+            continue; // handled in pass 2
         }
         const Tuple e = tuple_from_edge({{edge.vertices()[0], edge.vertices()[1]}});
         m_edge_attribute[e.eid(*this)].label = label;
     }
-
     for (const auto& [face, label] : cache.face_labels) {
         const auto& fv = face.vertices();
         if (fv[0] == v1_id || fv[1] == v1_id || fv[2] == v1_id) {
-            continue;
+            continue; // handled in pass 2
         }
         const auto [face_tuple, global_fid] = tuple_from_face({{fv[0], fv[1], fv[2]}});
         m_face_attribute[global_fid].label = label;
+    }
+
+    // Pass 2: edges/faces that had v1 as a corner (and, per the wing-tet filtering in
+    // collapse_edge_before, are guaranteed to have a valid reparented counterpart) now live at
+    // v2 instead. Their eid()/fid() slot was never written for this identity before, so
+    // without this it silently reads back whatever default (label 0) was already there,
+    // breaking anything that trusts edge/face labels near the collapse -- e.g. flood_fill()'s
+    // connectivity graph, which only follows edges with label != 0.
+    //
+    // Only fill in slots pass 1 left at the default: v1 and v2 could already have shared a
+    // vertex before the collapse (e.g. edge (v2, w) pre-existing alongside (v1, w)), in which
+    // case pass 1 already wrote the correct, independent value for that slot and it must win.
+    for (const auto& [edge, label] : cache.edge_labels) {
+        const size_t a = edge.vertices()[0];
+        const size_t b = edge.vertices()[1];
+        if (a != v1_id && b != v1_id) continue; // handled in pass 1
+        const size_t other = (a == v1_id) ? b : a;
+        if (other == v2_id) continue; // the collapsed edge itself -- gone, not reparented
+
+        const Tuple e = tuple_from_edge({{v2_id, other}});
+        EdgeAttributes& ea = m_edge_attribute[e.eid(*this)];
+        if (ea.label == 0) ea.label = label;
+    }
+    for (const auto& [face, label] : cache.face_labels) {
+        const auto& fv = face.vertices();
+        std::array<size_t, 2> others;
+        int k = 0;
+        bool touches_v1 = false;
+        bool touches_v2 = false;
+        for (const size_t v : fv) {
+            if (v == v1_id) {
+                touches_v1 = true;
+            } else {
+                if (v == v2_id) touches_v2 = true;
+                others[k++] = v;
+            }
+        }
+        if (!touches_v1) continue; // handled in pass 1
+        if (touches_v2) continue; // also had v2 as a corner -- gone, not reparented
+
+        const auto [face_tuple, global_fid] = tuple_from_face({{v2_id, others[0], others[1]}});
+        FaceAttributes& fa = m_face_attribute[global_fid];
+        if (fa.label == 0) fa.label = label;
     }
 
     // NormalDeviationAfterInvariant analogue: only reject a move that degrades an
