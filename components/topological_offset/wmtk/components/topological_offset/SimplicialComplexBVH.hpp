@@ -169,6 +169,43 @@ public:
 
     double dist(const VectorXd& p) const { return sqrt(squared_dist(p)); }
 
+    /**
+     * @brief find the nearest point on the complex (triangles and edges) to p
+     * @note unlike squared_dist(), this does not special-case points inside a tet of the
+     * complex -- for those the returned point is still the nearest surface point, not p itself
+     */
+    Vector3d nearest_point(const VectorXd& p) const
+    {
+        // pad to 3d if necessary
+        Vector3d p3;
+        if (p.size() == 2) {
+            p3 << p(0), p(1), 0.0;
+        } else {
+            p3 = p;
+        }
+
+        Vector3d best_p = p3;
+        double best_sq_dist = std::numeric_limits<double>::max();
+
+        Vector3d closest_p;
+        double tmp_sq_dist;
+        if (m_has_tris) {
+            m_tri_bvh.nearest_facet(p3, closest_p, tmp_sq_dist);
+            if (tmp_sq_dist < best_sq_dist) {
+                best_sq_dist = tmp_sq_dist;
+                best_p = closest_p;
+            }
+        }
+        if (m_has_edges) {
+            m_edge_bvh.nearest_facet(p3, closest_p, tmp_sq_dist);
+            if (tmp_sq_dist < best_sq_dist) {
+                best_sq_dist = tmp_sq_dist;
+                best_p = closest_p;
+            }
+        }
+        return best_p;
+    }
+
     void clear()
     {
         m_tri_bvh.clear();

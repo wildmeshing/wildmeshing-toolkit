@@ -217,10 +217,38 @@ public:
 
     /**
      * @brief run vertex smoothing over the whole mesh for n_iters passes
-     * @note skeleton: single-threaded, AMIPS-only (no envelope pull, no quality veto beyond
-     * rejecting moves that worsen the one-ring's worst tet). Extend smooth_after() to add more.
+     * @note skeleton: single-threaded. Input-complex vertices (label==1) never move. Offset
+     * surface vertices are optimized with quadrics toward target_distance from the input
+     * complex, see smooth_after_offset_surface(). All other vertices get plain AMIPS
+     * smoothing, see smooth_after_interior().
      */
     void smooth_all_vertices(size_t n_iters = 1);
+
+    /**
+     * @brief true if face f has exactly one incident tet labelled 2 (offset), i.e. it lies on
+     * the boundary between the offset region and the rest of the mesh
+     */
+    bool is_offset_surface_face(const Tuple& f) const;
+
+    /**
+     * @brief offset-surface faces (see is_offset_surface_face()) incident to vertex t
+     */
+    std::vector<Tuple> get_offset_surface_faces_for_vertex(const Tuple& t) const;
+
+    /**
+     * @brief AMIPS-only smoothing step, for vertices not on the offset surface
+     */
+    bool smooth_after_interior(const Tuple& t);
+
+    /**
+     * @brief quadrics-based smoothing step for offset surface vertices: blends a Laplacian
+     * step with a projection onto quadrics built from target_distance-offset samples of the
+     * input complex, following
+     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/OffsetOptimization.cpp#L2226
+     * @note skeleton: single centroid sample per incident face (the reference takes 4
+     * weighted samples per face), and no bisection fallback toward p0 on rejection.
+     */
+    bool smooth_after_offset_surface(const Tuple& t);
     //// smoothing
 
     /**
