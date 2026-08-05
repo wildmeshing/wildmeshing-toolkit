@@ -27,8 +27,18 @@ struct Parameters
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
     int smoothing_iterations; // number of smoothing passes run during optimize_offset()
 
+    // ---- collapse, similar to SimWild ----
+    double length_rel; // target edge length (relative to bbox diagonal)
+    double length; // target edge length (absolute). If < 0, computed from length_rel in init()
+    double stop_energy; // target AMIPS quality (see TopoOffsetTetMesh::get_quality()); a
+                         // collapse that would push an already-on-target region's quality back
+                         // above this is rejected
+
     VectorXd box_min;
     VectorXd box_max;
+
+    // derived in init()
+    double collapsing_l2; // upper bound (squared) on edge length for edge collapse eligibility
 
     Parameters() = default;
 
@@ -71,6 +81,10 @@ struct Parameters
 
         num_threads = json_params["num_threads"];
         smoothing_iterations = json_params["smoothing_iterations"];
+
+        length_rel = json_params["length_rel"];
+        length = json_params["length"];
+        stop_energy = json_params["stop_energy"];
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)
@@ -84,6 +98,14 @@ struct Parameters
         } else {
             target_distance = target_distance_rel * diag_l;
         }
+
+        if (length > 0) {
+            length_rel = length / diag_l;
+        } else {
+            length = length_rel * diag_l;
+        }
+        // only collapse edges shorter than 4/5 of the target length, matching SimWild
+        collapsing_l2 = length * length * (16. / 25.);
     }
 };
 } // namespace wmtk::components::topological_offset

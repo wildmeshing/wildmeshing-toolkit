@@ -137,7 +137,7 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         tempF.emplace_back(v1, v2, v3);
     }
 
-    if (!m_envelope) {
+    if (!m_envelope && !tempF.empty()) {
         logger().info("Init envelope from tet tags");
         // build envelopes
         std::vector<Eigen::Vector3d> tempV(vert_capacity());
@@ -152,35 +152,40 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
     }
 
-    // track bounding box
-    for (size_t i = 0; i < faces.size(); i++) {
-        const auto vs = get_face_vertices(faces[i]);
-        std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
-        int on_bbox = -1;
-        for (int k = 0; k < 3; k++) {
-            if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[2]].m_posf[k] == m_params.box_min[k]) {
-                on_bbox = k * 2;
-                break;
+    // track bounding box. box_min/box_max are only set by Parameters::init(), which callers
+    // that go through the full offset pipeline call before init_from_image() -- but plenty of
+    // unit tests construct a mesh directly from a default-constructed Parameters and never
+    // call it, leaving these as empty (size 0) VectorXd. Skip rather than index out of bounds.
+    if (m_params.box_min.size() >= 3 && m_params.box_max.size() >= 3) {
+        for (size_t i = 0; i < faces.size(); i++) {
+            const auto vs = get_face_vertices(faces[i]);
+            std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+            int on_bbox = -1;
+            for (int k = 0; k < 3; k++) {
+                if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_min[k] &&
+                    m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_min[k] &&
+                    m_vertex_attribute[vids[2]].m_posf[k] == m_params.box_min[k]) {
+                    on_bbox = k * 2;
+                    break;
+                }
+                if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_max[k] &&
+                    m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_max[k] &&
+                    m_vertex_attribute[vids[2]].m_posf[k] == m_params.box_max[k]) {
+                    on_bbox = k * 2 + 1;
+                    break;
+                }
             }
-            if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[2]].m_posf[k] == m_params.box_max[k]) {
-                on_bbox = k * 2 + 1;
-                break;
+            if (on_bbox < 0) {
+                continue;
             }
-        }
-        if (on_bbox < 0) {
-            continue;
-        }
-        assert(!faces[i].switch_tetrahedron(*this)); // face must be on boundary
+            assert(!faces[i].switch_tetrahedron(*this)); // face must be on boundary
 
-        const size_t fid = faces[i].fid(*this);
-        m_face_attribute[fid].m_is_bbox_fs = on_bbox;
+            const size_t fid = faces[i].fid(*this);
+            m_face_attribute[fid].m_is_bbox_fs = on_bbox;
 
-        for (const size_t vid : vids) {
-            m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+            for (const size_t vid : vids) {
+                m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+            }
         }
     }
 

@@ -209,6 +209,12 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
 
     const auto& VA = m_vertex_attribute;
 
+    // length, similar to SimWild: only collapse edges shorter than the target-length-derived
+    // cutoff (m_params.collapsing_l2, set in Parameters::init() from length/length_rel)
+    if ((VA[v1_id].m_posf - VA[v2_id].m_posf).squaredNorm() > m_params.collapsing_l2) {
+        return false;
+    }
+
     ///check if on bbox/surface/boundary
     // bbox
     if (!VA[v1_id].on_bbox_faces.empty()) {
@@ -247,6 +253,18 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     cache.nd_before = std::max(
         max_offset_surface_normal_deviation_at_vertex(v1_id),
         max_offset_surface_normal_deviation_at_vertex(v2_id));
+
+    // stop_energy setup: worst AMIPS quality currently around either endpoint, so
+    // collapse_edge_after() can tell a quality regression from a collapse that merely leaves
+    // an already-bad region bad.
+    cache.quality_before = 0.;
+    for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
+        cache.quality_before =
+            std::max(cache.quality_before, m_tet_attribute[tet.tid(*this)].m_quality);
+    }
+    for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+        cache.quality_before = std::max(cache.quality_before, m_tet_attribute[tid].m_quality);
+    }
 
     cache.v1_id = v1_id;
     cache.edge_labels.clear();
@@ -366,6 +384,22 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
     if (cache.nd_before < m_max_normal_deviation_deg) {
         const double nd_after = max_offset_surface_normal_deviation_at_vertex(t.vid(*this));
         if (nd_after >= m_max_normal_deviation_deg) {
+            return false;
+        }
+    }
+
+    // stop_energy: refresh quality for the survivor's (possibly remapped) one-ring tets --
+    // their vertex set may have changed even though their tid didn't, so the cached quality
+    // from before the collapse is no longer valid -- and reject only a regression: a region
+    // that was already on target (below stop_energy) must not be pushed back above it.
+    {
+        double quality_after = 0.;
+        for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
+            const double q = get_quality(tet);
+            m_tet_attribute[tet.tid(*this)].m_quality = q;
+            quality_after = std::max(quality_after, q);
+        }
+        if (cache.quality_before < m_params.stop_energy && quality_after >= m_params.stop_energy) {
             return false;
         }
     }
