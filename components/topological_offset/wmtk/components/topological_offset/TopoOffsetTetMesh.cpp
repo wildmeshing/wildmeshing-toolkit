@@ -586,7 +586,7 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 
     // simplicially embed again, if needed
     m_edge_split_mode = EdgeSplitMode::Midpoint;
-    if (is_simplicially_embedded()) {
+    if (!is_simplicially_embedded()) {
         simplicial_embedding();
         bool dummy = is_simplicially_embedded();
         consolidate_mesh();
@@ -832,7 +832,7 @@ void TopoOffsetTetMesh::grow_offset_conservative()
             tets_q.push(t);
         }
     }
-    logger().info("\tInitial queue size {}", tets_q.size());
+    logger().info("\tConservative grow: Initial queue size {}", tets_q.size());
 
     while (!tets_q.empty()) {
         Tuple curr_tet = tets_q.front();
@@ -851,6 +851,67 @@ void TopoOffsetTetMesh::grow_offset_conservative()
         bool in_offset = tet_is_in_offset_conservative(
             tet_id,
             m_params.relative_ball_threshold * m_params.target_distance);
+        if (in_offset) {
+            m_tet_attribute[tet_id].label = 2;
+            for (int i = 0; i < 4; i++) { // propagate label to faces
+                size_t f_id = tuple_from_face(tet_id, i).fid(*this);
+                if (m_face_attribute[f_id].label != 1) {
+                    m_face_attribute[f_id].label = 2;
+                }
+            }
+            for (int i = 0; i < 6; i++) {
+                size_t e_id = tuple_from_edge(tet_id, i).eid(*this);
+                if (m_edge_attribute[e_id].label != 1) {
+                    m_edge_attribute[e_id].label = 2;
+                }
+            }
+            auto vs = oriented_tet_vids(tet_id);
+            for (const size_t& v_id : vs) {
+                if (m_vertex_attribute[v_id].label != 1) {
+                    m_vertex_attribute[v_id].label = 2;
+                }
+            }
+
+            // collect adjacent tets, add to queue
+            auto adj_tets = get_face_adjacent_tets(curr_tet);
+            for (const Tuple& t : adj_tets) {
+                if (m_tet_attribute[t.tid(*this)].label != 0) {
+                    continue;
+                }
+                tets_q.push(t);
+            }
+        }
+    }
+}
+
+void TopoOffsetTetMesh::grow_offset_aggressive()
+{
+    std::queue<Tuple> tets_q;
+    auto all_tets = get_tets();
+
+    for (const Tuple& t : all_tets) {
+        size_t t_id = t.tid(*this);
+        if ((m_tet_attribute[t_id].label == 0) && (offset_tet_consistent_topology(t_id))) {
+            tets_q.push(t);
+        }
+    }
+    logger().info("\tAggressive grow: Initial queue size {}", tets_q.size());
+
+    while (!tets_q.empty()) {
+        Tuple curr_tet = tets_q.front();
+        tets_q.pop();
+
+        size_t tet_id = curr_tet.tid(*this);
+        if (m_tet_attribute[tet_id].label != 0) { // already in offset
+            continue;
+        }
+
+        // ensure tet wouldn't change topology
+        if ((m_tet_attribute[tet_id].label != 0) || (!offset_tet_consistent_topology(tet_id))) {
+            continue;
+        }
+
+        bool in_offset = tet_is_in_offset_aggressive(tet_id);
         if (in_offset) {
             m_tet_attribute[tet_id].label = 2;
             for (int i = 0; i < 4; i++) { // propagate label to faces
