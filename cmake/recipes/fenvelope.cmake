@@ -44,7 +44,7 @@ CPMAddPackage(
     # remove.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
     # master. A commit rather than the branch name, so the build stays reproducible.
-    GIT_TAG a9f488f81cda91fe3e3099aa4f98b9ee90d4502d
+    GIT_TAG 8381a02dbb8bb01846d3e8d08ec0854d62c762b4
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
     "FAST_ENVELOPE_ENABLE_TBB OFF"
