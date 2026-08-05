@@ -491,6 +491,9 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_inse
 <tr class="memitem:a02559db4df0246a2918dfad6a329de58" id="r_a02559db4df0246a2918dfad6a329de58"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a02559db4df0246a2918dfad6a329de58">swap_edge_44_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:a02559db4df0246a2918dfad6a329de58"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas for after a 4-4 edge swap.  <br /></td></tr>
 <tr class="separator:a02559db4df0246a2918dfad6a329de58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af49da93094ee3f4edd28605db2bd896e" id="r_af49da93094ee3f4edd28605db2bd896e"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#af49da93094ee3f4edd28605db2bd896e">swap_edge_44_accept_case</a> (const std::array&lt; size_t, 2 &gt; &amp;new_edge)</td></tr>
+<tr class="memdesc:af49da93094ee3f4edd28605db2bd896e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filter which of the 4-4 orientations may be chosen.  <br /></td></tr>
+<tr class="separator:af49da93094ee3f4edd28605db2bd896e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5655fb28ee1f32baafe1d83ac38d5400" id="r_a5655fb28ee1f32baafe1d83ac38d5400"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a5655fb28ee1f32baafe1d83ac38d5400">swap_edge_56_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:a5655fb28ee1f32baafe1d83ac38d5400"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for a 5-6 edge swap before changing the connectivity.  <br /></td></tr>
 <tr class="separator:a5655fb28ee1f32baafe1d83ac38d5400"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -500,6 +503,9 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_inse
 <tr class="memitem:ae0d1e9721129f3626cf45e1e047f2f7b" id="r_ae0d1e9721129f3626cf45e1e047f2f7b"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ae0d1e9721129f3626cf45e1e047f2f7b">swap_edge_56_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:ae0d1e9721129f3626cf45e1e047f2f7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas for after a 5-6 edge swap.  <br /></td></tr>
 <tr class="separator:ae0d1e9721129f3626cf45e1e047f2f7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee10c8f50f118614119d9074a75dade4" id="r_aee10c8f50f118614119d9074a75dade4"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aee10c8f50f118614119d9074a75dade4">swap_edge_56_accept_case</a> (const std::array&lt; size_t, 3 &gt; &amp;new_face)</td></tr>
+<tr class="memdesc:aee10c8f50f118614119d9074a75dade4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filter which of the 5-6 orientations may be chosen.  <br /></td></tr>
+<tr class="separator:aee10c8f50f118614119d9074a75dade4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d4749ec7f406e6515153c2446614c68" id="r_a8d4749ec7f406e6515153c2446614c68"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a8d4749ec7f406e6515153c2446614c68">swap_edge_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:a8d4749ec7f406e6515153c2446614c68"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an 3-2 edge swap before changing the conenctivity.  <br /></td></tr>
 <tr class="separator:a8d4749ec7f406e6515153c2446614c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2480,6 +2486,43 @@ false </dd></dl>
 
 </div>
 </div>
+<a id="af49da93094ee3f4edd28605db2bd896e" name="af49da93094ee3f4edd28605db2bd896e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af49da93094ee3f4edd28605db2bd896e">&#9670;&#160;</a></span>swap_edge_44_accept_case()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetMesh::swap_edge_44_accept_case </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>new_edge</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Filter which of the 4-4 orientations may be chosen. </p>
+<p>Called for every candidate 4-4 case (identified by its new edge) BEFORE the energy-based selection; a candidate whose new edge is rejected here is not considered. The default accepts everything, so interior edges keep the pure min-energy behavior. A derived mesh can override this to force a specific retetrahedralization (e.g. tetwild forces the case that realizes a surface diagonal flip).</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">new_edge</td><td>The two vertices of the candidate's new edge. The ordering is implementation-defined (currently new_edge[0] is the case-selector vertex). </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aff0df9b93230842f696f0f56fb53f95f">wmtk::components::tetwild::TetWildMesh</a>.</p>
+
+</div>
+</div>
 <a id="a02559db4df0246a2918dfad6a329de58" name="a02559db4df0246a2918dfad6a329de58"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a02559db4df0246a2918dfad6a329de58">&#9670;&#160;</a></span>swap_edge_44_after()</h2>
 
@@ -2638,6 +2681,44 @@ false </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if swap succeed </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>only happens on internal edges </dd></dl>
+
+</div>
+</div>
+<a id="aee10c8f50f118614119d9074a75dade4" name="aee10c8f50f118614119d9074a75dade4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee10c8f50f118614119d9074a75dade4">&#9670;&#160;</a></span>swap_edge_56_accept_case()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetMesh::swap_edge_56_accept_case </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>new_face</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Filter which of the 5-6 orientations may be chosen. </p>
+<p>Called for every candidate 5-6 case (identified by its new fan face) BEFORE the energy-based selection; a candidate whose new face is rejected here is not considered. The default accepts everything, so interior edges keep the pure min-energy behavior. <code>new_face[0]</code> is the fan apex. A derived mesh can override this to force a specific retetrahedralization (e.g. tetwild forces the fan that realizes a surface diagonal flip).</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">new_face</td><td>The candidate's new fan face; new_face[0] is the fan apex. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if this candidate case is allowed. </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a639a1f3d27fcf575639ff933b6d923c9">wmtk::components::tetwild::TetWildMesh</a>.</p>
 
 </div>
 </div>
