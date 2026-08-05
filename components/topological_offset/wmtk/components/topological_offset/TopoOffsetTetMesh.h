@@ -242,10 +242,22 @@ public:
     bool tet_is_in_offset_conservative(const size_t t_id, const double threshold_r) const;
 
     /**
+     * @brief check if a tet is inside the offset (implicitly defined via BVH distance field to
+     * input complex) by check if all its vertices are inside the offset region.
+     */
+    bool tet_is_in_offset_aggressive(const size_t t_id) const;
+
+    /**
      * @brief grow offset region conservatively using conservative checks while ensuring consistent
      * topology
      */
     void grow_offset_conservative();
+
+    /**
+     * @brief Grow offset region aggressively. A tet is considered in the offset if all its vertices
+     * are in the offset.
+     */
+    void grow_offset_aggressive();
     //// variable offset stuff
 
     /**
