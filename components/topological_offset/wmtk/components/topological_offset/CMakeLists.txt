@@ -11,6 +11,8 @@ set(SRC_FILES
 	TopoOffsetTetMesh.h
 	TopoOffsetTetMesh.cpp
 	Smooth.cpp
+	Quadrics.hpp
+	Quadrics.cpp
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp
