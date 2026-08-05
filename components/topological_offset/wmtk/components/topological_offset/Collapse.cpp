@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace wmtk::components::topological_offset {
 
@@ -20,17 +21,18 @@ double TopoOffsetTetMesh::face_normal_deviation(const Tuple& f) const
     if (cross_norm < 1e-12) return 0.; // degenerate triangle, nothing to measure
     const Vector3d face_normal = cross / cross_norm;
 
-    const Vector3d centroid = (p_a + p_b + p_c) / 3.;
-    const Vector3d nearest = m_input_complex_bvh.nearest_point(centroid);
-    const Vector3d diff = centroid - nearest;
-    const double dist = diff.norm();
-    if (dist < 1e-12) return 0.; // right on the input complex, no normal to compare against
-    const Vector3d input_normal = diff / dist;
-
-    // orientation independent: a triangle whose plane is parallel to the ideal offset plane
-    // counts as aligned regardless of which way get_face_vertices() happened to wind it
-    const double s = std::clamp(face_normal.cross(input_normal).norm(), -1., 1.);
-    return (180. / M_PI) * std::asin(s);
+    // max over all 4 samples, not just the centroid: a face straddling a feature has samples
+    // on both sides of it, and only the max catches the one that disagrees with the face's own
+    // (necessarily flat) normal -- averaging or using a single sample would miss it.
+    double max_dev = 0.;
+    for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
+        if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
+        // orientation independent: a triangle whose plane is parallel to the sample's implied
+        // plane counts as aligned regardless of which way get_face_vertices() winds it
+        const double c = std::clamp(face_normal.cross(s.normal).norm(), -1., 1.);
+        max_dev = std::max(max_dev, (180. / M_PI) * std::asin(c));
+    }
+    return max_dev;
 }
 
 double TopoOffsetTetMesh::max_offset_surface_normal_deviation_at_vertex(size_t vid) const
@@ -40,6 +42,29 @@ double TopoOffsetTetMesh::max_offset_surface_normal_deviation_at_vertex(size_t v
         max_nd = std::max(max_nd, face_normal_deviation(f));
     }
     return max_nd;
+}
+
+double TopoOffsetTetMesh::collapse_normal_deviation(const Tuple& edge, size_t remove_vid) const
+{
+    const Vector3d p0 = m_vertex_attribute[edge.vid(*this)].m_posf;
+    const Vector3d p1 = m_vertex_attribute[edge.switch_vertex(*this).vid(*this)].m_posf;
+    const Vector3d e_dir = (p1 - p0).normalized();
+
+    double min_angle = std::numeric_limits<double>::max();
+    double max_angle = std::numeric_limits<double>::lowest();
+    for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(remove_vid))) {
+        for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
+            if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
+            // orientation dependent (0-180): unlike face_normal_deviation, the edge direction
+            // has a genuine sign, so a sample pointing "with" vs "against" it are different
+            const double dot = std::clamp(e_dir.dot(s.normal), -1., 1.);
+            const double angle = (180. / M_PI) * std::acos(dot);
+            min_angle = std::min(min_angle, angle);
+            max_angle = std::max(max_angle, angle);
+        }
+    }
+    if (min_angle > max_angle) return 0.; // no samples found at all
+    return max_angle - min_angle;
 }
 
 bool TopoOffsetTetMesh::is_offset_surface_edge(const Tuple& e) const
@@ -110,11 +135,11 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         return false;
     }
 
-    // OffsetCollapseBeforeInvariant analogue: don't collapse onto a vertex whose surviving
-    // offset-surface patch is already poorly aligned with the input complex -- the reference
-    // checks the survivor's cofaces pre-collapse, which is what this reduces to since v2's
-    // position and its own incident faces are untouched by the collapse.
-    if (max_offset_surface_normal_deviation_at_vertex(v2_id) >= m_max_normal_deviation_deg) {
+    // OffsetCollapseBeforeInvariant analogue: don't collapse if the offset-target normal field
+    // sampled around the survivor disagrees with itself (relative to the collapse direction)
+    // by more than the threshold -- that disagreement is the signature of a feature edge
+    // nearby, and collapsing across it would flatten/cut through the feature.
+    if (collapse_normal_deviation(t, v1_id) >= m_max_normal_deviation_deg) {
         return false;
     }
 

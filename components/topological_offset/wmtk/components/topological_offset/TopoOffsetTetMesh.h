@@ -89,6 +89,23 @@ public:
 };
 
 
+/**
+ * @brief one sample of the input complex's implicit offset field, taken near a point on an
+ * offset-surface face. `normal` is Vector3d::Zero() if the sample point landed exactly on the
+ * input complex, in which case no normal direction could be recovered.
+ * @note mirrors a single sample of
+ * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/utils/Quadrics.cpp's
+ * get_triangle_samples_and_area()
+ */
+struct OffsetSurfaceSample
+{
+    Vector3d point; // the sample point, on (or near a corner of) the face
+    Vector3d nearest; // nearest point on the input complex to `point`
+    Vector3d normal; // (point - nearest).normalized()
+    double weight; // 1 for the face centroid, 0.1 for the 3 near-corner samples
+};
+
+
 class TopoOffsetTetMesh : public wmtk::TetMesh
 {
 public: // mode for splitting in marching tets
@@ -277,6 +294,15 @@ public:
     std::vector<Tuple> get_offset_surface_faces_for_vertex(const Tuple& t) const;
 
     /**
+     * @brief the 4 offset-field samples for face f (centroid + one near each corner), following
+     * Quadrics.cpp's get_triangle_samples_and_area(). Shared by the Quadrics construction below
+     * and by the feature-preserving checks in Collapse.cpp -- a single centroid sample cannot
+     * tell a locally-flat patch from one straddling a sharp feature of the input complex, since
+     * a single BVH nearest-point query just picks whichever side of the feature is closer.
+     */
+    std::array<OffsetSurfaceSample, 4> offset_surface_samples(const Tuple& f) const;
+
+    /**
      * @brief AMIPS-only smoothing step, for vertices not on the offset surface
      */
     bool smooth_after_interior(const Tuple& t);
@@ -286,8 +312,7 @@ public:
      * step with a projection onto quadrics built from target_distance-offset samples of the
      * input complex, following
      * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/OffsetOptimization.cpp#L2226
-     * @note skeleton: single centroid sample per incident face (the reference takes 4
-     * weighted samples per face), and no bisection fallback toward p0 on rejection.
+     * @note skeleton: no bisection fallback toward p0 on rejection.
      */
     bool smooth_after_offset_surface(const Tuple& t);
     //// smoothing
@@ -308,13 +333,16 @@ public:
      * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/NormalDeviationAfterInvariant.cpp
      * and .../invariants/OffsetCollapseBeforeInvariant.cpp
      */
-    double m_max_normal_deviation_deg = 60.0;
+    double m_max_normal_deviation_deg = 15.0;
 
     /**
-     * @brief angle (degrees, 0-90) between offset-surface face f's own normal and the
-     * "ideal" input-complex normal sampled at its centroid (same single-centroid-sample
-     * simplification as smooth_after_offset_surface()). Orientation independent, since
-     * get_face_vertices() gives no guarantee about which way a face is wound.
+     * @brief max angle (degrees, 0-90, orientation independent) between offset-surface face
+     * f's own normal and any of its offset_surface_samples() normals. Taking the max over all
+     * 4 samples (rather than a single centroid sample) is what makes this sensitive to
+     * features: a face straddling a sharp fold of the input complex will have samples on
+     * either side of the fold, so at least one of them disagrees strongly with the face's own
+     * (necessarily flat) normal, even though the face may look locally fine from any single
+     * sample alone.
      */
     double face_normal_deviation(const Tuple& f) const;
 
@@ -322,6 +350,19 @@ public:
      * @brief max face_normal_deviation() over the offset-surface faces incident to vertex vid
      */
     double max_offset_surface_normal_deviation_at_vertex(size_t vid) const;
+
+    /**
+     * @brief OffsetCollapseBeforeInvariant analogue: pools offset_surface_samples() normals
+     * from every offset-surface face incident to remove_vid and returns the spread
+     * (max - min, degrees, orientation dependent via normal_angle_180-style acos) of their
+     * angles to the collapsing edge's direction. A small spread means the samples around the
+     * survivor agree with each other relative to the edge, i.e. the edge runs along a locally
+     * flat/consistent part of the offset surface; a large spread means the true target-normal
+     * field disagrees with itself nearby -- a sign of a feature edge -- and collapsing there
+     * should be rejected. See
+     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/OffsetCollapseBeforeInvariant.cpp
+     */
+    double collapse_normal_deviation(const Tuple& edge, size_t remove_vid) const;
 
     /**
      * @brief true if edge e is incident to an offset-surface face (see
