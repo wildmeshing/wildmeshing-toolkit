@@ -5,4 +5,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "simwild"
 version = "0.1.0"
-dependencies = ["numpy>=2.0", "gmsh"]
+readme = "README.md"
+dependencies = ["numpy>=2.0", "gmsh", "scipy", "h5py"]
+
+# Also requires the `wildmeshing` bindings built from this repository:
+# pip install <wildmeshing-toolkit root>.
+[tool.setuptools]
+packages = [
+    "simwild",
+    "simwild.polyfem_ops",
+    "simwild.polyfem_ops.minimum_separation",
+    "simwild.polyfem_ops.laplacian_smoothing",
+    "simwild.polyfem_ops.polyfem_sim",
+]
+
+[tool.setuptools.package-data]
+"simwild.polyfem_ops.minimum_separation" = ["spec.json"]
+"simwild.polyfem_ops.laplacian_smoothing" = ["spec.json"]

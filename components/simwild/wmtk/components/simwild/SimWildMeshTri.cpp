@@ -606,7 +606,7 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t fid = t.fid(*this);
-        if (m_face_attribute.at(fid).m_quality < filter_energy) {
+        if (m_face_attribute.at(fid).m_quality < target_quality(fid)) {
             continue;
         }
         const auto vs = oriented_tri_vids(t);
