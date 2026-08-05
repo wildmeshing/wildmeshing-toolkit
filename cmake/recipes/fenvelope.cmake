@@ -33,8 +33,17 @@ CPMAddPackage(
     # is below every outward face, i.e. every face NEGATIVE. Forwarding the raw sign makes
     # containment fail everywhere, so the envelope silently grows far more conservative
     # than the requested epsilon rather than erroring out.
+    #
+    # PR #3 also puts back the graded cascade that #2 removed along with the arithmetic it
+    # fronted: the vendored semi-static double filter, then Indirect_Predicates' interval
+    # stage, then its exact one. Indirect_Predicates has no double-precision tier of its
+    # own, so without the first every query went straight to interval arithmetic, which on
+    # arm64 switches the FPU rounding mode twice per predicate -- 48% of samples in
+    # `fesetround` and 2.5-3.4x the runtime here. The filter is self-contained double code
+    # and reintroduces none of the duplicate expansion definitions that #2 existed to
+    # remove.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
-    GIT_TAG 7d615a9c578087dab899cd370cb225464908dcf4
+    GIT_TAG eda933b6fab8e89e5f43271ebafc397761da1563
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
     "FAST_ENVELOPE_ENABLE_TBB OFF"
