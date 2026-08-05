@@ -15,6 +15,7 @@ set(TEST_SOURCES
     test_nonmanifold.cpp
     test_operations.cpp
     test_raw_simplex_collection.cpp
+    test_resolve_path.cpp
     test_simplex_navigation.cpp
     test_tuple.cpp
     test_orient.cpp

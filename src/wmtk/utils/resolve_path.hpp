@@ -23,9 +23,12 @@ namespace wmtk::utils {
  *      path = "/c/b.txt"
  *      returns: "/c/b.txt"
  *
+ * An empty `root` resolves `path` against the current working directory.
+ *
  * An exception is thrown if the root path does not exist.
  *
  * @param root The folder used as root. If it is a file the parent folder is used as root.
+ *             If it is empty the current working directory is used.
  * @param path The path that should be made absolute.
  *
  * @returns The absolute path.
