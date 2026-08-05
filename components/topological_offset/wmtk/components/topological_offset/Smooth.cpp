@@ -82,6 +82,36 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::get_offset_surface_face
     return result;
 }
 
+std::array<OffsetSurfaceSample, 4> TopoOffsetTetMesh::offset_surface_samples(const Tuple& f) const
+{
+    const std::array<Tuple, 3> fv = get_face_vertices(f);
+    const Vector3d p0 = m_vertex_attribute[fv[0].vid(*this)].m_posf;
+    const Vector3d p1 = m_vertex_attribute[fv[1].vid(*this)].m_posf;
+    const Vector3d p2 = m_vertex_attribute[fv[2].vid(*this)].m_posf;
+    const Vector3d p_mid = (p0 + p1 + p2) / 3.;
+
+    constexpr double u = 0.1;
+    std::array<OffsetSurfaceSample, 4> samples;
+    samples[0].point = p_mid;
+    samples[0].weight = 1.;
+    samples[1].point = (1 - u) * p0 + u * p_mid;
+    samples[1].weight = u;
+    samples[2].point = (1 - u) * p1 + u * p_mid;
+    samples[2].weight = u;
+    samples[3].point = (1 - u) * p2 + u * p_mid;
+    samples[3].weight = u;
+
+    for (OffsetSurfaceSample& s : samples) {
+        s.nearest = m_input_complex_bvh.nearest_point(s.point);
+        const Vector3d diff = s.point - s.nearest;
+        const double dist = diff.norm();
+        // Vector3d::Zero() signals "no normal direction could be recovered"; the sample point
+        // landed exactly on the input complex, which is degenerate but not an error.
+        s.normal = (dist < 1e-12) ? Vector3d::Zero() : Vector3d(diff / dist);
+    }
+    return samples;
+}
+
 bool TopoOffsetTetMesh::smooth_after_interior(const Tuple& t)
 {
     const size_t vid = t.vid(*this);
@@ -155,30 +185,37 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
         p_laplace /= n_neighs;
     }
 
-    // Quadric built from one target_distance-offset sample of the input complex per incident
-    // offset-surface face (the reference takes 4 weighted samples per face; this is a
-    // simplified first draft with a single centroid sample).
+    // Quadric built from 4 target_distance-offset samples of the input complex per incident
+    // offset-surface face (centroid + one near each corner, weighted 1/0.1/0.1/0.1), following
+    // Quadrics.cpp's get_triangle_samples_and_area(). Taking several samples rather than just
+    // the centroid is what lets the quadric stay feature-aware: near a sharp fold of the input
+    // complex, samples on either side pull the per-vertex quadric's minimum toward the fold
+    // instead of averaging it away, the same way classic QEM simplification preserves features
+    // by summing quadrics from multiple differently-oriented triangles.
     Quadrics q(0., 0., 0., 0.);
-    int n_samples = 0;
+    int n_faces = 0;
     for (const Tuple& f : offset_faces) {
         const std::array<Tuple, 3> face_verts = get_face_vertices(f);
         const Vector3d p_a = m_vertex_attribute[face_verts[0].vid(*this)].m_posf;
         const Vector3d p_b = m_vertex_attribute[face_verts[1].vid(*this)].m_posf;
         const Vector3d p_c = m_vertex_attribute[face_verts[2].vid(*this)].m_posf;
-        const Vector3d centroid = (p_a + p_b + p_c) / 3.;
         const double area = 0.5 * (p_b - p_a).cross(p_c - p_a).norm();
 
-        const Vector3d nearest = m_input_complex_bvh.nearest_point(centroid);
-        const Vector3d diff = centroid - nearest;
-        const double dist = diff.norm();
-        if (dist < 1e-12) continue; // degenerate: cannot recover a normal direction
-        const Vector3d normal = diff / dist;
-        const Vector3d target = nearest + m_params.target_distance * normal;
+        Quadrics face_q(0., 0., 0., 0.);
+        bool any_sample = false;
+        for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
+            if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
+            const Vector3d target = s.nearest + m_params.target_distance * s.normal;
+            face_q += Quadrics(target, s.normal) * s.weight;
+            any_sample = true;
+        }
+        if (!any_sample) continue;
+        face_q *= area;
 
-        q += Quadrics(target, normal) * area;
-        ++n_samples;
+        q += face_q;
+        ++n_faces;
     }
-    if (n_samples == 0) return false;
+    if (n_faces == 0) return false;
 
     const Vector3d p_optimal = q.solve(p_laplace);
     const double w = 0.5; // blend toward the quadrics optimum, matching the reference
