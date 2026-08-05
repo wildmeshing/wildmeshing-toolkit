@@ -216,43 +216,21 @@ size_t TetMesh::Tuple::fid(const TetMesh& m) const
 
     size_t tid = std::numeric_limits<size_t>::max();
 
-    // find lowest common tet id
+    // find lowest common tet id -- see TetMesh::lowest_common_tet for why it scans the
+    // smallest fan rather than merging all three.
     {
         const auto& t0 = m.m_vertex_connectivity[v0_id].m_conn_tets;
         const auto& t1 = m.m_vertex_connectivity[v1_id].m_conn_tets;
         const auto& t2 = m.m_vertex_connectivity[v2_id].m_conn_tets;
-        size_t i0 = 0;
-        size_t i1 = 0;
-        size_t i2 = 0;
 
         if (t0.empty() || t1.empty() || t2.empty()) {
             log_and_throw_error(
                 "Tuple::fid(*this) error: One of the vertices has an empty tet vector");
         }
 
-        while (true) {
-            if (t0[i0] < t1[i1] || t0[i0] < t2[i2]) {
-                i0++;
-                if (i0 == t0.size()) {
-                    log_and_throw_error("Tuple::fid(*this) error");
-                }
-            }
-            if (t1[i1] < t2[i2] || t1[i1] < t0[i0]) {
-                i1++;
-                if (i1 == t1.size()) {
-                    log_and_throw_error("Tuple::fid(*this) error");
-                }
-            }
-            if (t2[i2] < t0[i0] || t2[i2] < t1[i1]) {
-                i2++;
-                if (i2 == t2.size()) {
-                    log_and_throw_error("Tuple::fid(*this) error");
-                }
-            }
-            if (t0[i0] == t1[i1] && t0[i0] == t2[i2]) {
-                tid = t0[i0];
-                break;
-            }
+        tid = m.lowest_common_tet(v0_id, v1_id, v2_id);
+        if (tid == std::numeric_limits<size_t>::max()) {
+            log_and_throw_error("Tuple::fid(*this) error");
         }
     }
 

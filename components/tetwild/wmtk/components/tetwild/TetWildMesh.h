@@ -597,6 +597,16 @@ public:
     /// parallel split; reset + logged by split_all_edges). Diagnostic only.
     size_t m_force_split_count = 0;
 
+    /// Per-pass claim for the high-valence split gate: one slot per vertex, reset at the
+    /// start of every split pass. A high-valence vertex accepts the first
+    /// valence-increasing split of the pass and refuses the rest, so refinement spreads
+    /// instead of piling onto the same vertex. Atomic because splits run in parallel; a
+    /// plain array of unique_ptr rather than a vector because std::atomic is not movable.
+    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
+    size_t m_high_valence_claim_size = 0;
+    /// Splits refused by that gate in the current pass, reported once per pass.
+    std::atomic<size_t> m_high_valence_rejects = 0;
+
     /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
     bool is_force_split_edge(size_t v1, size_t v2) const
     {

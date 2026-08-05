@@ -22,6 +22,7 @@
       "eps_rel",
       "length_rel",
       "stop_energy",
+      "split_high_valence_threshold",
       "w_amips",
       "num_smoothing_passes",
       "preserve_topology",
@@ -181,6 +182,12 @@
     "type": "float",
     "default": 10,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/split_high_valence_threshold",
+    "type": "int",
+    "default": 200,
+    "doc": "Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link."
   },
   {
     "pointer": "/w_amips",

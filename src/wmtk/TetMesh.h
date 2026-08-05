@@ -954,6 +954,25 @@ public:
      * @param vids Global vertex index of the face
      */
     std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
+
+    /**
+     * @brief Lowest tet id incident to all three vertices, or size_t(-1) if there is none.
+     *
+     * Costs O(smallest incident-tet fan) rather than O(largest), which matters when the
+     * fans are skewed -- see the implementation for the case that motivated it.
+     */
+    size_t lowest_common_tet(size_t v0_id, size_t v1_id, size_t v2_id) const;
+
+    /**
+     * @brief Number of tets incident to a vertex, in O(1).
+     *
+     * Around 20-30 on a well-shaped mesh. Worth checking before anything that walks the
+     * one ring, since a degenerate mesh can push it into the thousands.
+     */
+    size_t vertex_valence(const size_t vid) const
+    {
+        return m_vertex_connectivity[vid].m_conn_tets.size();
+    }
     std::tuple<Tuple, size_t> tuple_from_face(const simplex::Face& f) const;
 
     /**

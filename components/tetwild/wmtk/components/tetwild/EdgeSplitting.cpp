@@ -14,6 +14,17 @@ void TetWildMesh::split_all_edges()
     igl::Timer timer;
     double time;
     m_force_split_count = 0;
+
+    // Reset the high-valence claims for this pass. Sized at vert_capacity() now: storage
+    // is preallocated per phase, so any vertex a split creates during this pass already
+    // has an id below it (same invariant run_localized_to_convergence relies on for
+    // vertex_epoch). make_unique value-initialises, so every slot starts at 0.
+    if (m_params.split_high_valence_threshold > 0) {
+        m_high_valence_claim_size = vert_capacity();
+        m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
+    }
+    m_high_valence_rejects = 0;
+
     timer.start();
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
@@ -72,6 +83,12 @@ void TetWildMesh::split_all_edges()
             "[force-split] {} worst-tet longest edges force-split",
             m_force_split_count);
     }
+    if (const size_t n = m_high_valence_rejects.load(); n > 0) {
+        wmtk::logger().info(
+            "[high-valence] {} splits refused to avoid growing a vertex past {} incident tets",
+            n,
+            m_params.split_high_valence_threshold);
+    }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
 }
@@ -111,6 +128,40 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
     };
 
     auto tets = get_incident_tets_for_edge(loc0);
+
+    // High-valence gate. Splitting (v1,v2) leaves the endpoints' own incident-tet counts
+    // unchanged -- each keeps one child of every tet it was in -- and adds one to every
+    // vertex in the edge's link, since those sit in both children. So the gate applies to
+    // the link.
+    //
+    // A vertex past the threshold accepts one such split per pass and refuses the rest,
+    // which spreads the refinement instead of letting it pile onto the same vertex. Done
+    // here, before the face caching below, so a refusal is cheap.
+    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
+        std::vector<size_t> to_claim;
+        for (const Tuple& t : tets) {
+            const auto vs = oriented_tet_vertices(t);
+            for (int j = 0; j < 4; j++) {
+                const size_t vid = vs[j].vid(*this);
+                if (vid == v1_id || vid == v2_id) continue;
+                if (vid >= m_high_valence_claim_size) continue;
+                if (vertex_valence(vid) <= threshold) continue;
+                if (m_high_valence_claim[vid].load(std::memory_order_relaxed) != 0) {
+                    // Already spent this pass. Refuse rather than grow it further.
+                    m_high_valence_rejects.fetch_add(1, std::memory_order_relaxed);
+                    return false;
+                }
+                to_claim.push_back(vid);
+            }
+        }
+        // Claim only once the whole link is known to be free, so a refusal late in the
+        // loop does not burn the budget of a vertex found earlier.
+        for (const size_t vid : to_claim) {
+            m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+        }
+    }
+
     for (auto& t : tets) {
         auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
