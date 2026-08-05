@@ -3,6 +3,7 @@
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <algorithm>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/concurrent_map.hpp>
@@ -167,7 +168,7 @@ public:
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
-        auto n_tet = _tet_attribute.size();
+        const size_t n_tet = _tet_attribute.size();
         m_vertex_attribute.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
@@ -175,11 +176,22 @@ public:
         // new for edge
         // m_edge_attribute.resize(6 * n_tet);
 
-        for (auto i = 0; i < _vertex_attribute.size(); i++)
+        for (size_t i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
-        m_tet_attribute.m_attributes = std::vector<TetAttributes>(_tet_attribute.size());
-        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
-        for (auto i = 0; i < _tet_attribute.size(); i++)
+
+        // Keep whatever init() reserved. AttributeCollection::resize only ever grows, so the
+        // calls above cannot shrink a collection -- but assigning m_attributes directly does,
+        // and it used to drop the tet attributes to exactly n_tet. The attributes have to stay
+        // at least as large as the connectivity: an operation that creates a new element
+        // indexes them by its id, and a 5->6 swap creates one. That left m_tet_attribute one
+        // short of the tet the swap adds, and AttributeCollection::operator[] read past the end
+        // of it -- ASan reports a heap-buffer-overflow reached from swap_edge_56_after, and
+        // libstdc++ then aborts on the corrupted heap a few allocations later, while libc++
+        // carries on and the tests pass.
+        const size_t tcap = std::max(n_tet, m_tet_attribute.size());
+        m_tet_attribute.m_attributes = std::vector<TetAttributes>(tcap);
+        for (size_t i = 0; i < n_tet; i++) m_tet_attribute[i] = _tet_attribute[i];
+        for (size_t i = 0; i < n_tet; i++)
             m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
     }
 
