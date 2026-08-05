@@ -1,10 +1,13 @@
 
+#include "Quadrics.hpp"
 #include "TopoOffsetTetMesh.h"
 
+#include <wmtk/utils/AMIPS.h>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/solver.hpp>
-#include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/TetraQualityUtils.hpp>
+
+#include <set>
 
 namespace wmtk::components::topological_offset {
 
@@ -26,10 +29,61 @@ double TopoOffsetTetMesh::get_quality(const Tuple& t) const
 
 bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
-    return true;
+    // the input complex is the shape being offset -- it must stay fixed
+    const int label = m_vertex_attribute[t.vid(*this)].label;
+    return label == 0 || label == 2; // only move offset and interior vertices
 }
 
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
+{
+    if (!get_offset_surface_faces_for_vertex(t).empty()) {
+        return smooth_after_offset_surface(t);
+    }
+    return smooth_after_interior(t);
+}
+
+bool TopoOffsetTetMesh::is_offset_surface_face(const Tuple& f) const
+{
+    const bool t0_offset = m_tet_attribute[f.tid(*this)].label == 2;
+    const auto t1 = f.switch_tetrahedron(*this);
+    const bool t1_offset = t1.has_value() && m_tet_attribute[t1->tid(*this)].label == 2;
+    return t0_offset != t1_offset;
+}
+
+std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::get_offset_surface_faces_for_vertex(
+    const Tuple& t) const
+{
+    std::vector<Tuple> result;
+    std::set<size_t> seen_fids;
+
+    const size_t vid = t.vid(*this);
+    for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
+        const std::array<size_t, 4> tet_vids = oriented_tet_vids(tet);
+
+        // the 3 faces of the tet incident to vid are those obtained by omitting one of the
+        // *other* 3 vertices; omitting vid itself gives the one face that does not contain it
+        for (int skip = 0; skip < 4; ++skip) {
+            if (tet_vids[skip] == vid) continue;
+
+            std::array<size_t, 3> face_vids;
+            int k = 0;
+            for (int j = 0; j < 4; ++j) {
+                if (j != skip) face_vids[k++] = tet_vids[j];
+            }
+
+            const auto [face_tuple, unused_tid] = tuple_from_face(face_vids);
+            const size_t fid = face_tuple.fid(*this);
+            if (!seen_fids.insert(fid).second) continue;
+
+            if (is_offset_surface_face(face_tuple)) {
+                result.push_back(face_tuple);
+            }
+        }
+    }
+    return result;
+}
+
+bool TopoOffsetTetMesh::smooth_after_interior(const Tuple& t)
 {
     const size_t vid = t.vid(*this);
 
@@ -78,6 +132,64 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     }
 
     return max_after_quality <= max_quality;
+}
+
+bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
+{
+    const size_t vid = t.vid(*this);
+    const Vector3d p0 = m_vertex_attribute[vid].m_posf;
+
+    const std::vector<Tuple> offset_faces = get_offset_surface_faces_for_vertex(t);
+    assert(!offset_faces.empty());
+
+    // Laplacian smoothing, restricted to neighbors that are also on the offset surface --
+    // pulling in input-complex or interior neighbors would drag the surface off its shape.
+    Vector3d p_laplace = Vector3d::Zero();
+    {
+        int n_neighs = 0;
+        for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
+            if (get_offset_surface_faces_for_vertex(tuple_from_vertex(nb)).empty()) continue;
+            p_laplace += m_vertex_attribute[nb].m_posf;
+            ++n_neighs;
+        }
+        if (n_neighs == 0) return false;
+        p_laplace /= n_neighs;
+    }
+
+    // Quadric built from one target_distance-offset sample of the input complex per incident
+    // offset-surface face (the reference takes 4 weighted samples per face; this is a
+    // simplified first draft with a single centroid sample).
+    Quadrics q(0., 0., 0., 0.);
+    int n_samples = 0;
+    for (const Tuple& f : offset_faces) {
+        const std::array<Tuple, 3> face_verts = get_face_vertices(f);
+        const Vector3d p_a = m_vertex_attribute[face_verts[0].vid(*this)].m_posf;
+        const Vector3d p_b = m_vertex_attribute[face_verts[1].vid(*this)].m_posf;
+        const Vector3d p_c = m_vertex_attribute[face_verts[2].vid(*this)].m_posf;
+        const Vector3d centroid = (p_a + p_b + p_c) / 3.;
+        const double area = 0.5 * (p_b - p_a).cross(p_c - p_a).norm();
+
+        const Vector3d nearest = m_input_complex_bvh.nearest_point(centroid);
+        const Vector3d diff = centroid - nearest;
+        const double dist = diff.norm();
+        if (dist < 1e-12) continue; // degenerate: cannot recover a normal direction
+        const Vector3d normal = diff / dist;
+        const Vector3d target = nearest + m_params.target_distance * normal;
+
+        q += Quadrics(target, normal) * area;
+        ++n_samples;
+    }
+    if (n_samples == 0) return false;
+
+    const Vector3d p_optimal = q.solve(p_laplace);
+    const double w = 0.5; // blend toward the quadrics optimum, matching the reference
+    const Vector3d p_final = (1 - w) * p0 + w * p_optimal;
+
+    m_vertex_attribute[vid].m_posf = p_final;
+
+    // Inversion is caught by invariants(), called right after this by TetMesh::smooth_vertex.
+    // Unlike the reference, there is no bisection fallback toward p0 on rejection yet.
+    return true;
 }
 
 void TopoOffsetTetMesh::smooth_all_vertices(size_t n_iters)

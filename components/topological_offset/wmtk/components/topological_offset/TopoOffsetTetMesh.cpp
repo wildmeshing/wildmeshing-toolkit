@@ -619,11 +619,47 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
     }
 
+    // label all vertices between different tags as fixed
+    logger().info("\tFixing vertices between different tags...");
+    for (const Tuple& f : get_faces()) {
+        size_t f_id = f.fid(*this);
+        const auto f_opp_opt = f.switch_tetrahedron(*this);
+        if (!f_opp_opt) {
+            continue; // boundary face, skip
+        }
+        const Tuple& f_opp = f_opp_opt.value();
+
+        CellTag tags0 = m_tet_attribute[f.tid(*this)].tag;
+        CellTag tags1 = m_tet_attribute[f_opp.tid(*this)].tag;
+        if (tags0 == tags1) {
+            continue; // same tags, skip
+        }
+
+        auto vs = get_face_vids(f);
+        for (const size_t& vid : vs) {
+            if (m_vertex_attribute[vid].label == 0) {
+                m_vertex_attribute[vid].label = 3; // fixed vertex
+            }
+        }
+    }
+
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
     // just try smoothing for now
+    logger().info("\tSmoothing all vertices...");
     smooth_all_vertices();
 
     if (m_params.debug_output) { // intermediate output
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
+    for (const Tuple& v : get_vertices()) {
+        size_t v_id = v.vid(*this);
+        if (m_vertex_attribute[v_id].label == 3) {
+            m_vertex_attribute[v_id].label = 0; // reset fixed vertices to normal
+        }
     }
 }
 
@@ -1152,6 +1188,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
 
     // last matrix is offset
     std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tet_capacity(), 1));
+    VectorXd labels(vert_capacity());
+    labels.setZero();
 
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
@@ -1161,6 +1199,11 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
             tags[i](t_id, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
         }
         tags[m_tags_count](t_id, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
+    }
+
+    for (const Tuple& v : vs) {
+        size_t v_id = v.vid(*this);
+        labels[v_id] = m_vertex_attribute[v_id].label;
     }
 
     // set tet verts
@@ -1183,6 +1226,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
     writer->add_cell_field("offset_tag", tags[m_tags_count]);
+    writer->add_field("labels", labels);
     writer->write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // envelope
