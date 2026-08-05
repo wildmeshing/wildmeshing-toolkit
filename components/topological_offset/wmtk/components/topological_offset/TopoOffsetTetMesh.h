@@ -299,7 +299,7 @@ public:
      * @note skeleton: single-threaded, single pass (no repeated sweeps until convergence, no
      * priority queue -- just one pass over get_edges() in whatever order it returns)
      */
-    void collapse_all_edges(double min_edge_len_ratio = 0.25);
+    void collapse_all_edges();
 
     /**
      * @brief max angle (degrees, 0-90, orientation independent) allowed between an
@@ -322,6 +322,13 @@ public:
      * @brief max face_normal_deviation() over the offset-surface faces incident to vertex vid
      */
     double max_offset_surface_normal_deviation_at_vertex(size_t vid) const;
+
+    /**
+     * @brief true if edge e is incident to an offset-surface face (see
+     * is_offset_surface_face()), i.e. the edge itself runs along the offset surface rather
+     * than merely touching it at one endpoint
+     */
+    bool is_offset_surface_edge(const Tuple& e) const;
     //// collapse
 
     /**

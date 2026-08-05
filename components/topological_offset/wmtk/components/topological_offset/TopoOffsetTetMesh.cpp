@@ -760,7 +760,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
 
     // collapse
     logger().info("\tCollapsing short edges...");
-    collapse_all_edges(10);
+    for (size_t i = 0; i < 10; i++) {
+        collapse_all_edges();
+        if (m_params.debug_output) { // intermediate output
+            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        }
+    }
 
     if (m_params.debug_output) { // intermediate output
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
