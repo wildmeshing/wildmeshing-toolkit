@@ -300,6 +300,28 @@ public:
      * priority queue -- just one pass over get_edges() in whatever order it returns)
      */
     void collapse_all_edges(double min_edge_len_ratio = 0.25);
+
+    /**
+     * @brief max angle (degrees, 0-90, orientation independent) allowed between an
+     * offset-surface face's own normal and the input-complex normal it is supposed to
+     * approximate, checked by collapse_edge_before/after. See face_normal_deviation() and
+     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/NormalDeviationAfterInvariant.cpp
+     * and .../invariants/OffsetCollapseBeforeInvariant.cpp
+     */
+    double m_max_normal_deviation_deg = 60.0;
+
+    /**
+     * @brief angle (degrees, 0-90) between offset-surface face f's own normal and the
+     * "ideal" input-complex normal sampled at its centroid (same single-centroid-sample
+     * simplification as smooth_after_offset_surface()). Orientation independent, since
+     * get_face_vertices() gives no guarantee about which way a face is wound.
+     */
+    double face_normal_deviation(const Tuple& f) const;
+
+    /**
+     * @brief max face_normal_deviation() over the offset-surface faces incident to vertex vid
+     */
+    double max_offset_surface_normal_deviation_at_vertex(size_t vid) const;
     //// collapse
 
     /**
@@ -461,6 +483,11 @@ private:
         size_t v1_id; // removed by the collapse
         std::map<simplex::Edge, int> edge_labels;
         std::map<simplex::Face, int> face_labels;
+
+        // NormalDeviationAfterInvariant analogue: the worse of the two endpoints' offset
+        // surface deviation before the collapse, so collapse_edge_after() can tell whether a
+        // deviation over the threshold afterward is a regression or was already there
+        double nd_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<EdgeCollapseCache> edge_collapse_cache;
 
