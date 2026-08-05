@@ -25,7 +25,10 @@
       "log_file",
       "report",
       "num_threads",
-      "smoothing_iterations"
+      "smoothing_iterations",
+      "length_rel",
+      "length",
+      "stop_energy"
     ]
   },
   {
@@ -174,5 +177,23 @@
     "type": "int",
     "default": 3,
     "doc": "Number of smoothing passes run during offset optimization (only used if optimize is true)."
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Target edge length relative to the bounding box diagonal. Used to bound which edges edge collapse is allowed to touch (only edges shorter than 4/5 of this length are collapsed). Ignored if length >= 0."
+  },
+  {
+    "pointer": "/length",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Target edge length (absolute). If < 0, computed from length_rel."
+  },
+  {
+    "pointer": "/stop_energy",
+    "type": "float",
+    "default": 10.0,
+    "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
   }
 ]

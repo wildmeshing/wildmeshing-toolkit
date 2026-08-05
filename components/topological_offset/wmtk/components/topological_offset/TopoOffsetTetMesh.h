@@ -553,6 +553,11 @@ private:
         // surface deviation before the collapse, so collapse_edge_after() can tell whether a
         // deviation over the threshold afterward is a regression or was already there
         double nd_before = 0.;
+
+        // stop_energy: worst AMIPS quality among v1's and v2's incident tets before the
+        // collapse, so collapse_edge_after() only rejects a quality regression, not a
+        // collapse that leaves an already-bad region merely still bad
+        double quality_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<EdgeCollapseCache> edge_collapse_cache;
 
