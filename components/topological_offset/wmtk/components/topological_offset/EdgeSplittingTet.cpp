@@ -1,5 +1,9 @@
-#include <set>
 #include "TopoOffsetTetMesh.h"
+
+#include <set>
+#include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
 
 namespace wmtk::components::topological_offset {
 
@@ -129,21 +133,26 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
 
     size_t e_id = t.eid(*this);
 
+    const auto& VA = m_vertex_attribute;
+
     // vertices
     cache.v1_id = t.vid(*this);
     cache.v2_id = switch_vertex(t).vid(*this);
-    Vector3d p1 = m_vertex_attribute[cache.v1_id].m_posf;
-    Vector3d p2 = m_vertex_attribute[cache.v2_id].m_posf;
+
+    // if (VA[cache.v1_id].m_is_on_surface && VA[cache.v2_id].m_is_on_surface) {
+    //     // don't touch the input surface
+    //     return false;
+    // }
+
+    Vector3d p1 = VA[cache.v1_id].m_posf;
+    Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
     } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
-        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
-            (m_vertex_attribute[cache.v2_id].label != 0)) {
+        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label != 0)) {
             edge_split_binary_search(cache.v2_id, cache.v1_id, p_new);
-        } else if (
-            (m_vertex_attribute[cache.v1_id].label != 0) &&
-            (m_vertex_attribute[cache.v2_id].label == 0)) {
+        } else if ((VA[cache.v1_id].label != 0) && (VA[cache.v2_id].label == 0)) {
             edge_split_binary_search(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -160,12 +169,9 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         }
 
         // set split point
-        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
-            (m_vertex_attribute[cache.v2_id].label == 1)) {
+        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label == 1)) {
             p_new = ((p1 - p2) * (split_dist / edge_len)) + p2;
-        } else if (
-            (m_vertex_attribute[cache.v1_id].label == 1) &&
-            (m_vertex_attribute[cache.v2_id].label == 0)) {
+        } else if ((VA[cache.v1_id].label == 1) && (VA[cache.v2_id].label == 0)) {
             p_new = ((p2 - p1) * (split_dist / edge_len)) + p1;
         } else {
             log_and_throw_error(
@@ -174,12 +180,9 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
                 e_id);
         }
     } else if (m_edge_split_mode == EdgeSplitMode::LogRootFind) {
-        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
-            (m_vertex_attribute[cache.v2_id].label != 0)) {
+        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label != 0)) {
             edge_split_log_root_find(cache.v2_id, cache.v1_id, p_new);
-        } else if (
-            (m_vertex_attribute[cache.v1_id].label != 0) &&
-            (m_vertex_attribute[cache.v2_id].label == 0)) {
+        } else if ((VA[cache.v1_id].label != 0) && (VA[cache.v2_id].label == 0)) {
             edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -188,12 +191,9 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
                 e_id);
         }
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTracing) {
-        if ((m_vertex_attribute[cache.v1_id].label == 0) &&
-            (m_vertex_attribute[cache.v2_id].label != 0)) {
+        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label != 0)) {
             edge_split_sphere_tracing(cache.v2_id, cache.v1_id, p_new);
-        } else if (
-            (m_vertex_attribute[cache.v1_id].label != 0) &&
-            (m_vertex_attribute[cache.v2_id].label == 0)) {
+        } else if ((VA[cache.v1_id].label != 0) && (VA[cache.v2_id].label == 0)) {
             edge_split_sphere_tracing(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -582,6 +582,62 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
     }
 
     return true;
+}
+
+void TopoOffsetTetMesh::split_all_edges()
+{
+    // Midpoint mode has no label-based preconditions (unlike BinarySearch/Initial/etc., used
+    // only during marching_tets()), so it can be applied to any edge here.
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
+
+    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TopoOffsetTetMesh& m, const Tuple& e, auto& out) {
+            const size_t v0 = e.vid(m);
+            const size_t v1 = e.switch_vertex(m).vid(m);
+            const double len2 =
+                (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf).squaredNorm();
+            if (len2 > m.m_params.splitting_l2) {
+                out.emplace_back("edge_split", e);
+            }
+        });
+
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
+            std::vector<std::pair<std::string, Tuple>> op_tups;
+            for (const Tuple& t : newts) {
+                op_tups.emplace_back(op, t);
+            }
+            return op_tups;
+        };
+        // longest edges first: only edges above splitting_l2 (set in Parameters::init() from
+        // length/length_rel, matching SimWild) are eligible in the first place, so anything
+        // still queued below that got there via renewal from a previous split
+        executor.priority = [](const TopoOffsetTetMesh& m, wmtk::Op, const Tuple& t) {
+            const size_t v0 = t.vid(m);
+            const size_t v1 = t.switch_vertex(m).vid(m);
+            return (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf)
+                .squaredNorm();
+        };
+        executor.should_renew = [this](double priority_val) {
+            return priority_val > m_params.splitting_l2;
+        };
+        wmtk::run_localized_to_convergence(*this, executor, all_ops);
+    };
+
+    if (NUM_THREADS > 0) {
+        compute_vertex_partition();
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
+        executor.lock_vertices = [](TopoOffsetTetMesh& m, const Tuple& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
+        setup_and_execute(executor);
+    }
 }
 
 } // namespace wmtk::components::topological_offset

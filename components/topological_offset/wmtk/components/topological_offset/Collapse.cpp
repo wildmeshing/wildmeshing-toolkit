@@ -190,10 +190,24 @@ bool TopoOffsetTetMesh::offset_link_condition(const Tuple& edge) const
 
 bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
 {
+    auto& cache = edge_collapse_cache.local();
+    const auto& VA = m_vertex_attribute;
+
+    cache.changed_tids.clear();
+    cache.changed_energies.clear();
+
+    cache.edge_labels.clear();
+    cache.face_labels.clear();
+
     const size_t v1_id = t.vid(*this); // removed by the collapse
     const size_t v2_id = t.switch_vertex(*this).vid(*this); // survives, and keeps its position
 
-    if (m_vertex_attribute[v1_id].m_is_on_surface || m_vertex_attribute[v2_id].m_is_on_surface) {
+    cache.v1_id = v1_id;
+    cache.v2_id = v2_id;
+
+    cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
+
+    if (VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface) {
         // don't touch the input surface
         return false;
     }
@@ -207,7 +221,6 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         return false;
     }
 
-    const auto& VA = m_vertex_attribute;
 
     // length, similar to SimWild: only collapse edges shorter than the target-length-derived
     // cutoff (m_params.collapsing_l2, set in Parameters::init() from length/length_rel)
@@ -245,8 +258,6 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         return false;
     }
 
-    auto& cache = edge_collapse_cache.local();
-
     // NormalDeviationAfterInvariant analogue setup: remember how bad the offset surface
     // already was around this edge, so collapse_edge_after() only blocks a collapse that
     // makes a *good* patch worse, not one that was already over the threshold.
@@ -254,21 +265,40 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         max_offset_surface_normal_deviation_at_vertex(v1_id),
         max_offset_surface_normal_deviation_at_vertex(v2_id));
 
-    // stop_energy setup: worst AMIPS quality currently around either endpoint, so
-    // collapse_edge_after() can tell a quality regression from a collapse that merely leaves
-    // an already-bad region bad.
-    cache.quality_before = 0.;
-    for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
-        cache.quality_before =
-            std::max(cache.quality_before, m_tet_attribute[tet.tid(*this)].m_quality);
-    }
-    for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
-        cache.quality_before = std::max(cache.quality_before, m_tet_attribute[tid].m_quality);
+    const auto n1_locs = get_one_ring_tids_for_vertex(t);
+
+    cache.changed_tids.reserve(n1_locs.size());
+    cache.max_energy = 0;
+    for (const size_t& tid : n1_locs) {
+        const double q = m_tet_attribute.at(tid).m_quality;
+        cache.max_energy = std::max(cache.max_energy, q);
+        const auto vs = oriented_tet_vids(tid);
+        if (vs[0] != v2_id && vs[1] != v2_id && vs[2] != v2_id && vs[3] != v2_id) {
+            cache.changed_tids.emplace_back(tid);
+        }
     }
 
-    cache.v1_id = v1_id;
-    cache.edge_labels.clear();
-    cache.face_labels.clear();
+    // pre-compute after-collapse energies
+    cache.changed_energies.reserve(cache.changed_tids.size());
+    for (const size_t tid : cache.changed_tids) {
+        std::array<size_t, 4> vs = oriented_tet_vids(tid);
+        for (size_t i = 0; i < 4; ++i) {
+            if (vs[i] == v1_id) {
+                vs[i] = v2_id;
+                break;
+            }
+        }
+
+        if (is_inverted(vs)) {
+            return false;
+        }
+        double q = get_quality(vs);
+        if (q > cache.max_energy) {
+            return false;
+        }
+        cache.changed_energies.emplace_back(q);
+    }
+    assert(cache.changed_energies.size() == cache.changed_tids.size());
 
     // Snapshot edge/face labels around v1, keyed by vertex ids rather than eid()/fid(): those
     // are derived from whichever incident tet currently has the lowest id, and collapsing
@@ -388,20 +418,8 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         }
     }
 
-    // stop_energy: refresh quality for the survivor's (possibly remapped) one-ring tets --
-    // their vertex set may have changed even though their tid didn't, so the cached quality
-    // from before the collapse is no longer valid -- and reject only a regression: a region
-    // that was already on target (below stop_energy) must not be pushed back above it.
-    {
-        double quality_after = 0.;
-        for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
-            const double q = get_quality(tet);
-            m_tet_attribute[tet.tid(*this)].m_quality = q;
-            quality_after = std::max(quality_after, q);
-        }
-        if (cache.quality_before < m_params.stop_energy && quality_after >= m_params.stop_energy) {
-            return false;
-        }
+    for (int i = 0; i < cache.changed_tids.size(); i++) {
+        m_tet_attribute[cache.changed_tids[i]].m_quality = cache.changed_energies[i];
     }
 
     return true;

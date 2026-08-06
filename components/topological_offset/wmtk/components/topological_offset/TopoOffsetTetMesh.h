@@ -259,6 +259,8 @@ public:
     bool smooth_after(const Tuple& t) override;
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
     //// overriden splits/invariants
 
     /**
@@ -278,6 +280,16 @@ public:
      */
     double get_quality(const std::array<size_t, 4>& vids) const;
     double get_quality(const Tuple& t) const;
+
+    /**
+     * @brief true if the tet given by vids (or by tuple, via oriented_tet_vids()) is inverted,
+     * following SimWildMesh::is_inverted().
+     * @note skeleton: SimWild falls back to a rational orient3d when a vertex isn't rounded yet
+     * (m_is_rounded); this class has no rational position tracking, so it always uses the
+     * plain double predicate, same as invariants().
+     */
+    bool is_inverted(const std::array<size_t, 4>& vids) const;
+    bool is_inverted(const Tuple& t) const;
 
     /**
      * @brief run vertex smoothing over the whole mesh for n_iters passes
@@ -388,6 +400,33 @@ public:
      */
     bool offset_link_condition(const Tuple& edge) const;
     //// collapse
+
+    //// split (optimization-phase; separate from the marching-tets split machinery below)
+    /**
+     * @brief split edges longer than splitting_l2 (set in Parameters::init() from
+     * length/length_rel) once, over the whole mesh, longest first. Reuses the existing
+     * split_edge_before/after (EdgeSplitMode::Midpoint) already used by simplicial_embedding(),
+     * so label/tag inheritance for the new vertex and split simplices is unchanged from that
+     * path -- this just decides *which* edges to split and drives them through ExecutePass,
+     * mirroring collapse_all_edges()/smooth_all_vertices().
+     * @note skeleton: no quality- or feature-based gating beyond the length threshold.
+     */
+    void split_all_edges();
+    //// split
+
+    //// swap (2-3 / 3-2 edge-to-face flip only; no 4-4, 5-6, or face swap yet)
+    /**
+     * @brief swap_edge, restricted to edges whose 3 incident tets already share the same
+     * label and tag: the new tets/faces then unambiguously inherit that label/tag, and the
+     * offset/input region boundaries -- which live entirely in *which* tets carry which label
+     * -- cannot move, since a swap confined to a single-label neighborhood never changes any
+     * tet's label. Also stays away from the input and offset surfaces entirely (see
+     * m_is_on_surface / get_offset_surface_faces_for_vertex), and is only accepted if it
+     * strictly improves the worst AMIPS quality among the affected tets, matching
+     * SimWildMesh::swap_edge_before/after.
+     */
+    void swap_all_edges();
+    //// swap
 
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
@@ -546,6 +585,14 @@ private:
     struct EdgeCollapseCache
     {
         size_t v1_id; // removed by the collapse
+        size_t v2_id;
+        double max_energy;
+        double edge_length;
+        bool is_limit_length;
+
+        std::vector<size_t> changed_tids;
+        std::vector<double> changed_energies;
+
         std::map<simplex::Edge, int> edge_labels;
         std::map<simplex::Face, int> face_labels;
 
@@ -560,6 +607,24 @@ private:
         double quality_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<EdgeCollapseCache> edge_collapse_cache;
+
+    /**
+     * @brief snapshot for swap_edge, keyed by vertex ids for the same reason as
+     * EdgeCollapseCache: the 3 incident tets get replaced by 2 new ones, so eid()/fid() of the
+     * edges/faces that survive the swap can point at a different (unwritten) slot afterward.
+     * Unlike collapse, no vertex disappears here -- only the swapped edge itself and its 3
+     * incident faces vanish, and exactly one new face (the flipped-in triangle) appears -- so
+     * every other edge/face of the 3 old tets is cached and later restored verbatim.
+     */
+    struct SwapEdgeCache
+    {
+        int common_label = 0; // label shared by all 3 incident tets before the swap
+        CellTag common_tag; // tag shared by all 3 incident tets before the swap
+        double max_quality_before = 0.;
+        std::map<simplex::Edge, int> edge_labels; // all edges except the swapped edge itself
+        std::map<simplex::Face, int> face_labels; // all faces except the 3 that vanish with it
+    };
+    wmtk::threading::enumerable_thread_specific<SwapEdgeCache> swap_edge_cache;
 
 private: // helpers
     /**
