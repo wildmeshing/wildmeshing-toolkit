@@ -82,6 +82,7 @@ public:
     void reset()
     {
         m_is_surface_fs = false;
+        m_is_offset_fs = false;
         m_is_bbox_fs = -1;
     }
 
@@ -130,7 +131,9 @@ public: // mode for splitting in marching tets
         // only one of these is used, hard coded in execute_offset()
         BinarySearch = 2, // bisection root finding algo
         LogRootFind = 3, // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
-        SphereTracing = 4 // use sphere tracing to compute the zero of the distance field
+        SphereTracing = 4, // use sphere tracing to compute the zero of the distance field
+
+        Optimization = 5 // this is used in the optimization phase of the algorithm
     };
 
 public:
@@ -210,6 +213,7 @@ public:
     void init_surfaces_and_boundaries();
 
     bool is_edge_on_surface(const Tuple& loc);
+    bool is_edge_on_offset(const Tuple& loc);
 
     /**
      * @brief check that the ambient tag does not overlap with any other tags
@@ -545,6 +549,10 @@ private:
         VertexAttributes new_v;
 
         bool is_edge_on_surface = false;
+        bool is_edge_on_offset = false;
+        bool is_edge_open_boundary = false;
+
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
 
         // cache edge attributes
         EdgeAttributes split_e;
