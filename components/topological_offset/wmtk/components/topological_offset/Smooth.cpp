@@ -71,12 +71,14 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     return smooth_after_interior(t);
 }
 
-bool TopoOffsetTetMesh::is_offset_surface_face(const Tuple& f) const
+bool TopoOffsetTetMesh::is_offset_face(const Tuple& f) const
 {
-    const bool t0_offset = m_tet_attribute[f.tid(*this)].label == 2;
-    const auto t1 = f.switch_tetrahedron(*this);
-    const bool t1_offset = t1.has_value() && m_tet_attribute[t1->tid(*this)].label == 2;
-    return t0_offset != t1_offset;
+    return is_offset_face(f.fid(*this));
+}
+
+bool TopoOffsetTetMesh::is_offset_face(const size_t fid) const
+{
+    return m_face_attribute[fid].m_is_offset_fs;
 }
 
 std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::get_offset_surface_faces_for_vertex(
@@ -86,25 +88,31 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::get_offset_surface_face
     std::set<size_t> seen_fids;
 
     const size_t vid = t.vid(*this);
-    for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
-        const std::array<size_t, 4> tet_vids = oriented_tet_vids(tet);
+    for (const size_t tid : get_one_ring_tids_for_vertex(t)) {
+        const auto tet_vids = oriented_tet_vids(tid);
 
         // the 3 faces of the tet incident to vid are those obtained by omitting one of the
         // *other* 3 vertices; omitting vid itself gives the one face that does not contain it
         for (int skip = 0; skip < 4; ++skip) {
-            if (tet_vids[skip] == vid) continue;
+            if (tet_vids[skip] == vid) {
+                continue;
+            }
 
             std::array<size_t, 3> face_vids;
             int k = 0;
             for (int j = 0; j < 4; ++j) {
-                if (j != skip) face_vids[k++] = tet_vids[j];
+                if (j != skip) {
+                    face_vids[k++] = tet_vids[j];
+                }
             }
 
             const auto [face_tuple, unused_tid] = tuple_from_face(face_vids);
             const size_t fid = face_tuple.fid(*this);
-            if (!seen_fids.insert(fid).second) continue;
+            if (!seen_fids.insert(fid).second) {
+                continue;
+            }
 
-            if (is_offset_surface_face(face_tuple)) {
+            if (is_offset_face(face_tuple)) {
                 result.push_back(face_tuple);
             }
         }

@@ -139,10 +139,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     cache.v1_id = t.vid(*this);
     cache.v2_id = switch_vertex(t).vid(*this);
 
-    // if (VA[cache.v1_id].m_is_on_surface && VA[cache.v2_id].m_is_on_surface) {
-    //     // don't touch the input surface
-    //     return false;
-    // }
+    cache.is_edge_on_surface = is_edge_on_surface(t);
 
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
@@ -280,6 +277,10 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 
     // vertex attribute
     m_vertex_attribute[v_id] = cache.new_v;
+    m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
+    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+        m_vertex_attribute[v1_id].on_bbox_faces,
+        m_vertex_attribute[v2_id].on_bbox_faces);
 
     // split edges attribute
     size_t split_e1_id = tuple_from_edge({{v1_id, v_id}}).eid(*this);
