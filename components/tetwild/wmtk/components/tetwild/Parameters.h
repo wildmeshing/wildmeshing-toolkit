@@ -16,9 +16,10 @@ struct Parameters
     bool preserve_topology = false;
     std::string output_path;
 
-    // Allow the 3->2 edge swap to operate on surface edges (a surface diagonal
-    // flip) instead of forbidding them outright. Enabled by default; can be
-    // turned off to reproduce the old surface-frozen behavior for A/B testing.
+    // Allow the edge swaps (3->2, 4-4, 5-6) to operate on surface edges as a
+    // topology-preserving surface diagonal flip, instead of forbidding them
+    // outright. Enabled by default; can be turned off to reproduce the old
+    // surface-frozen behavior for A/B testing.
     bool allow_surface_swap = true;
     // Expensive debug check: verify the global surface topology signature
     // (connected components, Euler characteristic, boundary loops) is unchanged
@@ -80,6 +81,22 @@ struct Parameters
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
     double stop_energy = 10;
+
+    /**
+     * Incident-tet count above which a vertex is treated as pathological, or 0 to
+     * disable the gate.
+     *
+     * A well-shaped tet mesh has vertex valence around 20-30. When a split cascade
+     * concentrates on one vertex the valence runs away -- Thingi10K model 71263 reached
+     * 10896 -- and every operation touching it becomes O(valence): the one-ring walks in
+     * split_edge_after alone stall the pass. Above this threshold a vertex accepts only
+     * one valence-increasing split per split pass, which lets the refinement spread out
+     * instead of piling onto the same vertex.
+     *
+     * Splitting edge (a,b) leaves a's and b's own counts unchanged and adds one to every
+     * vertex in the edge's link, so the gate is applied to the link, not the endpoints.
+     */
+    int split_high_valence_threshold = 200;
 
     /**
      * Relative weight of the AMIPS (quality) term against the envelope (stay-on-surface)
