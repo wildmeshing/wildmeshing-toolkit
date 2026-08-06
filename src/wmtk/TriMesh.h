@@ -892,9 +892,22 @@ public:
      * Generate avertex Tuple using local vid and global fid
      * @param vid globale vid for the triangle
      * @note tuple refers to vid
+     * @return an invalid Tuple when vid is out of range, removed, or incident to no
+     *         triangle -- the same contract tuple_from_tri has always had.
+     *
+     * The guard is not decoration. Without it this read m_vertex_connectivity[vid][0]
+     * unconditionally, and VertexConnectivity::operator[] only asserts, so in Release a
+     * removed or isolated vertex indexed an EMPTY vector: nullptr[0], i.e. a segfault.
+     * for_each_vertex builds a Tuple for every slot in [0, vert_capacity()) and only then
+     * asks is_valid, so any caller that ran it on an unconsolidated mesh crashed -- 22 of
+     * 30 identical runs on Thingi-2D 193539, and 12 models into a 2333-model sweep.
      */
     Tuple tuple_from_vertex(size_t vid) const
     {
+        if (vid >= m_vertex_connectivity.size() || m_vertex_connectivity[vid].m_is_removed ||
+            m_vertex_connectivity[vid].m_conn_tris.empty()) {
+            return Tuple();
+        }
         auto fid = m_vertex_connectivity[vid][0];
         auto eid = m_tri_connectivity[fid].find((int)vid);
         return Tuple(vid, (eid + 1) % 3, fid, *this);
