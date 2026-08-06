@@ -253,70 +253,77 @@ void topological_offset(nlohmann::json json_params)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
-        // inversion check
-        auto tets = mesh.get_tets();
-        bool noninverted = mesh.invariants(tets);
-        if (!noninverted) {
-            std::string bad_tets_str = "";
-            for (const TetMesh::Tuple& t : tets) {
-                std::vector<TetMesh::Tuple> tvec;
-                tvec.push_back(t);
-                if (!mesh.invariants(tvec)) {
-                    bad_tets_str += (" " + std::to_string(t.tid(mesh)));
-                }
-            }
-            // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
-            log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
-        }
-
-        // offset region manifoldness check
-        if (check_manifoldness) {
-            if (mesh.offset_is_manifold()) {
-                logger().info("Offset region manifold check passed.");
-            } else {
-                // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
-                log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
-            }
-        }
-
-        // connected components check
-        size_t final_num_comps = mesh.flood_fill();
-        mesh.reset_connected_components();
-        if (final_num_comps != initial_num_comps) {
-            log_and_throw_error(
-                "# CONNECTED COMPONENTS MISMATCH: {} before, {} after",
-                initial_num_comps,
-                final_num_comps);
-        } else {
-            logger().info(
-                "connected components check passed. (# components={})",
-                initial_num_comps);
-        }
-
         // execute offset
         igl::Timer timer;
         timer.start();
         mesh.execute_offset(output_filename);
+
+        // checks
+        {
+            // inversion check
+            auto tets = mesh.get_tets();
+            bool noninverted = mesh.invariants(tets);
+            if (!noninverted) {
+                std::string bad_tets_str = "";
+                for (const TetMesh::Tuple& t : tets) {
+                    std::vector<TetMesh::Tuple> tvec;
+                    tvec.push_back(t);
+                    if (!mesh.invariants(tvec)) {
+                        bad_tets_str += (" " + std::to_string(t.tid(mesh)));
+                    }
+                }
+                // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
+                log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
+            }
+
+            // offset region manifoldness check
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed.");
+                } else {
+                    // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
+                    log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
+                }
+            }
+
+            // connected components check
+            size_t final_num_comps = mesh.flood_fill();
+            mesh.reset_connected_components();
+            if (final_num_comps != initial_num_comps) {
+                log_and_throw_error(
+                    "# CONNECTED COMPONENTS MISMATCH: {} before, {} after",
+                    initial_num_comps,
+                    final_num_comps);
+            } else {
+                logger().info(
+                    "connected components check passed. (# components={})",
+                    initial_num_comps);
+            }
+        }
+
         if (mesh.m_params.optimize) {
             mesh.optimize_offset(output_filename);
         }
+
         double time = timer.getElapsedTime();
         wmtk::logger().info("total time {}s", time);
 
         // inversion check
-        tets = mesh.get_tets();
-        noninverted = mesh.invariants(tets);
-        if (!noninverted) {
-            std::string bad_tets_str = "";
-            for (const TetMesh::Tuple& t : tets) {
-                std::vector<TetMesh::Tuple> tvec;
-                tvec.push_back(t);
-                if (!mesh.invariants(tvec)) {
-                    bad_tets_str += (" " + std::to_string(t.tid(mesh)));
+        {
+            auto tets = mesh.get_tets();
+            bool noninverted = mesh.invariants(tets);
+            if (!noninverted) {
+                std::string bad_tets_str = "";
+                for (const TetMesh::Tuple& t : tets) {
+                    std::vector<TetMesh::Tuple> tvec;
+                    tvec.push_back(t);
+                    if (!mesh.invariants(tvec)) {
+                        bad_tets_str += (" " + std::to_string(t.tid(mesh)));
+                    }
                 }
+                // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
+                log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
             }
-            // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
-            log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
         }
 
         // report
