@@ -31,10 +31,20 @@ public:
     Vector3d m_posf;
     int label = 0;
     size_t component_id = 0;
-    bool m_is_on_surface = false;
+    bool m_is_on_surface = false; // is this vertex on the input surface
+    bool m_is_on_offset = false; // is this vertex on the offset surface
     std::vector<int> on_bbox_faces;
     size_t partition_id =
         0; // for parallel execution, see TopoOffsetTetMesh::compute_vertex_partition()
+
+    /**
+     * The order of a vertex in a TetMesh is as follows:
+     * 0: vertex is not on the surface
+     * 1: vertex is on the surface
+     * 2: vertex is on the boundary of the surface or a non-manifold edge
+     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
+     */
+    size_t m_order = 0;
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
@@ -56,6 +66,7 @@ public:
      * Is this face a part of the input surfaces.
      */
     bool m_is_surface_fs = false;
+    bool m_is_offset_fs = false;
 
     /**
      * Keep track which bbox side the face is on
@@ -77,6 +88,7 @@ public:
     void merge(const FaceAttributes& attr)
     {
         m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
+        m_is_offset_fs = m_is_offset_fs || attr.m_is_offset_fs;
         if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
     }
 };
@@ -171,6 +183,9 @@ public:
         p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
 
+        m_collapse_check_link_condition = false;
+        m_collapse_check_manifold = false;
+
         optimization::deactivate_opt_logger();
     }
 
@@ -193,6 +208,8 @@ public:
         const std::vector<std::string>& tag_names);
 
     void init_surfaces_and_boundaries();
+
+    bool is_edge_on_surface(const Tuple& loc);
 
     /**
      * @brief check that the ambient tag does not overlap with any other tags
@@ -304,10 +321,11 @@ public:
      * @brief true if face f has exactly one incident tet labelled 2 (offset), i.e. it lies on
      * the boundary between the offset region and the rest of the mesh
      */
-    bool is_offset_surface_face(const Tuple& f) const;
+    bool is_offset_face(const Tuple& f) const;
+    bool is_offset_face(const size_t fid) const;
 
     /**
-     * @brief offset-surface faces (see is_offset_surface_face()) incident to vertex t
+     * @brief offset-surface faces (see is_offset_face()) incident to vertex t
      */
     std::vector<Tuple> get_offset_surface_faces_for_vertex(const Tuple& t) const;
 
@@ -526,6 +544,8 @@ private:
         size_t v2_id;
         VertexAttributes new_v;
 
+        bool is_edge_on_surface = false;
+
         // cache edge attributes
         EdgeAttributes split_e;
         std::map<size_t, EdgeAttributes> internal_e;
@@ -590,21 +610,20 @@ private:
         double edge_length;
         bool is_limit_length;
 
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        // all faces incident to the delete vertex (v1) that are on the tracked surface
+        std::vector<std::array<size_t, 3>> surface_faces;
+        // all faces incident to the delete vertex (v1) that are on the tracked surface
+        std::vector<std::array<size_t, 3>> offset_faces;
+        // all edges incident to the deleted vertex(v1) that are on the open boundary
+        std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
-
-        std::map<simplex::Edge, int> edge_labels;
-        std::map<simplex::Face, int> face_labels;
 
         // NormalDeviationAfterInvariant analogue: the worse of the two endpoints' offset
         // surface deviation before the collapse, so collapse_edge_after() can tell whether a
         // deviation over the threshold afterward is a regression or was already there
         double nd_before = 0.;
-
-        // stop_energy: worst AMIPS quality among v1's and v2's incident tets before the
-        // collapse, so collapse_edge_after() only rejects a quality regression, not a
-        // collapse that leaves an already-bad region merely still bad
-        double quality_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<EdgeCollapseCache> edge_collapse_cache;
 
@@ -625,6 +644,22 @@ private:
         std::map<simplex::Face, int> face_labels; // all faces except the 3 that vanish with it
     };
     wmtk::threading::enumerable_thread_specific<SwapEdgeCache> swap_edge_cache;
+
+public:
+    // substructure functions
+
+    bool is_order_2_edge(const Tuple& e) const;
+    bool is_order_2_edge(const std::array<size_t, 2>& e) const;
+
+    bool vertex_is_on_surface(const size_t vid) const override;
+
+    bool face_is_on_surface(const size_t fid) const override;
+
+    size_t get_order_of_vertex(const size_t vid) const override;
+    /**
+     * @brief Compute the vertex order for every vertex.
+     */
+    void init_vertex_order();
 
 private: // helpers
     /**
