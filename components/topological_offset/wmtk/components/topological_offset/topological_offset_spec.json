@@ -26,9 +26,11 @@
       "report",
       "num_threads",
       "smoothing_iterations",
+      "optimization_iterations",
       "length_rel",
       "length",
-      "stop_energy"
+      "stop_energy",
+      "max_normal_deviation_deg"
     ]
   },
   {
@@ -195,5 +197,17 @@
     "type": "float",
     "default": 10.0,
     "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
+  },
+  {
+    "pointer": "/optimization_iterations",
+    "type": "int",
+    "default": 3,
+    "doc": "Number of split/collapse/swap/smooth passes run during offset optimization (only used if optimize is true)."
+  },
+  {
+    "pointer": "/max_normal_deviation_deg",
+    "type": "float",
+    "default": 15.0,
+    "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
   }
 ]
