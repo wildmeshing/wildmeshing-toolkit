@@ -188,39 +188,31 @@ bool TopoOffsetTetMesh::offset_link_condition(const Tuple& edge) const
            is_exact_intersection(f_lk0, f_lk1, f_lk01);
 }
 
-bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
+bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
 {
     auto& cache = edge_collapse_cache.local();
     const auto& VA = m_vertex_attribute;
 
+    cache.changed_faces.clear();
     cache.changed_tids.clear();
     cache.changed_energies.clear();
+    cache.surface_faces.clear();
+    cache.offset_faces.clear();
+    cache.boundary_edges.clear();
 
-    cache.edge_labels.clear();
-    cache.face_labels.clear();
-
-    const size_t v1_id = t.vid(*this); // removed by the collapse
-    const size_t v2_id = t.switch_vertex(*this).vid(*this); // survives, and keeps its position
+    const size_t v1_id = loc.vid(*this); // removed by the collapse
+    Tuple loc1 = loc.switch_vertex(*this);
+    const size_t v2_id = loc1.vid(*this); // survives, and keeps its position
 
     cache.v1_id = v1_id;
     cache.v2_id = v2_id;
 
     cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
 
-    if (VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface) {
-        // don't touch the input surface
-        return false;
-    }
-
-    if (!get_offset_surface_faces_for_vertex(t).empty() &&
-        get_offset_surface_faces_for_vertex(t.switch_vertex(*this)).empty()) {
-        // never remove a vertex that sits on the offset surface -- v2 keeps its own, different
-        // position, so collapsing v1 away would move/erase this point of the offset surface.
-        // Collapsing the *other* direction (v2 on the surface, v1 interior) is unaffected: v2
-        // never moves either way, so nothing about the surface changes there.
-        return false;
-    }
-
+    // if (VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface) {
+    //     // don't touch the input surface
+    //     return false;
+    // }
 
     // length, similar to SimWild: only collapse edges shorter than the target-length-derived
     // cutoff (m_params.collapsing_l2, set in Parameters::init() from length/length_rel)
@@ -241,20 +233,32 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
             }
     }
 
-    // link condition restricted to the offset region (label 2): rejects collapses that would
-    // pinch or split the offset surface's own boundary, which the whole-mesh link condition
-    // inside collapse_edge_conn() cannot catch (there is generally enough surrounding label-0
-    // material to keep the *whole* tet complex manifold even when the label-2 sub-complex's
-    // boundary would not be).
-    if (!offset_link_condition(t)) {
-        return false;
+    // surface
+    if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
+        if (!VA[v2_id].m_is_on_surface) {
+            // do not collapse away from surface
+            return false;
+        }
+    }
+    if (cache.edge_length > 0 && VA[v1_id].m_is_on_offset) {
+        if (!VA[v2_id].m_is_on_offset) {
+            // do not collapse away from offset
+            return false;
+        }
+    }
+
+    // open boundary
+    if (cache.edge_length > 0 && VA[v1_id].m_order == 2) {
+        if (VA[v2_id].m_order < 2) {
+            return false;
+        }
     }
 
     // OffsetCollapseBeforeInvariant analogue: don't collapse if the offset-target normal field
     // sampled around the survivor disagrees with itself (relative to the collapse direction)
     // by more than the threshold -- that disagreement is the signature of a feature edge
     // nearby, and collapsing across it would flatten/cut through the feature.
-    if (collapse_normal_deviation(t, v1_id) >= m_max_normal_deviation_deg) {
+    if (collapse_normal_deviation(loc, v1_id) >= m_max_normal_deviation_deg) {
         return false;
     }
 
@@ -265,7 +269,7 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         max_offset_surface_normal_deviation_at_vertex(v1_id),
         max_offset_surface_normal_deviation_at_vertex(v2_id));
 
-    const auto n1_locs = get_one_ring_tids_for_vertex(t);
+    const auto n1_locs = get_one_ring_tids_for_vertex(loc);
 
     cache.changed_tids.reserve(n1_locs.size());
     cache.max_energy = 0;
@@ -300,126 +304,173 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     }
     assert(cache.changed_energies.size() == cache.changed_tids.size());
 
-    // Snapshot edge/face labels around v1, keyed by vertex ids rather than eid()/fid(): those
-    // are derived from whichever incident tet currently has the lowest id, and collapsing
-    // removes the tets that touched the collapsed edge, which can hand that "lowest id" role
-    // to a different surviving tet whose slot in m_edge_attribute/m_face_attribute was never
-    // written for this particular edge/face. Restoring by vertex-id key in
-    // collapse_edge_after() below fixes that back up.
-    //
-    // Edges/faces that touch v1 are additionally dropped when their tet is a "wing" tet (one
-    // that also contains v2): those tets are removed by the collapse entirely, so a v1-w
-    // edge/face coming only from a wing tet has no valid v2-w counterpart to reparent onto --
-    // it just vanishes with the tet. Skipping them here keeps collapse_edge_after() from
-    // reparenting them onto the *different*, already-correct edge/face that happens to share
-    // the same vertex set (the wing tet's face opposite v1, for instance, is exactly {v2, w0,
-    // w1} and is cached separately below since it does not touch v1).
-    for (const Tuple& tet : get_one_ring_tets_for_vertex(t)) {
-        const size_t tid = tet.tid(*this);
-        const std::array<size_t, 4> tet_vids = oriented_tet_vids(tid);
-        const bool is_wing_tet =
-            std::find(tet_vids.begin(), tet_vids.end(), v2_id) != tet_vids.end();
+    // if (m_params.perform_sanity_checks) {
+    //     if (!link_condition(loc)) {
+    //         log_and_throw_error("link condition failed for edge ({}, {})", v1_id, v2_id);
+    //     }
+    // }
 
-        for (int i = 0; i < 6; ++i) {
-            const Tuple e = tuple_from_edge(tid, i);
-            const size_t ev0 = e.vid(*this);
-            const size_t ev1 = e.switch_vertex(*this).vid(*this);
-            if (is_wing_tet && (ev0 == v1_id || ev1 == v1_id)) continue;
-            cache.edge_labels[simplex::Edge(ev0, ev1)] = m_edge_attribute[e.eid(*this)].label;
+    const auto n12_locs = get_incident_tids_for_edge(loc);
+    for (const size_t& tid : n12_locs) {
+        auto vs = oriented_tet_vids(tid);
+        std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
+        int cnt = 1;
+        // get the two vertices that are not v1/v2, i.e., the edge-link vertices.
+        for (int j = 0; j < 4; j++) {
+            if (vs[j] != v1_id && vs[j] != v2_id) {
+                f_vids[cnt] = vs[j];
+                cnt++;
+            }
         }
-        for (int i = 0; i < 4; ++i) {
-            const Tuple f = tuple_from_face(tid, i);
-            const std::array<Tuple, 3> fv = get_face_vertices(f);
-            const size_t fv0 = fv[0].vid(*this);
-            const size_t fv1 = fv[1].vid(*this);
-            const size_t fv2 = fv[2].vid(*this);
-            if (is_wing_tet && (fv0 == v1_id || fv1 == v1_id || fv2 == v1_id)) continue;
-            cache.face_labels[simplex::Face(fv0, fv1, fv2)] = m_face_attribute[f.fid(*this)].label;
+        auto [_1, global_fid1] = tuple_from_face(f_vids);
+        auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
+        auto f_attr = m_face_attribute.at(global_fid1);
+        f_attr.merge(m_face_attribute.at(global_fid2));
+        cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
+    }
+
+    if (VA[v1_id].m_is_on_surface) {
+        simplex::SimplexCollection fs = get_surface_faces_for_vertex(v1_id);
+
+        cache.surface_faces.reserve(fs.faces().size());
+        cache.offset_faces.reserve(fs.faces().size());
+        for (auto& f : fs.faces()) {
+            const simplex::Edge e_opp = f.opposite_edge(v1_id);
+            const size_t e0 = e_opp.vertices()[0];
+            const size_t e1 = e_opp.vertices()[1];
+            if (e0 == v2_id || e1 == v2_id) {
+                continue;
+            }
+            const auto [f_tuple, fid] = tuple_from_face(f.vertices());
+            if (m_face_attribute.at(fid).m_is_offset_fs) {
+                cache.offset_faces.push_back({{v2_id, e0, e1}});
+            } else if (m_face_attribute.at(fid).m_is_surface_fs) {
+                cache.surface_faces.push_back({{v2_id, e0, e1}});
+            } else {
+                log_and_throw_error("Surface face {} is neither offset nor surface", fid);
+            }
+            // cache.surface_faces.push_back({{v2_id, e0, e1}});
+        }
+
+        std::vector<std::array<size_t, 2>> bs;
+        // iterate through all faces inicdent to v1
+        for (const size_t& tid : n1_locs) {
+            const auto vs = oriented_tet_vids(tid);
+
+            int j_v1 = -1;
+            for (int j = 0; j < 4; j++) {
+                const size_t vid = vs[j];
+                if (vid == v1_id) {
+                    j_v1 = j;
+                }
+            }
+
+            for (int k = 0; k < 3; k++) {
+                const size_t va = vs[(j_v1 + 1 + k) % 4];
+                const size_t vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
+                if ((!VA[va].m_is_on_surface || !VA[vb].m_is_on_surface)) {
+                    continue;
+                }
+                const auto [f_tuple, fid] = tuple_from_face({{v1_id, va, vb}});
+                if (!m_face_attribute.at(fid).m_is_surface_fs) {
+                    // check if this face is actually on the surface
+                    continue;
+                }
+                if (va != v2_id) { // ignore collapsing edge (v1,v2)
+                    std::array<size_t, 2> ba = {{v1_id, va}};
+                    if (is_order_2_edge(ba)) {
+                        ba[0] = v2_id; // replace v1 with v2 for check in `after` function
+                        std::sort(ba.begin(), ba.end());
+                        bs.push_back(ba);
+                    }
+                }
+                if (vb != v2_id) { // ignore collapsing edge (v1,v2)
+                    std::array<size_t, 2> bb = {{v1_id, vb}};
+                    if (is_order_2_edge(bb)) {
+                        bb[0] = v2_id; // replace v1 with v2 for check in `after` function
+                        std::sort(bb.begin(), bb.end());
+                        bs.push_back(bb);
+                    }
+                }
+            }
+        }
+        wmtk::vector_unique(bs);
+        cache.boundary_edges = bs;
+    }
+
+    if (VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
+        if (!substructure_link_condition(loc)) {
+            return false;
         }
     }
 
     return true;
 }
 
-bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
+bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& loc)
 {
+    auto& VA = m_vertex_attribute;
     auto& cache = edge_collapse_cache.local();
     const size_t v1_id = cache.v1_id;
-    const size_t v2_id = t.vid(*this); // survivor
+    const size_t v2_id = cache.v2_id;
 
-    // Pass 1: edges/faces that never touched v1 -- restore directly. This must run before
-    // pass 2 below, since pass 2 only fills in slots pass 1 left untouched.
-    for (const auto& [edge, label] : cache.edge_labels) {
-        if (edge.vertices()[0] == v1_id || edge.vertices()[1] == v1_id) {
-            continue; // handled in pass 2
-        }
-        const Tuple e = tuple_from_edge({{edge.vertices()[0], edge.vertices()[1]}});
-        m_edge_attribute[e.eid(*this)].label = label;
-    }
-    for (const auto& [face, label] : cache.face_labels) {
-        const auto& fv = face.vertices();
-        if (fv[0] == v1_id || fv[1] == v1_id || fv[2] == v1_id) {
-            continue; // handled in pass 2
-        }
-        const auto [face_tuple, global_fid] = tuple_from_face({{fv[0], fv[1], fv[2]}});
-        m_face_attribute[global_fid].label = label;
+    assert(v2_id == loc.vid(*this));
+
+    if (!TetMesh::collapse_edge_after(loc)) {
+        return false;
     }
 
-    // Pass 2: edges/faces that had v1 as a corner (and, per the wing-tet filtering in
-    // collapse_edge_before, are guaranteed to have a valid reparented counterpart) now live at
-    // v2 instead. Their eid()/fid() slot was never written for this identity before, so
-    // without this it silently reads back whatever default (label 0) was already there,
-    // breaking anything that trusts edge/face labels near the collapse -- e.g. flood_fill()'s
-    // connectivity graph, which only follows edges with label != 0.
-    //
-    // Only fill in slots pass 1 left at the default: v1 and v2 could already have shared a
-    // vertex before the collapse (e.g. edge (v2, w) pre-existing alongside (v1, w)), in which
-    // case pass 1 already wrote the correct, independent value for that slot and it must win.
-    for (const auto& [edge, label] : cache.edge_labels) {
-        const size_t a = edge.vertices()[0];
-        const size_t b = edge.vertices()[1];
-        if (a != v1_id && b != v1_id) continue; // handled in pass 1
-        const size_t other = (a == v1_id) ? b : a;
-        if (other == v2_id) continue; // the collapsed edge itself -- gone, not reparented
-
-        const Tuple e = tuple_from_edge({{v2_id, other}});
-        EdgeAttributes& ea = m_edge_attribute[e.eid(*this)];
-        if (ea.label == 0) ea.label = label;
-    }
-    for (const auto& [face, label] : cache.face_labels) {
-        const auto& fv = face.vertices();
-        std::array<size_t, 2> others;
-        int k = 0;
-        bool touches_v1 = false;
-        bool touches_v2 = false;
-        for (const size_t v : fv) {
-            if (v == v1_id) {
-                touches_v1 = true;
-            } else {
-                if (v == v2_id) touches_v2 = true;
-                others[k++] = v;
-            }
-        }
-        if (!touches_v1) continue; // handled in pass 1
-        if (touches_v2) continue; // also had v2 as a corner -- gone, not reparented
-
-        const auto [face_tuple, global_fid] = tuple_from_face({{v2_id, others[0], others[1]}});
-        FaceAttributes& fa = m_face_attribute[global_fid];
-        if (fa.label == 0) fa.label = label;
-    }
+    // open boundary - must be set before checking for open boundary
+    VA[v2_id].m_order = std::max(VA.at(v1_id).m_order, VA.at(v2_id).m_order);
 
     // NormalDeviationAfterInvariant analogue: only reject a move that degrades an
     // already-good offset surface patch -- if it was already over the threshold before, don't
     // block a collapse from fixing (or merely not fixing) it.
     if (cache.nd_before < m_max_normal_deviation_deg) {
-        const double nd_after = max_offset_surface_normal_deviation_at_vertex(t.vid(*this));
+        const double nd_after = max_offset_surface_normal_deviation_at_vertex(loc.vid(*this));
         if (nd_after >= m_max_normal_deviation_deg) {
             return false;
         }
     }
 
+    // surface
+    // and order 2 edges
+    if (cache.edge_length > 0) {
+        for (auto& vids : cache.surface_faces) {
+            // surface envelope
+            bool is_out = m_envelope->is_outside(
+                {{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf, VA.at(vids[2]).m_posf}});
+            if (is_out) {
+                return false;
+            }
+        }
+        // for (const auto& vids : cache.boundary_edges) {
+        //     std::array<Vector3d, 2> pts{{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf}};
+        //     if (m_order_2_edge_envelope->is_outside(pts)) {
+        //         return false;
+        //     }
+        // }
+    }
+
+    //// update attrs
+    // tet attr
     for (int i = 0; i < cache.changed_tids.size(); i++) {
         m_tet_attribute[cache.changed_tids[i]].m_quality = cache.changed_energies[i];
+    }
+    // vertex attr
+    VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
+
+    // no need to update on_bbox_faces
+    // face attr
+    for (auto& info : cache.changed_faces) {
+        auto& f_attr = info.first;
+        auto& old_vids = info.second;
+        //
+        auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+        if (global_fid == -1) {
+            return false;
+        }
+        m_face_attribute[global_fid] = f_attr;
     }
 
     return true;

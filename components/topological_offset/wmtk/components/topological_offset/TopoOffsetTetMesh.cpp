@@ -193,6 +193,33 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 }
 
+bool TopoOffsetTetMesh::is_edge_on_surface(const Tuple& loc)
+{
+    size_t v1_id = loc.vid(*this);
+    auto loc1 = loc.switch_vertex(*this);
+    size_t v2_id = loc1.vid(*this);
+    if (!m_vertex_attribute[v1_id].m_is_on_surface || !m_vertex_attribute[v2_id].m_is_on_surface)
+        return false;
+
+    auto tets = get_incident_tets_for_edge(loc);
+    std::vector<size_t> n_vids;
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id)
+                n_vids.push_back(vs[j].vid(*this));
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    for (size_t vid : n_vids) {
+        auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (m_face_attribute[fid].m_is_surface_fs) return true;
+    }
+
+    return false;
+}
+
 
 bool TopoOffsetTetMesh::ambient_assert()
 {
@@ -641,6 +668,47 @@ size_t TopoOffsetTetMesh::flood_fill()
     return current_id;
 }
 
+bool TopoOffsetTetMesh::is_order_2_edge(const Tuple& e) const
+{
+    size_t v1 = e.vid(*this);
+    size_t v2 = e.switch_vertex(*this).vid(*this);
+    return is_order_2_edge({{v1, v2}});
+}
+
+bool TopoOffsetTetMesh::is_order_2_edge(const std::array<size_t, 2>& e) const
+{
+    return get_order_of_edge(e) == 2;
+}
+
+bool TopoOffsetTetMesh::vertex_is_on_surface(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_is_on_surface || m_vertex_attribute.at(vid).m_is_on_offset;
+}
+
+bool TopoOffsetTetMesh::face_is_on_surface(const size_t fid) const
+{
+    return m_face_attribute.at(fid).m_is_surface_fs || m_face_attribute.at(fid).m_is_offset_fs;
+}
+
+size_t TopoOffsetTetMesh::get_order_of_vertex(const size_t vid) const
+{
+    return m_vertex_attribute.at(vid).m_order;
+}
+
+void TopoOffsetTetMesh::init_vertex_order()
+{
+    std::array<size_t, 4> count{{0, 0, 0, 0}};
+
+    for (const Tuple& t : get_vertices()) {
+        const size_t vid = t.vid(*this);
+        const size_t order = compute_vertex_order(vid);
+        m_vertex_attribute[vid].m_order = order;
+        count[order]++;
+    }
+
+    logger().info("Vertex order count (0,1,2,3): {}", count);
+}
+
 void TopoOffsetTetMesh::compute_vertex_partition()
 {
     if (NUM_THREADS == 0) {
@@ -740,74 +808,72 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     }
 
     // label all vertices between different tags as fixed
-    logger().info("\tFixing vertices between different tags...");
+    logger().info("\tLabel offset faces...");
     for (const Tuple& f : get_faces()) {
-        const auto f_opp_opt = f.switch_tetrahedron(*this);
-        if (!f_opp_opt) {
-            continue; // boundary face, skip
+        const size_t fid = f.fid(*this);
+        if (m_face_attribute[fid].label != 2) {
+            continue; // face not on offset, skip
         }
-        const Tuple& f_opp = f_opp_opt.value();
-
-        CellTag tags0 = m_tet_attribute[f.tid(*this)].tag;
-        CellTag tags1 = m_tet_attribute[f_opp.tid(*this)].tag;
-        if (tags0 == tags1) {
-            continue; // same tags, skip
+        const auto f_opp = f.switch_tetrahedron(*this);
+        if (!f_opp) {
+            log_and_throw_error("Offset face {} has no opposite tet.", fid);
+        }
+        if (m_tet_attribute[f.tid(*this)].label ==
+            m_tet_attribute[f_opp.value().tid(*this)].label) {
+            continue; // face not between different labels, skip
         }
 
-        size_t fid = f.fid(*this);
-
-        if (m_face_attribute[fid].label == 1) {
-            continue; // face is in input complex, skip
-        }
+        // label face and vertices as on offset
+        m_face_attribute[fid].m_is_offset_fs = true;
 
         auto vs = get_face_vids(f);
         for (const size_t& vid : vs) {
-            if (m_vertex_attribute[vid].label == 0) {
-                m_vertex_attribute[vid].label = 3; // fixed vertex
-            }
+            m_vertex_attribute[vid].m_is_on_offset = true;
         }
     }
 
+    init_vertex_order();
+
+    /**
+     * All label attributes are ignored from here on out. All relevant information is stored in tags
+     * and in the "on_surface" and "on_offset" attributes.
+     */
+
     if (m_params.debug_output) { // intermediate output
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
+    for (size_t i = 0; i < 3; ++i) {
+        // // split
+        // logger().info("\tSplitting long edges...");
+        // split_all_edges();
+        // if (m_params.debug_output) { // intermediate output
+        //     write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        // }
 
-    // split
-    logger().info("\tSplitting long edges...");
-    split_all_edges();
-    if (m_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    }
-
-    // collapse
-    logger().info("\tCollapsing short edges...");
-    collapse_all_edges();
-    if (m_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    }
-
-    // swap
-    logger().info("\tSwapping edges...");
-    swap_all_edges();
-    if (m_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    }
-
-    // smoothing
-    logger().info("\tSmoothing all vertices...");
-    for (int i = 0; i < m_params.smoothing_iterations; i++) {
-        smooth_all_vertices();
+        // collapse
+        logger().info("\tCollapsing short edges...");
+        collapse_all_edges();
         if (m_params.debug_output) { // intermediate output
             write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
         }
-    }
 
-    for (const Tuple& v : get_vertices()) {
-        size_t v_id = v.vid(*this);
-        if (m_vertex_attribute[v_id].label == 3) {
-            m_vertex_attribute[v_id].label = 0; // reset fixed vertices to normal
-        }
+        // // swap
+        // logger().info("\tSwapping edges...");
+        // swap_all_edges();
+        // if (m_params.debug_output) { // intermediate output
+        //     write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        // }
+
+        // // smoothing
+        // logger().info("\tSmoothing all vertices...");
+        // for (int j = 0; j < m_params.smoothing_iterations; j++) {
+        //     smooth_all_vertices();
+        //     if (m_params.debug_output) { // intermediate output
+        //         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        //     }
+        // }
+        return;
     }
 }
 
@@ -1326,20 +1392,36 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     consolidate_mesh();
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
-    const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+    const auto faces_in = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+    const auto faces_off = get_faces_by_condition([](auto& f) { return f.m_is_offset_fs; });
+    std::vector<simplex::Edge> edges;
+    for (const Tuple& t : get_edges()) {
+        simplex::Edge e = simplex_from_edge(t);
+        if (is_order_2_edge(e.vertices())) {
+            edges.push_back(e);
+        }
+    }
 
     MatrixXd V(vert_capacity(), 3);
     MatrixXi T(tet_capacity(), 4);
-    MatrixXi F(faces.size(), 3);
+    MatrixXi F_in(faces_in.size(), 3);
+    MatrixXi F_off(faces_off.size(), 3);
+    MatrixXi E(edges.size(), 2);
 
     V.setZero();
     T.setZero();
-    F.setZero();
+    F_in.setZero();
+    F_off.setZero();
+    E.setZero();
 
     // last matrix is offset
     std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tet_capacity(), 1));
     VectorXd labels(vert_capacity());
     labels.setZero();
+    VectorXd v_order(vert_capacity());
+    v_order.setZero();
+    VectorXd v_id(vert_capacity());
+    v_id.setZero();
 
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
@@ -1351,15 +1433,28 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         tags[m_tags_count](t_id, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
     }
 
-    for (size_t i = 0; i < faces.size(); ++i) {
+    for (size_t i = 0; i < faces_in.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
-            F(i, j) = faces[i][j];
+            F_in(i, j) = faces_in[i][j];
         }
     }
 
+    for (size_t i = 0; i < faces_off.size(); ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            F_off(i, j) = faces_off[i][j];
+        }
+    }
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+        E(i, 0) = edges[i].vertices()[0];
+        E(i, 1) = edges[i].vertices()[1];
+    }
+
     for (const Tuple& v : vs) {
-        size_t v_id = v.vid(*this);
-        labels[v_id] = m_vertex_attribute[v_id].label;
+        size_t vid = v.vid(*this);
+        labels[vid] = m_vertex_attribute[vid].label;
+        v_order[vid] = m_vertex_attribute[vid].m_order;
+        v_id[vid] = vid;
     }
 
     // set tet verts
@@ -1382,14 +1477,37 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     }
     writer.add_cell_field("offset_tag", tags[m_tags_count]);
     writer.add_field("labels", labels);
+    writer.add_field("order", v_order);
+    writer.add_field("vid", v_id);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
     const std::string surf_out_path = path + "_surf.vtu";
     {
         paraviewo::VTUWriter surf_writer;
+        surf_writer.add_field("order", v_order);
+        surf_writer.add_field("vid", v_id);
         logger().info("Write {}", surf_out_path);
-        surf_writer.write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
+        surf_writer.write_mesh(surf_out_path, V, F_in, paraviewo::CellType::Triangle);
+    }
+
+    // offset faces
+    const std::string off_out_path = path + "_off.vtu";
+    {
+        paraviewo::VTUWriter off_writer;
+        off_writer.add_field("order", v_order);
+        off_writer.add_field("vid", v_id);
+        logger().info("Write {}", off_out_path);
+        off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
+    }
+    // edges
+    const std::string edge_out_path = path + "_edge.vtu";
+    {
+        paraviewo::VTUWriter edge_writer;
+        edge_writer.add_field("order", v_order);
+        edge_writer.add_field("vid", v_id);
+        logger().info("Write {}", edge_out_path);
+        edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
     }
 }
 
