@@ -12,6 +12,7 @@ set(SRC_FILES
 	TopoOffsetTetMesh.cpp
 	Smooth.cpp
 	Collapse.cpp
+	Swap.cpp
 	Quadrics.hpp
 	Quadrics.cpp
 
