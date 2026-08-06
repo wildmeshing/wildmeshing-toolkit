@@ -59,8 +59,12 @@ bool TopoOffsetTetMesh::is_inverted(const Tuple& t) const
 
 bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
+    const size_t vid = t.vid(*this);
+
+    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return false;
+
     // the input surfaces must stay fixed
-    return !m_vertex_attribute[t.vid(*this)].m_is_on_surface;
+    return !m_vertex_attribute[vid].m_is_on_surface;
 }
 
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
