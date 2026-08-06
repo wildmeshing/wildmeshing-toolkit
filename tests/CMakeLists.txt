@@ -17,6 +17,7 @@ set(TEST_SOURCES
     test_raw_simplex_collection.cpp
     test_read_triangle_mesh.cpp
     test_resolve_path.cpp
+    test_winding_number.cpp
     test_simplex_navigation.cpp
     test_tuple.cpp
     test_orient.cpp
