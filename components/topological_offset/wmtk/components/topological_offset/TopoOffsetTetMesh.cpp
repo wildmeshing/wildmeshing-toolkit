@@ -898,7 +898,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    for (size_t i = 0; i < 3; ++i) {
+    for (int i = 0; i < m_params.optimization_iterations; ++i) {
         // split
         logger().info("\tSplitting long edges...");
         split_all_edges();

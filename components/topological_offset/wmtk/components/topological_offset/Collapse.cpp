@@ -143,7 +143,7 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
     // sampled around the survivor disagrees with itself (relative to the collapse direction)
     // by more than the threshold -- that disagreement is the signature of a feature edge
     // nearby, and collapsing across it would flatten/cut through the feature.
-    if (collapse_normal_deviation(loc, v1_id) >= m_max_normal_deviation_deg) {
+    if (collapse_normal_deviation(loc, v1_id) >= m_params.max_normal_deviation_deg) {
         return false;
     }
 
@@ -312,9 +312,9 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& loc)
     // NormalDeviationAfterInvariant analogue: only reject a move that degrades an
     // already-good offset surface patch -- if it was already over the threshold before, don't
     // block a collapse from fixing (or merely not fixing) it.
-    if (cache.nd_before < m_max_normal_deviation_deg) {
+    if (cache.nd_before < m_params.max_normal_deviation_deg) {
         const double nd_after = max_offset_surface_normal_deviation_at_vertex(loc.vid(*this));
-        if (nd_after >= m_max_normal_deviation_deg) {
+        if (nd_after >= m_params.max_normal_deviation_deg) {
             return false;
         }
     }
