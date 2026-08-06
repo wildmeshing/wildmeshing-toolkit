@@ -124,7 +124,7 @@
   {
     "pointer": "/simplify_envelope_ratio",
     "type": "float",
-    "default": 0.9,
+    "default": 0.5,
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
   },
   {
