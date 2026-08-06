@@ -490,7 +490,7 @@ bool TopoOffsetTetMesh::offset_swap_normal_deviation_ok(
     }
 
     // only reject a regression: an already-poor alignment doesn't block the flip
-    if (nd_old < m_max_normal_deviation_deg && nd_new >= m_max_normal_deviation_deg) {
+    if (nd_old < m_params.max_normal_deviation_deg && nd_new >= m_params.max_normal_deviation_deg) {
         return false;
     }
     return true;

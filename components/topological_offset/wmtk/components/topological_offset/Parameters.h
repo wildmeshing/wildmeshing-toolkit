@@ -26,6 +26,7 @@ struct Parameters
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
     int smoothing_iterations; // number of smoothing passes run during optimize_offset()
+    int optimization_iterations; // number of split/collapse/swap/smooth passes in optimize_offset()
 
     // ---- collapse, similar to SimWild ----
     double length_rel; // target edge length (relative to bbox diagonal)
@@ -33,6 +34,11 @@ struct Parameters
     double stop_energy; // target AMIPS quality (see TopoOffsetTetMesh::get_quality()); a
                         // collapse that would push an already-on-target region's quality back
                         // above this is rejected
+
+    // max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the
+    // input-complex normal it is supposed to approximate, before collapse/swap reject a move
+    // that would push it further out of alignment.
+    double max_normal_deviation_deg;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -82,10 +88,13 @@ struct Parameters
 
         num_threads = json_params["num_threads"];
         smoothing_iterations = json_params["smoothing_iterations"];
+        optimization_iterations = json_params["optimization_iterations"];
 
         length_rel = json_params["length_rel"];
         length = json_params["length"];
         stop_energy = json_params["stop_energy"];
+
+        max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)

@@ -382,14 +382,13 @@ public:
      */
     void collapse_all_edges();
 
-    /**
-     * @brief max angle (degrees, 0-90, orientation independent) allowed between an
-     * offset-surface face's own normal and the input-complex normal it is supposed to
-     * approximate, checked by collapse_edge_before/after. See face_normal_deviation() and
-     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/NormalDeviationAfterInvariant.cpp
-     * and .../invariants/OffsetCollapseBeforeInvariant.cpp
-     */
-    double m_max_normal_deviation_deg = 15.0;
+    // max angle (degrees, 0-90, orientation independent) allowed between an offset-surface
+    // face's own normal and the input-complex normal it is supposed to approximate, checked by
+    // collapse_edge_before/after and offset_swap_normal_deviation_ok(). Exposed to the user as
+    // /max_normal_deviation_deg (see Parameters::max_normal_deviation_deg). See
+    // face_normal_deviation() and
+    // https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/NormalDeviationAfterInvariant.cpp
+    // and .../invariants/OffsetCollapseBeforeInvariant.cpp
     double m_max_normal_deviation_swap_max_deg = 75.0;
 
     /**
@@ -494,7 +493,7 @@ public:
     /**
      * @brief OffsetSwapInvariant analogue: for the offset-surface diagonal flip (a,b) -> (c,d)
      * across the two current offset faces (a,b,c)/(a,b,d), reject only a regression -- if the
-     * *old* diagonal (a,b) was already poorly aligned (spread >= m_max_normal_deviation_deg)
+     * *old* diagonal (a,b) was already poorly aligned (spread >= m_params.max_normal_deviation_deg)
      * with the offset target-normal field sampled on both faces, the flip is not blocked on
      * these grounds; if it was well aligned and the *new* diagonal (c,d) would not be, it is
      * rejected. See
