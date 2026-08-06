@@ -18,6 +18,8 @@
 
 #include "Parameters.h"
 
+#include <atomic>
+#include <memory>
 #include <set>
 
 namespace wmtk::components::triwild {
@@ -228,6 +230,16 @@ public:
     /// split; reset + logged by split_all_edges). Diagnostic only.
     size_t m_force_split_count = 0;
 
+    /// Per-pass claim for the high-valence split gate: one slot per vertex, reset at the
+    /// start of every split pass. A high-valence vertex accepts the first valence-increasing
+    /// split of the pass and refuses the rest, so refinement spreads instead of piling onto
+    /// the same vertex. Atomic because splits run in parallel; a plain array of unique_ptr
+    /// rather than a vector because std::atomic is not movable.
+    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
+    size_t m_high_valence_claim_size = 0;
+    /// Splits refused by that gate in the current pass, reported once per pass.
+    std::atomic<size_t> m_high_valence_rejects = 0;
+
     /// True iff edge (v1,v2) is a worst triangle's longest edge queued for force-split.
     bool is_force_split_edge(size_t v1, size_t v2) const
     {
@@ -283,6 +295,29 @@ public:
     double get_quality(const Tuple& loc) const;
     double get_quality(const size_t fid) const;
     bool round(const Tuple& loc);
+
+    /**
+     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
+     *
+     * round() is otherwise only attempted as a side effect of another operation (smoothing
+     * the vertex, or the merged vertex of a collapse), and neither reaches a vertex that
+     * only becomes roundable later: smoothing skips "good" regions by default. Without a
+     * sweep such a vertex keeps exact coordinates into the output for no geometric reason --
+     * and split_edge_after now introduces them unconditionally whenever the rounded midpoint
+     * would invert, so the sweep is what keeps that from reaching the output.
+     *
+     * Skipped outright when m_all_rounded says there is nothing to do.
+     */
+    size_t round_all_vertices();
+
+    /**
+     * @brief True when every vertex is known to be rounded.
+     *
+     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
+     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
+     * Atomic because operations that clear it run in parallel.
+     */
+    std::atomic<bool> m_all_rounded = false;
     //
     bool is_edge_on_surface(const Tuple& loc) const;
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;

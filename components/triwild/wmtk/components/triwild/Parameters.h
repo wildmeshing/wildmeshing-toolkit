@@ -5,7 +5,7 @@
 namespace wmtk::components::triwild {
 struct Parameters
 {
-    double epsr = 2e-3; // relative error bound (wrt diagonal)
+    double epsr = 1e-3; // relative error bound (wrt diagonal)
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
     double l = -1.;
@@ -20,13 +20,52 @@ struct Parameters
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
-    double stop_energy = 10;
+    double stop_energy = 100;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
+    /**
+     * Incident-triangle count above which a vertex is treated as pathological, or 0 to
+     * disable the gate.
+     *
+     * The 2D counterpart of tetwild's gate. Splitting edge (a,b) leaves a's and b's own
+     * counts unchanged and adds one to every vertex in the edge's link, so the gate is
+     * applied to the link, not the endpoints -- but in 2D that link is one or two vertices,
+     * not a whole ring, so the runaway this guards against is far less likely here.
+     */
+    int split_high_valence_threshold = 200;
+
+    /**
+     * Relative weight of the AMIPS (quality) term against the envelope (stay-on-curve) term
+     * during smoothing. w_envelope is derived as 1 - w_amips in the TriWildMesh constructor,
+     * so the small default means the envelope dominates and AMIPS acts as a light quality
+     * preference. Matches tetwild and simwild.
+     */
     double w_amips = 1e-4;
-    double w_envelope = 0;
+    double w_envelope = 1. - 1e-4; // derived; not read from json
+
+    /**
+     * How many smoothing passes each optimization iteration runs.
+     *
+     * This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was
+     * hard-coded to 1. Smoothing is the only phase that improves element quality without
+     * changing connectivity, so on meshes where split/collapse/swap have run out of useful
+     * moves it is the only thing left that can lower the energy.
+     */
+    int num_smoothing_passes = 10;
+
+    // Interleave smoothing between the topology passes instead of running it all at the end
+    // of the iteration. With this on, one iteration is
+    //     split    + interleaved_smoothing_passes smoothing passes
+    //     collapse + ...
+    //     swaps    + ...
+    // rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the
+    // only phase that improves quality without changing connectivity, so giving each topology
+    // pass a chance to be relaxed before the next one runs may keep the optimizer off the
+    // plateaus where split, collapse and swap simply undo each other.
+    bool interleaved_smoothing = false;
+    int interleaved_smoothing_passes = 2;
 
     // ---- Stuck-element sizing refinement --------------------------------
     // Same names, defaults and meaning as tetwild/simwild -- see the specs.
@@ -98,6 +137,12 @@ struct Parameters
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+
+        split_high_valence_threshold = json_params["split_high_valence_threshold"];
+        w_amips = json_params["w_amips"];
+        num_smoothing_passes = json_params["num_smoothing_passes"];
+        interleaved_smoothing = json_params["interleaved_smoothing"];
+        interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
 
         // Stuck-element sizing refinement.
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];

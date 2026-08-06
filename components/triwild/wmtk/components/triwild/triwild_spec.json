@@ -11,11 +11,18 @@
       "num_threads",
       "max_iterations",
       "skip_simplify",
+      "simplify_use_link_condition",
+      "simplify_envelope_ratio",
       "filter",
       "skip_winding_number",
       "eps_rel",
       "length_rel",
       "stop_energy",
+      "split_high_valence_threshold",
+      "w_amips",
+      "num_smoothing_passes",
+      "interleaved_smoothing",
+      "interleaved_smoothing_passes",
       "preserve_topology",
       "remove_duplicate_eps",
       "throw_on_fail",
@@ -26,6 +33,7 @@
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
+      "DEBUG_disable_envelope",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -94,7 +102,19 @@
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
-    "doc": "If true, input simplification will be skipped. The input curves are otherwise coarsened first, by collapsing their shortest segments while staying inside half the envelope, so the exact arrangement and the initial mesh do not carry input detail far below the target edge length."
+    "doc": "If true, input simplification will be skipped. The input curves are otherwise coarsened first, by collapsing their shortest segments while staying inside the simplification envelope, so the exact arrangement and the initial mesh do not carry input detail far below the target edge length."
+  },
+  {
+    "pointer": "/simplify_use_link_condition",
+    "type": "bool",
+    "default": false,
+    "doc": "Require the link condition when simplifying the input curves. When true the simplification cannot change the topology of the curve network: junctions and vertices shared between two inputs are frozen, and any collapse that would leave a degenerate or duplicated segment is rejected. When false those collapses are allowed -- the segment that becomes degenerate or duplicated is dropped instead -- so a dirty input simplifies much further, at the cost of merging junctions and separate curves that pass within the envelope. Open endpoints stay frozen either way: the envelope is one-sided, so nothing would notice a curve eroding inwards from its own tip."
+  },
+  {
+    "pointer": "/simplify_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
   },
   {
     "pointer": "/filter",
@@ -112,20 +132,26 @@
   {
     "pointer": "/eps_rel",
     "type": "float",
-    "default": 2e-3,
+    "default": 1e-3,
     "doc": "Envelope thickness relative to the bounding box"
   },
   {
     "pointer": "/remove_duplicate_eps",
     "type": "float",
-    "default": 2e-3,
-    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. Negative disables it."
+    "default": 0,
+    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the segment connectivity; negative skips the pass entirely."
   },
   {
     "pointer": "/DEBUG_hausdorff",
     "type": "bool",
     "default": false,
     "doc": "Sanity Check: Compute and report the Hausdorff distance of the input to the output. Should always be smaller than eps."
+  },
+  {
+    "pointer": "/DEBUG_disable_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Diagnostic only. Disables every envelope containment check during the triangulation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used."
   },
   {
     "pointer": "/length_rel",
@@ -136,8 +162,38 @@
   {
     "pointer": "/stop_energy",
     "type": "float",
+    "default": 100,
+    "doc": "Target energy. If all triangles have an energy below this, triwild will stop. Note this is the raw AMIPS2D energy, whose floor (an equilateral triangle) is 2 -- tetwild's stop_energy is compared against the cube root of AMIPS3D, whose floor is 3, so the same number is a looser target here than there."
+  },
+  {
+    "pointer": "/split_high_valence_threshold",
+    "type": "int",
+    "default": 200,
+    "doc": "Incident-triangle count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped triangle mesh has vertex valence around 6; a split cascade can drive one vertex much higher, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex opposite the edge, so the gate applies to those. Expect this to fire far less often than in 3D, where the edge's link is a whole ring rather than one or two vertices."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 0.0001,
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing; the envelope weight is 1 - w_amips. The small default makes smoothing primarily about staying on the input curves, with quality as a secondary preference."
+  },
+  {
+    "pointer": "/num_smoothing_passes",
+    "type": "int",
     "default": 10,
-    "doc": "Target energy. If all tets have an energy below this, triwild will stop."
+    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy."
+  },
+  {
+    "pointer": "/interleaved_smoothing",
+    "type": "bool",
+    "default": false,
+    "doc": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes."
+  },
+  {
+    "pointer": "/interleaved_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set."
   },
   {
     "pointer": "/preserve_topology",
@@ -166,7 +222,7 @@
   {
     "pointer": "/write_vtu",
     "type": "bool",
-    "default": false,
+    "default": true,
     "doc": "Write not just MSH but also VTU output."
   },
   {

@@ -809,6 +809,18 @@ public:
     }
 
     /**
+     * @brief Number of triangles incident to a vertex, by id.
+     *
+     * The same count as get_valence_for_vertex, for callers that hold a vid rather than a
+     * Tuple. Around 6 on a well-shaped mesh; worth checking before anything that walks the
+     * one ring, since a degenerate mesh can push it much higher.
+     */
+    size_t vertex_valence(const size_t vid) const
+    {
+        return m_vertex_connectivity[vid].m_conn_tris.size();
+    }
+
+    /**
      * @brief Get the one ring tris for a vertex
      *
      * @param t tuple pointing to a vertex

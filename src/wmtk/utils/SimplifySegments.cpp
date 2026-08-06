@@ -23,7 +23,8 @@ Key key_of(int a, int b)
 
 } // namespace
 
-size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope)
+size_t
+simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope, bool use_link_condition)
 {
     const int nv = static_cast<int>(V.rows());
     const int ne = static_cast<int>(E.rows());
@@ -46,11 +47,17 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
         present.insert(key_of(seg[e][0], seg[e][1]));
     }
 
-    // Valence != 2 is frozen: open endpoints, junctions, and -- because they end up with
-    // valence >= 4 -- any vertex shared between two input curves.
+    // Open endpoints (valence < 2) are frozen either way: the envelope is one-sided, so
+    // nothing would notice a curve eroding inwards from its own tip. Junctions -- and,
+    // because they end up with valence >= 4, any vertex shared between two input curves --
+    // are frozen only under the link condition. Matches 3D, where freeze_boundary() runs
+    // unconditionally and the link condition is the separate, optional guard.
+    const auto is_frozen = [&](int v) {
+        return use_link_condition ? v2e[v].size() != 2 : v2e[v].size() < 2;
+    };
     std::vector<char> frozen(nv, 0);
     for (int v = 0; v < nv; ++v) {
-        frozen[v] = v2e[v].size() != 2;
+        frozen[v] = is_frozen(v);
     }
 
     std::vector<char> edge_alive(ne, 1);
@@ -68,6 +75,7 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
 
     size_t n_removed = 0;
     std::vector<int> touched; // alive segments whose geometry changes, minus the collapsed one
+    std::vector<int> doomed; // subset of `touched` that the collapse removes outright
 
     while (!queue.empty()) {
         const auto [l2, e] = queue.top();
@@ -103,10 +111,12 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
             drop = std::max(a, b);
             m = 0.5 * (pos[a] + pos[b]);
         }
-        // `drop` is never frozen, so it has valence exactly 2: it loses e and hands its
-        // other segment to `keep`, which is why the collapse leaves `keep`'s valence -- and
-        // hence every frozen flag -- unchanged, and why they never need recomputing.
-        if (v2e[drop].size() != 2) {
+        // Under the link condition `drop` is never frozen, so it has valence exactly 2: it
+        // loses e and hands its other segment to `keep`, which is why the collapse leaves
+        // `keep`'s valence -- and hence every frozen flag -- unchanged, and why they never
+        // need recomputing. Without it `drop` may be a junction of any valence, and all of
+        // its segments move to `keep`.
+        if (use_link_condition && v2e[drop].size() != 2) {
             continue; // defensive: the invariant above should make this unreachable
         }
 
@@ -129,22 +139,31 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
         // Guards, all before any mutation.
         bool ok = true;
         std::set<Key> new_keys; // keys of the relabelled segments, to catch collisions
+        doomed.clear(); // relabelled segments that come out degenerate or duplicated
         for (const int f : touched) {
-            int u = seg[f][0] == drop ? keep : seg[f][0];
-            int w = seg[f][1] == drop ? keep : seg[f][1];
-            if (u == w) {
-                ok = false; // collapsed to a point (a parallel segment)
-                break;
-            }
-            if (seg[f][0] == drop || seg[f][1] == drop) {
+            const int u = seg[f][0] == drop ? keep : seg[f][0];
+            const int w = seg[f][1] == drop ? keep : seg[f][1];
+            const bool relabelled = (seg[f][0] == drop || seg[f][1] == drop);
+            bool dies = (u == w); // collapsed to a point (a parallel segment)
+            if (!dies && relabelled) {
                 const Key k = key_of(u, w);
                 // The relabelled segment must not land on top of one that already exists,
                 // nor on another relabelled one. `present` still holds f's old key, which
                 // cannot equal k because k contains `keep` and f did not.
-                if (present.count(k) != 0 || !new_keys.insert(k).second) {
+                dies = (present.count(k) != 0 || !new_keys.insert(k).second);
+            }
+            if (dies) {
+                // Both cases only arise for a segment incident to `drop`. Under the link
+                // condition they abort the collapse, which is what keeps the network's
+                // topology intact. Without it the segment is dropped instead: its geometry
+                // is either a point or a copy of a segment that survives, so nothing leaves
+                // the envelope either way.
+                if (use_link_condition) {
                     ok = false;
                     break;
                 }
+                doomed.push_back(f);
+                continue;
             }
             const std::array<Vector2d, 2> s = {
                 {position_after(seg[f][0]), position_after(seg[f][1])}};
@@ -164,6 +183,12 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
                 continue;
             }
             present.erase(key_of(seg[f][0], seg[f][1]));
+            // `doomed` is empty on all but a handful of collapses, and never reached at all
+            // under the link condition, so the linear scan is cheaper than a set.
+            if (std::find(doomed.begin(), doomed.end(), f) != doomed.end()) {
+                edge_alive[f] = 0;
+                continue; // seg[f] keeps its old endpoints; only `f != e` reads them below
+            }
             if (seg[f][0] == drop) {
                 seg[f][0] = keep;
             }
@@ -177,12 +202,35 @@ size_t simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelop
         edge_alive[e] = 0;
         vert_alive[drop] = 0;
         v2e[drop].clear();
-        v2e[keep].erase(
-            std::remove_if(
-                v2e[keep].begin(),
-                v2e[keep].end(),
-                [&](int f) { return !edge_alive[f]; }),
-            v2e[keep].end());
+        const auto purge = [&](int v) {
+            v2e[v].erase(
+                std::remove_if(v2e[v].begin(), v2e[v].end(), [&](int f) { return !edge_alive[f]; }),
+                v2e[v].end());
+        };
+        purge(keep);
+        // Dropping a duplicate lowers the valence of its far endpoint, and can lower
+        // `keep`'s below 2 (collapsing one side of a triangle leaves `keep` a dangling
+        // tip), so the frozen flags have to be refreshed. Unreachable under the link
+        // condition, where nothing dies and `keep`'s valence cannot fall.
+        for (const int f : doomed) {
+            for (const int v : {seg[f][0], seg[f][1]}) {
+                if (v != drop && v != keep) {
+                    purge(v);
+                    frozen[v] = is_frozen(v);
+                }
+            }
+        }
+        if (!doomed.empty()) {
+            frozen[keep] = is_frozen(keep);
+            // A vertex left with no segment at all carries no input geometry -- its position
+            // is a moved midpoint, not an input point -- so retire it rather than hand the
+            // arrangement a free point that was never there. Input free points have valence
+            // 0 from the start and are never an endpoint of a collapse, so they survive.
+            if (v2e[keep].empty()) {
+                vert_alive[keep] = 0;
+                ++n_removed;
+            }
+        }
         ++n_removed;
 
         for (const int f : v2e[keep]) {

@@ -15,6 +15,19 @@ void TriWildMesh::split_all_edges()
     igl::Timer timer;
     double time;
     m_force_split_count = 0;
+
+    // Reset the high-valence claims for this pass. Sized to the preallocated capacity, not
+    // vert_capacity(): vert_capacity() returns the live vertex count, so every vertex a split
+    // creates during this pass would get an id at or above it, trip the guard in
+    // split_edge_before, and be exempted from the gate entirely -- and those are exactly the
+    // ones that run away. The attribute collections are resized to the reservation, so their
+    // size is the capacity to use. make_unique value-initialises, so every slot starts at 0.
+    if (m_params.split_high_valence_threshold > 0) {
+        m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
+        m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
+    }
+    m_high_valence_rejects = 0;
+
     timer.start();
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
@@ -87,6 +100,13 @@ void TriWildMesh::split_all_edges()
             "[force-split] {} worst-triangle longest edges force-split",
             m_force_split_count);
     }
+    if (const size_t n = m_high_valence_rejects.load(); n > 0) {
+        wmtk::logger().info(
+            "[high-valence] {} splits refused to avoid growing a vertex past {} incident "
+            "triangles",
+            n,
+            m_params.split_high_valence_threshold);
+    }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
 }
@@ -106,6 +126,36 @@ bool TriWildMesh::split_edge_before(const Tuple& loc0)
     const simplex::Edge edge(cache.v1_id, cache.v2_id);
 
     const auto faces = get_incident_fids_for_edge(loc0);
+
+    // High-valence gate. Splitting (v1,v2) leaves the endpoints' own incident-triangle counts
+    // unchanged -- each keeps one child of every triangle it was in -- and adds one to every
+    // vertex in the edge's link, since those sit in both children. In 2D the link is the
+    // vertex opposite the edge in each incident face: one on a boundary edge, two inside.
+    //
+    // A vertex past the threshold accepts one such split per pass and refuses the rest, which
+    // spreads the refinement instead of letting it pile onto the same vertex. Done here,
+    // before the edge caching below, so a refusal is cheap.
+    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
+        std::vector<size_t> to_claim;
+        for (const size_t fid : faces) {
+            const size_t vid = simplex_from_face(fid).opposite_vertex(edge).id();
+            if (vid >= m_high_valence_claim_size) continue;
+            if (vertex_valence(vid) <= threshold) continue;
+            if (m_high_valence_claim[vid].load(std::memory_order_relaxed) != 0) {
+                // Already spent this pass. Refuse rather than grow it further.
+                m_high_valence_rejects.fetch_add(1, std::memory_order_relaxed);
+                return false;
+            }
+            to_claim.push_back(vid);
+        }
+        // Claim only once the whole link is known to be free, so a refusal late in the loop
+        // does not burn the budget of a vertex found earlier.
+        for (const size_t vid : to_claim) {
+            m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+        }
+    }
+
     for (const size_t fid : faces) {
         auto vs = oriented_tri_vids(fid);
         for (int j = 0; j < 3; j++) {
@@ -163,13 +213,26 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
         std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
-        // The rounded (double) midpoint inverts an incident triangle. By default reject
-        // the split. Place the new vertex at the
-        // EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
-        // shared edge, so it can never invert a previously-valid incident triangle -- the
-        // split always succeeds and the worst region can keep being refined. The vertex
-        // stays un-rounded (m_pos exact, m_is_rounded = false) until a later round()
-        // reclaims it.
+        // The rounded (double) midpoint inverts an incident triangle, so place the new vertex
+        // at the EXACT rational midpoint of the two endpoints instead. That midpoint lies on
+        // the shared edge, so it can never invert a previously-valid incident triangle: the
+        // split always succeeds and a stuck region can keep being refined. The vertex stays
+        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        //
+        // This used to apply only when an endpoint was already rational, to stop a split
+        // between two rounded endpoints from reintroducing exact coordinates into a
+        // fully-rounded mesh. That restriction is what stalled the optimizer: it rejected the
+        // split outright exactly where the mesh is degenerate, which is where refinement is
+        // needed, and the stuck-refine machinery then hammered the region from outside,
+        // driving the max energy up by orders of magnitude per pass. On Thingi10K 509315 the
+        // restriction cost 5 of 8 runs, which diverged to 1e16..1e20 and hit the sweep's
+        // one-hour timeout; without it 8 of 8 converge, in 2-5 iterations.
+        //
+        // Exact coordinates reaching the output is prevented by the iteration, not here: a
+        // split is the only operation that can un-round a vertex (collapse, swap and
+        // smoothing never do), the post-optimization pass is collapse-only, and
+        // mesh_improvement does not stop until every vertex is rounded as well as the energy
+        // target being met.
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         // Unlike tetwild, keep m_posf in step with the exact position: when an endpoint is
@@ -184,6 +247,9 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
                 return false;
             }
         }
+        // This split keeps an un-rounded vertex, so the sweep must not skip the next pass.
+        // Set after the rollback checks above, which leave the mesh unchanged.
+        m_all_rounded.store(false, std::memory_order_relaxed);
     }
 
     // update face attributes

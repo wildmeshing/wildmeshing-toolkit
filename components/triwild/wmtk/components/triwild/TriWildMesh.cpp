@@ -63,27 +63,66 @@ void TriWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        // One iteration is either split/collapse/swaps followed by all the smoothing, or --
+        // with interleaved_smoothing -- each topology pass followed by its own smoothing, so
+        // the next pass sees a relaxed mesh rather than the raw output of the previous one.
+        auto [max_energy, avg_energy] = [&]() -> std::tuple<double, double> {
+            if (!m_params.interleaved_smoothing) {
+                return local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+            }
+            const int k = m_params.interleaved_smoothing_passes;
+            local_operations({{1, 0, 0, k}});
+            local_operations({{0, 1, 0, k}});
+            return local_operations({{0, 0, 1, k}});
+        }();
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+
+        // Counted BEFORE the stop check, because it decides whether to stop. Atomic because
+        // for_each_vertex runs threading::parallel_for whenever NUM_THREADS != 0; plain ints
+        // race and can report cnt_round > cnt_verts. Same as tetwild.
+        std::atomic<int> n_round = 0, n_verts = 0;
+        TriMesh::for_each_vertex([&](auto& v) {
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+                n_round.fetch_add(1, std::memory_order_relaxed);
+            }
+            n_verts.fetch_add(1, std::memory_order_relaxed);
+        });
+        const int cnt_round = n_round.load(std::memory_order_relaxed);
+        const int cnt_verts = n_verts.load(std::memory_order_relaxed);
+        if (cnt_round < cnt_verts) {
+            logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        } else {
+            logger().info("All rounded!");
+        }
+
+        // Energy alone is not a sufficient termination condition. A mesh that hits the
+        // quality target while some vertex still carries exact coordinates is not finished:
+        // the output is what the caller consumes, and rational coordinates in it are a defect
+        // regardless of how good the elements are. So keep iterating while anything is
+        // un-rounded, and let max_its bound the run as before.
+        //
+        // This is what makes the unconditional exact-rational split in split_edge_after safe:
+        // a split is the only operation that can un-round a vertex, and the loop does not
+        // stop until the rounding sweep has reclaimed every one it introduced.
+        //
+        // The exact count is used rather than m_all_rounded, which is only maintained where
+        // the sweep runs (after smoothing) and would stay stale at num_smoothing_passes == 0,
+        // stranding the loop at max_its for no reason.
         if (max_energy < m_params.stop_energy) {
-            break;
+            if (cnt_round == cnt_verts) {
+                break;
+            }
+            logger().info(
+                "energy target reached, but {} of {} vertices are still un-rounded; "
+                "continuing",
+                cnt_verts - cnt_round,
+                cnt_verts);
         }
         consolidate_mesh();
 
         logger().info("#V = {}, #T = {}", vert_capacity(), tri_capacity());
-
-        auto cnt_round = 0, cnt_verts = 0;
-        TriMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-            cnt_verts++;
-        });
-        if (cnt_round < cnt_verts) {
-            logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        } else {
-            logger().info("All rounded!", cnt_round, cnt_verts);
-        }
 
         /// sizing field: when the max energy stalls, refine around the worst
         /// elements to escape stuck configurations (replaces the old global
@@ -192,6 +231,20 @@ std::tuple<double, double> TriWildMesh::local_operations(
         } else if (i == 3) {
             logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
+            // Reclaim whatever smoothing just made roundable: once per iteration, after all
+            // of its smoothing passes. Here rather than at the end of the run because
+            // smoothing is what frees a stuck vertex, and because a vertex left rational
+            // makes every incident triangle take the exact-arithmetic path in is_inverted --
+            // so rounding early keeps the following passes on doubles.
+            //
+            // Guarded on ops[i] so it really is once per iteration: this branch is also
+            // entered by the collapse-only pre and post passes, which pass ops[3] == 0 and
+            // have no smoothing for the sweep to follow.
+            //
+            // Skipped entirely once m_all_rounded is set.
+            if (ops[i] > 0) {
+                round_all_vertices();
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
@@ -991,6 +1044,36 @@ bool TriWildMesh::is_inverted(const size_t fid) const
 {
     auto vs = oriented_tri_vids(fid);
     return is_inverted(vs);
+}
+
+size_t TriWildMesh::round_all_vertices()
+{
+    if (m_all_rounded.load(std::memory_order_relaxed)) {
+        return 0;
+    }
+
+    size_t reclaimed = 0, still_unrounded = 0;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+            continue;
+        }
+        if (round(v)) {
+            ++reclaimed;
+        } else {
+            ++still_unrounded;
+        }
+    }
+
+    if (still_unrounded == 0) {
+        m_all_rounded.store(true, std::memory_order_relaxed);
+    }
+    if (reclaimed > 0 || still_unrounded > 0) {
+        logger().info(
+            "rounding sweep: reclaimed {}, still unrounded {}",
+            reclaimed,
+            still_unrounded);
+    }
+    return reclaimed;
 }
 
 bool TriWildMesh::round(const Tuple& v)

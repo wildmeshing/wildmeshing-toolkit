@@ -135,9 +135,23 @@ void triwild(nlohmann::json json_params)
     // 13% larger.)
     params.init(V_in.colwise().minCoeff(), V_in.colwise().maxCoeff());
 
-    // One envelope at eps/2 around the original input, shared by the simplification and by
-    // the optimizer -- tetwild's arrangement, which is what leaves room for both to move.
+    // Half of eps around the original input, as in tetwild -- the arrangement gets the other
+    // half, which is what leaves room for the optimizer to move.
     const double envelope_eps = params.eps / 2;
+    // The simplification and the triangulation used to share one envelope object at the same
+    // eps, which leaves the optimizer no room: a simplification free to place a vertex right
+    // at the limit hands the optimizer a mesh where almost every move is already outside.
+    // Simplifying inside a fraction of the envelope reserves the rest as headroom. Measured
+    // in 3D, where sharing one envelope put a third of the simplified vertices outside before
+    // the tet phase began and had ~94% of smoothing attempts vetoed.
+    const bool simplify_use_link_condition = json_params["simplify_use_link_condition"];
+    const double simplify_envelope_ratio = json_params["simplify_envelope_ratio"];
+    const double simplify_eps = envelope_eps * simplify_envelope_ratio;
+    logger().info(
+        "envelope eps: simplification {:.6} ({:.0f}% of triangulation {:.6})",
+        simplify_eps,
+        100 * simplify_envelope_ratio,
+        envelope_eps);
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
@@ -154,16 +168,22 @@ void triwild(nlohmann::json json_params)
             for (int i = 0; i < E_in.rows(); ++i) {
                 e[i] = E_in.row(i);
             }
-            simplify_envelope.init(v, e, envelope_eps);
+            simplify_envelope.init(v, e, simplify_eps);
         }
-        const size_t removed = wmtk::utils::simplify_segments(V_simp, E_simp, simplify_envelope);
+        const size_t removed = wmtk::utils::simplify_segments(
+            V_simp,
+            E_simp,
+            simplify_envelope,
+            simplify_use_link_condition);
         logger().info(
-            "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed)",
+            "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed). Link "
+            "condition {}.",
             V_in.rows(),
             V_simp.rows(),
             E_in.rows(),
             E_simp.rows(),
-            removed);
+            removed,
+            simplify_use_link_condition ? "on" : "off");
     }
 
     // Exact arrangement of the (simplified) segment network.
@@ -203,6 +223,15 @@ void triwild(nlohmann::json json_params)
     TriWildMesh mesh(params, envelope_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     mesh.init_mesh(V, F, E, tag_names, V_in, E_in);
+
+    // After init_mesh, which is what builds the envelope, and after the simplification, which
+    // uses its own object -- so this only disables the checks the optimizer makes.
+    if (json_params["DEBUG_disable_envelope"]) {
+        logger().warn(
+            "DEBUG_disable_envelope: envelope checks are OFF for the triangulation. "
+            "The output has no containment guarantee and is for diagnosis only.");
+        mesh.m_envelope->disabled = true;
+    }
 
     if (params.debug_output) {
         mesh.write_vtu(output_path + "_initial");
