@@ -5,6 +5,10 @@
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
 namespace wmtk::components::topological_offset {
 
 void face_attribute_tracker(
@@ -201,6 +205,51 @@ bool TopoOffsetTetMesh::swap_edge_after(const Tuple& t)
     return true;
 }
 
+bool TopoOffsetTetMesh::offset_swap_normal_deviation_ok(
+    const Tuple& face_abc,
+    const Tuple& face_abd,
+    size_t a,
+    size_t b,
+    size_t c,
+    size_t d) const
+{
+    // pool the 4 target-normal samples from both current offset faces, matching the
+    // reference's 8-sample pool (4 per triangle)
+    std::vector<OffsetSurfaceSample> samples;
+    for (const OffsetSurfaceSample& s : offset_surface_samples(face_abc)) samples.push_back(s);
+    for (const OffsetSurfaceSample& s : offset_surface_samples(face_abd)) samples.push_back(s);
+
+    const Vector3d pa = m_vertex_attribute[a].m_posf;
+    const Vector3d pb = m_vertex_attribute[b].m_posf;
+    const Vector3d pc = m_vertex_attribute[c].m_posf;
+    const Vector3d pd = m_vertex_attribute[d].m_posf;
+
+    // spread (max-min) of the angle between `dir` and every pooled sample, same formula as
+    // collapse_normal_deviation()
+    auto spread = [&samples](const Vector3d& dir) {
+        double min_angle = std::numeric_limits<double>::max();
+        double max_angle = std::numeric_limits<double>::lowest();
+        for (const OffsetSurfaceSample& s : samples) {
+            if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
+            const double dot = std::clamp(dir.dot(s.normal), -1., 1.);
+            const double angle = (180. / M_PI) * std::acos(dot);
+            min_angle = std::min(min_angle, angle);
+            max_angle = std::max(max_angle, angle);
+        }
+        if (min_angle > max_angle) return 0.; // no samples found at all
+        return max_angle - min_angle;
+    };
+
+    const double nd_old = spread((pb - pa).normalized()); // current diagonal (a,b)
+    const double nd_new = spread((pd - pc).normalized()); // diagonal after the flip (c,d)
+
+    // only reject a regression: an already-poor alignment doesn't block the flip
+    if (nd_old < m_max_normal_deviation_deg && nd_new >= m_max_normal_deviation_deg) {
+        return false;
+    }
+    return true;
+}
+
 bool TopoOffsetTetMesh::prepare_surface_flip_32(
     const Tuple& t,
     const std::vector<size_t>& incident_tets)
@@ -248,9 +297,9 @@ bool TopoOffsetTetMesh::prepare_surface_flip_32(
     int n_offset = 0;
     size_t c = 0, d = 0, e = 0; // vertex ids; c/d on surface, e not
     bool e_set = false;
+    Tuple offset_face_c, offset_face_d; // captured only for the offset case, see below
     for (int k = 0; k < 3; ++k) {
-        const auto [_, fid] = tuple_from_face(std::array<size_t, 3>{{a, b, ring[k]}});
-        (void)_; // tell compiler this variable is not needed
+        const auto [face_tuple, fid] = tuple_from_face(std::array<size_t, 3>{{a, b, ring[k]}});
         if (m_face_attribute[fid].m_is_surface_fs) {
             if (n_surf == 0) {
                 c = ring[k];
@@ -265,8 +314,10 @@ bool TopoOffsetTetMesh::prepare_surface_flip_32(
             if (n_offset == 0) {
                 c = ring[k];
                 cache.sf_face_attr = m_face_attribute[fid];
+                offset_face_c = face_tuple;
             } else if (n_offset == 1) {
                 d = ring[k];
+                offset_face_d = face_tuple;
             } else {
                 return false; // > 2 offset faces: non-manifold edge
             }
@@ -301,6 +352,15 @@ bool TopoOffsetTetMesh::prepare_surface_flip_32(
             // (c,d) already has a surface face incident
             return false;
         }
+    }
+
+    // OffsetSwapInvariant analogue: without this, a swap can freely re-triangulate the offset
+    // surface's diagonal even when doing so points the result away from the input complex's
+    // implicit offset field, since nothing else here checks alignment with it (only the input
+    // surface's own flip is protected, by the envelope containment check in swap_edge_after).
+    if (n_offset == 2 &&
+        !offset_swap_normal_deviation_ok(offset_face_c, offset_face_d, a, b, c, d)) {
+        return false;
     }
 
     cache.is_surface_flip = (n_surf == 2);

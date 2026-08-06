@@ -448,25 +448,43 @@ public:
      * label and tag: the new tets/faces then unambiguously inherit that label/tag, and the
      * offset/input region boundaries -- which live entirely in *which* tets carry which label
      * -- cannot move, since a swap confined to a single-label neighborhood never changes any
-     * tet's label. Also stays away from the input and offset surfaces entirely (see
-     * m_is_on_surface / get_offset_surface_faces_for_vertex), and is only accepted if it
-     * strictly improves the worst AMIPS quality among the affected tets, matching
-     * SimWildMesh::swap_edge_before/after.
+     * tet's label. An edge lying *on* the input or offset surface is additionally allowed as a
+     * topology-preserving surface diagonal flip (see prepare_surface_flip_32()), and is only
+     * accepted if it strictly improves the worst AMIPS quality among the affected tets,
+     * matching SimWildMesh::swap_edge_before/after.
      */
     void swap_all_edges();
 
     /**
-     * @brief Prepare a surface 3->2 edge swap (a surface diagonal flip).
+     * @brief Prepare a surface or offset-surface 3->2 edge swap (a diagonal flip).
      *
-     * Called from swap_edge_before when the swapped edge (a,b) is on the surface
-     * and has exactly 3 incident tets. Verifies the local guards that guarantee
+     * Called from swap_edge_before when the swapped edge (a,b) is on the input surface or the
+     * offset surface and has exactly 3 incident tets. Verifies the local guards that guarantee
      * the flip preserves surface manifoldness / topology, and fills the
      * surface-flip fields of swap_cache. Returns false (rejecting the swap) if
-     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface
-     * faces), or one of the two would-be new surface faces already tagged
-     * surface. The tets sharing (a,b) are passed in to avoid recomputation.
+     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface/offset
+     * faces), one of the two would-be new faces already tagged surface/offset, or --
+     * for an offset-surface flip only -- offset_swap_normal_deviation_ok() rejects it. The
+     * tets sharing (a,b) are passed in to avoid recomputation.
      */
     bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
+
+    /**
+     * @brief OffsetSwapInvariant analogue: for the offset-surface diagonal flip (a,b) -> (c,d)
+     * across the two current offset faces (a,b,c)/(a,b,d), reject only a regression -- if the
+     * *old* diagonal (a,b) was already poorly aligned (spread >= m_max_normal_deviation_deg)
+     * with the offset target-normal field sampled on both faces, the flip is not blocked on
+     * these grounds; if it was well aligned and the *new* diagonal (c,d) would not be, it is
+     * rejected. See
+     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/OffsetSwapInvariant.cpp
+     */
+    bool offset_swap_normal_deviation_ok(
+        const Tuple& face_abc,
+        const Tuple& face_abd,
+        size_t a,
+        size_t b,
+        size_t c,
+        size_t d) const;
     //// swap
 
     /**
