@@ -20,7 +20,15 @@ void TetWildMesh::split_all_edges()
     // has an id below it (same invariant run_localized_to_convergence relies on for
     // vertex_epoch). make_unique value-initialises, so every slot starts at 0.
     if (m_params.split_high_valence_threshold > 0) {
-        m_high_valence_claim_size = vert_capacity();
+        // Size to the preallocated capacity, not vert_capacity(). vert_capacity() returns
+        // current_vert_size -- the live vertex count -- so every vertex a split creates during
+        // this pass gets an id at or above it, trips the `vid >= m_high_valence_claim_size`
+        // guard below, and is exempted from the gate entirely. Those exempt vertices are
+        // exactly the ones that run away: on Thingi10K 509315 v15601 absorbed 1792
+        // valence-increasing splits in a single pass, where the gate allows one, reaching
+        // valence ~700 while the max energy climbed with it. The attribute collections are
+        // resized to the reservation, so their size is the capacity to use.
+        m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }
     m_high_valence_rejects = 0;
