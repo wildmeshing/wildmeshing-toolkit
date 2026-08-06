@@ -73,121 +73,6 @@ double TopoOffsetTetMesh::collapse_normal_deviation(const Tuple& edge, size_t re
     return max_angle - min_angle;
 }
 
-namespace {
-using Tet4 = std::array<size_t, 4>;
-
-/**
- * @brief link of the simplex spanned by `excluded`, within a sub-complex given as a list of
- * (possibly virtual) tets: for each vertex/edge/face of each tet that avoids every vertex in
- * `excluded`, add it to the corresponding output set.
- */
-std::tuple<std::set<simplex::Vertex>, std::set<simplex::Edge>, std::set<simplex::Face>> link_of(
-    const std::vector<size_t>& excluded,
-    const std::vector<Tet4>& tets)
-{
-    std::set<simplex::Vertex> verts;
-    std::set<simplex::Edge> edges;
-    std::set<simplex::Face> faces;
-
-    auto is_excluded = [&excluded](size_t v) {
-        return std::find(excluded.begin(), excluded.end(), v) != excluded.end();
-    };
-
-    for (const Tet4& tet : tets) {
-        for (const size_t v : tet) {
-            if (!is_excluded(v)) verts.insert(simplex::Vertex(v));
-        }
-        for (int i = 0; i < 3; ++i) {
-            for (int j = i + 1; j < 4; ++j) {
-                if (is_excluded(tet[i]) || is_excluded(tet[j])) continue;
-                edges.insert(simplex::Edge(tet[i], tet[j]));
-            }
-        }
-        for (int skip = 0; skip < 4; ++skip) {
-            std::array<size_t, 3> f;
-            int k = 0;
-            bool ok = true;
-            for (int j = 0; j < 4; ++j) {
-                if (j == skip) continue;
-                if (is_excluded(tet[j])) {
-                    ok = false;
-                    break;
-                }
-                f[k++] = tet[j];
-            }
-            if (ok) faces.insert(simplex::Face(f[0], f[1], f[2]));
-        }
-    }
-    return {verts, edges, faces};
-}
-
-/**
- * @brief true if every element of `expected` is exactly the intersection of `a` and `b`
- * (all three pre-sorted, unique -- i.e. std::set-backed)
- */
-template <class Set>
-bool is_exact_intersection(const Set& a, const Set& b, const Set& expected)
-{
-    std::vector<typename Set::value_type> inter;
-    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(inter));
-    return inter.size() == expected.size() &&
-           std::equal(inter.begin(), inter.end(), expected.begin());
-}
-} // namespace
-
-bool TopoOffsetTetMesh::offset_link_condition(const Tuple& edge) const
-{
-    // shared by every "coned off" boundary face, so the sub-complex behaves as closed
-    constexpr size_t DUMMY = std::numeric_limits<size_t>::max();
-
-    const size_t v0 = edge.vid(*this);
-    const size_t v1 = edge.switch_vertex(*this).vid(*this);
-
-    auto offset_star = [this](size_t v) {
-        std::vector<Tet4> tets;
-        for (const size_t tid : get_one_ring_tids_for_vertex(v)) {
-            if (m_tet_attribute[tid].label == 2) tets.push_back(oriented_tet_vids(tid));
-        }
-        // the sub-complex's own boundary (offset-surface faces) coned off to DUMMY, so it is
-        // treated as one more (virtual) tet incident to v -- the standard trick for applying
-        // the closed-complex link condition to a complex that actually has a boundary
-        for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v))) {
-            const std::array<Tuple, 3> fv = get_face_vertices(f);
-            tets.push_back({{fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this), DUMMY}});
-        }
-        return tets;
-    };
-
-    const std::vector<Tet4> star0 = offset_star(v0);
-    const std::vector<Tet4> star1 = offset_star(v1);
-    if (star0.empty() && star1.empty()) {
-        return true; // neither endpoint touches the offset region: nothing to check
-    }
-
-    auto contains_both = [v0, v1](const Tet4& tet) {
-        bool has0 = false, has1 = false;
-        for (const size_t v : tet) {
-            has0 |= (v == v0);
-            has1 |= (v == v1);
-        }
-        return has0 && has1;
-    };
-    std::vector<Tet4> star01;
-    for (const Tet4& tet : star0) {
-        if (contains_both(tet)) star01.push_back(tet);
-    }
-
-    const auto [v_lk0, e_lk0, f_lk0] = link_of({v0}, star0);
-    const auto [v_lk1, e_lk1, f_lk1] = link_of({v1}, star1);
-    const auto [v_lk01, e_lk01, f_lk01] = link_of({v0, v1}, star01);
-
-    // link(v0) intersect link(v1) == link(edge v0-v1), the standard edge-collapse link
-    // condition, checked component-wise for vertices/edges/faces
-    return is_exact_intersection(v_lk0, v_lk1, v_lk01) &&
-           is_exact_intersection(e_lk0, e_lk1, e_lk01) &&
-           is_exact_intersection(f_lk0, f_lk1, f_lk01);
-}
-
 bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
 {
     auto& cache = edge_collapse_cache.local();
@@ -398,7 +283,8 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
         cache.boundary_edges = bs;
     }
 
-    if (VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
+    if ((VA[v1_id].m_is_on_surface || VA[v1_id].m_is_on_offset) &&
+        (VA[v2_id].m_is_on_surface || VA[v2_id].m_is_on_offset)) {
         if (!substructure_link_condition(loc)) {
             return false;
         }
