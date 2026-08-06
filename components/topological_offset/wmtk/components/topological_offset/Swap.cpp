@@ -44,7 +44,8 @@ bool TopoOffsetTetMesh::swap_edge_before(const Tuple& t)
             m_tet_attribute[tid].tag != cache.common_tag) {
             return false;
         }
-        cache.max_quality_before = std::max(cache.max_quality_before, m_tet_attribute[tid].m_quality);
+        cache.max_quality_before =
+            std::max(cache.max_quality_before, m_tet_attribute[tid].m_quality);
     }
 
     // Snapshot every edge/face of the 3 incident tets, keyed by vertex ids for the same reason
@@ -120,8 +121,7 @@ bool TopoOffsetTetMesh::swap_edge_after(const Tuple& t)
         for (int i = 0; i < 4; ++i) {
             const Tuple f = tuple_from_face(tid, i);
             const std::array<Tuple, 3> fv = get_face_vertices(f);
-            const auto key =
-                simplex::Face(fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this));
+            const auto key = simplex::Face(fv[0].vid(*this), fv[1].vid(*this), fv[2].vid(*this));
             const auto it = cache.face_labels.find(key);
             m_face_attribute[f.fid(*this)].label =
                 (it != cache.face_labels.end()) ? it->second : cache.common_label;
