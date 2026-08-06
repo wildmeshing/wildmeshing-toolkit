@@ -773,12 +773,27 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     }
 
 
+    // split
+    logger().info("\tSplitting long edges...");
+    split_all_edges();
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
     // collapse
     logger().info("\tCollapsing short edges...");
     collapse_all_edges();
     if (m_params.debug_output) { // intermediate output
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
+
+    // swap
+    logger().info("\tSwapping edges...");
+    swap_all_edges();
+    if (m_params.debug_output) { // intermediate output
+        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+    }
+
     // smoothing
     logger().info("\tSmoothing all vertices...");
     for (int i = 0; i < m_params.smoothing_iterations; i++) {

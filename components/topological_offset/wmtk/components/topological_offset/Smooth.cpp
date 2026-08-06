@@ -8,6 +8,12 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
+// clang-format off
+#include <wmtk/utils/DisableWarnings.hpp>
+#include <igl/predicates/predicates.h>
+#include <wmtk/utils/EnableWarnings.hpp>
+// clang-format on
+
 #include <set>
 
 namespace wmtk::components::topological_offset {
@@ -26,6 +32,29 @@ double TopoOffsetTetMesh::get_quality(const std::array<size_t, 4>& vids) const
 double TopoOffsetTetMesh::get_quality(const Tuple& t) const
 {
     return get_quality(oriented_tet_vids(t));
+}
+
+bool TopoOffsetTetMesh::is_inverted(const std::array<size_t, 4>& vids) const
+{
+    // Return a positive value if the point pd lies below the plane passing through pa, pb,
+    // and pc; "below" is defined so that pa, pb, and pc appear in counterclockwise order when
+    // viewed from above the plane.
+    igl::predicates::exactinit();
+    const auto res = igl::predicates::orient3d(
+        m_vertex_attribute[vids[0]].m_posf,
+        m_vertex_attribute[vids[1]].m_posf,
+        m_vertex_attribute[vids[2]].m_posf,
+        m_vertex_attribute[vids[3]].m_posf);
+
+    if (res == igl::predicates::Orientation::NEGATIVE) { // neg result == pos tet
+        return false;
+    }
+    return true;
+}
+
+bool TopoOffsetTetMesh::is_inverted(const Tuple& t) const
+{
+    return is_inverted(oriented_tet_vids(t));
 }
 
 bool TopoOffsetTetMesh::smooth_before(const Tuple& t)

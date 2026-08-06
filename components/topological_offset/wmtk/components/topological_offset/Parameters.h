@@ -39,6 +39,7 @@ struct Parameters
 
     // derived in init()
     double collapsing_l2; // upper bound (squared) on edge length for edge collapse eligibility
+    double splitting_l2; // lower bound (squared) on edge length for edge split eligibility
 
     Parameters() = default;
 
@@ -106,6 +107,8 @@ struct Parameters
         }
         // only collapse edges shorter than 4/5 of the target length, matching SimWild
         collapsing_l2 = length * length * (16. / 25.);
+        // only split edges longer than 4/3 of the target length, matching SimWild
+        splitting_l2 = length * length * (16. / 9.);
     }
 };
 } // namespace wmtk::components::topological_offset
