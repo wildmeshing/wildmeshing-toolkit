@@ -220,6 +220,33 @@ bool TopoOffsetTetMesh::is_edge_on_surface(const Tuple& loc)
     return false;
 }
 
+bool TopoOffsetTetMesh::is_edge_on_offset(const Tuple& loc)
+{
+    size_t v1_id = loc.vid(*this);
+    auto loc1 = loc.switch_vertex(*this);
+    size_t v2_id = loc1.vid(*this);
+    if (!m_vertex_attribute[v1_id].m_is_on_offset || !m_vertex_attribute[v2_id].m_is_on_offset)
+        return false;
+
+    auto tets = get_incident_tets_for_edge(loc);
+    std::vector<size_t> n_vids;
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id)
+                n_vids.push_back(vs[j].vid(*this));
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    for (size_t vid : n_vids) {
+        auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (m_face_attribute[fid].m_is_offset_fs) return true;
+    }
+
+    return false;
+}
+
 
 bool TopoOffsetTetMesh::ambient_assert()
 {
@@ -844,12 +871,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     }
 
     for (size_t i = 0; i < 3; ++i) {
-        // // split
-        // logger().info("\tSplitting long edges...");
-        // split_all_edges();
-        // if (m_params.debug_output) { // intermediate output
-        //     write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-        // }
+        // split
+        logger().info("\tSplitting long edges...");
+        split_all_edges();
+        if (m_params.debug_output) { // intermediate output
+            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        }
 
         // collapse
         logger().info("\tCollapsing short edges...");

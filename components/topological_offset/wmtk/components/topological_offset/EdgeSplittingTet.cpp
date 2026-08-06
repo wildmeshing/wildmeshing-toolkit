@@ -130,6 +130,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     cache.internal_f.clear();
     cache.external_f.clear();
     cache.tets.clear();
+    cache.changed_faces.clear();
 
     size_t e_id = t.eid(*this);
 
@@ -140,11 +141,13 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     cache.v2_id = switch_vertex(t).vid(*this);
 
     cache.is_edge_on_surface = is_edge_on_surface(t);
+    cache.is_edge_on_offset = is_edge_on_offset(t);
 
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
-    if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
+    if (m_edge_split_mode == EdgeSplitMode::Midpoint ||
+        m_edge_split_mode == EdgeSplitMode::Optimization) {
         p_new = (p1 + p2) / 2.0;
     } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
         if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label != 0)) {
@@ -204,59 +207,97 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     cache.new_v = VertexAttributes(p_new);
     cache.new_v.label = m_edge_attribute[e_id].label;
 
-    // split edge
-    cache.split_e = m_edge_attribute[e_id];
+    if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        cache.is_edge_open_boundary = cache.is_edge_on_surface && is_order_2_edge(t);
 
-    // link edge maps (and collect opp vert ids)
-    std::set<size_t> opp_verts;
-    auto tets = get_incident_tets_for_edge(t); // Tuples
-    const simplex::Edge edge(cache.v1_id, cache.v2_id);
-    for (const Tuple& t_inc : tets) {
-        const simplex::Tet tet = simplex_from_tet(t_inc);
-        const simplex::Edge opp = tet.opposite_edge(edge);
-        opp_verts.insert(opp.vertices()[0]);
-        opp_verts.insert(opp.vertices()[1]);
+        /// save face track info
+        auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
+                       const std::pair<FaceAttributes, std::array<size_t, 3>>& v2) {
+            return v1.second < v2.second;
+        };
+        auto is_equal = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
+                           const std::pair<FaceAttributes, std::array<size_t, 3>>& v2) {
+            return v1.second == v2.second;
+        };
 
-        // link edge attribute
-        Tuple e1 = tuple_from_edge(opp.vertices());
-        cache.link_e[opp] = m_edge_attribute[e1.eid(*this)];
+        auto tets = get_incident_tets_for_edge(t);
+        for (auto& tt : tets) {
+            auto vs = oriented_tet_vertices(tt);
+            for (int j = 0; j < 4; j++) {
+                std::array<size_t, 3> f_vids = {{
+                    vs[(j + 1) % 4].vid(*this),
+                    vs[(j + 2) % 4].vid(*this),
+                    vs[(j + 3) % 4].vid(*this),
+                }}; // todo: speedup
+                std::sort(f_vids.begin(), f_vids.end());
+                auto [_, global_fid] = tuple_from_face(f_vids);
+                cache.changed_faces.push_back(std::make_pair(m_face_attribute[global_fid], f_vids));
+            }
+        }
+        wmtk::vector_unique(cache.changed_faces, comp, is_equal);
 
-        // face attributes
-        FaceAttributes new_fattr;
-        new_fattr.label = m_tet_attribute[t_inc.tid(*this)].label;
-        cache.internal_f[opp] = new_fattr;
+        // store tet attributes
+        const simplex::Edge edge(cache.v1_id, cache.v2_id);
+        for (const Tuple& tt : tets) {
+            const simplex::Tet tet = simplex_from_tet(tt);
+            const simplex::Edge opp = tet.opposite_edge(edge);
+            cache.tets[opp] = m_tet_attribute.at(tt.tid(*this));
+        }
+    } else {
+        // split edge
+        cache.split_e = m_edge_attribute[e_id];
 
-        auto [_1, global_fid1] =
-            tuple_from_face({{opp.vertices()[0], opp.vertices()[1], cache.v1_id}});
-        auto [_2, global_fid2] =
-            tuple_from_face({{opp.vertices()[0], opp.vertices()[1], cache.v2_id}});
-        cache.external_f[std::make_pair(opp, cache.v1_id)] = m_face_attribute[global_fid1];
-        cache.external_f[std::make_pair(opp, cache.v2_id)] = m_face_attribute[global_fid2];
+        // link edge maps (and collect opp vert ids)
+        std::set<size_t> opp_verts;
+        auto tets = get_incident_tets_for_edge(t); // Tuples
+        const simplex::Edge edge(cache.v1_id, cache.v2_id);
+        for (const Tuple& t_inc : tets) {
+            const simplex::Tet tet = simplex_from_tet(t_inc);
+            const simplex::Edge opp = tet.opposite_edge(edge);
+            opp_verts.insert(opp.vertices()[0]);
+            opp_verts.insert(opp.vertices()[1]);
 
-        // tet attribute
-        cache.tets[opp] = m_tet_attribute[t_inc.tid(*this)];
-    }
+            // link edge attribute
+            Tuple e1 = tuple_from_edge(opp.vertices());
+            cache.link_e[opp] = m_edge_attribute[e1.eid(*this)];
 
-    // opp vertex maps
-    for (const size_t opp_vid : opp_verts) {
-        // edge maps
-        auto [_1, global_fid1] = tuple_from_face({{opp_vid, cache.v1_id, cache.v2_id}});
-        EdgeAttributes new_eattr;
-        new_eattr.label = m_face_attribute[global_fid1].label;
-        cache.internal_e[opp_vid] = new_eattr;
+            // face attributes
+            FaceAttributes new_fattr;
+            new_fattr.label = m_tet_attribute[t_inc.tid(*this)].label;
+            cache.internal_f[opp] = new_fattr;
 
-        size_t glob_eid1 = tuple_from_edge({{cache.v1_id, opp_vid}}).eid(*this);
-        size_t glob_eid2 = tuple_from_edge({{cache.v2_id, opp_vid}}).eid(*this);
-        simplex::Edge e1(cache.v1_id, opp_vid);
-        simplex::Edge e2(cache.v2_id, opp_vid);
-        cache.external_e[e1] = m_edge_attribute[glob_eid1];
-        cache.external_e[e2] = m_edge_attribute[glob_eid2];
+            auto [_1, global_fid1] =
+                tuple_from_face({{opp.vertices()[0], opp.vertices()[1], cache.v1_id}});
+            auto [_2, global_fid2] =
+                tuple_from_face({{opp.vertices()[0], opp.vertices()[1], cache.v2_id}});
+            cache.external_f[std::make_pair(opp, cache.v1_id)] = m_face_attribute[global_fid1];
+            cache.external_f[std::make_pair(opp, cache.v2_id)] = m_face_attribute[global_fid2];
 
-        // face maps
-        cache.split_f[opp_vid] = m_face_attribute[global_fid1];
-        // if any incident face is on the surface, the new vertex is on the surface as well
-        if (m_face_attribute[global_fid1].m_is_surface_fs) {
-            cache.new_v.m_is_on_surface = true;
+            // tet attribute
+            cache.tets[opp] = m_tet_attribute[t_inc.tid(*this)];
+        }
+
+        // opp vertex maps
+        for (const size_t opp_vid : opp_verts) {
+            // edge maps
+            auto [_1, global_fid1] = tuple_from_face({{opp_vid, cache.v1_id, cache.v2_id}});
+            EdgeAttributes new_eattr;
+            new_eattr.label = m_face_attribute[global_fid1].label;
+            cache.internal_e[opp_vid] = new_eattr;
+
+            size_t glob_eid1 = tuple_from_edge({{cache.v1_id, opp_vid}}).eid(*this);
+            size_t glob_eid2 = tuple_from_edge({{cache.v2_id, opp_vid}}).eid(*this);
+            simplex::Edge e1(cache.v1_id, opp_vid);
+            simplex::Edge e2(cache.v2_id, opp_vid);
+            cache.external_e[e1] = m_edge_attribute[glob_eid1];
+            cache.external_e[e2] = m_edge_attribute[glob_eid2];
+
+            // face maps
+            cache.split_f[opp_vid] = m_face_attribute[global_fid1];
+            // if any incident face is on the surface, the new vertex is on the surface as well
+            if (m_face_attribute[global_fid1].m_is_surface_fs) {
+                cache.new_v.m_is_on_surface = true;
+            }
         }
     }
 
@@ -275,63 +316,155 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
     const size_t v1_id = cache.v1_id;
     const size_t v2_id = cache.v2_id;
 
-    // vertex attribute
-    m_vertex_attribute[v_id] = cache.new_v;
-    m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
-    m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
-        m_vertex_attribute[v1_id].on_bbox_faces,
-        m_vertex_attribute[v2_id].on_bbox_faces);
+    const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(t);
 
-    // split edges attribute
-    size_t split_e1_id = tuple_from_edge({{v1_id, v_id}}).eid(*this);
-    size_t split_e2_id = tuple_from_edge({{v2_id, v_id}}).eid(*this);
-    m_edge_attribute[split_e1_id] = cache.split_e;
-    m_edge_attribute[split_e2_id] = cache.split_e;
+    /// check inversion & rounding
+    auto& p = m_vertex_attribute[v_id].m_posf;
+    p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
 
-    // link edge maps
-    for (const auto& pair : cache.link_e) { // for every link edge
-        auto link_edge = pair.first;
-
-        // tet attributes
-        Tuple t1 = tuple_from_vids(link_edge.vertices()[0], link_edge.vertices()[1], v1_id, v_id);
-        Tuple t2 = tuple_from_vids(link_edge.vertices()[0], link_edge.vertices()[1], v2_id, v_id);
-        m_tet_attribute[t1.tid(*this)] = cache.tets[link_edge];
-        m_tet_attribute[t2.tid(*this)] = cache.tets[link_edge];
-
-        // face attributes
-        auto [_1, glob_fid1] =
-            tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v_id}});
-        m_face_attribute[glob_fid1] = cache.internal_f[link_edge];
-
-        auto [_2, glob_fid2] =
-            tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v1_id}});
-        auto [_3, glob_fid3] =
-            tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v2_id}});
-        m_face_attribute[glob_fid2] = cache.external_f[std::make_pair(link_edge, v1_id)];
-        m_face_attribute[glob_fid3] = cache.external_f[std::make_pair(link_edge, v2_id)];
-
-        // edge attributes
-        size_t link_e_glob_id = tuple_from_edge(link_edge.vertices()).eid(*this);
-        m_edge_attribute[link_e_glob_id] = pair.second;
+    for (const Tuple& tt : locs) {
+        if (is_inverted(tt)) {
+            return false;
+        }
     }
 
-    // oppo vertex maps
-    for (const auto& pair : cache.internal_e) { // for every oppo vertex
-        size_t opp_vid = pair.first;
+    if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        // update tet attributes
+        {
+            // v1 - v_new
+            const auto tets1 = get_incident_tets_for_edge(v1_id, v_id);
+            const simplex::Edge edge1(v1_id, v_id);
+            for (const Tuple& tt : tets1) {
+                const simplex::Tet tet = simplex_from_tet(tt);
+                const simplex::Edge opp = tet.opposite_edge(edge1);
+                m_tet_attribute[tt.tid(*this)] = cache.tets[opp];
+            }
+            // v2 - v_new
+            const auto tets2 = get_incident_tets_for_edge(v2_id, v_id);
+            const simplex::Edge edge2(v2_id, v_id);
+            for (const Tuple& tt : tets2) {
+                const simplex::Tet tet = simplex_from_tet(tt);
+                const simplex::Edge opp = tet.opposite_edge(edge2);
+                m_tet_attribute[tt.tid(*this)] = cache.tets[opp];
+            }
+            assert(tets1.size() + tets2.size() == locs.size());
+        }
 
-        // face attributes
-        auto [_1, glob_fid1] = tuple_from_face({{opp_vid, v1_id, v_id}});
-        auto [_2, glob_fid2] = tuple_from_face({{opp_vid, v2_id, v_id}});
-        m_face_attribute[glob_fid1] = cache.split_f[opp_vid];
-        m_face_attribute[glob_fid2] = cache.split_f[opp_vid];
+        /// update quality
+        for (const Tuple& loc : locs) {
+            m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
+        }
 
-        // edge attributes
-        size_t glob_eid = tuple_from_edge({{v_id, opp_vid}}).eid(*this);
-        size_t glob_eid1 = tuple_from_edge({{v1_id, opp_vid}}).eid(*this);
-        size_t glob_eid2 = tuple_from_edge({{v2_id, opp_vid}}).eid(*this);
-        m_edge_attribute[glob_eid] = cache.internal_e[opp_vid];
-        m_edge_attribute[glob_eid1] = cache.external_e[simplex::Edge(v1_id, opp_vid)];
-        m_edge_attribute[glob_eid2] = cache.external_e[simplex::Edge(v2_id, opp_vid)];
+        /// update vertex attribute
+        // bbox
+        m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+            m_vertex_attribute[v1_id].on_bbox_faces,
+            m_vertex_attribute[v2_id].on_bbox_faces);
+
+
+        // surface
+        m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
+        m_vertex_attribute[v_id].m_is_on_offset = cache.is_edge_on_offset;
+        if (cache.is_edge_on_surface || cache.is_edge_on_offset) {
+            m_vertex_attribute[v_id].m_order = 1;
+        } else {
+            m_vertex_attribute[v_id].m_order = 0;
+        }
+        if (cache.is_edge_open_boundary) {
+            m_vertex_attribute[v_id].m_order = 2;
+        }
+
+        /// update face attribute
+        // add new and erase old
+        for (auto& info : cache.changed_faces) {
+            auto& f_attr = info.first;
+            auto& old_vids = info.second;
+            std::vector<int> j_vn;
+            for (int j = 0; j < 3; j++) {
+                if (old_vids[j] != v1_id && old_vids[j] != v2_id) {
+                    j_vn.push_back(j);
+                }
+            }
+            if (j_vn.size() == 1) {
+                auto [_1, global_fid1] = tuple_from_face({{v1_id, v_id, old_vids[j_vn[0]]}});
+                m_face_attribute[global_fid1] = f_attr;
+                auto [_2, global_fid2] = tuple_from_face({{v2_id, v_id, old_vids[j_vn[0]]}});
+                m_face_attribute[global_fid2] = f_attr;
+            } else { // j_vn.size() == 2
+                auto [_, global_fid] = tuple_from_face(old_vids);
+                m_face_attribute[global_fid] = f_attr;
+                //
+                auto [_2, global_fid2] = tuple_from_face(
+                    {{old_vids[j_vn[0]], old_vids[j_vn[1]], v_id}}); // todo: avoid dup comp
+                m_face_attribute[global_fid2].reset();
+            }
+        }
+
+        m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
+        // m_vertex_attribute[v_id].m_sizing_scalar = (m_vertex_attribute[v1_id].m_sizing_scalar +
+        //                                             m_vertex_attribute[v2_id].m_sizing_scalar) /
+        //                                            2;
+    } else {
+        // vertex attribute
+        m_vertex_attribute[v_id] = cache.new_v;
+        m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
+        m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
+            m_vertex_attribute[v1_id].on_bbox_faces,
+            m_vertex_attribute[v2_id].on_bbox_faces);
+
+        // split edges attribute
+        size_t split_e1_id = tuple_from_edge({{v1_id, v_id}}).eid(*this);
+        size_t split_e2_id = tuple_from_edge({{v2_id, v_id}}).eid(*this);
+        m_edge_attribute[split_e1_id] = cache.split_e;
+        m_edge_attribute[split_e2_id] = cache.split_e;
+
+        // link edge maps
+        for (const auto& pair : cache.link_e) { // for every link edge
+            auto link_edge = pair.first;
+
+            // tet attributes
+            Tuple t1 =
+                tuple_from_vids(link_edge.vertices()[0], link_edge.vertices()[1], v1_id, v_id);
+            Tuple t2 =
+                tuple_from_vids(link_edge.vertices()[0], link_edge.vertices()[1], v2_id, v_id);
+            m_tet_attribute[t1.tid(*this)] = cache.tets[link_edge];
+            m_tet_attribute[t2.tid(*this)] = cache.tets[link_edge];
+
+            // face attributes
+            auto [_1, glob_fid1] =
+                tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v_id}});
+            m_face_attribute[glob_fid1] = cache.internal_f[link_edge];
+
+            auto [_2, glob_fid2] =
+                tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v1_id}});
+            auto [_3, glob_fid3] =
+                tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v2_id}});
+            m_face_attribute[glob_fid2] = cache.external_f[std::make_pair(link_edge, v1_id)];
+            m_face_attribute[glob_fid3] = cache.external_f[std::make_pair(link_edge, v2_id)];
+
+            // edge attributes
+            size_t link_e_glob_id = tuple_from_edge(link_edge.vertices()).eid(*this);
+            m_edge_attribute[link_e_glob_id] = pair.second;
+        }
+
+        // oppo vertex maps
+        for (const auto& pair : cache.internal_e) { // for every oppo vertex
+            size_t opp_vid = pair.first;
+
+            // face attributes
+            auto [_1, glob_fid1] = tuple_from_face({{opp_vid, v1_id, v_id}});
+            auto [_2, glob_fid2] = tuple_from_face({{opp_vid, v2_id, v_id}});
+            m_face_attribute[glob_fid1] = cache.split_f[opp_vid];
+            m_face_attribute[glob_fid2] = cache.split_f[opp_vid];
+
+            // edge attributes
+            size_t glob_eid = tuple_from_edge({{v_id, opp_vid}}).eid(*this);
+            size_t glob_eid1 = tuple_from_edge({{v1_id, opp_vid}}).eid(*this);
+            size_t glob_eid2 = tuple_from_edge({{v2_id, opp_vid}}).eid(*this);
+            m_edge_attribute[glob_eid] = cache.internal_e[opp_vid];
+            m_edge_attribute[glob_eid1] = cache.external_e[simplex::Edge(v1_id, opp_vid)];
+            m_edge_attribute[glob_eid2] = cache.external_e[simplex::Edge(v2_id, opp_vid)];
+        }
     }
 
     return true;
@@ -589,7 +722,7 @@ void TopoOffsetTetMesh::split_all_edges()
 {
     // Midpoint mode has no label-based preconditions (unlike BinarySearch/Initial/etc., used
     // only during marching_tets()), so it can be applied to any edge here.
-    m_edge_split_mode = EdgeSplitMode::Midpoint;
+    m_edge_split_mode = EdgeSplitMode::Optimization;
 
     std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
         *this,
