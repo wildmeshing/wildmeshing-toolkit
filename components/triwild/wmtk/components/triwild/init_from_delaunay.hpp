@@ -12,9 +12,20 @@ namespace wmtk::components::triwild {
  * The input edges are a soup: they may cross, overlap, be duplicated or be degenerate. Crossings
  * become new output vertices, so E_out generally has more (and shorter) edges than E.
  *
+ * The arrangement's vertices are EXACT: a crossing between two segments generally has no
+ * double representation, and vol_rem::embed_seg_in_tri_mesh returns bigrationals for exactly
+ * that reason. They are handed back in V_rational, and V_out is only their rounding.
+ *
+ * Rounding alone is not enough to work with, which is why both are returned. Two vertices
+ * that are exactly distinct can round to the SAME double, and any triangle using both is
+ * then exactly degenerate -- on the 20k 2D dataset that made about a third of the models
+ * unusable. The 3D path has always kept the rationals (VolumemesherInsertion's v_rational);
+ * this is the 2D counterpart.
+ *
  * @param V input vertices (Nx2)
  * @param E input edges (Mx2)
- * @param V_out output vertices (Kx2)
+ * @param V_out output vertices (Kx2), the rounding of V_rational
+ * @param V_rational output vertices, exact (size K)
  * @param F_out output faces (Lx3)
  * @param E_out output edges (Px2) - the output edges tiling the input edges
  */
@@ -22,6 +33,7 @@ void init_from_delaunay_box_mesh(
     const MatrixXd& V,
     const MatrixXi& E,
     MatrixXd& V_out,
+    std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
     MatrixXi& E_out);
 

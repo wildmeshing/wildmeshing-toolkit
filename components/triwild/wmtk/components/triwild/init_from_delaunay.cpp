@@ -20,8 +20,8 @@ namespace {
 // The remesher hands back exact coordinates; which concrete bignum type depends on
 // how VolumeRemesher was configured (see cmake/recipes/volumemesher.cmake). Go
 // through wmtk::Rational -- the same conversion the 3D insertion uses -- so both
-// backends are handled, then round once to double.
-double to_double(const vol_rem::bigrational& r)
+// backends are handled.
+Rational to_rational(const vol_rem::bigrational& r)
 {
     Rational q;
 #ifdef USE_GNU_GMP_CLASSES
@@ -29,7 +29,7 @@ double to_double(const vol_rem::bigrational& r)
 #else
     q.init_from_bin(r.get_str());
 #endif
-    return q.to_double();
+    return q;
 }
 
 /**
@@ -121,6 +121,7 @@ void init_from_delaunay_box_mesh(
     const MatrixXd& V,
     const MatrixXi& E,
     MatrixXd& V_out,
+    std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
     MatrixXi& E_out)
 {
@@ -172,11 +173,22 @@ void init_from_delaunay_box_mesh(
     }
     assert(vertices.size() % 2 == 0);
 
+    // Keep the exact coordinates and hand back the rounding alongside them. Rounding here
+    // and throwing the rationals away is what used to make distinct arrangement vertices
+    // collide on the same double -- see the header.
     const int nv = int(vertices.size() / 2);
+    V_rational.resize(nv);
     V_out.resize(nv, 2);
+    size_t n_indirect = 0;
     for (int v = 0; v < nv; ++v) {
-        V_out(v, 0) = to_double(vertices[2 * v + 0]);
-        V_out(v, 1) = to_double(vertices[2 * v + 1]);
+        V_rational[v][0] = to_rational(vertices[2 * v + 0]);
+        V_rational[v][1] = to_rational(vertices[2 * v + 1]);
+        V_out(v, 0) = V_rational[v][0].to_double();
+        V_out(v, 1) = V_rational[v][1].to_double();
+        if (Rational(V_out(v, 0)) != V_rational[v][0] ||
+            Rational(V_out(v, 1)) != V_rational[v][1]) {
+            ++n_indirect;
+        }
     }
 
     F_out.resize(tris.size(), 3);
@@ -213,10 +225,12 @@ void init_from_delaunay_box_mesh(
     }
 
     logger().info(
-        "2D arrangement: #V = {}, #F = {}, #E_constrained = {}",
+        "2D arrangement: #V = {}, #F = {}, #E_constrained = {} ({} vertices have no exact "
+        "double representation)",
         V_out.rows(),
         F_out.rows(),
-        E_out.rows());
+        E_out.rows(),
+        n_indirect);
 }
 
 void read_input_curves(

@@ -169,6 +169,11 @@ public:
      * @param F #Fx3 vertex IDs for all faces
      * @param E #Ex2 vertex IDs for all constraint edges
      * @param tag_names Names for each tag.
+     * @param V_rational the arrangement's EXACT vertex positions, matching V row for row.
+     *        V is only their rounding, and two exactly distinct vertices can round to the
+     *        same double, so V alone cannot tell a genuine degeneracy from a rounding
+     *        collision. Pass an empty vector when no exact positions exist (unit tests
+     *        building a mesh from doubles); every vertex is then taken as rounded.
      * @param V_env,E_env the curves the envelope is built around. These are the *original*
      *        input curves, not the arrangement's constrained edges: the optimizer has to
      *        stay near what the user gave us, not near the simplified version of it. Same
@@ -177,6 +182,7 @@ public:
      */
     void init_mesh(
         const MatrixXd& V,
+        const std::vector<Vector2r>& V_rational,
         const MatrixXi& F,
         const MatrixXi& E,
         const std::vector<std::string>& tag_names,

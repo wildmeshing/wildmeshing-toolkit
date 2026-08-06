@@ -33,6 +33,7 @@
       "DEBUG_output",
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
+      "DEBUG_euler",
       "DEBUG_disable_envelope",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
@@ -148,6 +149,12 @@
     "doc": "Sanity Check: Compute and report the Hausdorff distance of the input to the output. Should always be smaller than eps."
   },
   {
+    "pointer": "/DEBUG_euler",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Euler characteristic of each connected component of the input curve network and of the output's tracked edges, and warn if they differ. For a graph this is V - E, i.e. 1 - (number of independent cycles) per component: 1 for an open polyline, 0 for a closed loop, -1 for a figure eight. It therefore detects curves merged or split, loops opened or closed, and whole components lost -- the changes the simplification is allowed to make with simplify_use_link_condition off, and the ones a collapse can make that the envelope cannot see (the envelope only bounds output-inside-input, so a curve eroding along itself is invisible to it). Off by default because on a network with many components it is a per-run cost with no effect on the result."
+  },
+  {
     "pointer": "/DEBUG_disable_envelope",
     "type": "bool",
     "default": false,
@@ -162,8 +169,8 @@
   {
     "pointer": "/stop_energy",
     "type": "float",
-    "default": 100,
-    "doc": "Target energy. If all triangles have an energy below this, triwild will stop. Note this is the raw AMIPS2D energy, whose floor (an equilateral triangle) is 2 -- tetwild's stop_energy is compared against the cube root of AMIPS3D, whose floor is 3, so the same number is a looser target here than there."
+    "default": 20,
+    "doc": "Target energy. If all triangles have an energy below this, triwild will stop. Note this is the raw AMIPS2D energy, whose floor (an equilateral triangle) is 2 -- tetwild's stop_energy is compared against the cube root of AMIPS3D, whose floor is 3, so the same number would be a much looser target here than there. 20 is 10x the floor; tetwild's 100 is ~33x its own. At 100 a 300-model trial finished with a median max energy of 88.9 and a median iteration count of 1, i.e. one pass and stop."
   },
   {
     "pointer": "/split_high_valence_threshold",

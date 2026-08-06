@@ -14,9 +14,75 @@
 
 #include <triwild_spec.hpp>
 
+#include <algorithm>
+#include <map>
+#include <numeric>
+#include <vector>
+
 namespace wmtk::components::triwild {
 
 namespace {
+
+/**
+ * @brief Euler characteristic of each connected component of a 2D segment network, sorted.
+ *
+ * The 1D counterpart of tetwild's surface version. For a graph the Euler characteristic is
+ * V - E, which per connected component is 1 - (number of independent cycles): 1 for an open
+ * polyline or any other tree, 0 for a single closed loop, -1 for a figure eight. Comparing
+ * the sorted per-component values of the input curves against the output's tracked edges
+ * therefore catches exactly the topology changes that matter here -- components merged or
+ * split, loops opened or closed, whole curves lost.
+ *
+ * Vertices incident to no segment are ignored, mirroring the igl::remove_unreferenced call
+ * in the 3D version: they are free points the arrangement still triangulates, but they
+ * carry no curve topology and would otherwise swamp the result with one +1 component each.
+ */
+std::vector<int> compute_euler_characteristics(const MatrixXi& E)
+{
+    if (E.rows() == 0) {
+        return {};
+    }
+    const int n = E.maxCoeff() + 1;
+    std::vector<int> parent(n);
+    std::iota(parent.begin(), parent.end(), 0);
+    const auto find = [&parent](int x) {
+        while (parent[x] != x) {
+            parent[x] = parent[parent[x]]; // path halving
+            x = parent[x];
+        }
+        return x;
+    };
+    for (int i = 0; i < E.rows(); ++i) {
+        const int a = find(E(i, 0));
+        const int b = find(E(i, 1));
+        if (a != b) {
+            parent[a] = b;
+        }
+    }
+
+    std::vector<char> referenced(n, 0);
+    for (int i = 0; i < E.rows(); ++i) {
+        referenced[E(i, 0)] = 1;
+        referenced[E(i, 1)] = 1;
+    }
+    std::map<int, int> n_verts, n_edges;
+    for (int v = 0; v < n; ++v) {
+        if (referenced[v]) {
+            ++n_verts[find(v)];
+        }
+    }
+    for (int i = 0; i < E.rows(); ++i) {
+        ++n_edges[find(E(i, 0))];
+    }
+
+    std::vector<int> ecs;
+    ecs.reserve(n_verts.size());
+    for (const auto& [root, nv] : n_verts) {
+        ecs.push_back(nv - n_edges[root]);
+    }
+    std::sort(ecs.begin(), ecs.end());
+    return ecs;
+}
 
 /**
  * @brief One-sided Hausdorff distance from the input segments to the output's tracked
@@ -129,6 +195,15 @@ void triwild(nlohmann::json json_params)
     std::vector<MatrixXi> Es;
     read_input_curves(input_paths, json_params["remove_duplicate_eps"], V_in, E_in, Vs, Es);
 
+    // Informational input-topology report; gated behind DEBUG_euler because it is only
+    // meaningful next to the matching computations later in the run.
+    const bool debug_euler = json_params["DEBUG_euler"];
+    std::vector<int> ecs_input;
+    if (debug_euler) {
+        ecs_input = compute_euler_characteristics(E_in);
+        logger().info("Euler characteristic, input curves: {}", ecs_input);
+    }
+
     // The bounding box comes from the input curves, as in tetwild -- eps has to be known
     // before the arrangement runs, because the simplification happens first. (It used to be
     // taken from the arrangement output, which includes the background grid and is about
@@ -186,11 +261,43 @@ void triwild(nlohmann::json json_params)
             simplify_use_link_condition ? "on" : "off");
     }
 
+    // The simplification is the one stage whose topology is genuinely optional: with
+    // simplify_use_link_condition off it may merge junctions and separate curves. Compare
+    // here, while the curves are still the same kind of object.
+    std::vector<int> ecs_simplified;
+    if (debug_euler) {
+        ecs_simplified = compute_euler_characteristics(E_simp);
+        if (ecs_simplified != ecs_input) {
+            logger().warn(
+                "Euler characteristic, after simplification: {} -- changed from the input "
+                "{}. Expected when simplify_use_link_condition is off, which allows "
+                "junctions and separate curves to merge.",
+                ecs_simplified,
+                ecs_input);
+        } else {
+            logger().info("Euler characteristic, after simplification: unchanged.");
+        }
+    }
+
     // Exact arrangement of the (simplified) segment network.
     MatrixXd V;
+    std::vector<Vector2r> V_rational; // the same vertices, exact
     MatrixXi F;
     MatrixXi E; // constraint edges in the arrangement
-    init_from_delaunay_box_mesh(V_simp, E_simp, V, F, E);
+    init_from_delaunay_box_mesh(V_simp, E_simp, V, V_rational, F, E);
+
+    // The arrangement is the baseline for everything after it. It is EXPECTED to differ
+    // from the input: resolving a crossing inserts a vertex shared by both curves, which
+    // merges two components into one and adds a cycle. That is the arrangement doing its
+    // job, not a defect -- so this is reported, never warned about.
+    std::vector<int> ecs_arrangement;
+    if (debug_euler) {
+        ecs_arrangement = compute_euler_characteristics(E);
+        logger().info(
+            "Euler characteristic, arrangement constraints: {} ({} constrained edges)",
+            ecs_arrangement,
+            E.rows());
+    }
 
     if (params.debug_output) {
         MatrixXd V3(V.rows(), 3);
@@ -222,7 +329,7 @@ void triwild(nlohmann::json json_params)
 
     TriWildMesh mesh(params, envelope_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, F, E, tag_names, V_in, E_in);
+    mesh.init_mesh(V, V_rational, F, E, tag_names, V_in, E_in);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
@@ -306,6 +413,39 @@ void triwild(nlohmann::json json_params)
             logger().warn("Hausdorff distance is larger than the envelope!");
         } else {
             logger().info("Hausdorff distance is smaller than envelope (as expected).");
+        }
+    }
+
+    // Output topology, compared against the ARRANGEMENT, not against the input. The
+    // arrangement is where a legitimate topology change happens -- resolving a crossing
+    // merges two components and adds a cycle -- so comparing to the input would warn on
+    // every self-intersecting drawing. Everything after the arrangement (split, collapse,
+    // swap) is supposed to leave the tracked network's topology alone, and a collapse is
+    // the one that could quietly not: the envelope only bounds output-inside-input, so it
+    // cannot see a curve eroding along itself.
+    std::vector<int> ecs_output;
+    if (debug_euler) {
+        const auto tracked =
+            mesh.get_edges_by_condition([](const auto& e) { return e.m_is_surface_fs; });
+        MatrixXi E_out(tracked.size(), 2);
+        for (size_t i = 0; i < tracked.size(); ++i) {
+            E_out(i, 0) = int(tracked[i][0]);
+            E_out(i, 1) = int(tracked[i][1]);
+        }
+        ecs_output = compute_euler_characteristics(E_out);
+        logger().info(
+            "Euler characteristic, output tracked edges: {} ({} edges)",
+            ecs_output,
+            E_out.rows());
+        if (ecs_output != ecs_arrangement) {
+            logger().warn(
+                "Euler characteristic changed across the optimization: arrangement {} -> "
+                "output {}. The operations altered the tracked curve network's topology; "
+                "only the arrangement is entitled to do that.",
+                ecs_arrangement,
+                ecs_output);
+        } else {
+            logger().info("Euler characteristic is unchanged across the optimization.");
         }
     }
 

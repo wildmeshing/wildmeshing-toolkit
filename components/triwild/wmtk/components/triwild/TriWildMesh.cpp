@@ -261,6 +261,7 @@ std::tuple<double, double> TriWildMesh::local_operations(
 
 void TriWildMesh::init_mesh(
     const MatrixXd& V,
+    const std::vector<Vector2r>& V_rational,
     const MatrixXi& F,
     const MatrixXi& E,
     const std::vector<std::string>& tag_names,
@@ -278,27 +279,110 @@ void TriWildMesh::init_mesh(
     m_vertex_attribute.resize(V.rows());
     m_edge_attribute.resize(F.rows() * 3);
 
+    // Take the arrangement's EXACT positions, and round separately -- the 2D counterpart of
+    // what VolumemesherInsertion does with v_rational. m_pos used to be to_rational(V.row(i)),
+    // i.e. the rounded double converted back, which silently threw the arrangement's
+    // exactness away before anything could use it.
+    //
+    // A vertex whose coordinates happen to have an exact double representation ("direct")
+    // rounds for free: snapping it changes nothing, so it cannot invert a triangle. The rest
+    // start un-rounded and the sweep below reclaims whichever ones can be rounded without
+    // inverting anything.
+    assert(V_rational.empty() || V_rational.size() == size_t(V.rows()));
+    size_t n_indirect = 0;
     for (int i = 0; i < vert_capacity(); i++) {
-        m_vertex_attribute[i].m_pos = to_rational(Vector2d(V.row(i)));
-        m_vertex_attribute[i].m_posf = V.row(i);
+        auto& va = m_vertex_attribute[i];
+        if (V_rational.empty()) {
+            // No exact input available (a caller that only has doubles, e.g. a unit test).
+            va.m_pos = to_rational(Vector2d(V.row(i)));
+            va.m_posf = V.row(i);
+            va.m_is_rounded = true;
+            continue;
+        }
+        va.m_pos = V_rational[i];
+        va.m_posf = Vector2d(V_rational[i][0].to_double(), V_rational[i][1].to_double());
+        va.m_is_rounded =
+            (Rational(va.m_posf[0]) == va.m_pos[0]) && (Rational(va.m_posf[1]) == va.m_pos[1]);
+        if (!va.m_is_rounded) {
+            ++n_indirect;
+            m_all_rounded.store(false, std::memory_order_relaxed);
+        }
+    }
+    if (n_indirect > 0) {
+        logger().info(
+            "{} of {} arrangement vertices have no exact double representation; rounding "
+            "them where it does not invert a triangle",
+            n_indirect,
+            vert_capacity());
+        round_all_vertices();
     }
 
-    // init quality and check for inverted mesh
-    bool is_mesh_inverted = false;
+    // Init quality, and check that the arrangement handed over a uniformly, positively
+    // oriented triangulation.
+    //
+    // This used to trip on the first anomaly and report "Tets with different orientations in
+    // the input!", which named neither of the two things it actually catches and, because
+    // the old state machine took the first bad face as evidence that the WHOLE mesh was
+    // inverted, reported "fully inverted" whenever the only bad face happened to be the last
+    // one. Count instead, and say what was found. Same acceptance -- an all-positive mesh
+    // passes, anything else throws -- only the message changed.
+    //
+    // The orientation is judged in EXACT arithmetic, on m_pos, not on the rounded m_posf.
+    // Judging it on doubles is what used to make about a third of the 20k 2D dataset
+    // unusable: two arrangement vertices that are exactly distinct can round to the same
+    // double, and any triangle using both then looks exactly degenerate even though the
+    // arrangement is perfectly valid. With the rationals kept and only the safely-roundable
+    // vertices rounded (above), a triangle that is still degenerate here is a real one.
+    size_t n_degenerate = 0, n_negative = 0, n_total = 0;
+    size_t first_bad_fid = std::numeric_limits<size_t>::max();
+    std::array<size_t, 3> first_bad_vids = {{0, 0, 0}};
     for (const Tuple& t : get_faces()) {
-        if (is_mesh_inverted ^ is_inverted(t)) {
-            if (!is_mesh_inverted) {
-                is_mesh_inverted = true;
+        const size_t fid = t.fid(*this);
+        const auto vs = oriented_tri_vids(fid);
+        const Vector2r& p0 = m_vertex_attribute[vs[0]].m_pos;
+        const Vector2r& p1 = m_vertex_attribute[vs[1]].m_pos;
+        const Vector2r& p2 = m_vertex_attribute[vs[2]].m_pos;
+        const Rational d = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]);
+        if (!(d > 0)) {
+            if (d == 0) {
+                ++n_degenerate;
             } else {
-                log_and_throw_error("Tets with different orientations in the input!");
+                ++n_negative;
+            }
+            if (first_bad_fid == std::numeric_limits<size_t>::max()) {
+                first_bad_fid = fid;
+                first_bad_vids = vs;
             }
         }
-        m_face_attribute[t.fid(*this)].m_quality = get_quality(t);
+        ++n_total;
+        m_face_attribute[fid].m_quality = get_quality(t);
     }
 
-    if (is_mesh_inverted) {
+    if (n_degenerate + n_negative > 0) {
+        if (n_degenerate + n_negative == n_total) {
+            log_and_throw_error(
+                "Input mesh is fully inverted! This should not happen... Might be a bug.");
+        }
+        const auto& p0 = m_vertex_attribute[first_bad_vids[0]].m_posf;
+        const auto& p1 = m_vertex_attribute[first_bad_vids[1]].m_posf;
+        const auto& p2 = m_vertex_attribute[first_bad_vids[2]].m_posf;
         log_and_throw_error(
-            "Input mesh is fully inverted! This should not happen... Might be a bug.");
+            "The arrangement produced {} zero-area and {} negatively oriented triangles out "
+            "of {} (measured exactly, on the arrangement's rational coordinates). First is "
+            "face {} = ({}, {}, {}) at ({}, {}), ({}, {}), ({}, {}).",
+            n_degenerate,
+            n_negative,
+            n_total,
+            first_bad_fid,
+            first_bad_vids[0],
+            first_bad_vids[1],
+            first_bad_vids[2],
+            p0[0],
+            p0[1],
+            p1[0],
+            p1[1],
+            p2[0],
+            p2[1]);
     }
 
     // mark edges as on surface if they are in E
