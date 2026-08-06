@@ -177,6 +177,11 @@ public:
     FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
 
+    // debug use
+    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
+    // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
+    std::atomic<int> cnt_surface_swap = 0;
+
     TopoOffsetTetMesh(Parameters& _m_params, int _num_threads = 0)
         : m_params(_m_params)
     {
@@ -214,6 +219,7 @@ public:
 
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_offset(const Tuple& loc);
+    bool is_edge_on_bbox(const Tuple& loc);
 
     /**
      * @brief check that the ambient tag does not overlap with any other tags
@@ -448,6 +454,19 @@ public:
      * SimWildMesh::swap_edge_before/after.
      */
     void swap_all_edges();
+
+    /**
+     * @brief Prepare a surface 3->2 edge swap (a surface diagonal flip).
+     *
+     * Called from swap_edge_before when the swapped edge (a,b) is on the surface
+     * and has exactly 3 incident tets. Verifies the local guards that guarantee
+     * the flip preserves surface manifoldness / topology, and fills the
+     * surface-flip fields of swap_cache. Returns false (rejecting the swap) if
+     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface
+     * faces), or one of the two would-be new surface faces already tagged
+     * surface. The tets sharing (a,b) are passed in to avoid recomputation.
+     */
+    bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
     //// swap
 
     /**
@@ -645,11 +664,19 @@ private:
      */
     struct SwapEdgeCache
     {
-        int common_label = 0; // label shared by all 3 incident tets before the swap
-        CellTag common_tag; // tag shared by all 3 incident tets before the swap
-        double max_quality_before = 0.;
-        std::map<simplex::Edge, int> edge_labels; // all edges except the swapped edge itself
-        std::map<simplex::Face, int> face_labels; // all faces except the 3 that vanish with it
+        double max_energy;
+        std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
+        CellTag tet_tags;
+
+        // Surface 3->2 flip bookkeeping (filled by swap_edge_before when the
+        // swapped edge (a,b) lies on the surface). a,b are the removed-edge
+        // endpoints, c,d are the new surface-edge endpoints, e is the interior
+        // apex. sf_face_attr is copied onto the two new surface faces (a,c,d),
+        // (b,c,d). is_surface_flip gates the extra handling in swap_edge_after.
+        bool is_surface_flip = false;
+        bool is_offset_flip = false;
+        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0, sf_e = 0;
+        FaceAttributes sf_face_attr;
     };
     wmtk::threading::enumerable_thread_specific<SwapEdgeCache> swap_edge_cache;
 
