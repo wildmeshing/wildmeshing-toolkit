@@ -913,9 +913,16 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
         }
 
-        // swap
+        // swap: 2-3/3-2 + 4-4 + 5-6 edge swaps, then the 2-3 face swap, matching how
+        // SimWildMesh's own operation loop calls swap_all_edges_all() and swap_all_faces()
+        // together.
         logger().info("\tSwapping edges...");
-        swap_all_edges();
+        swap_all_edges_all();
+        if (m_params.debug_output) { // intermediate output
+            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        }
+        logger().info("\tSwapping faces...");
+        swap_all_faces();
         if (m_params.debug_output) { // intermediate output
             write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
         }

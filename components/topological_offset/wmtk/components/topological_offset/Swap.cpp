@@ -1,7 +1,9 @@
 
 #include "TopoOffsetTetMesh.h"
 
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/ExecutionScheduler.hpp>
+#include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
 
@@ -205,6 +207,244 @@ bool TopoOffsetTetMesh::swap_edge_after(const Tuple& t)
     return true;
 }
 
+bool TopoOffsetTetMesh::swap_edge_44_before(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_44_before(t)) {
+        return false;
+    }
+
+    const auto incident_tets = get_incident_tids_for_edge(t);
+    if (incident_tets.size() != 4) {
+        return false;
+    }
+
+    // unlike swap_edge (2-3/3-2), there is no surface-diagonal-flip case here: reject outright
+    if (is_edge_on_surface(t) || is_edge_on_offset(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
+
+    auto& cache = swap_edge_cache.local();
+    cache.is_surface_flip = false;
+    cache.is_offset_flip = false;
+    const auto& TA = m_tet_attribute;
+
+    cache.tet_tags = TA[incident_tets[0]].tag;
+    double max_energy = -1.0;
+    for (const size_t l : incident_tets) {
+        max_energy = std::max(TA[l].m_quality, max_energy);
+    }
+    cache.max_energy = max_energy;
+
+    face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
+
+    return true;
+}
+
+double TopoOffsetTetMesh::swap_edge_44_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
+{
+    double max_energy = -1;
+    for (const auto& vids : tets) {
+        if (is_inverted(vids)) {
+            return std::numeric_limits<double>::max();
+        }
+        const double e = get_quality(vids);
+        max_energy = std::max(max_energy, e);
+    }
+    return max_energy;
+}
+
+bool TopoOffsetTetMesh::swap_edge_44_after(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_44_after(t)) {
+        return false;
+    }
+
+    const auto incident_tets = get_incident_tets_for_edge(t);
+
+    double max_energy = -1.0;
+    for (const Tuple& l : incident_tets) {
+        if (is_inverted(l)) {
+            return false;
+        }
+        const double q = get_quality(l);
+        m_tet_attribute[l.tid(*this)].m_quality = q;
+        max_energy = std::max(q, max_energy);
+
+        m_tet_attribute[l.tid(*this)].tag = swap_edge_cache.local().tet_tags;
+    }
+
+    if (max_energy >= swap_edge_cache.local().max_energy) {
+        return false;
+    }
+
+    tracker_assign_after(
+        *this,
+        incident_tets,
+        swap_edge_cache.local().changed_faces,
+        m_face_attribute);
+
+    cnt_swap++;
+    return true;
+}
+
+bool TopoOffsetTetMesh::swap_edge_56_before(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_56_before(t)) {
+        return false;
+    }
+
+    const auto incident_tets = get_incident_tids_for_edge(t);
+    if (incident_tets.size() != 5) {
+        return false;
+    }
+    if (is_edge_on_surface(t) || is_edge_on_offset(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
+
+    auto& cache = swap_edge_cache.local();
+    cache.is_surface_flip = false;
+    cache.is_offset_flip = false;
+    const auto& TA = m_tet_attribute;
+
+    cache.tet_tags = TA[incident_tets[0]].tag;
+    double max_energy = -1.0;
+    for (const size_t l : incident_tets) {
+        max_energy = std::max(TA[l].m_quality, max_energy);
+    }
+    cache.max_energy = max_energy;
+
+    face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
+
+    return true;
+}
+
+double TopoOffsetTetMesh::swap_edge_56_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
+{
+    double max_energy = -1;
+    for (const auto& vids : tets) {
+        if (is_inverted(vids)) {
+            return std::numeric_limits<double>::max();
+        }
+        const double e = get_quality(vids);
+        max_energy = std::max(max_energy, e);
+    }
+    return max_energy;
+}
+
+bool TopoOffsetTetMesh::swap_edge_56_after(const Tuple& t)
+{
+    if (!TetMesh::swap_edge_56_after(t)) {
+        return false;
+    }
+
+    // No need to check inversion or energy against a "before" baseline here: the operation
+    // would already have been rejected via swap_edge_56_energy() if every orientation were
+    // worse. The inversion check below is a final safety net, matching SimWildMesh.
+    const auto e1 = get_incident_tids_for_edge(t);
+    const auto e2 = get_incident_tids_for_edge(t.switch_edge(*this));
+    const auto tids = wmtk::set_union(e1, e2);
+
+    for (const size_t tid : tids) {
+        const Tuple tet = tuple_from_tet(tid);
+        if (is_inverted(tet)) {
+            return false;
+        }
+        const double q = get_quality(tet);
+        m_tet_attribute[tid].m_quality = q;
+        m_tet_attribute[tid].tag = swap_edge_cache.local().tet_tags;
+    }
+
+    tracker_assign_after(*this, tids, swap_edge_cache.local().changed_faces, m_face_attribute);
+
+    cnt_swap++;
+    return true;
+}
+
+bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
+{
+    if (!TetMesh::swap_face_before(t)) {
+        return false;
+    }
+
+    auto& cache = swap_edge_cache.local();
+    cache.is_surface_flip = false;
+    cache.is_offset_flip = false;
+
+    const size_t fid = t.fid(*this);
+    if (m_face_attribute[fid].m_is_surface_fs || m_face_attribute[fid].m_is_offset_fs ||
+        m_face_attribute[fid].m_is_bbox_fs >= 0) {
+        return false;
+    }
+    const auto oppo_tet = t.switch_tetrahedron(*this);
+    assert(oppo_tet.has_value() && "Should not swap boundary.");
+
+    const size_t t0 = t.tid(*this);
+    const size_t t1 = oppo_tet.value().tid(*this);
+
+    const auto& TA = m_tet_attribute;
+
+    const double max_energy = std::max(TA[t0].m_quality, TA[t1].m_quality);
+
+    // pre-compute energy for all 3 possible re-triangulations of the 2-tet bistellar flip; the
+    // real connectivity change never moves any vertex, so this is exact, not an estimate
+    {
+        const auto t1_vids = oriented_tet_vids(t1);
+
+        const size_t v0 = t.vid(*this);
+        const size_t v1 = t.switch_vertex(*this).vid(*this);
+        const size_t v2 = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+        const size_t v3 = t.switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
+
+        const std::array<size_t, 3> tri{{v0, v1, v2}};
+
+        for (int i = 0; i < 3; i++) {
+            std::array<size_t, 4> new_tet = t1_vids;
+            wmtk::array_replace_inline(new_tet, tri[i], v3);
+            if (is_inverted(new_tet)) {
+                return false;
+            }
+            const double q = get_quality(new_tet);
+            if (q >= max_energy) {
+                return false;
+            }
+        }
+    }
+
+    cache.tet_tags = TA[t0].tag;
+
+    const std::vector<size_t> twotets{t0, t1};
+    face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces);
+    return true;
+}
+
+bool TopoOffsetTetMesh::swap_face_after(const Tuple& t)
+{
+    if (!TetMesh::swap_face_after(t)) {
+        return false;
+    }
+
+    const auto incident_tets = get_incident_tets_for_edge(t);
+
+    for (const Tuple& l : incident_tets) {
+        const double q = get_quality(l);
+        m_tet_attribute[l.tid(*this)].m_quality = q;
+        m_tet_attribute[l.tid(*this)].tag = swap_edge_cache.local().tet_tags;
+    }
+
+    tracker_assign_after(
+        *this,
+        incident_tets,
+        swap_edge_cache.local().changed_faces,
+        m_face_attribute);
+
+    cnt_swap++;
+    return true;
+}
+
 bool TopoOffsetTetMesh::offset_swap_normal_deviation_ok(
     const Tuple& face_abc,
     const Tuple& face_abd,
@@ -242,6 +482,12 @@ bool TopoOffsetTetMesh::offset_swap_normal_deviation_ok(
 
     const double nd_old = spread((pb - pa).normalized()); // current diagonal (a,b)
     const double nd_new = spread((pd - pc).normalized()); // diagonal after the flip (c,d)
+
+    if (nd_old >= m_max_normal_deviation_swap_max_deg ||
+        nd_new >= m_max_normal_deviation_swap_max_deg) {
+        // something might be off here, better don't flip
+        return false;
+    }
 
     // only reject a regression: an already-poor alignment doesn't block the flip
     if (nd_old < m_max_normal_deviation_deg && nd_new >= m_max_normal_deviation_deg) {
@@ -377,8 +623,8 @@ bool TopoOffsetTetMesh::prepare_surface_flip_32(
 
 void TopoOffsetTetMesh::swap_all_edges()
 {
-    // 2-3/3-2 flip only -- see the class-level note on swap_all_edges() for why 4-4, 5-6, and
-    // face swap are left out of this first draft.
+    // 2-3/3-2 flip only; see swap_all_edges_44()/swap_all_edges_56()/swap_all_faces() for the
+    // other three, and swap_all_edges_all() for running this one together with 4-4 and 5-6.
     std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
@@ -396,6 +642,160 @@ void TopoOffsetTetMesh::swap_all_edges()
         };
         // longest edges first, matching SimWildMesh's swap priority: swapping is primarily a
         // quality fix for long/skinny tets, unlike collapse's shortest-first order
+        executor.priority = [](const TopoOffsetTetMesh& m, wmtk::Op, const Tuple& t) {
+            const size_t v0 = t.vid(m);
+            const size_t v1 = t.switch_vertex(m).vid(m);
+            return (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf)
+                .squaredNorm();
+        };
+        wmtk::run_localized_to_convergence(*this, executor, all_ops);
+    };
+
+    if (NUM_THREADS > 0) {
+        compute_vertex_partition();
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
+        executor.lock_vertices = [](TopoOffsetTetMesh& m, const Tuple& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
+        setup_and_execute(executor);
+    }
+}
+
+void TopoOffsetTetMesh::swap_all_edges_44()
+{
+    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TopoOffsetTetMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_swap_44", e); });
+
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_edges;
+        executor.priority = [](const TopoOffsetTetMesh& m, wmtk::Op, const Tuple& t) {
+            const size_t v0 = t.vid(m);
+            const size_t v1 = t.switch_vertex(m).vid(m);
+            return (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf)
+                .squaredNorm();
+        };
+        wmtk::run_localized_to_convergence(*this, executor, all_ops);
+    };
+
+    if (NUM_THREADS > 0) {
+        compute_vertex_partition();
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
+        executor.lock_vertices = [](TopoOffsetTetMesh& m, const Tuple& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
+        setup_and_execute(executor);
+    }
+}
+
+void TopoOffsetTetMesh::swap_all_edges_56()
+{
+    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TopoOffsetTetMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_swap_56", e); });
+
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_edges;
+        executor.priority = [](const TopoOffsetTetMesh& m, wmtk::Op, const Tuple& t) {
+            const size_t v0 = t.vid(m);
+            const size_t v1 = t.switch_vertex(m).vid(m);
+            return (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf)
+                .squaredNorm();
+        };
+        wmtk::run_localized_to_convergence(*this, executor, all_ops);
+    };
+
+    if (NUM_THREADS > 0) {
+        compute_vertex_partition();
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
+        executor.lock_vertices = [](TopoOffsetTetMesh& m, const Tuple& e, int task_id) -> bool {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
+        setup_and_execute(executor);
+    }
+}
+
+void TopoOffsetTetMesh::swap_all_faces()
+{
+    // Seeded from canonical edge tuples, same as SimWildMesh::swap_all_faces(): each such
+    // tuple is still anchored at *some* face, giving a first pass of coverage, and
+    // renew_neighbor_tuples (wmtk::renewal_faces) re-enqueues genuinely face-anchored tuples
+    // around every successful flip from then on.
+    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TopoOffsetTetMesh&, const Tuple& e, auto& out) { out.emplace_back("face_swap", e); });
+
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples = wmtk::renewal_faces;
+        executor.priority = [](const TopoOffsetTetMesh& m, wmtk::Op, const Tuple& t) {
+            const size_t v0 = t.vid(m);
+            const size_t v1 = t.switch_vertex(m).vid(m);
+            return (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf)
+                .squaredNorm();
+        };
+        wmtk::run_localized_to_convergence(*this, executor, all_ops);
+    };
+
+    if (NUM_THREADS > 0) {
+        compute_vertex_partition();
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
+        executor.lock_vertices = [](TopoOffsetTetMesh& m, const Tuple& e, int task_id) -> bool {
+            return m.try_set_face_mutex_two_ring(e, task_id);
+        };
+        executor.num_threads = NUM_THREADS;
+        setup_and_execute(executor);
+    } else {
+        auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
+        setup_and_execute(executor);
+    }
+}
+
+void TopoOffsetTetMesh::swap_all_edges_all()
+{
+    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](TopoOffsetTetMesh&, const Tuple& e, auto& out) {
+            out.emplace_back("edge_swap", e);
+            out.emplace_back("edge_swap_44", e);
+            out.emplace_back("edge_swap_56", e);
+        });
+
+    auto setup_and_execute = [&](auto& executor) {
+        executor.renew_neighbor_tuples =
+            [](const TopoOffsetTetMesh& m, const std::string&, const std::vector<Tuple>& newt) {
+                std::vector<Tuple> new_edges;
+                for (const Tuple& ti : newt) {
+                    for (int j = 0; j < 6; ++j) {
+                        new_edges.push_back(m.tuple_from_edge(ti.tid(m), j));
+                    }
+                }
+                wmtk::unique_edge_tuples(m, new_edges);
+
+                std::vector<std::pair<std::string, Tuple>> op_tups;
+                op_tups.reserve(new_edges.size() * 3);
+                for (const Tuple& loc : new_edges) {
+                    op_tups.emplace_back("edge_swap", loc);
+                    op_tups.emplace_back("edge_swap_44", loc);
+                    op_tups.emplace_back("edge_swap_56", loc);
+                }
+                return op_tups;
+            };
         executor.priority = [](const TopoOffsetTetMesh& m, wmtk::Op, const Tuple& t) {
             const size_t v0 = t.vid(m);
             const size_t v1 = t.switch_vertex(m).vid(m);

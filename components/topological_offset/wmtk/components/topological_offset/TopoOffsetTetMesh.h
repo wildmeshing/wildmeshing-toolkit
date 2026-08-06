@@ -288,6 +288,16 @@ public:
     bool collapse_edge_after(const Tuple& t) override;
     bool swap_edge_before(const Tuple& t) override;
     bool swap_edge_after(const Tuple& t) override;
+    bool swap_edge_44_before(const Tuple& t) override;
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    bool swap_edge_44_after(const Tuple& t) override;
+    bool swap_edge_56_before(const Tuple& t) override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    bool swap_edge_56_after(const Tuple& t) override;
+    bool swap_face_before(const Tuple& t) override;
+    bool swap_face_after(const Tuple& t) override;
     //// overriden splits/invariants
 
     /**
@@ -380,6 +390,7 @@ public:
      * and .../invariants/OffsetCollapseBeforeInvariant.cpp
      */
     double m_max_normal_deviation_deg = 15.0;
+    double m_max_normal_deviation_swap_max_deg = 75.0;
 
     /**
      * @brief max angle (degrees, 0-90, orientation independent) between offset-surface face
@@ -424,10 +435,10 @@ public:
     void split_all_edges();
     //// split
 
-    //// swap (2-3 / 3-2 edge-to-face flip only; no 4-4, 5-6, or face swap yet)
+    //// swap
     /**
-     * @brief swap_edge, restricted to edges whose 3 incident tets already share the same
-     * label and tag: the new tets/faces then unambiguously inherit that label/tag, and the
+     * @brief swap_edge (2-3/3-2), restricted to edges whose 3 incident tets already share the
+     * same label and tag: the new tets/faces then unambiguously inherit that label/tag, and the
      * offset/input region boundaries -- which live entirely in *which* tets carry which label
      * -- cannot move, since a swap confined to a single-label neighborhood never changes any
      * tet's label. An edge lying *on* the input or offset surface is additionally allowed as a
@@ -436,6 +447,35 @@ public:
      * matching SimWildMesh::swap_edge_before/after.
      */
     void swap_all_edges();
+
+    /**
+     * @brief 4-4 edge swap (edges with exactly 4 incident tets), matching
+     * SimWildMesh::swap_all_edges_44(). Unlike swap_all_edges(), this never touches the input
+     * or offset surface (or the bbox) at all -- there is no surface-diagonal-flip case for it,
+     * so an edge on either surface is rejected outright in swap_edge_44_before().
+     */
+    void swap_all_edges_44();
+
+    /**
+     * @brief 5-6 edge swap (edges with exactly 5 incident tets), matching
+     * SimWildMesh::swap_all_edges_56(). Same surface/offset/bbox exclusion as
+     * swap_all_edges_44().
+     */
+    void swap_all_edges_56();
+
+    /**
+     * @brief 2-3 face swap (a bistellar flip turning the 2 tets sharing a face into 3 tets
+     * sharing an edge), matching SimWildMesh::swap_all_faces(). Never touches a face on the
+     * input surface, the offset surface, or the bbox.
+     */
+    void swap_all_faces();
+
+    /**
+     * @brief runs swap_edge, swap_edge_44, and swap_edge_56 together over the same edge op
+     * list, matching SimWildMesh::swap_all_edges_all(). This is what optimize_offset() calls;
+     * the three swap_all_edges*() above remain available individually (e.g. for tests).
+     */
+    void swap_all_edges_all();
 
     /**
      * @brief Prepare a surface or offset-surface 3->2 edge swap (a diagonal flip).
