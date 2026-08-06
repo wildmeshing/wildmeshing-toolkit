@@ -25,6 +25,8 @@
       "split_high_valence_threshold",
       "w_amips",
       "num_smoothing_passes",
+      "interleaved_smoothing",
+      "interleaved_smoothing_passes",
       "preserve_topology",
       "remove_duplicate_eps",
       "allow_surface_swap",
@@ -199,6 +201,18 @@
     "type": "int",
     "default": 10,
     "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy."
+  },
+  {
+    "pointer": "/interleaved_smoothing",
+    "type": "bool",
+    "default": false,
+    "doc": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes."
+  },
+  {
+    "pointer": "/interleaved_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set."
   },
   {
     "pointer": "/preserve_topology",

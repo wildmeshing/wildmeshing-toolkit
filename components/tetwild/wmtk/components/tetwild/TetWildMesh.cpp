@@ -76,8 +76,18 @@ void TetWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] =
-            local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+        // One iteration is either split/collapse/swaps followed by all the smoothing, or --
+        // with interleaved_smoothing -- each topology pass followed by its own smoothing, so
+        // the next pass sees a relaxed mesh rather than the raw output of the previous one.
+        auto [max_energy, avg_energy] = [&]() -> std::tuple<double, double> {
+            if (!m_params.interleaved_smoothing) {
+                return local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+            }
+            const int k = m_params.interleaved_smoothing_passes;
+            local_operations({{1, 0, 0, k}});
+            local_operations({{0, 1, 0, k}});
+            return local_operations({{0, 0, 1, k}});
+        }();
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
