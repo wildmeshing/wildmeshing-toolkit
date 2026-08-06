@@ -921,14 +921,14 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         }
         logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
 
-        // // smoothing
-        // logger().info("\tSmoothing all vertices...");
-        // for (int j = 0; j < m_params.smoothing_iterations; j++) {
-        //     smooth_all_vertices();
-        //     if (m_params.debug_output) { // intermediate output
-        //         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-        //     }
-        // }
+        // smoothing
+        logger().info("\tSmoothing all vertices...");
+        for (int j = 0; j < m_params.smoothing_iterations; j++) {
+            smooth_all_vertices();
+            if (m_params.debug_output) { // intermediate output
+                write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+            }
+        }
     }
 }
 
@@ -1346,6 +1346,9 @@ bool TopoOffsetTetMesh::offset_is_manifold()
 
 bool TopoOffsetTetMesh::invariants(const std::vector<Tuple>& tets)
 {
+    /**
+     * TODO: Check this individually in each operation
+     */
     igl::predicates::exactinit();
     for (const Tuple& t : tets) {
         auto vs = oriented_tet_vids(t);
