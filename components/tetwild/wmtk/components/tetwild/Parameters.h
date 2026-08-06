@@ -117,6 +117,18 @@ struct Parameters
      */
     int num_smoothing_passes = 10;
 
+    // Interleave smoothing between the topology passes instead of running it all at the end
+    // of the iteration. With this on, one iteration is
+    //     split   + interleaved_smoothing_passes smoothing passes
+    //     collapse + ...
+    //     swaps    + ...
+    // rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the
+    // only phase that improves quality without changing connectivity, so giving each topology
+    // pass a chance to be relaxed before the next one runs may keep the optimizer off the
+    // plateaus where split, collapse and swap simply undo each other.
+    bool interleaved_smoothing = false;
+    int interleaved_smoothing_passes = 2;
+
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
