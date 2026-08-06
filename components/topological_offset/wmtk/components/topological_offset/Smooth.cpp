@@ -193,6 +193,9 @@ bool TopoOffsetTetMesh::smooth_after_interior(const Tuple& t)
     // Only the quality veto needs to be checked here.
     double max_after_quality = 0.;
     for (const Tuple& tet : locs) {
+        if (is_inverted(tet)) {
+            return false;
+        }
         const size_t tid = tet.tid(*this);
         const double q = get_quality(tet);
         m_tet_attribute[tid].m_quality = q;
