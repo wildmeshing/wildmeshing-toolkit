@@ -221,27 +221,26 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
-        // The rounded (double) midpoint inverts an incident tet. By default reject
-        // the split. But if the rational fallback is enabled, place the new vertex at
-        // the EXACT rational midpoint of the two endpoints instead. That midpoint lies
-        // on the shared edge, so it can never invert a previously-valid incident tet --
-        // the split always succeeds and a stuck region can keep being refined. The
-        // vertex stays un-rounded (m_pos exact, m_is_rounded=false) until a later
-        // round() reclaims it.
+        // The rounded (double) midpoint inverts an incident tet, so place the new vertex at
+        // the EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
+        // shared edge, so it can never invert a previously-valid incident tet: the split
+        // always succeeds and a stuck region can keep being refined. The vertex stays
+        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
         //
-        // Only when an endpoint is already rational, though. Splitting between two
-        // rounded endpoints would manufacture a brand-new rational vertex out of a
-        // fully-rounded neighbourhood, so a mesh that had reached "All rounded!" could
-        // go back to carrying exact coordinates -- and did: model 73435 finished with
-        // unrounded vertices having reported all-rounded one iteration earlier. With
-        // this rule rationals only ever propagate from existing rationals, so the
-        // rounded set cannot shrink and the invariant is monotone.
-        const bool endpoint_is_rational =
-            !m_vertex_attribute[v1_id].m_is_rounded || !m_vertex_attribute[v2_id].m_is_rounded;
-        if (!m_params.stuck_refine_rational_split || !endpoint_is_rational) {
-            return false;
-        }
-
+        // This used to apply only when an endpoint was already rational, to stop a split
+        // between two rounded endpoints from reintroducing exact coordinates into a
+        // fully-rounded mesh. That restriction is what stalled the optimizer: it rejected the
+        // split outright exactly where the mesh is degenerate, which is where refinement is
+        // needed, and the stuck-refine machinery then hammered the region from outside,
+        // driving the max energy up by orders of magnitude per pass. On Thingi10K 509315 the
+        // restriction cost 5 of 8 runs, which diverged to 1e16..1e20 and hit the sweep's
+        // one-hour timeout; without it 8 of 8 converge, in 2-5 iterations, and healthy models
+        // are unchanged in both time and quality.
+        //
+        // Exact coordinates reaching the output is prevented by the iteration, not here: a
+        // split is the only operation that can un-round a vertex (collapse, all four swaps
+        // and smoothing never do), the post-optimization pass is collapse-only, and the loop
+        // does not stop until every vertex is rounded as well as the energy target being met.
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         // Guard against a pre-existing inverted incident tet: re-check in exact

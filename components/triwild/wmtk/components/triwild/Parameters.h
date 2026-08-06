@@ -66,7 +66,6 @@ struct Parameters
     // current worst-triangle set instead fall back to the EXACT rational midpoint
     // (never inverts) and keep the new vertex un-rounded, so the worst region can
     // still be refined.
-    bool stuck_refine_rational_split = true;
 
     // ---- Skip good regions ----------------------------------------------
     // Only smooth vertices incident to a triangle whose energy is >=
@@ -109,7 +108,6 @@ struct Parameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        stuck_refine_rational_split = json_params["stuck_refine_rational_split"];
 
         // Skip good regions.
         skip_good_regions = json_params["skip_good_regions"];

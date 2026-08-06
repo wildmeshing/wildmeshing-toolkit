@@ -45,7 +45,6 @@
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
       "stuck_refine_force_split",
-      "stuck_refine_rational_split",
       "skip_good_regions",
       "skip_good_regions_margin",
       "skip_winding_number"
@@ -322,12 +321,6 @@
     "type": "bool",
     "default": true,
     "doc": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall."
-  },
-  {
-    "pointer": "/stuck_refine_rational_split",
-    "type": "bool",
-    "default": true,
-    "doc": "When a split's rounded (double) midpoint would invert an incident tet, allow edges of the current worst-tet set to fall back to the exact rational midpoint (never inverts, keeps the new vertex un-rounded) instead of rejecting the split."
   },
   {
     "pointer": "/skip_good_regions",

@@ -61,7 +61,6 @@ struct Parameters
     // the current worst-tet set (the seeds used by refine_sizing_around_worst)
     // instead fall back to the EXACT rational midpoint (never inverts) and keep
     // the new vertex un-rounded, so the worst region can still be refined.
-    bool stuck_refine_rational_split = true;
 
     // ---- Skip good regions ----------------------------------------------
     // Only smooth vertices incident to a tet whose energy is >=

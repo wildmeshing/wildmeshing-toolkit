@@ -164,16 +164,12 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
         // The rounded (double) midpoint inverts an incident triangle. By default reject
-        // the split. If the rational fallback is enabled, place the new vertex at the
+        // the split. Place the new vertex at the
         // EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
         // shared edge, so it can never invert a previously-valid incident triangle -- the
         // split always succeeds and the worst region can keep being refined. The vertex
         // stays un-rounded (m_pos exact, m_is_rounded = false) until a later round()
         // reclaims it.
-        if (!m_params.stuck_refine_rational_split) {
-            return false;
-        }
-
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         // Unlike tetwild, keep m_posf in step with the exact position: when an endpoint is
