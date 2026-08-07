@@ -74,8 +74,8 @@ struct Parameters
     // only phase that improves quality without changing connectivity, so giving each topology
     // pass a chance to be relaxed before the next one runs may keep the optimizer off the
     // plateaus where split, collapse and swap simply undo each other.
-    bool interleaved_smoothing = false;
-    int interleaved_smoothing_passes = 2;
+    bool interleaved_smoothing = true;
+    int interleaved_smoothing_passes = 1;
 
     // ---- Stuck-element sizing refinement --------------------------------
     // Same names, defaults and meaning as tetwild/simwild -- see the specs.
@@ -123,7 +123,13 @@ struct Parameters
     // gated: gating the topology/sizing ops (split/collapse/swap) starves the
     // optimizer and blows up the element count, so those always run over the
     // whole mesh.
-    bool skip_good_regions = true;
+    // Off: gating on element quality also skips SURFACE vertices, whose smoothing is driven
+    // almost entirely by the envelope term (w_amips 1e-4), not by the quality of the elements
+    // around them. On 122839 the filtered run exhausted 60 iterations at max energy 21.03
+    // while the unfiltered one converged to 19.9998 in 54 -- and did so in LESS wall time
+    // (875s vs 947s), because needing fewer iterations more than paid for the extra vertices
+    // per pass.
+    bool skip_good_regions = false;
     // Safety margin on the "active" threshold: a triangle is active when its
     // energy is >= this fraction of stop_energy, so vertices near triangles
     // sitting just below the target are still smoothed.
