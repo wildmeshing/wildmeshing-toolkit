@@ -146,7 +146,7 @@
     "pointer": "/DEBUG_hausdorff",
     "type": "bool",
     "default": false,
-    "doc": "Sanity Check: Compute and report the Hausdorff distance of the input to the output. Should always be smaller than eps."
+    "doc": "Sanity Check: Compute and report the deviation between the input curves and the output's tracked edges, in both directions. Containment, d(output -> input), is the envelope invariant and should always be smaller than eps. Coverage, d(input -> output), is reported as a diagnostic and is NOT bounded by anything: the simplification is allowed to remove detail and the arrangement may drop segments, so a large value means the output no longer covers part of the input, not that the envelope was violated."
   },
   {
     "pointer": "/DEBUG_euler",

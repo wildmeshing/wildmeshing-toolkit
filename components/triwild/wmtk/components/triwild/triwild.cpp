@@ -85,64 +85,79 @@ std::vector<int> compute_euler_characteristics(const MatrixXi& E)
 }
 
 /**
- * @brief One-sided Hausdorff distance from the input segments to the output's tracked
- * edges: the largest distance any point of the input has to travel to reach the output.
+ * @brief Largest distance from any point of the segments (V, E) to the geometry that
+ * `target` was built over, or -1 when there is nothing to sample.
  *
- * The 2D counterpart of tetwild's DEBUG_hausdorff check, which samples the input surface
- * and measures against an envelope built over the output surface. Here the samples are
- * spread along each input segment proportionally to its length (the input is a segment
- * soup, so there is no area to sample uniformly).
+ * Samples each segment uniformly with the budget spread by length: the input is a segment
+ * soup, so there is no area to sample, and there is no reason to sample a long segment as
+ * coarsely as a short one. Deterministic, unlike the 3D version's
+ * igl::random_points_on_mesh -- a diagnostic that changes between runs is hard to act on.
+ *
+ * A max over samples converges slowly, so the budget is deliberately large (tetwild raised
+ * its own from 10k to 100k after finding a 21x under-estimate). This is opt-in diagnostic
+ * code; a stable answer is worth the samples.
  */
-double hausdorff_to_output(
-    const TriWildMesh& mesh,
-    const std::vector<MatrixXd>& Vs,
-    const std::vector<MatrixXi>& Es)
+double
+max_deviation(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target, int n_samples)
 {
-    // Envelope over the output's tracked edges.
-    std::vector<Vector2d> v_out;
-    std::vector<Vector2i> e_out;
-    v_out.reserve(mesh.vert_capacity());
-    for (size_t i = 0; i < mesh.vert_capacity(); ++i) {
-        v_out.push_back(mesh.m_vertex_attribute[i].m_posf);
-    }
-    for (const auto& vids :
-         mesh.get_edges_by_condition([](const auto& e) { return e.m_is_surface_fs; })) {
-        e_out.emplace_back(int(vids[0]), int(vids[1]));
-    }
-    if (e_out.empty()) {
-        logger().warn("Hausdorff check: the output has no tracked edges.");
-        return -1;
-    }
-    SampleEnvelope env;
-    env.init(v_out, e_out, 0);
-
-    // Total input length, so the sample budget can be spread by length.
-    constexpr int n_samples = 10000;
     double total_length = 0;
-    for (size_t k = 0; k < Es.size(); ++k) {
-        for (int i = 0; i < Es[k].rows(); ++i) {
-            total_length += (Vs[k].row(Es[k](i, 1)) - Vs[k].row(Es[k](i, 0))).norm();
-        }
+    for (int i = 0; i < E.rows(); ++i) {
+        total_length += (V.row(E(i, 1)) - V.row(E(i, 0))).norm();
     }
-    if (total_length <= 0) {
+    if (E.rows() == 0 || total_length <= 0) {
         return -1;
     }
 
     double sq_max = -1;
     Vector2d projection;
-    for (size_t k = 0; k < Es.size(); ++k) {
-        for (int i = 0; i < Es[k].rows(); ++i) {
-            const Vector2d a = Vs[k].row(Es[k](i, 0));
-            const Vector2d b = Vs[k].row(Es[k](i, 1));
-            const double len = (b - a).norm();
-            const int n = std::max(1, int(n_samples * len / total_length));
-            for (int s = 0; s <= n; ++s) {
-                const Vector2d p = a + (b - a) * (double(s) / double(n));
-                sq_max = std::max(sq_max, env.nearest_point(p, projection));
-            }
+    for (int i = 0; i < E.rows(); ++i) {
+        const Vector2d a = V.row(E(i, 0));
+        const Vector2d b = V.row(E(i, 1));
+        const double len = (b - a).norm();
+        const int n = std::max(1, int(n_samples * len / total_length));
+        for (int s = 0; s <= n; ++s) {
+            const Vector2d p = a + (b - a) * (double(s) / double(n));
+            sq_max = std::max(sq_max, target.nearest_point(p, projection));
         }
     }
     return sq_max < 0 ? -1 : std::sqrt(sq_max);
+}
+
+/**
+ * @brief The output's tracked (input-carrying) edges, as a standalone (V, E) pair.
+ */
+void tracked_edges(const TriWildMesh& mesh, MatrixXd& V, MatrixXi& E)
+{
+    V.resize(mesh.vert_capacity(), 2);
+    for (size_t i = 0; i < mesh.vert_capacity(); ++i) {
+        V.row(i) = mesh.m_vertex_attribute[i].m_posf;
+    }
+    const auto tracked =
+        mesh.get_edges_by_condition([](const auto& e) { return e.m_is_surface_fs; });
+    E.resize(tracked.size(), 2);
+    for (size_t i = 0; i < tracked.size(); ++i) {
+        E(i, 0) = int(tracked[i][0]);
+        E(i, 1) = int(tracked[i][1]);
+    }
+}
+
+/**
+ * @brief Build a 2D envelope over the segments (V, E). eps is irrelevant here: only
+ * nearest_point() is used, and that ignores the thickness.
+ */
+std::shared_ptr<SampleEnvelope> envelope_over(const MatrixXd& V, const MatrixXi& E)
+{
+    std::vector<Vector2d> v(V.rows());
+    for (int i = 0; i < V.rows(); ++i) {
+        v[i] = V.row(i);
+    }
+    std::vector<Vector2i> e(E.rows());
+    for (int i = 0; i < E.rows(); ++i) {
+        e[i] = E.row(i);
+    }
+    auto env = std::make_shared<SampleEnvelope>();
+    env->init(v, e, 0);
+    return env;
 }
 
 } // namespace
@@ -399,20 +414,51 @@ void triwild(nlohmann::json json_params)
     // double time = timer.getElapsedTime();
     // logger().info("total time {:.4}s", time);
 
-    // Sanity check: how far the input actually is from the output. The 2D counterpart of
-    // tetwild's DEBUG_hausdorff -- sample the input segments and measure each sample
-    // against an envelope built over the output's tracked (surface) edges.
-    double hausdorff_distance = -1;
+    // Surface deviation, both directions. The 2D counterpart of tetwild's DEBUG_hausdorff,
+    // including the correction from #967:
+    //
+    //   containment d(output -> input) is the envelope invariant. Every point of the output's
+    //       tracked edges stays within eps of the input; this is what the optimizer maintains
+    //       and the only direction worth comparing against eps.
+    //   coverage    d(input -> output) is NOT promised by anything. The simplification is
+    //       allowed to remove detail and the arrangement may drop segments, so this grows
+    //       while containment is untouched. Reported as a diagnostic only.
+    //
+    // This check used to compute coverage, call it "Hausdorff distance", and warn that it was
+    // "larger than the envelope" -- exactly the mistake #967 fixed in 3D, where a legitimate
+    // result read 50x eps on containment that was actually 0.34x. On the 2D sweep it made ~60%
+    // of successful models look like envelope violations.
+    double containment_distance = -1;
+    double coverage_distance = -1;
     if (json_params["DEBUG_hausdorff"]) {
-        hausdorff_distance = hausdorff_to_output(mesh, Vs, Es);
-        logger().info(
-            "Hausdorff distance = {:.4} | Envelope = {:.4}",
-            hausdorff_distance,
-            params.eps);
-        if (hausdorff_distance > params.eps) {
-            logger().warn("Hausdorff distance is larger than the envelope!");
+        const int n_samples = 100000;
+        MatrixXd V_track;
+        MatrixXi E_track;
+        tracked_edges(mesh, V_track, E_track);
+        if (E_track.rows() == 0) {
+            logger().warn("Hausdorff check: the output has no tracked edges.");
         } else {
-            logger().info("Hausdorff distance is smaller than envelope (as expected).");
+            const auto env_in = envelope_over(V_in, E_in);
+            const auto env_out = envelope_over(V_track, E_track);
+            containment_distance = max_deviation(V_track, E_track, *env_in, n_samples);
+            coverage_distance = max_deviation(V_in, E_in, *env_out, n_samples);
+
+            logger().info(
+                "curve deviation: containment d(output->input) = {:.4} | envelope = {:.4}",
+                containment_distance,
+                params.eps);
+            if (containment_distance > params.eps) {
+                logger().warn(
+                    "Output is outside the envelope; the containment invariant was "
+                    "violated.");
+            } else {
+                logger().info("Output is inside the envelope (as expected).");
+            }
+            // No comparison against eps: the pipeline does not promise this direction.
+            logger().info(
+                "curve deviation: coverage d(input->output) = {:.4} (diagnostic; large means "
+                "the output no longer covers part of the input)",
+                coverage_distance);
         }
     }
 
@@ -464,7 +510,10 @@ void triwild(nlohmann::json json_params)
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
         // report["time"] = time;
-        report["hausdorff"] = hausdorff_distance;
+        // "hausdorff" keeps its name and now holds containment, the invariant; "coverage" is
+        // the other direction. Same convention as the tetwild report.
+        report["hausdorff"] = containment_distance;
+        report["coverage"] = coverage_distance;
         report["all_rounded"] = all_rounded;
         // report["insertion_and_preprocessing"] = insertion_time;
         fout << std::setw(4) << report;
