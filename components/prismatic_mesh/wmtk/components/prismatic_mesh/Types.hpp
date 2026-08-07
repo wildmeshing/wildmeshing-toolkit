@@ -82,6 +82,9 @@ struct PrismaticMeshReport
     size_t unlock_rollbacks = 0;
     size_t remaining_equal_source_edges = 0;
     size_t remaining_tau_2_2 = 0;
+    size_t open_boundary_edges = 0;
+    size_t open_boundary_candidate_tets = 0;
+    size_t open_boundary_removed_tets = 0;
     size_t marked_shell_sources = 0;
     size_t least_squares_shell_vertices = 0;
     size_t singular_shell_vertices = 0;
@@ -99,6 +102,7 @@ struct PrismaticMeshReport
     size_t rod_shell_junctions = 0;
     size_t rod_shell_components = 0;
     size_t rod_shell_transition_tets = 0;
+    size_t duplicate_cells_removed = 0;
     double minimum_shell_scale = 1;
     double max_amips = 0;
     std::vector<std::string> warnings;

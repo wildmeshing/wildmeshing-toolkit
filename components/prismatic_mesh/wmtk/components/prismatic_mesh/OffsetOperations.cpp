@@ -18,6 +18,94 @@ Edge sorted_edge(size_t a, size_t b)
 
 } // namespace
 
+OpenBoundaryStats PrismOffsetTetMesh::handle_open_boundaries(
+    const std::vector<std::array<size_t, 3>>& annotated_faces)
+{
+    OpenBoundaryStats stats;
+    std::map<Edge, size_t> face_count;
+    for (const auto& face : annotated_faces) {
+        ++face_count[sorted_edge(face[0], face[1])];
+        ++face_count[sorted_edge(face[1], face[2])];
+        ++face_count[sorted_edge(face[2], face[0])];
+    }
+
+    std::set<Edge> boundary_edges;
+    for (const auto& [edge, count] : face_count) {
+        if (count <= 1) boundary_edges.insert(edge);
+    }
+    stats.boundary_edges = boundary_edges.size();
+    if (boundary_edges.empty()) return stats;
+
+    std::vector<size_t> remove;
+    for (const Tuple& tet : get_tets()) {
+        const size_t tid = tet.tid(*this);
+        if (m_tet_attribute[tid].label != 2) continue;
+
+        std::vector<size_t> input_vertices;
+        std::vector<size_t> offset_vertices;
+        std::set<size_t> all_sources;
+        bool has_unknown_source = false;
+        for (const size_t vertex : oriented_tet_vids(tet)) {
+            const auto& attributes = m_vertex_attribute[vertex];
+            if (attributes.source_vid < 0) {
+                has_unknown_source = true;
+                break;
+            }
+            all_sources.insert(static_cast<size_t>(attributes.source_vid));
+            if (attributes.label == 1)
+                input_vertices.push_back(vertex);
+            else if (attributes.label == 2)
+                offset_vertices.push_back(vertex);
+        }
+        if (has_unknown_source || input_vertices.empty() || offset_vertices.empty()) continue;
+
+        bool near_boundary = false;
+        for (const Edge& edge : boundary_edges) {
+            if (all_sources.count(edge[0]) != 0 && all_sources.count(edge[1]) != 0) {
+                near_boundary = true;
+                break;
+            }
+        }
+        if (!near_boundary) continue;
+        ++stats.candidate_tets;
+
+        const size_t n = offset_vertices.size();
+        std::set<size_t> offset_sources;
+        for (const size_t vertex : offset_vertices) {
+            offset_sources.insert(static_cast<size_t>(m_vertex_attribute[vertex].source_vid));
+        }
+        const size_t m = offset_sources.size();
+
+        bool should_remove = (n == 2 && m == 1) || (n == 3 && m == 1);
+        if (n == 2 && m == 2 && input_vertices.size() == 2) {
+            std::set<size_t> input_sources;
+            for (const size_t vertex : input_vertices) {
+                input_sources.insert(static_cast<size_t>(m_vertex_attribute[vertex].source_vid));
+            }
+            if (input_sources == offset_sources && input_sources.size() == 2) {
+                const Edge corresponding =
+                    sorted_edge(*input_sources.begin(), *input_sources.rbegin());
+                should_remove = boundary_edges.count(corresponding) != 0;
+            }
+        } else if (n == 3 && m == 2) {
+            const Edge corresponding =
+                sorted_edge(*offset_sources.begin(), *offset_sources.rbegin());
+            should_remove = boundary_edges.count(corresponding) != 0;
+        }
+
+        if (should_remove) remove.push_back(tid);
+    }
+
+    std::sort(remove.begin(), remove.end());
+    remove.erase(std::unique(remove.begin(), remove.end()), remove.end());
+    stats.removed_tets = remove.size();
+    if (!remove.empty()) {
+        remove_tets_by_ids(remove);
+        consolidate_mesh();
+    }
+    return stats;
+}
+
 bool PrismOffsetTetMesh::is_offset_surface_edge(const Tuple& edge) const
 {
     const size_t v0 = edge.vid(*this);
@@ -113,19 +201,43 @@ size_t PrismOffsetTetMesh::count_tau_2_2() const
 std::set<int64_t> PrismOffsetTetMesh::non_bijective_sources() const
 {
     std::set<int64_t> result;
+    for (const size_t vertex : non_bijective_vertices()) {
+        const int64_t source = m_vertex_attribute[vertex].source_vid;
+        if (source >= 0) result.insert(source);
+    }
+    return result;
+}
+
+std::set<size_t> PrismOffsetTetMesh::non_bijective_vertices() const
+{
+    std::set<size_t> result;
     for (const Tuple& edge : get_edges()) {
         const size_t v0 = edge.vid(*this);
         const size_t v1 = edge.switch_vertex(*this).vid(*this);
         const auto& a0 = m_vertex_attribute[v0];
         const auto& a1 = m_vertex_attribute[v1];
         if (is_offset_surface_edge(edge) && a0.source_vid >= 0 && a0.source_vid == a1.source_vid) {
-            result.insert(a0.source_vid);
+            // Algorithm 9 marks every vertex of an offset triangle incident to
+            // a residual equal-source edge, not every vertex elsewhere that
+            // happens to share the same input source.
+            for (const Tuple& face : get_faces()) {
+                const auto vertices = get_face_vids(face);
+                const bool contains_edge =
+                    std::find(vertices.begin(), vertices.end(), v0) != vertices.end() &&
+                    std::find(vertices.begin(), vertices.end(), v1) != vertices.end();
+                if (!contains_edge) continue;
+                bool all_offset = true;
+                for (const size_t vertex : vertices) {
+                    all_offset = all_offset && m_vertex_attribute[vertex].label == 2;
+                }
+                if (all_offset) result.insert(vertices.begin(), vertices.end());
+            }
         }
     }
     for (const Tuple& tet : get_tets()) {
         Tau22 configuration;
         if (!classify_tau_2_2(tet, configuration)) continue;
-        result.insert(configuration.sources.begin(), configuration.sources.end());
+        result.insert(configuration.offset.begin(), configuration.offset.end());
     }
     return result;
 }

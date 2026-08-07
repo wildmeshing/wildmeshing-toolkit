@@ -286,6 +286,9 @@ nlohmann::json PrismaticMeshReport::to_json() const
         {"unlock_rollbacks", unlock_rollbacks},
         {"remaining_equal_source_edges", remaining_equal_source_edges},
         {"remaining_tau_2_2", remaining_tau_2_2},
+        {"open_boundary_edges", open_boundary_edges},
+        {"open_boundary_candidate_tets", open_boundary_candidate_tets},
+        {"open_boundary_removed_tets", open_boundary_removed_tets},
         {"marked_shell_sources", marked_shell_sources},
         {"least_squares_shell_vertices", least_squares_shell_vertices},
         {"singular_shell_vertices", singular_shell_vertices},
@@ -303,6 +306,7 @@ nlohmann::json PrismaticMeshReport::to_json() const
         {"rod_shell_junctions", rod_shell_junctions},
         {"rod_shell_components", rod_shell_components},
         {"rod_shell_transition_tets", rod_shell_transition_tets},
+        {"duplicate_cells_removed", duplicate_cells_removed},
         {"minimum_shell_scale", minimum_shell_scale},
         {"max_amips", max_amips},
         {"warnings", warnings}};

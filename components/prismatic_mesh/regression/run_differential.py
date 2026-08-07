@@ -423,7 +423,11 @@ def unstable_output_runs(compare_binary, outputs):
     for index in range(1, len(outputs)):
         current = canonical_hash(outputs[index])
         if baseline is None or current is None or current != baseline:
-            unstable.append(index)
+            run_directory = outputs[index].parent.name
+            try:
+                unstable.append(int(run_directory.removeprefix("run_")))
+            except ValueError:
+                unstable.append(index)
     return unstable
 
 
@@ -451,6 +455,16 @@ def main():
     manifest = json.loads(args.manifest.read_text(encoding="utf8"))
     repository = pathlib.Path(__file__).resolve().parents[3]
     new_commit = command_output(["git", "-C", str(repository), "rev-parse", "HEAD"])
+    new_worktree_dirty = bool(
+        command_output(["git", "-C", str(repository), "status", "--porcelain"])
+    )
+    build_type = "unknown"
+    cmake_cache = repository / "build" / "CMakeCache.txt"
+    if cmake_cache.exists():
+        for line in cmake_cache.read_text(encoding="utf8", errors="replace").splitlines():
+            if line.startswith("CMAKE_BUILD_TYPE:STRING="):
+                build_type = line.partition("=")[2] or "unspecified"
+                break
     compiler = command_output(["c++", "--version"]).splitlines()[0]
     args.work_dir.mkdir(parents=True, exist_ok=True)
     reports = []
@@ -533,10 +547,10 @@ def main():
                 "failures": [entry["error"] for entry in old_run_errors + new_run_errors],
                 "old_run_errors": old_run_errors,
                 "new_run_errors": new_run_errors,
-                "old_unstable_runs":
-                    [entry["run"] for entry in old_run_errors] + old_output_instability,
-                "new_unstable_runs":
-                    [entry["run"] for entry in new_run_errors] + new_output_instability,
+                "old_unstable_runs": sorted(set(
+                    [entry["run"] for entry in old_run_errors] + old_output_instability)),
+                "new_unstable_runs": sorted(set(
+                    [entry["run"] for entry in new_run_errors] + new_output_instability)),
             }
             # Preserve metrics for whichever implementation succeeded. This is
             # important for old-code defect cases: a reference assertion must
@@ -609,6 +623,8 @@ def main():
     summary = {
         "old_commit": manifest["old_commit"],
         "new_commit": new_commit,
+        "new_worktree_dirty": new_worktree_dirty,
+        "build_type": build_type,
         "platform": platform.platform(),
         "compiler": compiler,
         "runs": args.runs,

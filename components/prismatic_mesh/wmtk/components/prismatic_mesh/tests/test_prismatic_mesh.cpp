@@ -24,6 +24,17 @@ PrismaticMeshInput one_tet_input()
     return input;
 }
 
+PrismaticMeshInput embedded_shell_input()
+{
+    PrismaticMeshInput input;
+    input.vertices.resize(5, 3);
+    input.vertices << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1;
+    input.tets = {{{0, 1, 2, 3}}, {{0, 2, 1, 4}}};
+    input.tet_groups = {{"ambient"}, {"ambient"}};
+    input.face_groups["shell"] = {{{0, 1, 2}}};
+    return input;
+}
+
 using Facet = std::vector<size_t>;
 
 std::map<Facet, size_t> facet_incidence(const HybridVolumeMesh& mesh)
@@ -199,6 +210,75 @@ TEST_CASE("paper tau22 unlock rolls back both blocked diagonals", "[prismatic_me
     CHECK(mesh.check_mesh_connectivity_validity());
 }
 
+TEST_CASE(
+    "paper open-boundary tau classification removes only incompatible tets",
+    "[prismatic_mesh][offset]")
+{
+    wmtk::components::topological_offset::Parameters parameters;
+    const std::vector<std::array<size_t, 3>> faces = {{{0, 1, 2}}};
+
+    SECTION("tau 2 1 is removed")
+    {
+        PrismOffsetTetMesh mesh(parameters);
+        mesh.init(4, {{{0, 1, 2, 3}}});
+        mesh.m_tet_attribute[0].label = 2;
+        mesh.m_vertex_attribute[0].label = 1;
+        mesh.m_vertex_attribute[0].source_vid = 0;
+        mesh.m_vertex_attribute[1].label = 1;
+        mesh.m_vertex_attribute[1].source_vid = 1;
+        mesh.m_vertex_attribute[2].label = 2;
+        mesh.m_vertex_attribute[2].source_vid = 0;
+        mesh.m_vertex_attribute[3].label = 2;
+        mesh.m_vertex_attribute[3].source_vid = 0;
+
+        const auto stats = mesh.handle_open_boundaries(faces);
+        CHECK(stats.boundary_edges == 3);
+        CHECK(stats.candidate_tets == 1);
+        CHECK(stats.removed_tets == 1);
+        CHECK(mesh.tet_size() == 0);
+    }
+
+    SECTION("tau 3 3 is preserved")
+    {
+        PrismOffsetTetMesh mesh(parameters);
+        mesh.init(4, {{{0, 1, 2, 3}}});
+        mesh.m_tet_attribute[0].label = 2;
+        mesh.m_vertex_attribute[0].label = 1;
+        mesh.m_vertex_attribute[0].source_vid = 0;
+        for (size_t i = 1; i < 4; ++i) {
+            mesh.m_vertex_attribute[i].label = 2;
+            mesh.m_vertex_attribute[i].source_vid = static_cast<int64_t>(i - 1);
+        }
+
+        const auto stats = mesh.handle_open_boundaries(faces);
+        CHECK(stats.boundary_edges == 3);
+        CHECK(stats.candidate_tets == 1);
+        CHECK(stats.removed_tets == 0);
+        CHECK(mesh.tet_size() == 1);
+    }
+
+    SECTION("closed annotated surfaces have no open boundary")
+    {
+        PrismOffsetTetMesh mesh(parameters);
+        mesh.init(4, {{{0, 1, 2, 3}}});
+        mesh.m_tet_attribute[0].label = 2;
+        for (size_t i = 0; i < 4; ++i) {
+            mesh.m_vertex_attribute[i].label = i == 0 ? 1 : 2;
+            mesh.m_vertex_attribute[i].source_vid = static_cast<int64_t>(i);
+        }
+        const std::vector<std::array<size_t, 3>> closed = {
+            {{0, 1, 2}},
+            {{0, 3, 1}},
+            {{1, 3, 2}},
+            {{0, 2, 3}}};
+        const auto stats = mesh.handle_open_boundaries(closed);
+        CHECK(stats.boundary_edges == 0);
+        CHECK(stats.candidate_tets == 0);
+        CHECK(stats.removed_tets == 0);
+        CHECK(mesh.tet_size() == 1);
+    }
+}
+
 TEST_CASE("cross section validation", "[prismatic_mesh]")
 {
     const std::vector<Vector2d> square = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
@@ -210,6 +290,27 @@ TEST_CASE("cross section validation", "[prismatic_mesh]")
 
     const std::vector<Vector2d> bowtie = {{-1, -1}, {1, 1}, {-1, 1}, {1, -1}};
     CHECK_FALSE(is_valid_cross_section(bowtie));
+}
+
+TEST_CASE("annotated simplices must belong to the tetrahedral complex", "[prismatic_mesh][input]")
+{
+    auto bad_face = one_tet_input();
+    bad_face.vertices.conservativeResize(5, 3);
+    bad_face.vertices.row(4) = Vector3d(2, 2, 2);
+    bad_face.face_groups["shell"] = {{{0, 1, 4}}};
+    PrismaticMeshParameters shell_parameters;
+    shell_parameters.shells = {{"shell", 0.1}};
+    CHECK_THROWS(generate_prismatic_mesh(bad_face, shell_parameters));
+
+    auto duplicate_edge = one_tet_input();
+    duplicate_edge.edge_groups["rod"] = {{{0, 1}}, {{1, 0}}};
+    RodDefinition rod;
+    rod.group = "rod";
+    rod.thickness = 0.1;
+    rod.cross_section = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
+    PrismaticMeshParameters rod_parameters;
+    rod_parameters.rods = {rod};
+    CHECK_THROWS(generate_prismatic_mesh(duplicate_edge, rod_parameters));
 }
 
 TEST_CASE("hybrid cell validity", "[prismatic_mesh]")
@@ -283,18 +384,22 @@ TEST_CASE("paper marked-vertex recovery partitions", "[prismatic_mesh][recovery]
 
 TEST_CASE("paper shell layer", "[prismatic_mesh]")
 {
-    auto input = one_tet_input();
-    input.face_groups["shell"] = {{{0, 1, 2}}};
+    const auto input = embedded_shell_input();
 
     PrismaticMeshParameters parameters;
     parameters.shells.push_back({"shell", 0.1});
     const auto result = generate_prismatic_mesh(input, parameters);
 
-    CHECK(result.mesh.prisms.size() == 2);
-    CHECK(result.mesh.tets.empty());
-    CHECK(result.report.shell_prisms == 2);
+    // One side is an exact prism column. The other contains an embedding
+    // subdivision and must conservatively remain tetrahedral rather than
+    // overlap a nominal prism candidate.
+    CHECK(result.mesh.prisms.size() == 1);
+    CHECK_FALSE(result.mesh.tets.empty());
+    CHECK(result.report.shell_prisms == 1);
     CHECK(result.report.topological_offset_runs == 1);
+    CHECK(result.report.open_boundary_edges == 3);
     CHECK(result.mesh.vertices.rows() == 9);
+    for (const auto& [_, count] : facet_incidence(result.mesh)) CHECK(count <= 2);
 }
 
 TEST_CASE("solid preservation", "[prismatic_mesh]")
@@ -311,8 +416,8 @@ TEST_CASE("solid preservation", "[prismatic_mesh]")
 
 TEST_CASE("shell layer respects an annotated solid side", "[prismatic_mesh]")
 {
-    auto input = one_tet_input();
-    input.face_groups["shell"] = {{{0, 1, 2}}};
+    auto input = embedded_shell_input();
+    input.tet_groups[1] = {"solid"};
 
     PrismaticMeshParameters parameters;
     parameters.solid_groups = {"solid"};
