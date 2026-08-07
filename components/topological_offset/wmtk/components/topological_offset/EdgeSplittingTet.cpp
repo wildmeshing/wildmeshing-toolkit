@@ -208,6 +208,18 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     cache.new_v.label = m_edge_attribute[e_id].label;
 
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        // Precise (sizing-scaled) length gate: split_all_edges()'s collection lambda and
+        // should_renew filter only see a raw squared length (no per-vertex sizing info), so
+        // they use a conservative, over-inclusive threshold; this is where the real decision
+        // for this specific edge's two endpoints happens.
+        {
+            const double sizing_ratio =
+                (VA[cache.v1_id].m_sizing_scalar + VA[cache.v2_id].m_sizing_scalar) / 2.;
+            if ((p1 - p2).squaredNorm() <= m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                return false;
+            }
+        }
+
         cache.is_edge_open_boundary = cache.is_edge_on_surface && is_order_2_edge(t);
 
         /// save face track info
@@ -401,9 +413,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
         }
 
         m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
-        // m_vertex_attribute[v_id].m_sizing_scalar = (m_vertex_attribute[v1_id].m_sizing_scalar +
-        //                                             m_vertex_attribute[v2_id].m_sizing_scalar) /
-        //                                            2;
+        m_vertex_attribute[v_id].m_sizing_scalar = (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                                     m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                                    2;
     } else {
         // vertex attribute
         m_vertex_attribute[v_id] = cache.new_v;
@@ -732,7 +744,11 @@ void TopoOffsetTetMesh::split_all_edges()
             const size_t v1 = e.switch_vertex(m).vid(m);
             const double len2 =
                 (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf).squaredNorm();
-            if (len2 > m.m_params.splitting_l2) {
+            // conservative pre-filter: MIN_SIZING_SCALAR is the smallest possible sizing
+            // scalar, so this is the lowest the sizing-scaled threshold could ever be for any
+            // edge. split_edge_before() applies the precise, per-edge sizing-scaled check.
+            if (len2 > m.m_params.splitting_l2 * TopoOffsetTetMesh::MIN_SIZING_SCALAR *
+                           TopoOffsetTetMesh::MIN_SIZING_SCALAR) {
                 out.emplace_back("edge_split", e);
             }
         });
@@ -755,7 +771,7 @@ void TopoOffsetTetMesh::split_all_edges()
                 .squaredNorm();
         };
         executor.should_renew = [this](double priority_val) {
-            return priority_val > m_params.splitting_l2;
+            return priority_val > m_params.splitting_l2 * MIN_SIZING_SCALAR * MIN_SIZING_SCALAR;
         };
         wmtk::run_localized_to_convergence(*this, executor, all_ops);
     };
