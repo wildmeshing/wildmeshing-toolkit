@@ -19,6 +19,11 @@ branch hangs, and writes `summary.json`. A failure in one executable never
 prevents the other executable from running. Raw meshes and logs remain in the
 selected work directory.
 
+The summary records the pinned old commit, current commit and dirty-worktree
+state, CMake build type, compiler, executable hashes, and the exact per-case
+configuration paths. A dirty run is useful during development but must be
+repeated from a clean commit before recording a release baseline.
+
 Determinism is based on the comparator's canonical cell hash, independently of
 validity. This keeps an invalid-but-byte-identical output from being
 misdiagnosed as nondeterministic; validity remains a separate hard failure.

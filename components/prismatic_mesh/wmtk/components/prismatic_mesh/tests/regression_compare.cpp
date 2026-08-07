@@ -23,7 +23,9 @@ namespace {
 struct Cell
 {
     int type = 0;
+    size_t element_tag = 0;
     std::vector<size_t> vertices;
+    std::string region;
 };
 
 struct Mesh
@@ -31,6 +33,7 @@ struct Mesh
     std::map<size_t, Vector3d> vertices;
     std::vector<Cell> cells;
     std::set<std::string> physical_groups;
+    std::set<std::string> region_names;
 };
 
 using Facet = std::vector<size_t>;
@@ -65,10 +68,33 @@ Mesh load(const std::filesystem::path& path)
         for (size_t i = 0; i < block.num_elements_in_block; ++i) {
             Cell cell;
             cell.type = block.element_type;
+            cell.element_tag = block.data[i * (n + 1)];
             for (size_t j = 0; j < n; ++j) {
                 cell.vertices.push_back(block.data[i * (n + 1) + j + 1]);
             }
             result.cells.push_back(std::move(cell));
+        }
+    }
+    std::map<size_t, size_t> cell_by_tag;
+    for (size_t i = 0; i < result.cells.size(); ++i) {
+        cell_by_tag.emplace(result.cells[i].element_tag, i);
+    }
+    for (const auto& field : data.m_spec.element_data) {
+        if (field.header.string_tags.size() < 2 ||
+            field.header.string_tags.front() != "region_id") {
+            continue;
+        }
+        const auto name_to_id = nlohmann::json::parse(field.header.string_tags[1]);
+        std::map<int64_t, std::string> id_to_name;
+        for (const auto& [name, id] : name_to_id.items()) {
+            id_to_name.emplace(id.get<int64_t>(), name);
+            result.region_names.insert(name);
+        }
+        for (const auto& entry : field.entries) {
+            const auto cell = cell_by_tag.find(entry.tag);
+            if (cell == cell_by_tag.end() || entry.data.empty()) continue;
+            const auto region = id_to_name.find(std::llround(entry.data.front()));
+            if (region != id_to_name.end()) result.cells[cell->second].region = region->second;
         }
     }
     for (const auto& group : data.m_spec.physical_groups) {
@@ -140,13 +166,23 @@ std::multiset<std::string> canonical_cells(const Mesh& mesh, const double eps)
         std::string best;
         for (const auto& permutation : permutations) {
             std::ostringstream key;
-            key << cell.type << ':';
+            key << cell.type << ':' << cell.region << ':';
             for (const size_t i : permutation) key << points[i] << ';';
             if (best.empty() || key.str() < best) best = key.str();
         }
         result.insert(std::move(best));
     }
     return result;
+}
+
+std::multiset<std::string> canonical_solid_tets(const Mesh& mesh, const double eps)
+{
+    Mesh solids;
+    solids.vertices = mesh.vertices;
+    for (const Cell& cell : mesh.cells) {
+        if (cell.type == 4 && cell.region.rfind("solid", 0) == 0) solids.cells.push_back(cell);
+    }
+    return canonical_cells(solids, eps);
 }
 
 std::multiset<std::string> canonical_boundary(const Mesh& mesh, const double eps)
@@ -408,6 +444,13 @@ nlohmann::json metrics(const Mesh& mesh)
     size_t pyramids = 0;
     bool conforming = false;
     const auto boundary = boundary_facets(mesh, conforming);
+    const auto canonical = canonical_cells(mesh, std::max(1e-10, 1e-8 * (hi - lo).norm()));
+    size_t duplicate_cell_count = 0;
+    for (auto cell = canonical.begin(); cell != canonical.end();) {
+        const auto end = canonical.upper_bound(*cell);
+        duplicate_cell_count += static_cast<size_t>(std::distance(cell, end) - 1);
+        cell = end;
+    }
     for (const auto& cell : mesh.cells) {
         volume += cell_volume(mesh, cell);
         tets += cell.type == 4;
@@ -425,6 +468,9 @@ nlohmann::json metrics(const Mesh& mesh)
         {"canonical_hash", canonical_hash(mesh)},
         {"valid", valid(mesh)},
         {"conforming", conforming},
+        {"duplicate_cells", duplicate_cell_count != 0},
+        {"duplicate_cell_count", duplicate_cell_count},
+        {"region_names", mesh.region_names},
         {"boundary_facets", boundary.size()},
         {"max_amips", max_amips(mesh)}};
 }
@@ -460,6 +506,10 @@ int main(int argc, char** argv)
         if (!old_metrics["conforming"].get<bool>() || !new_metrics["conforming"].get<bool>()) {
             failures.push_back("one or both meshes are non-conforming");
         }
+        if (old_metrics["duplicate_cells"].get<bool>() ||
+            new_metrics["duplicate_cells"].get<bool>()) {
+            failures.push_back("one or both meshes contain duplicate cells");
+        }
         if (canonical_cells(old_mesh, eps) != canonical_cells(new_mesh, eps)) {
             failures.push_back("canonical cell multisets differ");
         }
@@ -469,12 +519,22 @@ int main(int argc, char** argv)
         if (old_mesh.physical_groups != new_mesh.physical_groups) {
             failures.push_back("physical groups differ");
         }
+        if (old_mesh.region_names != new_mesh.region_names) {
+            failures.push_back("region tag sets differ");
+        }
     } else {
         if (!old_metrics["valid"].get<bool>() || !new_metrics["valid"].get<bool>()) {
             failures.push_back("one or both meshes contain invalid cells");
         }
         if (!old_metrics["conforming"].get<bool>() || !new_metrics["conforming"].get<bool>()) {
             failures.push_back("one or both meshes are non-conforming");
+        }
+        if (old_metrics["duplicate_cells"].get<bool>() ||
+            new_metrics["duplicate_cells"].get<bool>()) {
+            failures.push_back("one or both meshes contain duplicate cells");
+        }
+        if (canonical_solid_tets(old_mesh, eps) != canonical_solid_tets(new_mesh, eps)) {
+            failures.push_back("solid tetrahedron ownership or region tags differ");
         }
         const double old_volume = old_metrics["volume"];
         const double new_volume = new_metrics["volume"];

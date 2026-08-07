@@ -88,6 +88,19 @@ std::array<Vector3d, N> cell_points(
     return result;
 }
 
+bool point_in_closed_tet(const Vector3d& point, const std::array<Vector3d, 4>& tet)
+{
+    Matrix3d basis;
+    basis.col(0) = tet[1] - tet[0];
+    basis.col(1) = tet[2] - tet[0];
+    basis.col(2) = tet[3] - tet[0];
+    const double determinant = basis.determinant();
+    if (std::abs(determinant) <= 1e-30) return false;
+    const Vector3d barycentric = basis.fullPivLu().solve(point - tet[0]);
+    const double tolerance = 1e-10;
+    return barycentric.minCoeff() >= -tolerance && barycentric.sum() <= 1 + tolerance;
+}
+
 void orient_and_append_tet(
     HybridVolumeMesh& mesh,
     const std::vector<Vector3d>& vertices,
@@ -251,6 +264,19 @@ double prism_max_amips(const std::vector<Vector3d>& vertices, const std::array<s
              std::array<size_t, 4>{{prism[2], prism[3], prism[4], prism[5]}}))});
 }
 
+double pyramid_max_amips(
+    const std::vector<Vector3d>& vertices,
+    const std::array<size_t, 5>& pyramid)
+{
+    return std::max(
+        tet_amips(cell_points(
+            vertices,
+            std::array<size_t, 4>{{pyramid[0], pyramid[1], pyramid[2], pyramid[4]}})),
+        tet_amips(cell_points(
+            vertices,
+            std::array<size_t, 4>{{pyramid[0], pyramid[2], pyramid[3], pyramid[4]}})));
+}
+
 void improve_shell_vertices(
     HybridVolumeMesh& mesh,
     std::vector<Vector3d>& vertices,
@@ -275,12 +301,20 @@ void improve_shell_vertices(
     }
     for (size_t p = 0; p < mesh.pyramids.size(); ++p) {
         for (const size_t vertex : mesh.pyramids[p]) {
-            if (movable_sources.count(vertex) != 0) incident_pyramids[vertex].push_back(p);
+            if (movable_sources.count(vertex) == 0) continue;
+            incident_pyramids[vertex].push_back(p);
+            for (const size_t neighbor : mesh.pyramids[p]) {
+                if (neighbor != vertex) neighbors[vertex].insert(neighbor);
+            }
         }
     }
     for (size_t t = 0; t < mesh.tets.size(); ++t) {
         for (const size_t vertex : mesh.tets[t]) {
-            if (movable_sources.count(vertex) != 0) incident_tets[vertex].push_back(t);
+            if (movable_sources.count(vertex) == 0) continue;
+            incident_tets[vertex].push_back(t);
+            for (const size_t neighbor : mesh.tets[t]) {
+                if (neighbor != vertex) neighbors[vertex].insert(neighbor);
+            }
         }
     }
 
@@ -288,7 +322,11 @@ void improve_shell_vertices(
     for (size_t iteration = 0; iteration < maximum_iterations; ++iteration) {
         size_t accepted = 0;
         for (const auto& [vertex, source] : movable_sources) {
-            if (neighbors[vertex].empty() || incident_prisms[vertex].empty()) continue;
+            if (neighbors[vertex].empty() ||
+                (incident_prisms[vertex].empty() && incident_pyramids[vertex].empty() &&
+                 incident_tets[vertex].empty())) {
+                continue;
+            }
             Vector3d average = Vector3d::Zero();
             for (const size_t neighbor : neighbors[vertex]) average += vertices[neighbor];
             average /= static_cast<double>(neighbors[vertex].size());
@@ -299,6 +337,12 @@ void improve_shell_vertices(
             double before = 0;
             for (const size_t prism : incident_prisms[vertex]) {
                 before = std::max(before, prism_max_amips(vertices, mesh.prisms[prism]));
+            }
+            for (const size_t pyramid : incident_pyramids[vertex]) {
+                before = std::max(before, pyramid_max_amips(vertices, mesh.pyramids[pyramid]));
+            }
+            for (const size_t tet : incident_tets[vertex]) {
+                before = std::max(before, tet_amips(cell_points(vertices, mesh.tets[tet])));
             }
             ++report.shell_smoothing_attempts;
             bool collision = false;
@@ -329,9 +373,11 @@ void improve_shell_vertices(
                                      cell_points(vertices, mesh.pyramids[pyramid]),
                                      parameters.jacobian_tolerance,
                                      parameters.validity_max_depth);
+                after = std::max(after, pyramid_max_amips(vertices, mesh.pyramids[pyramid]));
             }
             for (const size_t tet : incident_tets[vertex]) {
                 valid = valid && is_valid_tet(cell_points(vertices, mesh.tets[tet]));
+                after = std::max(after, tet_amips(cell_points(vertices, mesh.tets[tet])));
             }
             if (!valid || !std::isfinite(after) || after + 1e-12 >= before) {
                 vertices[vertex] = previous;
@@ -351,6 +397,89 @@ bool selected_solid(const std::set<std::string>& groups, const std::set<std::str
         if (selected.count(group) != 0) return true;
     }
     return false;
+}
+
+void validate_input_complex(const PrismaticMeshInput& input)
+{
+    const size_t vertex_count = static_cast<size_t>(input.vertices.rows());
+    std::set<Face> tet_faces;
+    std::set<Edge> tet_edges;
+    for (size_t tet_index = 0; tet_index < input.tets.size(); ++tet_index) {
+        const auto& tet = input.tets[tet_index];
+        std::set<size_t> distinct;
+        for (const size_t vertex : tet) {
+            if (vertex >= vertex_count) {
+                log_and_throw_error(
+                    "Tetrahedron {} references out-of-range vertex {}.",
+                    tet_index,
+                    vertex);
+            }
+            distinct.insert(vertex);
+        }
+        if (distinct.size() != 4) {
+            log_and_throw_error("Tetrahedron {} has repeated vertices.", tet_index);
+        }
+        const std::array<Vector3d, 4> points = {
+            input.vertices.row(tet[0]),
+            input.vertices.row(tet[1]),
+            input.vertices.row(tet[2]),
+            input.vertices.row(tet[3])};
+        if (!is_valid_tet(points) && !is_valid_tet({points[0], points[1], points[3], points[2]})) {
+            log_and_throw_error("Tetrahedron {} is degenerate.", tet_index);
+        }
+        tet_faces.insert(sorted_face({{tet[0], tet[1], tet[2]}}));
+        tet_faces.insert(sorted_face({{tet[0], tet[1], tet[3]}}));
+        tet_faces.insert(sorted_face({{tet[0], tet[2], tet[3]}}));
+        tet_faces.insert(sorted_face({{tet[1], tet[2], tet[3]}}));
+        for (size_t i = 0; i < 4; ++i) {
+            for (size_t j = i + 1; j < 4; ++j) {
+                tet_edges.insert(sorted_edge(tet[i], tet[j]));
+            }
+        }
+    }
+
+    for (const auto& [group, faces] : input.face_groups) {
+        std::set<Face> unique;
+        for (const Face& face : faces) {
+            for (const size_t vertex : face) {
+                if (vertex >= vertex_count) {
+                    log_and_throw_error(
+                        "Face group '{}' references out-of-range vertex {}.",
+                        group,
+                        vertex);
+                }
+            }
+            const Face key = sorted_face(face);
+            if (key[0] == key[1] || key[1] == key[2]) {
+                log_and_throw_error("Face group '{}' contains a degenerate face.", group);
+            }
+            if (!unique.insert(key).second) {
+                log_and_throw_error("Face group '{}' contains a duplicate face.", group);
+            }
+            if (!input.tets.empty() && tet_faces.count(key) == 0) {
+                log_and_throw_error(
+                    "Face group '{}' contains a triangle that is not a tetrahedral simplex.",
+                    group);
+            }
+        }
+    }
+    for (const auto& [group, edges] : input.edge_groups) {
+        std::set<Edge> unique;
+        for (const Edge& edge : edges) {
+            if (edge[0] >= vertex_count || edge[1] >= vertex_count || edge[0] == edge[1]) {
+                log_and_throw_error("Edge group '{}' contains an invalid edge.", group);
+            }
+            const Edge key = sorted_edge(edge[0], edge[1]);
+            if (!unique.insert(key).second) {
+                log_and_throw_error("Edge group '{}' contains a duplicate edge.", group);
+            }
+            if (!input.tets.empty() && tet_edges.count(key) == 0) {
+                log_and_throw_error(
+                    "Edge group '{}' contains an edge that is not a tetrahedral simplex.",
+                    group);
+            }
+        }
+    }
 }
 
 void compact_output_vertices(HybridVolumeMesh& mesh)
@@ -385,10 +514,53 @@ void compact_output_vertices(HybridVolumeMesh& mesh)
     mesh.vertices = std::move(compact);
 }
 
+template <size_t N>
+size_t remove_duplicate_cells(
+    std::vector<std::array<size_t, N>>& cells,
+    std::vector<std::string>& regions,
+    const MatrixXd& vertices,
+    const double epsilon,
+    const int element_type,
+    std::set<std::string>& accepted)
+{
+    std::vector<std::array<size_t, N>> unique_cells;
+    std::vector<std::string> unique_regions;
+    unique_cells.reserve(cells.size());
+    unique_regions.reserve(regions.size());
+    size_t removed = 0;
+    for (size_t cell_index = 0; cell_index < cells.size(); ++cell_index) {
+        std::array<std::array<int64_t, 3>, N> points;
+        for (size_t i = 0; i < N; ++i) {
+            for (size_t axis = 0; axis < 3; ++axis) {
+                points[i][axis] = static_cast<int64_t>(
+                    std::llround(vertices(cells[cell_index][i], axis) / epsilon));
+            }
+        }
+        std::sort(points.begin(), points.end());
+        const std::string region =
+            cell_index < regions.size() ? regions[cell_index] : std::string{};
+        std::ostringstream key;
+        key << element_type << ':' << region << ':';
+        for (const auto& point : points) {
+            key << point[0] << ',' << point[1] << ',' << point[2] << ';';
+        }
+        if (!accepted.insert(key.str()).second) {
+            ++removed;
+            continue;
+        }
+        unique_cells.push_back(cells[cell_index]);
+        unique_regions.push_back(region);
+    }
+    cells = std::move(unique_cells);
+    regions = std::move(unique_regions);
+    return removed;
+}
+
 struct ShellSectorData
 {
     std::map<std::pair<size_t, size_t>, size_t> sector_by_vertex_face;
     std::map<std::pair<size_t, size_t>, Vector3d> direction_by_vertex_sector;
+    std::map<std::pair<size_t, size_t>, bool> singular_by_vertex_sector;
 };
 
 ShellSectorData shell_sectors(
@@ -488,6 +660,7 @@ ShellSectorData shell_sectors(
                 result.sector_by_vertex_face[{v, face}] = sector;
             }
             result.direction_by_vertex_sector[{v, sector}] = direction;
+            result.singular_by_vertex_sector[{v, sector}] = singular;
         }
     }
     report.shell_vertex_sectors += next_sector;
@@ -496,8 +669,32 @@ ShellSectorData shell_sectors(
 
 struct TopologicalShellData
 {
+    struct Vertex
+    {
+        Vector3d position;
+        int64_t source = -1;
+        bool original_input = false;
+        int label = 0;
+    };
+
+    struct Tet
+    {
+        std::array<size_t, 4> vertices;
+        bool selected_solid = false;
+    };
+
+    struct OffsetFace
+    {
+        std::array<size_t, 3> vertices;
+        std::array<size_t, 3> sources;
+    };
+
     std::map<size_t, std::vector<Vector3d>> targets;
     std::set<size_t> marked_sources;
+    std::set<size_t> marked_vertices;
+    std::map<size_t, Vertex> vertices;
+    std::vector<Tet> offset_tets;
+    std::vector<OffsetFace> offset_faces;
 };
 
 TopologicalShellData topological_shell_data(
@@ -505,13 +702,21 @@ TopologicalShellData topological_shell_data(
     const std::vector<Face>& faces,
     const double thickness,
     const size_t max_iterations,
+    const std::set<std::string>& solid_groups,
     PrismaticMeshReport& report)
 {
     MatrixXi tets(input.tets.size(), 4);
     for (size_t i = 0; i < input.tets.size(); ++i) {
         for (size_t j = 0; j < 4; ++j) tets(i, j) = static_cast<int>(input.tets[i][j]);
     }
-    MatrixSi tags(input.tets.size(), 0);
+    const std::vector<std::string> solid_names(solid_groups.begin(), solid_groups.end());
+    MatrixSi tags(input.tets.size(), solid_names.size());
+    tags.setZero();
+    for (size_t t = 0; t < input.tets.size(); ++t) {
+        for (size_t tag = 0; tag < solid_names.size(); ++tag) {
+            tags.coeffRef(t, tag) = input.tet_groups[t].count(solid_names[tag]) != 0;
+        }
+    }
     MatrixXd envelope_vertices;
     MatrixXi envelope_faces;
 
@@ -526,16 +731,28 @@ TopologicalShellData topological_shell_data(
     offset_parameters.sorted_marching = true;
     offset_parameters.save_vtu = false;
     offset_parameters.debug_output = false;
+    offset_parameters.protected_tags = solid_groups;
     const VectorXd minimum = input.vertices.colwise().minCoeff().transpose();
     const VectorXd maximum = input.vertices.colwise().maxCoeff().transpose();
     offset_parameters.init(minimum, maximum);
 
     PrismOffsetTetMesh mesh(offset_parameters, 0);
-    mesh.init_from_image(input.vertices, tets, tags, envelope_vertices, envelope_faces, {});
+    mesh.init_from_image(
+        input.vertices,
+        tets,
+        tags,
+        envelope_vertices,
+        envelope_faces,
+        solid_names);
     mesh.label_input_complex(faces, {});
     mesh.init_input_complex_bvh();
     mesh.execute_offset({});
     ++report.topological_offset_runs;
+
+    const auto boundary_stats = mesh.handle_open_boundaries(faces);
+    report.open_boundary_edges += boundary_stats.boundary_edges;
+    report.open_boundary_candidate_tets += boundary_stats.candidate_tets;
+    report.open_boundary_removed_tets += boundary_stats.removed_tets;
 
     // Preserve the geometric target candidates produced by the offset before
     // topology editing. A collapse chooses one of these existing positions, so
@@ -566,10 +783,54 @@ TopologicalShellData topological_shell_data(
             result.marked_sources.insert(static_cast<size_t>(source));
         }
     }
+    result.marked_vertices = mesh.non_bijective_vertices();
     report.marked_shell_sources += result.marked_sources.size();
 
+    std::set<Face> annotated_faces;
+    for (const Face& face : faces) annotated_faces.insert(sorted_face(face));
+
+    for (const auto& vertex : mesh.get_vertices()) {
+        const size_t id = vertex.vid(mesh);
+        const auto& attributes = mesh.m_vertex_attribute[id];
+        result.vertices.emplace(
+            id,
+            TopologicalShellData::Vertex{
+                attributes.m_posf,
+                attributes.source_vid,
+                attributes.original_input,
+                attributes.label});
+    }
+
     for (const auto& tet : mesh.get_tets()) {
-        report.topological_offset_tets += mesh.m_tet_attribute[tet.tid(mesh)].label == 2;
+        const auto& attributes = mesh.m_tet_attribute[tet.tid(mesh)];
+        if (attributes.label != 2) continue;
+        bool is_selected_solid = false;
+        for (size_t tag = 0; tag < solid_names.size(); ++tag) {
+            is_selected_solid =
+                is_selected_solid || attributes.tag.count(static_cast<int64_t>(tag + 1)) != 0;
+        }
+        result.offset_tets.push_back({mesh.oriented_tet_vids(tet), is_selected_solid});
+        ++report.topological_offset_tets;
+    }
+
+    for (const auto& face : mesh.get_faces()) {
+        const auto face_vertices = mesh.get_face_vids(face);
+        bool all_offset = true;
+        std::array<size_t, 3> sources;
+        for (size_t i = 0; i < 3; ++i) {
+            const auto& attributes = mesh.m_vertex_attribute[face_vertices[i]];
+            all_offset = all_offset && attributes.label == 2 && attributes.source_vid >= 0;
+            if (attributes.source_vid >= 0) {
+                sources[i] = static_cast<size_t>(attributes.source_vid);
+            }
+        }
+        if (!all_offset || annotated_faces.count(sorted_face(sources)) == 0) continue;
+
+        const bool current_is_offset = mesh.m_tet_attribute[face.tid(mesh)].label == 2;
+        const auto other = face.switch_tetrahedron(mesh);
+        const bool other_is_offset = other && mesh.m_tet_attribute[other->tid(mesh)].label == 2;
+        if (current_is_offset == other_is_offset) continue;
+        result.offset_faces.push_back({face_vertices, sources});
     }
     return result;
 }
@@ -1279,6 +1540,7 @@ PrismaticMeshResult generate_prismatic_mesh(
     if (input.vertices.cols() != 3 || input.tets.size() != input.tet_groups.size()) {
         log_and_throw_error("Invalid PrismaticMeshInput.");
     }
+    validate_input_complex(input);
 
     PrismaticMeshResult result;
     result.report.input_tets = input.tets.size();
@@ -1383,6 +1645,7 @@ PrismaticMeshResult generate_prismatic_mesh(
                                         found->second,
                                         shell.thickness,
                                         parameters.max_shell_iterations,
+                                        solid_groups,
                                         result.report)
                                   : TopologicalShellData{};
         const auto side_faces = classify_shell_sides(
@@ -1392,6 +1655,360 @@ PrismaticMeshResult generate_prismatic_mesh(
             solid_groups,
             face_incidence,
             result.report);
+
+        if (parameters.use_topological_offset) {
+            struct Candidate
+            {
+                const TopologicalShellData::OffsetFace* offset = nullptr;
+                const ShellSideFace* side = nullptr;
+            };
+
+            std::map<Face, size_t> input_face_index;
+            for (size_t face_index = 0; face_index < found->second.size(); ++face_index) {
+                input_face_index.emplace(sorted_face(found->second[face_index]), face_index);
+            }
+            std::map<std::pair<Face, int>, const ShellSideFace*> allowed_sides;
+            for (const ShellSideFace& side : side_faces) {
+                allowed_sides.emplace(std::make_pair(sorted_face(side.face), side.side), &side);
+            }
+
+            std::vector<Candidate> candidates;
+            std::set<std::array<size_t, 3>> seen_offset_faces;
+            for (const auto& offset_face : topology.offset_faces) {
+                auto face_key = offset_face.vertices;
+                std::sort(face_key.begin(), face_key.end());
+                if (!seen_offset_faces.insert(face_key).second) continue;
+                const Face source_face = sorted_face(offset_face.sources);
+                const auto face_it = input_face_index.find(source_face);
+                if (face_it == input_face_index.end()) continue;
+                const Face& oriented = found->second[face_it->second];
+                const Vector3d a = input.vertices.row(oriented[0]);
+                const Vector3d b = input.vertices.row(oriented[1]);
+                const Vector3d c = input.vertices.row(oriented[2]);
+                Vector3d offset_center = Vector3d::Zero();
+                for (const size_t vertex : offset_face.vertices) {
+                    offset_center += topology.vertices.at(vertex).position;
+                }
+                offset_center /= 3;
+                const double signed_side =
+                    (b - a).cross(c - a).dot(offset_center - (a + b + c) / 3);
+                if (std::abs(signed_side) <= 1e-14) continue;
+                const int side = signed_side > 0 ? 1 : -1;
+                const auto allowed = allowed_sides.find({source_face, side});
+                if (allowed != allowed_sides.end()) {
+                    candidates.push_back({&offset_face, allowed->second});
+                }
+            }
+
+            // Assign one target to every actual offset-surface vertex. Sharing
+            // follows the edited tetrahedral topology; it is no longer inferred
+            // from an input (source,side,sector) key.
+            std::map<size_t, Vector3d> target_sum;
+            std::map<size_t, size_t> target_count;
+            std::set<size_t> singular_top_vertices;
+            std::map<size_t, std::set<size_t>> top_neighbors;
+            for (const Candidate& candidate : candidates) {
+                for (size_t i = 0; i < 3; ++i) {
+                    top_neighbors[candidate.offset->vertices[i]].insert(
+                        candidate.offset->vertices[(i + 1) % 3]);
+                    top_neighbors[candidate.offset->vertices[i]].insert(
+                        candidate.offset->vertices[(i + 2) % 3]);
+                }
+                for (size_t i = 0; i < 3; ++i) {
+                    const size_t top = candidate.offset->vertices[i];
+                    const size_t source = candidate.offset->sources[i];
+                    size_t local = 0;
+                    while (candidate.side->face[local] != source) ++local;
+                    const size_t sector = candidate.side->sectors[local];
+                    const Vector3d direction =
+                        sectors.direction_by_vertex_sector.at({source, sector});
+                    if (target_count[top] == 0) target_sum[top] = Vector3d::Zero();
+                    const Vector3d origin = input.vertices.row(source);
+                    Vector3d target_direction = candidate.side->side * direction;
+                    if (sectors.singular_by_vertex_sector.at({source, sector})) {
+                        target_direction = topology.vertices.at(top).position - origin;
+                        if (target_direction.norm() <= 1e-14) {
+                            target_direction = candidate.side->side * direction;
+                        }
+                        target_direction.normalize();
+                        singular_top_vertices.insert(top);
+                    }
+                    target_sum[top] += origin + shell.thickness * target_direction;
+                    ++target_count[top];
+                }
+            }
+
+            std::map<size_t, Vector3d> top_position;
+            for (const auto& [vertex, count] : target_count) {
+                top_position[vertex] = target_sum.at(vertex) / static_cast<double>(count);
+            }
+
+            // PositionAdjustment: a regular target must remain in the kernel
+            // represented by the original one-ring of its offset vertex. Shrink
+            // toward the corresponding input vertex; if the one-ring cannot
+            // contain the target, switch to the paper's singular sphere target.
+            for (auto& [vertex, position] : top_position) {
+                if (singular_top_vertices.count(vertex) != 0) continue;
+                const size_t source = static_cast<size_t>(topology.vertices.at(vertex).source);
+                const Vector3d origin = input.vertices.row(source);
+                bool in_kernel = false;
+                for (size_t iteration = 0; iteration < parameters.max_shell_iterations;
+                     ++iteration) {
+                    for (const auto& tet : topology.offset_tets) {
+                        if (tet.selected_solid ||
+                            std::find(tet.vertices.begin(), tet.vertices.end(), vertex) ==
+                                tet.vertices.end()) {
+                            continue;
+                        }
+                        std::array<Vector3d, 4> tet_points;
+                        for (size_t i = 0; i < 4; ++i) {
+                            tet_points[i] = topology.vertices.at(tet.vertices[i]).position;
+                        }
+                        if (point_in_closed_tet(position, tet_points)) {
+                            in_kernel = true;
+                            break;
+                        }
+                    }
+                    if (in_kernel) break;
+                    position = 0.5 * (origin + position);
+                    ++result.report.shell_shrink_iterations;
+                    result.report.minimum_shell_scale = std::min(
+                        result.report.minimum_shell_scale,
+                        (position - origin).norm() / shell.thickness);
+                }
+                if (!in_kernel) {
+                    Vector3d direction = topology.vertices.at(vertex).position - origin;
+                    if (direction.norm() <= 1e-14) {
+                        direction = position - origin;
+                    }
+                    if (direction.norm() > 1e-14) {
+                        position = origin + shell.thickness * direction.normalized();
+                    }
+                    singular_top_vertices.insert(vertex);
+                }
+            }
+
+            // The paper resolves the non-unique spherical target with one
+            // Laplacian round. Reprojecting the averaged direction retains the
+            // prescribed shell radius while regularizing neighboring targets.
+            const auto pre_laplacian = top_position;
+            for (const size_t vertex : singular_top_vertices) {
+                if (top_neighbors[vertex].empty()) continue;
+                Vector3d average = Vector3d::Zero();
+                size_t count = 0;
+                for (const size_t neighbor : top_neighbors[vertex]) {
+                    const auto position = pre_laplacian.find(neighbor);
+                    if (position == pre_laplacian.end()) continue;
+                    average += position->second;
+                    ++count;
+                }
+                if (count == 0) continue;
+                average /= static_cast<double>(count);
+                const size_t source = static_cast<size_t>(topology.vertices.at(vertex).source);
+                const Vector3d origin = input.vertices.row(source);
+                Vector3d direction = average - origin;
+                if (direction.norm() > 1e-14) {
+                    top_position[vertex] = origin + shell.thickness * direction.normalized();
+                }
+            }
+
+            // PositionAdjustment is accepted only while every editable offset
+            // tetrahedron preserves its original orientation. Prism validity
+            // alone is insufficient because collapsed columns can leave
+            // unmatched tetrahedra that are emitted by the conservative
+            // fallback below. Roll back all relocated vertices of an invalid
+            // tetrahedron toward their proven-valid offset positions.
+            for (size_t iteration = 0; iteration < parameters.max_shell_iterations; ++iteration) {
+                std::set<size_t> rollback;
+                for (const auto& tet : topology.offset_tets) {
+                    if (tet.selected_solid) continue;
+                    std::array<Vector3d, 4> original_points;
+                    std::array<Vector3d, 4> target_points;
+                    for (size_t i = 0; i < tet.vertices.size(); ++i) {
+                        original_points[i] = topology.vertices.at(tet.vertices[i]).position;
+                        const auto target = top_position.find(tet.vertices[i]);
+                        target_points[i] =
+                            target == top_position.end() ? original_points[i] : target->second;
+                    }
+                    if (!is_valid_tet(original_points)) {
+                        std::swap(original_points[2], original_points[3]);
+                        std::swap(target_points[2], target_points[3]);
+                    }
+                    if (is_valid_tet(target_points)) continue;
+                    for (const size_t vertex : tet.vertices) {
+                        if (top_position.count(vertex) != 0) rollback.insert(vertex);
+                    }
+                }
+                if (rollback.empty()) break;
+                ++result.report.shell_shrink_iterations;
+                for (const size_t vertex : rollback) {
+                    const Vector3d original = topology.vertices.at(vertex).position;
+                    top_position.at(vertex) = 0.5 * (original + top_position.at(vertex));
+                }
+                if (iteration + 1 == parameters.max_shell_iterations) {
+                    for (const size_t vertex : rollback) {
+                        top_position.at(vertex) = topology.vertices.at(vertex).position;
+                    }
+                    result.report.warnings.push_back(
+                        "Shell target relocation was rolled back to preserve offset-tet "
+                        "orientation.");
+                }
+            }
+
+            std::map<size_t, size_t> input_vertex_by_source;
+            for (const auto& [vertex, attributes] : topology.vertices) {
+                if (attributes.original_input && attributes.source >= 0) {
+                    input_vertex_by_source.emplace(static_cast<size_t>(attributes.source), vertex);
+                }
+            }
+            std::map<size_t, size_t> output_vertex_by_topology;
+            const auto map_topology_vertex = [&](const size_t vertex) {
+                const auto existing = output_vertex_by_topology.find(vertex);
+                if (existing != output_vertex_by_topology.end()) return existing->second;
+                const auto& attributes = topology.vertices.at(vertex);
+                size_t output_vertex;
+                if (attributes.original_input && attributes.source >= 0 &&
+                    static_cast<size_t>(attributes.source) < input.vertices.rows()) {
+                    output_vertex = static_cast<size_t>(attributes.source);
+                } else {
+                    const auto target = top_position.find(vertex);
+                    output_vertex = append_vertex(
+                        vertices,
+                        target == top_position.end() ? attributes.position : target->second);
+                }
+                output_vertex_by_topology.emplace(vertex, output_vertex);
+                if (!attributes.original_input && attributes.label == 2 && attributes.source >= 0 &&
+                    static_cast<size_t>(attributes.source) < input.vertices.rows()) {
+                    movable_shell_vertices.emplace(
+                        output_vertex,
+                        static_cast<size_t>(attributes.source));
+                }
+                return output_vertex;
+            };
+
+            std::set<size_t> represented_tets;
+            for (const Candidate& candidate : candidates) {
+                std::array<size_t, 6> prism;
+                std::set<size_t> column_vertices;
+                for (size_t i = 0; i < 3; ++i) {
+                    const size_t source = candidate.offset->sources[i];
+                    prism[i] = source;
+                    prism[i + 3] = map_topology_vertex(candidate.offset->vertices[i]);
+                    column_vertices.insert(candidate.offset->vertices[i]);
+                    const auto input_vertex = input_vertex_by_source.find(source);
+                    if (input_vertex != input_vertex_by_source.end()) {
+                        column_vertices.insert(input_vertex->second);
+                    }
+                    movable_shell_vertices.emplace(prism[i + 3], source);
+                }
+                std::vector<size_t> column_tets;
+                for (size_t tet_index = 0; tet_index < topology.offset_tets.size(); ++tet_index) {
+                    const auto& tet = topology.offset_tets[tet_index];
+                    bool inside_column = !tet.selected_solid;
+                    for (const size_t vertex : tet.vertices) {
+                        inside_column = inside_column && column_vertices.count(vertex) != 0;
+                    }
+                    if (inside_column) column_tets.push_back(tet_index);
+                }
+
+                // A recovered hybrid cell may replace tetrahedra only when the
+                // two representations have exactly the same triangulated
+                // boundary. A mere vertex-subset test is not sufficient after
+                // embedding splits: it can emit a prism over tet fallback
+                // cells that contain additional vertices, creating overlap.
+                HybridVolumeMesh trial;
+                PrismaticMeshReport trial_report;
+                append_recovered_prism(
+                    trial,
+                    vertices,
+                    prism,
+                    {{topology.marked_vertices.count(candidate.offset->vertices[0]) != 0,
+                      topology.marked_vertices.count(candidate.offset->vertices[1]) != 0,
+                      topology.marked_vertices.count(candidate.offset->vertices[2]) != 0}},
+                    "shell:" + shell.group,
+                    parameters,
+                    trial_report);
+
+                using Triangle = std::array<size_t, 3>;
+                const auto boundary_triangles = [](const std::vector<std::array<size_t, 4>>& tets) {
+                    std::map<Triangle, size_t> counts;
+                    static constexpr std::array<std::array<size_t, 3>, 4> local_faces = {
+                        {{{0, 1, 2}}, {{0, 1, 3}}, {{0, 2, 3}}, {{1, 2, 3}}}};
+                    for (const auto& tet : tets) {
+                        for (const auto& local : local_faces) {
+                            Triangle face = {{tet[local[0]], tet[local[1]], tet[local[2]]}};
+                            std::sort(face.begin(), face.end());
+                            ++counts[face];
+                        }
+                    }
+                    std::set<Triangle> boundary;
+                    bool valid = true;
+                    for (const auto& [face, count] : counts) {
+                        valid = valid && count <= 2;
+                        if (count == 1) boundary.insert(face);
+                    }
+                    return std::make_pair(valid, boundary);
+                };
+
+                std::vector<std::array<size_t, 4>> actual_tets;
+                bool disjoint = !column_tets.empty();
+                for (const size_t tet_index : column_tets) {
+                    disjoint = disjoint && represented_tets.count(tet_index) == 0;
+                    std::array<size_t, 4> tet;
+                    for (size_t i = 0; i < tet.size(); ++i) {
+                        tet[i] = map_topology_vertex(topology.offset_tets[tet_index].vertices[i]);
+                    }
+                    actual_tets.push_back(tet);
+                }
+
+                std::vector<std::array<size_t, 4>> trial_tets = trial.tets;
+                for (const auto& p : trial.prisms) {
+                    trial_tets.push_back({{p[0], p[1], p[2], p[3]}});
+                    trial_tets.push_back({{p[1], p[2], p[3], p[4]}});
+                    trial_tets.push_back({{p[2], p[3], p[4], p[5]}});
+                }
+                for (const auto& p : trial.pyramids) {
+                    trial_tets.push_back({{p[0], p[1], p[2], p[4]}});
+                    trial_tets.push_back({{p[0], p[2], p[3], p[4]}});
+                }
+                const auto actual_boundary = boundary_triangles(actual_tets);
+                const auto trial_boundary = boundary_triangles(trial_tets);
+                if (!disjoint || !actual_boundary.first || !trial_boundary.first ||
+                    actual_boundary.second != trial_boundary.second) {
+                    continue;
+                }
+
+                append_recovered_prism(
+                    result.mesh,
+                    vertices,
+                    prism,
+                    {{topology.marked_vertices.count(candidate.offset->vertices[0]) != 0,
+                      topology.marked_vertices.count(candidate.offset->vertices[1]) != 0,
+                      topology.marked_vertices.count(candidate.offset->vertices[2]) != 0}},
+                    "shell:" + shell.group,
+                    parameters,
+                    result.report);
+                for (const size_t tet_index : column_tets) {
+                    represented_tets.insert(tet_index);
+                }
+            }
+
+            // Any offset tetrahedron not proven to belong to a recovered
+            // prism/pyramid column remains an actual tetrahedron from the edited
+            // topology. Selected solid cells are emitted by the solid path.
+            for (size_t tet_index = 0; tet_index < topology.offset_tets.size(); ++tet_index) {
+                const auto& tet = topology.offset_tets[tet_index];
+                if (tet.selected_solid || represented_tets.count(tet_index) != 0) continue;
+                std::array<size_t, 4> output_tet;
+                for (size_t i = 0; i < 4; ++i) {
+                    output_tet[i] = map_topology_vertex(tet.vertices[i]);
+                }
+                orient_and_append_tet(result.mesh, vertices, output_tet, "shell:" + shell.group);
+                ++result.report.fallback_tets;
+            }
+            continue;
+        }
+
         std::map<ShellVertexKey, Vector3d> targets;
         for (const auto& candidate : side_faces) {
             for (size_t local_vertex = 0; local_vertex < 3; ++local_vertex) {
@@ -1505,6 +2122,39 @@ PrismaticMeshResult generate_prismatic_mesh(
 
     result.mesh.vertices.resize(vertices.size(), 3);
     for (size_t i = 0; i < vertices.size(); ++i) result.mesh.vertices.row(i) = vertices[i];
+
+    if (result.mesh.vertices.rows() != 0) {
+        const Vector3d output_minimum = result.mesh.vertices.colwise().minCoeff().transpose();
+        const Vector3d output_maximum = result.mesh.vertices.colwise().maxCoeff().transpose();
+        const double duplicate_epsilon =
+            std::max(1e-10, 1e-8 * (output_maximum - output_minimum).norm());
+        std::set<std::string> accepted_cells;
+        result.report.duplicate_cells_removed += remove_duplicate_cells(
+            result.mesh.tets,
+            result.mesh.tet_region_tags,
+            result.mesh.vertices,
+            duplicate_epsilon,
+            4,
+            accepted_cells);
+        result.report.duplicate_cells_removed += remove_duplicate_cells(
+            result.mesh.pyramids,
+            result.mesh.pyramid_region_tags,
+            result.mesh.vertices,
+            duplicate_epsilon,
+            7,
+            accepted_cells);
+        result.report.duplicate_cells_removed += remove_duplicate_cells(
+            result.mesh.prisms,
+            result.mesh.prism_region_tags,
+            result.mesh.vertices,
+            duplicate_epsilon,
+            6,
+            accepted_cells);
+    }
+    if (result.report.duplicate_cells_removed != 0) {
+        result.report.warnings.push_back(
+            "Coincident duplicate output cells were removed after conservative recovery.");
+    }
 
     const auto accumulate_amips =
         [&result](const std::vector<Vector3d>& all_vertices, std::array<size_t, 4> tet) {

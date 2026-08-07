@@ -21,6 +21,13 @@ struct OffsetOperationStats
     size_t remaining_tau_2_2 = 0;
 };
 
+struct OpenBoundaryStats
+{
+    size_t boundary_edges = 0;
+    size_t candidate_tets = 0;
+    size_t removed_tets = 0;
+};
+
 /**
  * Prism-specific editing of a current topological-offset tetrahedral mesh.
  *
@@ -43,6 +50,16 @@ public:
     /** Apply collapse -> unlock passes until neither operation succeeds. */
     OffsetOperationStats simplify_offset(size_t max_iterations);
 
+    /**
+     * Apply paper Algorithm 3 before shell simplification.
+     *
+     * Open boundary edges are derived from the explicitly annotated triangle
+     * complex. Only offset-region tetrahedra whose provenance meets one of the
+     * paper's removable tau configurations are deleted.
+     */
+    OpenBoundaryStats handle_open_boundaries(
+        const std::vector<std::array<size_t, 3>>& annotated_faces);
+
     /** One deterministic pass over equal-source offset-surface edges. */
     size_t collapse_equal_source_edges(OffsetOperationStats* stats = nullptr);
 
@@ -51,6 +68,7 @@ public:
 
     size_t count_equal_source_edges() const;
     size_t count_tau_2_2() const;
+    std::set<size_t> non_bijective_vertices() const;
     std::set<int64_t> non_bijective_sources() const;
 
 protected:
