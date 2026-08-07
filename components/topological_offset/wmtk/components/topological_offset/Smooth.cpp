@@ -263,7 +263,7 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     }
     if (n_faces == 0) return false;
 
-    const Vector3d p_optimal = q.solve(p_laplace);
+    const Vector3d p_optimal = q.solve(p_laplace, m_params.quadrics_svd_threshold);
 
     const double w = m_params.smooth_quadrics_weight;
     const double u = m_params.smooth_laplacian_weight;
