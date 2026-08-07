@@ -92,6 +92,27 @@ public:
         add_simplex_elements<3>(num_tets, get_tet_cb);
     }
 
+    /**
+     * @brief Add six-node wedge/prism elements (Gmsh element type 6).
+     *
+     * The elements reference the most recently added 3D vertex block, just like
+     * add_tets(). Mixed tetrahedron/prism/pyramid blocks may share that block.
+     */
+    template <typename Fn>
+    void add_prisms(size_t num_prisms, const Fn& get_prism_cb)
+    {
+        add_volume_elements<6, 6>(num_prisms, get_prism_cb);
+    }
+
+    /**
+     * @brief Add five-node pyramid elements (Gmsh element type 7).
+     */
+    template <typename Fn>
+    void add_pyramids(size_t num_pyramids, const Fn& get_pyramid_cb)
+    {
+        add_volume_elements<7, 5>(num_pyramids, get_pyramid_cb);
+    }
+
     template <int NUM_FIELDS, typename Fn>
     void add_edge_vertex_attribute(const std::string& name, const Fn& get_attribute_cb)
     {
@@ -200,6 +221,10 @@ public:
     inline size_t get_num_faces() const { return get_num_simplex_elements(2); }
 
     inline size_t get_num_tets() const { return get_num_simplex_elements(3); }
+
+    inline size_t get_num_prisms() const { return get_num_elements_by_type(3, 6); }
+
+    inline size_t get_num_pyramids() const { return get_num_elements_by_type(3, 7); }
 
     template <typename Fn>
     void extract_tet_vertices(Fn&& set_vertex_cb) const
@@ -480,6 +505,47 @@ private:
         m_spec.elements.entity_blocks.push_back(std::move(block));
     }
 
+    template <int ELEMENT_TYPE, int NUM_NODES, typename Fn>
+    void add_volume_elements(size_t num_elements, const Fn& get_element_cb)
+    {
+        static_assert(ELEMENT_TYPE == 6 || ELEMENT_TYPE == 7);
+        static_assert(NUM_NODES == 6 || NUM_NODES == 5);
+        if (num_elements == 0) return;
+        if (m_spec.nodes.num_nodes == 0) {
+            log_and_throw_error("Please add a vertex block before adding elements.");
+        }
+
+        const auto& vertex_block = m_spec.nodes.entity_blocks.back();
+        if (vertex_block.entity_dim != 3) {
+            log_and_throw_error(
+                "Prisms and pyramids must reference the most recently added 3D vertex block.");
+        }
+
+        mshio::ElementBlock block;
+        block.entity_dim = 3;
+        block.entity_tag = vertex_block.entity_tag;
+        block.element_type = ELEMENT_TYPE;
+        block.num_elements_in_block = num_elements;
+
+        const size_t vertex_offset =
+            vertex_block.num_nodes_in_block == 0 ? 0 : vertex_block.tags.front() - 1;
+        const size_t tag_offset = m_spec.elements.max_element_tag;
+        block.data.reserve(num_elements * (NUM_NODES + 1));
+        for (size_t i = 0; i < num_elements; ++i) {
+            const auto& e = get_element_cb(i);
+            block.data.push_back(tag_offset + i + 1);
+            for (size_t j = 0; j < NUM_NODES; ++j) {
+                block.data.push_back(vertex_offset + e[j] + 1);
+            }
+        }
+
+        m_spec.elements.num_entity_blocks++;
+        m_spec.elements.num_elements += num_elements;
+        m_spec.elements.min_element_tag = 1;
+        m_spec.elements.max_element_tag += num_elements;
+        m_spec.elements.entity_blocks.push_back(std::move(block));
+    }
+
     template <int NUM_FIELDS, int ELEMENT_DIM, typename Fn>
     void add_vertex_attribute(const std::string& name, const Fn& get_attribute_cb)
     {
@@ -630,6 +696,17 @@ private:
         } else {
             return 0;
         }
+    }
+
+    size_t get_num_elements_by_type(const int dim, const int element_type) const
+    {
+        size_t count = 0;
+        for (const auto& block : m_spec.elements.entity_blocks) {
+            if (block.entity_dim == dim && block.element_type == element_type) {
+                count += block.num_elements_in_block;
+            }
+        }
+        return count;
     }
 
     size_t get_num_simplex_elements(const int dim, const int tag) const
