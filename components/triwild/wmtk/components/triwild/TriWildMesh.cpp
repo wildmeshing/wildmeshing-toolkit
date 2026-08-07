@@ -397,6 +397,46 @@ void TriWildMesh::init_mesh(
         m_vertex_attribute[vids[1]].m_is_on_surface = true;
     }
 
+    // Feature points: the 0-dimensional features of the curve network, taken from the
+    // constrained edges E. Valence 1 is an open polyline's endpoint, valence >= 3 a junction;
+    // valence 2 is the interior of a curve and valence 0 is not on it at all.
+    //
+    // Without these, the collapse pass deletes open polylines outright. A polyline erodes by
+    // legal collapses of its interior into its tip until one segment is left, and that
+    // segment has a feature at BOTH ends -- which the existing order test permits, because it
+    // only refuses collapsing a feature into a non-feature. Measured on the 2D dataset:
+    // 215292 went from 28 open components after the arrangement to 0 in the output, and
+    // 134005 from 18 to 15, entirely in the collapse passes.
+    {
+        std::vector<int> surf_valence(vert_capacity(), 0);
+        for (int i = 0; i < E.rows(); ++i) {
+            ++surf_valence[E(i, 0)];
+            ++surf_valence[E(i, 1)];
+        }
+        size_t n_endpoints = 0, n_junctions = 0;
+        for (size_t v = 0; v < vert_capacity(); ++v) {
+            const int val = surf_valence[v];
+            if (val == 0 || val == 2) {
+                continue;
+            }
+            m_vertex_attribute[v].m_feature_id = m_feature_points.size();
+            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
+            if (val == 1) {
+                ++n_endpoints;
+            } else {
+                ++n_junctions;
+            }
+        }
+        if (!m_feature_points.empty()) {
+            logger().info(
+                "feature points: {} polyline endpoints, {} junctions (kept within {:.6} of "
+                "their input positions)",
+                n_endpoints,
+                n_junctions,
+                m_envelope_eps);
+        }
+    }
+
     // init envelope
     if (m_envelope) {
         log_and_throw_error("Envelope was already initialized once.");
@@ -1128,6 +1168,65 @@ bool TriWildMesh::is_inverted(const size_t fid) const
 {
     auto vs = oriented_tri_vids(fid);
     return is_inverted(vs);
+}
+
+std::pair<size_t, size_t> TriWildMesh::feature_retention() const
+{
+    if (m_feature_points.empty()) {
+        return {0, 0};
+    }
+    // Measured geometrically, not from the ids: the invariant is "every input feature point
+    // still has a mesh vertex within eps of it", and that is true whether or not the vertex
+    // in question is the one carrying the id. Ids drive the per-collapse policy because they
+    // are local and cheap; they are not the thing being promised, and counting them would
+    // under-report exactly the legitimate merge case the policy now allows.
+    std::vector<char> seen(m_feature_points.size(), 0);
+    const double eps2 = m_envelope_eps * m_envelope_eps;
+    for (const Tuple& v : get_vertices()) {
+        const Vector2d& p = m_vertex_attribute[v.vid(*this)].m_posf;
+        for (size_t f = 0; f < m_feature_points.size(); ++f) {
+            if (!seen[f] && (p - m_feature_points[f]).squaredNorm() <= eps2) {
+                seen[f] = 1;
+            }
+        }
+    }
+    return {size_t(std::count(seen.begin(), seen.end(), char(1))), m_feature_points.size()};
+}
+
+bool TriWildMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const
+{
+    const size_t f = m_vertex_attribute[vid].m_feature_id;
+    if (f == NO_FEATURE || !m_params.preserve_feature_points) {
+        return true;
+    }
+    // A ball, not a pin. The vertex may move anywhere within eps of the feature it stands
+    // for, which is exactly the guarantee the envelope gives everywhere else.
+    return (p - m_feature_points[f]).squaredNorm() <= m_envelope_eps * m_envelope_eps;
+}
+
+bool TriWildMesh::collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const
+{
+    if (!m_params.preserve_feature_points) {
+        return false;
+    }
+    // v1 disappears into v2, and v2 does not move. So the question is only whether the
+    // feature v1 stood for is still represented afterwards, by v2.
+    const size_t f1 = m_vertex_attribute[v1_id].m_feature_id;
+    if (f1 == NO_FEATURE) {
+        return false;
+    }
+    // Distance is the whole test. An earlier version also refused outright when v2 already
+    // stood for a DIFFERENT feature, on the theory that one of the two would be lost. That
+    // is wrong, and expensively so: when two anchors sit within eps of each other the
+    // survivor covers both, and forbidding the merge deadlocks the mesh. On the puzzle
+    // integration model it left a degenerate triangle that the collapse pass exists to
+    // remove, and the max energy sat at 1e50 -- MAX_ENERGY -- for all 82 iterations instead
+    // of converging to 4.99 in 3.
+    //
+    // Two anchors further apart than eps are still protected, because then v2 -- sitting on
+    // one of them -- is more than eps from the other and fails this same test.
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
+           m_envelope_eps * m_envelope_eps;
 }
 
 size_t TriWildMesh::round_all_vertices()

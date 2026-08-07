@@ -14,6 +14,16 @@ struct Parameters
     Vector2d box_min = Vector2d::Zero();
     Vector2d box_max = Vector2d::Ones();
     bool preserve_topology = false;
+
+    /**
+     * Keep the curve network's 0-dimensional features -- open polyline endpoints and
+     * junctions -- within eps of where the arrangement put them.
+     *
+     * Without it the collapse pass deletes open polylines outright: a polyline erodes into
+     * its own tip until one segment is left, and that segment has a feature at both ends,
+     * which nothing else refuses. Off only for A/B against the old behaviour.
+     */
+    bool preserve_feature_points = true;
     std::string output_path;
 
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
@@ -134,6 +144,7 @@ struct Parameters
         lr = json_params["length_rel"];
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
+        preserve_feature_points = json_params["preserve_feature_points"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];

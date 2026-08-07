@@ -24,6 +24,7 @@
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
       "preserve_topology",
+      "preserve_feature_points",
       "remove_duplicate_eps",
       "throw_on_fail",
       "log_file",
@@ -201,6 +202,12 @@
     "type": "int",
     "default": 2,
     "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set."
+  },
+  {
+    "pointer": "/preserve_feature_points",
+    "type": "bool",
+    "default": true,
+    "doc": "Keep the curve network's 0-dimensional features -- the endpoints of open polylines, and junctions -- within eps of where the arrangement placed them. Each such vertex is bound to a specific feature point, so a collapse is refused when it would leave that point unrepresented or move it further than eps, and smoothing may move the vertex anywhere inside that ball but no further. Without this the collapse pass deletes open polylines outright: a polyline erodes into its own tip until a single segment is left, and that segment carries a feature at BOTH ends, which the surface order test does not refuse (it only forbids collapsing a feature into a non-feature). Measured on the 2D dataset, model 215292 went from 28 open components after the arrangement to 0 in the output. Turn off only to reproduce the old behaviour."
   },
   {
     "pointer": "/preserve_topology",

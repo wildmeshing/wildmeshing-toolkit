@@ -507,6 +507,21 @@ void triwild(nlohmann::json json_params)
         }
     }
 
+    // The feature-point invariant, measured on the finished mesh.
+    const auto [feat_kept, feat_total] = mesh.feature_retention();
+    if (feat_total > 0) {
+        if (feat_kept == feat_total) {
+            logger().info("feature points retained: {}/{}", feat_kept, feat_total);
+        } else {
+            logger().warn(
+                "feature points retained: {}/{} -- {} polyline endpoints or junctions are no "
+                "longer represented within eps",
+                feat_kept,
+                feat_total,
+                feat_total - feat_kept);
+        }
+    }
+
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     wmtk::logger().info("final max energy = {} avg = {}", max_energy, avg_energy);
@@ -526,6 +541,8 @@ void triwild(nlohmann::json json_params)
         // the other direction. Same convention as the tetwild report.
         report["hausdorff"] = containment_distance;
         report["coverage"] = coverage_distance;
+        report["features_retained"] = feat_kept;
+        report["features_total"] = feat_total;
         report["all_rounded"] = all_rounded;
         // report["insertion_and_preprocessing"] = insertion_time;
         fout << std::setw(4) << report;
@@ -539,6 +556,16 @@ void triwild(nlohmann::json json_params)
         }
         if (max_energy > params.stop_energy) {
             log_and_throw_error("Max energy is too large.");
+        }
+        // The feature-point invariant is a promise of the run, so it belongs here next to the
+        // other two. It is also what gives the polyline integration test teeth: the harness
+        // only checks that a config does not throw.
+        if (feat_kept < feat_total) {
+            log_and_throw_error(
+                "{} of {} feature points (polyline endpoints / junctions) are no longer "
+                "represented within eps.",
+                feat_total - feat_kept,
+                feat_total);
         }
     }
 

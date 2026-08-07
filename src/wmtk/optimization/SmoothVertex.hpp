@@ -361,6 +361,15 @@ bool smooth_vertex_2d(
         solve();
     }
 
+    // Per-vertex positional constraint, on top of the envelope. A mesh uses this to pin a
+    // vertex to a 0-dimensional feature it stands for -- within a ball, so the vertex is
+    // still free to move and improve quality, it just cannot walk away from the feature.
+    // Meshes with no such features answer true unconditionally.
+    if (!m.smoothing_position_is_allowed(vid, m.smoothing_position(vid))) {
+        if (counters) ++counters->envelope;
+        return false;
+    }
+
     // Containment, edge by edge rather than face by face as in 3D.
     const std::shared_ptr<SampleEnvelope> check_env =
         VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : nullptr;

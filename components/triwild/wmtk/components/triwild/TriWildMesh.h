@@ -24,6 +24,9 @@
 
 namespace wmtk::components::triwild {
 
+/// A vertex that stands for no input feature point. See VertexAttributes::m_feature_id.
+inline constexpr size_t NO_FEATURE = std::numeric_limits<size_t>::max();
+
 // TODO: missing comments on what these attributes are
 class VertexAttributes
 {
@@ -34,6 +37,24 @@ public:
 
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces;
+
+    /**
+     * Index into TriWildMesh::m_feature_points, or NO_FEATURE.
+     *
+     * A feature point is a 0-dimensional feature of the curve network: an open polyline's
+     * endpoint, or a junction. This is the 2D counterpart of tetwild's m_is_on_open_boundary,
+     * with one deliberate difference -- it names WHICH feature the vertex stands for, not
+     * merely that it stands for one.
+     *
+     * That difference is the whole point. tetwild asks "is the survivor inside the envelope
+     * of the boundary?", a containment question, and in 3D a boundary is a curve with many
+     * edges so collapsing one shortens it rather than deleting it. In 2D the feature is a
+     * single point, and a containment test passes trivially when one endpoint is collapsed
+     * onto another -- the target IS a feature point, distance zero -- while the first
+     * endpoint quietly stops being represented. Preserving features is a COVERAGE property,
+     * so the constraint has to bind a vertex to a specific point.
+     */
+    size_t m_feature_id = NO_FEATURE;
 
     double m_sizing_scalar = 1;
 
@@ -96,6 +117,47 @@ public:
     std::vector<Vector2i> m_E_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_envelope_eps = -1;
+
+    /**
+     * Anchor positions of the curve network's 0-dimensional features, indexed by
+     * VertexAttributes::m_feature_id.
+     *
+     * Filled in init_mesh from the arrangement's constrained edges: a vertex whose valence in
+     * that edge set is neither 0 nor 2 is a feature -- valence 1 is an open polyline's
+     * endpoint, valence >= 3 a junction. Reading it off the arrangement rather than the raw
+     * input is deliberate: it is the network the optimizer actually starts from, so a
+     * junction the simplification was allowed to merge (which it may, with
+     * simplify_use_link_condition off) is correctly absent, and no provenance or
+     * position-matching plumbing is needed.
+     *
+     * A vertex carrying feature f may never end up further than m_envelope_eps from
+     * m_feature_points[f]. Since the anchor never moves, no spatial index is required: the
+     * feature id is a direct lookup.
+     */
+    std::vector<Vector2d> m_feature_points;
+    /// Collapses refused because they would drop or displace a feature point. Diagnostic.
+    std::atomic<size_t> m_feature_rejects = 0;
+
+    /**
+     * @brief May vertex `vid` sit at `p`?
+     *
+     * False only when the vertex stands for a feature point and `p` is more than
+     * m_envelope_eps away from it. Smoothing is free to move a feature vertex inside that
+     * ball -- it is a containment test, not a freeze, so the optimizer keeps the quality it
+     * can get near features.
+     */
+    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const;
+
+    /**
+     * @brief {feature points still represented within eps, total feature points}.
+     *
+     * The invariant preserve_feature_points maintains, measured on the finished mesh rather
+     * than assumed from the per-operation checks.
+     */
+    std::pair<size_t, size_t> feature_retention() const;
+
+    /// True iff collapsing v1 into v2 would drop or displace a feature point.
+    bool collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
