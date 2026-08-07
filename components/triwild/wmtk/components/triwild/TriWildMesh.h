@@ -154,7 +154,7 @@ public:
      * The invariant preserve_feature_points maintains, measured on the finished mesh rather
      * than assumed from the per-operation checks.
      */
-    std::pair<size_t, size_t> feature_retention() const;
+    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
 
     /// True iff collapsing v1 into v2 would drop or displace a feature point.
     bool collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const;

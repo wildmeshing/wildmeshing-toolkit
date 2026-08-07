@@ -1170,8 +1170,11 @@ bool TriWildMesh::is_inverted(const size_t fid) const
     return is_inverted(vs);
 }
 
-std::pair<size_t, size_t> TriWildMesh::feature_retention() const
+std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) const
 {
+    if (worst_ratio) {
+        *worst_ratio = 0;
+    }
     if (m_feature_points.empty()) {
         return {0, 0};
     }
@@ -1187,6 +1190,26 @@ std::pair<size_t, size_t> TriWildMesh::feature_retention() const
         for (size_t f = 0; f < m_feature_points.size(); ++f) {
             if (!seen[f] && (p - m_feature_points[f]).squaredNorm() <= eps2) {
                 seen[f] = 1;
+            }
+        }
+    }
+    // For anything not retained, how far the nearest live vertex actually is, in units of
+    // eps. This is what separates "the anchor drifted just past the ball" from "the curve was
+    // deleted": the first is a bookkeeping artefact of a legitimate merge, the second is the
+    // bug this whole mechanism exists to stop.
+    if (worst_ratio) {
+        for (size_t f = 0; f < m_feature_points.size(); ++f) {
+            if (seen[f]) {
+                continue;
+            }
+            double best = std::numeric_limits<double>::max();
+            for (const Tuple& v : get_vertices()) {
+                best = std::min(
+                    best,
+                    (m_vertex_attribute[v.vid(*this)].m_posf - m_feature_points[f]).squaredNorm());
+            }
+            if (best < std::numeric_limits<double>::max()) {
+                *worst_ratio = std::max(*worst_ratio, std::sqrt(best) / m_envelope_eps);
             }
         }
     }

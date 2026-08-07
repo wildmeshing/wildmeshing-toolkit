@@ -508,17 +508,20 @@ void triwild(nlohmann::json json_params)
     }
 
     // The feature-point invariant, measured on the finished mesh.
-    const auto [feat_kept, feat_total] = mesh.feature_retention();
+    double feat_worst_ratio = 0;
+    const auto [feat_kept, feat_total] = mesh.feature_retention(&feat_worst_ratio);
     if (feat_total > 0) {
         if (feat_kept == feat_total) {
             logger().info("feature points retained: {}/{}", feat_kept, feat_total);
         } else {
             logger().warn(
                 "feature points retained: {}/{} -- {} polyline endpoints or junctions are no "
-                "longer represented within eps",
+                "longer represented within eps; the worst is {:.2f} x eps from the nearest "
+                "vertex",
                 feat_kept,
                 feat_total,
-                feat_total - feat_kept);
+                feat_total - feat_kept,
+                feat_worst_ratio);
         }
     }
 
@@ -543,6 +546,7 @@ void triwild(nlohmann::json json_params)
         report["coverage"] = coverage_distance;
         report["features_retained"] = feat_kept;
         report["features_total"] = feat_total;
+        report["features_worst_ratio"] = feat_worst_ratio;
         report["all_rounded"] = all_rounded;
         // report["insertion_and_preprocessing"] = insertion_time;
         fout << std::setw(4) << report;
