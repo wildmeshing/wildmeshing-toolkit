@@ -31,6 +31,8 @@
       "length",
       "stop_energy",
       "max_normal_deviation_deg",
+      "smooth_quadrics_weight",
+      "smooth_laplacian_weight",
       "min_sizing_scalar",
       "max_sizing_scalar",
       "sizing_mrm_threshold",
@@ -213,6 +215,18 @@
     "type": "float",
     "default": 15.0,
     "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
+  },
+  {
+    "pointer": "/smooth_quadrics_weight",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Blend weight (0-1) toward the quadrics-optimal target vertex during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
+  },
+  {
+    "pointer": "/smooth_laplacian_weight",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Blend weight (0-1) toward the Laplacian of neighboring offset-surface vertices during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
   },
   {
     "pointer": "/min_sizing_scalar",
