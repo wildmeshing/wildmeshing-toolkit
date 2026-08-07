@@ -14,6 +14,75 @@ using namespace wmtk;
 using namespace components::topological_offset;
 using namespace components::simwild::expression_parser;
 
+TEST_CASE("explicit_complex_provenance_3d", "[topological_offset][provenance]")
+{
+    MatrixXd V(4, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1;
+    MatrixXi T(1, 4);
+    T << 0, 1, 2, 3;
+    MatrixSi tags(1, 0);
+    MatrixXd V_env;
+    MatrixXi F_env;
+
+    Parameters parameters;
+    TopoOffsetTetMesh mesh(parameters, 0);
+    mesh.init_from_image(V, T, tags, V_env, F_env, {});
+    mesh.label_input_complex({{{0, 1, 2}}}, {});
+
+    for (const size_t v : {size_t(0), size_t(1), size_t(2)}) {
+        CHECK(mesh.m_vertex_attribute[v].label == 1);
+        CHECK(mesh.m_vertex_attribute[v].source_vid == static_cast<int64_t>(v));
+        CHECK(mesh.m_vertex_attribute[v].original_input);
+    }
+    CHECK(mesh.m_vertex_attribute[3].label == 0);
+    CHECK(mesh.m_vertex_attribute[3].source_vid == 3);
+    CHECK(mesh.m_vertex_attribute[3].original_input);
+    const auto [_, fid] = mesh.tuple_from_face({{0, 1, 2}});
+    CHECK(mesh.m_face_attribute[fid].label == 1);
+}
+
+TEST_CASE("explicit complex executes in memory", "[topological_offset][provenance]")
+{
+    MatrixXd V(5, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1;
+    MatrixXi T(2, 4);
+    T << 0, 1, 2, 3, 0, 2, 1, 4;
+    MatrixSi tags(2, 0);
+    MatrixXd V_env;
+    MatrixXi F_env;
+
+    Parameters parameters;
+    parameters.respect_all_topologies = true;
+    parameters.offset_in = true;
+    parameters.offset_out = true;
+    parameters.target_distance = 0.1;
+    parameters.target_distance_rel = -1;
+    parameters.relative_ball_threshold = 0.5;
+    parameters.edge_search_term_len = 1e-6;
+    parameters.sorted_marching = true;
+    parameters.save_vtu = false;
+    parameters.debug_output = false;
+    parameters.init(V.colwise().minCoeff(), V.colwise().maxCoeff());
+
+    TopoOffsetTetMesh mesh(parameters, 0);
+    mesh.init_from_image(V, T, tags, V_env, F_env, {});
+    mesh.label_input_complex({{{0, 1, 2}}}, {});
+    mesh.init_input_complex_bvh();
+    mesh.execute_offset({});
+
+    size_t offset_tets = 0;
+    size_t mapped_offset_vertices = 0;
+    for (const auto& tet : mesh.get_tets()) {
+        offset_tets += mesh.m_tet_attribute[tet.tid(mesh)].label == 2;
+    }
+    for (const auto& vertex : mesh.get_vertices()) {
+        const auto& attributes = mesh.m_vertex_attribute[vertex.vid(mesh)];
+        mapped_offset_vertices += attributes.label == 2 && attributes.source_vid >= 0;
+    }
+    CHECK(offset_tets > 0);
+    CHECK(mapped_offset_vertices > 0);
+}
+
 
 // used for checking attribute propagation. values are arbitrary
 const int V0_LABEL = 10;

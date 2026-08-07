@@ -102,6 +102,8 @@ void TopoOffsetTetMesh::init_from_image(
     for (const Tuple& v : verts) {
         size_t v_id = v.vid(*this);
         m_vertex_attribute[v_id].m_posf = V.row(v_id);
+        m_vertex_attribute[v_id].source_vid = static_cast<int64_t>(v_id);
+        m_vertex_attribute[v_id].original_input = true;
     }
 }
 
@@ -341,6 +343,42 @@ void TopoOffsetTetMesh::label_input_complex()
     }
 }
 
+void TopoOffsetTetMesh::label_input_complex(
+    const std::vector<std::array<size_t, 3>>& faces,
+    const std::vector<std::array<size_t, 2>>& edges,
+    const std::vector<size_t>& vertices)
+{
+    auto label_vertex = [this](const size_t v_id) {
+        if (v_id >= vert_capacity()) {
+            log_and_throw_error("Annotated vertex {} is not in the tetrahedral mesh.", v_id);
+        }
+        auto& attr = m_vertex_attribute[v_id];
+        attr.label = 1;
+        attr.source_vid = static_cast<int64_t>(v_id);
+        attr.original_input = true;
+    };
+
+    auto label_edge = [this, &label_vertex](const std::array<size_t, 2>& e) {
+        const Tuple t = tuple_from_edge(e);
+        m_edge_attribute[t.eid(*this)].label = 1;
+        label_vertex(e[0]);
+        label_vertex(e[1]);
+    };
+
+    for (const auto& f : faces) {
+        const auto [t, f_id] = tuple_from_face(f);
+        m_face_attribute[f_id].label = 1;
+        label_edge({{f[0], f[1]}});
+        label_edge({{f[1], f[2]}});
+        label_edge({{f[2], f[0]}});
+    }
+    for (const auto& e : edges) {
+        label_edge(e);
+    }
+    for (const size_t v : vertices) {
+        label_vertex(v);
+    }
+}
 
 bool TopoOffsetTetMesh::empty_input_complex()
 {
@@ -586,7 +624,7 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 
     // simplicially embed again, if needed
     m_edge_split_mode = EdgeSplitMode::Midpoint;
-    if (is_simplicially_embedded()) {
+    if (!is_simplicially_embedded()) {
         simplicial_embedding();
         bool dummy = is_simplicially_embedded();
         consolidate_mesh();

@@ -29,6 +29,12 @@ public:
     Vector3d m_posf;
     int label = 0;
     size_t component_id = 0;
+    // Vertex on the input complex that induced this vertex. A value of -1 means that
+    // no vertex-to-vertex correspondence is defined (for example, a barycentric
+    // refinement vertex). This provenance is optional for topological_offset itself,
+    // but is required by consumers that recover layered cells.
+    int64_t source_vid = -1;
+    bool original_input = false;
 
     VertexAttributes() {};
     VertexAttributes(const Vector3d& p);
@@ -87,7 +93,7 @@ public:
     int64_t m_single_tag;
 
     // dont actually use, just for retaining in output
-    bool m_has_envelope;
+    bool m_has_envelope = false;
     MatrixXd m_V_envelope;
     MatrixXi m_F_envelope;
 
@@ -139,6 +145,19 @@ public:
      * @brief label input simplicial complex simplices, as defined in m_params.offset_selection
      */
     void label_input_complex();
+
+    /**
+     * @brief Label an explicitly annotated lower-dimensional input complex.
+     *
+     * The simplices must already be embedded in this tetrahedral mesh. Faces imply
+     * their boundary edges and vertices; edges imply their endpoints. This overload
+     * is used by components that receive face/edge physical groups directly instead
+     * of deriving a complex from volume-tag expressions.
+     */
+    void label_input_complex(
+        const std::vector<std::array<size_t, 3>>& faces,
+        const std::vector<std::array<size_t, 2>>& edges,
+        const std::vector<size_t>& vertices = {});
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
