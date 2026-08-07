@@ -33,6 +33,7 @@
       "max_normal_deviation_deg",
       "smooth_quadrics_weight",
       "smooth_laplacian_weight",
+      "quadrics_svd_threshold",
       "min_sizing_scalar",
       "max_sizing_scalar",
       "sizing_mrm_threshold",
@@ -227,6 +228,12 @@
     "type": "float",
     "default": 0.01,
     "doc": "Blend weight (0-1) toward the Laplacian of neighboring offset-surface vertices during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
+  },
+  {
+    "pointer": "/quadrics_svd_threshold",
+    "type": "float",
+    "default": 1e-2,
+    "doc": "SVD threshold used when solving for the quadrics-optimal target vertex during offset-surface smoothing. Controls sensitivity to feature edges: lower means more sensitive."
   },
   {
     "pointer": "/min_sizing_scalar",
