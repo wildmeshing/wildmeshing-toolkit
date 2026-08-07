@@ -242,6 +242,18 @@ void triwild(nlohmann::json json_params)
         simplify_eps,
         100 * simplify_envelope_ratio,
         envelope_eps);
+    // 0.5 is not an arbitrary ceiling. is_outside(edge) accepts when every sample is within
+    // eps/2 and the sampling guarantees the rest of the segment is within another eps/2, so
+    // the simplification can leave geometry up to simplify_eps from the input, while the
+    // triangulation's own check accepts samples only up to envelope_eps/2. Those meet exactly
+    // at ratio 0.5; above it the simplification may legally produce an input that the
+    // envelope sanity check below rejects, and the run dies before it starts.
+    if (simplify_envelope_ratio > 0.5) {
+        logger().warn(
+            "simplify_envelope_ratio {} exceeds 0.5; the simplification may produce curves "
+            "that the triangulation's envelope check rejects at init.",
+            simplify_envelope_ratio);
+    }
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;

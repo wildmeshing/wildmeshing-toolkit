@@ -52,7 +52,35 @@ class SampleEnvelope : public wmtk::Envelope
 public:
     SampleEnvelope(bool exact = false)
         : use_exact(exact) {};
+    /**
+     * Per-sample acceptance radius, squared, for POINT and TRIANGLE queries.
+     *
+     * eps shrunk by the covering radius of sampleTriangle's lattice, sampling_dist/sqrt(3).
+     * A point query needs no shrink at all and is therefore merely conservative here; it is
+     * left as it is because every 3D operation goes through it and widening it would change
+     * tetwild's behaviour everywhere, which belongs in its own change.
+     */
     double eps2 = 1e-6;
+    /**
+     * The same, for EDGE queries, where the covering radius is different.
+     *
+     * is_outside(edge) samples the segment at N+1 evenly spaced points with
+     * N = floor(L/sampling_dist) + 1 > L/sampling_dist, so the spacing is L/N < sampling_dist
+     * and every point of the segment lies within sampling_dist/2 of a sample. Distance to a
+     * set is 1-Lipschitz, so "every sample within r" implies "every point within
+     * r + sampling_dist/2"; for that to imply containment in eps,
+     *
+     *     r = eps - sampling_dist / 2      (= eps/2, since sampling_dist = eps)
+     *
+     * The lattice constant eps - sampling_dist/sqrt(3) belongs to sampleTriangle and is
+     * simply the wrong figure here: it is 0.4226*eps against the correct 0.5*eps, so using
+     * it made the edge test 18% stricter than the geometry requires. That is safe on its own
+     * -- but it also made the simplification's own guarantee (r_s + sampling_dist_s/2 = eps_s)
+     * exceed the acceptance threshold of the coarser envelope the optimizer checks against,
+     * so a correctly simplified input could be rejected by the init sanity check. It was,
+     * once in 15665 models.
+     */
+    double eps2_edge = 1e-6;
     double sampling_dist = 1e-3;
     bool use_exact = false;
 

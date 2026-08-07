@@ -123,6 +123,9 @@ void SampleEnvelope::init(
     sampling_dist = _eps;
     const double real_envelope = _eps - _eps / std::sqrt(3);
     eps2 = real_envelope * real_envelope;
+    // Edge queries sample a line, not a lattice; see eps2_edge in the header.
+    const double real_envelope_edge = _eps - _eps / 2;
+    eps2_edge = real_envelope_edge * real_envelope_edge;
 
     MatrixXd VV;
     VV.resize(V.size(), 3);
@@ -149,8 +152,12 @@ void SampleEnvelope::init(
     }
 
     sampling_dist = _eps;
+    // eps2 keeps the lattice constant for point queries; eps2_edge carries the one derived
+    // for a sampled segment. See the header.
     const double real_envelope = _eps - _eps / sqrt(3);
     eps2 = real_envelope * real_envelope;
+    const double real_envelope_edge = _eps - _eps / 2;
+    eps2_edge = real_envelope_edge * real_envelope_edge;
 
     MatrixXd VV;
     VV.resize(V.size(), 3);
@@ -176,8 +183,12 @@ void SampleEnvelope::init(
     }
 
     sampling_dist = _eps;
+    // eps2 keeps the lattice constant for point queries; eps2_edge carries the one derived
+    // for a sampled segment. See the header.
     const double real_envelope = _eps - _eps / sqrt(3);
     eps2 = real_envelope * real_envelope;
+    const double real_envelope_edge = _eps - _eps / 2;
+    eps2_edge = real_envelope_edge * real_envelope_edge;
 
     MatrixXd VV;
     VV.resize(V.size(), 2);
@@ -276,6 +287,9 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
     static thread_local std::vector<Vector3d> pts;
     pts.clear();
 
+    // N > L / sampling_dist, so the spacing L/N is strictly below sampling_dist and every
+    // point of the segment is within sampling_dist/2 of a sample. eps2_edge is the radius
+    // that turns "every sample inside" into "the whole segment inside eps"; see the header.
     const int N = (edge[0] - edge[1]).norm() / sampling_dist + 1;
     pts.reserve(N);
 
@@ -284,19 +298,11 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
         pts.push_back(tmp);
     }
 
-    Vector3d current_point = pts[0];
-
     double sq_dist;
     Vector3d nearest_point;
-    int prev_facet = m_bvh->nearest_facet(current_point, nearest_point, sq_dist);
-    if (sq_dist > eps2) {
-        wmtk::logger().trace("fail envelope check 4");
-        return true;
-    }
-
     for (size_t i = 0; i < pts.size(); ++i) {
         m_bvh->nearest_facet(pts[i], nearest_point, sq_dist);
-        if (sq_dist > eps2) {
+        if (sq_dist > eps2_edge) {
             wmtk::logger().trace("fail envelope check 5");
             return true;
         }
