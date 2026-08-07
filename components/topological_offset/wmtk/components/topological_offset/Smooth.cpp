@@ -264,13 +264,13 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     if (n_faces == 0) return false;
 
     const Vector3d p_optimal = q.solve(p_laplace);
-    const double w = 0.5; // blend toward the quadrics optimum, matching the reference
-    const Vector3d p_final = (1 - w) * p0 + w * p_optimal;
 
+    const double w = m_params.smooth_quadrics_weight;
+    const double u = m_params.smooth_laplacian_weight;
+    const Vector3d p_final = (1 - w - u) * p0 + w * p_optimal + u * p_laplace;
     m_vertex_attribute[vid].m_posf = p_final;
 
     // Inversion is caught by invariants(), called right after this by TetMesh::smooth_vertex.
-    // Unlike the reference, there is no bisection fallback toward p0 on rejection yet.
     return true;
 }
 

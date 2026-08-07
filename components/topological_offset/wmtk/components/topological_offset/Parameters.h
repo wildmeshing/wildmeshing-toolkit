@@ -40,6 +40,13 @@ struct Parameters
     // that would push it further out of alignment.
     double max_normal_deviation_deg;
 
+    // ---- offset-surface smoothing blend, see TopoOffsetTetMesh::smooth_after_offset_surface()
+    // ---- each offset-surface vertex moves to a weighted blend of its previous position,
+    // the quadrics-optimal target vertex, and the Laplacian of its offset-surface
+    // neighbors; the remaining weight (1 - w - u) stays with the previous position.
+    double smooth_quadrics_weight; // w: blend toward the quadrics-optimal target vertex
+    double smooth_laplacian_weight; // u: blend toward the offset-surface Laplacian
+
     // ---- sizing field, see TopoOffsetTetMesh::update_sizing_field() ----
     // bounds for VertexAttributes::m_sizing_scalar
     double min_sizing_scalar;
@@ -59,6 +66,7 @@ struct Parameters
     // derived in init()
     double collapsing_l2; // upper bound (squared) on edge length for edge collapse eligibility
     double splitting_l2; // lower bound (squared) on edge length for edge split eligibility
+    double diag_l; // bounding box diagonal length
 
     Parameters() = default;
 
@@ -109,6 +117,9 @@ struct Parameters
 
         max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
 
+        smooth_quadrics_weight = json_params["smooth_quadrics_weight"];
+        smooth_laplacian_weight = json_params["smooth_laplacian_weight"];
+
         min_sizing_scalar = json_params["min_sizing_scalar"];
         max_sizing_scalar = json_params["max_sizing_scalar"];
         sizing_mrm_threshold = json_params["sizing_mrm_threshold"];
@@ -120,7 +131,7 @@ struct Parameters
         box_min = min_;
         box_max = max_;
 
-        double diag_l = (max_ - min_).norm();
+        diag_l = (max_ - min_).norm();
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;
         } else {
