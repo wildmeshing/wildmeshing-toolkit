@@ -1,0 +1,22 @@
+{
+  "old_commit": "f2875ca3b",
+  "coordinate_tolerance": "max(1e-10, 1e-8 * bbox_diagonal)",
+  "cases": [
+    {"name": "single_planar_triangle", "tier": "exact", "nx": 1, "ny": 1, "selection": "first"},
+    {"name": "two_triangle_planar_quad", "tier": "exact", "nx": 1, "ny": 1, "selection": "all"},
+    {"name": "regular_planar_fan", "tier": "semantic", "geometry": "fan", "old_failure": "all three pinned runs aborted in TetCollapse"},
+    {"name": "open_triangulated_strip", "tier": "exact", "nx": 4, "ny": 1, "selection": "all"},
+    {"name": "mild_two_triangle_hinge", "tier": "exact", "nx": 2, "ny": 1, "selection": "all", "crease": 0.08},
+    {"name": "closed_tetrahedral_surface", "tier": "semantic", "old_instability": "run 1 differed in the initial three-run baseline", "geometry": "tetrahedron"},
+    {"name": "closed_triangulated_cube", "tier": "semantic", "geometry": "cube", "old_instability": "one of three pinned runs timed out"},
+    {"name": "two_disconnected_panels", "tier": "semantic", "geometry": "disconnected", "nx": 2, "ny": 2, "selection": "all", "old_instability": "runs 1 and 2 differed from run 0"},
+    {"name": "regular_cylindrical_patch", "tier": "semantic", "old_instability": "run 2 differed and the baseline contained an invalid prism", "geometry": "cylinder", "nx": 5, "ny": 2},
+    {"name": "simple_convex_folded_panel", "tier": "semantic", "old_instability": "run 2 differed in the initial three-run baseline", "nx": 3, "ny": 2, "selection": "all", "crease": 0.12},
+    {"name": "cube_with_one_face_removed", "tier": "semantic", "geometry": "open_cube"},
+    {"name": "obtuse_open_boundary_panel", "tier": "semantic", "nx": 2, "ny": 1, "selection": "all", "skew": 0.35},
+    {"name": "concave_folded_strip", "tier": "semantic", "nx": 5, "ny": 1, "selection": "all", "crease": -0.18},
+    {"name": "nonmanifold_t_junction", "tier": "semantic", "geometry": "nonmanifold_t"},
+    {"name": "nearby_shell_sheets", "tier": "semantic", "geometry": "nearby_sheets", "nx": 3, "ny": 3, "selection": "all"},
+    {"name": "shell_attached_to_solid", "tier": "semantic", "nx": 2, "ny": 2, "selection": "all", "solid": true}
+  ]
+}
