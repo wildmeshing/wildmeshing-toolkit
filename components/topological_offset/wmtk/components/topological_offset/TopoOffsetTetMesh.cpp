@@ -858,7 +858,8 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     assert(ambient_assert());
 }
 
-double TopoOffsetTetMesh::mean_ratio_metric(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2)
+double
+TopoOffsetTetMesh::mean_ratio_metric(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2)
 {
     const Vector3d a = p1 - p0;
     const Vector3d b = p2 - p1;
