@@ -1178,42 +1178,44 @@ std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) co
     if (m_feature_points.empty()) {
         return {0, 0};
     }
-    // Measured geometrically, not from the ids: the invariant is "every input feature point
-    // still has a mesh vertex within eps of it", and that is true whether or not the vertex
-    // in question is the one carrying the id. Ids drive the per-collapse policy because they
-    // are local and cheap; they are not the thing being promised, and counting them would
-    // under-report exactly the legitimate merge case the policy now allows.
-    std::vector<char> seen(m_feature_points.size(), 0);
-    const double eps2 = m_envelope_eps * m_envelope_eps;
+
+    // One nearest-neighbour query per feature against a kd-tree of the live vertices.
+    //
+    // The first version of this walked every vertex for every feature, and called
+    // get_vertices() -- which BUILDS AND RETURNS A FRESH VECTOR each time -- from inside that
+    // loop. On 2D model 177574 (573k triangles, thousands of features) it was 100% of the
+    // process's samples and burned the entire 1800 s sweep timeout on a mesh that had already
+    // converged to 19.91 and finished rounding. It turned four converged models into
+    // "failures". Diagnostics do not get to cost more than the thing they measure.
+    std::vector<Vector3d> pts;
+    pts.reserve(vert_capacity());
     for (const Tuple& v : get_vertices()) {
         const Vector2d& p = m_vertex_attribute[v.vid(*this)].m_posf;
-        for (size_t f = 0; f < m_feature_points.size(); ++f) {
-            if (!seen[f] && (p - m_feature_points[f]).squaredNorm() <= eps2) {
-                seen[f] = 1;
-            }
+        pts.emplace_back(p[0], p[1], 0);
+    }
+    if (pts.empty()) {
+        return {0, m_feature_points.size()};
+    }
+    const KNN knn(pts);
+
+    size_t kept = 0;
+    for (const Vector2d& anchor : m_feature_points) {
+        uint32_t idx = 0;
+        double sq = 0;
+        knn.nearest_neighbor(Vector3d(anchor[0], anchor[1], 0), idx, sq);
+        // Retention is geometric on purpose: the invariant is "some vertex is still within
+        // eps of this anchor", true whether or not that vertex carries the id. Ids drive the
+        // per-collapse policy because they are local and cheap; counting them here would
+        // under-report the legitimate merge the policy allows.
+        if (sq <= m_envelope_eps * m_envelope_eps) {
+            ++kept;
+        } else if (worst_ratio) {
+            // How far the nearest vertex actually is, in units of eps -- what separates an
+            // anchor that drifted just past the ball from a curve that was deleted.
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_envelope_eps);
         }
     }
-    // For anything not retained, how far the nearest live vertex actually is, in units of
-    // eps. This is what separates "the anchor drifted just past the ball" from "the curve was
-    // deleted": the first is a bookkeeping artefact of a legitimate merge, the second is the
-    // bug this whole mechanism exists to stop.
-    if (worst_ratio) {
-        for (size_t f = 0; f < m_feature_points.size(); ++f) {
-            if (seen[f]) {
-                continue;
-            }
-            double best = std::numeric_limits<double>::max();
-            for (const Tuple& v : get_vertices()) {
-                best = std::min(
-                    best,
-                    (m_vertex_attribute[v.vid(*this)].m_posf - m_feature_points[f]).squaredNorm());
-            }
-            if (best < std::numeric_limits<double>::max()) {
-                *worst_ratio = std::max(*worst_ratio, std::sqrt(best) / m_envelope_eps);
-            }
-        }
-    }
-    return {size_t(std::count(seen.begin(), seen.end(), char(1))), m_feature_points.size()};
+    return {kept, m_feature_points.size()};
 }
 
 bool TriWildMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const

@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#include <tuple>
 #include <vector>
 
 namespace wmtk::components::triwild {
@@ -507,9 +508,14 @@ void triwild(nlohmann::json json_params)
         }
     }
 
-    // The feature-point invariant, measured on the finished mesh.
+    // The feature-point invariant, measured on the finished mesh. Opt-in: the cost scales
+    // with the input's feature count, which on a dense curve network runs to hundreds of
+    // thousands, and it tells you nothing the run depends on.
     double feat_worst_ratio = 0;
-    const auto [feat_kept, feat_total] = mesh.feature_retention(&feat_worst_ratio);
+    size_t feat_kept = 0, feat_total = 0;
+    if (json_params["DEBUG_feature_retention"]) {
+        std::tie(feat_kept, feat_total) = mesh.feature_retention(&feat_worst_ratio);
+    }
     if (feat_total > 0) {
         if (feat_kept == feat_total) {
             logger().info("feature points retained: {}/{}", feat_kept, feat_total);
@@ -544,9 +550,11 @@ void triwild(nlohmann::json json_params)
         // the other direction. Same convention as the tetwild report.
         report["hausdorff"] = containment_distance;
         report["coverage"] = coverage_distance;
-        report["features_retained"] = feat_kept;
-        report["features_total"] = feat_total;
-        report["features_worst_ratio"] = feat_worst_ratio;
+        if (json_params["DEBUG_feature_retention"]) {
+            report["features_retained"] = feat_kept;
+            report["features_total"] = feat_total;
+            report["features_worst_ratio"] = feat_worst_ratio;
+        }
         report["all_rounded"] = all_rounded;
         // report["insertion_and_preprocessing"] = insertion_time;
         fout << std::setw(4) << report;

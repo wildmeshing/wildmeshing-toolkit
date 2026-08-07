@@ -35,6 +35,7 @@
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
       "DEBUG_euler",
+      "DEBUG_feature_retention",
       "DEBUG_disable_envelope",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
@@ -154,6 +155,12 @@
     "type": "bool",
     "default": false,
     "doc": "Sanity Check: Compute and report the Euler characteristic of each connected component of the input curve network and of the output's tracked edges, and warn if they differ. For a graph this is V - E, i.e. 1 - (number of independent cycles) per component: 1 for an open polyline, 0 for a closed loop, -1 for a figure eight. It therefore detects curves merged or split, loops opened or closed, and whole components lost -- the changes the simplification is allowed to make with simplify_use_link_condition off, and the ones a collapse can make that the envelope cannot see (the envelope only bounds output-inside-input, so a curve eroding along itself is invisible to it). Off by default because on a network with many components it is a per-run cost with no effect on the result."
+  },
+  {
+    "pointer": "/DEBUG_feature_retention",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: count how many of the curve network's 0-dimensional features -- open polyline endpoints and junctions -- still have a mesh vertex within eps of them, and how far the worst one that does not is. Reports features_retained, features_total and features_worst_ratio. Off by default because it is pure diagnosis and the count is proportional to the input's feature count, which can be enormous: model 177574 of the 2D dataset has 821,954 of them. It costs one kd-tree build over the live vertices plus one nearest-neighbour query per feature. Note this measures a property the pipeline does not guarantee -- two anchors closer than eps may legitimately merge, and such merges cascade -- so a value below 100% is information, not a failure."
   },
   {
     "pointer": "/DEBUG_disable_envelope",
