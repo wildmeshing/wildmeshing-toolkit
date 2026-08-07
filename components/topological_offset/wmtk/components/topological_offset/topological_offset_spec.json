@@ -30,7 +30,11 @@
       "length_rel",
       "length",
       "stop_energy",
-      "max_normal_deviation_deg"
+      "max_normal_deviation_deg",
+      "min_sizing_scalar",
+      "max_sizing_scalar",
+      "sizing_mrm_threshold",
+      "sizing_gradation"
     ]
   },
   {
@@ -209,5 +213,29 @@
     "type": "float",
     "default": 15.0,
     "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
+  },
+  {
+    "pointer": "/min_sizing_scalar",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Lower bound for the per-vertex sizing field (see max_sizing_scalar). Refinement stops once a vertex's sizing scalar reaches this fraction of the base target length."
+  },
+  {
+    "pointer": "/max_sizing_scalar",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Upper bound for the per-vertex sizing field, a multiplier on the target edge length (splitting_l2/collapsing_l2) refined/coarsened once per optimize_offset() iteration based on the mean ratio metric of the offset triangulation (see sizing_mrm_threshold). 1.0 means never coarser than the base target length."
+  },
+  {
+    "pointer": "/sizing_mrm_threshold",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Mean ratio metric threshold used to update the sizing field once per optimize_offset() iteration: for each offset-surface vertex, the sizing scalar is halved (refine) if the worst incident offset triangle's mean ratio metric is below this, or multiplied by 1.5 (coarsen) if above."
+  },
+  {
+    "pointer": "/sizing_gradation",
+    "type": "float",
+    "default": 2.0,
+    "doc": "Gradation cap for the sizing field: neighboring vertices' sizing scalars may differ by at most this factor. After each mean-ratio-metric refinement pass, the refined vertices' lower sizing scalar is propagated outward (monotone, only ever lowers a neighbor's scalar) so the mesh doesn't jump straight from fine to coarse. <= 1 disables gradation."
   }
 ]

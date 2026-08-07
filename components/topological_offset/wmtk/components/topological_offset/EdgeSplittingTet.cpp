@@ -744,11 +744,11 @@ void TopoOffsetTetMesh::split_all_edges()
             const size_t v1 = e.switch_vertex(m).vid(m);
             const double len2 =
                 (m.m_vertex_attribute[v0].m_posf - m.m_vertex_attribute[v1].m_posf).squaredNorm();
-            // conservative pre-filter: MIN_SIZING_SCALAR is the smallest possible sizing
+            // conservative pre-filter: min_sizing_scalar is the smallest possible sizing
             // scalar, so this is the lowest the sizing-scaled threshold could ever be for any
             // edge. split_edge_before() applies the precise, per-edge sizing-scaled check.
-            if (len2 > m.m_params.splitting_l2 * TopoOffsetTetMesh::MIN_SIZING_SCALAR *
-                           TopoOffsetTetMesh::MIN_SIZING_SCALAR) {
+            if (len2 > m.m_params.splitting_l2 * m.m_params.min_sizing_scalar *
+                           m.m_params.min_sizing_scalar) {
                 out.emplace_back("edge_split", e);
             }
         });
@@ -771,7 +771,8 @@ void TopoOffsetTetMesh::split_all_edges()
                 .squaredNorm();
         };
         executor.should_renew = [this](double priority_val) {
-            return priority_val > m_params.splitting_l2 * MIN_SIZING_SCALAR * MIN_SIZING_SCALAR;
+            return priority_val >
+                   m_params.splitting_l2 * m_params.min_sizing_scalar * m_params.min_sizing_scalar;
         };
         wmtk::run_localized_to_convergence(*this, executor, all_ops);
     };
