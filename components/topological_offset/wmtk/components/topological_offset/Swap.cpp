@@ -83,6 +83,11 @@ bool TopoOffsetTetMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
+    // do not swap edges on the surface for now
+    if (is_edge_on_surface(t) || is_edge_on_offset(t) || is_edge_on_bbox(t)) {
+        return false;
+    }
+
     auto incident_tets = get_incident_tids_for_edge(t);
     if (incident_tets.size() != 3) {
         return false;
