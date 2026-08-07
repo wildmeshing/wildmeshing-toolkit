@@ -145,82 +145,81 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="comment">// the current worst-tet set (the seeds used by refine_sizing_around_worst)</span></div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="comment">// instead fall back to the EXACT rational midpoint (never inverts) and keep</span></div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="comment">// the new vertex un-rounded, so the worst region can still be refined.</span></div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keywordtype">bool</span> stuck_refine_rational_split = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="comment">// ---- Skip good regions ----------------------------------------------</span></div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="comment">// Only smooth vertices incident to a tet whose energy is &gt;=</span></div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="comment">// skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by</span></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="comment">// good tets does nothing, so skipping it is free (14-16x faster smooth</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="comment">// passes). Only smoothing is gated: gating the topology/sizing ops</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="comment">// (split/collapse/swap) starves the optimizer and blows up the element</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="comment">// count, so those always run over the whole mesh.</span></div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordtype">bool</span> skip_good_regions = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="comment">// Safety margin on the &quot;active&quot; threshold: a tet is active when its energy</span></div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="comment">// (cbrt of m_quality) is &gt;= this fraction of stop_energy, so vertices near</span></div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="comment">// tets sitting just below the target are still smoothed.</span></div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="keywordtype">double</span> skip_good_regions_margin = 0.9;</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keywordtype">double</span> splitting_l2 = -1.; <span class="comment">// the lower bound length (squared) for edge split</span></div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keywordtype">double</span> collapsing_l2 =</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>        std::numeric_limits&lt;double&gt;::max(); <span class="comment">// the upper bound length (squared) for edge collapse</span></div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="keywordtype">double</span> stop_energy = 10;</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">   99</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">split_high_valence_threshold</a> = 200;</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">  107</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">w_amips</a> = 1e-4;</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>    <span class="keywordtype">double</span> w_envelope = 1. - 1e-4; <span class="comment">// derived; not read from json</span></div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">  118</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">num_smoothing_passes</a> = 10;</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="keywordtype">bool</span> debug_output = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="keywordtype">bool</span> perform_sanity_checks = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span> </div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector3d&amp; min_, <span class="keyword">const</span> Vector3d&amp; max_)</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    {</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        min = min_;</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        max = max_;</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        diag_l = (max - min).norm();</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        <span class="keywordflow">if</span> (l &gt; 0)</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>            lr = l / diag_l;</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>            l = lr * diag_l;</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        splitting_l2 = l * l * (16 / 9.);</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>        collapsing_l2 = l * l * (16 / 25.);</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span> </div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        <span class="keywordflow">if</span> (eps &gt; 0)</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            epsr = eps / diag_l;</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>            eps = epsr * diag_l;</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span> </div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        l_min = eps;</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>    }</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>    <span class="keywordtype">void</span> init(</div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; vertices,</div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    {</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        Vector3d min_, max_;</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>            <span class="keywordflow">if</span> (i == 0) {</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>                min_ = vertices[i];</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>                max_ = vertices[i];</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            }</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) min_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) max_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>            }</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        }</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span> </div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        init(min_, max_);</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>    }</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>};</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="comment">// ---- Skip good regions ----------------------------------------------</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="comment">// Only smooth vertices incident to a tet whose energy is &gt;=</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="comment">// skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by</span></div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="comment">// good tets does nothing, so skipping it is free (14-16x faster smooth</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="comment">// passes). Only smoothing is gated: gating the topology/sizing ops</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="comment">// (split/collapse/swap) starves the optimizer and blows up the element</span></div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="comment">// count, so those always run over the whole mesh.</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordtype">bool</span> skip_good_regions = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="comment">// Safety margin on the &quot;active&quot; threshold: a tet is active when its energy</span></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="comment">// (cbrt of m_quality) is &gt;= this fraction of stop_energy, so vertices near</span></div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="comment">// tets sitting just below the target are still smoothed.</span></div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="keywordtype">double</span> skip_good_regions_margin = 0.9;</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keywordtype">double</span> splitting_l2 = -1.; <span class="comment">// the lower bound length (squared) for edge split</span></div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keywordtype">double</span> collapsing_l2 =</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        std::numeric_limits&lt;double&gt;::max(); <span class="comment">// the upper bound length (squared) for edge collapse</span></div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span> </div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keywordtype">double</span> stop_energy = 10;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">   98</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">split_high_valence_threshold</a> = 200;</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">  106</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">w_amips</a> = 1e-4;</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>    <span class="keywordtype">double</span> w_envelope = 1. - 1e-4; <span class="comment">// derived; not read from json</span></div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span> </div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">  117</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">num_smoothing_passes</a> = 10;</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="keywordtype">bool</span> debug_output = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="keywordtype">bool</span> perform_sanity_checks = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector3d&amp; min_, <span class="keyword">const</span> Vector3d&amp; max_)</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    {</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        min = min_;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        max = max_;</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        diag_l = (max - min).norm();</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="keywordflow">if</span> (l &gt; 0)</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            lr = l / diag_l;</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>            l = lr * diag_l;</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        splitting_l2 = l * l * (16 / 9.);</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        collapsing_l2 = l * l * (16 / 25.);</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        <span class="keywordflow">if</span> (eps &gt; 0)</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            epsr = eps / diag_l;</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>            eps = epsr * diag_l;</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span> </div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        l_min = eps;</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    }</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>    <span class="keywordtype">void</span> init(</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>        <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; vertices,</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    {</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        Vector3d min_, max_;</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            <span class="keywordflow">if</span> (i == 0) {</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>                min_ = vertices[i];</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>                max_ = vertices[i];</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            }</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) min_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) max_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>            }</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>        }</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span> </div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        init(min_, max_);</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>    }</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>};</div>
 </div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">wmtk::components::tetwild::Parameters</a></div><div class="ttdef"><b>Definition</b> Parameters.h:5</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a49e1cda3810b8706568c4ffb80c9730d"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">wmtk::components::tetwild::Parameters::num_smoothing_passes</a></div><div class="ttdeci">int num_smoothing_passes</div><div class="ttdef"><b>Definition</b> Parameters.h:118</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a704d7da438a3e127505e7bb645125232"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">wmtk::components::tetwild::Parameters::w_amips</a></div><div class="ttdeci">double w_amips</div><div class="ttdef"><b>Definition</b> Parameters.h:107</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_acdbf8d5cc07818ff6b808bc5019bd688"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">wmtk::components::tetwild::Parameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> Parameters.h:99</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a49e1cda3810b8706568c4ffb80c9730d"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">wmtk::components::tetwild::Parameters::num_smoothing_passes</a></div><div class="ttdeci">int num_smoothing_passes</div><div class="ttdef"><b>Definition</b> Parameters.h:117</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a704d7da438a3e127505e7bb645125232"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">wmtk::components::tetwild::Parameters::w_amips</a></div><div class="ttdeci">double w_amips</div><div class="ttdef"><b>Definition</b> Parameters.h:106</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_acdbf8d5cc07818ff6b808bc5019bd688"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">wmtk::components::tetwild::Parameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> Parameters.h:98</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
