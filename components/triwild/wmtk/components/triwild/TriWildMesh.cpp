@@ -1102,7 +1102,8 @@ std::vector<size_t> TriWildMesh::active_vertices() const
         [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
         [this](size_t fid) { return m_face_attribute[fid].m_quality; },
         [this](size_t fid) { return oriented_tri_vids(fid); },
-        active_quality_threshold());
+        active_quality_threshold(),
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
 }
 
 bool TriWildMesh::is_inverted_f(const Tuple& loc) const

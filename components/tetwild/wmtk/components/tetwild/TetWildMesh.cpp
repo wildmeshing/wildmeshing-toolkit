@@ -1223,7 +1223,8 @@ std::vector<size_t> TetWildMesh::active_vertices() const
         [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
         [this](size_t tid) { return m_tet_attribute[tid].m_quality; },
         [this](size_t tid) { return oriented_tet_vids(tid); },
-        active_quality_threshold());
+        active_quality_threshold(),
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
 }
 
 
