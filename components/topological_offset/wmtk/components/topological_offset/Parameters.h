@@ -11,17 +11,17 @@ struct Parameters
     ExpressionPtr offset_selection;
     std::set<std::string> offset_output_tag;
     std::set<std::string> protected_tags;
-    bool respect_all_topologies;
-    bool offset_in;
-    bool offset_out;
-    double target_distance;
-    double target_distance_rel;
-    double relative_ball_threshold;
-    double edge_search_term_len;
-    bool sorted_marching;
+    bool respect_all_topologies = false;
+    bool offset_in = false;
+    bool offset_out = true;
+    double target_distance = -1.0;
+    double target_distance_rel = 1e-2;
+    double relative_ball_threshold = 0.1;
+    double edge_search_term_len = 1e-3;
+    bool sorted_marching = false;
     std::string output_path; // no extension
-    bool save_vtu;
-    bool debug_output;
+    bool save_vtu = false;
+    bool debug_output = false;
 
     Parameters() = default;
 
