@@ -48,6 +48,18 @@ bool TopoOffsetTetMesh::tet_is_in_offset_conservative(const size_t t_id, const d
     return true; // all spheres inside --> tet inside offset
 }
 
+bool TopoOffsetTetMesh::tet_is_in_offset_aggressive(const size_t t_id) const
+{
+    const auto vs = oriented_tet_vids(t_id);
+    for (const size_t& v_id : vs) {
+        const double d = m_input_complex_bvh.dist(m_vertex_attribute[v_id].m_posf);
+        if (d > m_params.target_distance) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
 {
