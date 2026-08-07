@@ -45,7 +45,6 @@
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
       "stuck_refine_force_split",
-      "stuck_refine_rational_split",
       "skip_good_regions",
       "skip_good_regions_margin",
       "skip_winding_number"
@@ -113,13 +112,13 @@
   {
     "pointer": "/simplify_use_link_condition",
     "type": "bool",
-    "default": true,
+    "default": false,
     "doc": "Require the link condition when simplifying the input surface. When true the simplification cannot change the topology of the input, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed, so the input simplifies further, but the surface handed to the arrangement may differ topologically from the input."
   },
   {
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
-    "default": false,
+    "default": true,
     "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
   },
   {
@@ -168,7 +167,7 @@
   {
     "pointer": "/eps_rel",
     "type": "float",
-    "default": 2e-3,
+    "default": 1e-3,
     "doc": "Envelope thickness relative to the bounding box"
   },
   {
@@ -180,7 +179,7 @@
   {
     "pointer": "/stop_energy",
     "type": "float",
-    "default": 10,
+    "default": 100,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
   },
   {
@@ -210,8 +209,8 @@
   {
     "pointer": "/remove_duplicate_eps",
     "type": "float",
-    "default": 2e-3,
-    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately."
+    "default": 0,
+    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the surface connectivity; negative skips the pass entirely."
   },
   {
     "pointer": "/allow_surface_swap",
@@ -322,12 +321,6 @@
     "type": "bool",
     "default": true,
     "doc": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall."
-  },
-  {
-    "pointer": "/stuck_refine_rational_split",
-    "type": "bool",
-    "default": true,
-    "doc": "When a split's rounded (double) midpoint would invert an incident tet, allow edges of the current worst-tet set to fall back to the exact rational midpoint (never inverts, keeps the new vertex un-rounded) instead of rejecting the split."
   },
   {
     "pointer": "/skip_good_regions",

@@ -75,7 +75,7 @@ void SimWildMesh::split_all_edges()
             "[force-split] {} worst-tet longest edges force-split",
             m_force_split_count);
     }
-    // Consumed: the queued force-split edges no longer exist after this pass.
+    // Consumed: the queued force-split edges no longer exist after this pass
     m_force_split_edges.clear();
 }
 
@@ -172,10 +172,6 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
         std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
-        if (!m_params.stuck_refine_rational_split) {
-            return false;
-        }
-
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         p = to_double(m_vertex_attribute[v_id].m_pos);
