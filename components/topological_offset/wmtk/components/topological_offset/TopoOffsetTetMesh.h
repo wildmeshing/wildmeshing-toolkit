@@ -39,8 +39,9 @@ public:
 
     // Multiplier on the target edge length (splitting_l2/collapsing_l2), matching
     // SimWildMesh::VertexAttributes::m_sizing_scalar: < 1 refines (shorter edges are kept
-    // around this vertex), > 1 coarsens, clamped to [TopoOffsetTetMesh::MIN_SIZING_SCALAR, 1].
-    // Updated once per optimize_offset() iteration by update_sizing_field().
+    // around this vertex), > 1 coarsens, clamped to [Parameters::min_sizing_scalar,
+    // Parameters::max_sizing_scalar]. Updated once per optimize_offset() iteration by
+    // update_sizing_field().
     double m_sizing_scalar = 1.0;
 
     /**
@@ -441,15 +442,12 @@ public:
     //// split
 
     //// sizing field
-    // Bounds for VertexAttributes::m_sizing_scalar. Refinement stops at 1/10th of the base
-    // target length; coarsening never exceeds the base target itself (a sizing_scalar > 1
-    // would mean "coarser than what the user asked for", which update_sizing_field() never
-    // has a reason to produce).
-    static constexpr double MIN_SIZING_SCALAR = 0.1;
-    static constexpr double MAX_SIZING_SCALAR = 1.0;
-    // Mean ratio metric strictly below this is "bad" (refine); strictly above is "good"
-    // (coarsen), matching the reference's compute_target_edge_length().
-    static constexpr double SIZING_MRM_THRESHOLD = 0.5;
+    // Bounds and thresholds for the sizing field are user-configurable; see
+    // Parameters::min_sizing_scalar / max_sizing_scalar / sizing_mrm_threshold /
+    // sizing_gradation. Refinement stops at min_sizing_scalar; coarsening never exceeds
+    // max_sizing_scalar (default: the base target itself, since a sizing_scalar > 1 would mean
+    // "coarser than what the user asked for", which update_sizing_field() never has a reason
+    // to produce).
 
     /**
      * @brief unsigned mean ratio metric of a triangle: 2*sqrt(3)*area / (sum of squared edge
@@ -463,12 +461,14 @@ public:
      * the mean ratio metric of the offset triangulation (faces with m_is_offset_fs), following
      * the reference's compute_target_edge_length(): for every vertex incident to at least one
      * offset-surface face, take the worst (minimum) mean_ratio_metric() among those faces, and
-     * halve the sizing scalar if it is below SIZING_MRM_THRESHOLD, or multiply it by 1.5
-     * (coarsen) if above -- clamped to [MIN_SIZING_SCALAR, MAX_SIZING_SCALAR]. Vertices not
-     * incident to any offset-surface face are left untouched. Called once per
-     * optimize_offset() iteration, after smoothing.
-     * @note skeleton: unlike the reference, this doesn't also factor in normal deviation, and
-     * there is no "at most 1.5x the neighboring target" gradation cap between adjacent edges.
+     * halve the sizing scalar if it is below m_params.sizing_mrm_threshold, or multiply it by
+     * 1.5 (coarsen) if above -- clamped to [m_params.min_sizing_scalar,
+     * m_params.max_sizing_scalar]. Vertices not incident to any offset-surface face are left
+     * untouched. The vertices actually refined this pass then seed
+     * wmtk::utils::gradation_smooth_sizing() (m_params.sizing_gradation), matching
+     * SimWildMesh::gradation_smooth_sizing(), so a newly refined patch doesn't sit right next
+     * to an unrelated coarse one. Called once per optimize_offset() iteration, after smoothing.
+     * @note skeleton: unlike the reference, this doesn't also factor in normal deviation.
      */
     void update_sizing_field();
     //// sizing field

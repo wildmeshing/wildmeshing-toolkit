@@ -2,6 +2,7 @@
 #include "TopoOffsetTetMesh.h"
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 
@@ -890,17 +891,32 @@ void TopoOffsetTetMesh::update_sizing_field()
         }
     }
 
+    std::vector<size_t> refined; // seeds for gradation: vertices whose sizing was just lowered
     for (size_t vid = 0; vid < vert_capacity(); ++vid) {
         if (!touched[vid]) continue;
 
         double& s = m_vertex_attribute[vid].m_sizing_scalar;
-        if (min_mrm[vid] < SIZING_MRM_THRESHOLD) {
+        const double old_s = s;
+        if (min_mrm[vid] < m_params.sizing_mrm_threshold) {
             s *= 0.5; // refine: a badly-shaped incident offset triangle wants shorter edges
         } else {
             s *= 1.5; // coarsen: every incident offset triangle is already well shaped
         }
-        s = std::clamp(s, MIN_SIZING_SCALAR, MAX_SIZING_SCALAR);
+        s = std::clamp(s, m_params.min_sizing_scalar, m_params.max_sizing_scalar);
+        if (s < old_s) {
+            refined.push_back(vid);
+        }
     }
+
+    // Gradation: propagate the refinement outward so neighboring sizing scalars never differ
+    // by more than sizing_gradation, matching SimWildMesh::gradation_smooth_sizing(). This is
+    // monotone (only ever lowers a neighbor's scalar), so a vertex that was just coarsened
+    // above can still get pulled back down here if it sits next to a freshly refined one.
+    wmtk::utils::gradation_smooth_sizing(
+        m_params.sizing_gradation,
+        refined,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
+        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
 }
 
 void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)

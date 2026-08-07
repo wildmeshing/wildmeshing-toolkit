@@ -40,6 +40,19 @@ struct Parameters
     // that would push it further out of alignment.
     double max_normal_deviation_deg;
 
+    // ---- sizing field, see TopoOffsetTetMesh::update_sizing_field() ----
+    // bounds for VertexAttributes::m_sizing_scalar
+    double min_sizing_scalar;
+    double max_sizing_scalar;
+    // mean ratio metric strictly below this is "bad" (refine); strictly above is "good"
+    // (coarsen), matching the reference's compute_target_edge_length()
+    double sizing_mrm_threshold;
+    // gradation cap: neighboring vertices' sizing scalars may differ by at most this factor,
+    // enforced by propagating the refinement outward (monotone, only ever lowers a
+    // neighbor's scalar), matching SimWildMesh::Parameters::stuck_refine_gradation. <= 1
+    // disables gradation entirely.
+    double sizing_gradation;
+
     VectorXd box_min;
     VectorXd box_max;
 
@@ -95,6 +108,11 @@ struct Parameters
         stop_energy = json_params["stop_energy"];
 
         max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
+
+        min_sizing_scalar = json_params["min_sizing_scalar"];
+        max_sizing_scalar = json_params["max_sizing_scalar"];
+        sizing_mrm_threshold = json_params["sizing_mrm_threshold"];
+        sizing_gradation = json_params["sizing_gradation"];
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)
