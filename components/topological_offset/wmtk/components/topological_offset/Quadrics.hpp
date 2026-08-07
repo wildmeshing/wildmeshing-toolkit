@@ -37,10 +37,18 @@ public:
      * @brief solve for the position minimizing the quadric error, regularized toward p along
      * directions the quadric leaves unconstrained (relevant for quadrics built from a single
      * plane, whose A matrix is singular)
+     *
+     * @param svd_threshold singular values of A below this (relative to the largest) are
+     * treated as zero, i.e. left unconstrained/regularized toward p. Controls sensitivity to
+     * feature edges: lower means less sensitive (more singular values are kept, pulling the
+     * result more strongly toward sharp features); see
+     * Eigen::JacobiSVD::setThreshold().
      */
-    Vector3d solve(const Eigen::Ref<const Vector3d>& p) const;
+    Vector3d solve(const Eigen::Ref<const Vector3d>& p, double svd_threshold = 1e-2) const;
 
-    double squared_distance_to_optimum(const Eigen::Ref<const Vector3d>& p) const;
+    double squared_distance_to_optimum(
+        const Eigen::Ref<const Vector3d>& p,
+        double svd_threshold = 1e-2) const;
 
 private:
     Matrix4d m_matrix = Matrix4d::Zero();

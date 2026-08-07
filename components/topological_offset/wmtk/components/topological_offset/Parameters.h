@@ -46,6 +46,9 @@ struct Parameters
     // neighbors; the remaining weight (1 - w - u) stays with the previous position.
     double smooth_quadrics_weight; // w: blend toward the quadrics-optimal target vertex
     double smooth_laplacian_weight; // u: blend toward the offset-surface Laplacian
+    // SVD threshold used by Quadrics::solve() when solving for the quadrics-optimal target
+    // vertex. Controls sensitivity to feature edges: lower means more sensitive.
+    double quadrics_svd_threshold;
 
     // ---- sizing field, see TopoOffsetTetMesh::update_sizing_field() ----
     // bounds for VertexAttributes::m_sizing_scalar
@@ -119,6 +122,7 @@ struct Parameters
 
         smooth_quadrics_weight = json_params["smooth_quadrics_weight"];
         smooth_laplacian_weight = json_params["smooth_laplacian_weight"];
+        quadrics_svd_threshold = json_params["quadrics_svd_threshold"];
 
         min_sizing_scalar = json_params["min_sizing_scalar"];
         max_sizing_scalar = json_params["max_sizing_scalar"];
