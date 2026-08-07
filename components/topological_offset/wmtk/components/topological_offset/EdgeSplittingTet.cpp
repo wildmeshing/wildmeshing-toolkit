@@ -414,8 +414,8 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 
         m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
         m_vertex_attribute[v_id].m_sizing_scalar = (m_vertex_attribute[v1_id].m_sizing_scalar +
-                                                     m_vertex_attribute[v2_id].m_sizing_scalar) /
-                                                    2;
+                                                    m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                                   2;
     } else {
         // vertex attribute
         m_vertex_attribute[v_id] = cache.new_v;
