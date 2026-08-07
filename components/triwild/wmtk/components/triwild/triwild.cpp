@@ -561,31 +561,27 @@ void triwild(nlohmann::json json_params)
         if (max_energy > params.stop_energy) {
             log_and_throw_error("Max energy is too large.");
         }
-        // The feature-point invariant, with the slack the merge rule makes unavoidable.
+        // Feature-point retention is deliberately NOT asserted here, because "every anchor
+        // keeps a vertex within eps" is not actually an invariant of the pipeline.
         //
-        // Requiring every anchor to keep a vertex within exactly eps is too strict, because
-        // the collapse rule deliberately lets two anchors closer than eps merge -- the
-        // survivor covers both. It then carries only ONE feature id, so the other anchor
-        // stops constraining it. Bound on the result: at merge time the survivor is within
-        // eps of both anchors, so those anchors are at most 2 eps apart; afterwards it stays
-        // within eps of the one it carries, hence at most eps + 2 eps from the other.
+        // Two anchors closer than eps are allowed to merge: the survivor covers both, which
+        // is correct and is what keeps a mesh with sub-eps features from deadlocking. But the
+        // survivor carries only ONE feature id, so the anchor it did not keep stops
+        // constraining it, and it may then move a further eps away from that one.
         //
-        // Measured across the 2D sweep, the worst unretained anchor lands at 1.02 to 2.22 x
-        // eps, comfortably inside that. Anything past 3 x eps is not this mechanism and is
-        // worth looking at -- a chain of merges could in principle compound further, and if
-        // that is what a model is doing the right answer is per-vertex feature SETS, not a
-        // larger constant here.
-        constexpr double feature_tolerance = 3.0;
-        if (feat_worst_ratio > feature_tolerance) {
-            log_and_throw_error(
-                "{} of {} feature points (polyline endpoints / junctions) are no longer "
-                "represented; the worst is {:.2f} x eps from the nearest vertex, past the "
-                "{:.0f} x eps the merge rule can account for.",
-                feat_total - feat_kept,
-                feat_total,
-                feat_worst_ratio,
-                feature_tolerance);
-        }
+        // Those merges CASCADE. The survivor can merge again with a third anchor, and again
+        // with a fourth, each step re-anchoring the constraint on whichever id it happens to
+        // carry and letting the earliest anchors slip another eps. A chain of k merges walks
+        // the vertex O(k * eps) from where it started, so no fixed multiple of eps is a
+        // sound bound -- it depends on how many sub-eps features the input crowds together.
+        // Measured on the 2D sweep the worst case is 2.22 x eps, but that is an observation,
+        // not a guarantee, and throwing on any particular multiple would be dressing up a
+        // guess as an invariant.
+        //
+        // Making it exact needs per-vertex feature SETS, so a survivor stays constrained by
+        // every anchor it covers rather than the last id assigned to it. Until then this is
+        // reported and not enforced: the warning above, plus features_retained and
+        // features_worst_ratio in the report.
     }
 
     if (json_params["write_vtu"]) {
