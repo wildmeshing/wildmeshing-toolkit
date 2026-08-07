@@ -1,0 +1,85 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": ["application", "input"],
+    "optional": [
+      "output",
+      "input_dir",
+      "solid_groups",
+      "shells",
+      "rods",
+      "max_shell_iterations",
+      "validity_max_depth",
+      "jacobian_tolerance",
+      "use_topological_offset",
+      "report"
+    ]
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "options": ["prismatic_mesh"]
+  },
+  {
+    "pointer": "/input",
+    "type": "string"
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "prismatic_mesh.msh"
+  },
+  {
+    "pointer": "/input_dir",
+    "type": "string",
+    "default": ""
+  },
+  {
+    "pointer": "/solid_groups",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/solid_groups/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/shells",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/rods",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/max_shell_iterations",
+    "type": "int",
+    "default": 100,
+    "min": 1
+  },
+  {
+    "pointer": "/validity_max_depth",
+    "type": "int",
+    "default": 8,
+    "min": 0
+  },
+  {
+    "pointer": "/jacobian_tolerance",
+    "type": "float",
+    "default": 1e-12,
+    "min": 0
+  },
+  {
+    "pointer": "/use_topological_offset",
+    "type": "bool",
+    "default": true
+  },
+  {
+    "pointer": "/report",
+    "type": "string",
+    "default": ""
+  }
+]
