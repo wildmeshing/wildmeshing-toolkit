@@ -100,9 +100,15 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
     // }
 
     // length, similar to SimWild: only collapse edges shorter than the target-length-derived
-    // cutoff (m_params.collapsing_l2, set in Parameters::init() from length/length_rel)
-    if ((VA[v1_id].m_posf - VA[v2_id].m_posf).squaredNorm() > m_params.collapsing_l2) {
-        return false;
+    // cutoff (m_params.collapsing_l2, set in Parameters::init() from length/length_rel),
+    // scaled by the sizing field so a refined region resists collapsing back down
+    {
+        const double sizing_ratio =
+            (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2.;
+        if ((VA[v1_id].m_posf - VA[v2_id].m_posf).squaredNorm() >
+            m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+            return false;
+        }
     }
 
     ///check if on bbox/surface/boundary

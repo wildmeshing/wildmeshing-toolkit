@@ -18,6 +18,9 @@
 #include <igl/remove_unreferenced.h>
 #include <paraviewo/VTUWriter.hpp>
 
+#include <algorithm>
+#include <limits>
+
 
 namespace wmtk::components::topological_offset {
 
@@ -854,6 +857,52 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     assert(ambient_assert());
 }
 
+double TopoOffsetTetMesh::mean_ratio_metric(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2)
+{
+    const Vector3d a = p1 - p0;
+    const Vector3d b = p2 - p1;
+    const Vector3d c = p0 - p2;
+
+    const double sq_length_sum = a.squaredNorm() + b.squaredNorm() + c.squaredNorm();
+    if (sq_length_sum < 1e-20) return 0.; // degenerate triangle, treat as maximally bad
+    const double area = a.cross(b).norm();
+
+    constexpr double prefactor = 2. * 1.7320508075688772; // 2*sqrt(3)
+    return prefactor * area / sq_length_sum;
+}
+
+void TopoOffsetTetMesh::update_sizing_field()
+{
+    const std::vector<std::array<size_t, 3>> offset_faces =
+        get_faces_by_condition([](const FaceAttributes& f) { return f.m_is_offset_fs; });
+
+    std::vector<double> min_mrm(vert_capacity(), std::numeric_limits<double>::max());
+    std::vector<bool> touched(vert_capacity(), false);
+
+    for (const std::array<size_t, 3>& f : offset_faces) {
+        const double mrm = mean_ratio_metric(
+            m_vertex_attribute[f[0]].m_posf,
+            m_vertex_attribute[f[1]].m_posf,
+            m_vertex_attribute[f[2]].m_posf);
+        for (const size_t v : f) {
+            min_mrm[v] = std::min(min_mrm[v], mrm);
+            touched[v] = true;
+        }
+    }
+
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!touched[vid]) continue;
+
+        double& s = m_vertex_attribute[vid].m_sizing_scalar;
+        if (min_mrm[vid] < SIZING_MRM_THRESHOLD) {
+            s *= 0.5; // refine: a badly-shaped incident offset triangle wants shorter edges
+        } else {
+            s *= 1.5; // coarsen: every incident offset triangle is already well shaped
+        }
+        s = std::clamp(s, MIN_SIZING_SCALAR, MAX_SIZING_SCALAR);
+    }
+}
+
 void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file)
 {
     logger().info("Optimizing offset...");
@@ -899,6 +948,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     }
 
     for (int i = 0; i < m_params.optimization_iterations; ++i) {
+        logger().info("Optimization iteration {} / {}", i + 1, m_params.optimization_iterations);
         // split
         logger().info("\tSplitting long edges...");
         split_all_edges();
@@ -936,6 +986,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
                 write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
             }
         }
+
+        // sizing field: refine/coarsen based on the offset triangulation's mean ratio metric,
+        // so the next iteration's split/collapse pass targets shorter edges around badly
+        // shaped offset triangles and allows longer ones where it is already well shaped.
+        logger().info("\tUpdating sizing field...");
+        update_sizing_field();
     }
 }
 
@@ -1486,6 +1542,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     v_order.setZero();
     VectorXd v_id(vert_capacity());
     v_id.setZero();
+    VectorXd v_sizing(vert_capacity());
+    v_sizing.setZero();
 
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
@@ -1519,6 +1577,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         labels[vid] = m_vertex_attribute[vid].label;
         v_order[vid] = m_vertex_attribute[vid].m_order;
         v_id[vid] = vid;
+        v_sizing[vid] = m_vertex_attribute[vid].m_sizing_scalar;
     }
 
     // set tet verts
@@ -1543,6 +1602,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("labels", labels);
     writer.add_field("order", v_order);
     writer.add_field("vid", v_id);
+    writer.add_field("sizing", v_sizing);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -1551,6 +1611,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         paraviewo::VTUWriter surf_writer;
         surf_writer.add_field("order", v_order);
         surf_writer.add_field("vid", v_id);
+        surf_writer.add_field("sizing", v_sizing);
         logger().info("Write {}", surf_out_path);
         surf_writer.write_mesh(surf_out_path, V, F_in, paraviewo::CellType::Triangle);
     }
@@ -1561,6 +1622,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         paraviewo::VTUWriter off_writer;
         off_writer.add_field("order", v_order);
         off_writer.add_field("vid", v_id);
+        off_writer.add_field("sizing", v_sizing);
         logger().info("Write {}", off_out_path);
         off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
     }
@@ -1570,6 +1632,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         paraviewo::VTUWriter edge_writer;
         edge_writer.add_field("order", v_order);
         edge_writer.add_field("vid", v_id);
+        edge_writer.add_field("sizing", v_sizing);
         logger().info("Write {}", edge_out_path);
         edge_writer.write_mesh(edge_out_path, V, E, paraviewo::CellType::Line);
     }
