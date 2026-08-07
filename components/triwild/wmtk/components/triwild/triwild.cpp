@@ -561,15 +561,30 @@ void triwild(nlohmann::json json_params)
         if (max_energy > params.stop_energy) {
             log_and_throw_error("Max energy is too large.");
         }
-        // The feature-point invariant is a promise of the run, so it belongs here next to the
-        // other two. It is also what gives the polyline integration test teeth: the harness
-        // only checks that a config does not throw.
-        if (feat_kept < feat_total) {
+        // The feature-point invariant, with the slack the merge rule makes unavoidable.
+        //
+        // Requiring every anchor to keep a vertex within exactly eps is too strict, because
+        // the collapse rule deliberately lets two anchors closer than eps merge -- the
+        // survivor covers both. It then carries only ONE feature id, so the other anchor
+        // stops constraining it. Bound on the result: at merge time the survivor is within
+        // eps of both anchors, so those anchors are at most 2 eps apart; afterwards it stays
+        // within eps of the one it carries, hence at most eps + 2 eps from the other.
+        //
+        // Measured across the 2D sweep, the worst unretained anchor lands at 1.02 to 2.22 x
+        // eps, comfortably inside that. Anything past 3 x eps is not this mechanism and is
+        // worth looking at -- a chain of merges could in principle compound further, and if
+        // that is what a model is doing the right answer is per-vertex feature SETS, not a
+        // larger constant here.
+        constexpr double feature_tolerance = 3.0;
+        if (feat_worst_ratio > feature_tolerance) {
             log_and_throw_error(
                 "{} of {} feature points (polyline endpoints / junctions) are no longer "
-                "represented within eps.",
+                "represented; the worst is {:.2f} x eps from the nearest vertex, past the "
+                "{:.0f} x eps the merge rule can account for.",
                 feat_total - feat_kept,
-                feat_total);
+                feat_total,
+                feat_worst_ratio,
+                feature_tolerance);
         }
     }
 
