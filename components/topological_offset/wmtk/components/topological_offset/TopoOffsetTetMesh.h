@@ -362,6 +362,9 @@ public:
      * and by the feature-preserving checks in Collapse.cpp -- a single centroid sample cannot
      * tell a locally-flat patch from one straddling a sharp feature of the input complex, since
      * a single BVH nearest-point query just picks whichever side of the feature is closer.
+     * @note a sample is only accepted (non-zero OffsetSurfaceSample::normal) if it lies in the
+     * direction of offset_face_outward_normal(f); otherwise it is degenerate for our purposes,
+     * same as landing exactly on the input complex.
      */
     std::array<OffsetSurfaceSample, 4> offset_surface_samples(const Tuple& f) const;
 

@@ -52,8 +52,11 @@ double TopoOffsetTetMesh::max_offset_surface_normal_deviation_at_vertex(size_t v
 
 double TopoOffsetTetMesh::collapse_normal_deviation(const Tuple& edge, size_t remove_vid) const
 {
-    const Vector3d p0 = m_vertex_attribute[edge.vid(*this)].m_posf;
-    const Vector3d p1 = m_vertex_attribute[edge.switch_vertex(*this).vid(*this)].m_posf;
+    const size_t v0 = edge.vid(*this);
+    const size_t v1 = edge.switch_vertex(*this).vid(*this);
+    const Vector3d p0 = m_vertex_attribute[v0].m_posf;
+    const Vector3d p1 = m_vertex_attribute[v1].m_posf;
+
     const Vector3d e_dir = (p1 - p0).normalized();
 
     double min_angle = std::numeric_limits<double>::max();
@@ -103,8 +106,7 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
     // cutoff (m_params.collapsing_l2, set in Parameters::init() from length/length_rel),
     // scaled by the sizing field so a refined region resists collapsing back down
     {
-        const double sizing_ratio =
-            (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2.;
+        const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2.;
         if ((VA[v1_id].m_posf - VA[v2_id].m_posf).squaredNorm() >
             m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
             return false;

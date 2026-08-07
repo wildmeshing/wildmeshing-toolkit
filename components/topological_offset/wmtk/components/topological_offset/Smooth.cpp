@@ -14,6 +14,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <optional>
 #include <set>
 
 namespace wmtk::components::topological_offset {
@@ -147,8 +148,7 @@ std::array<OffsetSurfaceSample, 4> TopoOffsetTetMesh::offset_surface_samples(con
         s.nearest = m_input_complex_bvh.nearest_point(s.point);
         const Vector3d diff = s.point - s.nearest;
         const double dist = diff.norm();
-        // Vector3d::Zero() signals "no normal direction could be recovered"; the sample point
-        // landed exactly on the input complex, which is degenerate but not an error.
+
         s.normal = (dist < 1e-12) ? Vector3d::Zero() : Vector3d(diff / dist);
     }
     return samples;
@@ -217,13 +217,41 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     const std::vector<Tuple> offset_faces = get_offset_surface_faces_for_vertex(t);
     assert(!offset_faces.empty());
 
+    const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(t);
+    auto any_inverted = [&]() {
+        for (const Tuple& tet : locs) {
+            if (is_inverted(tet)) return true;
+        }
+        return false;
+    };
+    // Move the vertex to `target`; if that inverts an incident tet, binary search along the
+    // segment from the known-valid p0 to `target` for the furthest point that does not.
+    auto move_to = [&](const Vector3d& target) {
+        m_vertex_attribute[vid].m_posf = target;
+        if (!any_inverted()) return;
+
+        double lo = 0.; // m_posf = p0 + lo * (target - p0), always valid
+        double hi = 1.; // always invalid
+        constexpr int max_iters = 10;
+        for (int iter = 0; iter < max_iters; ++iter) {
+            const double mid = 0.5 * (lo + hi);
+            m_vertex_attribute[vid].m_posf = p0 + mid * (target - p0);
+            if (any_inverted()) {
+                hi = mid;
+            } else {
+                lo = mid;
+            }
+        }
+        m_vertex_attribute[vid].m_posf = p0 + lo * (target - p0);
+    };
+
     // Laplacian smoothing, restricted to neighbors that are also on the offset surface --
     // pulling in input-complex or interior neighbors would drag the surface off its shape.
     Vector3d p_laplace = Vector3d::Zero();
     {
         int n_neighs = 0;
         for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
-            if (get_offset_surface_faces_for_vertex(tuple_from_vertex(nb)).empty()) continue;
+            if (!m_vertex_attribute[nb].m_is_on_offset) continue;
             p_laplace += m_vertex_attribute[nb].m_posf;
             ++n_neighs;
         }
@@ -239,7 +267,7 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     // instead of averaging it away, the same way classic QEM simplification preserves features
     // by summing quadrics from multiple differently-oriented triangles.
     Quadrics q(0., 0., 0., 0.);
-    int n_faces = 0;
+    bool any_sample = false;
     for (const Tuple& f : offset_faces) {
         const std::array<Tuple, 3> face_verts = get_face_vertices(f);
         const Vector3d p_a = m_vertex_attribute[face_verts[0].vid(*this)].m_posf;
@@ -248,29 +276,28 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
         const double area = 0.5 * (p_b - p_a).cross(p_c - p_a).norm();
 
         Quadrics face_q(0., 0., 0., 0.);
-        bool any_sample = false;
         for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
-            if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
+            if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no valid normal
             const Vector3d target = s.nearest + m_params.target_distance * s.normal;
             face_q += Quadrics(target, s.normal) * s.weight;
             any_sample = true;
         }
-        if (!any_sample) continue;
         face_q *= area;
 
         q += face_q;
-        ++n_faces;
     }
-    if (n_faces == 0) return false;
+    if (!any_sample) return false;
 
     const Vector3d p_optimal = q.solve(p_laplace, m_params.quadrics_svd_threshold);
 
     const double w = m_params.smooth_quadrics_weight;
     const double u = m_params.smooth_laplacian_weight;
     const Vector3d p_final = (1 - w - u) * p0 + w * p_optimal + u * p_laplace;
-    m_vertex_attribute[vid].m_posf = p_final;
 
-    // Inversion is caught by invariants(), called right after this by TetMesh::smooth_vertex.
+    move_to(p_final);
+
+    // Any remaining inversion (from the binary search's finite precision) is caught by
+    // invariants(), called right after this by TetMesh::smooth_vertex.
     return true;
 }
 
