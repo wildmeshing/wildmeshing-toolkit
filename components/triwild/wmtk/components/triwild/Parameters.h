@@ -63,7 +63,7 @@ struct Parameters
      * changing connectivity, so on meshes where split/collapse/swap have run out of useful
      * moves it is the only thing left that can lower the energy.
      */
-    int num_smoothing_passes = 10;
+    int num_smoothing_passes = 2;
 
     // Interleave smoothing between the topology passes instead of running it all at the end
     // of the iteration. With this on, one iteration is

@@ -199,8 +199,8 @@
   {
     "pointer": "/num_smoothing_passes",
     "type": "int",
-    "default": 10,
-    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy."
+    "default": 2,
+    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy. Was 10; lowered to 2 once surface vertices stopped being skipped by skip_good_regions, which made each pass do real work -- on Thingi10K 240280 a pass costs 41-51s and moves fewer vertices each time (accepted 18606 -> 17077 over five passes, envelope rejections 11316 -> 12237), so the later passes in a run of 10 buy very little for their cost."
   },
   {
     "pointer": "/interleaved_smoothing",
