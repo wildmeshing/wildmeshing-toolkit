@@ -1,17 +1,25 @@
 // Containment queries that only the exact envelope can answer.
 //
-// SampleEnvelope has two backends. The sampled one places points along the query and asks the
-// BVH whether each is within eps of the input; it cannot see anything that happens between
-// two samples, and pays for that by shrinking its acceptance radius (eps/sqrt(3) for a
-// triangle, eps/2 for a segment -- see the derivations on SampleEnvelope::eps2 and eps2_edge).
-// The exact one asks whether the query is covered by the union of the eps-neighbourhoods of
-// the input primitives and decides that with exact predicates, so it uses the full eps.
+// Both of SampleEnvelope's backends describe the SAME envelope: the eps-neighbourhood of the
+// input. They are handed the same eps and neither is meant to be wider or narrower than the
+// other. What differs is how much of that eps they manage to use.
+//
+// The sampled one places points along the query and asks the BVH whether each is within some
+// radius of the input. It cannot see what happens between two samples, so to guarantee the
+// whole query is within eps it has to shrink that radius by the sampling's covering radius --
+// eps/sqrt(3) for a triangle, eps/2 for a segment (see SampleEnvelope::eps2 and eps2_edge).
+// That shrink is an implementation detail of staying conservative, not a smaller envelope: it
+// costs some of the eps budget, so the sampled test rejects geometry that is genuinely inside.
+//
+// The exact one decides coverage by the union of the input's eps-neighbourhoods directly, so
+// it spends almost none of the budget on conservatism -- fast-envelope inscribes a hexahedron
+// (3D) or rectangle (2D) whose corners reach exactly eps.
 //
 // Until fast-envelope gained envelopes built from edges, only the triangle-mesh envelope had
 // an exact backend; the segment and 2D queries threw. These cases pin what the exact path now
-// answers, and in particular the two places where the two backends legitimately disagree:
-// the band between the shrunk radius and eps, where sampled is stricter, and a gap narrower
-// than the sample spacing, where sampled is wrong.
+// answers, and in particular the two places where the backends legitimately disagree: the band
+// the sampled test gives up to its own conservatism, and a gap narrower than the sample
+// spacing, where the sampled test is simply wrong.
 #include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/Types.hpp>
@@ -87,16 +95,17 @@ TEST_CASE("exact and sampled 3D segment envelopes agree away from the boundary",
 
 TEST_CASE("the sampled segment envelope is the stricter of the two", "[envelope]")
 {
-    // The sampled test accepts a segment only when every sample is within eps/2, because the
-    // spacing guarantees no more than another eps/2 between samples. So above eps/2 it starts
-    // rejecting geometry the input actually contains. That is safe -- it errs towards
-    // rejection -- but it is the reason the exact envelope is worth having.
+    // Same envelope, different amounts of it recovered. The sampled test accepts a segment
+    // only when every sample is within eps/2, because the spacing guarantees no more than
+    // another eps/2 between samples -- so above eps/2 it starts rejecting geometry that is
+    // inside the eps envelope it is supposed to represent. That is safe, and it is the cost of
+    // sampling rather than a smaller envelope; recovering it is the point of the exact path.
     //
-    // The offset below has to sit in the band where the two disagree. The upper end is not
-    // eps: fast-envelope wraps each segment in a hexahedron of half-width eps/sqrt(3), whose
-    // corners reach eps but whose inscribed sphere is eps/sqrt(3). Staying inside that sphere
-    // is inside the hexahedron whatever orientation the frame comes out with, which keeps this
-    // from depending on how seg_cube happens to pick its two cross-section axes.
+    // The offset below has to sit in the band the sampled test gives up. Its upper end is not
+    // eps: fast-envelope inscribes a hexahedron of half-width eps/sqrt(3) whose corners reach
+    // eps, so eps/sqrt(3) is the offset guaranteed inside whatever orientation the frame comes
+    // out with. Using the inscribed sphere keeps this from depending on how seg_cube happens
+    // to pick its two cross-section axes.
     //
     //     eps/2 = 0.0500  <  0.95 * eps/sqrt(3) = 0.0548  <=  eps/sqrt(3) = 0.0577
     const double eps = 0.1;

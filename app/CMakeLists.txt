@@ -1,6 +1,10 @@
 
 include(wmtk_data)
 include(jse)
+# Every executable under here links CLI11::CLI11. The target used to arrive as a side effect
+# of fenvelope.cmake pulling cli11 in for fast-envelope's own app, which stopped being true
+# when fast-envelope dropped that app -- so declare it where it is actually used.
+include(cli11)
 
 option(WMTK_APP_HARMTET "Harmonic Triangulation app" ON)
 option(WMTK_APP_INTERIOR_TET_OPT "interior tet opt application" ON)
