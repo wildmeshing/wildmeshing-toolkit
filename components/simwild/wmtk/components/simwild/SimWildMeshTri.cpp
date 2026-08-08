@@ -208,8 +208,9 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         m_envelope = std::make_shared<SampleEnvelope>();
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
         m_envelope_orig = m_envelope;
-    } else if (m_params.operation == "remeshing") {
-        // All surface edges must be inside the envelope
+    } else if (m_params.operation == "remeshing" && m_params.check_envelope_at_init) {
+        // All surface edges must be inside the envelope. Opt-in: see
+        // Parameters::check_envelope_at_init for why it is not worth its cost by default.
         logger().info("Envelope sanity check");
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {
