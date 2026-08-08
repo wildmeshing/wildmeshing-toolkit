@@ -432,7 +432,12 @@ void SimWildMesh::find_order_2_edges()
     }
 
     // init open boundary envelope
-    m_order_2_edge_envelope = std::make_shared<SampleEnvelope>();
+    //
+    // Follows the surface envelope's predicate: same input, same epsilon, so there is no
+    // reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
+    // curves. It was hard-wired to sampled only because the exact envelope could not be built
+    // from edges until fast-envelope #6.
+    m_order_2_edge_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
     m_order_2_edge_envelope->init(v_posf, order_2_edges, m_params.epsr * m_params.diag_l / 2.0);
 }
 
