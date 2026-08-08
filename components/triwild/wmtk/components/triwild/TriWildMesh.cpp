@@ -456,8 +456,12 @@ void TriWildMesh::init_mesh(
         m_E_envelope[i] = E_env.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>();
+    m_envelope = std::make_shared<SampleEnvelope>(!m_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+    logger().info(
+        "Envelope: {} (eps {:.6})",
+        m_envelope->use_exact ? "EXACT" : "sampled",
+        m_envelope_eps);
 
     // Sanity check: All surface edges must be inside the envelope. Opt-in: see
     // Parameters::check_envelope_at_init for why it is not worth its cost by default.

@@ -13,6 +13,8 @@
       "skip_simplify",
       "simplify_use_link_condition",
       "simplify_envelope_ratio",
+      "simplify_use_sample_envelope",
+      "use_sample_envelope",
       "filter",
       "skip_winding_number",
       "eps_rel",
@@ -119,6 +121,18 @@
     "type": "float",
     "default": 0.5,
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+  },
+  {
+    "pointer": "/simplify_use_sample_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large curve network, which is why this defaults the other way round from use_sample_envelope -- the same split tetwild makes. Both backends guarantee the same thing, that everything they accept lies within simplify_envelope_ratio * eps of the input; they differ only in how much of that budget they manage to use, so this does not change what simplify_envelope_ratio means."
+  },
+  {
+    "pointer": "/use_sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Use the sampled envelope instead of the exact one. Both describe the same envelope -- the eps-neighbourhood of the input -- and both are given the same eps; neither is wider than the other. They differ in how much of that eps they can use. The sampled test places points along a query and asks whether each is within some radius of the input; since it cannot see what happens between two samples, it shrinks that radius to stay conservative, and so rejects some geometry that is genuinely inside. The exact one decides coverage by the union of the input's eps-neighbourhoods directly and spends almost nothing on conservatism. The difference that matters in practice: a segment bridging a gap between two input curves is rejected by the exact envelope and accepted by the sampled one whenever the gap falls between samples."
   },
   {
     "pointer": "/filter",

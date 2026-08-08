@@ -243,16 +243,21 @@ void triwild(nlohmann::json json_params)
         simplify_eps,
         100 * simplify_envelope_ratio,
         envelope_eps);
-    // 0.5 is not an arbitrary ceiling. is_outside(edge) accepts when every sample is within
-    // eps/2 and the sampling guarantees the rest of the segment is within another eps/2, so
-    // the simplification can leave geometry up to simplify_eps from the input, while the
-    // triangulation's own check accepts samples only up to envelope_eps/2. Those meet exactly
-    // at ratio 0.5; above it the simplification may legally produce an input that the
-    // envelope sanity check below rejects, and the run dies before it starts.
-    if (simplify_envelope_ratio > 0.5) {
+    const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
+    // The only ratio that is wrong independently of how the envelope is implemented. Above 1
+    // the simplification is allowed to move geometry further than the triangulation's own
+    // envelope permits, so the optimizer starts from a mesh that is already outside it and
+    // every operation near those curves is vetoed.
+    //
+    // There used to be a warning at 0.5 here. That number was the sampled backend's internal
+    // compensation showing through -- its edge test accepts a segment only within eps/2,
+    // because its sampling guarantees the other eps/2 -- and both backends guarantee the same
+    // thing to their caller: everything they accept is within eps. A caller reasoning about
+    // eps/2 is reasoning about an implementation detail it should not be able to see.
+    if (simplify_envelope_ratio > 1.0) {
         logger().warn(
-            "simplify_envelope_ratio {} exceeds 0.5; the simplification may produce curves "
-            "that the triangulation's envelope check rejects at init.",
+            "simplify_envelope_ratio {} exceeds 1; the simplification may move curves further "
+            "than the triangulation's envelope allows, leaving the mesh outside it at init.",
             simplify_envelope_ratio);
     }
 
@@ -261,7 +266,7 @@ void triwild(nlohmann::json json_params)
     if (json_params["skip_simplify"]) {
         logger().info("skip simplification");
     } else {
-        SampleEnvelope simplify_envelope;
+        SampleEnvelope simplify_envelope(!simplify_use_sample_envelope);
         {
             std::vector<Vector2d> v(V_in.rows());
             for (int i = 0; i < V_in.rows(); ++i) {

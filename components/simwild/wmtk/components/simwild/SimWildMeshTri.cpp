@@ -205,8 +205,12 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_E_envelope = tempE;
-        m_envelope = std::make_shared<SampleEnvelope>();
+        m_envelope = std::make_shared<SampleEnvelope>(!m_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+        logger().info(
+            "Envelope: {} (eps {:.6})",
+            m_envelope->use_exact ? "EXACT" : "sampled",
+            m_envelope_eps);
         m_envelope_orig = m_envelope;
     } else if (m_params.operation == "remeshing" && m_params.check_envelope_at_init) {
         // All surface edges must be inside the envelope. Opt-in: see
@@ -276,8 +280,12 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         m_E_envelope[i] = E.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>();
+    m_envelope = std::make_shared<SampleEnvelope>(!m_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+    logger().info(
+        "Envelope: {} (eps {:.6})",
+        m_envelope->use_exact ? "EXACT" : "sampled",
+        m_envelope_eps);
 
     if (!m_envelope_orig) {
         m_envelope_orig = m_envelope;

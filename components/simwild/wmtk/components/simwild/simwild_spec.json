@@ -145,7 +145,7 @@
     "pointer": "/use_sample_envelope",
     "type": "bool",
     "default": false,
-    "doc": "Use sample envelope instead of exact one."
+    "doc": "Use the sampled envelope instead of the exact one. Governs both the 3D surface envelope and, since the exact envelope gained support for edges, the order-2 (open boundary and non-manifold) curve envelope and the 2D polyline envelope -- all three are containment tests against the same input at the same epsilon, so they follow one flag. The sampled test places points along the query and asks whether each is within eps of the input, so it cannot see what happens between two samples and shrinks its acceptance radius to compensate; the exact one decides coverage by the union of the eps-neighbourhoods without sampling, so it uses the full eps and is strictly sharper."
   },
   {
     "pointer": "/num_threads",
