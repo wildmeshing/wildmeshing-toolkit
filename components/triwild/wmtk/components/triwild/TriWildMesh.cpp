@@ -445,8 +445,8 @@ void TriWildMesh::init_mesh(
 
     // Around the original input curves, not around the arrangement's constrained edges:
     // after simplification those are the coarsened curves, and the optimizer must stay near
-    // what the user gave us. The sanity check below then genuinely verifies that the
-    // simplified curves are still inside the envelope.
+    // what the user gave us. That is what makes the (opt-in) sanity check below a real
+    // check rather than a tautology: it asks whether the simplified curves are still inside.
     m_V_envelope.resize(V_env.rows());
     for (size_t i = 0; i < m_V_envelope.size(); ++i) {
         m_V_envelope[i] = V_env.row(i);
@@ -459,8 +459,9 @@ void TriWildMesh::init_mesh(
     m_envelope = std::make_shared<SampleEnvelope>();
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
 
-    // Sanity check: All surface edges must be inside the envelope
-    {
+    // Sanity check: All surface edges must be inside the envelope. Opt-in: see
+    // Parameters::check_envelope_at_init for why it is not worth its cost by default.
+    if (m_params.check_envelope_at_init) {
         logger().info("Envelope sanity check");
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {

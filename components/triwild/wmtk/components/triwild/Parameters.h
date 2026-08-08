@@ -36,6 +36,18 @@ struct Parameters
     bool perform_sanity_checks = false;
 
     /**
+     * Verify at init that every constrained edge starts inside the envelope.
+     *
+     * The invariant is real -- the envelope is built around the *input* curves while the
+     * constrained edges come from the simplified ones, so it checks that the simplification
+     * stayed inside its share of eps -- but it costs one sampled segment query per
+     * constrained edge, serially. On a 3.5M-edge input that is 22s locally and 63s on a
+     * slower machine, paid on every run to catch something that has fired once in 15665
+     * models. Off by default; turn it on when changing the simplification or the envelope.
+     */
+    bool check_envelope_at_init = false;
+
+    /**
      * Incident-triangle count above which a vertex is treated as pathological, or 0 to
      * disable the gate.
      *
@@ -154,6 +166,7 @@ struct Parameters
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+        check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];
 
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
         w_amips = json_params["w_amips"];
