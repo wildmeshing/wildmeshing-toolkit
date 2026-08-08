@@ -72,6 +72,16 @@ void TetWildMesh::mesh_improvement(int max_its)
     }
     int refine_cooldown =
         m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
+    // Bound on how far refinement may grow the mesh before it is abandoned. Refinement pays
+    // for quality with elements, and that trade is only worth making while it is converging.
+    // When the requested quality is below what this input can reach, filter_energy collapses
+    // to the target, every cell is selected, and each firing multiplies the element count
+    // while the max energy creeps toward an asymptote that never reaches the target. The max
+    // energy keeps *improving* the whole way, so "refinement stopped helping" does not catch
+    // this -- the growth is the signal.
+    size_t verts_at_first_refine = 0;
+    bool refine_exhausted = false;
+
 
     for (int it = 0; it < max_its; it++) {
         ///ops
@@ -148,9 +158,25 @@ void TetWildMesh::mesh_improvement(int max_its)
         if (refine_cooldown > 0) {
             --refine_cooldown;
         } else if (
-            it > 0 && max_energy > m_params.stop_energy &&
+            !refine_exhausted && it > 0 && max_energy > m_params.stop_energy &&
             (pre_max_energy - max_energy) <=
                 m_params.stuck_refine_stall_eps * (max_energy - m_params.stop_energy)) {
+            if (verts_at_first_refine == 0) {
+                verts_at_first_refine = get_vertices().size();
+            } else if (
+                get_vertices().size() > m_params.stuck_refine_max_growth * verts_at_first_refine) {
+                logger().warn(
+                    "[stuck-refine] the mesh has grown from {} to {} vertices without reaching "
+                    "stop_energy {:.4} (max energy {:.4}); giving up on refinement. The quality "
+                    "target is likely below what this input can reach.",
+                    verts_at_first_refine,
+                    get_vertices().size(),
+                    m_params.stop_energy,
+                    max_energy);
+                refine_exhausted = true;
+                pre_max_energy = max_energy;
+                continue;
+            }
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
             refine_sizing_around_worst(max_energy);
             // adjust_sizing_field_serial(max_energy); // The old update

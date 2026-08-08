@@ -1984,6 +1984,16 @@ void SimWildMeshTri::mesh_improvement(int max_its)
 
     int refine_cooldown =
         m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
+    // Bound on how far refinement may grow the mesh before it is abandoned. Refinement pays
+    // for quality with elements, and that trade is only worth making while it is converging.
+    // When the requested quality is below what this input can reach, filter_energy collapses
+    // to the target, every cell is selected, and each firing multiplies the element count
+    // while the relative quality creeps toward an asymptote that never reaches 1. The quality
+    // keeps *improving* the whole way, so "refinement stopped helping" does not catch this --
+    // the growth is the signal.
+    size_t verts_at_first_refine = 0;
+    bool refine_exhausted = false;
+
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
@@ -2007,9 +2017,24 @@ void SimWildMeshTri::mesh_improvement(int max_its)
         if (refine_cooldown > 0) {
             --refine_cooldown;
         } else if (
-            it > 0 && quality_rel > 1.0 &&
+            !refine_exhausted && it > 0 && quality_rel > 1.0 &&
             (pre_quality_rel - quality_rel) <=
                 m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
+            if (verts_at_first_refine == 0) {
+                verts_at_first_refine = get_vertices().size();
+            } else if (
+                get_vertices().size() > m_params.stuck_refine_max_growth * verts_at_first_refine) {
+                logger().warn(
+                    "[stuck-refine] the mesh has grown from {} to {} vertices without reaching "
+                    "the quality target (max relative quality {:.4}); giving up on refinement. "
+                    "The target is likely below what this input can reach.",
+                    verts_at_first_refine,
+                    get_vertices().size(),
+                    quality_rel);
+                refine_exhausted = true;
+                pre_quality_rel = std::min(pre_quality_rel, quality_rel);
+                continue;
+            }
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
             refine_sizing_around_worst();
             // adjust_sizing_field_serial(max_energy); // The old update

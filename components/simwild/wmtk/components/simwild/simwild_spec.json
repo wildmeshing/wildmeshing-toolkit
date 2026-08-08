@@ -36,6 +36,7 @@
       "allow_surface_swap",
       "check_surface_topology",
       "stuck_refine_stall_eps",
+    "stuck_refine_max_growth",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
       "stuck_refine_rings",
@@ -327,6 +328,12 @@
     "type": "bool",
     "default": false,
     "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
+  },
+  {
+      "pointer": "/stuck_refine_max_growth",
+      "type": "float",
+      "default": 8.0,
+      "doc": "Give up on refinement once it has grown the mesh by this factor without reaching the quality target. Refinement buys quality with elements, and that is only worth doing while it converges; when the target is below what the input can reach, every firing multiplies the element count while the max energy creeps toward an asymptote above the target."
   },
   {
     "pointer": "/stuck_refine_stall_eps",

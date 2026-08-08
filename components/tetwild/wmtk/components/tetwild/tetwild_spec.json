@@ -40,6 +40,7 @@
       "DEBUG_euler",
       "DEBUG_disable_envelope",
       "stuck_refine_stall_eps",
+    "stuck_refine_max_growth",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
       "stuck_refine_rings",
@@ -285,6 +286,12 @@
     "type": "bool",
     "default": false,
     "doc": "Diagnostic only. Disables every envelope containment check during the tetrahedralisation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used."
+  },
+  {
+      "pointer": "/stuck_refine_max_growth",
+      "type": "float",
+      "default": 8.0,
+      "doc": "Give up on refinement once it has grown the mesh by this factor without reaching the quality target. Refinement buys quality with elements, and that is only worth doing while it converges; when the target is below what the input can reach, every firing multiplies the element count while the max energy creeps toward an asymptote above the target."
   },
   {
     "pointer": "/stuck_refine_stall_eps",
