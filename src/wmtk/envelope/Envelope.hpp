@@ -139,6 +139,8 @@ public:
 
 private:
     void require_exact_kind(Kind expected, const char* query) const;
+    void require_exact_3d(const char* query) const;
+    void require_exact_built(const char* query) const;
 
     template <typename VertexList>
     void
@@ -154,5 +156,8 @@ private:
     /// Edges2d only. A separate class upstream, not an overload.
     fastEnvelope::FastEnvelope2D exact_envelope_2d;
     Kind m_kind = Kind::Uninitialized;
+    /// Whether the edge/2D exact structure was actually built. Always false for Triangles3d,
+    /// which builds its exact envelope unconditionally and is checked by kind alone.
+    bool m_exact_built = false;
 };
 } // namespace wmtk
