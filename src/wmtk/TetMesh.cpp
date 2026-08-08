@@ -180,33 +180,40 @@ void TetMesh::init(const MatrixXi& T)
 
 std::vector<TetMesh::Tuple> TetMesh::get_edges() const
 {
-    std::vector<std::tuple<size_t, size_t, TetMesh::Tuple>> edges;
-    edges.reserve(tet_capacity() * 6);
+    // One entry per edge, not six. get_faces() right below already works this way: an
+    // edge's canonical representative is the one whose eid() -- the lowest tet id
+    // carrying it, times six, plus the local edge -- points back at this (tid, j). So the
+    // duplicates can be rejected as they are generated instead of being collected,
+    // sorted and uniqued afterwards.
+    //
+    // The old form built 6 * tet_capacity() entries of (v0, v1, Tuple) at 56 bytes each,
+    // sorted all of them, and copied the survivors into a second vector. On a mesh with
+    // 18M tets that is roughly 6 GB of staging plus a 108M-element sort, to produce a
+    // result 6x smaller.
+    //
+    // The output is still ordered by (min vid, max vid), and the representative is now
+    // well defined rather than whatever an unstable std::sort happened to leave first
+    // among the six copies of each edge.
+    std::vector<std::pair<std::pair<size_t, size_t>, TetMesh::Tuple>> edges;
     for (int i = 0; i < tet_capacity(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 6; j++) {
-            auto tup = tuple_from_edge(i, j);
-            auto v0 = tup.vid(*this);
-            auto v1 = tup.switch_vertex(*this).vid(*this);
+            const auto tup = tuple_from_edge(i, j);
+            if (tup.eid(*this) != size_t(6 * i + j)) {
+                continue; // some lower-numbered tet owns this edge
+            }
+            size_t v0 = tup.vid(*this);
+            size_t v1 = tup.switch_vertex(*this).vid(*this);
             if (v0 > v1) std::swap(v0, v1);
-            edges.emplace_back(v0, v1, tup);
+            edges.emplace_back(std::make_pair(v0, v1), tup);
         }
     }
-    std::sort(edges.begin(), edges.end(), [](auto& a, auto& b) {
-        return std::tie(std::get<0>(a), std::get<1>(a)) < std::tie(std::get<0>(b), std::get<1>(b));
+    std::sort(edges.begin(), edges.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
     });
-    edges.erase(
-        std::unique(
-            edges.begin(),
-            edges.end(),
-            [](auto& a, auto& b) {
-                return std::tie(std::get<0>(a), std::get<1>(a)) ==
-                       std::tie(std::get<0>(b), std::get<1>(b));
-            }),
-        edges.end());
     std::vector<TetMesh::Tuple> uniq_edges;
     uniq_edges.reserve(edges.size());
-    for (auto& [v0, v1, e] : edges) uniq_edges.push_back(e);
+    for (auto& [key, e] : edges) uniq_edges.push_back(e);
     return uniq_edges;
 }
 
