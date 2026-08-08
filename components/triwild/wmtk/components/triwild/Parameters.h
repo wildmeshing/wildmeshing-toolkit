@@ -131,7 +131,13 @@ struct Parameters
     // Cooldown: after a refinement, skip this many improvement iterations before
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
-    int stuck_refine_cooldown = 1;
+    //
+    // 0 by default: measured over 468 triwild20k models, a cooldown of 1 costs ~13% wall
+    // time for exactly the same mesh sizes (identical median and p90 vertex counts). The
+    // idea that the operations need an idle iteration to act on the new field does not
+    // survive contact with the data -- the trigger already declines to fire while the mesh
+    // is converging, so a separate cooldown only delays the next escape.
+    int stuck_refine_cooldown = 0;
     // Number of worst triangles (by energy) whose neighborhoods are refined.
     // 0 => every triangle above the filter energy, max(max_energy / 100, stop_energy).
     // Beware in 2D: the AMIPS2D energy of an equilateral triangle is 2, so a stop_energy
