@@ -96,7 +96,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a5f6bcd111b7552e56def830f7f7f4b5b" id="r_a5f6bcd111b7552e56def830f7f7f4b5b"><td class="memItemLeft" align="right" valign="top"><a id="a5f6bcd111b7552e56def830f7f7f4b5b" name="a5f6bcd111b7552e56def830f7f7f4b5b"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>epsr</b> = 2e-3</td></tr>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>epsr</b> = 1e-3</td></tr>
 <tr class="separator:a5f6bcd111b7552e56def830f7f7f4b5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1937edcd6f141be64b3c21b7c4b2c278" id="r_a1937edcd6f141be64b3c21b7c4b2c278"><td class="memItemLeft" align="right" valign="top"><a id="a1937edcd6f141be64b3c21b7c4b2c278" name="a1937edcd6f141be64b3c21b7c4b2c278"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>eps</b> = -1.</td></tr>
@@ -122,6 +122,8 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>box_max</b> = Vec
 <tr class="memitem:ae0b3dd1df72fd1558084896f5e5b8a55" id="r_ae0b3dd1df72fd1558084896f5e5b8a55"><td class="memItemLeft" align="right" valign="top"><a id="ae0b3dd1df72fd1558084896f5e5b8a55" name="ae0b3dd1df72fd1558084896f5e5b8a55"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>preserve_topology</b> = false</td></tr>
 <tr class="separator:ae0b3dd1df72fd1558084896f5e5b8a55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0ddf933c7388d9e2d9123b738ec1988" id="r_aa0ddf933c7388d9e2d9123b738ec1988"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">preserve_feature_points</a> = true</td></tr>
+<tr class="separator:aa0ddf933c7388d9e2d9123b738ec1988"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20ddea7105522f294d9ccdf2d3b0c6d0" id="r_a20ddea7105522f294d9ccdf2d3b0c6d0"><td class="memItemLeft" align="right" valign="top"><a id="a20ddea7105522f294d9ccdf2d3b0c6d0" name="a20ddea7105522f294d9ccdf2d3b0c6d0"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>output_path</b></td></tr>
 <tr class="separator:a20ddea7105522f294d9ccdf2d3b0c6d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,7 +133,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>splitting_l2</b> = 
 <tr class="memitem:a5564b7d535d35c1617c8a97aeeb2e118" id="r_a5564b7d535d35c1617c8a97aeeb2e118"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a5564b7d535d35c1617c8a97aeeb2e118">collapsing_l2</a></td></tr>
 <tr class="separator:a5564b7d535d35c1617c8a97aeeb2e118"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc86dca70d9102d55cc968341c06668d" id="r_acc86dca70d9102d55cc968341c06668d"><td class="memItemLeft" align="right" valign="top"><a id="acc86dca70d9102d55cc968341c06668d" name="acc86dca70d9102d55cc968341c06668d"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>stop_energy</b> = 10</td></tr>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>stop_energy</b> = 20</td></tr>
 <tr class="separator:acc86dca70d9102d55cc968341c06668d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2262bd06ba1c021e75b10f11e322df5f" id="r_a2262bd06ba1c021e75b10f11e322df5f"><td class="memItemLeft" align="right" valign="top"><a id="a2262bd06ba1c021e75b10f11e322df5f" name="a2262bd06ba1c021e75b10f11e322df5f"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>debug_output</b> = false</td></tr>
@@ -139,12 +141,23 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>debug_output</b> = fa
 <tr class="memitem:a32ab8622292fb9a5e44d4f1994ef7641" id="r_a32ab8622292fb9a5e44d4f1994ef7641"><td class="memItemLeft" align="right" valign="top"><a id="a32ab8622292fb9a5e44d4f1994ef7641" name="a32ab8622292fb9a5e44d4f1994ef7641"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks</b> = false</td></tr>
 <tr class="separator:a32ab8622292fb9a5e44d4f1994ef7641"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af28882131ce9c55ff3f138fa79ef8891" id="r_af28882131ce9c55ff3f138fa79ef8891"><td class="memItemLeft" align="right" valign="top"><a id="af28882131ce9c55ff3f138fa79ef8891" name="af28882131ce9c55ff3f138fa79ef8891"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>w_amips</b> = 1e-4</td></tr>
+<tr class="memitem:ab78031b3b87e66abd0b6c2653c1c8758" id="r_ab78031b3b87e66abd0b6c2653c1c8758"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">check_envelope_at_init</a> = false</td></tr>
+<tr class="separator:ab78031b3b87e66abd0b6c2653c1c8758"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a284aca8f258fe8c3eacc4ff47294ecb9" id="r_a284aca8f258fe8c3eacc4ff47294ecb9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">split_high_valence_threshold</a> = 200</td></tr>
+<tr class="separator:a284aca8f258fe8c3eacc4ff47294ecb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af28882131ce9c55ff3f138fa79ef8891" id="r_af28882131ce9c55ff3f138fa79ef8891"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#af28882131ce9c55ff3f138fa79ef8891">w_amips</a> = 1e-4</td></tr>
 <tr class="separator:af28882131ce9c55ff3f138fa79ef8891"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3aa5450e4a7132a3d63ac0656781fc9b" id="r_a3aa5450e4a7132a3d63ac0656781fc9b"><td class="memItemLeft" align="right" valign="top"><a id="a3aa5450e4a7132a3d63ac0656781fc9b" name="a3aa5450e4a7132a3d63ac0656781fc9b"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>w_envelope</b> = 0</td></tr>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>w_envelope</b> = 1. - 1e-4</td></tr>
 <tr class="separator:a3aa5450e4a7132a3d63ac0656781fc9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe978015899fe6f5011a2544b4729f23" id="r_abe978015899fe6f5011a2544b4729f23"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#abe978015899fe6f5011a2544b4729f23">num_smoothing_passes</a> = 2</td></tr>
+<tr class="separator:abe978015899fe6f5011a2544b4729f23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f4579447820b6d5c84d80f01794559a" id="r_a9f4579447820b6d5c84d80f01794559a"><td class="memItemLeft" align="right" valign="top"><a id="a9f4579447820b6d5c84d80f01794559a" name="a9f4579447820b6d5c84d80f01794559a"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>interleaved_smoothing</b> = true</td></tr>
+<tr class="separator:a9f4579447820b6d5c84d80f01794559a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec7883663853b444b59d1a5df6082138" id="r_aec7883663853b444b59d1a5df6082138"><td class="memItemLeft" align="right" valign="top"><a id="aec7883663853b444b59d1a5df6082138" name="aec7883663853b444b59d1a5df6082138"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>interleaved_smoothing_passes</b> = 1</td></tr>
+<tr class="separator:aec7883663853b444b59d1a5df6082138"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfce2fc54e980c61ed79f3ca93378c02" id="r_adfce2fc54e980c61ed79f3ca93378c02"><td class="memItemLeft" align="right" valign="top"><a id="adfce2fc54e980c61ed79f3ca93378c02" name="adfce2fc54e980c61ed79f3ca93378c02"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>stuck_refine_stall_eps</b> = 0.01</td></tr>
 <tr class="separator:adfce2fc54e980c61ed79f3ca93378c02"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -170,7 +183,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>stuck_refine_gradat
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>stuck_refine_force_split</b> = true</td></tr>
 <tr class="separator:a4c8876f81d4c5f728ba78ba46bb16c7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63650f97f8ba5e6bd5602197efc99e27" id="r_a63650f97f8ba5e6bd5602197efc99e27"><td class="memItemLeft" align="right" valign="top"><a id="a63650f97f8ba5e6bd5602197efc99e27" name="a63650f97f8ba5e6bd5602197efc99e27"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions</b> = true</td></tr>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions</b> = false</td></tr>
 <tr class="separator:a63650f97f8ba5e6bd5602197efc99e27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78fe56291995b0f6dd4291e1a0750512" id="r_a78fe56291995b0f6dd4291e1a0750512"><td class="memItemLeft" align="right" valign="top"><a id="a78fe56291995b0f6dd4291e1a0750512" name="a78fe56291995b0f6dd4291e1a0750512"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions_margin</b> = 0.9</td></tr>
@@ -207,6 +220,22 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions_m
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="ab78031b3b87e66abd0b6c2653c1c8758" name="ab78031b3b87e66abd0b6c2653c1c8758"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab78031b3b87e66abd0b6c2653c1c8758">&#9670;&#160;</a></span>check_envelope_at_init</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::triwild::Parameters::check_envelope_at_init = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Verify at init that every constrained edge starts inside the envelope.</p>
+<p>The invariant is real &ndash; the envelope is built around the <em>input</em> curves while the constrained edges come from the simplified ones, so it checks that the simplification stayed inside its share of eps &ndash; but it costs one sampled segment query per constrained edge, serially. On a 3.5M-edge input that is 22s locally and 63s on a slower machine, paid on every run to catch something that has fired once in 15665 models. Off by default; turn it on when changing the simplification or the envelope. </p>
+
+</div>
+</div>
 <a id="a5564b7d535d35c1617c8a97aeeb2e118" name="a5564b7d535d35c1617c8a97aeeb2e118"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5564b7d535d35c1617c8a97aeeb2e118">&#9670;&#160;</a></span>collapsing_l2</h2>
 
@@ -221,6 +250,69 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions_m
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        std::numeric_limits&lt;double&gt;::max()</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="abe978015899fe6f5011a2544b4729f23" name="abe978015899fe6f5011a2544b4729f23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe978015899fe6f5011a2544b4729f23">&#9670;&#160;</a></span>num_smoothing_passes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::triwild::Parameters::num_smoothing_passes = 2</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>How many smoothing passes each optimization iteration runs.</p>
+<p>This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was hard-coded to 1. Smoothing is the only phase that improves element quality without changing connectivity, so on meshes where split/collapse/swap have run out of useful moves it is the only thing left that can lower the energy. </p>
+
+</div>
+</div>
+<a id="aa0ddf933c7388d9e2d9123b738ec1988" name="aa0ddf933c7388d9e2d9123b738ec1988"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0ddf933c7388d9e2d9123b738ec1988">&#9670;&#160;</a></span>preserve_feature_points</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::triwild::Parameters::preserve_feature_points = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Keep the curve network's 0-dimensional features &ndash; open polyline endpoints and junctions &ndash; within eps of where the arrangement put them.</p>
+<p>Without it the collapse pass deletes open polylines outright: a polyline erodes into its own tip until one segment is left, and that segment has a feature at both ends, which nothing else refuses. Off only for A/B against the old behaviour. </p>
+
+</div>
+</div>
+<a id="a284aca8f258fe8c3eacc4ff47294ecb9" name="a284aca8f258fe8c3eacc4ff47294ecb9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a284aca8f258fe8c3eacc4ff47294ecb9">&#9670;&#160;</a></span>split_high_valence_threshold</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::triwild::Parameters::split_high_valence_threshold = 200</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Incident-triangle count above which a vertex is treated as pathological, or 0 to disable the gate.</p>
+<p>The 2D counterpart of tetwild's gate. Splitting edge (a,b) leaves a's and b's own counts unchanged and adds one to every vertex in the edge's link, so the gate is applied to the link, not the endpoints &ndash; but in 2D that link is one or two vertices, not a whole ring, so the runaway this guards against is far less likely here. </p>
+
+</div>
+</div>
+<a id="af28882131ce9c55ff3f138fa79ef8891" name="af28882131ce9c55ff3f138fa79ef8891"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af28882131ce9c55ff3f138fa79ef8891">&#9670;&#160;</a></span>w_amips</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::triwild::Parameters::w_amips = 1e-4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Relative weight of the AMIPS (quality) term against the envelope (stay-on-curve) term during smoothing. w_envelope is derived as 1 - w_amips in the <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html">TriWildMesh</a> constructor, so the small default means the envelope dominates and AMIPS acts as a light quality preference. Matches tetwild and simwild. </p>
+
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>

@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['parallel_20scheduling_0',['Parallel Scheduling',['../index.html#autotoc_md43',1,'']]],
+  ['parallel_20scheduling_0',['Parallel Scheduling',['../index.html#autotoc_md51',1,'']]],
   ['parameters_1',['parameters',['../structwmtk_1_1components_1_1simwild_1_1_parameters.html',1,'wmtk::components::simwild::Parameters'],['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933',1,'wmtk::components::triwild::Parameters::Parameters()'],['../structwmtk_1_1components_1_1triwild_1_1_parameters.html',1,'wmtk::components::triwild::Parameters'],['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html',1,'wmtk::components::topological_offset::Parameters'],['../structwmtk_1_1components_1_1manifold__extraction_1_1_parameters.html',1,'wmtk::components::manifold_extraction::Parameters'],['../structwmtk_1_1components_1_1tetwild_1_1_parameters.html',1,'wmtk::components::tetwild::Parameters']]],
   ['parametrize_5fpatch_5fboundaries_2',['parametrize_patch_boundaries',['../class_clough_tocher_patch.html#a05505a01d244070dc1ff742631e499a1',1,'CloughTocherPatch']]],
   ['parse_3',['parse',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#aaba02e4fb4af504d54d6699913fa17b4',1,'wmtk::components::simwild::expression_parser::Parser']]],
@@ -19,14 +19,15 @@ var searchData=
   ['polyfem_20operations_16',['PolyFEM Operations',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md17',1,'']]],
   ['polyfem_5fbin_17',['polyfem_bin',['../namespacesimwild_1_1polyfem__ops_1_1polyfem__utils.html#a98b415d322fdc2a59fde207a0722458c',1,'simwild::polyfem_ops::polyfem_utils']]],
   ['posf_18',['posf',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a63871cc4ff2d7215ca80b08e4e458ee8',1,'wmtk::components::tetwild::orig::TetVertex']]],
-  ['positioninfocache_19',['positioninfocache',['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_1_1_position_info_cache.html',1,'wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::PositionInfoCache'],['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_1_1_position_info_cache.html',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing::PositionInfoCache']]],
+  ['positioninfocache_19',['positioninfocache',['../structwmtk_1_1components_1_1isotropic__remeshing_1_1_isotropic_remeshing_1_1_position_info_cache.html',1,'wmtk::components::isotropic_remeshing::IsotropicRemeshing::PositionInfoCache'],['../structwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse_1_1_position_info_cache.html',1,'wmtk::components::shortest_edge_collapse::ShortestEdgeCollapse::PositionInfoCache']]],
   ['prepare_5fsurface_5fflip_20',['prepare_surface_flip',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aa380e45168a502160e35533ce3eae433',1,'wmtk::components::tetwild::TetWildMesh']]],
   ['prepare_5fsurface_5fflip_5f32_21',['prepare_surface_flip_32',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ada4b8c34dfe58e3b3f47c7c8343247e9',1,'wmtk::components::simwild::SimWildMesh']]],
-  ['print_5finfo_22',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const']]],
-  ['priority_23',['priority',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md13',1,'5. Tag Priority'],['../structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc',1,'wmtk::ExecutePass::priority']]],
-  ['push_5fback_24',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]],
-  ['pyexpression_25',['PyExpression',['../class_py_expression.html',1,'']]],
-  ['python_20bindings_26',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
-  ['python_20wrapper_27',['Python Wrapper',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md6',1,'']]],
-  ['python_20wrapper_20installation_28',['Python Wrapper Installation',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md7',1,'']]]
+  ['preserve_5ffeature_5fpoints_22',['preserve_feature_points',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988',1,'wmtk::components::triwild::Parameters']]],
+  ['print_5finfo_23',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const']]],
+  ['priority_24',['priority',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md13',1,'5. Tag Priority'],['../structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc',1,'wmtk::ExecutePass::priority']]],
+  ['push_5fback_25',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]],
+  ['pyexpression_26',['PyExpression',['../class_py_expression.html',1,'']]],
+  ['python_20bindings_27',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
+  ['python_20wrapper_28',['Python Wrapper',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md6',1,'']]],
+  ['python_20wrapper_20installation_29',['Python Wrapper Installation',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md7',1,'']]]
 ];

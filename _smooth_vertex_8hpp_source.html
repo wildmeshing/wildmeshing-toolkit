@@ -383,43 +383,52 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>        solve();</div>
 <div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>    }</div>
 <div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span> </div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>    <span class="comment">// Containment, edge by edge rather than face by face as in 3D.</span></div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>    <span class="keyword">const</span> std::shared_ptr&lt;SampleEnvelope&gt; check_env =</div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>        VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>    <span class="keywordflow">if</span> (check_env) {</div>
-<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>        <span class="keyword">const</span> Vector2d p = m.smoothing_position(vid);</div>
-<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> Vector2d&amp; q : surf_neighbors) {</div>
-<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>            <span class="keyword">const</span> std::array&lt;Eigen::Vector2d, 2&gt; edge = {{p, q}};</div>
-<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>            <span class="keywordflow">if</span> (check_env-&gt;is_outside(edge)) {</div>
-<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>                <span class="keywordflow">if</span> (counters) ++counters-&gt;envelope;</div>
-<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>            }</div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>        }</div>
-<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>    }</div>
-<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span> </div>
-<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>    <span class="keywordtype">double</span> max_after_quality = 0.;</div>
-<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keywordtype">size_t</span> fid : locs) {</div>
-<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>        <span class="keywordflow">if</span> (m.is_inverted(fid)) {</div>
-<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>            <span class="keywordflow">if</span> (counters) ++counters-&gt;inverted;</div>
-<div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>        }</div>
-<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> q = m.get_quality(fid);</div>
-<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>        FA[fid].m_quality = q;</div>
-<div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span>        max_after_quality = std::max(max_after_quality, q);</div>
-<div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>    }</div>
-<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span> </div>
-<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>    <span class="keywordflow">if</span> (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {</div>
-<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>        <span class="keywordflow">if</span> (max_after_quality &gt; max_quality) {</div>
-<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>            <span class="keywordflow">if</span> (counters) ++counters-&gt;quality;</div>
-<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>        }</div>
-<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>    }</div>
-<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span> </div>
-<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <span class="keywordflow">if</span> (counters) ++counters-&gt;accepted;</div>
-<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>}</div>
-<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span> </div>
-<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>} <span class="comment">// namespace wmtk::optimization</span></div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>    <span class="comment">// Per-vertex positional constraint, on top of the envelope. A mesh uses this to pin a</span></div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>    <span class="comment">// vertex to a 0-dimensional feature it stands for -- within a ball, so the vertex is</span></div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>    <span class="comment">// still free to move and improve quality, it just cannot walk away from the feature.</span></div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>    <span class="comment">// Meshes with no such features answer true unconditionally.</span></div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>    <span class="keywordflow">if</span> (!m.smoothing_position_is_allowed(vid, m.smoothing_position(vid))) {</div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>        <span class="keywordflow">if</span> (counters) ++counters-&gt;envelope;</div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>    }</div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span> </div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>    <span class="comment">// Containment, edge by edge rather than face by face as in 3D.</span></div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>    <span class="keyword">const</span> std::shared_ptr&lt;SampleEnvelope&gt; check_env =</div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>        VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>    <span class="keywordflow">if</span> (check_env) {</div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>        <span class="keyword">const</span> Vector2d p = m.smoothing_position(vid);</div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> Vector2d&amp; q : surf_neighbors) {</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>            <span class="keyword">const</span> std::array&lt;Eigen::Vector2d, 2&gt; edge = {{p, q}};</div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>            <span class="keywordflow">if</span> (check_env-&gt;is_outside(edge)) {</div>
+<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>                <span class="keywordflow">if</span> (counters) ++counters-&gt;envelope;</div>
+<div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>            }</div>
+<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>        }</div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>    }</div>
+<div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span> </div>
+<div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>    <span class="keywordtype">double</span> max_after_quality = 0.;</div>
+<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keywordtype">size_t</span> fid : locs) {</div>
+<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span>        <span class="keywordflow">if</span> (m.is_inverted(fid)) {</div>
+<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>            <span class="keywordflow">if</span> (counters) ++counters-&gt;inverted;</div>
+<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>        }</div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> q = m.get_quality(fid);</div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>        FA[fid].m_quality = q;</div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>        max_after_quality = std::max(max_after_quality, q);</div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    }</div>
+<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span> </div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>    <span class="keywordflow">if</span> (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {</div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>        <span class="keywordflow">if</span> (max_after_quality &gt; max_quality) {</div>
+<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>            <span class="keywordflow">if</span> (counters) ++counters-&gt;quality;</div>
+<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>        }</div>
+<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>    }</div>
+<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span> </div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>    <span class="keywordflow">if</span> (counters) ++counters-&gt;accepted;</div>
+<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>}</div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span> </div>
+<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>} <span class="comment">// namespace wmtk::optimization</span></div>
 <div class="ttc" id="astructwmtk_1_1optimization_1_1_smooth_reject_counters_html"><div class="ttname"><a href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html">wmtk::optimization::SmoothRejectCounters</a></div><div class="ttdoc">Why a smoothing attempt was refused, counted per pass.</div><div class="ttdef"><b>Definition</b> SmoothVertex.hpp:30</div></div>
 <div class="ttc" id="astructwmtk_1_1optimization_1_1_smooth_reject_counters_html_a1d785e4d12bdfdfa9f5bfaae8613eac7"><div class="ttname"><a href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a1d785e4d12bdfdfa9f5bfaae8613eac7">wmtk::optimization::SmoothRejectCounters::envelope</a></div><div class="ttdeci">std::atomic&lt; size_t &gt; envelope</div><div class="ttdoc">a surface triangle left the envelope</div><div class="ttdef"><b>Definition</b> SmoothVertex.hpp:32</div></div>
 <div class="ttc" id="astructwmtk_1_1optimization_1_1_smooth_reject_counters_html_a7ee86b9e24d37dc5af641555cbbf6a44"><div class="ttname"><a href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a7ee86b9e24d37dc5af641555cbbf6a44">wmtk::optimization::SmoothRejectCounters::already_inverted</a></div><div class="ttdeci">std::atomic&lt; size_t &gt; already_inverted</div><div class="ttdoc">incident tet inverted in floats on entry</div><div class="ttdef"><b>Definition</b> SmoothVertex.hpp:31</div></div>

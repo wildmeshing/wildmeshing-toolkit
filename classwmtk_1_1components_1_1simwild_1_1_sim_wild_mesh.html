@@ -134,6 +134,8 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">Samp
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_containment_envelope</b> (const size_t vid) const</td></tr>
 <tr class="memdesc:a41f7050028679ea600f43324679a82ed"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the resulting surface triangles are checked against. <br /></td></tr>
 <tr class="separator:a41f7050028679ea600f43324679a82ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a401a733cfaab437a47f89f3cbe95842d" id="r_a401a733cfaab437a47f89f3cbe95842d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a401a733cfaab437a47f89f3cbe95842d">smoothing_position_is_allowed</a> (const size_t, const Vector2d &amp;) const</td></tr>
+<tr class="separator:a401a733cfaab437a47f89f3cbe95842d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3eae47a5fbf4b147ab6752c37eedfb1d" id="r_a3eae47a5fbf4b147ab6752c37eedfb1d"><td class="memItemLeft" align="right" valign="top"><a id="a3eae47a5fbf4b147ab6752c37eedfb1d" name="a3eae47a5fbf4b147ab6752c37eedfb1d"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>SimWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a3eae47a5fbf4b147ab6752c37eedfb1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1487,6 +1489,43 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a880ffd0d9e947b37dde0ef1b673cc36e">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a401a733cfaab437a47f89f3cbe95842d" name="a401a733cfaab437a47f89f3cbe95842d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a401a733cfaab437a47f89f3cbe95842d">&#9670;&#160;</a></span>smoothing_position_is_allowed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::smoothing_position_is_allowed </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector2d &amp;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>No 0-dimensional features here, so smoothing is never positionally constrained beyond the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is. </p>
 
 </div>
 </div>

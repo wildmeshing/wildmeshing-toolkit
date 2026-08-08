@@ -14,7 +14,7 @@ var searchData=
   ['rollback_5fprotected_5fattributes_11',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a6419d01660badf33195e0c3ad52d07f1',1,'wmtk::TriMesh']]],
   ['roughness_5f2d_12',['roughness_2d',['../namespacegeo.html#a1c095ba0104d883ba320762361b4040e',1,'geo']]],
   ['round_13',['round',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad7558616aa2479ba9c410d55911e8bdb',1,'wmtk::components::simwild::SimWildMesh']]],
-  ['round_5fall_5fvertices_14',['round_all_vertices',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ab3485063a512c867b01cef85e1331e73',1,'wmtk::components::tetwild::TetWildMesh']]],
+  ['round_5fall_5fvertices_14',['round_all_vertices',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ab3485063a512c867b01cef85e1331e73',1,'wmtk::components::tetwild::TetWildMesh::round_all_vertices()'],['../classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ab3d396f6d1ed610b249f9d7507ac69b8',1,'wmtk::components::triwild::TriWildMesh::round_all_vertices()']]],
   ['run_15',['run',['../namespacesimwild_1_1polyfem__ops_1_1laplacian__smoothing.html#a5e636acba9d6efd78e917315cc44f2ab',1,'simwild.polyfem_ops.laplacian_smoothing.run()'],['../namespacesimwild_1_1polyfem__ops_1_1minimum__separation.html#a9317614c9d1d6384c6ba379a47d6e008',1,'simwild.polyfem_ops.minimum_separation.run()']]],
   ['run_5fstreaming_16',['run_streaming',['../namespacesimwild_1_1polyfem__ops_1_1polyfem__utils.html#a55dd2ffa42fb15c2e6556e79a9015d99',1,'simwild::polyfem_ops::polyfem_utils']]]
 ];

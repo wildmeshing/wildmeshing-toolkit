@@ -104,6 +104,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_surface</b> =
 <tr class="memitem:addec31a064a27f68347747c48b2d1c6b" id="r_addec31a064a27f68347747c48b2d1c6b"><td class="memItemLeft" align="right" valign="top"><a id="addec31a064a27f68347747c48b2d1c6b" name="addec31a064a27f68347747c48b2d1c6b"></a>
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>on_bbox_faces</b></td></tr>
 <tr class="separator:addec31a064a27f68347747c48b2d1c6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af473fbbf4d6b14d99d8c06d28ab0139d" id="r_af473fbbf4d6b14d99d8c06d28ab0139d"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_vertex_attributes.html#af473fbbf4d6b14d99d8c06d28ab0139d">m_feature_id</a> = NO_FEATURE</td></tr>
+<tr class="separator:af473fbbf4d6b14d99d8c06d28ab0139d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb088b0455257d16520fb6065e3a438b" id="r_adb088b0455257d16520fb6065e3a438b"><td class="memItemLeft" align="right" valign="top"><a id="adb088b0455257d16520fb6065e3a438b" name="adb088b0455257d16520fb6065e3a438b"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_scalar</b> = 1</td></tr>
 <tr class="separator:adb088b0455257d16520fb6065e3a438b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -111,6 +113,25 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_sizing_scalar</b>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>partition_id</b> = 0</td></tr>
 <tr class="separator:a370c5350add4ff9a0906a9e2e814e34f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="af473fbbf4d6b14d99d8c06d28ab0139d" name="af473fbbf4d6b14d99d8c06d28ab0139d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af473fbbf4d6b14d99d8c06d28ab0139d">&#9670;&#160;</a></span>m_feature_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::triwild::VertexAttributes::m_feature_id = NO_FEATURE</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Index into <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a905291694b802ccf03e224ea95e20990">TriWildMesh::m_feature_points</a>, or NO_FEATURE.</p>
+<p>A feature point is a 0-dimensional feature of the curve network: an open polyline's endpoint, or a junction. This is the 2D counterpart of tetwild's m_is_on_open_boundary, with one deliberate difference &ndash; it names WHICH feature the vertex stands for, not merely that it stands for one.</p>
+<p>That difference is the whole point. tetwild asks "is the survivor inside the envelope
+of the boundary?", a containment question, and in 3D a boundary is a curve with many edges so collapsing one shortens it rather than deleting it. In 2D the feature is a single point, and a containment test passes trivially when one endpoint is collapsed onto another &ndash; the target IS a feature point, distance zero &ndash; while the first endpoint quietly stops being represented. Preserving features is a COVERAGE property, so the constraint has to bind a vertex to a specific point. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/triwild/wmtk/components/triwild/<a class="el" href="_tri_wild_mesh_8h_source.html">TriWildMesh.h</a></li>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/triwild/wmtk/components/triwild/<b>TriWildMesh.cpp</b></li>

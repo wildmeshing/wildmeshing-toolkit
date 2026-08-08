@@ -297,6 +297,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_manifold_vertex</b
 <tr class="memitem:a24bb2f44a4eaf19f4e3ca2d0d53442f2" id="r_a24bb2f44a4eaf19f4e3ca2d0d53442f2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a24bb2f44a4eaf19f4e3ca2d0d53442f2">get_valence_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:a24bb2f44a4eaf19f4e3ca2d0d53442f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count the number of the one ring tris for a vertex.  <br /></td></tr>
 <tr class="separator:a24bb2f44a4eaf19f4e3ca2d0d53442f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acff7875734b66f318b1def8ff6ff57eb" id="r_acff7875734b66f318b1def8ff6ff57eb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#acff7875734b66f318b1def8ff6ff57eb">vertex_valence</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:acff7875734b66f318b1def8ff6ff57eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of triangles incident to a vertex, by id.  <br /></td></tr>
+<tr class="separator:acff7875734b66f318b1def8ff6ff57eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5531e50cdc431dca793549b92116859b" id="r_a5531e50cdc431dca793549b92116859b"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a5531e50cdc431dca793549b92116859b">get_one_ring_tris_for_vertex</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
 <tr class="memdesc:a5531e50cdc431dca793549b92116859b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the one ring tris for a vertex.  <br /></td></tr>
 <tr class="separator:a5531e50cdc431dca793549b92116859b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2305,6 +2308,8 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>tuple refers to vid </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>an invalid <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> when vid is out of range, removed, or incident to no triangle &ndash; the same contract tuple_from_tri has always had.</dd></dl>
+<p>The guard is not decoration. Without it this read m_vertex_connectivity[vid][0] unconditionally, and VertexConnectivity::operator[] only asserts, so in Release a removed or isolated vertex indexed an EMPTY vector: nullptr[0], i.e. a segfault. for_each_vertex builds a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> for every slot in [0, <a class="el" href="classwmtk_1_1_tri_mesh.html#a8f4722aa023014096691a82acb1fa1e8" title="get the current largest global vid">vert_capacity()</a>) and only then asks is_valid, so any caller that ran it on an unconsolidated mesh crashed &ndash; 22 of 30 identical runs on Thingi-2D 193539, and 12 models into a 2333-model sweep. </p>
 
 </div>
 </div>
@@ -2435,6 +2440,35 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 </dl>
 
 <p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a692094cd0bb6daf029585ec2d0fb10e4">wmtk::components::simwild::tri::SimWildMeshTri</a>, and <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a4c792d0ae449d800da095780750d5a06">wmtk::components::triwild::TriWildMesh</a>.</p>
+
+</div>
+</div>
+<a id="acff7875734b66f318b1def8ff6ff57eb" name="acff7875734b66f318b1def8ff6ff57eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acff7875734b66f318b1def8ff6ff57eb">&#9670;&#160;</a></span>vertex_valence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TriMesh::vertex_valence </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Number of triangles incident to a vertex, by id. </p>
+<p>The same count as get_valence_for_vertex, for callers that hold a vid rather than a <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>. Around 6 on a well-shaped mesh; worth checking before anything that walks the one ring, since a degenerate mesh can push it much higher. </p>
 
 </div>
 </div>
