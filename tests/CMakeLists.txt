@@ -8,6 +8,7 @@ include(Catch)
 set(TEST_SOURCES
     2d_tests.cpp
     test_delaunay.cpp
+    test_envelope.cpp
     test_geom.cpp
     test_io.cpp
     test_knn.cpp
