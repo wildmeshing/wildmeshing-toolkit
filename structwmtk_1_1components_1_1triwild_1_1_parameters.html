@@ -143,6 +143,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <tr class="separator:a32ab8622292fb9a5e44d4f1994ef7641"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab78031b3b87e66abd0b6c2653c1c8758" id="r_ab78031b3b87e66abd0b6c2653c1c8758"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">check_envelope_at_init</a> = false</td></tr>
 <tr class="separator:ab78031b3b87e66abd0b6c2653c1c8758"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a728094439aa48195fc2d36c8d25c1da2" id="r_a728094439aa48195fc2d36c8d25c1da2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">use_sample_envelope</a> = false</td></tr>
+<tr class="separator:a728094439aa48195fc2d36c8d25c1da2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a284aca8f258fe8c3eacc4ff47294ecb9" id="r_a284aca8f258fe8c3eacc4ff47294ecb9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">split_high_valence_threshold</a> = 200</td></tr>
 <tr class="separator:a284aca8f258fe8c3eacc4ff47294ecb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af28882131ce9c55ff3f138fa79ef8891" id="r_af28882131ce9c55ff3f138fa79ef8891"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#af28882131ce9c55ff3f138fa79ef8891">w_amips</a> = 1e-4</td></tr>
@@ -297,6 +299,23 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions_m
 </div><div class="memdoc">
 <p>Incident-triangle count above which a vertex is treated as pathological, or 0 to disable the gate.</p>
 <p>The 2D counterpart of tetwild's gate. Splitting edge (a,b) leaves a's and b's own counts unchanged and adds one to every vertex in the edge's link, so the gate is applied to the link, not the endpoints &ndash; but in 2D that link is one or two vertices, not a whole ring, so the runaway this guards against is far less likely here. </p>
+
+</div>
+</div>
+<a id="a728094439aa48195fc2d36c8d25c1da2" name="a728094439aa48195fc2d36c8d25c1da2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a728094439aa48195fc2d36c8d25c1da2">&#9670;&#160;</a></span>use_sample_envelope</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::triwild::Parameters::use_sample_envelope = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Use the sampled envelope rather than the exact one for the mesh optimization.</p>
+<p>The two answer a different question. The sampled test places points along the query segment and asks whether each is within eps of the input; it therefore cannot see anything that happens between two samples, and pays for that by shrinking its acceptance radius to eps/2 (see <a class="el" href="classwmtk_1_1_sample_envelope.html#a37cb35a79a867dea585aa2346c873c0b">SampleEnvelope::eps2_edge</a>). The exact one asks whether the segment is covered by the union of the eps-rectangles around the input segments and decides it without sampling, so it uses the full eps and answers a strictly sharper question &ndash; notably it rejects a segment that bridges a gap between two input curves, which the sampled test accepts whenever the gap is narrow enough to fall between samples.</p>
+<p>Exact by default, matching tetwild. </p>
 
 </div>
 </div>

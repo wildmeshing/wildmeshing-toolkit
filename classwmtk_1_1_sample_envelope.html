@@ -74,8 +74,10 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1_sample_envelope-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::SampleEnvelope Class Reference</div></div>
@@ -91,6 +93,15 @@ Inheritance diagram for wmtk::SampleEnvelope:</div>
   </map>
 </div></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:ac634e11dc6345cf581e3149c03acbea9" id="r_ac634e11dc6345cf581e3149c03acbea9"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9">Kind</a> { <b>Uninitialized</b>
+, <b>Triangles3d</b>
+, <b>Edges3d</b>
+, <b>Edges2d</b>
+ }</td></tr>
+<tr class="separator:ac634e11dc6345cf581e3149c03acbea9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:adce207ce707be3c6b4388ed185a9478f" id="r_adce207ce707be3c6b4388ed185a9478f"><td class="memItemLeft" align="right" valign="top"><a id="adce207ce707be3c6b4388ed185a9478f" name="adce207ce707be3c6b4388ed185a9478f"></a>
@@ -126,6 +137,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_point</b> (
 <tr class="memitem:a5c993c06e246599a8e635223f5dfdb19" id="r_a5c993c06e246599a8e635223f5dfdb19"><td class="memItemLeft" align="right" valign="top"><a id="a5c993c06e246599a8e635223f5dfdb19" name="a5c993c06e246599a8e635223f5dfdb19"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>initialized</b> ()</td></tr>
 <tr class="separator:a5c993c06e246599a8e635223f5dfdb19"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d77a4ea4f2f4b9bbeb0e6d2caa3b981" id="r_a4d77a4ea4f2f4b9bbeb0e6d2caa3b981"><td class="memItemLeft" align="right" valign="top"><a id="a4d77a4ea4f2f4b9bbeb0e6d2caa3b981" name="a4d77a4ea4f2f4b9bbeb0e6d2caa3b981"></a>
+<a class="el" href="classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9">Kind</a>&#160;</td><td class="memItemRight" valign="bottom"><b>kind</b> () const</td></tr>
+<tr class="separator:a4d77a4ea4f2f4b9bbeb0e6d2caa3b981"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62309295c493d3b12f6fade2524af011" id="r_a62309295c493d3b12f6fade2524af011"><td class="memItemLeft" align="right" valign="top"><a id="a62309295c493d3b12f6fade2524af011" name="a62309295c493d3b12f6fade2524af011"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>squared_distance</b> (const Eigen::Vector3d &amp;p) const</td></tr>
 <tr class="separator:a62309295c493d3b12f6fade2524af011"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -148,6 +162,19 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>use_exact</b> = false
 <tr class="memitem:a02b553658ee2d7a77bbdc652321f7191" id="r_a02b553658ee2d7a77bbdc652321f7191"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a02b553658ee2d7a77bbdc652321f7191">disabled</a> = false</td></tr>
 <tr class="separator:a02b553658ee2d7a77bbdc652321f7191"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:adc6210eef55570cf228a140a47cd2527" id="r_adc6210eef55570cf228a140a47cd2527"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#adc6210eef55570cf228a140a47cd2527">require_exact_kind</a> (<a class="el" href="classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9">Kind</a> expected, const char *query) const</td></tr>
+<tr class="separator:adc6210eef55570cf228a140a47cd2527"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8053619bced13832ad11ab0f1794d4f" id="r_af8053619bced13832ad11ab0f1794d4f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#af8053619bced13832ad11ab0f1794d4f">require_exact_3d</a> (const char *query) const</td></tr>
+<tr class="separator:af8053619bced13832ad11ab0f1794d4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12345271792906a0324cf7b7c545994c" id="r_a12345271792906a0324cf7b7c545994c"><td class="memItemLeft" align="right" valign="top"><a id="a12345271792906a0324cf7b7c545994c" name="a12345271792906a0324cf7b7c545994c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>require_exact_built</b> (const char *query) const</td></tr>
+<tr class="separator:a12345271792906a0324cf7b7c545994c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2421c380fd791e278b86cede703bd971" id="r_a2421c380fd791e278b86cede703bd971"><td class="memTemplParams" colspan="2">template&lt;typename VertexList &gt; </td></tr>
+<tr class="memitem:a2421c380fd791e278b86cede703bd971"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a2421c380fd791e278b86cede703bd971">init_exact_edges</a> (const VertexList &amp;V, const std::vector&lt; Eigen::Vector2i &gt; &amp;F, const double _eps)</td></tr>
+<tr class="separator:a2421c380fd791e278b86cede703bd971"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a4820c18eb8e6c981b6dda615286d02e1" id="r_a4820c18eb8e6c981b6dda615286d02e1"><td class="memItemLeft" align="right" valign="top"><a id="a4820c18eb8e6c981b6dda615286d02e1" name="a4820c18eb8e6c981b6dda615286d02e1"></a>
@@ -161,8 +188,43 @@ std::shared_ptr&lt; SimpleBVH::BVH &gt;&#160;</td><td class="memItemRight" valig
 <tr class="separator:a1793c5557ec08004503d6308d762d026"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a236b0a02e557cd600ee1e26b1f376ca1" id="r_a236b0a02e557cd600ee1e26b1f376ca1"><td class="memItemLeft" align="right" valign="top"><a id="a236b0a02e557cd600ee1e26b1f376ca1" name="a236b0a02e557cd600ee1e26b1f376ca1"></a>
 fastEnvelope::FastEnvelope&#160;</td><td class="memItemRight" valign="bottom"><b>exact_envelope</b></td></tr>
+<tr class="memdesc:a236b0a02e557cd600ee1e26b1f376ca1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serves both Triangles3d and Edges3d: FastEnvelope has an init() for each. <br /></td></tr>
 <tr class="separator:a236b0a02e557cd600ee1e26b1f376ca1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7286c0f3b39e115452de7a5920db1adb" id="r_a7286c0f3b39e115452de7a5920db1adb"><td class="memItemLeft" align="right" valign="top"><a id="a7286c0f3b39e115452de7a5920db1adb" name="a7286c0f3b39e115452de7a5920db1adb"></a>
+fastEnvelope::FastEnvelope2D&#160;</td><td class="memItemRight" valign="bottom"><b>exact_envelope_2d</b></td></tr>
+<tr class="memdesc:a7286c0f3b39e115452de7a5920db1adb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Edges2d only. A separate class upstream, not an overload. <br /></td></tr>
+<tr class="separator:a7286c0f3b39e115452de7a5920db1adb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a60a9c1ffd571f5b398c6a41c00fb23" id="r_a4a60a9c1ffd571f5b398c6a41c00fb23"><td class="memItemLeft" align="right" valign="top"><a id="a4a60a9c1ffd571f5b398c6a41c00fb23" name="a4a60a9c1ffd571f5b398c6a41c00fb23"></a>
+<a class="el" href="classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9">Kind</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_kind</b> = Kind::Uninitialized</td></tr>
+<tr class="separator:a4a60a9c1ffd571f5b398c6a41c00fb23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e03e8de3782e45bcff76f8005497186" id="r_a2e03e8de3782e45bcff76f8005497186"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a2e03e8de3782e45bcff76f8005497186">m_exact_built</a> = false</td></tr>
+<tr class="separator:a2e03e8de3782e45bcff76f8005497186"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="ac634e11dc6345cf581e3149c03acbea9" name="ac634e11dc6345cf581e3149c03acbea9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac634e11dc6345cf581e3149c03acbea9">&#9670;&#160;</a></span>Kind</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9">wmtk::SampleEnvelope::Kind</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Which of the three init() overloads built this envelope.</p>
+<p>The sampled path does not need it &ndash; every overload ends up in the same BVH, and a 2D query is answered by lifting to z = 0. The exact path does: a triangle-built and an edge-built FastEnvelope are different objects, a 2D envelope is a different class again, and only init() knows which one was filled in. Without this, is_outside(Vector2d) would lift to 3D and query a FastEnvelope that was never initialized, which answers "outside" for everything rather than failing. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="aefc94500d5ea8555afc5c14c7cb0f821" name="aefc94500d5ea8555afc5c14c7cb0f821"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aefc94500d5ea8555afc5c14c7cb0f821">&#9670;&#160;</a></span>init()</h2>
@@ -205,6 +267,53 @@ fastEnvelope::FastEnvelope&#160;</td><td class="memItemRight" valign="bottom"><b
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a>.</p>
+
+</div>
+</div>
+<a id="a2421c380fd791e278b86cede703bd971" name="a2421c380fd791e278b86cede703bd971"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2421c380fd791e278b86cede703bd971">&#9670;&#160;</a></span>init_exact_edges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename VertexList &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SampleEnvelope::init_exact_edges </td>
+          <td>(</td>
+          <td class="paramtype">const VertexList &amp;&#160;</td>
+          <td class="paramname"><em>V</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; Eigen::Vector2i &gt; &amp;&#160;</td>
+          <td class="paramname"><em>F</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>_eps</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Build the exact edge envelope, when there is one to build and anything will ask for it.</p>
+<p>Unlike the triangle overload, this is conditional on use_exact. The triangle envelope has to carry both structures because callers flip the flag on an already-initialized envelope &ndash; tetwild does that around its simplification, simwild around its insertion &ndash; but every one of those toggles is on a triangle envelope. Building the hexahedra or rectangles for a sampled edge envelope is pure cost: it added ~12% to the integration suite when this was unconditional. A toggle that arrives afterwards anyway is caught by m_exact_built rather than silently answering "outside" against an empty structure.</p>
+<p>A zero epsilon is a legitimate way to ask for an envelope that will only ever be used for nearest_point() &ndash; triwild's Delaunay seeding does it, to reject grid points that fall too close to the input curves. There is no such thing as a zero-width exact envelope: the 2D construction asserts on it, and a containment query against one would answer "outside" for everything not exactly on the input. So skip that too, and let the query fail rather than quietly reject everything. </p>
 
 </div>
 </div>
@@ -264,6 +373,71 @@ fastEnvelope::FastEnvelope&#160;</td><td class="memItemRight" valign="bottom"><b
 
 </div>
 </div>
+<a id="af8053619bced13832ad11ab0f1794d4f" name="af8053619bced13832ad11ab0f1794d4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8053619bced13832ad11ab0f1794d4f">&#9670;&#160;</a></span>require_exact_3d()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SampleEnvelope::require_exact_3d </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>query</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The 3D point and segment queries work against either 3D envelope, so they check only that this is not the 2D one &ndash; and that its exact structure actually exists. </p>
+
+</div>
+</div>
+<a id="adc6210eef55570cf228a140a47cd2527" name="adc6210eef55570cf228a140a47cd2527"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc6210eef55570cf228a140a47cd2527">&#9670;&#160;</a></span>require_exact_kind()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SampleEnvelope::require_exact_kind </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9">Kind</a>&#160;</td>
+          <td class="paramname"><em>expected</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>query</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>An exact query must be answered by the structure the matching init() built.</p>
+<p>Getting this wrong is silent and dangerous rather than noisy: a default-constructed FastEnvelope has no prisms, and a query against no prisms answers "outside" for every point &ndash; so a mismatched envelope does not crash, it just vetoes every operation and looks like an optimization that cannot move. </p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a02b553658ee2d7a77bbdc652321f7191" name="a02b553658ee2d7a77bbdc652321f7191"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a02b553658ee2d7a77bbdc652321f7191">&#9670;&#160;</a></span>disabled</h2>
@@ -314,6 +488,29 @@ optimizer cannot move at all". </p>
 <p>is_outside(edge) samples the segment at N+1 evenly spaced points with N = floor(L/sampling_dist) + 1 &gt; L/sampling_dist, so the spacing is L/N &lt; sampling_dist and every point of the segment lies within sampling_dist/2 of a sample. Distance to a set is 1-Lipschitz, so "every sample within r" implies "every point within
 r + sampling_dist/2"; for that to imply containment in eps, </p><pre class="fragment">r = eps - sampling_dist / 2      (= eps/2, since sampling_dist = eps)
 </pre><p> The lattice constant eps - sampling_dist/sqrt(3) belongs to sampleTriangle and is simply the wrong figure here: it is 0.4226*eps against the correct 0.5*eps, so using it made the edge test 18% stricter than the geometry requires. That is safe on its own &ndash; but it also made the simplification's own guarantee (r_s + sampling_dist_s/2 = eps_s) exceed the acceptance threshold of the coarser envelope the optimizer checks against, so a correctly simplified input could be rejected by the init sanity check. It was, once in 15665 models. </p>
+
+</div>
+</div>
+<a id="a2e03e8de3782e45bcff76f8005497186" name="a2e03e8de3782e45bcff76f8005497186"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e03e8de3782e45bcff76f8005497186">&#9670;&#160;</a></span>m_exact_built</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::SampleEnvelope::m_exact_built = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the edge/2D exact structure was actually built. Always false for Triangles3d, which builds its exact envelope unconditionally and is checked by kind alone. </p>
 
 </div>
 </div>
