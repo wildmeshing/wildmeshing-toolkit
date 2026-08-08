@@ -21,11 +21,17 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # branch of the arrangement-vertex conversions in tetwild, simwild and triwild, which
 # is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
 # init_from_bin parses.
+#
+# Pinned at main. The previous pin (dcf40546) was two commits behind it; the only
+# functional change between them is PR #17, which reuses a cell's local data structure
+# across non-splitting constraints in BSP.cpp -- a performance change in the
+# arrangement core, so it is the kind of bump that wants the full test suite run
+# against it rather than a smoke test.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG dcf40546f9c71c82c72eb4c29527c30ac40f640b
+    GIT_TAG 7e5d2b49a2c866770e15c9252c07533b50636c8a
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )
