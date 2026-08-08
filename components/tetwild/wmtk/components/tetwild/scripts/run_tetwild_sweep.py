@@ -38,7 +38,7 @@ Configuration -- environment variables:
     TETWILD_JOB_TIMEOUT   per-model seconds           (default 10800 = 3h)
     TETWILD_MEM_GB        per-model memory cap, GB    (default 128, 0 disables)
     TETWILD_LIMIT         process at most N new models (default 0 = all)
-    TETWILD_SAMPLE        smallest | spread | random  (default smallest)
+    TETWILD_SAMPLE        name | smallest | spread | random  (default smallest)
     TETWILD_SEED          seed for TETWILD_SAMPLE=random  (default 0)
     TETWILD_REPORT_ONLY   if set, only regenerate the report and exit
 
@@ -890,7 +890,13 @@ def _order_models(meshes):
               whole size range. A 100-model trial ordered 'smallest' tells you almost
               nothing -- the 100 smallest meshes in Thingi10K are trivial.
     random:   uniform sample, seeded by TETWILD_SEED.
+    name:     filename order. Size is uncorrelated with the name, so the expensive
+              models are spread through the run instead of all landing at the end --
+              which keeps the machine busy to the finish and makes progress linear
+              rather than front-loaded. This is what the 2D runner defaults to.
     """
+    if SAMPLE == "name":
+        return sorted(meshes, key=lambda p: p.name)
     by_size = sorted(meshes, key=lambda p: p.stat().st_size)
     if SAMPLE == "smallest":
         return by_size
@@ -908,7 +914,7 @@ def _order_models(meshes):
         # keep the rest behind the sample so a resume still has work to do
         rest = [m for i, m in enumerate(by_size) if i not in set(picked_idx)]
         return picked + rest
-    sys.exit(f"unknown TETWILD_SAMPLE: {SAMPLE!r} (smallest | spread | random)")
+    sys.exit(f"unknown TETWILD_SAMPLE: {SAMPLE!r} (name | smallest | spread | random)")
 
 
 # --------------------------------------------------------------------------- #
