@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """
-Batch-run tetwild over the Thingi10K dataset. See README.md.
+Batch-run tetwild over the Thingi10K dataset -- kirby.cs.nyu.edu edition.
 
-Written for kirby.cs.nyu.edu, whose layout is the default for TETWILD_ROOT; set that
-variable to run it anywhere. The 3D counterpart of run_triwild_sweep.py, and the same
-contract: run it with no arguments to start (or resume) the sweep; it skips every
-model already in success/ or failure/. Stop it cleanly with:
+Adapted from run_tetwild_thingi10k.py (the macOS version). Same contract: run it
+with no arguments to start (or resume) the sweep; it skips every model already in
+success/ or failure/. Stop it cleanly with:
 
-    run_tetwild_sweep.py stop
+    run_tetwild_thingi10k_kirby.py stop
 
 which signals the running sweep to abandon whatever is in flight (those models are
 left unpublished, so a later resume reprocesses them -- no spurious failures), drain,
 write the report, and exit.
 
 What changed from the macOS version:
-  * paths hang off TETWILD_ROOT;
+  * paths point at /u/3/daniele/thingi10k-sweep;
   * OUT_DIR is env-overridable (TETWILD_OUT), so a trial sweep and the real one do
     not share a success/failure namespace;
   * defaults are 8 models x 8 threads, 3h per model;
@@ -33,14 +32,13 @@ Per model:
     nonzero / timeout / OOM   -> move the run into  <OUT>/failure/<id>/  (with a reason)
 
 Configuration -- environment variables:
-    TETWILD_ROOT          sweep root: build/, data/, runs/  (default the kirby path)
-    TETWILD_OUT           output directory            (default <root>/runs/full)
+    TETWILD_OUT           output directory            (default runs/full)
     TETWILD_PARALLEL      models to run concurrently  (default 8)
     TETWILD_THREADS       threads per model           (default 8)
     TETWILD_JOB_TIMEOUT   per-model seconds           (default 10800 = 3h)
     TETWILD_MEM_GB        per-model memory cap, GB    (default 128, 0 disables)
     TETWILD_LIMIT         process at most N new models (default 0 = all)
-    TETWILD_SAMPLE        name | smallest | spread | random  (default smallest)
+    TETWILD_SAMPLE        smallest | spread | random  (default smallest)
     TETWILD_SEED          seed for TETWILD_SAMPLE=random  (default 0)
     TETWILD_REPORT_ONLY   if set, only regenerate the report and exit
 
@@ -69,10 +67,7 @@ from pathlib import Path
 # --------------------------------------------------------------------------- #
 # Hardcoded configuration
 # --------------------------------------------------------------------------- #
-# Everything hangs off one root: build/ (the wmtk_app to test), data/ (the mesh
-# dataset) and runs/ (the outputs). Override with TETWILD_ROOT to run this anywhere;
-# the default is the kirby layout it was written for.
-SWEEP_ROOT = Path(os.environ.get("TETWILD_ROOT", "/u/3/daniele/thingi10k-sweep"))
+SWEEP_ROOT = Path("/u/3/daniele/thingi10k-sweep")
 WMTK_APP = SWEEP_ROOT / "build/app/wmtk_app"
 DATASET_DIR = SWEEP_ROOT / "data"
 OUT_DIR = Path(os.environ.get("TETWILD_OUT", str(SWEEP_ROOT / "runs/full")))
@@ -94,11 +89,20 @@ REPORT_ONLY = bool(os.environ.get("TETWILD_REPORT_ONLY"))
 # tetwild parameters requested for this sweep. Everything not named here comes from
 # the spec defaults of whatever branch build/ was built from -- which is the point of
 # the sweep on thingi10k-sweep-2, so do not pin the simplify_* parameters here.
+# Only the knobs the SWEEP needs, not the ones under test. Everything else comes from
+# the spec defaults of whatever branch build/ was built from -- which is the point of
+# this harness: it tests the defaults, not a private configuration. Note eps_rel and
+# filter below happen to equal the current spec defaults; they are pinned so the sweep
+# keeps meaning the same thing if those defaults ever move.
 PARAMS = {
     "application": "tetwild",
     "eps_rel": 1e-3,
     "filter": "none",
     "num_threads": THREADS,
+    # The .msh is the real output and the .vtu is a visualization dump that _prune
+    # deletes immediately afterwards, so writing it costs time and disk on every model
+    # for nothing. The 2D sweep has always forced this off.
+    "write_vtu": False,
 }
 
 # Which of a run's output files to keep. The .vtu files are large visualization
@@ -886,13 +890,7 @@ def _order_models(meshes):
               whole size range. A 100-model trial ordered 'smallest' tells you almost
               nothing -- the 100 smallest meshes in Thingi10K are trivial.
     random:   uniform sample, seeded by TETWILD_SEED.
-    name:     filename order. Size is uncorrelated with the name, so the expensive
-              models are spread through the run instead of all landing at the end --
-              which keeps the machine busy to the finish and makes progress linear
-              rather than front-loaded. This is what the 2D runner defaults to.
     """
-    if SAMPLE == "name":
-        return sorted(meshes, key=lambda p: p.name)
     by_size = sorted(meshes, key=lambda p: p.stat().st_size)
     if SAMPLE == "smallest":
         return by_size
@@ -910,7 +908,7 @@ def _order_models(meshes):
         # keep the rest behind the sample so a resume still has work to do
         rest = [m for i, m in enumerate(by_size) if i not in set(picked_idx)]
         return picked + rest
-    sys.exit(f"unknown TETWILD_SAMPLE: {SAMPLE!r} (name | smallest | spread | random)")
+    sys.exit(f"unknown TETWILD_SAMPLE: {SAMPLE!r} (smallest | spread | random)")
 
 
 # --------------------------------------------------------------------------- #
