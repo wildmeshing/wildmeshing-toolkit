@@ -1,4 +1,3 @@
-#include <CLI/CLI.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 
 #include <igl/Timer.h>

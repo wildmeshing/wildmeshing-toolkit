@@ -6,6 +6,7 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
+#include <fastenvelope/FastEnvelope2D.h>
 #include <SimpleBVH/BVH.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -50,6 +51,18 @@ public:
 class SampleEnvelope : public wmtk::Envelope
 {
 public:
+    /**
+     * Which of the three init() overloads built this envelope.
+     *
+     * The sampled path does not need it -- every overload ends up in the same BVH, and a 2D
+     * query is answered by lifting to z = 0. The exact path does: a triangle-built and an
+     * edge-built FastEnvelope are different objects, a 2D envelope is a different class
+     * again, and only init() knows which one was filled in. Without this, is_outside(Vector2d)
+     * would lift to 3D and query a FastEnvelope that was never initialized, which answers
+     * "outside" for everything rather than failing.
+     */
+    enum class Kind { Uninitialized, Triangles3d, Edges3d, Edges2d };
+
     SampleEnvelope(bool exact = false)
         : use_exact(exact) {};
     /**
@@ -119,15 +132,29 @@ public:
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
     bool initialized() { return m_bvh != nullptr; };
 
+    Kind kind() const { return m_kind; }
+
     double squared_distance(const Eigen::Vector3d& p) const;
     double squared_distance(const Eigen::Vector2d& p) const;
 
 private:
+    void require_exact_kind(Kind expected, const char* query) const;
+
+    template <typename VertexList>
+    void init_exact_edges(
+        const VertexList& V,
+        const std::vector<Eigen::Vector2i>& F,
+        const double _eps);
+
     std::vector<int> geo_vertex_ind;
     std::vector<int> geo_face_ind;
     std::shared_ptr<SimpleBVH::BVH> m_bvh;
 
 private:
+    /// Serves both Triangles3d and Edges3d: FastEnvelope has an init() for each.
     fastEnvelope::FastEnvelope exact_envelope;
+    /// Edges2d only. A separate class upstream, not an overload.
+    fastEnvelope::FastEnvelope2D exact_envelope_2d;
+    Kind m_kind = Kind::Uninitialized;
 };
 } // namespace wmtk
