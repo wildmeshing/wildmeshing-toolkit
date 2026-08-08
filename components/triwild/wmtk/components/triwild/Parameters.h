@@ -48,6 +48,22 @@ struct Parameters
     bool check_envelope_at_init = false;
 
     /**
+     * Use the sampled envelope rather than the exact one for the mesh optimization.
+     *
+     * The two answer a different question. The sampled test places points along the query
+     * segment and asks whether each is within eps of the input; it therefore cannot see
+     * anything that happens between two samples, and pays for that by shrinking its
+     * acceptance radius to eps/2 (see SampleEnvelope::eps2_edge). The exact one asks whether
+     * the segment is covered by the union of the eps-rectangles around the input segments and
+     * decides it without sampling, so it uses the full eps and answers a strictly sharper
+     * question -- notably it rejects a segment that bridges a gap between two input curves,
+     * which the sampled test accepts whenever the gap is narrow enough to fall between samples.
+     *
+     * Exact by default, matching tetwild.
+     */
+    bool use_sample_envelope = false;
+
+    /**
      * Incident-triangle count above which a vertex is treated as pathological, or 0 to
      * disable the gate.
      *
@@ -167,6 +183,7 @@ struct Parameters
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
         check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];
+        use_sample_envelope = json_params["use_sample_envelope"];
 
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
         w_amips = json_params["w_amips"];
