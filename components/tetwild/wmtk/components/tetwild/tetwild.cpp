@@ -291,7 +291,23 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
 
     params.init(box_minmax.first, box_minmax.second);
-    wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * params.diag_l);
+
+    // The surface handed to the arrangement is taken as the simplification left it.
+    //
+    // This used to run wmtk::remove_duplicates(vsimp, fsimp, 1e-10 * diag_l) here, which
+    // merged vertices wrongly. It is not a proximity merge: it forwards to
+    // igl::remove_duplicate_vertices, which SNAPS coordinates to an epsilon grid and
+    // takes unique rows, so whether two vertices merge depends on which side of a cell
+    // boundary they fall on rather than on how far apart they are. Two vertices 2*eps
+    // apart merge when they land in the same cell; two a tenth of eps apart survive when
+    // a boundary runs between them.
+    //
+    // Nothing here needs it. collapse_shortest() is followed by consolidate_mesh(), so
+    // the ids are already contiguous, vert_capacity()/tri_capacity() are the live counts,
+    // and vsimp/fsimp are exactly sized with no stale slots. The simplification also
+    // maintains a valid manifold connectivity -- checked immediately above by
+    // check_mesh_connectivity_validity() -- so there are no coincident vertices or
+    // duplicated faces for it to find.
 
     // Built around the ORIGINAL input, like the simplification one, but at the full tet eps.
     // A separate object because surf_mesh's is deliberately tighter now.
