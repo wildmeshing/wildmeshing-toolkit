@@ -339,8 +339,8 @@
   {
     "pointer": "/skip_good_regions",
     "type": "bool",
-    "default": true,
-    "doc": "Only smooth vertices incident to a triangle whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions. The filter is safe for surface vertices only because active_vertices() appends every surface vertex unconditionally, whatever the quality threshold says -- their smoothing is driven by the envelope term rather than by element quality, so filtering them on quality would freeze them (it did: octocat smoothed nothing). It was briefly OFF here after an A/B on 122839 at stop_energy 20 showed filtering cost more than it saved (60 iterations ending at 21.03 with it on, against convergence to 19.9998 in 54 iterations and 875s vs 947s with it off). That measurement does not transfer to the current default: the threshold is skip_good_regions_margin * stop_energy, so at 20 it was 18 against an AMIPS2D floor of 2 and skipped almost nothing, while at 100 it is 90 and skips most of a converging mesh. Worth re-measuring in the new regime."
+    "default": false,
+    "doc": "Only smooth vertices incident to a triangle whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions. OFF by default: smoothing is the only phase that improves quality without changing connectivity, and the premise that a vertex surrounded by good elements has nothing to gain is not reliable -- for surface vertices the move is driven by the envelope term rather than by element quality, which is why active_vertices() has to append every surface vertex unconditionally to keep the filter from freezing them outright. With the filter off that special case stops carrying the correctness of the pass. Measured in 2D on 122839 at stop_energy 20, filtering also cost more than it saved: 60 iterations ending at max energy 21.03 with it on, against convergence to 19.9998 in 54 iterations and less wall time (875s vs 947s) with it off. Note the threshold scales with stop_energy, so the filter skips far more at 100 than at 20."
   },
   {
     "pointer": "/skip_good_regions_margin",
