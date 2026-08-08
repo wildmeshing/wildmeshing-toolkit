@@ -63,7 +63,7 @@ TETWILD_JOB_TIMEOUT=21600 python3 run_tetwild_sweep.py
 | `TETWILD_JOB_TIMEOUT` | 10800 | seconds per model |
 | `TETWILD_MEM_GB` | 128 | per model, 0 disables |
 | `TETWILD_LIMIT` | 0 | process at most N new models |
-| `TETWILD_SAMPLE` | `smallest` | `smallest` \| `spread` \| `random` |
+| `TETWILD_SAMPLE` | `smallest` | `name` \| `smallest` \| `spread` \| `random` — `name` spreads the expensive models through the run instead of stacking them at the end |
 | `TETWILD_SEED` | 0 | for `TETWILD_SAMPLE=random` |
 | `TETWILD_REPORT_ONLY` | unset | regenerate the report and exit |
 | `TETWILD_REPORT_BANNER` | unset | note shown at the top of the HTML report |
