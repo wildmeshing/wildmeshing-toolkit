@@ -2107,17 +2107,22 @@ std::vector<TriMesh::Tuple> TriMesh::get_vertices() const
         size_t fid = *min_element(v_conn_fids.begin(), v_conn_fids.end());
 
         // get the 3 vid
-        const std::array<size_t, 3> f_conn_verts = m_tri_connectivity[fid].m_indices;
+        const std::array<size_t, 3>& f_conn_verts = m_tri_connectivity[fid].m_indices;
         assert(i == f_conn_verts[0] || i == f_conn_verts[1] || i == f_conn_verts[2]);
 
+        // The local edge opposite the vertex's own local index, i.e. (lvid + 2) % 3. The
+        // second test used to be a plain `if`, so its `else` ran whenever the vertex was
+        // not local index 1 -- overwriting the lvid == 0 case with 1 and leaving that
+        // branch dead. Both edges do contain the vertex, so the tuple stayed valid and
+        // nothing caught it; it was simply not the edge this is documented to return.
         size_t eid = -1;
-
-        // eid is the same as the lvid
-        if (i == f_conn_verts[0]) eid = 2;
-        if (i == f_conn_verts[1])
+        if (i == f_conn_verts[0]) {
+            eid = 2;
+        } else if (i == f_conn_verts[1]) {
             eid = 0;
-        else
+        } else {
             eid = 1;
+        }
 
         Tuple v_tuple = Tuple(i, eid, fid, *this);
         assert(v_tuple.is_valid(*this));
