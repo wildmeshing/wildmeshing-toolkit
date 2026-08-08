@@ -16,7 +16,7 @@ var searchData=
   ['get_5fone_5fring_5fedges_5ffor_5fvertex_13',['get_one_ring_edges_for_vertex',['../classwmtk_1_1_tri_mesh.html#a9208cec662f3d90924bafdf9153530e0',1,'wmtk::TriMesh']]],
   ['get_5fone_5fring_5ftets_5ffor_5fedge_14',['get_one_ring_tets_for_edge',['../classwmtk_1_1_tet_mesh.html#a62fbc2654061c7851ee19eda5e99c251',1,'wmtk::TetMesh']]],
   ['get_5fone_5fring_5ftets_5ffor_5fvertex_15',['get_one_ring_tets_for_vertex',['../classwmtk_1_1_tet_mesh.html#ae7d0d7f9da45fda456290a85dc37f9bc',1,'wmtk::TetMesh']]],
-  ['get_5fone_5fring_5ftids_5ffor_5fvertex_16',['get_one_ring_tids_for_vertex',['../classwmtk_1_1_tet_mesh.html#aaf99d19a2b5b7e8ccc1871e4079822b2',1,'wmtk::TetMesh']]],
+  ['get_5fone_5fring_5ftids_5ffor_5fvertex_16',['get_one_ring_tids_for_vertex',['../classwmtk_1_1_tet_mesh.html#a8022ee1285ed0380bd05831800f8a005',1,'wmtk::TetMesh']]],
   ['get_5fone_5fring_5ftris_5ffor_5fvertex_17',['get_one_ring_tris_for_vertex',['../classwmtk_1_1_tri_mesh.html#a5531e50cdc431dca793549b92116859b',1,'wmtk::TriMesh']]],
   ['get_5fone_5fring_5fvertices_5ffor_5fvertex_18',['get_one_ring_vertices_for_vertex',['../classwmtk_1_1_tet_mesh.html#a047fb81087a5bcd8b848ed30060dd1e0',1,'wmtk::TetMesh']]],
   ['get_5fone_5fring_5fvids_5ffor_5fvertex_19',['get_one_ring_vids_for_vertex',['../classwmtk_1_1_tet_mesh.html#a7af1bc5b0045ec31cdfea9a2204f1d6a',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid) const'],['../classwmtk_1_1_tet_mesh.html#a71f69b2cf285973833a06ae2096ad2b8',1,'wmtk::TetMesh::get_one_ring_vids_for_vertex(size_t vid, std::vector&lt; size_t &gt; &amp;cache)']]],
