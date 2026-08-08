@@ -141,10 +141,8 @@ private:
     void require_exact_kind(Kind expected, const char* query) const;
 
     template <typename VertexList>
-    void init_exact_edges(
-        const VertexList& V,
-        const std::vector<Eigen::Vector2i>& F,
-        const double _eps);
+    void
+    init_exact_edges(const VertexList& V, const std::vector<Eigen::Vector2i>& F, const double _eps);
 
     std::vector<int> geo_vertex_ind;
     std::vector<int> geo_face_ind;
