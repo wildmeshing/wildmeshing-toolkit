@@ -2008,7 +2008,8 @@ void SimWildMeshTri::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && quality_rel > 1.0 &&
-            (pre_quality_rel - quality_rel) <= m_params.stuck_refine_stall_eps * pre_quality_rel) {
+            (pre_quality_rel - quality_rel) <=
+                m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
             refine_sizing_around_worst();
             // adjust_sizing_field_serial(max_energy); // The old update

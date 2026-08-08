@@ -133,7 +133,8 @@ void TriWildMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_energy > m_params.stop_energy &&
-            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
+            (pre_max_energy - max_energy) <=
+                m_params.stuck_refine_stall_eps * (max_energy - m_params.stop_energy)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
             refine_sizing_around_worst(max_energy);
             // adjust_sizing_field_serial(max_energy); // The old update

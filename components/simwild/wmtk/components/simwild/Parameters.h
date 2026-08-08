@@ -24,11 +24,19 @@ struct Parameters
     bool check_surface_topology = false;
 
     // ---- Stuck-element sizing refinement --------------------------------
-    // Trigger threshold: fire when the max energy did not improve by more than
-    // this *fraction* since the previous iteration, i.e. refine when
-    // (prev_max - max) <= stall_eps * prev_max. 0 => only when it does not
-    // improve at all (or gets worse).
-    double stuck_refine_stall_eps = 0.01;
+    // Trigger threshold: fire when the last iteration's improvement is small compared
+    // with the distance the max energy still has to cover, i.e. refine when
+    //     (prev_max - max) <= stall_eps * (max - target).
+    // Equivalently: refine unless the mesh is on course to reach the target within
+    // about 1/stall_eps more iterations. 0 => only when it does not improve at all.
+    //
+    // The denominator is the remaining distance, not prev_max, and that is the whole
+    // point. Measured against prev_max, a mesh grinding down at a steady 1.3% per
+    // iteration toward a target far below clears a 1% bar every single iteration and so
+    // never looks stalled -- even though at that rate it needs on the order of a hundred
+    // more iterations and the operations have in fact deadlocked. The escape hatch then
+    // never fires, which is exactly the regime it exists for.
+    double stuck_refine_stall_eps = 0.1;
     // Cooldown: after a refinement, skip this many improvement iterations before
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
