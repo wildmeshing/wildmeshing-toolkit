@@ -129,6 +129,10 @@ public:
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
+    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
+    /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
+    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
+
     // scaling factors
     double m_s_amips = -1;
     double m_s_envelope = -1;

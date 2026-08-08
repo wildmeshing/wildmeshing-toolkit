@@ -160,6 +160,10 @@ public:
     /// Envelope the resulting surface triangles are checked against.
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
+    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
+    /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
+    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
+
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
     std::function<double(const Vector3d&)> m_voronoi_split_fn = nullptr;

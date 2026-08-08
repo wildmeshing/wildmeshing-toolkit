@@ -18,9 +18,14 @@
 
 #include "Parameters.h"
 
+#include <atomic>
+#include <memory>
 #include <set>
 
 namespace wmtk::components::triwild {
+
+/// A vertex that stands for no input feature point. See VertexAttributes::m_feature_id.
+inline constexpr size_t NO_FEATURE = std::numeric_limits<size_t>::max();
 
 // TODO: missing comments on what these attributes are
 class VertexAttributes
@@ -32,6 +37,24 @@ public:
 
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces;
+
+    /**
+     * Index into TriWildMesh::m_feature_points, or NO_FEATURE.
+     *
+     * A feature point is a 0-dimensional feature of the curve network: an open polyline's
+     * endpoint, or a junction. This is the 2D counterpart of tetwild's m_is_on_open_boundary,
+     * with one deliberate difference -- it names WHICH feature the vertex stands for, not
+     * merely that it stands for one.
+     *
+     * That difference is the whole point. tetwild asks "is the survivor inside the envelope
+     * of the boundary?", a containment question, and in 3D a boundary is a curve with many
+     * edges so collapsing one shortens it rather than deleting it. In 2D the feature is a
+     * single point, and a containment test passes trivially when one endpoint is collapsed
+     * onto another -- the target IS a feature point, distance zero -- while the first
+     * endpoint quietly stops being represented. Preserving features is a COVERAGE property,
+     * so the constraint has to bind a vertex to a specific point.
+     */
+    size_t m_feature_id = NO_FEATURE;
 
     double m_sizing_scalar = 1;
 
@@ -94,6 +117,47 @@ public:
     std::vector<Vector2i> m_E_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_envelope_eps = -1;
+
+    /**
+     * Anchor positions of the curve network's 0-dimensional features, indexed by
+     * VertexAttributes::m_feature_id.
+     *
+     * Filled in init_mesh from the arrangement's constrained edges: a vertex whose valence in
+     * that edge set is neither 0 nor 2 is a feature -- valence 1 is an open polyline's
+     * endpoint, valence >= 3 a junction. Reading it off the arrangement rather than the raw
+     * input is deliberate: it is the network the optimizer actually starts from, so a
+     * junction the simplification was allowed to merge (which it may, with
+     * simplify_use_link_condition off) is correctly absent, and no provenance or
+     * position-matching plumbing is needed.
+     *
+     * A vertex carrying feature f may never end up further than m_envelope_eps from
+     * m_feature_points[f]. Since the anchor never moves, no spatial index is required: the
+     * feature id is a direct lookup.
+     */
+    std::vector<Vector2d> m_feature_points;
+    /// Collapses refused because they would drop or displace a feature point. Diagnostic.
+    std::atomic<size_t> m_feature_rejects = 0;
+
+    /**
+     * @brief May vertex `vid` sit at `p`?
+     *
+     * False only when the vertex stands for a feature point and `p` is more than
+     * m_envelope_eps away from it. Smoothing is free to move a feature vertex inside that
+     * ball -- it is a containment test, not a freeze, so the optimizer keeps the quality it
+     * can get near features.
+     */
+    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const;
+
+    /**
+     * @brief {feature points still represented within eps, total feature points}.
+     *
+     * The invariant preserve_feature_points maintains, measured on the finished mesh rather
+     * than assumed from the per-operation checks.
+     */
+    std::pair<size_t, size_t> feature_retention(double* worst_ratio = nullptr) const;
+
+    /// True iff collapsing v1 into v2 would drop or displace a feature point.
+    bool collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const;
 
     using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
@@ -167,6 +231,11 @@ public:
      * @param F #Fx3 vertex IDs for all faces
      * @param E #Ex2 vertex IDs for all constraint edges
      * @param tag_names Names for each tag.
+     * @param V_rational the arrangement's EXACT vertex positions, matching V row for row.
+     *        V is only their rounding, and two exactly distinct vertices can round to the
+     *        same double, so V alone cannot tell a genuine degeneracy from a rounding
+     *        collision. Pass an empty vector when no exact positions exist (unit tests
+     *        building a mesh from doubles); every vertex is then taken as rounded.
      * @param V_env,E_env the curves the envelope is built around. These are the *original*
      *        input curves, not the arrangement's constrained edges: the optimizer has to
      *        stay near what the user gave us, not near the simplified version of it. Same
@@ -175,6 +244,7 @@ public:
      */
     void init_mesh(
         const MatrixXd& V,
+        const std::vector<Vector2r>& V_rational,
         const MatrixXi& F,
         const MatrixXi& E,
         const std::vector<std::string>& tag_names,
@@ -227,6 +297,16 @@ public:
     /// Count of force-splits taken in the current split pass (atomic_ref from the parallel
     /// split; reset + logged by split_all_edges). Diagnostic only.
     size_t m_force_split_count = 0;
+
+    /// Per-pass claim for the high-valence split gate: one slot per vertex, reset at the
+    /// start of every split pass. A high-valence vertex accepts the first valence-increasing
+    /// split of the pass and refuses the rest, so refinement spreads instead of piling onto
+    /// the same vertex. Atomic because splits run in parallel; a plain array of unique_ptr
+    /// rather than a vector because std::atomic is not movable.
+    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
+    size_t m_high_valence_claim_size = 0;
+    /// Splits refused by that gate in the current pass, reported once per pass.
+    std::atomic<size_t> m_high_valence_rejects = 0;
 
     /// True iff edge (v1,v2) is a worst triangle's longest edge queued for force-split.
     bool is_force_split_edge(size_t v1, size_t v2) const
@@ -283,6 +363,29 @@ public:
     double get_quality(const Tuple& loc) const;
     double get_quality(const size_t fid) const;
     bool round(const Tuple& loc);
+
+    /**
+     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
+     *
+     * round() is otherwise only attempted as a side effect of another operation (smoothing
+     * the vertex, or the merged vertex of a collapse), and neither reaches a vertex that
+     * only becomes roundable later: smoothing skips "good" regions by default. Without a
+     * sweep such a vertex keeps exact coordinates into the output for no geometric reason --
+     * and split_edge_after now introduces them unconditionally whenever the rounded midpoint
+     * would invert, so the sweep is what keeps that from reaching the output.
+     *
+     * Skipped outright when m_all_rounded says there is nothing to do.
+     */
+    size_t round_all_vertices();
+
+    /**
+     * @brief True when every vertex is known to be rounded.
+     *
+     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
+     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
+     * Atomic because operations that clear it run in parallel.
+     */
+    std::atomic<bool> m_all_rounded = false;
     //
     bool is_edge_on_surface(const Tuple& loc) const;
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;

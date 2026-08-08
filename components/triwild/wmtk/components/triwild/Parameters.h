@@ -5,7 +5,7 @@
 namespace wmtk::components::triwild {
 struct Parameters
 {
-    double epsr = 2e-3; // relative error bound (wrt diagonal)
+    double epsr = 1e-3; // relative error bound (wrt diagonal)
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
     double l = -1.;
@@ -14,19 +14,80 @@ struct Parameters
     Vector2d box_min = Vector2d::Zero();
     Vector2d box_max = Vector2d::Ones();
     bool preserve_topology = false;
+
+    /**
+     * Keep the curve network's 0-dimensional features -- open polyline endpoints and
+     * junctions -- within eps of where the arrangement put them.
+     *
+     * Without it the collapse pass deletes open polylines outright: a polyline erodes into
+     * its own tip until one segment is left, and that segment has a feature at both ends,
+     * which nothing else refuses. Off only for A/B against the old behaviour.
+     */
+    bool preserve_feature_points = true;
     std::string output_path;
 
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
-    double stop_energy = 10;
+    double stop_energy = 20;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
+    /**
+     * Verify at init that every constrained edge starts inside the envelope.
+     *
+     * The invariant is real -- the envelope is built around the *input* curves while the
+     * constrained edges come from the simplified ones, so it checks that the simplification
+     * stayed inside its share of eps -- but it costs one sampled segment query per
+     * constrained edge, serially. On a 3.5M-edge input that is 22s locally and 63s on a
+     * slower machine, paid on every run to catch something that has fired once in 15665
+     * models. Off by default; turn it on when changing the simplification or the envelope.
+     */
+    bool check_envelope_at_init = false;
+
+    /**
+     * Incident-triangle count above which a vertex is treated as pathological, or 0 to
+     * disable the gate.
+     *
+     * The 2D counterpart of tetwild's gate. Splitting edge (a,b) leaves a's and b's own
+     * counts unchanged and adds one to every vertex in the edge's link, so the gate is
+     * applied to the link, not the endpoints -- but in 2D that link is one or two vertices,
+     * not a whole ring, so the runaway this guards against is far less likely here.
+     */
+    int split_high_valence_threshold = 200;
+
+    /**
+     * Relative weight of the AMIPS (quality) term against the envelope (stay-on-curve) term
+     * during smoothing. w_envelope is derived as 1 - w_amips in the TriWildMesh constructor,
+     * so the small default means the envelope dominates and AMIPS acts as a light quality
+     * preference. Matches tetwild and simwild.
+     */
     double w_amips = 1e-4;
-    double w_envelope = 0;
+    double w_envelope = 1. - 1e-4; // derived; not read from json
+
+    /**
+     * How many smoothing passes each optimization iteration runs.
+     *
+     * This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was
+     * hard-coded to 1. Smoothing is the only phase that improves element quality without
+     * changing connectivity, so on meshes where split/collapse/swap have run out of useful
+     * moves it is the only thing left that can lower the energy.
+     */
+    int num_smoothing_passes = 2;
+
+    // Interleave smoothing between the topology passes instead of running it all at the end
+    // of the iteration. With this on, one iteration is
+    //     split    + interleaved_smoothing_passes smoothing passes
+    //     collapse + ...
+    //     swaps    + ...
+    // rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the
+    // only phase that improves quality without changing connectivity, so giving each topology
+    // pass a chance to be relaxed before the next one runs may keep the optimizer off the
+    // plateaus where split, collapse and swap simply undo each other.
+    bool interleaved_smoothing = true;
+    int interleaved_smoothing_passes = 1;
 
     // ---- Stuck-element sizing refinement --------------------------------
     // Same names, defaults and meaning as tetwild/simwild -- see the specs.
@@ -74,7 +135,13 @@ struct Parameters
     // gated: gating the topology/sizing ops (split/collapse/swap) starves the
     // optimizer and blows up the element count, so those always run over the
     // whole mesh.
-    bool skip_good_regions = true;
+    // Off: gating on element quality also skips SURFACE vertices, whose smoothing is driven
+    // almost entirely by the envelope term (w_amips 1e-4), not by the quality of the elements
+    // around them. On 122839 the filtered run exhausted 60 iterations at max energy 21.03
+    // while the unfiltered one converged to 19.9998 in 54 -- and did so in LESS wall time
+    // (875s vs 947s), because needing fewer iterations more than paid for the extra vertices
+    // per pass.
+    bool skip_good_regions = false;
     // Safety margin on the "active" threshold: a triangle is active when its
     // energy is >= this fraction of stop_energy, so vertices near triangles
     // sitting just below the target are still smoothed.
@@ -95,9 +162,17 @@ struct Parameters
         lr = json_params["length_rel"];
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
+        preserve_feature_points = json_params["preserve_feature_points"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+        check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];
+
+        split_high_valence_threshold = json_params["split_high_valence_threshold"];
+        w_amips = json_params["w_amips"];
+        num_smoothing_passes = json_params["num_smoothing_passes"];
+        interleaved_smoothing = json_params["interleaved_smoothing"];
+        interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
 
         // Stuck-element sizing refinement.
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];

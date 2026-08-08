@@ -207,21 +207,38 @@ void gradation_smooth_sizing(
 }
 
 /**
- * @brief The vertices incident to at least one cell whose quality reaches `thr`.
+ * @brief The vertices worth smoothing: those incident to a cell whose quality reaches `thr`,
+ * plus every surface vertex.
  *
- * Used by the skip-good-regions filter to restrict smoothing to non-good regions:
- * smoothing a vertex surrounded by good cells does nothing, so skipping it is free.
+ * The quality half is the skip-good-regions filter -- smoothing a vertex surrounded by good
+ * cells does not improve those cells, so skipping it is free.
+ *
+ * That argument does NOT extend to surface vertices, which is why they are added
+ * unconditionally. A surface vertex has a second objective the cell quality cannot see:
+ * smoothing minimises w_amips * AMIPS + w_envelope * EnvelopeEnergy, and with the default
+ * w_amips = 1e-4 the envelope term carries 99.99% of the weight. It is what pulls the vertex
+ * back toward the input. Gate it on element quality and a surface vertex surrounded by good
+ * cells is skipped, so the term doing almost all of its work never runs.
+ *
+ * Measured before this was fixed: tetwild on octocat and sphere smoothed ZERO vertices for
+ * entire runs -- "smooth: accepted 0 | rejected: 0, 0, 0, 0" on every pass -- because the
+ * mesh sat below 0.9 * stop_energy and nothing qualified. It failed silently rather than
+ * loudly, which is why it survived a 10,000-model sweep. simwild already special-cased this
+ * in its own active_vertices(); tetwild and triwild did not, so it now lives here where all
+ * three share it.
  *
  * @param cell_vids `Range(size_t cid)` -- the cell's vertex ids
+ * @param is_surface_vertex `bool(size_t vid)` -- vertex lies on the tracked surface
  */
-template <class IsValid, class Quality, class CellVids>
+template <class IsValid, class Quality, class CellVids, class IsSurfaceVertex>
 std::vector<size_t> active_vertices(
     size_t n_verts,
     size_t n_cells,
     IsValid is_valid,
     Quality quality,
     CellVids cell_vids,
-    double thr)
+    double thr,
+    IsSurfaceVertex is_surface_vertex)
 {
     std::vector<char> seen(n_verts, 0);
     std::vector<size_t> out;
@@ -237,6 +254,12 @@ std::vector<size_t> active_vertices(
                 seen[v] = 1;
                 out.push_back(v);
             }
+        }
+    }
+    for (size_t v = 0; v < n_verts; ++v) {
+        if (!seen[v] && is_surface_vertex(v)) {
+            seen[v] = 1;
+            out.push_back(v);
         }
     }
     return out;

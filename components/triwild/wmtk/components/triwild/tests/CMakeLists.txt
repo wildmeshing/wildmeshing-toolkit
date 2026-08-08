@@ -11,6 +11,7 @@ set(SRC_FILES
     test_sizing_refine.cpp
     test_simplify_segments.cpp
     test_winding_tags.cpp
+    test_feature_points.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

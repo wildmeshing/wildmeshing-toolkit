@@ -25,6 +25,8 @@
       "split_high_valence_threshold",
       "w_amips",
       "num_smoothing_passes",
+      "interleaved_smoothing",
+      "interleaved_smoothing_passes",
       "preserve_topology",
       "remove_duplicate_eps",
       "allow_surface_swap",
@@ -197,8 +199,20 @@
   {
     "pointer": "/num_smoothing_passes",
     "type": "int",
-    "default": 10,
-    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy."
+    "default": 2,
+    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy. Was 10; lowered to 2 once surface vertices stopped being skipped by skip_good_regions, which made each pass do real work -- on Thingi10K 240280 a pass costs 41-51s and moves fewer vertices each time (accepted 18606 -> 17077 over five passes, envelope rejections 11316 -> 12237), so the later passes in a run of 10 buy very little for their cost."
+  },
+  {
+    "pointer": "/interleaved_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in both applications: each topology pass then sees a relaxed mesh rather than the raw output of the previous one. Measured in 2D on 122839, where per iteration it reached a given energy sooner than the batched schedule (102 vs 535 at iteration 5, 25 vs 69 at iteration 13), at roughly 3x the work per iteration since each topology pass gets its own smoothing."
+  },
+  {
+    "pointer": "/interleaved_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration."
   },
   {
     "pointer": "/preserve_topology",

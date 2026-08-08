@@ -22,8 +22,70 @@
 #include <wmtk/threading/parallel_for.hpp>
 
 #include <algorithm>
+#include <cmath>
 
 namespace wmtk::utils {
+
+namespace detail {
+
+/**
+ * @brief Signed angle subtended at P by the oriented 2D segment (A, B), in turns.
+ *
+ * Vendored from libigl's igl::signed_angle (MPL-2.0, Copyright (C) 2015 Alec Jacobson),
+ * with the same arithmetic and the same order of operations, so the result is bit-identical.
+ *
+ * It is copied rather than called because the only libigl entry point that evaluates a whole
+ * point set, igl::winding_number(V, E, O, W), parallelises internally -- see the note on
+ * winding_number_2d. Having the per-point evaluation here is what lets that function look
+ * like the 3D one above: one loop, one level of parallelism, driven by wmtk.
+ */
+inline double signed_angle_2d(double ax, double ay, double bx, double by, double px, double py)
+{
+    // Gather vectors to source and destination, and their lengths.
+    double o2A[2] = {px - ax, py - ay};
+    double o2B[2] = {px - bx, py - by};
+    double o2Al = 0;
+    double o2Bl = 0;
+    for (int i = 0; i < 2; i++) {
+        o2Al += o2A[i] * o2A[i];
+        o2Bl += o2B[i] * o2B[i];
+    }
+    o2Al = std::sqrt(o2Al);
+    o2Bl = std::sqrt(o2Bl);
+    // Normalize, guarding the degenerate case where P coincides with an endpoint.
+    for (int i = 0; i < 2; i++) {
+        if (o2Al != 0) {
+            o2A[i] /= o2Al;
+        }
+        if (o2Bl != 0) {
+            o2B[i] /= o2Bl;
+        }
+    }
+    constexpr double two_pi = 2.0 * 3.14159265358979323846;
+    return -std::atan2(o2B[0] * o2A[1] - o2B[1] * o2A[0], o2B[0] * o2A[0] + o2B[1] * o2A[1]) /
+           two_pi;
+}
+
+} // namespace detail
+
+/**
+ * @brief Winding number of a single query point with respect to the segment soup (V, E).
+ *
+ * The 2D counterpart of WindingNumberAABB::winding_number(p): a direct O(#E) sweep, since
+ * libigl has no hierarchical accelerator in 2D. Segments are summed in index order, matching
+ * igl::winding_number(V, E, p) exactly.
+ */
+inline double
+winding_number_2d_point(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E, double px, double py)
+{
+    double w = 0;
+    for (Eigen::Index f = 0; f < E.rows(); ++f) {
+        const Eigen::Index a = E(f, 0);
+        const Eigen::Index b = E(f, 1);
+        w += detail::signed_angle_2d(V(a, 0), V(a, 1), V(b, 0), V(b, 1), px, py);
+    }
+    return w;
+}
 
 /**
  * @brief Winding number of every query point O.row(i) with respect to the triangle
@@ -64,9 +126,17 @@ inline void winding_number(
  * query points are processed in parallel chunks.
  *
  * The 2D winding number has no hierarchical accelerator in libigl -- it is a direct
- * O(#E) sweep per query -- so unlike the 3D version above there is nothing to build once;
- * chunking the queries and letting igl handle each chunk is both the simplest and the
- * fastest thing to do, and gives bit-identical results to the serial call.
+ * O(#E) sweep per query -- so unlike the 3D version above there is nothing to build once.
+ *
+ * Each point is evaluated with winding_number_2d_point, NOT by handing a chunk to
+ * igl::winding_number(V, E, O, W). That call parallelises internally: for F.cols() == 2 it
+ * runs igl::parallel_for(O.rows(), ..., 10000), which spawns igl::default_num_threads()
+ * threads -- hardware_concurrency() unless IGL_NUM_THREADS says otherwise -- whenever the
+ * chunk exceeds 10000 rows. Nesting that inside this parallel_for MULTIPLIED the two thread
+ * counts instead of capping them: with num_threads 8 on a 128-core machine, a single model
+ * held 1003 live threads and drove the load average to 1000, which is the opposite of what
+ * this file exists to do. The 3D overload above never had the problem because it calls the
+ * per-point hier.winding_number(), not the whole-matrix entry point.
  */
 inline void winding_number_2d(
     const Eigen::MatrixXd& V,
@@ -81,12 +151,10 @@ inline void winding_number_2d(
     threading::parallel_for(
         threading::range(0, static_cast<size_t>(O.rows())),
         [&](const threading::range& r) {
-            const Eigen::Index begin = static_cast<Eigen::Index>(r.begin());
-            const Eigen::Index n = static_cast<Eigen::Index>(r.end()) - begin;
-            if (n <= 0) return;
-            Eigen::VectorXd w_chunk;
-            igl::winding_number(V, E, Eigen::MatrixXd(O.middleRows(begin, n)), w_chunk);
-            W.segment(begin, n) = w_chunk;
+            for (size_t o = r.begin(); o < r.end(); ++o) {
+                const Eigen::Index i = static_cast<Eigen::Index>(o);
+                W(i) = winding_number_2d_point(V, E, O(i, 0), O(i, 1));
+            }
         },
         std::max(num_threads, 1));
 }

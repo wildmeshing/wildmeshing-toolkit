@@ -316,9 +316,11 @@ void SimWildMesh::init_surfaces_and_boundaries()
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
         m_envelope_orig = m_envelope;
     } else if (m_params.operation == "remeshing") {
-        // All surface faces must be inside the envelope
+        // Deliberately NOT behind check_envelope_at_init, unlike its 2D counterpart and
+        // triwild's: the answer is not an assertion but a decision -- if any surface face
+        // starts outside, the envelope is rebuilt from the tet tags below. Skipping it would
+        // change the envelope the run uses, not just what it reports.
         logger().info("Envelope sanity check");
-        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         bool is_outside = false;
         for_each_face([&](const Tuple& t) {
             const size_t fid = t.fid(*this);

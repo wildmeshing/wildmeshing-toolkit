@@ -448,6 +448,59 @@ TEST_CASE("edge_collapse", "[test_2d_operation]")
     }
 }
 
+TEST_CASE("tuple_from_vertex_on_unconsolidated_mesh", "[test_2d_operation][TriMesh]")
+{
+    // tuple_from_vertex used to read m_vertex_connectivity[vid][0] unconditionally.
+    // VertexConnectivity::operator[] only asserts, so in Release a vertex with no incident
+    // triangle indexed an empty vector -- nullptr[0]. for_each_vertex walks every slot in
+    // [0, vert_capacity()) and only checks is_valid AFTER building the tuple, so calling it
+    // on a mesh that has not been consolidated segfaulted. It reached triwild as a 73%
+    // crash rate on one model and killed 12 of the first 2333 models of the 2D sweep.
+    using namespace utils::examples::tri;
+
+    SECTION("isolated vertex")
+    {
+        // Vertex 3 is declared but referenced by no triangle.
+        TriMesh m;
+        std::vector<std::array<size_t, 3>> tris = {{{0, 1, 2}}};
+        m.init(4, tris);
+        REQUIRE(m.vert_capacity() == 4);
+        REQUIRE_FALSE(m.tuple_from_vertex(3).is_valid(m));
+
+        size_t visited = 0;
+        m.for_each_vertex([&](const TriMesh::Tuple&) { ++visited; });
+        REQUIRE(visited == 3); // the isolated vertex is skipped, not dereferenced
+    }
+
+    SECTION("removed vertex, before consolidation")
+    {
+        class Collapse : public TriMesh
+        {
+            bool collapse_edge_before(const TriMesh::Tuple&) override { return true; }
+            bool collapse_edge_after(const TriMesh::Tuple&) override { return true; }
+        };
+        Collapse m;
+        TriMeshVF input = edge_region();
+        m.init(input.F);
+        const size_t n_before = m.vert_capacity();
+
+        const auto tuple = m.tuple_from_vids(4, 5, 1);
+        REQUIRE(tuple.is_valid(m));
+        std::vector<TriMesh::Tuple> dummy;
+        REQUIRE(m.collapse_edge(tuple, dummy));
+
+        // Deliberately NOT consolidated: the collapse leaves a removed slot behind, which
+        // is exactly the state triwild's rounded-vertex count runs in.
+        REQUIRE(m.vert_capacity() == n_before);
+        size_t visited = 0;
+        m.for_each_vertex([&](const TriMesh::Tuple& v) {
+            REQUIRE(v.is_valid(m));
+            ++visited;
+        });
+        REQUIRE(visited < n_before);
+    }
+}
+
 TEST_CASE("swap_operation", "[test_2d_operation]")
 {
     const std::string root(WMTK_DATA_DIR);

@@ -15,6 +15,7 @@ namespace wmtk::components::triwild {
 
 void TriWildMesh::collapse_all_edges(bool is_limit_length)
 {
+    m_feature_rejects = 0;
     igl::Timer timer;
     timer.start();
 
@@ -67,6 +68,13 @@ void TriWildMesh::collapse_all_edges(bool is_limit_length)
         // pre-checks on every failure, even where nothing could have changed.
         const size_t total_success = wmtk::run_localized_to_convergence(*this, executor, all_ops);
         logger().info("collapse success: {}", total_success);
+        if (const size_t n = m_feature_rejects.load(); n > 0) {
+            logger().info(
+                "[feature] {} collapses refused to keep a polyline endpoint or junction "
+                "within {:.6} of its input position",
+                n,
+                m_envelope_eps);
+        }
     };
 
     timer.start();
@@ -104,6 +112,19 @@ bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
 
     ///check if on bbox/surface/boundary
+    // Feature points, i.e. polyline endpoints and junctions. Checked before everything else
+    // because it is a two-vector test and it is the one that keeps whole curves alive.
+    //
+    // Note this is NOT covered by the order test further down. That test refuses collapsing a
+    // feature into a non-feature; it says nothing about feature-into-feature, which is
+    // precisely how an open polyline dies -- its last remaining segment has a feature at both
+    // ends. Nor is it gated on m_is_rounded here: an un-rounded endpoint is just as much an
+    // endpoint.
+    if (collapse_breaks_feature(v1_id, v2_id)) {
+        m_feature_rejects.fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+
     // bbox
     if (!VA[v1_id].on_bbox_faces.empty()) {
         if (VA[v2_id].on_bbox_faces.size() < VA[v1_id].on_bbox_faces.size()) {
@@ -292,6 +313,12 @@ bool TriWildMesh::collapse_edge_after(const Tuple& loc)
     }
     // vertex attr
     VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
+    // The survivor takes over whatever feature point v1 stood for. collapse_edge_before has
+    // already established that it is within eps of it, and that v2 did not stand for a
+    // different one, so the feature stays represented.
+    if (VA.at(v2_id).m_feature_id == NO_FEATURE) {
+        VA[v2_id].m_feature_id = VA.at(v1_id).m_feature_id;
+    }
 
     // no need to update on_bbox_faces
     // face attr

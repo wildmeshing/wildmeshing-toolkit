@@ -90,6 +90,19 @@ struct Parameters
     bool debug_output = false;
     bool perform_sanity_checks = false;
 
+    /**
+     * Verify at init that every surface edge starts inside the envelope (2D remeshing only).
+     *
+     * The same check triwild carries, and the same trade: the invariant is real, but it
+     * costs one sampled segment query per surface edge, serially, on every run. Measured in
+     * triwild's 2D sweep at 22s on a 3.5M-edge input and 5m07s on a 7.6M-edge one -- 8.5% of
+     * that model's entire budget, spent before the first iteration. Off by default.
+     *
+     * The 3D counterpart in VolumemesherInsertion is deliberately NOT gated by this: it is
+     * not a check but a decision, feeding the "rebuild the envelope from tet tags" branch.
+     */
+    bool check_envelope_at_init = false;
+
     // weighting terms for the optimization
     double w_amips = 1e-4;
     double w_envelope = 0;
@@ -130,6 +143,7 @@ struct Parameters
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+        check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];
 
         allow_surface_swap = json_params["allow_surface_swap"];
         check_surface_topology = json_params["check_surface_topology"];

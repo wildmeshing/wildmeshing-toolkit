@@ -836,25 +836,18 @@ std::tuple<double, double> SimWildMesh::get_max_avg_energy()
 
 std::vector<size_t> SimWildMesh::active_vertices() const
 {
-    std::vector<size_t> out = utils::active_vertices(
+    // "Surface vertices are always active, independent of the incident tet quality" used to
+    // be open-coded here. It now lives in utils::active_vertices, so tetwild and triwild --
+    // which lacked it, and consequently smoothed nothing at all on well-shaped meshes -- get
+    // it too.
+    return utils::active_vertices(
         vert_capacity(),
         tet_capacity(),
         [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
         [this](size_t tid) { return m_tet_attribute[tid].m_quality; },
         [this](size_t tid) { return oriented_tet_vids(tid); },
-        active_quality_threshold());
-
-    // Surface vertices are always active, independent of the incident tet quality.
-    std::vector<char> seen(vert_capacity(), 0);
-    for (const size_t v : out) {
-        seen[v] = 1;
-    }
-    for (size_t i = 0; i < vert_capacity(); ++i) {
-        if (!seen[i] && m_vertex_attribute[i].m_is_on_surface) {
-            out.push_back(i);
-        }
-    }
-    return out;
+        active_quality_threshold(),
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
 }
 
 bool SimWildMesh::is_inverted_f(const Tuple& loc) const

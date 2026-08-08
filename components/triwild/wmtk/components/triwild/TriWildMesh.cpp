@@ -63,27 +63,66 @@ void TriWildMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        // One iteration is either split/collapse/swaps followed by all the smoothing, or --
+        // with interleaved_smoothing -- each topology pass followed by its own smoothing, so
+        // the next pass sees a relaxed mesh rather than the raw output of the previous one.
+        auto [max_energy, avg_energy] = [&]() -> std::tuple<double, double> {
+            if (!m_params.interleaved_smoothing) {
+                return local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+            }
+            const int k = m_params.interleaved_smoothing_passes;
+            local_operations({{1, 0, 0, k}});
+            local_operations({{0, 1, 0, k}});
+            return local_operations({{0, 0, 1, k}});
+        }();
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
+
+        // Counted BEFORE the stop check, because it decides whether to stop. Atomic because
+        // for_each_vertex runs threading::parallel_for whenever NUM_THREADS != 0; plain ints
+        // race and can report cnt_round > cnt_verts. Same as tetwild.
+        std::atomic<int> n_round = 0, n_verts = 0;
+        TriMesh::for_each_vertex([&](auto& v) {
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+                n_round.fetch_add(1, std::memory_order_relaxed);
+            }
+            n_verts.fetch_add(1, std::memory_order_relaxed);
+        });
+        const int cnt_round = n_round.load(std::memory_order_relaxed);
+        const int cnt_verts = n_verts.load(std::memory_order_relaxed);
+        if (cnt_round < cnt_verts) {
+            logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        } else {
+            logger().info("All rounded!");
+        }
+
+        // Energy alone is not a sufficient termination condition. A mesh that hits the
+        // quality target while some vertex still carries exact coordinates is not finished:
+        // the output is what the caller consumes, and rational coordinates in it are a defect
+        // regardless of how good the elements are. So keep iterating while anything is
+        // un-rounded, and let max_its bound the run as before.
+        //
+        // This is what makes the unconditional exact-rational split in split_edge_after safe:
+        // a split is the only operation that can un-round a vertex, and the loop does not
+        // stop until the rounding sweep has reclaimed every one it introduced.
+        //
+        // The exact count is used rather than m_all_rounded, which is only maintained where
+        // the sweep runs (after smoothing) and would stay stale at num_smoothing_passes == 0,
+        // stranding the loop at max_its for no reason.
         if (max_energy < m_params.stop_energy) {
-            break;
+            if (cnt_round == cnt_verts) {
+                break;
+            }
+            logger().info(
+                "energy target reached, but {} of {} vertices are still un-rounded; "
+                "continuing",
+                cnt_verts - cnt_round,
+                cnt_verts);
         }
         consolidate_mesh();
 
         logger().info("#V = {}, #T = {}", vert_capacity(), tri_capacity());
-
-        auto cnt_round = 0, cnt_verts = 0;
-        TriMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-            cnt_verts++;
-        });
-        if (cnt_round < cnt_verts) {
-            logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        } else {
-            logger().info("All rounded!", cnt_round, cnt_verts);
-        }
 
         /// sizing field: when the max energy stalls, refine around the worst
         /// elements to escape stuck configurations (replaces the old global
@@ -192,6 +231,20 @@ std::tuple<double, double> TriWildMesh::local_operations(
         } else if (i == 3) {
             logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
+            // Reclaim whatever smoothing just made roundable: once per iteration, after all
+            // of its smoothing passes. Here rather than at the end of the run because
+            // smoothing is what frees a stuck vertex, and because a vertex left rational
+            // makes every incident triangle take the exact-arithmetic path in is_inverted --
+            // so rounding early keeps the following passes on doubles.
+            //
+            // Guarded on ops[i] so it really is once per iteration: this branch is also
+            // entered by the collapse-only pre and post passes, which pass ops[3] == 0 and
+            // have no smoothing for the sweep to follow.
+            //
+            // Skipped entirely once m_all_rounded is set.
+            if (ops[i] > 0) {
+                round_all_vertices();
+            }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
             sanity_checks();
@@ -208,6 +261,7 @@ std::tuple<double, double> TriWildMesh::local_operations(
 
 void TriWildMesh::init_mesh(
     const MatrixXd& V,
+    const std::vector<Vector2r>& V_rational,
     const MatrixXi& F,
     const MatrixXi& E,
     const std::vector<std::string>& tag_names,
@@ -225,27 +279,110 @@ void TriWildMesh::init_mesh(
     m_vertex_attribute.resize(V.rows());
     m_edge_attribute.resize(F.rows() * 3);
 
+    // Take the arrangement's EXACT positions, and round separately -- the 2D counterpart of
+    // what VolumemesherInsertion does with v_rational. m_pos used to be to_rational(V.row(i)),
+    // i.e. the rounded double converted back, which silently threw the arrangement's
+    // exactness away before anything could use it.
+    //
+    // A vertex whose coordinates happen to have an exact double representation ("direct")
+    // rounds for free: snapping it changes nothing, so it cannot invert a triangle. The rest
+    // start un-rounded and the sweep below reclaims whichever ones can be rounded without
+    // inverting anything.
+    assert(V_rational.empty() || V_rational.size() == size_t(V.rows()));
+    size_t n_indirect = 0;
     for (int i = 0; i < vert_capacity(); i++) {
-        m_vertex_attribute[i].m_pos = to_rational(Vector2d(V.row(i)));
-        m_vertex_attribute[i].m_posf = V.row(i);
+        auto& va = m_vertex_attribute[i];
+        if (V_rational.empty()) {
+            // No exact input available (a caller that only has doubles, e.g. a unit test).
+            va.m_pos = to_rational(Vector2d(V.row(i)));
+            va.m_posf = V.row(i);
+            va.m_is_rounded = true;
+            continue;
+        }
+        va.m_pos = V_rational[i];
+        va.m_posf = Vector2d(V_rational[i][0].to_double(), V_rational[i][1].to_double());
+        va.m_is_rounded =
+            (Rational(va.m_posf[0]) == va.m_pos[0]) && (Rational(va.m_posf[1]) == va.m_pos[1]);
+        if (!va.m_is_rounded) {
+            ++n_indirect;
+            m_all_rounded.store(false, std::memory_order_relaxed);
+        }
+    }
+    if (n_indirect > 0) {
+        logger().info(
+            "{} of {} arrangement vertices have no exact double representation; rounding "
+            "them where it does not invert a triangle",
+            n_indirect,
+            vert_capacity());
+        round_all_vertices();
     }
 
-    // init quality and check for inverted mesh
-    bool is_mesh_inverted = false;
+    // Init quality, and check that the arrangement handed over a uniformly, positively
+    // oriented triangulation.
+    //
+    // This used to trip on the first anomaly and report "Tets with different orientations in
+    // the input!", which named neither of the two things it actually catches and, because
+    // the old state machine took the first bad face as evidence that the WHOLE mesh was
+    // inverted, reported "fully inverted" whenever the only bad face happened to be the last
+    // one. Count instead, and say what was found. Same acceptance -- an all-positive mesh
+    // passes, anything else throws -- only the message changed.
+    //
+    // The orientation is judged in EXACT arithmetic, on m_pos, not on the rounded m_posf.
+    // Judging it on doubles is what used to make about a third of the 20k 2D dataset
+    // unusable: two arrangement vertices that are exactly distinct can round to the same
+    // double, and any triangle using both then looks exactly degenerate even though the
+    // arrangement is perfectly valid. With the rationals kept and only the safely-roundable
+    // vertices rounded (above), a triangle that is still degenerate here is a real one.
+    size_t n_degenerate = 0, n_negative = 0, n_total = 0;
+    size_t first_bad_fid = std::numeric_limits<size_t>::max();
+    std::array<size_t, 3> first_bad_vids = {{0, 0, 0}};
     for (const Tuple& t : get_faces()) {
-        if (is_mesh_inverted ^ is_inverted(t)) {
-            if (!is_mesh_inverted) {
-                is_mesh_inverted = true;
+        const size_t fid = t.fid(*this);
+        const auto vs = oriented_tri_vids(fid);
+        const Vector2r& p0 = m_vertex_attribute[vs[0]].m_pos;
+        const Vector2r& p1 = m_vertex_attribute[vs[1]].m_pos;
+        const Vector2r& p2 = m_vertex_attribute[vs[2]].m_pos;
+        const Rational d = (p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]);
+        if (!(d > 0)) {
+            if (d == 0) {
+                ++n_degenerate;
             } else {
-                log_and_throw_error("Tets with different orientations in the input!");
+                ++n_negative;
+            }
+            if (first_bad_fid == std::numeric_limits<size_t>::max()) {
+                first_bad_fid = fid;
+                first_bad_vids = vs;
             }
         }
-        m_face_attribute[t.fid(*this)].m_quality = get_quality(t);
+        ++n_total;
+        m_face_attribute[fid].m_quality = get_quality(t);
     }
 
-    if (is_mesh_inverted) {
+    if (n_degenerate + n_negative > 0) {
+        if (n_degenerate + n_negative == n_total) {
+            log_and_throw_error(
+                "Input mesh is fully inverted! This should not happen... Might be a bug.");
+        }
+        const auto& p0 = m_vertex_attribute[first_bad_vids[0]].m_posf;
+        const auto& p1 = m_vertex_attribute[first_bad_vids[1]].m_posf;
+        const auto& p2 = m_vertex_attribute[first_bad_vids[2]].m_posf;
         log_and_throw_error(
-            "Input mesh is fully inverted! This should not happen... Might be a bug.");
+            "The arrangement produced {} zero-area and {} negatively oriented triangles out "
+            "of {} (measured exactly, on the arrangement's rational coordinates). First is "
+            "face {} = ({}, {}, {}) at ({}, {}), ({}, {}), ({}, {}).",
+            n_degenerate,
+            n_negative,
+            n_total,
+            first_bad_fid,
+            first_bad_vids[0],
+            first_bad_vids[1],
+            first_bad_vids[2],
+            p0[0],
+            p0[1],
+            p1[0],
+            p1[1],
+            p2[0],
+            p2[1]);
     }
 
     // mark edges as on surface if they are in E
@@ -260,6 +397,46 @@ void TriWildMesh::init_mesh(
         m_vertex_attribute[vids[1]].m_is_on_surface = true;
     }
 
+    // Feature points: the 0-dimensional features of the curve network, taken from the
+    // constrained edges E. Valence 1 is an open polyline's endpoint, valence >= 3 a junction;
+    // valence 2 is the interior of a curve and valence 0 is not on it at all.
+    //
+    // Without these, the collapse pass deletes open polylines outright. A polyline erodes by
+    // legal collapses of its interior into its tip until one segment is left, and that
+    // segment has a feature at BOTH ends -- which the existing order test permits, because it
+    // only refuses collapsing a feature into a non-feature. Measured on the 2D dataset:
+    // 215292 went from 28 open components after the arrangement to 0 in the output, and
+    // 134005 from 18 to 15, entirely in the collapse passes.
+    {
+        std::vector<int> surf_valence(vert_capacity(), 0);
+        for (int i = 0; i < E.rows(); ++i) {
+            ++surf_valence[E(i, 0)];
+            ++surf_valence[E(i, 1)];
+        }
+        size_t n_endpoints = 0, n_junctions = 0;
+        for (size_t v = 0; v < vert_capacity(); ++v) {
+            const int val = surf_valence[v];
+            if (val == 0 || val == 2) {
+                continue;
+            }
+            m_vertex_attribute[v].m_feature_id = m_feature_points.size();
+            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
+            if (val == 1) {
+                ++n_endpoints;
+            } else {
+                ++n_junctions;
+            }
+        }
+        if (!m_feature_points.empty()) {
+            logger().info(
+                "feature points: {} polyline endpoints, {} junctions (kept within {:.6} of "
+                "their input positions)",
+                n_endpoints,
+                n_junctions,
+                m_envelope_eps);
+        }
+    }
+
     // init envelope
     if (m_envelope) {
         log_and_throw_error("Envelope was already initialized once.");
@@ -268,8 +445,8 @@ void TriWildMesh::init_mesh(
 
     // Around the original input curves, not around the arrangement's constrained edges:
     // after simplification those are the coarsened curves, and the optimizer must stay near
-    // what the user gave us. The sanity check below then genuinely verifies that the
-    // simplified curves are still inside the envelope.
+    // what the user gave us. That is what makes the (opt-in) sanity check below a real
+    // check rather than a tautology: it asks whether the simplified curves are still inside.
     m_V_envelope.resize(V_env.rows());
     for (size_t i = 0; i < m_V_envelope.size(); ++i) {
         m_V_envelope[i] = V_env.row(i);
@@ -282,8 +459,9 @@ void TriWildMesh::init_mesh(
     m_envelope = std::make_shared<SampleEnvelope>();
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
 
-    // Sanity check: All surface edges must be inside the envelope
-    {
+    // Sanity check: All surface edges must be inside the envelope. Opt-in: see
+    // Parameters::check_envelope_at_init for why it is not worth its cost by default.
+    if (m_params.check_envelope_at_init) {
         logger().info("Envelope sanity check");
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {
@@ -925,7 +1103,8 @@ std::vector<size_t> TriWildMesh::active_vertices() const
         [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
         [this](size_t fid) { return m_face_attribute[fid].m_quality; },
         [this](size_t fid) { return oriented_tri_vids(fid); },
-        active_quality_threshold());
+        active_quality_threshold(),
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
 }
 
 bool TriWildMesh::is_inverted_f(const Tuple& loc) const
@@ -991,6 +1170,120 @@ bool TriWildMesh::is_inverted(const size_t fid) const
 {
     auto vs = oriented_tri_vids(fid);
     return is_inverted(vs);
+}
+
+std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) const
+{
+    if (worst_ratio) {
+        *worst_ratio = 0;
+    }
+    if (m_feature_points.empty()) {
+        return {0, 0};
+    }
+
+    // One nearest-neighbour query per feature against a kd-tree of the live vertices.
+    //
+    // The first version of this walked every vertex for every feature, and called
+    // get_vertices() -- which BUILDS AND RETURNS A FRESH VECTOR each time -- from inside that
+    // loop. On 2D model 177574 (573k triangles, thousands of features) it was 100% of the
+    // process's samples and burned the entire 1800 s sweep timeout on a mesh that had already
+    // converged to 19.91 and finished rounding. It turned four converged models into
+    // "failures". Diagnostics do not get to cost more than the thing they measure.
+    std::vector<Vector3d> pts;
+    pts.reserve(vert_capacity());
+    for (const Tuple& v : get_vertices()) {
+        const Vector2d& p = m_vertex_attribute[v.vid(*this)].m_posf;
+        pts.emplace_back(p[0], p[1], 0);
+    }
+    if (pts.empty()) {
+        return {0, m_feature_points.size()};
+    }
+    const KNN knn(pts);
+
+    size_t kept = 0;
+    for (const Vector2d& anchor : m_feature_points) {
+        uint32_t idx = 0;
+        double sq = 0;
+        knn.nearest_neighbor(Vector3d(anchor[0], anchor[1], 0), idx, sq);
+        // Retention is geometric on purpose: the invariant is "some vertex is still within
+        // eps of this anchor", true whether or not that vertex carries the id. Ids drive the
+        // per-collapse policy because they are local and cheap; counting them here would
+        // under-report the legitimate merge the policy allows.
+        if (sq <= m_envelope_eps * m_envelope_eps) {
+            ++kept;
+        } else if (worst_ratio) {
+            // How far the nearest vertex actually is, in units of eps -- what separates an
+            // anchor that drifted just past the ball from a curve that was deleted.
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_envelope_eps);
+        }
+    }
+    return {kept, m_feature_points.size()};
+}
+
+bool TriWildMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const
+{
+    const size_t f = m_vertex_attribute[vid].m_feature_id;
+    if (f == NO_FEATURE || !m_params.preserve_feature_points) {
+        return true;
+    }
+    // A ball, not a pin. The vertex may move anywhere within eps of the feature it stands
+    // for, which is exactly the guarantee the envelope gives everywhere else.
+    return (p - m_feature_points[f]).squaredNorm() <= m_envelope_eps * m_envelope_eps;
+}
+
+bool TriWildMesh::collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const
+{
+    if (!m_params.preserve_feature_points) {
+        return false;
+    }
+    // v1 disappears into v2, and v2 does not move. So the question is only whether the
+    // feature v1 stood for is still represented afterwards, by v2.
+    const size_t f1 = m_vertex_attribute[v1_id].m_feature_id;
+    if (f1 == NO_FEATURE) {
+        return false;
+    }
+    // Distance is the whole test. An earlier version also refused outright when v2 already
+    // stood for a DIFFERENT feature, on the theory that one of the two would be lost. That
+    // is wrong, and expensively so: when two anchors sit within eps of each other the
+    // survivor covers both, and forbidding the merge deadlocks the mesh. On the puzzle
+    // integration model it left a degenerate triangle that the collapse pass exists to
+    // remove, and the max energy sat at 1e50 -- MAX_ENERGY -- for all 82 iterations instead
+    // of converging to 4.99 in 3.
+    //
+    // Two anchors further apart than eps are still protected, because then v2 -- sitting on
+    // one of them -- is more than eps from the other and fails this same test.
+    return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
+           m_envelope_eps * m_envelope_eps;
+}
+
+size_t TriWildMesh::round_all_vertices()
+{
+    if (m_all_rounded.load(std::memory_order_relaxed)) {
+        return 0;
+    }
+
+    size_t reclaimed = 0, still_unrounded = 0;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+            continue;
+        }
+        if (round(v)) {
+            ++reclaimed;
+        } else {
+            ++still_unrounded;
+        }
+    }
+
+    if (still_unrounded == 0) {
+        m_all_rounded.store(true, std::memory_order_relaxed);
+    }
+    if (reclaimed > 0 || still_unrounded > 0) {
+        logger().info(
+            "rounding sweep: reclaimed {}, still unrounded {}",
+            reclaimed,
+            still_unrounded);
+    }
+    return reclaimed;
 }
 
 bool TriWildMesh::round(const Tuple& v)
