@@ -243,13 +243,16 @@ void triwild(nlohmann::json json_params)
         simplify_eps,
         100 * simplify_envelope_ratio,
         envelope_eps);
-    // 0.5 is not an arbitrary ceiling. is_outside(edge) accepts when every sample is within
-    // eps/2 and the sampling guarantees the rest of the segment is within another eps/2, so
-    // the simplification can leave geometry up to simplify_eps from the input, while the
-    // triangulation's own check accepts samples only up to envelope_eps/2. Those meet exactly
-    // at ratio 0.5; above it the simplification may legally produce an input that the
-    // envelope sanity check below rejects, and the run dies before it starts.
-    if (simplify_envelope_ratio > 0.5) {
+    const bool simplify_use_sample_envelope = json_params["simplify_use_sample_envelope"];
+    // 0.5 is not an arbitrary ceiling -- but it is a property of the *sampled* envelope.
+    // is_outside(edge) accepts when every sample is within eps/2 and the sampling guarantees
+    // the rest of the segment is within another eps/2, so the simplification can leave
+    // geometry up to simplify_eps from the input, while the triangulation's own check accepts
+    // samples only up to envelope_eps/2. Those meet exactly at ratio 0.5; above it the
+    // simplification may legally produce an input that the envelope sanity check below
+    // rejects, and the run dies before it starts. The exact envelope has no sampling slack to
+    // pay for and uses the full eps on both sides, so the bound does not apply to it.
+    if (simplify_envelope_ratio > 0.5 && simplify_use_sample_envelope) {
         logger().warn(
             "simplify_envelope_ratio {} exceeds 0.5; the simplification may produce curves "
             "that the triangulation's envelope check rejects at init.",
@@ -261,7 +264,7 @@ void triwild(nlohmann::json json_params)
     if (json_params["skip_simplify"]) {
         logger().info("skip simplification");
     } else {
-        SampleEnvelope simplify_envelope;
+        SampleEnvelope simplify_envelope(!simplify_use_sample_envelope);
         {
             std::vector<Vector2d> v(V_in.rows());
             for (int i = 0; i < V_in.rows(); ++i) {

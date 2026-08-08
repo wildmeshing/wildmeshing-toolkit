@@ -143,7 +143,8 @@ public:
     bool m_collapse_check_quality = true;
 
     // for open boundary
-    std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope; // todo: add sample envelope option
+    /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
+    std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope;
 
     wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
         m_solver;

@@ -13,6 +13,8 @@
       "skip_simplify",
       "simplify_use_link_condition",
       "simplify_envelope_ratio",
+      "simplify_use_sample_envelope",
+      "use_sample_envelope",
       "filter",
       "skip_winding_number",
       "eps_rel",
@@ -119,6 +121,18 @@
     "type": "float",
     "default": 0.5,
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+  },
+  {
+    "pointer": "/simplify_use_sample_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large curve network, which is why this defaults the other way round from use_sample_envelope -- the same split tetwild makes. Note that with the exact envelope the simplify_envelope_ratio <= 0.5 ceiling stops applying: that bound exists only because the sampled edge test accepts within eps/2 and its sampling guarantees another eps/2, and an exact test has no such slack."
+  },
+  {
+    "pointer": "/use_sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Use the sampled envelope instead of the exact one. The sampled test places points along a query segment and asks whether each is within eps of the input, so it cannot see what happens between two samples and shrinks its acceptance radius to eps/2 to compensate. The exact one asks whether the segment is covered by the union of the eps-rectangles around the input segments, and decides that without sampling -- so it uses the full eps and is strictly sharper. The difference that matters in practice: a segment bridging a gap between two input curves is rejected by the exact envelope and accepted by the sampled one whenever the gap falls between samples."
   },
   {
     "pointer": "/filter",

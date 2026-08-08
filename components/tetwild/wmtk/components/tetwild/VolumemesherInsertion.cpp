@@ -1621,8 +1621,13 @@ void TetWildMesh::find_open_boundary()
     }
 
     // init the order-2 envelope (surface boundaries and non-manifold edges)
+    //
+    // It follows the surface envelope's choice of predicate rather than being hard-wired to
+    // the sampled one. Both are containment tests against the same input at the same epsilon,
+    // so having `use_sample_envelope: false` hold for the surface but not for its boundary
+    // curves was an accident of the exact envelope not supporting edges until now.
     if (!m_order2_envelope) {
-        m_order2_envelope = std::make_shared<SampleEnvelope>();
+        m_order2_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
     }
     m_order2_envelope->init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
 }
