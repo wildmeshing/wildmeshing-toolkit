@@ -7,6 +7,9 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 
+#include <algorithm>
+#include <limits>
+
 using namespace wmtk;
 
 namespace {
@@ -111,7 +114,13 @@ size_t TriMesh::Tuple::eid(const TriMesh& m) const
 
     const size_t v_opp = switch_vertex(m).vid(m);
 
-    const std::vector<size_t>& fids = m.m_vertex_connectivity[m_vid].m_conn_tris;
+    // Walk the smaller of the two endpoint fans: the faces carrying both vertices are the
+    // same set either way, and both fans are sorted, so the first hit is the minimum fid
+    // whichever one is scanned. switch_faces() below already picks the smaller fan; this
+    // one always took m_vid's, which on a high-valence vertex is the expensive choice.
+    const std::vector<size_t>& v0_fids = m.m_vertex_connectivity[m_vid].m_conn_tris;
+    const std::vector<size_t>& v1_fids = m.m_vertex_connectivity[v_opp].m_conn_tris;
+    const std::vector<size_t>& fids = v0_fids.size() <= v1_fids.size() ? v0_fids : v1_fids;
 
     // find face that contain m_vid and v_opp
     for (const size_t f : fids) {
@@ -126,10 +135,12 @@ size_t TriMesh::Tuple::eid(const TriMesh& m) const
                 local_v1 = (int)i;
             }
         }
-        if (local_v1 == -1) {
+        // Both tests are needed now: when the smaller fan is v_opp's, a face in it is
+        // guaranteed to carry v_opp but not m_vid, which is the reverse of the assumption
+        // the old single-fan version could make.
+        if (local_v0 == -1 || local_v1 == -1) {
             continue;
         }
-        assert(local_v0 != -1);
         size_t local_eid = 3 - (local_v0 + local_v1);
         // fids are sorted --> return smallest fid
         return 3 * f + local_eid;
@@ -1905,10 +1916,15 @@ const std::vector<size_t>& TriMesh::get_one_ring_fids_for_vertex(const size_t vi
 std::vector<wmtk::TriMesh::Tuple> TriMesh::get_one_ring_edges_for_vertex(
     const wmtk::TriMesh::Tuple& t) const
 {
+    size_t vid = t.vid(*this);
+    const auto one_ring_tris = get_one_ring_tris_for_vertex(t);
+    // On a manifold interior vertex the ring has exactly as many edges as triangles; a
+    // boundary vertex has one more. Reserving the upper bound costs nothing and removes
+    // the reallocation chain that a high-valence vertex used to pay for twice.
     std::vector<Tuple> one_ring_edges;
     std::vector<size_t> one_ring_vertices;
-    size_t vid = t.vid(*this);
-    auto one_ring_tris = get_one_ring_tris_for_vertex(t);
+    one_ring_edges.reserve(one_ring_tris.size() + 1);
+    one_ring_vertices.reserve(one_ring_tris.size() + 1);
     for (Tuple tri : one_ring_tris) {
         // find the vertex
         while (tri.vid(*this) != vid) {
@@ -1979,7 +1995,7 @@ std::array<wmtk::TriMesh::Tuple, 3> TriMesh::oriented_tri_vertices(
 {
     std::array<TriMesh::Tuple, 3> incident_verts;
     size_t fid = t.fid(*this);
-    auto indices = m_tri_connectivity[fid].m_indices;
+    const auto& indices = m_tri_connectivity[fid].m_indices;
 
     incident_verts[0] = Tuple(indices[0], 2, fid, *this);
     incident_verts[1] = Tuple(indices[1], 0, fid, *this);
@@ -1996,7 +2012,7 @@ std::array<size_t, 3> TriMesh::oriented_tri_vids(const Tuple& t) const
 std::array<size_t, 3> TriMesh::oriented_tri_vids(const size_t fid) const
 {
     std::array<size_t, 3> incident_verts;
-    auto indices = m_tri_connectivity[fid].m_indices;
+    const auto& indices = m_tri_connectivity[fid].m_indices;
 
     incident_verts[0] = indices[0];
     incident_verts[1] = indices[1];
@@ -2183,14 +2199,34 @@ TriMesh::Tuple wmtk::TriMesh::tuple_from_vids(size_t vid0, size_t vid1, size_t v
     const auto& vf1 = m_vertex_connectivity[vid1];
     const auto& vf2 = m_vertex_connectivity[vid2];
 
-    const std::vector<size_t> tris01 = set_intersection(vf0.m_conn_tris, vf1.m_conn_tris);
-    const std::vector<size_t> tris012 = set_intersection(tris01, vf2.m_conn_tris);
+    // Three-way intersection in one pass over the smallest fan. The old form built the
+    // pairwise intersection into a heap vector and then intersected that with the third
+    // fan, allocating twice to find a single face; the fans are sorted, so a membership
+    // test against the other two is enough.
+    const std::vector<size_t>* fans[3] = {&vf0.m_conn_tris, &vf1.m_conn_tris, &vf2.m_conn_tris};
+    const std::vector<size_t>* smallest = fans[0];
+    for (int i = 1; i < 3; ++i) {
+        if (fans[i]->size() < smallest->size()) {
+            smallest = fans[i];
+        }
+    }
+    const auto in_fan = [](const std::vector<size_t>& fan, const size_t f) {
+        return std::binary_search(fan.begin(), fan.end(), f);
+    };
 
-    if (tris012.size() != 1) {
-        log_and_throw_error("Cannot find face with vids ({},{},{})", vid0, vid1, vid2);
+    size_t fid = std::numeric_limits<size_t>::max();
+    size_t n_found = 0;
+    for (const size_t f : *smallest) {
+        if (in_fan(vf0.m_conn_tris, f) && in_fan(vf1.m_conn_tris, f) &&
+            in_fan(vf2.m_conn_tris, f)) {
+            fid = f;
+            ++n_found;
+        }
     }
 
-    const size_t fid = tris012[0];
+    if (n_found != 1) {
+        log_and_throw_error("Cannot find face with vids ({},{},{})", vid0, vid1, vid2);
+    }
 
     const auto& tc = m_tri_connectivity[fid].m_indices;
     size_t local_vid = -1;

@@ -131,7 +131,7 @@ inline void array_replace_inline(std::array<T, N>& arr, const T& v0, const T& v1
 template <typename T, size_t N>
 inline std::array<T, N> array_replace(const std::array<T, N>& arr, const T& v0, const T& v1)
 {
-    std::array<size_t, 4> out = arr;
+    std::array<T, N> out = arr;
     array_replace_inline(out, v0, v1);
     return out;
 }
