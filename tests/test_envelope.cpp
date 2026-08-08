@@ -26,7 +26,9 @@ namespace {
 /// A single segment of the x axis, from the origin to (length, 0, 0).
 void init_axis_3d(SampleEnvelope& env, double length, double eps)
 {
-    const std::vector<Eigen::Vector3d> V = {Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(length, 0, 0)};
+    const std::vector<Eigen::Vector3d> V = {
+        Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(length, 0, 0)};
     const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1)};
     env.init(V, E, eps);
 }
@@ -178,14 +180,14 @@ TEST_CASE("only the exact envelope sees a gap between two input curves", "[envel
     exact.init(V, E, eps);
 
     // Inside one component: fine.
-    CHECK_FALSE(exact.is_outside(std::array<Eigen::Vector2d, 2>{
-        {Eigen::Vector2d(0.2, 0), Eigen::Vector2d(0.8, 0)}}));
+    CHECK_FALSE(exact.is_outside(
+        std::array<Eigen::Vector2d, 2>{{Eigen::Vector2d(0.2, 0), Eigen::Vector2d(0.8, 0)}}));
     // Spanning the gap: outside, even though both endpoints are inside.
-    CHECK(exact.is_outside(std::array<Eigen::Vector2d, 2>{
-        {Eigen::Vector2d(0.5, 0), Eigen::Vector2d(1.8 + gap, 0)}}));
+    CHECK(exact.is_outside(
+        std::array<Eigen::Vector2d, 2>{{Eigen::Vector2d(0.5, 0), Eigen::Vector2d(1.8 + gap, 0)}}));
     // Both endpoints inside is not sufficient even for a short query.
-    CHECK(exact.is_outside(std::array<Eigen::Vector2d, 2>{
-        {Eigen::Vector2d(1, 0), Eigen::Vector2d(1 + gap, 0)}}));
+    CHECK(exact.is_outside(
+        std::array<Eigen::Vector2d, 2>{{Eigen::Vector2d(1, 0), Eigen::Vector2d(1 + gap, 0)}}));
 }
 
 TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope]")
