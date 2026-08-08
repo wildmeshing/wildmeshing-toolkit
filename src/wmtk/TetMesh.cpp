@@ -228,6 +228,12 @@ void TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&)>& fu
 std::vector<TetMesh::Tuple> TetMesh::get_faces() const
 {
     auto faces = std::vector<TetMesh::Tuple>();
+    // Each tet contributes at most 4 faces and exactly one is the canonical
+    // representative, so 2 * tet_capacity() is a close upper bound on a closed mesh and
+    // an over-estimate on an open one. Without this the vector doubles its way up and
+    // holds both buffers at the last reallocation -- 187M faces x 40 bytes is 7.5 GB of
+    // payload on Thingi10K 338910, and the transient peak is far worse.
+    faces.reserve(2 * tet_capacity());
     for (int i = 0; i < tet_capacity(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 4; j++) {
@@ -317,6 +323,7 @@ bool TetMesh::check_mesh_connectivity_validity() const
 std::vector<TetMesh::Tuple> TetMesh::get_tets() const
 {
     std::vector<TetMesh::Tuple> tets;
+    tets.reserve(tet_capacity());
     for (auto i = 0; i < tet_capacity(); i++) {
         auto& t = m_tet_connectivity[i];
         if (t.m_is_removed) continue;
@@ -332,6 +339,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_tets() const
 std::vector<TetMesh::Tuple> TetMesh::get_vertices() const
 {
     std::vector<TetMesh::Tuple> verts;
+    verts.reserve(vert_capacity());
     for (auto i = 0; i < vert_capacity(); i++) {
         auto& vc = m_vertex_connectivity[i];
         if (vc.m_is_removed) continue;
@@ -736,13 +744,15 @@ std::array<TetMesh::Tuple, 6> TetMesh::tet_edges(const Tuple& t) const
     return es;
 }
 
-std::vector<size_t> TetMesh::get_one_ring_tids_for_vertex(const Tuple& t) const
+const std::vector<size_t>& TetMesh::get_one_ring_tids_for_vertex(const Tuple& t) const
 {
     return get_one_ring_tids_for_vertex(t.m_global_vid);
 }
 
-std::vector<size_t> TetMesh::get_one_ring_tids_for_vertex(const size_t vid) const
+const std::vector<size_t>& TetMesh::get_one_ring_tids_for_vertex(const size_t vid) const
 {
+    // The fan IS the stored connectivity, so hand it back rather than copying it. Matches
+    // TriMesh::get_one_ring_fids_for_vertex, which has always returned a reference.
     return m_vertex_connectivity[vid].m_conn_tets;
 }
 
@@ -760,8 +770,10 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_vertex(const Tuple& t
 
 std::vector<TetMesh::Tuple> TetMesh::get_one_ring_vertices_for_vertex(const Tuple& t) const
 {
+    const auto& tids = m_vertex_connectivity[t.m_global_vid].m_conn_tets;
     std::vector<size_t> v_ids;
-    for (size_t t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
+    v_ids.reserve(tids.size() * 4);
+    for (size_t t_id : tids) {
         for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
@@ -769,6 +781,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_vertices_for_vertex(const Tupl
     vector_unique(v_ids);
     vector_erase(v_ids, t.m_global_vid);
     std::vector<Tuple> vertices;
+    vertices.reserve(v_ids.size());
     for (auto v_id : v_ids) {
         vertices.push_back(tuple_from_vertex(v_id));
     }
@@ -838,8 +851,9 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
     const size_t vid0,
     const size_t vid1) const
 {
-    auto tids = get_incident_tids_for_edge(vid0, vid1);
+    const auto tids = get_incident_tids_for_edge(vid0, vid1);
     std::vector<Tuple> tets;
+    tets.reserve(tids.size());
     for (size_t t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));
         assert(tets.back().is_valid(*this));

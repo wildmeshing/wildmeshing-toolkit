@@ -1077,8 +1077,8 @@ public:
      * @param t a Tuple that refers to a vertex
      * @return std::vector<size_t> a vector of vids
      */
-    std::vector<size_t> get_one_ring_tids_for_vertex(const Tuple& t) const;
-    std::vector<size_t> get_one_ring_tids_for_vertex(const size_t vid) const;
+    const std::vector<size_t>& get_one_ring_tids_for_vertex(const Tuple& t) const;
+    const std::vector<size_t>& get_one_ring_tids_for_vertex(const size_t vid) const;
 
     /**
      * @brief Get the one ring vertices for a vertex
