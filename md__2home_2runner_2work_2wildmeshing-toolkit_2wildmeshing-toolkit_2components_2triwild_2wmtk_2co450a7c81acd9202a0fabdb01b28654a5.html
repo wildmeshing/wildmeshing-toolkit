@@ -72,7 +72,7 @@ $(function() {
   <div class="headertitle"><div class="title">triwild sweep scripts</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md30"></a> Batch-run triwild over a large 2D dataset, collect per-model results, and report. Written for the 20k 2D curve dataset on <code>kirby.cs.nyu.edu</code>, but nothing here is kirby-specific beyond the default paths.</p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md37"></a> Batch-run triwild over a large 2D dataset, collect per-model results, and report. Written for the 20k 2D curve dataset on <code>kirby.cs.nyu.edu</code>, but nothing here is kirby-specific beyond the default paths.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">file   </th><th class="markdownTableHeadNone">what it is    </th></tr>
@@ -83,14 +83,14 @@ $(function() {
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>failure_report.py</code>   </td><td class="markdownTableBodyNone">post-hoc: where each failed model died, how far it got, at what energy   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md31"></a>
+<h1><a class="anchor" id="autotoc_md38"></a>
 Layout</h1>
 <p>Everything hangs off one root, <code>TRIWILD_ROOT</code> (default <code>/u/3/daniele/triwild-sweep</code>):</p>
 <div class="fragment"><div class="line">&lt;root&gt;/build/app/wmtk_app     the binary under test</div>
 <div class="line">&lt;root&gt;/data/*.obj             the dataset</div>
 <div class="line">&lt;root&gt;/runs/&lt;name&gt;/           output: success/  failure/  .work/  report/</div>
 </div><!-- fragment --><p>A model that exits 0 lands in <code>success/&lt;id&gt;/</code>, anything else in <code>failure/&lt;id&gt;/</code> with a <code>status.txt</code> recording the reason. Both keep the config, the log and the report.json.</p>
-<h1><a class="anchor" id="autotoc_md32"></a>
+<h1><a class="anchor" id="autotoc_md39"></a>
 Running</h1>
 <div class="fragment"><div class="line">export TRIWILD_ROOT=/path/to/sweep</div>
 <div class="line">./sweep2d.sh full          # every model, filename order</div>
@@ -103,7 +103,7 @@ Running</h1>
 <p>Or drive the runner directly:</p>
 <div class="fragment"><div class="line">TRIWILD_ROOT=... TRIWILD_OUT=.../runs/full TRIWILD_PARALLEL=13 TRIWILD_THREADS=8 \</div>
 <div class="line">TRIWILD_JOB_TIMEOUT=21600 python3 run_triwild_sweep.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md33"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md40"></a>
 Environment</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -131,7 +131,7 @@ Environment</h2>
 </table>
 <p><code>TRIWILD_MEM_GB</code> is a cap <b>per model</b>, not a budget for the sweep — 16 × 128 G is far more than any machine has. It is a runaway-killer, and it binds harder in 2D than in 3D because the dataset's files span 2.7 KB to 1.6 GB and the large ones are read whole before anything else happens.</p>
 <p><code>TRIWILD_PARALLEL × TRIWILD_THREADS</code> should be near the core count. The trade is not neutral: triwild's preprocessing (input simplification, then the 2D arrangement) is serial, so extra threads only help the optimization loop, while extra concurrent models contend for memory bandwidth and slow the serial phases for everyone. Measured on 228906, preprocessing took 32m16s at 32×4 and 23m19s at 13×8.</p>
-<h1><a class="anchor" id="autotoc_md34"></a>
+<h1><a class="anchor" id="autotoc_md41"></a>
 What the sweep fixes about the defaults</h1>
 <p>Only the knobs the harness itself needs are pinned; everything else comes from the spec defaults of whatever branch <code>build/</code> was built from, which is the point — the sweep tests the defaults rather than a private configuration. Pinned:</p>
 <ul>
@@ -139,7 +139,7 @@ What the sweep fixes about the defaults</h1>
 <li><code>write_vtu: false</code>. The <code>.msh</code> is the real output; the <code>.vtu</code> would be written only to be pruned.</li>
 <li><code>DEBUG_hausdorff: true</code>, because the two deviation directions are the point of the run.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md35"></a>
+<h1><a class="anchor" id="autotoc_md42"></a>
 Reports</h1>
 <p><code>report/</code> gets three files:</p>
 <ul>
@@ -147,7 +147,7 @@ Reports</h1>
 <li><code>results.csv</code> — one row per model: time, iterations, energies, element counts, both Hausdorff directions, input size, simplification ratio, failure reason</li>
 <li><code>index.html</code> — self-contained HTML: headline stats, the containment invariant, distributions, run time vs input size, slowest models, failures. No CDN, no build step.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md36"></a>
+<h2><a class="anchor" id="autotoc_md43"></a>
 Reading the two Hausdorff numbers</h2>
 <p>They are not interchangeable, and conflating them once made ~60% of models look like violations:</p>
 <ul>
@@ -155,7 +155,7 @@ Reading the two Hausdorff numbers</h2>
 <li><b>coverage</b>, d(input → output) — <em>diagnostic, bounded by nothing</em>. The simplification is allowed to remove detail and the arrangement may drop segments, so a large value means the output no longer covers part of the input. Use <code>DEBUG_euler</code> to see which curves were lost.</li>
 </ul>
 <p>Runs made before the direction was corrected stored coverage under the name <code>hausdorff</code> and have no <code>coverage</code> key. The report detects them by that absence, labels them <code>metric=legacy-coverage</code>, and keeps them out of the containment statistics rather than pooling two different quantities.</p>
-<h1><a class="anchor" id="autotoc_md37"></a>
+<h1><a class="anchor" id="autotoc_md44"></a>
 Caveat on comparing runs</h1>
 <p>The report pools whatever is in <code>success/</code>, so a directory filled across several builds or several <code>stop_energy</code> targets yields statistics that mix them. The 19,686-model run of August 2026 is exactly that case: most of it ran at <code>stop_energy</code> 20 and the tail at 100, which is why its median max energy is 19.8. For a quotable dataset, run the whole corpus once on one build. </p>
 </div></div><!-- contents -->

@@ -18,6 +18,6 @@ var searchData=
   ['vertexmutex_15',['vertexmutex',['../classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html',1,'wmtk::TriMesh::VertexMutex'],['../classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html',1,'wmtk::TetMesh::VertexMutex']]],
   ['vertexsmoother_16',['VertexSmoother',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_vertex_smoother.html',1,'wmtk::components::tetwild::orig']]],
   ['vertices_17',['vertices',['../classwmtk_1_1simplex_1_1_simplex_collection.html#aa0515d0eb2f6c17111ecdc7797f2d690',1,'wmtk::simplex::SimplexCollection']]],
-  ['via_20cmake_18',['via CMake',['../index.html#autotoc_md40',1,'']]],
+  ['via_20cmake_18',['via CMake',['../index.html#autotoc_md47',1,'']]],
   ['vid_19',['vid',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#acbb74bf154ffde866b0e83015e2fdd80',1,'wmtk::TetMesh::Tuple::vid()'],['../classwmtk_1_1_tri_mesh_1_1_tuple.html#aca27bf9b696588c5eebcd06b45f05f05',1,'wmtk::TriMesh::Tuple::vid()']]]
 ];
