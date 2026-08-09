@@ -458,3 +458,145 @@ TEST_CASE("envelope_energy_2d_derivatives", "[energies]")
         }
     }
 }
+
+namespace {
+
+/// Central-difference check that `gradient` really is the derivative of `value`, and that
+/// `hessian` really is the derivative of `gradient`.
+///
+/// Every energy here is consumed by a Newton solver: `value` drives the line search while
+/// `gradient` and `hessian` pick the step. If the three disagree the solver still "works" --
+/// it just takes wrong-sized steps, or rejects good ones, and nothing reports an error. That
+/// is how an isotropic hessian and a missing factor of two lived in EnvelopeEnergy, and how
+/// DirichletEnergy2D shipped a gradient that is only correct for exactly two cells.
+void check_derivatives(
+    polysolve::nonlinear::Problem& energy,
+    const VectorXd& p,
+    const double h = 1e-6,
+    const double tol = 1e-5,
+    const bool check_hessian = true)
+{
+    const int n = p.size();
+
+    VectorXd g;
+    energy.gradient(p, g);
+    REQUIRE(g.size() == n);
+    for (int i = 0; i < n; ++i) {
+        VectorXd a = p, b = p;
+        a[i] -= h;
+        b[i] += h;
+        const double fd = (energy.value(b) - energy.value(a)) / (2 * h);
+        CHECK(std::abs(g[i] - fd) <= tol * std::max(1.0, std::abs(fd)));
+    }
+
+    if (!check_hessian) {
+        return;
+    }
+    MatrixXd H;
+    energy.hessian(p, H);
+    REQUIRE(H.rows() == n);
+    REQUIRE(H.cols() == n);
+    for (int i = 0; i < n; ++i) {
+        VectorXd a = p, b = p;
+        a[i] -= h;
+        b[i] += h;
+        VectorXd ga, gb;
+        energy.gradient(a, ga);
+        energy.gradient(b, gb);
+        const VectorXd fd = (gb - ga) / (2 * h);
+        for (int j = 0; j < n; ++j) {
+            CHECK(std::abs(H(j, i) - fd[j]) <= 1e-4 * std::max(1.0, std::abs(fd[j])));
+        }
+    }
+}
+
+} // namespace
+
+TEST_CASE("amips_energy_derivatives", "[energies]")
+{
+    SECTION("2d")
+    {
+        std::vector<std::array<double, 6>> cells = {
+            {{0.4, 0.3, 1, 0, 0.5, 0.9}},
+            {{0.4, 0.3, 0.5, 0.9, -0.4, 0.2}},
+        };
+        optimization::AMIPSEnergy2D energy(cells, 0.75);
+        check_derivatives(energy, Vector2d(0.4, 0.3));
+    }
+    SECTION("3d")
+    {
+        std::vector<std::array<double, 12>> cells = {
+            {{0.3, 0.4, 0.35, 1, 0, 0, 0, 1, 0, 0, 0, 1}},
+            {{0.3, 0.4, 0.35, 1, 0, 0, 0, 1, 0, 0.4, 0.4, -0.9}},
+        };
+        optimization::AMIPSEnergy3D energy(cells, 0.75);
+        check_derivatives(energy, Vector3d(0.3, 0.4, 0.35));
+    }
+}
+
+TEST_CASE("dirichlet_energy_2d_derivatives", "[energies]")
+{
+    // The pre-existing dirichlet_energy_2d case uses exactly two cells, which is the one
+    // count at which a gradient of 2x - sum(y) coincides with the true sum(x - y). Vary the
+    // count so the check actually bites.
+    const Vector2d p(0.5, 1.0);
+    const std::vector<std::array<double, 4>> all = {
+        {{p[0], p[1], 0, 0}},
+        {{p[0], p[1], 1, 0}},
+        {{p[0], p[1], 0.3, -0.7}},
+        {{p[0], p[1], -0.6, 0.2}},
+    };
+
+    for (size_t n : {size_t(1), size_t(2), size_t(3), size_t(4)}) {
+        DYNAMIC_SECTION("cells = " << n)
+        {
+            std::vector<std::array<double, 4>> cells(all.begin(), all.begin() + n);
+            optimization::DirichletEnergy2D energy(cells);
+            check_derivatives(energy, p);
+        }
+    }
+}
+
+TEST_CASE("biharmonic_energy_derivatives", "[energies]")
+{
+    SECTION("2d")
+    {
+        const Vector2d p0(0.2, 0.9), p1(1, 0), p2(0, 1);
+        double M;
+        Vector3d L_w;
+        optimization::BiharmonicEnergy2D::local_mass_and_stiffness({{p0, p1, p2}}, M, L_w);
+        optimization::BiharmonicEnergy2D energy({{p0, p1, p2}}, M, L_w, 0.6);
+        check_derivatives(energy, p0);
+    }
+    SECTION("3d")
+    {
+        MatrixXd pts(3, 3);
+        pts << 0.2, 0.9, 0.1, 1, 0, 0, 0, 1, 0;
+        double M;
+        VectorXd L_w;
+        optimization::BiharmonicEnergy3D::uniform_mass_and_stiffness(pts, M, L_w);
+        optimization::BiharmonicEnergy3D energy(pts, M, L_w, 0.6);
+        check_derivatives(energy, Vector3d(pts.row(0)));
+    }
+}
+
+TEST_CASE("energy_sum_derivatives", "[energies]")
+{
+    // The combination the smoothing actually solves: quality plus stay-on-the-input.
+    std::vector<std::array<double, 6>> cells = {
+        {{0.4, 0.3, 1, 0, 0.5, 0.9}},
+        {{0.4, 0.3, 0.5, 0.9, -0.4, 0.2}},
+    };
+    auto amips = std::make_shared<optimization::AMIPSEnergy2D>(cells, 1e-4);
+
+    auto env = std::make_shared<SampleEnvelope>(false);
+    const std::vector<Eigen::Vector2d> V = {Eigen::Vector2d(-2, 0), Eigen::Vector2d(4, 0)};
+    const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1)};
+    env->init(V, E, 0.1);
+    auto envelope = std::make_shared<optimization::EnvelopeEnergy2D>(env, 1.2);
+
+    auto sum = std::make_shared<optimization::EnergySum>();
+    sum->add_energy(amips, 3.0);
+    sum->add_energy(envelope, 0.5);
+    check_derivatives(*sum, Vector2d(0.4, 0.3));
+}

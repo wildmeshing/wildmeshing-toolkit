@@ -32,7 +32,10 @@ void DirichletEnergy2D::gradient(const TVector& x, TVector& gradv)
 {
     assert(x.size() == 2);
 
-    Vector2d tmp = 2 * x;
+    // d/dx of 0.5 * sum_c |x - y_c|^2 is sum_c (x - y_c), i.e. n*x - sum_c y_c. The leading
+    // term used to be a flat 2*x, which is the same thing only when there are exactly two
+    // cells -- and the one existing test happened to use exactly two.
+    Vector2d tmp = static_cast<double>(m_cells.size()) * Vector2d(x);
     for (const auto& c : m_cells) {
         Vector2d y(c[2], c[3]);
         tmp -= y;
@@ -43,7 +46,8 @@ void DirichletEnergy2D::gradient(const TVector& x, TVector& gradv)
 
 void DirichletEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 {
-    hessian = 2 * Matrix2d::Identity();
+    // Matching the gradient above: the second derivative of 0.5 * sum_c |x - y_c|^2 is n*I.
+    hessian = static_cast<double>(m_cells.size()) * Matrix2d::Identity();
 }
 
 
