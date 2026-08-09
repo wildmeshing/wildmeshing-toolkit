@@ -18,6 +18,7 @@
       "use_legacy_code",
       "num_threads",
       "max_iterations",
+    "max_expected_iterations",
       "filter",
       "eps_rel",
       "length_rel",
@@ -287,15 +288,22 @@
     "doc": "Diagnostic only. Disables every envelope containment check during the tetrahedralisation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used."
   },
   {
+
+      "pointer": "/max_expected_iterations",
+      "type": "int",
+      "default": 0,
+      "doc": "Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches."
+  },
+  {
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
-    "default": 0.01,
-    "doc": "Refine when the max energy improved by at most this fraction since the previous iteration. 0 => only when it does not improve at all."
+    "default": 0.1,
+    "doc": "Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy). Equivalently, refine unless the mesh is on course to reach the target within about 1/eps more iterations. 0 => only when it does not improve at all."
   },
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 1,
+    "default": 0,
     "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
   },
   {

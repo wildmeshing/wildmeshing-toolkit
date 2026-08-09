@@ -550,6 +550,7 @@ void triwild(nlohmann::json json_params)
         report["avg_energy"] = avg_energy;
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
+        report["#iterations"] = mesh.m_iterations_used;
         // report["time"] = time;
         // "hausdorff" keeps its name and now holds containment, the invariant; "coverage" is
         // the other direction. Same convention as the tetwild report.
@@ -573,6 +574,17 @@ void triwild(nlohmann::json json_params)
         }
         if (max_energy > params.stop_energy) {
             log_and_throw_error("Max energy is too large.");
+        }
+        // Regression guard for the sizing-refinement stall: an input that normally converges
+        // in a handful of iterations and suddenly needs the whole budget means the
+        // stuck-refine trigger stopped firing when it should. That is a silent slowdown --
+        // the mesh still reaches stop_energy, so no energy or envelope assertion catches it.
+        const int max_expected_its = json_params["max_expected_iterations"];
+        if (max_expected_its > 0 && mesh.m_iterations_used > max_expected_its) {
+            log_and_throw_error(
+                "Converged, but needed {} iterations against an expected maximum of {}.",
+                mesh.m_iterations_used,
+                max_expected_its);
         }
         // Feature-point retention is deliberately NOT asserted here, because "every anchor
         // keeps a vertex within eps" is not actually an invariant of the pipeline.

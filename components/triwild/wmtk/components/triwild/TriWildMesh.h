@@ -106,6 +106,9 @@ class TriWildMesh : public wmtk::TriMesh
 {
 public:
     int m_debug_print_counter = 0;
+    /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
+    /// budget is visible as such, and asserted against in the integration tests.
+    int m_iterations_used = 0;
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;
     std::map<std::string, int64_t> m_tag_name_to_id;

@@ -123,6 +123,10 @@ public:
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
 
+    /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
+    /// budget is visible as such, and asserted against in the integration tests.
+    int m_iterations_used = 0;
+
     /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
     /// distance) on a comparable footing.
     double m_s_amips = 1.;

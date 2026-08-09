@@ -76,6 +76,7 @@ void TriWildMesh::smooth_all_vertices(const size_t n_iters)
         // log_total_surface_energy();
         igl::Timer timer;
         timer.start();
+        m_smooth_rejects.reset();
         std::vector<std::pair<std::string, Tuple>> collect_all_ops;
         if (m_params.skip_good_regions) {
             // Only smooth vertices incident to an "active" (non-good) face -- smoothing a
@@ -107,6 +108,7 @@ void TriWildMesh::smooth_all_vertices(const size_t n_iters)
             executor(*this, collect_all_ops);
             logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
         }
+        logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         if (m_params.debug_output) {
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }

@@ -2,6 +2,40 @@
 
 namespace wmtk::optimization {
 
+namespace {
+
+/**
+ * @brief Gauss-Newton hessian of `weight * d(r)^2`, d being the distance to the input:
+ * `2 * weight * n n^T` with n the unit normal.
+ *
+ * Rank one, not isotropic, and that is the whole point. Moving ALONG the input does not
+ * change the distance, so the curvature in that direction is zero. An isotropic
+ * `2 * weight * I` applies the full normal stiffness tangentially as well, and a surface
+ * vertex's AMIPS term is weighted 1e-4 against this one -- so that spurious stiffness
+ * divides the tangential Newton step by orders of magnitude. The vertex is then pinned
+ * where it stands instead of being free to slide along the curve or surface it sits on,
+ * which is what leaves a sliver whose vertices are all on the input unable to relax.
+ *
+ * On the input itself the direction is unavailable (r == nearest) and the envelope also
+ * contributes no gradient there, so the block is dropped and the step is governed by the
+ * quality term alone -- exactly the free tangential motion that is wanted. The normal
+ * stiffness reappears as soon as the vertex has moved off, and the line search's
+ * is_step_valid still refuses any step that leaves the envelope.
+ */
+template <class Vec, class Mat>
+Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
+{
+    const Vec d = r - nearest;
+    const double len = d.norm();
+    if (len <= 1e-12) {
+        return Mat::Zero();
+    }
+    const Vec u = d / len;
+    return 2.0 * weight * (u * u.transpose());
+}
+
+} // namespace
+
 EnvelopeEnergy2D::EnvelopeEnergy2D(
     const std::shared_ptr<SampleEnvelope>& envelope,
     const double weight,
@@ -26,12 +60,18 @@ void EnvelopeEnergy2D::gradient(const TVector& x, TVector& gradv)
     Vector2d r(x);
     Vector2d n;
     m_envelope->nearest_point(r, n);
-    gradv = m_weight * (r - n);
+    // The derivative of value(), which is m_weight * |r - n|^2. The factor of 2 was missing,
+    // so value, gradient and hessian each described a differently scaled energy and the line
+    // search tested Armijo against half the true directional derivative.
+    gradv = 2 * m_weight * (r - n);
 }
 
 void EnvelopeEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 {
-    hessian = m_weight * 2 * Matrix2d::Identity();
+    Vector2d r(x);
+    Vector2d n;
+    m_envelope->nearest_point(r, n);
+    hessian = gauss_newton_hessian<Vector2d, Matrix2d>(r, n, m_weight);
 }
 
 void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
@@ -75,12 +115,18 @@ void EnvelopeEnergy3D::gradient(const TVector& x, TVector& gradv)
     Vector3d r(x);
     Vector3d n;
     m_envelope->nearest_point(r, n);
-    gradv = m_weight * (r - n);
+    // The derivative of value(), which is m_weight * |r - n|^2. The factor of 2 was missing,
+    // so value, gradient and hessian each described a differently scaled energy and the line
+    // search tested Armijo against half the true directional derivative.
+    gradv = 2 * m_weight * (r - n);
 }
 
 void EnvelopeEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
-    hessian = m_weight * 2 * Matrix3d::Identity();
+    Vector3d r(x);
+    Vector3d n;
+    m_envelope->nearest_point(r, n);
+    hessian = gauss_newton_hessian<Vector3d, Matrix3d>(r, n, m_weight);
 }
 
 void EnvelopeEnergy3D::solution_changed(const TVector& new_x) {}

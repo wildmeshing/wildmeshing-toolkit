@@ -74,6 +74,7 @@ void TetWildMesh::mesh_improvement(int max_its)
         m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
 
     for (int it = 0; it < max_its; it++) {
+        m_iterations_used = it + 1;
         ///ops
         logger().info("\n========it {}========", it);
         // One iteration is either split/collapse/swaps followed by all the smoothing, or --
@@ -149,7 +150,8 @@ void TetWildMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_energy > m_params.stop_energy &&
-            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
+            (pre_max_energy - max_energy) <=
+                m_params.stuck_refine_stall_eps * (max_energy - m_params.stop_energy)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
             refine_sizing_around_worst(max_energy);
             // adjust_sizing_field_serial(max_energy); // The old update

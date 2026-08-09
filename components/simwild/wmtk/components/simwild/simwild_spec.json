@@ -331,13 +331,13 @@
   {
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
-    "default": 0.01,
-    "doc": "Refine when the max energy improved by at most this fraction since the previous iteration. 0 => only when it does not improve at all."
+    "default": 0.1,
+    "doc": "Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy). Equivalently, refine unless the mesh is on course to reach the target within about 1/eps more iterations. 0 => only when it does not improve at all."
   },
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 1,
+    "default": 0,
     "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
   },
   {
