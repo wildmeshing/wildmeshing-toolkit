@@ -42,7 +42,6 @@
       "DEBUG_disable_envelope",
       "DEBUG_envelope_sanity_check",
       "stuck_refine_stall_eps",
-    "stuck_refine_max_growth",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
       "stuck_refine_rings",
@@ -289,12 +288,7 @@
     "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
   },
   {
-      "pointer": "/stuck_refine_max_growth",
-      "type": "float",
-      "default": 8.0,
-      "doc": "Give up on refinement once it has grown the mesh by this factor without reaching the quality target. Refinement buys quality with elements, and that is only worth doing while it converges; when the target is below what the input can reach, every firing multiplies the element count while the max energy creeps toward an asymptote above the target."
-  },
-  {
+
       "pointer": "/max_expected_iterations",
       "type": "int",
       "default": 0,

@@ -121,13 +121,6 @@ struct Parameters
     // and the operations have in fact deadlocked. The escape hatch then never fires,
     // which is exactly the regime it exists for.
     double stuck_refine_stall_eps = 0.1;
-    // Give up on refinement once it has grown the mesh by this factor without reaching the
-    // quality target. Refinement buys quality with elements, and that trade is only worth
-    // making while it converges; when the target is below what the input can reach, every
-    // firing multiplies the element count while the max energy creeps toward an asymptote
-    // above the target. Runs that converge normally never approach this -- across 468
-    // triwild20k models the growth attributable to refinement has a 90th percentile of 4%.
-    double stuck_refine_max_growth = 8.0;
     // Cooldown: after a refinement, skip this many improvement iterations before
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
@@ -214,7 +207,6 @@ struct Parameters
 
         // Stuck-element sizing refinement.
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
-        stuck_refine_max_growth = json_params["stuck_refine_max_growth"];
         stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
         stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
         stuck_refine_rings = json_params["stuck_refine_rings"];
