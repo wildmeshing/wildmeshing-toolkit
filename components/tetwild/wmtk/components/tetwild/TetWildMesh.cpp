@@ -84,6 +84,7 @@ void TetWildMesh::mesh_improvement(int max_its)
 
 
     for (int it = 0; it < max_its; it++) {
+        m_iterations_used = it + 1;
         ///ops
         logger().info("\n========it {}========", it);
         // One iteration is either split/collapse/swaps followed by all the smoothing, or --

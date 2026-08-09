@@ -10,6 +10,7 @@
       "input_dir",
       "num_threads",
       "max_iterations",
+    "max_expected_iterations",
       "skip_simplify",
       "simplify_use_link_condition",
       "simplify_envelope_ratio",
@@ -292,6 +293,12 @@
       "type": "float",
       "default": 8.0,
       "doc": "Give up on refinement once it has grown the mesh by this factor without reaching the quality target. Refinement buys quality with elements, and that is only worth doing while it converges; when the target is below what the input can reach, every firing multiplies the element count while the max energy creeps toward an asymptote above the target."
+  },
+  {
+      "pointer": "/max_expected_iterations",
+      "type": "int",
+      "default": 0,
+      "doc": "Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches."
   },
   {
     "pointer": "/stuck_refine_stall_eps",

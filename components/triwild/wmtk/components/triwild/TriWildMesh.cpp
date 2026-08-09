@@ -77,6 +77,7 @@ void TriWildMesh::mesh_improvement(int max_its)
     bool refine_exhausted = false;
 
     for (int it = 0; it < max_its; it++) {
+        m_iterations_used = it + 1;
         ///ops
         logger().info("\n========it {}========", it);
         // One iteration is either split/collapse/swaps followed by all the smoothing, or --

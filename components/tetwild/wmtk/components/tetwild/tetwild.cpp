@@ -703,6 +703,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         report["avg_energy"] = avg_energy;
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
+        report["#iterations"] = mesh_new.m_iterations_used;
         report["time"] = time;
         // d(output -> input); the key kept its name so existing consumers keep working,
         // but it now holds the containment direction rather than the coverage one.
@@ -723,6 +724,17 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         }
         if (max_energy > params.stop_energy) {
             log_and_throw_error("Max energy is too large.");
+        }
+        // Regression guard for the sizing-refinement stall: an input that normally converges
+        // in a handful of iterations and suddenly needs the whole budget means the
+        // stuck-refine trigger stopped firing when it should. That is a silent slowdown --
+        // the mesh still reaches stop_energy, so no energy or envelope assertion catches it.
+        const int max_expected_its = json_params["max_expected_iterations"];
+        if (max_expected_its > 0 && mesh_new.m_iterations_used > max_expected_its) {
+            log_and_throw_error(
+                "Converged, but needed {} iterations against an expected maximum of {}.",
+                mesh_new.m_iterations_used,
+                max_expected_its);
         }
         // Containment only. Coverage is deliberately not checked here: a run that
         // legitimately simplifies away a feature would otherwise be reported as a failure.
