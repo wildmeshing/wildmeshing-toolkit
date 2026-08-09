@@ -43,13 +43,16 @@ CPMAddPackage(
     # `FastEnvelope::init(V, edges, eps)` in 3D and the new `FastEnvelope2D` -- which is what
     # lets SampleEnvelope answer segment and 2D queries exactly instead of throwing.
     #
-    # Note fast-envelope declares Indirect_Predicates itself (cmake/recipes/ipred.cmake) at a
-    # different commit from the one VolumeRemesher pins. FetchContent keeps the first
-    # declaration, and the top-level CMakeLists includes volumeremesher before fenvelope, so
-    # VolumeRemesher's pin is the one that takes effect. That include order is load-bearing.
+    # And PR #8, which points fast-envelope's own Indirect_Predicates declaration
+    # (cmake/recipes/ipred.cmake) at the same commit VolumeRemesher uses. FetchContent keeps
+    # the first declaration and silently ignores later ones, so while the two disagreed the
+    # include order here decided the version for both -- volumeremesher comes first in the
+    # top-level CMakeLists, so fast-envelope ran on a different Indirect_Predicates than the
+    # one it was built and tested against upstream. Now that both pin the same commit that
+    # include order no longer matters; keep them moving together.
     GITHUB_REPOSITORY wildmeshing/fast-envelope
     # main. A commit rather than the branch name, so the build stays reproducible.
-    GIT_TAG 928e5ecd09bc7de9319468788727572f9b7c1f5d
+    GIT_TAG b116e1511e2130885ef3cc288c1253fc079b6989
     OPTIONS
     "FAST_ENVELOPE_WITH_UNIT_TESTS OFF"
 )
