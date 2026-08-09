@@ -41,6 +41,9 @@ Configuration -- environment variables:
     TETWILD_SAMPLE        name | smallest | spread | random  (default smallest)
     TETWILD_SEED          seed for TETWILD_SAMPLE=random  (default 0)
     TETWILD_REPORT_ONLY   if set, only regenerate the report and exit
+    TETWILD_SANITY_CHECKS if set, run with DEBUG_sanity_checks (exact-rational
+                          orientation checks; slow, but the only way an inverted tet
+                          coming out of the arrangement is named in the log)
 
 Memory note: the cap is PER MODEL, not a budget for the sweep. 8 x 128G is more than
 kirby has, so the cap is a runaway-killer, not an admission control -- it stops one
@@ -104,6 +107,16 @@ PARAMS = {
     # for nothing. The 2D sweep has always forced this off.
     "write_vtu": False,
 }
+
+# Opt-in exact-rational checking. The orientation checks that name an inverted tet
+# directly -- "After embed_tri_in_poly_mesh: Tet [...] is inverted!" -- sit behind
+# DEBUG_sanity_checks and are off by default, so a run that produces inverted tets says
+# nothing about them unless two happen to collide on a shared face, at which point a
+# downstream combinatorial check reports a "duplicate face" and points at the wrong
+# cause. Set TETWILD_SANITY_CHECKS=1 to hunt for the real thing. It is expensive: the
+# per-operation checks run for the whole optimization, not just insertion.
+if os.environ.get("TETWILD_SANITY_CHECKS"):
+    PARAMS["DEBUG_sanity_checks"] = True
 
 # Which of a run's output files to keep. The .vtu files are large visualization
 # dumps; the .msh is the actual tet mesh. Keep the mesh, the surfaces, and all the

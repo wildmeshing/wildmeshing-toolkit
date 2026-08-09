@@ -67,6 +67,7 @@ TETWILD_JOB_TIMEOUT=21600 python3 run_tetwild_sweep.py
 | `TETWILD_SEED` | 0 | for `TETWILD_SAMPLE=random` |
 | `TETWILD_REPORT_ONLY` | unset | regenerate the report and exit |
 | `TETWILD_REPORT_BANNER` | unset | note shown at the top of the HTML report |
+| `TETWILD_SANITY_CHECKS` | unset | run with `DEBUG_sanity_checks` — exact-rational orientation checks. Slow, but the only way an inverted tet coming out of the arrangement is named in the log |
 
 `TETWILD_MEM_GB` is a cap **per model**, not a budget for the sweep — 8 × 128 G is more
 than most machines have. It is a runaway-killer: it stops one pathological mesh from
