@@ -571,6 +571,8 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ae9d855b2f06d57a7f4ad95628a370588" id="r_ae9d855b2f06d57a7f4ad95628a370588"><td class="memItemLeft" align="right" valign="top"><a id="ae9d855b2f06d57a7f4ad95628a370588" name="ae9d855b2f06d57a7f4ad95628a370588"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_debug_print_counter</b> = 0</td></tr>
 <tr class="separator:ae9d855b2f06d57a7f4ad95628a370588"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23b0f8ee067f0b7b214bcb03649d3765" id="r_a23b0f8ee067f0b7b214bcb03649d3765"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a23b0f8ee067f0b7b214bcb03649d3765">m_iterations_used</a> = 0</td></tr>
+<tr class="separator:a23b0f8ee067f0b7b214bcb03649d3765"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb003270c0474ff8903d0e534fa41318" id="r_aeb003270c0474ff8903d0e534fa41318"><td class="memItemLeft" align="right" valign="top"><a id="aeb003270c0474ff8903d0e534fa41318" name="aeb003270c0474ff8903d0e534fa41318"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_tags_count</b> = 0</td></tr>
 <tr class="separator:aeb003270c0474ff8903d0e534fa41318"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1519,6 +1521,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
       </table>
 </div><div class="memdoc">
 <p>Per-pass claim for the high-valence split gate: one slot per vertex, reset at the start of every split pass. A high-valence vertex accepts the first valence-increasing split of the pass and refuses the rest, so refinement spreads instead of piling onto the same vertex. Atomic because splits run in parallel; a plain array of unique_ptr rather than a vector because std::atomic is not movable. </p>
+
+</div>
+</div>
+<a id="a23b0f8ee067f0b7b214bcb03649d3765" name="a23b0f8ee067f0b7b214bcb03649d3765"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23b0f8ee067f0b7b214bcb03649d3765">&#9670;&#160;</a></span>m_iterations_used</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::triwild::TriWildMesh::m_iterations_used = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Iterations mesh_improvement actually used. Reported so a run that needs the whole budget is visible as such, and asserted against in the integration tests. </p>
 
 </div>
 </div>

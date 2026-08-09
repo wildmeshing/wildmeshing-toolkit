@@ -756,6 +756,8 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">Samp
 <a class="el" href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html">optimization::SmoothRejectCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_rejects</b></td></tr>
 <tr class="memdesc:a46280d9ae58818061b8a34c8ccbc8f13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Why smoothing attempts were refused, reported once per pass. <br /></td></tr>
 <tr class="separator:a46280d9ae58818061b8a34c8ccbc8f13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39acb7ee87f88cbed69a7757ab9317c0" id="r_a39acb7ee87f88cbed69a7757ab9317c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a39acb7ee87f88cbed69a7757ab9317c0">m_iterations_used</a> = 0</td></tr>
+<tr class="separator:a39acb7ee87f88cbed69a7757ab9317c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4c303bfaf40c8732d5c697073fd6845" id="r_af4c303bfaf40c8732d5c697073fd6845"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#af4c303bfaf40c8732d5c697073fd6845">m_s_amips</a> = 1.</td></tr>
 <tr class="separator:af4c303bfaf40c8732d5c697073fd6845"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7ea27f7d6c4d6622dd688028802f856" id="r_aa7ea27f7d6c4d6622dd688028802f856"><td class="memItemLeft" align="right" valign="top"><a id="aa7ea27f7d6c4d6622dd688028802f856" name="aa7ea27f7d6c4d6622dd688028802f856"></a>
@@ -2214,6 +2216,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
       </table>
 </div><div class="memdoc">
 <p>Optional per-input names (JSON "input_names"), used to label the per-input winding-number output fields. Empty =&gt; the fields are numbered. </p>
+
+</div>
+</div>
+<a id="a39acb7ee87f88cbed69a7757ab9317c0" name="a39acb7ee87f88cbed69a7757ab9317c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39acb7ee87f88cbed69a7757ab9317c0">&#9670;&#160;</a></span>m_iterations_used</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::tetwild::TetWildMesh::m_iterations_used = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Iterations mesh_improvement actually used. Reported so a run that needs the whole budget is visible as such, and asserted against in the integration tests. </p>
 
 </div>
 </div>

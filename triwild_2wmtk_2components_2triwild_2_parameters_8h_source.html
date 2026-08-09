@@ -137,151 +137,165 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>    <span class="comment">// ---- Stuck-element sizing refinement --------------------------------</span></div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>    <span class="comment">// Same names, defaults and meaning as tetwild/simwild -- see the specs.</span></div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    <span class="comment">//</span></div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    <span class="comment">// Trigger threshold: fire when the max energy did not improve by more than</span></div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    <span class="comment">// this *fraction* since the previous iteration, i.e. refine when</span></div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <span class="comment">// (prev_max - max) &lt;= stall_eps * prev_max. 0 =&gt; only when it does not</span></div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    <span class="comment">// improve at all (or gets worse).</span></div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="keywordtype">double</span> stuck_refine_stall_eps = 0.01;</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="comment">// Cooldown: after a refinement, skip this many improvement iterations before</span></div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    <span class="comment">// refining again, so the operations get full passes to act on the new sizing</span></div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    <span class="comment">// field before more refinement is added. 0 =&gt; may refine every iteration.</span></div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="keywordtype">int</span> stuck_refine_cooldown = 1;</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="comment">// Number of worst triangles (by energy) whose neighborhoods are refined.</span></div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="comment">// 0 =&gt; every triangle above the filter energy, max(max_energy / 100, stop_energy).</span></div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    <span class="comment">// Beware in 2D: the AMIPS2D energy of an equilateral triangle is 2, so a stop_energy</span></div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    <span class="comment">// close to that makes the filter catch nearly the whole mesh, and with force_split on</span></div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    <span class="comment">// that means thousands of gate-bypassing splits per stall.</span></div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <span class="keywordtype">int</span> stuck_refine_num_worst = 0;</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    <span class="comment">// Graph rings around each worst triangle&#39;s vertices included in the refinement.</span></div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    <span class="keywordtype">int</span> stuck_refine_rings = 0;</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    <span class="comment">// Multiplicative reduction of m_sizing_scalar per refinement (0.5 =&gt; /2).</span></div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>    <span class="keywordtype">double</span> stuck_refine_factor = 0.5;</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>    <span class="comment">// Lower bound on m_sizing_scalar.</span></div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>    <span class="keywordtype">double</span> stuck_refine_min_scalar = 1e-3;</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    <span class="comment">// Gradation cap for the monotone sizing smoothing: neighboring sizings may</span></div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>    <span class="comment">// differ by at most this factor. The smoothing only ever *lowers* sizings</span></div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    <span class="comment">// (spreads refinement outward), never raises the refined values, avoiding</span></div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    <span class="comment">// sharp resolution jumps that make operations ill-conditioned.</span></div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>    <span class="keywordtype">double</span> stuck_refine_gradation = 2.0;</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>    <span class="comment">// Force-split: when the max energy stalls, split each worst triangle&#39;s longest edge</span></div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>    <span class="comment">// once, bypassing the split length gate. This unsticks a sliver whose edges are</span></div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>    <span class="comment">// too short to be split-eligible, WITHOUT touching the sizing field.</span></div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    <span class="keywordtype">bool</span> stuck_refine_force_split = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>    <span class="comment">// When a split&#39;s rounded (double) midpoint would invert an incident triangle, the</span></div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>    <span class="comment">// split is normally rejected. If this is on, splits of edges that belong to the</span></div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    <span class="comment">// current worst-triangle set instead fall back to the EXACT rational midpoint</span></div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    <span class="comment">// (never inverts) and keep the new vertex un-rounded, so the worst region can</span></div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    <span class="comment">// still be refined.</span></div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span> </div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    <span class="comment">// ---- Skip good regions ----------------------------------------------</span></div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    <span class="comment">// Only smooth vertices incident to a triangle whose energy is &gt;=</span></div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>    <span class="comment">// skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by</span></div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    <span class="comment">// good triangles does nothing, so skipping it is free. Only smoothing is</span></div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    <span class="comment">// gated: gating the topology/sizing ops (split/collapse/swap) starves the</span></div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>    <span class="comment">// optimizer and blows up the element count, so those always run over the</span></div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>    <span class="comment">// whole mesh.</span></div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <span class="comment">// Off: gating on element quality also skips SURFACE vertices, whose smoothing is driven</span></div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>    <span class="comment">// almost entirely by the envelope term (w_amips 1e-4), not by the quality of the elements</span></div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    <span class="comment">// around them. On 122839 the filtered run exhausted 60 iterations at max energy 21.03</span></div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>    <span class="comment">// while the unfiltered one converged to 19.9998 in 54 -- and did so in LESS wall time</span></div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>    <span class="comment">// (875s vs 947s), because needing fewer iterations more than paid for the extra vertices</span></div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>    <span class="comment">// per pass.</span></div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>    <span class="keywordtype">bool</span> skip_good_regions = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>    <span class="comment">// Safety margin on the &quot;active&quot; threshold: a triangle is active when its</span></div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    <span class="comment">// energy is &gt;= this fraction of stop_energy, so vertices near triangles</span></div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>    <span class="comment">// sitting just below the target are still smoothed.</span></div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    <span class="keywordtype">double</span> skip_good_regions_margin = 0.9;</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span> </div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span> </div>
-<div class="foldopen" id="foldopen00173" data-start="{" data-end="}">
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">  173</a></span>    <a class="code hl_function" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">Parameters</a>(<span class="keyword">const</span> nlohmann::json&amp; json_params)</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    {</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>        output_path = json_params[<span class="stringliteral">&quot;output&quot;</span>];</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span> </div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>        epsr = json_params[<span class="stringliteral">&quot;eps_rel&quot;</span>];</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        lr = json_params[<span class="stringliteral">&quot;length_rel&quot;</span>];</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        stop_energy = json_params[<span class="stringliteral">&quot;stop_energy&quot;</span>];</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>        preserve_topology = json_params[<span class="stringliteral">&quot;preserve_topology&quot;</span>];</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">preserve_feature_points</a> = json_params[<span class="stringliteral">&quot;preserve_feature_points&quot;</span>];</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span> </div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        debug_output = json_params[<span class="stringliteral">&quot;DEBUG_output&quot;</span>];</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        perform_sanity_checks = json_params[<span class="stringliteral">&quot;DEBUG_sanity_checks&quot;</span>];</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">check_envelope_at_init</a> = json_params[<span class="stringliteral">&quot;DEBUG_envelope_sanity_check&quot;</span>];</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">use_sample_envelope</a> = json_params[<span class="stringliteral">&quot;use_sample_envelope&quot;</span>];</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span> </div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">split_high_valence_threshold</a> = json_params[<span class="stringliteral">&quot;split_high_valence_threshold&quot;</span>];</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#af28882131ce9c55ff3f138fa79ef8891">w_amips</a> = json_params[<span class="stringliteral">&quot;w_amips&quot;</span>];</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#abe978015899fe6f5011a2544b4729f23">num_smoothing_passes</a> = json_params[<span class="stringliteral">&quot;num_smoothing_passes&quot;</span>];</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        interleaved_smoothing = json_params[<span class="stringliteral">&quot;interleaved_smoothing&quot;</span>];</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>        interleaved_smoothing_passes = json_params[<span class="stringliteral">&quot;interleaved_smoothing_passes&quot;</span>];</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span> </div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        <span class="comment">// Stuck-element sizing refinement.</span></div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        stuck_refine_stall_eps = json_params[<span class="stringliteral">&quot;stuck_refine_stall_eps&quot;</span>];</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        stuck_refine_cooldown = json_params[<span class="stringliteral">&quot;stuck_refine_cooldown&quot;</span>];</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        stuck_refine_num_worst = json_params[<span class="stringliteral">&quot;stuck_refine_num_worst&quot;</span>];</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        stuck_refine_rings = json_params[<span class="stringliteral">&quot;stuck_refine_rings&quot;</span>];</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        stuck_refine_factor = json_params[<span class="stringliteral">&quot;stuck_refine_factor&quot;</span>];</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        stuck_refine_min_scalar = json_params[<span class="stringliteral">&quot;stuck_refine_min_scalar&quot;</span>];</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>        stuck_refine_gradation = json_params[<span class="stringliteral">&quot;stuck_refine_gradation&quot;</span>];</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        stuck_refine_force_split = json_params[<span class="stringliteral">&quot;stuck_refine_force_split&quot;</span>];</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        <span class="comment">// Skip good regions.</span></div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>        skip_good_regions = json_params[<span class="stringliteral">&quot;skip_good_regions&quot;</span>];</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        skip_good_regions_margin = json_params[<span class="stringliteral">&quot;skip_good_regions_margin&quot;</span>];</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>    }</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    <span class="comment">// Trigger threshold: fire when the last iteration&#39;s improvement is small compared</span></div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    <span class="comment">// with the distance the max energy still has to cover, i.e. refine when</span></div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <span class="comment">//     (prev_max - max) &lt;= stall_eps * (max - stop_energy).</span></div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    <span class="comment">// Equivalently: refine unless the mesh is on course to reach the target within</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="comment">// about 1/stall_eps more iterations. 0 =&gt; only when it does not improve at all.</span></div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="comment">//</span></div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    <span class="comment">// The denominator is the remaining distance, not prev_max, and that is the whole</span></div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    <span class="comment">// point. Measured against prev_max, a mesh grinding down at a steady 1.3% per</span></div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="comment">// iteration from 27 toward a target of 5 clears a 1% bar every single iteration and</span></div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="comment">// so never looks stalled -- even though at that rate it needs ~130 more iterations</span></div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="comment">// and the operations have in fact deadlocked. The escape hatch then never fires,</span></div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    <span class="comment">// which is exactly the regime it exists for.</span></div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    <span class="keywordtype">double</span> stuck_refine_stall_eps = 0.1;</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    <span class="comment">// Cooldown: after a refinement, skip this many improvement iterations before</span></div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <span class="comment">// refining again, so the operations get full passes to act on the new sizing</span></div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    <span class="comment">// field before more refinement is added. 0 =&gt; may refine every iteration.</span></div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    <span class="comment">//</span></div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    <span class="comment">// 0 by default: measured over 468 triwild20k models, a cooldown of 1 costs ~13% wall</span></div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>    <span class="comment">// time for exactly the same mesh sizes (identical median and p90 vertex counts). The</span></div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>    <span class="comment">// idea that the operations need an idle iteration to act on the new field does not</span></div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>    <span class="comment">// survive contact with the data -- the trigger already declines to fire while the mesh</span></div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    <span class="comment">// is converging, so a separate cooldown only delays the next escape.</span></div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>    <span class="keywordtype">int</span> stuck_refine_cooldown = 0;</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    <span class="comment">// Number of worst triangles (by energy) whose neighborhoods are refined.</span></div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    <span class="comment">// 0 =&gt; every triangle above the filter energy, max(max_energy / 100, stop_energy).</span></div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>    <span class="comment">// Beware in 2D: the AMIPS2D energy of an equilateral triangle is 2, so a stop_energy</span></div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>    <span class="comment">// close to that makes the filter catch nearly the whole mesh, and with force_split on</span></div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>    <span class="comment">// that means thousands of gate-bypassing splits per stall.</span></div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>    <span class="keywordtype">int</span> stuck_refine_num_worst = 0;</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    <span class="comment">// Graph rings around each worst triangle&#39;s vertices included in the refinement.</span></div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>    <span class="keywordtype">int</span> stuck_refine_rings = 0;</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>    <span class="comment">// Multiplicative reduction of m_sizing_scalar per refinement (0.5 =&gt; /2).</span></div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    <span class="keywordtype">double</span> stuck_refine_factor = 0.5;</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    <span class="comment">// Lower bound on m_sizing_scalar.</span></div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    <span class="keywordtype">double</span> stuck_refine_min_scalar = 1e-3;</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    <span class="comment">// Gradation cap for the monotone sizing smoothing: neighboring sizings may</span></div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    <span class="comment">// differ by at most this factor. The smoothing only ever *lowers* sizings</span></div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    <span class="comment">// (spreads refinement outward), never raises the refined values, avoiding</span></div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>    <span class="comment">// sharp resolution jumps that make operations ill-conditioned.</span></div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    <span class="keywordtype">double</span> stuck_refine_gradation = 2.0;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    <span class="comment">// Force-split: when the max energy stalls, split each worst triangle&#39;s longest edge</span></div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>    <span class="comment">// once, bypassing the split length gate. This unsticks a sliver whose edges are</span></div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>    <span class="comment">// too short to be split-eligible, WITHOUT touching the sizing field.</span></div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <span class="keywordtype">bool</span> stuck_refine_force_split = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>    <span class="comment">// When a split&#39;s rounded (double) midpoint would invert an incident triangle, the</span></div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    <span class="comment">// split is normally rejected. If this is on, splits of edges that belong to the</span></div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>    <span class="comment">// current worst-triangle set instead fall back to the EXACT rational midpoint</span></div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>    <span class="comment">// (never inverts) and keep the new vertex un-rounded, so the worst region can</span></div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>    <span class="comment">// still be refined.</span></div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>    <span class="comment">// ---- Skip good regions ----------------------------------------------</span></div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    <span class="comment">// Only smooth vertices incident to a triangle whose energy is &gt;=</span></div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>    <span class="comment">// skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by</span></div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    <span class="comment">// good triangles does nothing, so skipping it is free. Only smoothing is</span></div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>    <span class="comment">// gated: gating the topology/sizing ops (split/collapse/swap) starves the</span></div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    <span class="comment">// optimizer and blows up the element count, so those always run over the</span></div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    <span class="comment">// whole mesh.</span></div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>    <span class="comment">// Off: gating on element quality also skips SURFACE vertices, whose smoothing is driven</span></div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>    <span class="comment">// almost entirely by the envelope term (w_amips 1e-4), not by the quality of the elements</span></div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>    <span class="comment">// around them. On 122839 the filtered run exhausted 60 iterations at max energy 21.03</span></div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>    <span class="comment">// while the unfiltered one converged to 19.9998 in 54 -- and did so in LESS wall time</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>    <span class="comment">// (875s vs 947s), because needing fewer iterations more than paid for the extra vertices</span></div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>    <span class="comment">// per pass.</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    <span class="keywordtype">bool</span> skip_good_regions = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    <span class="comment">// Safety margin on the &quot;active&quot; threshold: a triangle is active when its</span></div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    <span class="comment">// energy is &gt;= this fraction of stop_energy, so vertices near triangles</span></div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    <span class="comment">// sitting just below the target are still smoothed.</span></div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>    <span class="keywordtype">double</span> skip_good_regions_margin = 0.9;</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span> </div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span> </div>
+<div class="foldopen" id="foldopen00187" data-start="{" data-end="}">
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">  187</a></span>    <a class="code hl_function" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">Parameters</a>(<span class="keyword">const</span> nlohmann::json&amp; json_params)</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>    {</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        output_path = json_params[<span class="stringliteral">&quot;output&quot;</span>];</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        epsr = json_params[<span class="stringliteral">&quot;eps_rel&quot;</span>];</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>        lr = json_params[<span class="stringliteral">&quot;length_rel&quot;</span>];</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>        stop_energy = json_params[<span class="stringliteral">&quot;stop_energy&quot;</span>];</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        preserve_topology = json_params[<span class="stringliteral">&quot;preserve_topology&quot;</span>];</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">preserve_feature_points</a> = json_params[<span class="stringliteral">&quot;preserve_feature_points&quot;</span>];</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        debug_output = json_params[<span class="stringliteral">&quot;DEBUG_output&quot;</span>];</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        perform_sanity_checks = json_params[<span class="stringliteral">&quot;DEBUG_sanity_checks&quot;</span>];</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">check_envelope_at_init</a> = json_params[<span class="stringliteral">&quot;DEBUG_envelope_sanity_check&quot;</span>];</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">use_sample_envelope</a> = json_params[<span class="stringliteral">&quot;use_sample_envelope&quot;</span>];</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span> </div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">split_high_valence_threshold</a> = json_params[<span class="stringliteral">&quot;split_high_valence_threshold&quot;</span>];</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#af28882131ce9c55ff3f138fa79ef8891">w_amips</a> = json_params[<span class="stringliteral">&quot;w_amips&quot;</span>];</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#abe978015899fe6f5011a2544b4729f23">num_smoothing_passes</a> = json_params[<span class="stringliteral">&quot;num_smoothing_passes&quot;</span>];</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>        interleaved_smoothing = json_params[<span class="stringliteral">&quot;interleaved_smoothing&quot;</span>];</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        interleaved_smoothing_passes = json_params[<span class="stringliteral">&quot;interleaved_smoothing_passes&quot;</span>];</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        <span class="comment">// Stuck-element sizing refinement.</span></div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>        stuck_refine_stall_eps = json_params[<span class="stringliteral">&quot;stuck_refine_stall_eps&quot;</span>];</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>        stuck_refine_cooldown = json_params[<span class="stringliteral">&quot;stuck_refine_cooldown&quot;</span>];</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        stuck_refine_num_worst = json_params[<span class="stringliteral">&quot;stuck_refine_num_worst&quot;</span>];</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>        stuck_refine_rings = json_params[<span class="stringliteral">&quot;stuck_refine_rings&quot;</span>];</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        stuck_refine_factor = json_params[<span class="stringliteral">&quot;stuck_refine_factor&quot;</span>];</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>        stuck_refine_min_scalar = json_params[<span class="stringliteral">&quot;stuck_refine_min_scalar&quot;</span>];</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>        stuck_refine_gradation = json_params[<span class="stringliteral">&quot;stuck_refine_gradation&quot;</span>];</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>        stuck_refine_force_split = json_params[<span class="stringliteral">&quot;stuck_refine_force_split&quot;</span>];</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        <span class="comment">// Skip good regions.</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>        skip_good_regions = json_params[<span class="stringliteral">&quot;skip_good_regions&quot;</span>];</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>        skip_good_regions_margin = json_params[<span class="stringliteral">&quot;skip_good_regions_margin&quot;</span>];</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>    }</div>
 </div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span> </div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector2d&amp; min_, <span class="keyword">const</span> Vector2d&amp; max_)</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    {</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        box_min = min_;</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>        box_max = max_;</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        diag_l = (box_max - box_min).norm();</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>        <span class="keywordflow">if</span> (l &gt; 0) {</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>            lr = l / diag_l;</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>            l = lr * diag_l;</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        }</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>        splitting_l2 = l * l * (16 / 9.);</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>        collapsing_l2 = l * l * (16 / 25.);</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>        <span class="keywordflow">if</span> (eps &gt; 0) {</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            epsr = eps / diag_l;</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            eps = epsr * diag_l;</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>        }</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>        l_min = eps;</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>    }</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    <span class="keywordtype">void</span> init(</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>        <span class="keyword">const</span> std::vector&lt;Vector2d&gt;&amp; vertices,</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>    {</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>        Vector2d min_, max_;</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>            <span class="keywordflow">if</span> (i == 0) {</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>                min_ = vertices[i];</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>                max_ = vertices[i];</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            }</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 2; j++) {</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) {</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>                    min_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>                }</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) {</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>                    max_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                }</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>            }</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        }</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        init(min_, max_);</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    }</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>};</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector2d&amp; min_, <span class="keyword">const</span> Vector2d&amp; max_)</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>    {</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>        box_min = min_;</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>        box_max = max_;</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>        diag_l = (box_max - box_min).norm();</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>        <span class="keywordflow">if</span> (l &gt; 0) {</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            lr = l / diag_l;</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>            l = lr * diag_l;</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        }</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>        splitting_l2 = l * l * (16 / 9.);</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>        collapsing_l2 = l * l * (16 / 25.);</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span> </div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        <span class="keywordflow">if</span> (eps &gt; 0) {</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            epsr = eps / diag_l;</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            eps = epsr * diag_l;</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>        }</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span> </div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        l_min = eps;</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    }</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    <span class="keywordtype">void</span> init(</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>        <span class="keyword">const</span> std::vector&lt;Vector2d&gt;&amp; vertices,</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    {</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        Vector2d min_, max_;</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>            <span class="keywordflow">if</span> (i == 0) {</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                min_ = vertices[i];</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                max_ = vertices[i];</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>            }</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 2; j++) {</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) {</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                    min_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                }</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) {</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                    max_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                }</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>            }</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>        }</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span> </div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>        init(min_, max_);</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    }</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>};</div>
 </div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>} <span class="comment">// namespace wmtk::components::triwild</span></div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>} <span class="comment">// namespace wmtk::components::triwild</span></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">wmtk::components::triwild::Parameters</a></div><div class="ttdef"><b>Definition</b> Parameters.h:7</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a284aca8f258fe8c3eacc4ff47294ecb9"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">wmtk::components::triwild::Parameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> Parameters.h:75</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a28f57ac286ea9a1dab06783b4b194933"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">wmtk::components::triwild::Parameters::Parameters</a></div><div class="ttdeci">Parameters(const nlohmann::json &amp;json_params)</div><div class="ttdoc">Read every optimizer knob out of the (defaults-injected) JSON.</div><div class="ttdef"><b>Definition</b> Parameters.h:173</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a28f57ac286ea9a1dab06783b4b194933"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">wmtk::components::triwild::Parameters::Parameters</a></div><div class="ttdeci">Parameters(const nlohmann::json &amp;json_params)</div><div class="ttdoc">Read every optimizer knob out of the (defaults-injected) JSON.</div><div class="ttdef"><b>Definition</b> Parameters.h:187</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a728094439aa48195fc2d36c8d25c1da2"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">wmtk::components::triwild::Parameters::use_sample_envelope</a></div><div class="ttdeci">bool use_sample_envelope</div><div class="ttdef"><b>Definition</b> Parameters.h:64</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_aa0ddf933c7388d9e2d9123b738ec1988"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">wmtk::components::triwild::Parameters::preserve_feature_points</a></div><div class="ttdeci">bool preserve_feature_points</div><div class="ttdef"><b>Definition</b> Parameters.h:26</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_ab78031b3b87e66abd0b6c2653c1c8758"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">wmtk::components::triwild::Parameters::check_envelope_at_init</a></div><div class="ttdeci">bool check_envelope_at_init</div><div class="ttdef"><b>Definition</b> Parameters.h:48</div></div>

@@ -111,127 +111,141 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>    <span class="keywordtype">bool</span> check_surface_topology = <span class="keyword">false</span>;</div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <span class="comment">// ---- Stuck-element sizing refinement --------------------------------</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="comment">// Trigger threshold: fire when the max energy did not improve by more than</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="comment">// this *fraction* since the previous iteration, i.e. refine when</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="comment">// (prev_max - max) &lt;= stall_eps * prev_max. 0 =&gt; only when it does not</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <span class="comment">// improve at all (or gets worse).</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="keywordtype">double</span> stuck_refine_stall_eps = 0.01;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="comment">// Cooldown: after a refinement, skip this many improvement iterations before</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="comment">// refining again, so the operations get full passes to act on the new sizing</span></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="comment">// field before more refinement is added. 0 =&gt; may refine every iteration.</span></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordtype">int</span> stuck_refine_cooldown = 1;</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="comment">// Number of worst tets (by energy) whose neighborhoods are refined.</span></div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordtype">int</span> stuck_refine_num_worst = 50;</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="comment">// Graph rings around each worst tet&#39;s vertices included in the refinement.</span></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordtype">int</span> stuck_refine_rings = 3;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="comment">// Multiplicative reduction of m_sizing_scalar per refinement (0.5 =&gt; /2).</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="keywordtype">double</span> stuck_refine_factor = 0.5;</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="comment">// Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;</span></div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="comment">// still far above the position-rounding scale so it stays numerically safe.</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keywordtype">double</span> stuck_refine_min_scalar = 1e-3;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="comment">// Gradation cap for the monotone sizing smoothing: neighboring sizings may</span></div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="comment">// differ by at most this factor. The smoothing only ever *lowers* sizings</span></div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="comment">// (spreads refinement outward), never raises the refined values, avoiding</span></div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    <span class="comment">// sharp resolution jumps that make operations ill-conditioned.</span></div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <span class="keywordtype">double</span> stuck_refine_gradation = 2.0;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="comment">// Force-split: when the max energy stalls, split each worst tet&#39;s longest edge</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="comment">// once, bypassing the split length gate. This unsticks a sliver whose edges are</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="comment">// too short to be split-eligible, WITHOUT touching the sizing field (which the</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="comment">// *factor ratchet above still drives). Adds at most one split per worst tet per</span></div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="comment">// stall, so it does not bloat the tet count.</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keywordtype">bool</span> stuck_refine_force_split = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="comment">// When a split&#39;s rounded (double) midpoint would invert an incident tet, the</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="comment">// split is normally rejected. If this is on, splits of edges that belong to</span></div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="comment">// the current worst-tet set (the seeds used by refine_sizing_around_worst)</span></div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="comment">// instead fall back to the EXACT rational midpoint (never inverts) and keep</span></div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="comment">// the new vertex un-rounded, so the worst region can still be refined.</span></div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="comment">// ---- Skip good regions ----------------------------------------------</span></div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="comment">// Only smooth vertices incident to a tet whose energy is &gt;=</span></div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="comment">// skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by</span></div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="comment">// good tets does nothing, so skipping it is free (14-16x faster smooth</span></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="comment">// passes). Only smoothing is gated: gating the topology/sizing ops</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="comment">// (split/collapse/swap) starves the optimizer and blows up the element</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="comment">// count, so those always run over the whole mesh.</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordtype">bool</span> skip_good_regions = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="comment">// Safety margin on the &quot;active&quot; threshold: a tet is active when its energy</span></div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="comment">// (cbrt of m_quality) is &gt;= this fraction of stop_energy, so vertices near</span></div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="comment">// tets sitting just below the target are still smoothed.</span></div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="keywordtype">double</span> skip_good_regions_margin = 0.9;</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keywordtype">double</span> splitting_l2 = -1.; <span class="comment">// the lower bound length (squared) for edge split</span></div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keywordtype">double</span> collapsing_l2 =</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        std::numeric_limits&lt;double&gt;::max(); <span class="comment">// the upper bound length (squared) for edge collapse</span></div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span> </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keywordtype">double</span> stop_energy = 10;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">   98</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">split_high_valence_threshold</a> = 200;</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">  106</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">w_amips</a> = 1e-4;</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>    <span class="keywordtype">double</span> w_envelope = 1. - 1e-4; <span class="comment">// derived; not read from json</span></div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span> </div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">  117</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">num_smoothing_passes</a> = 2;</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    <span class="comment">// Interleave smoothing between the topology passes instead of running it all at the end</span></div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="comment">// of the iteration. With this on, one iteration is</span></div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="comment">//     split   + interleaved_smoothing_passes smoothing passes</span></div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    <span class="comment">//     collapse + ...</span></div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    <span class="comment">//     swaps    + ...</span></div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    <span class="comment">// rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the</span></div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <span class="comment">// only phase that improves quality without changing connectivity, so giving each topology</span></div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    <span class="comment">// pass a chance to be relaxed before the next one runs may keep the optimizer off the</span></div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    <span class="comment">// plateaus where split, collapse and swap simply undo each other.</span></div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    <span class="keywordtype">bool</span> interleaved_smoothing = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>    <span class="keywordtype">int</span> interleaved_smoothing_passes = 2;</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span> </div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>    <span class="keywordtype">bool</span> debug_output = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    <span class="keywordtype">bool</span> perform_sanity_checks = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector3d&amp; min_, <span class="keyword">const</span> Vector3d&amp; max_)</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    {</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        min = min_;</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        max = max_;</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        diag_l = (max - min).norm();</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        <span class="keywordflow">if</span> (l &gt; 0)</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>            lr = l / diag_l;</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>            l = lr * diag_l;</div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        splitting_l2 = l * l * (16 / 9.);</div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        collapsing_l2 = l * l * (16 / 25.);</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        <span class="keywordflow">if</span> (eps &gt; 0)</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            epsr = eps / diag_l;</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            eps = epsr * diag_l;</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        l_min = eps;</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>    }</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>    <span class="keywordtype">void</span> init(</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>        <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; vertices,</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    {</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        Vector3d min_, max_;</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            <span class="keywordflow">if</span> (i == 0) {</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                min_ = vertices[i];</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                max_ = vertices[i];</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>            }</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) min_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) max_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            }</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>        }</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span> </div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>        init(min_, max_);</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>    }</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>};</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="comment">// Trigger threshold: fire when the last iteration&#39;s improvement is small compared</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="comment">// with the distance the max energy still has to cover, i.e. refine when</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="comment">//     (prev_max - max) &lt;= stall_eps * (max - target).</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <span class="comment">// Equivalently: refine unless the mesh is on course to reach the target within</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="comment">// about 1/stall_eps more iterations. 0 =&gt; only when it does not improve at all.</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="comment">//</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="comment">// The denominator is the remaining distance, not prev_max, and that is the whole</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="comment">// point. Measured against prev_max, a mesh grinding down at a steady 1.3% per</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="comment">// iteration toward a target far below clears a 1% bar every single iteration and so</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="comment">// never looks stalled -- even though at that rate it needs on the order of a hundred</span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="comment">// more iterations and the operations have in fact deadlocked. The escape hatch then</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="comment">// never fires, which is exactly the regime it exists for.</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordtype">double</span> stuck_refine_stall_eps = 0.1;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="comment">// Cooldown: after a refinement, skip this many improvement iterations before</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="comment">// refining again, so the operations get full passes to act on the new sizing</span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="comment">// field before more refinement is added. 0 =&gt; may refine every iteration.</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="comment">//</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="comment">// 0 by default: measured over 468 triwild20k models, a cooldown of 1 costs ~13% wall</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="comment">// time for exactly the same mesh sizes (identical median and p90 vertex counts). The</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="comment">// idea that the operations need an idle iteration to act on the new field does not</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="comment">// survive contact with the data -- the trigger already declines to fire while the mesh</span></div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    <span class="comment">// is converging, so a separate cooldown only delays the next escape.</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <span class="keywordtype">int</span> stuck_refine_cooldown = 0;</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="comment">// Number of worst tets (by energy) whose neighborhoods are refined.</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordtype">int</span> stuck_refine_num_worst = 50;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="comment">// Graph rings around each worst tet&#39;s vertices included in the refinement.</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="keywordtype">int</span> stuck_refine_rings = 3;</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="comment">// Multiplicative reduction of m_sizing_scalar per refinement (0.5 =&gt; /2).</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keywordtype">double</span> stuck_refine_factor = 0.5;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="comment">// Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="comment">// still far above the position-rounding scale so it stays numerically safe.</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="keywordtype">double</span> stuck_refine_min_scalar = 1e-3;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="comment">// Gradation cap for the monotone sizing smoothing: neighboring sizings may</span></div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="comment">// differ by at most this factor. The smoothing only ever *lowers* sizings</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="comment">// (spreads refinement outward), never raises the refined values, avoiding</span></div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="comment">// sharp resolution jumps that make operations ill-conditioned.</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="keywordtype">double</span> stuck_refine_gradation = 2.0;</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="comment">// Force-split: when the max energy stalls, split each worst tet&#39;s longest edge</span></div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="comment">// once, bypassing the split length gate. This unsticks a sliver whose edges are</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="comment">// too short to be split-eligible, WITHOUT touching the sizing field (which the</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="comment">// *factor ratchet above still drives). Adds at most one split per worst tet per</span></div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="comment">// stall, so it does not bloat the tet count.</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordtype">bool</span> stuck_refine_force_split = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="comment">// When a split&#39;s rounded (double) midpoint would invert an incident tet, the</span></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="comment">// split is normally rejected. If this is on, splits of edges that belong to</span></div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="comment">// the current worst-tet set (the seeds used by refine_sizing_around_worst)</span></div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="comment">// instead fall back to the EXACT rational midpoint (never inverts) and keep</span></div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="comment">// the new vertex un-rounded, so the worst region can still be refined.</span></div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="comment">// ---- Skip good regions ----------------------------------------------</span></div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="comment">// Only smooth vertices incident to a tet whose energy is &gt;=</span></div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="comment">// skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by</span></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="comment">// good tets does nothing, so skipping it is free (14-16x faster smooth</span></div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="comment">// passes). Only smoothing is gated: gating the topology/sizing ops</span></div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="comment">// (split/collapse/swap) starves the optimizer and blows up the element</span></div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <span class="comment">// count, so those always run over the whole mesh.</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keywordtype">bool</span> skip_good_regions = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="comment">// Safety margin on the &quot;active&quot; threshold: a tet is active when its energy</span></div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <span class="comment">// (cbrt of m_quality) is &gt;= this fraction of stop_energy, so vertices near</span></div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="comment">// tets sitting just below the target are still smoothed.</span></div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="keywordtype">double</span> skip_good_regions_margin = 0.9;</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    <span class="keywordtype">double</span> splitting_l2 = -1.; <span class="comment">// the lower bound length (squared) for edge split</span></div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keywordtype">double</span> collapsing_l2 =</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        std::numeric_limits&lt;double&gt;::max(); <span class="comment">// the upper bound length (squared) for edge collapse</span></div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordtype">double</span> stop_energy = 10;</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">  112</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">split_high_valence_threshold</a> = 200;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">  120</a></span>    <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">w_amips</a> = 1e-4;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="keywordtype">double</span> w_envelope = 1. - 1e-4; <span class="comment">// derived; not read from json</span></div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span> </div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">  131</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">num_smoothing_passes</a> = 2;</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>    <span class="comment">// Interleave smoothing between the topology passes instead of running it all at the end</span></div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    <span class="comment">// of the iteration. With this on, one iteration is</span></div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    <span class="comment">//     split   + interleaved_smoothing_passes smoothing passes</span></div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>    <span class="comment">//     collapse + ...</span></div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>    <span class="comment">//     swaps    + ...</span></div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>    <span class="comment">// rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the</span></div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>    <span class="comment">// only phase that improves quality without changing connectivity, so giving each topology</span></div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    <span class="comment">// pass a chance to be relaxed before the next one runs may keep the optimizer off the</span></div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>    <span class="comment">// plateaus where split, collapse and swap simply undo each other.</span></div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>    <span class="keywordtype">bool</span> interleaved_smoothing = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    <span class="keywordtype">int</span> interleaved_smoothing_passes = 2;</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span> </div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    <span class="keywordtype">bool</span> debug_output = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    <span class="keywordtype">bool</span> perform_sanity_checks = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span> </div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector3d&amp; min_, <span class="keyword">const</span> Vector3d&amp; max_)</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>    {</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        min = min_;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        max = max_;</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>        diag_l = (max - min).norm();</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        <span class="keywordflow">if</span> (l &gt; 0)</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>            lr = l / diag_l;</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>            l = lr * diag_l;</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        splitting_l2 = l * l * (16 / 9.);</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        collapsing_l2 = l * l * (16 / 25.);</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span> </div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        <span class="keywordflow">if</span> (eps &gt; 0)</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            epsr = eps / diag_l;</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>            eps = epsr * diag_l;</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        l_min = eps;</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    }</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    <span class="keywordtype">void</span> init(</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>        <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; vertices,</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>    {</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>        Vector3d min_, max_;</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            <span class="keywordflow">if</span> (i == 0) {</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                min_ = vertices[i];</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                max_ = vertices[i];</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>            }</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) min_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) max_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>            }</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>        }</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span> </div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        init(min_, max_);</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>    }</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>};</div>
 </div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">wmtk::components::tetwild::Parameters</a></div><div class="ttdef"><b>Definition</b> Parameters.h:5</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a49e1cda3810b8706568c4ffb80c9730d"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">wmtk::components::tetwild::Parameters::num_smoothing_passes</a></div><div class="ttdeci">int num_smoothing_passes</div><div class="ttdef"><b>Definition</b> Parameters.h:117</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a704d7da438a3e127505e7bb645125232"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">wmtk::components::tetwild::Parameters::w_amips</a></div><div class="ttdeci">double w_amips</div><div class="ttdef"><b>Definition</b> Parameters.h:106</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_acdbf8d5cc07818ff6b808bc5019bd688"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">wmtk::components::tetwild::Parameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> Parameters.h:98</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a49e1cda3810b8706568c4ffb80c9730d"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">wmtk::components::tetwild::Parameters::num_smoothing_passes</a></div><div class="ttdeci">int num_smoothing_passes</div><div class="ttdef"><b>Definition</b> Parameters.h:131</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a704d7da438a3e127505e7bb645125232"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232">wmtk::components::tetwild::Parameters::w_amips</a></div><div class="ttdeci">double w_amips</div><div class="ttdef"><b>Definition</b> Parameters.h:120</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_acdbf8d5cc07818ff6b808bc5019bd688"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">wmtk::components::tetwild::Parameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> Parameters.h:112</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
