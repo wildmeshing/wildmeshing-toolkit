@@ -90,18 +90,83 @@ void sampleTriangle(
     }
 }
 
+/**
+ * Build the exact edge envelope, when there is one to build and anything will ask for it.
+ *
+ * Unlike the triangle overload, this is conditional on use_exact. The triangle envelope has to
+ * carry both structures because callers flip the flag on an already-initialized envelope --
+ * tetwild does that around its simplification, simwild around its insertion -- but every one
+ * of those toggles is on a triangle envelope. Building the hexahedra or rectangles for a
+ * sampled edge envelope is pure cost: it added ~12% to the integration suite when this was
+ * unconditional. A toggle that arrives afterwards anyway is caught by m_exact_built rather
+ * than silently answering "outside" against an empty structure.
+ *
+ * A zero epsilon is a legitimate way to ask for an envelope that will only ever be used for
+ * nearest_point() -- triwild's Delaunay seeding does it, to reject grid points that fall too
+ * close to the input curves. There is no such thing as a zero-width exact envelope: the 2D
+ * construction asserts on it, and a containment query against one would answer "outside" for
+ * everything not exactly on the input. So skip that too, and let the query fail rather than
+ * quietly reject everything.
+ */
+template <typename VertexList>
+void SampleEnvelope::init_exact_edges(
+    const VertexList& V,
+    const std::vector<Eigen::Vector2i>& F,
+    const double _eps)
+{
+    m_exact_built = false;
+    if (!use_exact) {
+        return;
+    }
+    if (!(_eps > 0)) {
+        log_and_throw_error("An exact envelope needs a positive epsilon, got {}.", _eps);
+    }
+
+    if constexpr (std::is_same_v<VertexList, std::vector<Eigen::Vector2d>>) {
+        exact_envelope_2d.init(V, F, _eps);
+    } else {
+        exact_envelope.init(V, F, _eps);
+    }
+    m_exact_built = true;
+}
+
 void SampleEnvelope::init(
     const std::vector<Eigen::Vector3d>& V,
     const std::vector<Eigen::Vector3i>& F,
     const double _eps)
 {
     if (!use_exact) {
-        logger().warn("Sample envelope is probably broken! Better to use the exact one.");
+        logger().info("Using sample envelope.");
     }
+    m_kind = Kind::Triangles3d;
     exact_envelope.init(V, F, _eps);
 
-    eps2 = _eps * _eps;
-    sampling_dist = std::sqrt(eps2);
+    // sampleTriangle lays samples on a triangular lattice of spacing `sampling_dist`, whose
+    // covering radius is sampling_dist / sqrt(3): every point of the triangle is within that
+    // distance of some sample. So for "every sample is inside" to imply "the whole triangle
+    // is inside the true eps-envelope", the per-sample test has to use the shrunk radius
+    //
+    //     real_envelope = _eps - sampling_dist / sqrt(3)
+    //
+    // Testing against the unshrunk _eps made this anti-conservative: a triangle straying up
+    // to _eps * (1 + 1/sqrt(3)) ~= 1.577 * _eps outside the input could still pass every
+    // sample and be accepted.
+    //
+    // This is what both reference implementations do. TetWild, src/tetwild/State.cpp:
+    //     sampling_dist = eps_input / args.stage;
+    //     eps = eps_input - sampling_dist / std::sqrt(3) * (args.stage + 1 - sub_stage);
+    // and fTetWild, src/Parameters.h, on the sampled (non-NEW_ENVELOPE) path:
+    //     dd = eps_input / 1.5;
+    //     eps_usable = eps_input - dd / std::sqrt(3);
+    // Neither shrinks on its exact-envelope path, because the shrink exists purely to pay
+    // for the sampling. The two edge overloads below already did this; only the triangle
+    // one did not.
+    sampling_dist = _eps;
+    const double real_envelope = _eps - _eps / std::sqrt(3);
+    eps2 = real_envelope * real_envelope;
+    // Edge queries sample a line, not a lattice; see eps2_edge in the header.
+    const double real_envelope_edge = _eps - _eps / 2;
+    eps2_edge = real_envelope_edge * real_envelope_edge;
 
     MatrixXd VV;
     VV.resize(V.size(), 3);
@@ -123,13 +188,19 @@ void SampleEnvelope::init(
     const std::vector<Eigen::Vector2i>& F,
     const double _eps)
 {
-    if (use_exact) {
-        log_and_throw_error("Cannot use an exact envelope for edges.");
-    }
+    m_kind = Kind::Edges3d;
+    // The raw _eps, not the shrunk one below: the shrink pays for the sampling lattice and
+    // the exact envelope has no lattice. fast-envelope builds a hexahedron of half-width
+    // eps/sqrt(3) around each segment, so its corners sit at exactly eps.
+    init_exact_edges(V, F, _eps);
 
     sampling_dist = _eps;
+    // eps2 keeps the lattice constant for point queries; eps2_edge carries the one derived
+    // for a sampled segment. See the header.
     const double real_envelope = _eps - _eps / sqrt(3);
     eps2 = real_envelope * real_envelope;
+    const double real_envelope_edge = _eps - _eps / 2;
+    eps2_edge = real_envelope_edge * real_envelope_edge;
 
     MatrixXd VV;
     VV.resize(V.size(), 3);
@@ -150,13 +221,19 @@ void SampleEnvelope::init(
     const std::vector<Eigen::Vector2i>& F,
     const double _eps)
 {
-    if (use_exact) {
-        log_and_throw_error("Cannot use an exact envelope for edges.");
-    }
+    m_kind = Kind::Edges2d;
+    // Raw _eps again; see the 3D edge overload. In 2D the conservative shape is a rectangle
+    // of half-width eps/sqrt(2) around each segment, extended by the same amount past both
+    // ends, so its corners sit at exactly eps.
+    init_exact_edges(V, F, _eps);
 
     sampling_dist = _eps;
+    // eps2 keeps the lattice constant for point queries; eps2_edge carries the one derived
+    // for a sampled segment. See the header.
     const double real_envelope = _eps - _eps / sqrt(3);
     eps2 = real_envelope * real_envelope;
+    const double real_envelope_edge = _eps - _eps / 2;
+    eps2_edge = real_envelope_edge * real_envelope_edge;
 
     MatrixXd VV;
     VV.resize(V.size(), 2);
@@ -173,9 +250,60 @@ void SampleEnvelope::init(
     m_bvh->init(VV, FF, 0);
 }
 
+/**
+ * An exact query must be answered by the structure the matching init() built.
+ *
+ * Getting this wrong is silent and dangerous rather than noisy: a default-constructed
+ * FastEnvelope has no prisms, and a query against no prisms answers "outside" for every
+ * point -- so a mismatched envelope does not crash, it just vetoes every operation and
+ * looks like an optimization that cannot move.
+ */
+void SampleEnvelope::require_exact_kind(Kind expected, const char* query) const
+{
+    if (m_kind != expected) {
+        log_and_throw_error(
+            "Exact {} query against an envelope built by a different init() (kind {}, need {}).",
+            query,
+            static_cast<int>(m_kind),
+            static_cast<int>(expected));
+    }
+    require_exact_built(query);
+}
+
+/**
+ * The 3D point and segment queries work against either 3D envelope, so they check only that
+ * this is not the 2D one -- and that its exact structure actually exists.
+ */
+void SampleEnvelope::require_exact_3d(const char* query) const
+{
+    if (m_kind != Kind::Triangles3d && m_kind != Kind::Edges3d) {
+        log_and_throw_error(
+            "Exact {} query against an envelope built by a different init() (kind {}).",
+            query,
+            static_cast<int>(m_kind));
+    }
+    require_exact_built(query);
+}
+
+void SampleEnvelope::require_exact_built(const char* query) const
+{
+    // The edge and 2D overloads only build their exact structure when use_exact was already
+    // set at init time, so a flag flipped afterwards would otherwise query an empty envelope.
+    if (m_kind != Kind::Triangles3d && !m_exact_built) {
+        log_and_throw_error(
+            "Exact {} query, but use_exact was set after init() built only the sampled "
+            "envelope. Re-init the envelope after changing the flag.",
+            query);
+    }
+}
+
 bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
 {
+    if (disabled) return false;
     if (use_exact) {
+        // Points work against either 3D envelope, so both kinds are accepted here; only a 2D
+        // one is wrong, and that is what the check catches.
+        require_exact_3d("3D point");
         return exact_envelope.is_outside(pts);
     }
     double dist2 = squared_distance(pts);
@@ -185,12 +313,21 @@ bool SampleEnvelope::is_outside(const Eigen::Vector3d& pts) const
 
 bool SampleEnvelope::is_outside(const Eigen::Vector2d& pts) const
 {
+    // The 2D exact envelope is its own object, so this cannot go through the 3D overload the
+    // way the sampled path does -- that would consult an exact_envelope no 2D init ever
+    // filled in, and an empty FastEnvelope answers "outside" for every query.
+    if (!disabled && use_exact && m_kind == Kind::Edges2d) {
+        require_exact_built("2D point");
+        return exact_envelope_2d.is_outside(pts);
+    }
     return is_outside(Vector3d(pts[0], pts[1], 0));
 }
 
 bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 {
+    if (disabled) return false;
     if (use_exact) {
+        require_exact_kind(Kind::Triangles3d, "triangle");
         return exact_envelope.is_outside(tri);
     }
     std::array<Vector3d, 3> vs = {
@@ -246,12 +383,21 @@ bool SampleEnvelope::is_outside(const std::array<Eigen::Vector3d, 3>& tri) const
 
 bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
 {
+    if (disabled) return false;
     if (use_exact) {
-        log_and_throw_error("Cannot use an exact envelope for edges.");
+        // Exact for both 3D envelope kinds: a segment is inside when it is covered by the
+        // union of the prisms (Triangles3d) or the hexahedra (Edges3d), which fast-envelope
+        // decides without sampling. The sampled path below can only test finitely many points
+        // on the segment, so it pays for that with the eps/2 shrink in eps2_edge; this does not.
+        require_exact_3d("3D segment");
+        return exact_envelope.is_outside(edge[0], edge[1]);
     }
     static thread_local std::vector<Vector3d> pts;
     pts.clear();
 
+    // N > L / sampling_dist, so the spacing L/N is strictly below sampling_dist and every
+    // point of the segment is within sampling_dist/2 of a sample. eps2_edge is the radius
+    // that turns "every sample inside" into "the whole segment inside eps"; see the header.
     const int N = (edge[0] - edge[1]).norm() / sampling_dist + 1;
     pts.reserve(N);
 
@@ -260,19 +406,11 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
         pts.push_back(tmp);
     }
 
-    Vector3d current_point = pts[0];
-
     double sq_dist;
     Vector3d nearest_point;
-    int prev_facet = m_bvh->nearest_facet(current_point, nearest_point, sq_dist);
-    if (sq_dist > eps2) {
-        wmtk::logger().trace("fail envelope check 4");
-        return true;
-    }
-
     for (size_t i = 0; i < pts.size(); ++i) {
         m_bvh->nearest_facet(pts[i], nearest_point, sq_dist);
-        if (sq_dist > eps2) {
+        if (sq_dist > eps2_edge) {
             wmtk::logger().trace("fail envelope check 5");
             return true;
         }
@@ -283,6 +421,10 @@ bool SampleEnvelope::is_outside(const std::array<Vector3d, 2>& edge) const
 
 bool SampleEnvelope::is_outside(const std::array<Vector2d, 2>& edge) const
 {
+    if (!disabled && use_exact && m_kind == Kind::Edges2d) {
+        require_exact_built("2D segment");
+        return exact_envelope_2d.is_outside(edge[0], edge[1]);
+    }
     std::array<Vector3d, 2> e;
     for (size_t i = 0; i < edge.size(); ++i) {
         e[i] = Vector3d(edge[i][0], edge[i][1], 0);

@@ -2,9 +2,10 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
+#include <algorithm>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/concurrent_map.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
@@ -23,6 +24,8 @@
 #include <set>
 #include <unordered_set>
 #include <utility>
+#include <wmtk/utils/SurfaceTopology.hpp>
+#include <wmtk/utils/partition_utils.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -102,14 +105,45 @@ public:
     const double MAX_ENERGY = 1e50;
 
     Parameters& m_params;
-    SampleEnvelope& m_envelope;
+    /// Surface envelope: what a surface vertex is pulled toward and checked against.
+    std::shared_ptr<SampleEnvelope> m_envelope;
+    /// Envelope for order-2 vertices, i.e. those on a surface boundary or a non-manifold
+    /// edge. Named for the order rather than for "open boundary" because that is what
+    /// TetMesh::compute_vertex_order actually reports, and it is the broader set.
+    std::shared_ptr<SampleEnvelope> m_order2_envelope;
 
-    // for open boundary
-    SampleEnvelope m_open_boundary_envelope; // todo: add sample envelope option
+    /// Optional per-input names (JSON "input_names"), used to label the per-input
+    /// winding-number output fields. Empty => the fields are numbered.
+    std::vector<std::string> m_input_names;
 
-    TetWildMesh(Parameters& _m_params, SampleEnvelope& _m_envelope, int _num_threads = 1)
+    /// Per-thread Newton solver for smoothing; created on first use.
+    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
+        m_solver;
+
+    /// Why smoothing attempts were refused, reported once per pass.
+    optimization::SmoothRejectCounters m_smooth_rejects;
+
+
+    /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
+    /// budget is visible as such, and asserted against in the integration tests.
+    int m_iterations_used = 0;
+
+    /// Scale factors putting AMIPS (dimensionless) and the envelope energy (a squared
+    /// distance) on a comparable footing.
+    double m_s_amips = 1.;
+    double m_s_envelope = -1.;
+
+    /// Envelope a vertex is pulled toward while smoothing.
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    /// Envelope the resulting surface triangles are checked against.
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
+
+    TetWildMesh(
+        Parameters& _m_params,
+        std::shared_ptr<SampleEnvelope> _m_envelope,
+        int _num_threads = 1)
         : m_params(_m_params)
-        , m_envelope(_m_envelope)
+        , m_envelope(std::move(_m_envelope))
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
@@ -117,6 +151,11 @@ public:
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
+
+        optimization::deactivate_opt_logger();
+        m_s_amips = 1.;
+        m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
+        m_params.w_envelope = 1. - m_params.w_amips;
     }
 
     ~TetWildMesh() {}
@@ -134,7 +173,7 @@ public:
         const std::vector<VertexAttributes>& _vertex_attribute,
         const std::vector<TetAttributes>& _tet_attribute)
     {
-        auto n_tet = _tet_attribute.size();
+        const size_t n_tet = _tet_attribute.size();
         m_vertex_attribute.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
@@ -142,11 +181,22 @@ public:
         // new for edge
         // m_edge_attribute.resize(6 * n_tet);
 
-        for (auto i = 0; i < _vertex_attribute.size(); i++)
+        for (size_t i = 0; i < _vertex_attribute.size(); i++)
             m_vertex_attribute[i] = _vertex_attribute[i];
-        m_tet_attribute.m_attributes = std::vector<TetAttributes>(_tet_attribute.size());
-        for (auto i = 0; i < _tet_attribute.size(); i++) m_tet_attribute[i] = _tet_attribute[i];
-        for (auto i = 0; i < _tet_attribute.size(); i++)
+
+        // Keep whatever init() reserved. AttributeCollection::resize only ever grows, so the
+        // calls above cannot shrink a collection -- but assigning m_attributes directly does,
+        // and it used to drop the tet attributes to exactly n_tet. The attributes have to stay
+        // at least as large as the connectivity: an operation that creates a new element
+        // indexes them by its id, and a 5->6 swap creates one. That left m_tet_attribute one
+        // short of the tet the swap adds, and AttributeCollection::operator[] read past the end
+        // of it -- ASan reports a heap-buffer-overflow reached from swap_edge_56_after, and
+        // libstdc++ then aborts on the corrupted heap a few allocations later, while libc++
+        // carries on and the tests pass.
+        const size_t tcap = std::max(n_tet, m_tet_attribute.size());
+        m_tet_attribute.m_attributes = std::vector<TetAttributes>(tcap);
+        for (size_t i = 0; i < n_tet; i++) m_tet_attribute[i] = _tet_attribute[i];
+        for (size_t i = 0; i < n_tet; i++)
             m_tet_attribute[i].m_quality = get_quality(tuple_from_tet(i));
     }
 
@@ -158,7 +208,6 @@ public:
             m_vertex_attribute[i].partition_id = partition_id[i];
     }
 
-    // TODO This should not be here but inside wmtk
     void compute_vertex_partition_morton()
     {
         if (NUM_THREADS == 0) {
@@ -167,101 +216,16 @@ public:
 
         logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-        std::vector<Eigen::Vector3d> V_v(vert_capacity());
+        std::vector<size_t> partition_id;
+        wmtk::partition_vertex_morton(
+            vert_capacity(),
+            [this](size_t i) { return m_vertex_attribute[i].m_posf; },
+            NUM_THREADS,
+            partition_id);
 
-        threading::parallel_for(
-            threading::range(0, V_v.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V_v[i] = m_vertex_attribute[i].m_posf;
-                }
-            },
-            NUM_THREADS);
-
-
-        struct sortstruct
-        {
-            size_t order;
-            Resorting::MortonCode64 morton;
-        };
-
-        std::vector<sortstruct> list_v;
-        list_v.resize(V_v.size());
-        // since the morton code requires a correct scale of input vertices,
-        //  we need to scale the vertices if their coordinates are out of range
-        std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
-        Eigen::Vector3d vmin, vmax;
-        vmin = V.front();
-        vmax = V.front();
-
-        for (size_t j = 0; j < V.size(); j++) {
-            for (int i = 0; i < 3; i++) {
-                vmin(i) = std::min(vmin(i), V[j](i));
-                vmax(i) = std::max(vmax(i), V[j](i));
-            }
+        for (size_t i = 0; i < partition_id.size(); i++) {
+            m_vertex_attribute[i].partition_id = partition_id[i];
         }
-
-        // get_bb_corners(V, vmin, vmax);
-        Eigen::Vector3d center = (vmin + vmax) / 2;
-
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] - center;
-                }
-            },
-            NUM_THREADS);
-
-        Eigen::Vector3d scale_point =
-            vmax - center; // after placing box at origin, vmax and vmin are symetric.
-
-        double xscale, yscale, zscale;
-        xscale = fabs(scale_point[0]);
-        yscale = fabs(scale_point[1]);
-        zscale = fabs(scale_point[2]);
-        double scale = std::max(std::max(xscale, yscale), zscale);
-        if (scale > 300) {
-            threading::parallel_for(
-                threading::range(0, V.size()),
-                [&](const threading::range& r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        V[i] = V[i] / scale;
-                    }
-                },
-                NUM_THREADS);
-        }
-
-        constexpr int multi = 1000;
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    list_v[i].morton = Resorting::MortonCode64(
-                        int(V[i][0] * multi),
-                        int(V[i][1] * multi),
-                        int(V[i][2] * multi));
-                    list_v[i].order = i;
-                }
-            },
-            NUM_THREADS);
-
-        const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-            return (a.morton < b.morton);
-        };
-
-        std::sort(list_v.begin(), list_v.end(), morton_compare);
-
-        size_t interval = list_v.size() / NUM_THREADS + 1;
-
-        threading::parallel_for(
-            threading::range(0, list_v.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-                }
-            },
-            NUM_THREADS);
     }
 
     size_t get_partition_id(const Tuple& loc) const
@@ -302,12 +266,14 @@ public:
     bool swap_edge_44_before(const Tuple& t) override;
     double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
+    bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) override;
     bool swap_edge_44_after(const Tuple& t) override;
 
     size_t swap_all_edges_56();
     bool swap_edge_56_before(const Tuple& t) override;
     double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
+    bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) override;
     bool swap_edge_56_after(const Tuple& t) override;
 
     size_t swap_all_edges_32();
@@ -315,38 +281,40 @@ public:
     bool swap_edge_after(const Tuple& t) override;
 
     /**
-     * @brief Prepare a surface 3->2 edge swap (a surface diagonal flip).
+     * @brief Prepare a surface edge swap (a surface diagonal flip), any ring size.
      *
-     * Called from swap_edge_before when the swapped edge (a,b) is on the surface
-     * and has exactly 3 incident tets. Verifies the local guards that guarantee
-     * the flip preserves surface manifoldness / topology, and fills the
-     * surface-flip fields of swap_cache. Returns false (rejecting the swap) if
-     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface
-     * faces), or one of the two would-be new surface faces already tagged
-     * surface. The tets sharing (a,b) are passed in to avoid recomputation.
+     * Called from swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped
+     * edge (a,b) is on the surface. Regardless of how many tets share (a,b), the surface change is
+     * always the 2D diagonal flip of the two incident surface faces (a,b,c),(a,b,d) into
+     * (a,c,d),(b,c,d). This verifies the ring-size-independent guards that guarantee the flip
+     * preserves surface manifoldness / topology and fills the surface-flip fields of swap_cache.
+     * The specific retetrahedralization that realizes (c,d) is selected later by
+     * swap_edge_44_accept_case / swap_edge_56_accept_case (the 3->2 path always realizes it).
+     * Returns false (rejecting the swap) if any guard fails: open-boundary edge, non-manifold edge
+     * (!= 2 surface faces incident to (a,b)), the target edge (c,d) already carries a surface face,
+     * or one of the two would-be new surface faces (a,c,d),(b,c,d) is already tagged surface. The
+     * tets sharing (a,b) are passed in to avoid recomputation.
      */
-    bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
+    bool prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets);
 
     /**
-     * @brief A topological fingerprint of the tracked surface (m_is_surface_fs).
-     *
-     * Cheap-to-compare summary used to assert that surface-modifying operations
-     * (surface edge flips) do not change the surface topology: number of
-     * connected components, surface V/E/F, Euler characteristic, and number of
-     * boundary loops. A valid surface diagonal flip leaves all of these
-     * invariant. O(#surface faces); only used by tests / check_surface_topology.
+     * @brief Number of surface faces incident to edge (a,b), counted directly over the edge's
+     * incident tets. Unlike is_edge_on_surface(), this does NOT short-circuit on the (possibly
+     * stale) m_is_on_surface vertex flags, so a genuine manifold surface edge is never mistaken
+     * for an interior edge (== 2) nor a non-manifold one (> 2). Used to route swaps.
      */
-    struct SurfaceTopoSignature
+    int edge_incident_surface_face_count(const Tuple& e);
+
+    /// A topological fingerprint of the tracked surface (m_is_surface_fs). See
+    /// wmtk/utils/SurfaceTopology.hpp.
+    using SurfaceTopoSignature = wmtk::utils::SurfaceTopoSignature;
+
+    SurfaceTopoSignature surface_topology_signature() const
     {
-        long long components = 0;
-        long long V = 0;
-        long long E = 0;
-        long long F = 0;
-        long long euler = 0; // V - E + F
-        long long boundary_loops = 0;
-        bool operator==(const SurfaceTopoSignature&) const = default;
-    };
-    SurfaceTopoSignature surface_topology_signature() const;
+        return wmtk::utils::surface_topology_signature(*this, [this](size_t fid) {
+            return m_face_attribute[fid].m_is_surface_fs;
+        });
+    }
 
     /**
      * @brief Compare a surface signature against the current one and log an
@@ -354,7 +322,10 @@ public:
      * guard swap passes that can flip surface edges.
      */
     void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
-        const;
+        const
+    {
+        wmtk::utils::warn_if_surface_topology_changed(before, surface_topology_signature(), where);
+    }
 
     size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
@@ -371,6 +342,27 @@ public:
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
     bool round(const Tuple& loc);
+    /**
+     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
+     *
+     * round() is otherwise only attempted as a side effect of another operation
+     * (smooth_before on the vertex being smoothed, collapse_edge_after on the merged
+     * one), and neither reaches a vertex that only becomes roundable later: smoothing
+     * skips "good" regions by default. Without a sweep such a vertex keeps exact
+     * coordinates into the output for no geometric reason.
+     *
+     * Skipped outright when m_all_rounded says there is nothing to do.
+     */
+    size_t round_all_vertices();
+
+    /**
+     * @brief True when every vertex is known to be rounded.
+     *
+     * Only trusted when true, and only round_all_vertices() sets it that way. Any code
+     * that leaves a vertex un-rounded must clear it, or the sweep will skip the vertex
+     * forever. Atomic because operations that clear it run in parallel.
+     */
+    std::atomic<bool> m_all_rounded = false;
     //
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
@@ -442,7 +434,6 @@ public:
     void filter_with_tracked_surface_winding_number();
     void filter_with_flood_fill();
 
-    bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond) const;
@@ -453,7 +444,10 @@ public:
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
     // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
+    // cnt_surface_swap is the grand total; the per-type counters break it down by the swap that
+    // realized the flip (3->2, 4-4, 5-6).
     std::atomic<int> cnt_surface_swap = 0;
+    std::atomic<int> cnt_surface_swap_32 = 0, cnt_surface_swap_44 = 0, cnt_surface_swap_56 = 0;
 
 private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
@@ -479,12 +473,20 @@ private:
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
         size_t edge_order = 0;
+        /// Worst quality among the tets incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate tet" from "this split
+        /// subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
+
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
 
     struct CollapseInfoCache
     {
@@ -524,13 +526,14 @@ private:
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
 
-        // Surface 3->2 flip bookkeeping (filled by swap_edge_before when the
-        // swapped edge (a,b) lies on the surface). a,b are the removed-edge
-        // endpoints, c,d are the new surface-edge endpoints, e is the interior
-        // apex. sf_face_attr is copied onto the two new surface faces (a,c,d),
-        // (b,c,d). is_surface_flip gates the extra handling in swap_edge_after.
+        // Surface diagonal-flip bookkeeping (filled by prepare_surface_flip from
+        // swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped edge (a,b)
+        // lies on the surface). a,b are the removed-edge endpoints, c,d are the new surface-edge
+        // endpoints (the apexes of the two incident surface faces). sf_face_attr is copied onto the
+        // two new surface faces (a,c,d),(b,c,d). is_surface_flip gates the accept-case case-forcing
+        // and the extra retag/envelope handling in the swap *_after callbacks.
         bool is_surface_flip = false;
-        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0, sf_e = 0;
+        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
         FaceAttributes sf_face_attr;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
@@ -636,6 +639,16 @@ public:
     /// Count of force-splits taken in the current split pass (atomic_ref from the
     /// parallel split; reset + logged by split_all_edges). Diagnostic only.
     size_t m_force_split_count = 0;
+
+    /// Per-pass claim for the high-valence split gate: one slot per vertex, reset at the
+    /// start of every split pass. A high-valence vertex accepts the first
+    /// valence-increasing split of the pass and refuses the rest, so refinement spreads
+    /// instead of piling onto the same vertex. Atomic because splits run in parallel; a
+    /// plain array of unique_ptr rather than a vector because std::atomic is not movable.
+    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
+    size_t m_high_valence_claim_size = 0;
+    /// Splits refused by that gate in the current pass, reported once per pass.
+    std::atomic<size_t> m_high_valence_rejects = 0;
 
     /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
     bool is_force_split_edge(size_t v1, size_t v2) const

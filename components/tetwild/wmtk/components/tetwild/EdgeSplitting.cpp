@@ -14,6 +14,25 @@ void TetWildMesh::split_all_edges()
     igl::Timer timer;
     double time;
     m_force_split_count = 0;
+
+    // Reset the high-valence claims for this pass. Sized at vert_capacity() now: storage
+    // is preallocated per phase, so any vertex a split creates during this pass already
+    // has an id below it (same invariant run_localized_to_convergence relies on for
+    // vertex_epoch). make_unique value-initialises, so every slot starts at 0.
+    if (m_params.split_high_valence_threshold > 0) {
+        // Size to the preallocated capacity, not vert_capacity(). vert_capacity() returns
+        // current_vert_size -- the live vertex count -- so every vertex a split creates during
+        // this pass gets an id at or above it, trips the `vid >= m_high_valence_claim_size`
+        // guard below, and is exempted from the gate entirely. Those exempt vertices are
+        // exactly the ones that run away: on Thingi10K 509315 v15601 absorbed 1792
+        // valence-increasing splits in a single pass, where the gate allows one, reaching
+        // valence ~700 while the max energy climbed with it. The attribute collections are
+        // resized to the reservation, so their size is the capacity to use.
+        m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
+        m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
+    }
+    m_high_valence_rejects = 0;
+
     timer.start();
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
@@ -72,6 +91,12 @@ void TetWildMesh::split_all_edges()
             "[force-split] {} worst-tet longest edges force-split",
             m_force_split_count);
     }
+    if (const size_t n = m_high_valence_rejects.load(); n > 0) {
+        wmtk::logger().info(
+            "[high-valence] {} splits refused to avoid growing a vertex past {} incident tets",
+            n,
+            m_params.split_high_valence_threshold);
+    }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
 }
@@ -88,6 +113,12 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
     //
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
+
+    cache.max_quality_before = 0.;
+    for (const size_t tid : get_incident_tids_for_edge(loc0)) {
+        cache.max_quality_before =
+            std::max(cache.max_quality_before, m_tet_attribute[tid].m_quality);
+    }
 
     cache.is_edge_on_surface = is_edge_on_surface(loc0);
 
@@ -111,6 +142,40 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
     };
 
     auto tets = get_incident_tets_for_edge(loc0);
+
+    // High-valence gate. Splitting (v1,v2) leaves the endpoints' own incident-tet counts
+    // unchanged -- each keeps one child of every tet it was in -- and adds one to every
+    // vertex in the edge's link, since those sit in both children. So the gate applies to
+    // the link.
+    //
+    // A vertex past the threshold accepts one such split per pass and refuses the rest,
+    // which spreads the refinement instead of letting it pile onto the same vertex. Done
+    // here, before the face caching below, so a refusal is cheap.
+    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
+        std::vector<size_t> to_claim;
+        for (const Tuple& t : tets) {
+            const auto vs = oriented_tet_vertices(t);
+            for (int j = 0; j < 4; j++) {
+                const size_t vid = vs[j].vid(*this);
+                if (vid == v1_id || vid == v2_id) continue;
+                if (vid >= m_high_valence_claim_size) continue;
+                if (vertex_valence(vid) <= threshold) continue;
+                if (m_high_valence_claim[vid].load(std::memory_order_relaxed) != 0) {
+                    // Already spent this pass. Refuse rather than grow it further.
+                    m_high_valence_rejects.fetch_add(1, std::memory_order_relaxed);
+                    return false;
+                }
+                to_claim.push_back(vid);
+            }
+        }
+        // Claim only once the whole link is known to be free, so a refusal late in the
+        // loop does not burn the budget of a vertex found earlier.
+        for (const size_t vid : to_claim) {
+            m_high_valence_claim[vid].store(1, std::memory_order_relaxed);
+        }
+    }
+
     for (auto& t : tets) {
         auto vs = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
@@ -162,18 +227,26 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
-        // The rounded (double) midpoint inverts an incident tet. By default reject
-        // the split. But if this edge belongs to the current worst-tet set (the
-        // seeds picked by refine_sizing_around_worst) and the rational fallback is
-        // enabled, place the new vertex at the EXACT rational midpoint of the two
-        // endpoints instead. That midpoint lies on the shared edge, so it can never
-        // invert a previously-valid incident tet -- the split always succeeds and
-        // the worst region can keep being refined. The vertex stays un-rounded
-        // (m_pos exact, m_is_rounded=false) until a later round() reclaims it.
-        if (!m_params.stuck_refine_rational_split) {
-            return false;
-        }
-
+        // The rounded (double) midpoint inverts an incident tet, so place the new vertex at
+        // the EXACT rational midpoint of the two endpoints instead. That midpoint lies on the
+        // shared edge, so it can never invert a previously-valid incident tet: the split
+        // always succeeds and a stuck region can keep being refined. The vertex stays
+        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        //
+        // This used to apply only when an endpoint was already rational, to stop a split
+        // between two rounded endpoints from reintroducing exact coordinates into a
+        // fully-rounded mesh. That restriction is what stalled the optimizer: it rejected the
+        // split outright exactly where the mesh is degenerate, which is where refinement is
+        // needed, and the stuck-refine machinery then hammered the region from outside,
+        // driving the max energy up by orders of magnitude per pass. On Thingi10K 509315 the
+        // restriction cost 5 of 8 runs, which diverged to 1e16..1e20 and hit the sweep's
+        // one-hour timeout; without it 8 of 8 converge, in 2-5 iterations, and healthy models
+        // are unchanged in both time and quality.
+        //
+        // Exact coordinates reaching the output is prevented by the iteration, not here: a
+        // split is the only operation that can un-round a vertex (collapse, all four swaps
+        // and smoothing never do), the post-optimization pass is collapse-only, and the loop
+        // does not stop until every vertex is rounded as well as the energy target being met.
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         // Guard against a pre-existing inverted incident tet: re-check in exact
@@ -183,9 +256,32 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
                 return false;
             }
         }
+        // This split keeps an un-rounded vertex, so the sweep must not skip the next
+        // pass. Set after the rollback checks above, which leave the mesh unchanged.
+        m_all_rounded.store(false, std::memory_order_relaxed);
     }
 
     /// update quality
+    //
+    // A split is otherwise unconditional: it checks orientation and the envelope but never
+    // quality. That is right for a length-driven split of a long, well-behaved edge and
+    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
+    // land essentially on the opposite edge. The result is a POSITIVELY ORIENTED tet whose
+    // volume is too small for AMIPS, so get_quality returns MAX_ENERGY, the reported max
+    // energy jumps to cbrt(1e50) = 4.6e16, and every control decision that divides by it --
+    // filter_energy, the stall test, the average -- is meaningless from then on. On
+    // Thingi10K 101954 that is exactly how the run died: the first 4.6e16 appears on the
+    // split line immediately after "[force-split] 92 worst-tet longest edges force-split".
+    //
+    // Refuse to be the operation that creates one. A split that merely subdivides a region
+    // that was already degenerate is still allowed, so a stuck region can keep being refined.
+    double max_quality_after = 0.;
+    for (const Tuple& loc : locs) {
+        max_quality_after = std::max(max_quality_after, get_quality(loc));
+    }
+    if (max_quality_after >= MAX_ENERGY && cache.max_quality_before < MAX_ENERGY) {
+        return false;
+    }
     for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }

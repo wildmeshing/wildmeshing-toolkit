@@ -6,6 +6,7 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <fastenvelope/FastEnvelope.h>
+#include <fastenvelope/FastEnvelope2D.h>
 #include <SimpleBVH/BVH.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -50,11 +51,66 @@ public:
 class SampleEnvelope : public wmtk::Envelope
 {
 public:
+    /**
+     * Which of the three init() overloads built this envelope.
+     *
+     * The sampled path does not need it -- every overload ends up in the same BVH, and a 2D
+     * query is answered by lifting to z = 0. The exact path does: a triangle-built and an
+     * edge-built FastEnvelope are different objects, a 2D envelope is a different class
+     * again, and only init() knows which one was filled in. Without this, is_outside(Vector2d)
+     * would lift to 3D and query a FastEnvelope that was never initialized, which answers
+     * "outside" for everything rather than failing.
+     */
+    enum class Kind { Uninitialized, Triangles3d, Edges3d, Edges2d };
+
     SampleEnvelope(bool exact = false)
         : use_exact(exact) {};
+    /**
+     * Per-sample acceptance radius, squared, for POINT and TRIANGLE queries.
+     *
+     * eps shrunk by the covering radius of sampleTriangle's lattice, sampling_dist/sqrt(3).
+     * A point query needs no shrink at all and is therefore merely conservative here; it is
+     * left as it is because every 3D operation goes through it and widening it would change
+     * tetwild's behaviour everywhere, which belongs in its own change.
+     */
     double eps2 = 1e-6;
+    /**
+     * The same, for EDGE queries, where the covering radius is different.
+     *
+     * is_outside(edge) samples the segment at N+1 evenly spaced points with
+     * N = floor(L/sampling_dist) + 1 > L/sampling_dist, so the spacing is L/N < sampling_dist
+     * and every point of the segment lies within sampling_dist/2 of a sample. Distance to a
+     * set is 1-Lipschitz, so "every sample within r" implies "every point within
+     * r + sampling_dist/2"; for that to imply containment in eps,
+     *
+     *     r = eps - sampling_dist / 2      (= eps/2, since sampling_dist = eps)
+     *
+     * The lattice constant eps - sampling_dist/sqrt(3) belongs to sampleTriangle and is
+     * simply the wrong figure here: it is 0.4226*eps against the correct 0.5*eps, so using
+     * it made the edge test 18% stricter than the geometry requires. That is safe on its own
+     * -- but it also made the simplification's own guarantee (r_s + sampling_dist_s/2 = eps_s)
+     * exceed the acceptance threshold of the coarser envelope the optimizer checks against,
+     * so a correctly simplified input could be rejected by the init sanity check. It was,
+     * once in 15665 models.
+     */
+    double eps2_edge = 1e-6;
     double sampling_dist = 1e-3;
     bool use_exact = false;
+
+    /**
+     * Debug escape hatch: when set, every is_outside() answers "inside".
+     *
+     * The envelope is the only thing that can reject an operation for geometric rather
+     * than combinatorial reasons, so turning it off tells you whether a stalled
+     * optimization is blocked by the envelope or by the mesh itself. It removes the
+     * containment guarantee entirely -- the output is not usable, only diagnostic.
+     *
+     * Note nearest_point() is unaffected, so EnvelopeEnergy still pulls surface vertices
+     * toward the input while smoothing. Only the veto goes away, which is the point: it
+     * separates "the optimizer cannot move because the envelope forbids it" from "the
+     * optimizer cannot move at all".
+     */
+    bool disabled = false;
     void init(
         const std::vector<Eigen::Vector3d>& m_ver,
         const std::vector<Eigen::Vector3i>& m_faces,
@@ -76,15 +132,32 @@ public:
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
     bool initialized() { return m_bvh != nullptr; };
 
+    Kind kind() const { return m_kind; }
+
     double squared_distance(const Eigen::Vector3d& p) const;
     double squared_distance(const Eigen::Vector2d& p) const;
 
 private:
+    void require_exact_kind(Kind expected, const char* query) const;
+    void require_exact_3d(const char* query) const;
+    void require_exact_built(const char* query) const;
+
+    template <typename VertexList>
+    void
+    init_exact_edges(const VertexList& V, const std::vector<Eigen::Vector2i>& F, const double _eps);
+
     std::vector<int> geo_vertex_ind;
     std::vector<int> geo_face_ind;
     std::shared_ptr<SimpleBVH::BVH> m_bvh;
 
 private:
+    /// Serves both Triangles3d and Edges3d: FastEnvelope has an init() for each.
     fastEnvelope::FastEnvelope exact_envelope;
+    /// Edges2d only. A separate class upstream, not an overload.
+    fastEnvelope::FastEnvelope2D exact_envelope_2d;
+    Kind m_kind = Kind::Uninitialized;
+    /// Whether the edge/2D exact structure was actually built. Always false for Triangles3d,
+    /// which builds its exact envelope unconditionally and is checked by kind alone.
+    bool m_exact_built = false;
 };
 } // namespace wmtk

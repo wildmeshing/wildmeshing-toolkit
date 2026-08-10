@@ -18,9 +18,11 @@
       "eps",
       "eps_simplify_rel",
       "eps_simplify",
+      "order2_envelope_ratio",
       "length",
       "length_rel",
       "sizing_field",
+      "quality_field",
       "stop_energy",
       "stop_at_float",
       "preserve_topology",
@@ -31,6 +33,7 @@
       "report",
       "DEBUG_output",
       "DEBUG_sanity_checks",
+      "DEBUG_envelope_sanity_check",
       "allow_surface_swap",
       "check_surface_topology",
       "stuck_refine_stall_eps",
@@ -41,7 +44,6 @@
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
       "stuck_refine_force_split",
-      "stuck_refine_rational_split",
       "skip_good_regions",
       "skip_good_regions_margin",
       "fill_holes_tags",
@@ -125,7 +127,7 @@
     "max": 4
   },
   {
-    "pointer": "/input_transform/*/*",
+    "pointer": "/input_transform/*/*/*",
     "type": "float"
   },
   {
@@ -138,13 +140,13 @@
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
-    "doc": "If true, input simplification will be skipped."
+    "doc": "If true, input simplification will be skipped. Only surface input may be simplified. If the input is already a tet mesh (.msh), it will never be simplified."
   },
   {
     "pointer": "/use_sample_envelope",
     "type": "bool",
     "default": false,
-    "doc": "Use sample envelope instead of exact one."
+    "doc": "Use the sampled envelope instead of the exact one. Governs both the 3D surface envelope and, since the exact envelope gained support for edges, the order-2 (open boundary and non-manifold) curve envelope and the 2D polyline envelope -- all three are containment tests against the same input at the same epsilon, so they follow one flag. The sampled test places points along the query and asks whether each is within eps of the input, so it cannot see what happens between two samples and shrinks its acceptance radius to compensate; the exact one decides coverage by the union of the eps-neighbourhoods without sampling, so it uses the full eps and is strictly sharper."
   },
   {
     "pointer": "/num_threads",
@@ -174,13 +176,19 @@
     "pointer": "/eps_simplify_rel",
     "type": "float",
     "default": 2e-4,
-    "doc": "Envelope thickness relative to the bounding box for the initial simplification."
+    "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh."
   },
   {
     "pointer": "/eps_simplify",
     "type": "float",
     "default": -1,
-    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one."
+    "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+  },
+  {
+    "pointer": "/order2_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured in tetwild on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps."
   },
   {
     "pointer": "/length",
@@ -222,7 +230,30 @@
     "pointer": "/sizing_field/*/length_rel",
     "type": "float",
     "default": 5e-2,
-    "doc": "Relative target edge length for the region."
+    "doc": "Target edge length relative to the bounding box for the region."
+  },
+  {
+    "pointer": "/quality_field",
+    "type": "list",
+    "default": [],
+    "doc": "Prescribe a target quality for a specific region defined by tags. The last prescibed quality will be used for each element. Example: [{\"tags\": \"tag_0 & tag_1\", \"quality\": 100}, {\"tags\": \"tag_2\", \"quality\": 50}]"
+  },
+  {
+    "pointer": "/quality_field/*",
+    "type": "object",
+    "required": ["tags", "quality"],
+    "doc": "A region and its target quality."
+  },
+  {
+    "pointer": "/quality_field/*/tags",
+    "type": "string",
+    "doc": "A region of tags."
+  },
+  {
+    "pointer": "/quality_field/*/quality",
+    "type": "float",
+    "min": 0,
+    "doc": "Target quality for the region."
   },
   {
     "pointer": "/stop_energy",
@@ -287,6 +318,12 @@
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
   },
   {
+    "pointer": "/DEBUG_envelope_sanity_check",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: for the 2D remeshing path, verify at init that every surface edge already lies inside the envelope, and abort if one does not. Everything downstream assumes it -- an operation vetoed by the envelope only means something if the mesh started inside it -- but the check costs one sampled segment query per surface edge, serially, on every run. Measured in triwild's 2D sweep, where the same check cost 22s on a 3.5M-edge input and 5m07s on a 7.6M-edge one, the latter 8.5% of that model's entire budget. Off by default; turn it on when changing the input simplification or the envelope. Note the 3D path's superficially similar check is not governed by this flag: there the result selects whether to rebuild the envelope from the tet tags, so it is a decision rather than an assertion and always runs."
+  },
+  {
     "pointer": "/allow_surface_swap",
     "type": "bool",
     "default": true,
@@ -301,13 +338,13 @@
   {
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
-    "default": 0.01,
-    "doc": "Refine when the max energy improved by at most this fraction since the previous iteration. 0 => only when it does not improve at all."
+    "default": 0.1,
+    "doc": "Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy). Equivalently, refine unless the mesh is on course to reach the target within about 1/eps more iterations. 0 => only when it does not improve at all."
   },
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 1,
+    "default": 0,
     "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
   },
   {
@@ -349,16 +386,10 @@
     "doc": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall."
   },
   {
-    "pointer": "/stuck_refine_rational_split",
-    "type": "bool",
-    "default": true,
-    "doc": "When a split's rounded (double) midpoint would invert an incident tet, allow edges of the current worst-tet set to fall back to the exact rational midpoint (never inverts, keeps the new vertex un-rounded) instead of rejecting the split."
-  },
-  {
     "pointer": "/skip_good_regions",
     "type": "bool",
-    "default": true,
-    "doc": "Only smooth vertices incident to a tet whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions."
+    "default": false,
+    "doc": "Only smooth vertices incident to a tet whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions. OFF by default: smoothing is the only phase that improves quality without changing connectivity, and the premise that a vertex surrounded by good elements has nothing to gain is not reliable -- for surface vertices the move is driven by the envelope term rather than by element quality, which is why active_vertices() has to append every surface vertex unconditionally to keep the filter from freezing them outright. With the filter off that special case stops carrying the correctness of the pass. Measured in 2D on 122839 at stop_energy 20, filtering also cost more than it saved: 60 iterations ending at max energy 21.03 with it on, against convergence to 19.9998 in 54 iterations and less wall time (875s vs 947s) with it off. Note the threshold scales with stop_energy, so the filter skips far more at 100 than at 20."
   },
   {
     "pointer": "/skip_good_regions_margin",

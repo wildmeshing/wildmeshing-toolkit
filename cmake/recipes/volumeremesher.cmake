@@ -6,9 +6,14 @@ endif()
 
 message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 
-# PR #15 (branch `2d`), a descendant of the previous pin, which adds the 2D pipeline:
-# vol_rem::embed_seg_in_tri_mesh in VolumeRemesher/2d/embed2d.h, used by triwild to
-# insert its input segments. The 3D entry point is unchanged.
+# wildmeshing/VolumeRemesher main. Carries the 2D pipeline
+# (vol_rem::embed_seg_in_tri_mesh in VolumeRemesher/2d/embed2d.h, used by triwild to
+# insert its input segments) plus, since PR #19, an externalized exact-arithmetic
+# kernel: numerics.h and the predicate headers are now thin shims over NFG and
+# Indirect_Predicates, fetched and pinned by VolumeRemesher itself. Those upstream
+# headers live in the global namespace; the shims re-export the public types into
+# `vol_rem` with using-declarations, so the include paths and the API this project
+# depends on are unchanged. Note the build now fetches two more repositories.
 #
 # Exact-arithmetic backend: VOLUMEREMESHER_WITH_GMP defaults to OFF, so
 # `vol_rem::bigrational` is upstream's built-in bignum rather than mpq_class and
@@ -16,11 +21,17 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # branch of the arrangement-vertex conversions in tetwild, simwild and triwild, which
 # is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
 # init_from_bin parses.
+#
+# Pinned at main. The previous pin (dcf40546) was two commits behind it; the only
+# functional change between them is PR #17, which reuses a cell's local data structure
+# across non-splitting constraints in BSP.cpp -- a performance change in the
+# arrangement core, so it is the kind of bump that wants the full test suite run
+# against it rather than a smoke test.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 39884cecf50464fc618257faa15aca7e702534ac
+    GIT_TAG ba8a7329cf1225356dcc8e7bcee0883e0cc51e85
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )

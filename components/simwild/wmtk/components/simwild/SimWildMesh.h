@@ -2,10 +2,10 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/utils/Morton.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -24,6 +24,8 @@
 #include <igl/remove_unreferenced.h>
 #include <memory>
 
+#include <wmtk/utils/SurfaceTopology.hpp>
+#include <wmtk/utils/partition_utils.hpp>
 #include "expression_parser/Expression.hpp"
 
 namespace wmtk::components::simwild {
@@ -136,11 +138,13 @@ public:
     double m_envelope_eps = -1;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
+    std::vector<std::tuple<ExprPtr, double>> m_quality_field;
 
     bool m_collapse_check_quality = true;
 
     // for open boundary
-    std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope; // todo: add sample envelope option
+    /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
+    std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope;
 
     wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
         m_solver;
@@ -148,6 +152,18 @@ public:
     // scaling factors
     double m_s_amips = -1;
     double m_s_envelope = -1;
+
+    /// Why smoothing attempts were refused, reported once per pass.
+    optimization::SmoothRejectCounters m_smooth_rejects;
+
+    /// Envelope a vertex is pulled toward while smoothing.
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    /// Envelope the resulting surface triangles are checked against.
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
+
+    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
+    /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
+    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
@@ -226,101 +242,16 @@ public:
 
         logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-        std::vector<Eigen::Vector3d> V_v(vert_capacity());
+        std::vector<size_t> partition_id;
+        wmtk::partition_vertex_morton(
+            vert_capacity(),
+            [this](size_t i) { return m_vertex_attribute[i].m_posf; },
+            NUM_THREADS,
+            partition_id);
 
-        threading::parallel_for(
-            threading::range(0, V_v.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V_v[i] = m_vertex_attribute[i].m_posf;
-                }
-            },
-            NUM_THREADS);
-
-
-        struct sortstruct
-        {
-            int order;
-            Resorting::MortonCode64 morton;
-        };
-
-        std::vector<sortstruct> list_v;
-        list_v.resize(V_v.size());
-        // since the morton code requires a correct scale of input vertices,
-        //  we need to scale the vertices if their coordinates are out of range
-        std::vector<Eigen::Vector3d> V = V_v; // this is for rescaling vertices
-        Eigen::Vector3d vmin, vmax;
-        vmin = V.front();
-        vmax = V.front();
-
-        for (size_t j = 0; j < V.size(); j++) {
-            for (int i = 0; i < 3; i++) {
-                vmin(i) = std::min(vmin(i), V[j](i));
-                vmax(i) = std::max(vmax(i), V[j](i));
-            }
+        for (size_t i = 0; i < partition_id.size(); i++) {
+            m_vertex_attribute[i].partition_id = partition_id[i];
         }
-
-        // get_bb_corners(V, vmin, vmax);
-        Eigen::Vector3d center = (vmin + vmax) / 2;
-
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] - center;
-                }
-            },
-            NUM_THREADS);
-
-        Eigen::Vector3d scale_point =
-            vmax - center; // after placing box at origin, vmax and vmin are symetric.
-
-        double xscale, yscale, zscale;
-        xscale = fabs(scale_point[0]);
-        yscale = fabs(scale_point[1]);
-        zscale = fabs(scale_point[2]);
-        double scale = std::max(std::max(xscale, yscale), zscale);
-        if (scale > 300) {
-            threading::parallel_for(
-                threading::range(0, V.size()),
-                [&](const threading::range& r) {
-                    for (size_t i = r.begin(); i < r.end(); i++) {
-                        V[i] = V[i] / scale;
-                    }
-                },
-                NUM_THREADS);
-        }
-
-        constexpr int multi = 1000;
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    list_v[i].morton = Resorting::MortonCode64(
-                        int(V[i][0] * multi),
-                        int(V[i][1] * multi),
-                        int(V[i][2] * multi));
-                    list_v[i].order = i;
-                }
-            },
-            NUM_THREADS);
-
-        const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-            return (a.morton < b.morton);
-        };
-
-        std::sort(list_v.begin(), list_v.end(), morton_compare);
-
-        int interval = list_v.size() / NUM_THREADS + 1;
-
-        threading::parallel_for(
-            threading::range(0, list_v.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-                }
-            },
-            NUM_THREADS);
     }
 
     size_t get_partition_id(const Tuple& loc) const
@@ -333,6 +264,14 @@ public:
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
+
+    void set_quality_field(const nlohmann::json& quality_field_json);
+
+    double target_quality(const size_t tid) const;
+    double target_quality(const Tuple& t) const;
+    double quality_rel(const size_t tid) const;
+    double quality_rel(const Tuple& t) const;
+    bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
 
     double get_length2(const Tuple& l) const;
 
@@ -385,26 +324,16 @@ public:
      */
     bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
 
-    /**
-     * @brief A topological fingerprint of the tracked surface (m_is_surface_fs).
-     *
-     * Cheap-to-compare summary used to assert that surface-modifying operations
-     * (surface edge flips) do not change the surface topology: number of
-     * connected components, surface V/E/F, Euler characteristic, and number of
-     * boundary loops. A valid surface diagonal flip leaves all of these
-     * invariant. O(#surface faces); only used by tests / check_surface_topology.
-     */
-    struct SurfaceTopoSignature
+    /// A topological fingerprint of the tracked surface (m_is_surface_fs). See
+    /// wmtk/utils/SurfaceTopology.hpp.
+    using SurfaceTopoSignature = wmtk::utils::SurfaceTopoSignature;
+
+    SurfaceTopoSignature surface_topology_signature() const
     {
-        long long components = 0;
-        long long V = 0;
-        long long E = 0;
-        long long F = 0;
-        long long euler = 0; // V - E + F
-        long long boundary_loops = 0;
-        bool operator==(const SurfaceTopoSignature&) const = default;
-    };
-    SurfaceTopoSignature surface_topology_signature() const;
+        return wmtk::utils::surface_topology_signature(*this, [this](size_t fid) {
+            return m_face_attribute[fid].m_is_surface_fs;
+        });
+    }
 
     /**
      * @brief Compare a surface signature against the current one and log an
@@ -412,7 +341,10 @@ public:
      * guard swap passes that can flip surface edges.
      */
     void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
-        const;
+        const
+    {
+        wmtk::utils::warn_if_surface_topology_changed(before, surface_topology_signature(), where);
+    }
 
     size_t swap_all_faces();
     bool swap_face_before(const Tuple& t) override;
@@ -450,11 +382,6 @@ public:
     double get_quality(const std::array<size_t, 4>& vs) const;
     double get_quality(const Tuple& loc) const;
 
-    std::vector<std::array<double, 12>> get_amips_assembles(const Tuple& t) const;
-
-    std::shared_ptr<polysolve::nonlinear::Problem> get_amips_energy(const Tuple& t) const;
-    std::shared_ptr<polysolve::nonlinear::Problem> get_envelope_energy(const Tuple& t) const;
-
     /**
      * @brief Round a vertex position to floating point.
      *
@@ -475,12 +402,8 @@ public:
     bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
+    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
-
-    bool check_attributes();
 
     std::vector<std::array<size_t, 3>> get_faces_by_condition(
         std::function<bool(const FaceAttributes&)> cond) const;
@@ -503,6 +426,10 @@ private:
         size_t v2_id;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        /// Worst quality among the elements incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate element" from "this
+        /// split subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
@@ -515,6 +442,10 @@ private:
         std::map<simplex::Edge, TetAttributes> tets;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
+
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
 
     struct CollapseInfoCache
     {
@@ -587,7 +518,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst(double max_energy);
+    size_t refine_sizing_around_worst();
 
     /**
      * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
@@ -599,7 +530,7 @@ public:
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
-    bool adjust_sizing_field_serial(double max_energy);
+    bool adjust_sizing_field_serial();
 
     /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
     /// split_all_edges force-splits exactly these edges (bypasses the length gate),

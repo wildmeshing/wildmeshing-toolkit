@@ -180,33 +180,40 @@ void TetMesh::init(const MatrixXi& T)
 
 std::vector<TetMesh::Tuple> TetMesh::get_edges() const
 {
-    std::vector<std::tuple<size_t, size_t, TetMesh::Tuple>> edges;
-    edges.reserve(tet_capacity() * 6);
+    // One entry per edge, not six. get_faces() right below already works this way: an
+    // edge's canonical representative is the one whose eid() -- the lowest tet id
+    // carrying it, times six, plus the local edge -- points back at this (tid, j). So the
+    // duplicates can be rejected as they are generated instead of being collected,
+    // sorted and uniqued afterwards.
+    //
+    // The old form built 6 * tet_capacity() entries of (v0, v1, Tuple) at 56 bytes each,
+    // sorted all of them, and copied the survivors into a second vector. On a mesh with
+    // 18M tets that is roughly 6 GB of staging plus a 108M-element sort, to produce a
+    // result 6x smaller.
+    //
+    // The output is still ordered by (min vid, max vid), and the representative is now
+    // well defined rather than whatever an unstable std::sort happened to leave first
+    // among the six copies of each edge.
+    std::vector<std::pair<std::pair<size_t, size_t>, TetMesh::Tuple>> edges;
     for (int i = 0; i < tet_capacity(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 6; j++) {
-            auto tup = tuple_from_edge(i, j);
-            auto v0 = tup.vid(*this);
-            auto v1 = tup.switch_vertex(*this).vid(*this);
+            const auto tup = tuple_from_edge(i, j);
+            if (tup.eid(*this) != size_t(6 * i + j)) {
+                continue; // some lower-numbered tet owns this edge
+            }
+            size_t v0 = tup.vid(*this);
+            size_t v1 = tup.switch_vertex(*this).vid(*this);
             if (v0 > v1) std::swap(v0, v1);
-            edges.emplace_back(v0, v1, tup);
+            edges.emplace_back(std::make_pair(v0, v1), tup);
         }
     }
-    std::sort(edges.begin(), edges.end(), [](auto& a, auto& b) {
-        return std::tie(std::get<0>(a), std::get<1>(a)) < std::tie(std::get<0>(b), std::get<1>(b));
+    std::sort(edges.begin(), edges.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
     });
-    edges.erase(
-        std::unique(
-            edges.begin(),
-            edges.end(),
-            [](auto& a, auto& b) {
-                return std::tie(std::get<0>(a), std::get<1>(a)) ==
-                       std::tie(std::get<0>(b), std::get<1>(b));
-            }),
-        edges.end());
     std::vector<TetMesh::Tuple> uniq_edges;
     uniq_edges.reserve(edges.size());
-    for (auto& [v0, v1, e] : edges) uniq_edges.push_back(e);
+    for (auto& [key, e] : edges) uniq_edges.push_back(e);
     return uniq_edges;
 }
 
@@ -228,6 +235,12 @@ void TetMesh::for_each_face(const std::function<void(const TetMesh::Tuple&)>& fu
 std::vector<TetMesh::Tuple> TetMesh::get_faces() const
 {
     auto faces = std::vector<TetMesh::Tuple>();
+    // Each tet contributes at most 4 faces and exactly one is the canonical
+    // representative, so 2 * tet_capacity() is a close upper bound on a closed mesh and
+    // an over-estimate on an open one. Without this the vector doubles its way up and
+    // holds both buffers at the last reallocation -- 187M faces x 40 bytes is 7.5 GB of
+    // payload on Thingi10K 338910, and the transient peak is far worse.
+    faces.reserve(2 * tet_capacity());
     for (int i = 0; i < tet_capacity(); i++) {
         if (m_tet_connectivity[i].m_is_removed) continue;
         for (int j = 0; j < 4; j++) {
@@ -317,6 +330,7 @@ bool TetMesh::check_mesh_connectivity_validity() const
 std::vector<TetMesh::Tuple> TetMesh::get_tets() const
 {
     std::vector<TetMesh::Tuple> tets;
+    tets.reserve(tet_capacity());
     for (auto i = 0; i < tet_capacity(); i++) {
         auto& t = m_tet_connectivity[i];
         if (t.m_is_removed) continue;
@@ -332,6 +346,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_tets() const
 std::vector<TetMesh::Tuple> TetMesh::get_vertices() const
 {
     std::vector<TetMesh::Tuple> verts;
+    verts.reserve(vert_capacity());
     for (auto i = 0; i < vert_capacity(); i++) {
         auto& vc = m_vertex_connectivity[i];
         if (vc.m_is_removed) continue;
@@ -389,6 +404,54 @@ TetMesh::Tuple TetMesh::tuple_from_face(size_t tid, int local_fid) const
     return Tuple(*this, vid, eid, local_fid, tid);
 }
 
+size_t TetMesh::lowest_common_tet(const size_t v0_id, const size_t v1_id, const size_t v2_id) const
+{
+    const auto& t0 = m_vertex_connectivity[v0_id].m_conn_tets;
+    const auto& t1 = m_vertex_connectivity[v1_id].m_conn_tets;
+    const auto& t2 = m_vertex_connectivity[v2_id].m_conn_tets;
+
+    // Scan the SMALLEST of the three fans and test the other two vertices against each
+    // candidate tet, rather than merging all three in lockstep.
+    //
+    // The lockstep merge advances every pointer, so it costs O(|t0| + |t1| + |t2|) --
+    // set by the LARGEST fan. That is fine when the fans are all ~20-30, which is the
+    // valence of a well-shaped tet mesh, and it is why the merge was written that way.
+    // It collapses when the fans are skewed. On Thingi10K model 71263 a split cascade
+    // drove two vertices to 5494 and 10896 incident tets while the third had 10: the
+    // merge walked ~16k entries to find a tet that 10 candidates would have located.
+    // split_edge_before calls this four times per incident tet, so the pass stopped
+    // making visible progress -- 98.5% of samples sat in this function.
+    //
+    // Scanning the smallest fan costs O(min fan) with a four-element check per candidate,
+    // so it is comparable at normal valence and bounded by the *best* vertex rather than
+    // the worst when the mesh degenerates.
+    //
+    // m_conn_tets is sorted, so scanning upward returns the lowest common tet id -- the
+    // canonicalisation the global face id depends on, since a face shared by two tets
+    // must get the same id from either side.
+    const std::vector<size_t>* fan = &t0;
+    size_t other_a = v1_id;
+    size_t other_b = v2_id;
+    if (t1.size() < fan->size()) {
+        fan = &t1;
+        other_a = v0_id;
+        other_b = v2_id;
+    }
+    if (t2.size() < fan->size()) {
+        fan = &t2;
+        other_a = v0_id;
+        other_b = v1_id;
+    }
+
+    for (const size_t tid : *fan) {
+        const auto& conn = m_tet_connectivity[tid];
+        if (conn.find(other_a) >= 0 && conn.find(other_b) >= 0) {
+            return tid;
+        }
+    }
+    return std::numeric_limits<size_t>::max();
+}
+
 std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<size_t, 3>& vids) const
 {
     size_t v0_id = vids[0];
@@ -402,41 +465,16 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
         const auto& t0 = m_vertex_connectivity[v0_id].m_conn_tets;
         const auto& t1 = m_vertex_connectivity[v1_id].m_conn_tets;
         const auto& t2 = m_vertex_connectivity[v2_id].m_conn_tets;
-        size_t i0 = 0;
-        size_t i1 = 0;
-        size_t i2 = 0;
 
         if (t0.empty() || t1.empty() || t2.empty()) {
             assert(false && "tuple_from_face: one of the vertices has no incident tets");
             return {Tuple(), -1};
         }
 
-        while (true) {
-            if (t0[i0] < t1[i1] || t0[i0] < t2[i2]) {
-                i0++;
-                if (i0 == t0.size()) {
-                    assert(false && "tuple_from_face: no common tet found for the three vertices");
-                    return {Tuple(), -1};
-                }
-            }
-            if (t1[i1] < t2[i2] || t1[i1] < t0[i0]) {
-                i1++;
-                if (i1 == t1.size()) {
-                    assert(false && "tuple_from_face: no common tet found for the three vertices");
-                    return {Tuple(), -1};
-                }
-            }
-            if (t2[i2] < t0[i0] || t2[i2] < t1[i1]) {
-                i2++;
-                if (i2 == t2.size()) {
-                    assert(false && "tuple_from_face: no common tet found for the three vertices");
-                    return {Tuple(), -1};
-                }
-            }
-            if (t0[i0] == t1[i1] && t0[i0] == t2[i2]) {
-                global_tid = t0[i0];
-                break;
-            }
+        global_tid = lowest_common_tet(v0_id, v1_id, v2_id);
+        if (global_tid == std::numeric_limits<size_t>::max()) {
+            assert(false && "tuple_from_face: no common tet found for the three vertices");
+            return {Tuple(), -1};
         }
     }
 
@@ -713,13 +751,15 @@ std::array<TetMesh::Tuple, 6> TetMesh::tet_edges(const Tuple& t) const
     return es;
 }
 
-std::vector<size_t> TetMesh::get_one_ring_tids_for_vertex(const Tuple& t) const
+const std::vector<size_t>& TetMesh::get_one_ring_tids_for_vertex(const Tuple& t) const
 {
     return get_one_ring_tids_for_vertex(t.m_global_vid);
 }
 
-std::vector<size_t> TetMesh::get_one_ring_tids_for_vertex(const size_t vid) const
+const std::vector<size_t>& TetMesh::get_one_ring_tids_for_vertex(const size_t vid) const
 {
+    // The fan IS the stored connectivity, so hand it back rather than copying it. Matches
+    // TriMesh::get_one_ring_fids_for_vertex, which has always returned a reference.
     return m_vertex_connectivity[vid].m_conn_tets;
 }
 
@@ -737,8 +777,10 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_tets_for_vertex(const Tuple& t
 
 std::vector<TetMesh::Tuple> TetMesh::get_one_ring_vertices_for_vertex(const Tuple& t) const
 {
+    const auto& tids = m_vertex_connectivity[t.m_global_vid].m_conn_tets;
     std::vector<size_t> v_ids;
-    for (size_t t_id : m_vertex_connectivity[t.m_global_vid].m_conn_tets) {
+    v_ids.reserve(tids.size() * 4);
+    for (size_t t_id : tids) {
         for (size_t j = 0; j < 4; j++) {
             v_ids.push_back(m_tet_connectivity[t_id][j]);
         }
@@ -746,6 +788,7 @@ std::vector<TetMesh::Tuple> TetMesh::get_one_ring_vertices_for_vertex(const Tupl
     vector_unique(v_ids);
     vector_erase(v_ids, t.m_global_vid);
     std::vector<Tuple> vertices;
+    vertices.reserve(v_ids.size());
     for (auto v_id : v_ids) {
         vertices.push_back(tuple_from_vertex(v_id));
     }
@@ -815,8 +858,9 @@ std::vector<TetMesh::Tuple> TetMesh::get_incident_tets_for_edge(
     const size_t vid0,
     const size_t vid1) const
 {
-    auto tids = get_incident_tids_for_edge(vid0, vid1);
+    const auto tids = get_incident_tids_for_edge(vid0, vid1);
     std::vector<Tuple> tets;
+    tets.reserve(tids.size());
     for (size_t t_id : tids) {
         tets.push_back(tuple_from_tet(t_id));
         assert(tets.back().is_valid(*this));

@@ -43,4 +43,19 @@ function(add_component_test COMPONENT_NAME)
 
     set_target_properties(${COMPONENT_TEST_NAME} PROPERTIES FOLDER wmtk_components_tests)
 
+    # Register with ctest. Without this the executable is built and never run, by CI or by
+    # anyone typing `ctest` locally -- which is how two suites came to sit broken on main
+    # (tetwild's surface-swap case and three shortest_edge_collapse cases), each failing
+    # against behaviour that had changed underneath it while nothing was watching.
+    #
+    # One entry per component rather than catch_discover_tests: that helper lives in Catch2's
+    # `extras` and needs the module path set up, which is done in tests/ and is not visible in
+    # this directory scope. The whole set runs in a few seconds, so per-case granularity is
+    # not worth the extra plumbing here.
+    # --allow-running-no-tests because c1_simplification's two cases are currently commented
+    # out, so its executable holds nothing and Catch2 exits non-zero on an empty run. Without
+    # the flag that component alone would fail the moment these are registered.
+    add_test(NAME ${COMPONENT_TEST_NAME} COMMAND ${COMPONENT_TEST_NAME} --allow-running-no-tests)
+    wmtk_copy_dll(${COMPONENT_TEST_NAME})
+
 endfunction()

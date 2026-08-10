@@ -1,5 +1,7 @@
 
 #include "SimWildMesh.h"
+
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -37,117 +39,36 @@ bool SimWildMesh::smooth_before(const Tuple& t)
 
 bool SimWildMesh::smooth_after(const Tuple& t)
 {
-    // Newton iterations are encapsulated here.
-    logger().trace("Newton iteration for vertex smoothing.");
-    auto vid = t.vid(*this);
+    // The body lives in wmtk::optimization::smooth_vertex_3d, shared with tetwild.
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = m_params.w_amips;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = true;
 
-    const auto& VA = m_vertex_attribute;
-    const auto& TA = m_tet_attribute;
+    return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
+}
 
-    const auto locs = get_one_ring_tets_for_vertex(t);
-    assert(!locs.empty());
-    double max_quality = 0.;
-    for (auto& tet : locs) {
-        max_quality = std::max(max_quality, TA[tet.tid(*this)].m_quality);
-        if (is_inverted_f(tet)) {
-            // Neighbors that are not rounded could cause a tet to be inverted in floats
-            // std::cout << "Inverted tet " << m_vertex_attribute[vid].m_posf.transpose() <<
-            // std::endl;
-            return false;
-        }
+std::shared_ptr<SampleEnvelope> SimWildMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    // Order 2 means the vertex sits on a surface boundary or a non-manifold edge, so it is
+    // pulled toward the feature-edge envelope rather than the original surface.
+    const std::shared_ptr<SampleEnvelope> env =
+        m_vertex_attribute[vid].m_order == 2 ? m_order_2_edge_envelope : m_envelope_orig;
+    if (!env) {
+        log_and_throw_error(
+            "Envelope was not initialized. Vertex was of order {}",
+            m_vertex_attribute[vid].m_order);
     }
+    return env;
+}
 
-    auto& solver = m_solver.local();
-    if (!solver) {
-        solver = optimization::create_basic_solver();
-    }
-
-    const Vector3d old_pos = VA[vid].m_posf;
-
-    auto amips_energy = get_amips_energy(t);
-
-    std::shared_ptr<polysolve::nonlinear::Problem> total_energy = amips_energy;
-
-    auto solve = [&]() {
-        VectorXd x = VA[vid].m_posf;
-        try {
-            solver->minimize(*total_energy, x);
-        } catch (const std::exception&) {
-            // polysolve might throw errors that we want to ignore (e.g., line search failed)
-        }
-        m_vertex_attribute[vid].m_posf = x;
-    };
-
-    if (VA[vid].m_is_on_surface) {
-        auto energy_sum = std::make_shared<optimization::EnergySum>();
-
-        auto envelope_energy = get_envelope_energy(t);
-        // do one solve without weights for amips and envelope
-        if (m_params.w_amips > 0) {
-            energy_sum->add_energy(amips_energy, 1. / m_params.w_amips);
-        }
-        if (m_params.w_envelope > 0) {
-            energy_sum->add_energy(envelope_energy, 1. / m_params.w_envelope);
-        }
-        total_energy = energy_sum;
-        solve();
-
-        // second solve (with proper weights)
-        energy_sum = std::make_shared<optimization::EnergySum>();
-
-        if (m_params.w_amips > 0) {
-            energy_sum->add_energy(amips_energy);
-        }
-        if (m_params.w_envelope > 0) {
-            energy_sum->add_energy(envelope_energy);
-        }
-        total_energy = energy_sum;
-        solve();
-    } else {
-        // not on the surface
-        solve();
-    }
-
-    logger().trace("old pos {} -> new pos {}", old_pos, VA[vid].m_posf);
-
-    // check surface containment
-    if (VA[vid].m_is_on_surface) {
-        // write_vtu_with_energies(fmt::format("debug_smooth_{}", debug_print_counter++));
-        const simplex::SimplexCollection surf_assembles = get_surface_faces_for_vertex(vid);
-        for (size_t i = 0; i < surf_assembles.faces().size(); ++i) {
-            const simplex::Face& f = surf_assembles.faces()[i];
-
-            std::array<Eigen::Vector3d, 3> face;
-            face[0] = VA[f.vertices()[0]].m_posf;
-            face[1] = VA[f.vertices()[1]].m_posf;
-            face[2] = VA[f.vertices()[2]].m_posf;
-
-            if (m_envelope->is_outside(face)) {
-                return false;
-            }
-        }
-    }
-
-    // rational position must be updated before the inversion check!
-    m_vertex_attribute[vid].m_pos = to_rational(VA[vid].m_posf);
-
-    // quality
-    auto max_after_quality = 0.;
-    for (const Tuple& loc : locs) {
-        if (is_inverted(loc)) {
-            return false;
-        }
-        auto t_id = loc.tid(*this);
-        m_tet_attribute[t_id].m_quality = get_quality(loc);
-        max_after_quality = std::max(max_after_quality, TA[t_id].m_quality);
-    }
-    if (!VA[vid].m_is_on_surface) {
-        if (max_after_quality > max_quality) {
-            return false;
-        }
-    }
-
-    return true;
+std::shared_ptr<SampleEnvelope> SimWildMesh::smoothing_containment_envelope(const size_t) const
+{
+    // The working envelope, which is not m_envelope_orig: the pull target and the
+    // containment test are deliberately different objects here.
+    return m_envelope;
 }
 
 void SimWildMesh::smooth_all_vertices(const size_t n_iters = 1)
@@ -156,6 +77,7 @@ void SimWildMesh::smooth_all_vertices(const size_t n_iters = 1)
         igl::Timer timer;
         double time;
         timer.start();
+        m_smooth_rejects.reset();
         auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
         if (m_params.skip_good_regions) {
             // Only smooth vertices incident to an "active" (non-good) tet -- smoothing
@@ -190,68 +112,12 @@ void SimWildMesh::smooth_all_vertices(const size_t n_iters = 1)
             time = timer.getElapsedTime();
             wmtk::logger().info("vertex smoothing operation time serial: {:.4}s", time);
         }
+        logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         if (m_params.debug_output) {
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
         }
     }
 }
 
-std::vector<std::array<double, 12>> SimWildMesh::get_amips_assembles(const Tuple& t) const
-{
-    const size_t vid = t.vid(*this);
-    const auto locs = get_one_ring_tets_for_vertex(t);
-
-    std::vector<std::array<double, 12>> assembles(locs.size());
-    int loc_id = 0;
-
-    for (const Tuple& loc : locs) {
-        auto& T = assembles[loc_id];
-        auto t_id = loc.tid(*this);
-        assert(!is_inverted_f(loc));
-
-        std::array<size_t, 4> local_verts = oriented_tet_vids(t_id);
-        local_verts = wmtk::orient_preserve_tet_reorder(local_verts, vid);
-
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 3; j++) {
-                T[i * 3 + j] = m_vertex_attribute[local_verts[i]].m_posf[j];
-            }
-        }
-        loc_id++;
-    }
-
-    return assembles;
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> SimWildMesh::get_amips_energy(const Tuple& t) const
-{
-    const double w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1;
-
-    const auto assembles = get_amips_assembles(t);
-    auto amips_energy = std::make_shared<optimization::AMIPSEnergy3D>(assembles, w);
-    assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_posf);
-    return amips_energy;
-}
-
-std::shared_ptr<polysolve::nonlinear::Problem> SimWildMesh::get_envelope_energy(
-    const Tuple& t) const
-{
-    size_t vid = t.vid(*this);
-    const double w = m_s_envelope * m_params.w_envelope;
-
-    auto env = m_envelope_orig;
-    if (m_vertex_attribute[vid].m_order == 2) {
-        env = m_order_2_edge_envelope;
-    }
-
-    if (!env) {
-        log_and_throw_error(
-            "Envelope was not initialized. Vertex was of order {}",
-            m_vertex_attribute[vid].m_order);
-    }
-
-    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy3D>(env, w);
-    return envelope_energy;
-}
 
 } // namespace wmtk::components::simwild

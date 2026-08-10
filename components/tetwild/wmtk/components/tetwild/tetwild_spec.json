@@ -6,16 +6,29 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_names",
       "input_dir",
+      "write_vtu",
+      "preallocation_factor",
       "skip_simplify",
+      "simplify_use_link_condition",
+      "simplify_use_sample_envelope",
+      "simplify_envelope_ratio",
+      "order2_envelope_ratio",
       "use_sample_envelope",
       "use_legacy_code",
       "num_threads",
       "max_iterations",
+    "max_expected_iterations",
       "filter",
       "eps_rel",
       "length_rel",
       "stop_energy",
+      "split_high_valence_threshold",
+      "w_amips",
+      "num_smoothing_passes",
+      "interleaved_smoothing",
+      "interleaved_smoothing_passes",
       "preserve_topology",
       "remove_duplicate_eps",
       "allow_surface_swap",
@@ -27,6 +40,7 @@
       "DEBUG_sanity_checks",
       "DEBUG_hausdorff",
       "DEBUG_euler",
+      "DEBUG_disable_envelope",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -35,7 +49,6 @@
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
       "stuck_refine_force_split",
-      "stuck_refine_rational_split",
       "skip_good_regions",
       "skip_good_regions_margin",
       "skip_winding_number"
@@ -65,16 +78,64 @@
     "doc": "Output file name (without extension)."
   },
   {
+    "pointer": "/input_names",
+    "type": "list",
+    "doc": "List of names for the input meshes. If no names are assigned, the meshes will be named tag_0, tag_1, etc.",
+    "default": []
+  },
+  {
+    "pointer": "/input_names/*",
+    "type": "string",
+    "doc": "Name for one input mesh."
+  },
+  {
     "pointer": "/input_dir",
     "type": "string",
     "default": "",
     "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
   },
   {
+    "pointer": "/write_vtu",
+    "type": "bool",
+    "default": true,
+    "doc": "Write the VTU output next to the MSH."
+  },
+  {
+    "pointer": "/preallocation_factor",
+    "type": "float",
+    "default": 6.0,
+    "min": 1.0,
+    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
+  },
+  {
     "pointer": "/skip_simplify",
     "type": "bool",
     "default": false,
     "doc": "If true, input simplification will be skipped."
+  },
+  {
+    "pointer": "/simplify_use_link_condition",
+    "type": "bool",
+    "default": false,
+    "doc": "Require the link condition when simplifying the input surface. When true the simplification cannot change the topology of the input, which also means it cannot create non-manifold edges or vertices. When false those collapses are allowed, so the input simplifies further, but the surface handed to the arrangement may differ topologically from the input."
+  },
+  {
+    "pointer": "/simplify_use_sample_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the tetrahedralisation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large input. Note the toolkit itself warns that the sampled envelope is unreliable, and on thin lattice geometry it has been observed to over-collapse badly."
+  },
+  {
+    "pointer": "/simplify_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the tetrahedralisation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+  },
+  {
+    "pointer": "/order2_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps."
   },
   {
     "pointer": "/use_sample_envelope",
@@ -116,7 +177,7 @@
   {
     "pointer": "/eps_rel",
     "type": "float",
-    "default": 2e-3,
+    "default": 1e-3,
     "doc": "Envelope thickness relative to the bounding box"
   },
   {
@@ -128,8 +189,38 @@
   {
     "pointer": "/stop_energy",
     "type": "float",
-    "default": 10,
+    "default": 100,
     "doc": "Target energy. If all tets have an energy below this, tetwild will stop."
+  },
+  {
+    "pointer": "/split_high_valence_threshold",
+    "type": "int",
+    "default": 200,
+    "doc": "Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 0.0001,
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing; the envelope weight is 1 - w_amips. The small default makes smoothing primarily about staying on the surface, with quality as a secondary preference."
+  },
+  {
+    "pointer": "/num_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy. Was 10; lowered to 2 once surface vertices stopped being skipped by skip_good_regions, which made each pass do real work -- on Thingi10K 240280 a pass costs 41-51s and moves fewer vertices each time (accepted 18606 -> 17077 over five passes, envelope rejections 11316 -> 12237), so the later passes in a run of 10 buy very little for their cost."
+  },
+  {
+    "pointer": "/interleaved_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in both applications: each topology pass then sees a relaxed mesh rather than the raw output of the previous one. Measured in 2D on 122839, where per iteration it reached a given energy sooner than the batched schedule (102 vs 535 at iteration 5, 25 vs 69 at iteration 13), at roughly 3x the work per iteration since each topology pass gets its own smoothing."
+  },
+  {
+    "pointer": "/interleaved_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration."
   },
   {
     "pointer": "/preserve_topology",
@@ -140,14 +231,14 @@
   {
     "pointer": "/remove_duplicate_eps",
     "type": "float",
-    "default": 2e-3,
-    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately."
+    "default": 0,
+    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the surface connectivity; negative skips the pass entirely."
   },
   {
     "pointer": "/allow_surface_swap",
     "type": "bool",
     "default": true,
-    "doc": "Allow surface edge swapping."
+    "doc": "Allow the edge swaps (3-2, 4-4, 5-6) to operate on surface edges, as a topology-preserving surface diagonal flip. When false, every surface edge is left alone."
   },
   {
     "pointer": "/check_surface_topology",
@@ -198,15 +289,28 @@
     "doc": "Sanity Check: Compute and report the Euler characteristic of the input and output surfaces and warn if they differ. Off by default because on meshes with many components it can take tens of seconds. It is computed regardless when preserve_topology is set (the topology check needs it)."
   },
   {
+    "pointer": "/DEBUG_disable_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Diagnostic only. Disables every envelope containment check during the tetrahedralisation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used."
+  },
+  {
+
+      "pointer": "/max_expected_iterations",
+      "type": "int",
+      "default": 0,
+      "doc": "Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches."
+  },
+  {
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
-    "default": 0.01,
-    "doc": "Refine when the max energy improved by at most this fraction since the previous iteration. 0 => only when it does not improve at all."
+    "default": 0.1,
+    "doc": "Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy). Equivalently, refine unless the mesh is on course to reach the target within about 1/eps more iterations. 0 => only when it does not improve at all."
   },
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 1,
+    "default": 0,
     "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
   },
   {
@@ -248,16 +352,10 @@
     "doc": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall."
   },
   {
-    "pointer": "/stuck_refine_rational_split",
-    "type": "bool",
-    "default": true,
-    "doc": "When a split's rounded (double) midpoint would invert an incident tet, allow edges of the current worst-tet set to fall back to the exact rational midpoint (never inverts, keeps the new vertex un-rounded) instead of rejecting the split."
-  },
-  {
     "pointer": "/skip_good_regions",
     "type": "bool",
-    "default": true,
-    "doc": "Only smooth vertices incident to a tet whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions."
+    "default": false,
+    "doc": "Only smooth vertices incident to a tet whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions. OFF by default: smoothing is the only phase that improves quality without changing connectivity, and the premise that a vertex surrounded by good elements has nothing to gain is not reliable -- for surface vertices the move is driven by the envelope term rather than by element quality, which is why active_vertices() has to append every surface vertex unconditionally to keep the filter from freezing them outright. With the filter off that special case stops carrying the correctness of the pass. Measured in 2D on 122839 at stop_energy 20, filtering also cost more than it saved: 60 iterations ending at max energy 21.03 with it on, against convergence to 19.9998 in 54 iterations and less wall time (875s vs 947s) with it off. Note the threshold scales with stop_energy, so the filter skips far more at 100 than at 20."
   },
   {
     "pointer": "/skip_good_regions_margin",

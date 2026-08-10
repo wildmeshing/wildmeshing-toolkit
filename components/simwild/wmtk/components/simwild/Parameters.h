@@ -24,15 +24,29 @@ struct Parameters
     bool check_surface_topology = false;
 
     // ---- Stuck-element sizing refinement --------------------------------
-    // Trigger threshold: fire when the max energy did not improve by more than
-    // this *fraction* since the previous iteration, i.e. refine when
-    // (prev_max - max) <= stall_eps * prev_max. 0 => only when it does not
-    // improve at all (or gets worse).
-    double stuck_refine_stall_eps = 0.01;
+    // Trigger threshold: fire when the last iteration's improvement is small compared
+    // with the distance the max energy still has to cover, i.e. refine when
+    //     (prev_max - max) <= stall_eps * (max - target).
+    // Equivalently: refine unless the mesh is on course to reach the target within
+    // about 1/stall_eps more iterations. 0 => only when it does not improve at all.
+    //
+    // The denominator is the remaining distance, not prev_max, and that is the whole
+    // point. Measured against prev_max, a mesh grinding down at a steady 1.3% per
+    // iteration toward a target far below clears a 1% bar every single iteration and so
+    // never looks stalled -- even though at that rate it needs on the order of a hundred
+    // more iterations and the operations have in fact deadlocked. The escape hatch then
+    // never fires, which is exactly the regime it exists for.
+    double stuck_refine_stall_eps = 0.1;
     // Cooldown: after a refinement, skip this many improvement iterations before
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
-    int stuck_refine_cooldown = 1;
+    //
+    // 0 by default: measured over 468 triwild20k models, a cooldown of 1 costs ~13% wall
+    // time for exactly the same mesh sizes (identical median and p90 vertex counts). The
+    // idea that the operations need an idle iteration to act on the new field does not
+    // survive contact with the data -- the trigger already declines to fire while the mesh
+    // is converging, so a separate cooldown only delays the next escape.
+    int stuck_refine_cooldown = 0;
     // Number of worst tets (by energy) whose neighborhoods are refined.
     int stuck_refine_num_worst = 50;
     // Graph rings around each worst tet's vertices included in the refinement.
@@ -58,7 +72,6 @@ struct Parameters
     // the current worst-tet set (the seeds used by refine_sizing_around_worst)
     // instead fall back to the EXACT rational midpoint (never inverts) and keep
     // the new vertex un-rounded, so the worst region can still be refined.
-    bool stuck_refine_rational_split = true;
 
     // ---- Skip good regions ----------------------------------------------
     // Only smooth vertices incident to a tet whose energy is >=
@@ -75,6 +88,10 @@ struct Parameters
 
 
     double epsr_simplify = 2e-3; // relative error bound (wrt diagonal) for simplification
+    /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
+    /// surface envelope's. Deliberately below 1 where the surface envelope uses the full eps;
+    /// see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5.
+    double order2_envelope_ratio = 0.5;
     double eps_simplify = -1.; // absolute error bound for simplification
 
     // parameters set in `init` function based on mesh bbox
@@ -90,6 +107,19 @@ struct Parameters
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
+
+    /**
+     * Verify at init that every surface edge starts inside the envelope (2D remeshing only).
+     *
+     * The same check triwild carries, and the same trade: the invariant is real, but it
+     * costs one sampled segment query per surface edge, serially, on every run. Measured in
+     * triwild's 2D sweep at 22s on a 3.5M-edge input and 5m07s on a 7.6M-edge one -- 8.5% of
+     * that model's entire budget, spent before the first iteration. Off by default.
+     *
+     * The 3D counterpart in VolumemesherInsertion is deliberately NOT gated by this: it is
+     * not a check but a decision, feeding the "rebuild the envelope from tet tags" branch.
+     */
+    bool check_envelope_at_init = false;
 
     // weighting terms for the optimization
     double w_amips = 1e-4;
@@ -125,12 +155,14 @@ struct Parameters
         preserve_topology = json_params["preserve_topology"];
 
         epsr_simplify = json_params["eps_simplify_rel"];
+        order2_envelope_ratio = json_params["order2_envelope_ratio"];
         eps_simplify = json_params["eps_simplify"];
 
         w_amips = json_params["w_amips"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
+        check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];
 
         allow_surface_swap = json_params["allow_surface_swap"];
         check_surface_topology = json_params["check_surface_topology"];
@@ -144,7 +176,6 @@ struct Parameters
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
-        stuck_refine_rational_split = json_params["stuck_refine_rational_split"];
 
         // Skip good regions.
         skip_good_regions = json_params["skip_good_regions"];

@@ -75,7 +75,7 @@ void SimWildMesh::split_all_edges()
             "[force-split] {} worst-tet longest edges force-split",
             m_force_split_count);
     }
-    // Consumed: the queued force-split edges no longer exist after this pass.
+    // Consumed: the queued force-split edges no longer exist after this pass
     m_force_split_edges.clear();
 }
 
@@ -89,6 +89,12 @@ bool SimWildMesh::split_edge_before(const Tuple& loc0)
     cache.v1_id = loc0.vid(*this);
     auto loc1 = loc0.switch_vertex(*this);
     cache.v2_id = loc1.vid(*this);
+
+    cache.max_quality_before = 0.;
+    for (const size_t tid : get_incident_tids_for_edge(loc0)) {
+        cache.max_quality_before =
+            std::max(cache.max_quality_before, m_tet_attribute[tid].m_quality);
+    }
 
     cache.is_edge_on_surface = is_edge_on_surface(loc0);
 
@@ -172,10 +178,6 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
         std::atomic_ref<size_t>(m_force_split_count).fetch_add(1, std::memory_order_relaxed);
     }
     if (!m_vertex_attribute[v_id].m_is_rounded) {
-        if (!m_params.stuck_refine_rational_split) {
-            return false;
-        }
-
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
         p = to_double(m_vertex_attribute[v_id].m_pos);
@@ -254,6 +256,23 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
     }
 
     /// update quality
+    //
+    // A split is otherwise unconditional: it checks orientation and the envelope but never
+    // quality. That is right for a length-driven split of a long, well-behaved edge and
+    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
+    // land essentially on the opposite edge and leave a correctly-oriented element whose
+    // area/volume is too small for AMIPS -- get_quality then returns MAX_ENERGY, and every
+    // control decision that divides by the max energy is meaningless from then on. Refuse
+    // to be the operation that creates one; subdividing an already-degenerate region is
+    // still allowed, so a stuck region can keep being refined. See tetwild's EdgeSplitting
+    // for the measurement this comes from.
+    double max_quality_after = 0.;
+    for (const Tuple& loc : locs) {
+        max_quality_after = std::max(max_quality_after, get_quality(loc));
+    }
+    if (max_quality_after >= MAX_ENERGY && cache.max_quality_before < MAX_ENERGY) {
+        return false;
+    }
     for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }

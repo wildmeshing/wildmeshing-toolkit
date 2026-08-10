@@ -1,12 +1,15 @@
 
 #include "TetWildMesh.h"
 
+#include <tuple>
+
 #include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
 #include <wmtk/utils/io.hpp>
@@ -73,30 +76,89 @@ void TetWildMesh::mesh_improvement(int max_its)
         m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
 
     for (int it = 0; it < max_its; it++) {
+        m_iterations_used = it + 1;
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        // One iteration is either split/collapse/swaps followed by all the smoothing, or --
+        // with interleaved_smoothing -- each topology pass followed by its own smoothing, so
+        // the next pass sees a relaxed mesh rather than the raw output of the previous one.
+        // With interleaved_smoothing an iteration is THREE local_operations calls, and only
+        // the last one's value used to be tested against the target. Two thirds of the
+        // states the optimizer produces were therefore never offered to the stopping
+        // criterion: a run converged only if it happened to be good at the end of a SWAP
+        // pass. On triwild20k 179282 the mesh reached 9.9515 four separate times, every one
+        // of them in a split pass, and the run went to the iteration cap having never shown
+        // the convergence check anything below 10.0499.
+        //
+        // So test after every pass and stop on the state that met the target, rather than on
+        // whatever the two passes after it turn that state into. Breaking early leaves the
+        // remaining passes of this iteration unrun, which is the point: they are not needed.
+        double max_energy = 0., avg_energy = 0.;
+        if (!m_params.interleaved_smoothing) {
+            std::tie(max_energy, avg_energy) =
+                local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+        } else {
+            const int k = m_params.interleaved_smoothing_passes;
+            const std::array<std::array<int, 4>, 3> passes = {
+                {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}};
+            for (const std::array<int, 4>& ops : passes) {
+                std::tie(max_energy, avg_energy) = local_operations(ops);
+                if (max_energy < m_params.stop_energy) {
+                    break;
+                }
+            }
+        }
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
 
+        // Count the rounded vertices BEFORE the stop check. This used to sit after the
+        // break, so the iteration that actually reached the energy target never reported
+        // its rounding: the last thing the log said was "All rounded!" from the previous
+        // iteration, and finalize could then still fail with "Not all vertices rounded!".
+        // The log was not wrong, it was one iteration stale, which reads exactly like a
+        // contradiction.
+        // Atomic because for_each_vertex runs threading::parallel_for whenever
+        // NUM_THREADS != 0. These were plain ints, which raced: octocat reported counts
+        // like "-37 of 4149 un-rounded", i.e. cnt_round > cnt_verts. Harmless while this
+        // only fed a log line, not harmless now that it decides whether to stop.
+        std::atomic<int> n_round = 0, n_verts = 0;
+        TetMesh::for_each_vertex([&](auto& v) {
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+                n_round.fetch_add(1, std::memory_order_relaxed);
+            }
+            n_verts.fetch_add(1, std::memory_order_relaxed);
+        });
+        const int cnt_round = n_round.load(std::memory_order_relaxed);
+        const int cnt_verts = n_verts.load(std::memory_order_relaxed);
+        if (cnt_round < cnt_verts) {
+            logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        } else {
+            logger().info("All rounded!");
+        }
+
+        // Energy alone is not a sufficient termination condition. A mesh that hits the
+        // quality target while some vertex still carries exact coordinates is not
+        // finished: the output is what the caller consumes, and rational coordinates in
+        // it are a defect regardless of how good the elements are. So keep iterating
+        // while anything is un-rounded, and let max_its bound the run as before.
+        //
+        // The exact count is used rather than m_all_rounded, which is only maintained
+        // where the sweep runs (after smoothing) and would stay stale at
+        // num_smoothing_passes == 0, stranding the loop at max_its for no reason.
         if (max_energy < m_params.stop_energy) {
-            break;
+            if (cnt_round == cnt_verts) {
+                break;
+            }
+            logger().info(
+                "energy target reached, but {} of {} vertices are still un-rounded; "
+                "continuing",
+                cnt_verts - cnt_round,
+                cnt_verts);
         }
         consolidate_mesh();
 
         logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
-
-        auto cnt_round = 0, cnt_verts = 0;
-        TetMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) cnt_round++;
-            cnt_verts++;
-        });
-        if (cnt_round < cnt_verts) {
-            logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        } else {
-            logger().info("All rounded!", cnt_round, cnt_verts);
-        }
 
         /// sizing field: when the max energy stalls, refine around the worst
         /// elements to escape stuck configurations (replaces the old global
@@ -107,7 +169,8 @@ void TetWildMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_energy > m_params.stop_energy &&
-            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
+            (pre_max_energy - max_energy) <=
+                m_params.stuck_refine_stall_eps * (max_energy - m_params.stop_energy)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
             refine_sizing_around_worst(max_energy);
             // adjust_sizing_field_serial(max_energy); // The old update
@@ -121,20 +184,45 @@ void TetWildMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 }
 
+size_t TetWildMesh::round_all_vertices()
+{
+    if (m_all_rounded.load(std::memory_order_relaxed)) {
+        return 0;
+    }
+
+    size_t reclaimed = 0, still_unrounded = 0;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+            continue;
+        }
+        if (round(v)) {
+            ++reclaimed;
+        } else {
+            ++still_unrounded;
+        }
+    }
+
+    if (still_unrounded == 0) {
+        m_all_rounded.store(true, std::memory_order_relaxed);
+    }
+    if (reclaimed > 0 || still_unrounded > 0) {
+        logger().info(
+            "rounding sweep: reclaimed {}, still unrounded {}",
+            reclaimed,
+            still_unrounded);
+    }
+    return reclaimed;
+}
+
 void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
     logger().set_level(spdlog::level::level_enum::debug);
 
-    SampleEnvelope* env;
-    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
-        env = d;
-    } else {
-        log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
-    }
-    SampleEnvelope* env_b;
-    if (SampleEnvelope* d = dynamic_cast<SampleEnvelope*>(&m_envelope); d != nullptr) {
-        env_b = d;
-    } else {
+    // m_envelope is a SampleEnvelope already; the dynamic_cast these lines used to do was
+    // a no-op left over from when it was held as the Envelope base.
+    SampleEnvelope* env = m_envelope.get();
+    SampleEnvelope* env_b = m_envelope.get();
+    if (env == nullptr) {
         log_and_throw_error("Legacy TetWild can only be used with sample envelope.");
     }
 
@@ -378,7 +466,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             const auto p0 = m_vertex_attribute[verts[0]].m_posf;
             const auto p1 = m_vertex_attribute[verts[1]].m_posf;
             const auto p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope.is_outside({{p0, p1, p2}})) {
+            if (m_envelope->is_outside({{p0, p1, p2}})) {
                 logger().error("Face {} is outside!", verts);
             }
         }
@@ -502,12 +590,31 @@ std::tuple<double, double> TetWildMesh::local_operations(
             }
             auto [max_energy, avg_energy] = get_max_avg_energy();
             logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
+            logger().info(
+                "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
+                cnt_surface_swap.load(),
+                cnt_surface_swap_32.load(),
+                cnt_surface_swap_44.load(),
+                cnt_surface_swap_56.load());
             sanity_checks();
         } else if (i == 3) {
             for (int n = 0; n < ops[i]; n++) {
                 logger().info("==smoothing {}==", n);
                 smooth_all_vertices();
+            }
+            // Reclaim whatever smoothing just made roundable: once per iteration, after
+            // all of its smoothing passes. Here rather than at the end of the run because
+            // smoothing is what frees a stuck vertex, and because a vertex left rational
+            // makes every incident tet take the exact-arithmetic path in get_quality --
+            // so rounding early keeps the following passes on doubles.
+            //
+            // Guarded on ops[i] so it really is once per iteration: this branch is also
+            // entered by the collapse-only pre and post passes, which pass ops[3] == 0
+            // and have no smoothing for the sweep to follow.
+            //
+            // Skipped entirely once m_all_rounded is set.
+            if (ops[i] > 0) {
+                round_all_vertices();
             }
             if (m_params.debug_output) {
                 save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
@@ -632,108 +739,60 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 
 size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
 {
-    const int num_worst = std::max(0, m_params.stuck_refine_num_worst);
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    const double factor = m_params.stuck_refine_factor;
-    const double floor = m_params.stuck_refine_min_scalar;
+    // Clamped above, as adjust_sizing_field_serial always did and as the original TetWild's
+    // updateScalarField target does by ratcheting down from 1e6. Without the clamp a single
+    // degenerate tet (quality MAX_ENERGY, reported as 4.6e16) sets filter_energy to 4.6e14,
+    // and select_worst_cells then picks out only the degenerate tets -- refinement stops
+    // seeing the merely-bad ones it exists to fix.
+    const double filter_energy = std::min(std::max(max_energy / 100, m_params.stop_energy), 100.);
 
-    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+    // m_quality stores AMIPS^3, so the energy the "max energy" refers to is its cube root.
+    const auto worst = utils::select_worst_cells(
+        tet_capacity(),
+        [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
+        [this](size_t tid) { return std::cbrt(m_tet_attribute[tid].m_quality); },
+        filter_energy,
+        m_params.stuck_refine_num_worst);
 
-    // Find the num_worst valid tets with the highest energy. `worst` is kept
-    // sorted ascending by quality, size <= num_worst (front = smallest kept).
-    std::vector<std::pair<double, size_t>> worst;
-    worst.reserve(num_worst);
-    for (size_t tid = 0; tid < tet_capacity(); ++tid) {
-        const Tuple t = tuple_from_tet(tid);
-        if (!t.is_valid(*this)) {
-            continue;
-        }
-        const double& q = m_tet_attribute[tid].m_quality;
-        if (std::cbrt(q) < filter_energy) {
-            continue;
-        }
-        if (num_worst > 0) {
-            if (static_cast<int>(worst.size()) < num_worst) {
-                worst.emplace_back(q, tid);
-                std::sort(worst.begin(), worst.end());
-            } else if (q > worst.front().first) {
-                worst.front() = {q, tid};
-                std::sort(worst.begin(), worst.end());
-            }
-        } else {
-            worst.emplace_back(q, tid);
-        }
-    }
-
-    if (num_worst == 0) {
-        std::sort(worst.begin(), worst.end());
-    }
     if (worst.empty()) {
         return 0;
     }
 
-    // Record the worst tets' own vertices (for the exact-rational split fallback)
-    // and, if force-split is on, the LONGEST edge of each worst tet. split_all_edges
-    // force-splits exactly those edges (bypasses the length gate), so a stuck
-    // sliver's long edge is split immediately -- WITHOUT changing the sizing field.
+    // If force-split is on, record the LONGEST edge of each worst tet. split_all_edges
+    // force-splits exactly those edges (bypasses the length gate), so a stuck sliver's
+    // long edge is split immediately -- WITHOUT changing the sizing field.
     m_force_split_edges.clear();
-    for (const auto& [q, tid] : worst) {
-        const auto vs = oriented_tet_vids(tid);
-        if (m_params.stuck_refine_force_split) {
-            double l2max = -1;
-            size_t ea = vs[0];
-            size_t eb = vs[1];
-            for (size_t a = 0; a < 4; ++a) {
-                for (size_t b = a + 1; b < 4; ++b) {
-                    const Vector3d& pa = m_vertex_attribute[vs[a]].m_posf;
-                    const Vector3d& pb = m_vertex_attribute[vs[b]].m_posf;
-                    const double l2 = (pa - pb).squaredNorm();
-                    if (l2 > l2max) {
-                        l2max = l2;
-                        ea = vs[a];
-                        eb = vs[b];
-                    }
-                }
-            }
-            m_force_split_edges.insert(simplex::Edge(ea, eb));
+    if (m_params.stuck_refine_force_split) {
+        for (const auto& [q, tid] : worst) {
+            m_force_split_edges.insert(
+                utils::longest_edge(oriented_tet_vids(tid), [this](size_t vid) -> const Vector3d& {
+                    return m_vertex_attribute[vid].m_posf;
+                }));
         }
     }
 
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.
-    std::unordered_set<size_t> region;
-    std::vector<size_t> frontier;
+    std::vector<size_t> seeds;
+    seeds.reserve(4 * worst.size());
     for (const auto& [_, tid] : worst) {
-        const auto vs = oriented_tet_vids(tid);
-        for (const size_t v : vs) {
-            region.insert(v);
+        for (const size_t v : oriented_tet_vids(tid)) {
+            seeds.push_back(v);
         }
     }
-    frontier.insert(frontier.end(), region.begin(), region.end());
+    const auto one_ring = [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); };
+    const auto region = utils::grow_vertex_region(seeds, n_rings, one_ring);
 
-    // grow region by n rings starting from the worst tets' vertices
-    for (int r = 0; r < n_rings; ++r) {
-        std::vector<size_t> next;
-        for (const size_t v : frontier) {
-            for (const size_t u : get_one_ring_vids_for_vertex_adj(v)) {
-                if (region.insert(u).second) {
-                    next.push_back(u);
-                }
-            }
-        }
-        frontier.swap(next);
-    }
+    const auto sizing = [this](size_t v) -> double& {
+        return m_vertex_attribute[v].m_sizing_scalar;
+    };
 
     // Apply the multiplicative refinement, clamped at the floor.
-    std::vector<size_t> refined;
-    refined.reserve(region.size());
-    for (const size_t v : region) {
-        double& s = m_vertex_attribute[v].m_sizing_scalar;
-        const double ns = std::max(floor, s * factor);
-        if (ns < s) {
-            s = ns;
-            refined.push_back(v);
-        }
-    }
+    const auto refined = utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        m_params.stuck_refine_min_scalar,
+        sizing);
 
     // Grade the refined region into its surroundings (monotone, only lowers).
     gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
@@ -743,7 +802,7 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
         "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices, "
         "filter_energy {:.4}",
         worst.size(),
-        std::cbrt(worst.back().first),
+        worst.back().first,
         refined.size(),
         region.size(),
         filter_energy);
@@ -752,34 +811,11 @@ size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
 
 void TetWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
 {
-    if (grade <= 1.0) {
-        return;
-    }
-
-    // Min-relaxation (Dijkstra/Bellman-Ford style): vertex u caps each neighbor
-    // at grade * sizing[u]. Only ever decreases sizings, so it spreads more
-    // refinement outward without raising the already-refined (seed) values.
-    // Sizings are always in (0, 1], so once grade*sizing[u] >= 1 the cap can no
-    // longer lower any neighbor and propagation stops -- this bounds the halo.
-    std::queue<size_t> q;
-    for (const size_t v : seeds) {
-        q.push(v);
-    }
-    while (!q.empty()) {
-        const size_t u = q.front();
-        q.pop();
-        const double cap = grade * m_vertex_attribute[u].m_sizing_scalar;
-        if (cap >= 1.0) {
-            continue;
-        }
-        for (const size_t w : get_one_ring_vids_for_vertex_adj(u)) {
-            double& sw = m_vertex_attribute[w].m_sizing_scalar;
-            if (sw > cap) {
-                sw = cap;
-                q.push(w);
-            }
-        }
-    }
+    utils::gradation_smooth_sizing(
+        grade,
+        seeds,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
+        [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
 }
 
 void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)
@@ -1207,24 +1243,14 @@ std::tuple<double, double> TetWildMesh::get_max_avg_energy()
 
 std::vector<size_t> TetWildMesh::active_vertices() const
 {
-    const double thr = active_quality_threshold();
-    std::vector<char> seen(vert_capacity(), 0);
-    std::vector<size_t> out;
-    for (size_t i = 0; i < tet_capacity(); ++i) {
-        if (!tuple_from_tet(i).is_valid(*this)) {
-            continue;
-        }
-        if (m_tet_attribute[i].m_quality < thr) {
-            continue;
-        }
-        for (const size_t v : oriented_tet_vids(i)) {
-            if (!seen[v]) {
-                seen[v] = 1;
-                out.push_back(v);
-            }
-        }
-    }
-    return out;
+    return utils::active_vertices(
+        vert_capacity(),
+        tet_capacity(),
+        [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
+        [this](size_t tid) { return m_tet_attribute[tid].m_quality; },
+        [this](size_t tid) { return oriented_tet_vids(tid); },
+        active_quality_threshold(),
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
 }
 
 
@@ -1402,6 +1428,31 @@ bool TetWildMesh::is_edge_on_surface(const Tuple& loc)
     return false;
 }
 
+int TetWildMesh::edge_incident_surface_face_count(const Tuple& e)
+{
+    const size_t v1_id = e.vid(*this);
+    const size_t v2_id = e.switch_vertex(*this).vid(*this);
+
+    const auto tets = get_incident_tets_for_edge(e);
+    std::vector<size_t> n_vids;
+    for (const auto& t : tets) {
+        const auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; ++j) {
+            const size_t v = vs[j].vid(*this);
+            if (v != v1_id && v != v2_id) n_vids.push_back(v);
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    int count = 0;
+    for (const size_t vid : n_vids) {
+        auto [ftup, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        (void)ftup;
+        if (fid != static_cast<size_t>(-1) && m_face_attribute[fid].m_is_surface_fs) ++count;
+    }
+    return count;
+}
+
 
 bool TetWildMesh::is_edge_on_bbox(const Tuple& loc)
 {
@@ -1486,85 +1537,6 @@ bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
     return false;
 }
 
-bool TetWildMesh::check_attributes()
-{
-    for (auto& f : get_faces()) {
-        auto fid = f.fid(*this);
-        auto vs = get_face_vertices(f);
-
-        if (m_face_attribute[fid].m_is_surface_fs) {
-            if (!(m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
-                  m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
-                  m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface)) {
-                logger().critical("surface track wrong");
-                return false;
-            }
-            bool is_out = m_envelope.is_outside(
-                {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
-                  m_vertex_attribute[vs[1].vid(*this)].m_posf,
-                  m_vertex_attribute[vs[2].vid(*this)].m_posf}});
-            if (is_out) {
-                logger().critical(
-                    "is_out f {} {} {}",
-                    vs[0].vid(*this),
-                    vs[1].vid(*this),
-                    vs[2].vid(*this));
-                return false;
-            }
-        }
-        if (m_face_attribute[fid].m_is_bbox_fs >= 0) {
-            if (!(!m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
-                  !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
-                  !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty())) {
-                logger().critical("bbox track wrong {}", fid);
-                return false;
-            }
-        }
-    }
-
-    const auto& vs = get_vertices();
-    for (const auto& v : vs) {
-        size_t i = v.vid(*this);
-        if (m_vertex_attribute[i].m_is_on_surface) {
-            bool is_out = m_envelope.is_outside(m_vertex_attribute[i].m_posf);
-            if (is_out) {
-                logger().critical("is_out v");
-                return false;
-            }
-        }
-
-        // check rounding
-        if (m_vertex_attribute[i].m_is_rounded) {
-            if (m_vertex_attribute[i].m_pos[0] != m_vertex_attribute[i].m_posf[0] ||
-                m_vertex_attribute[i].m_pos[1] != m_vertex_attribute[i].m_posf[1] ||
-                m_vertex_attribute[i].m_pos[2] != m_vertex_attribute[i].m_posf[2]) {
-                logger().critical("rounding error {} rounded", i);
-                return false;
-            }
-        } else {
-            Vector3d p = to_double(m_vertex_attribute[i].m_pos);
-            if (p != m_vertex_attribute[i].m_posf) {
-                logger().critical("rounding error {} unrounded", i);
-                return false;
-            }
-        }
-    }
-
-    // check quality
-    const auto& tets = get_tets();
-    for (const auto& t : tets) {
-        size_t i = t.tid(*this);
-        double q = get_quality(t);
-        if (q != m_tet_attribute[i].m_quality) {
-            logger().critical(
-                "q!=m_tet_attribute[i].m_quality {} {}",
-                q,
-                m_tet_attribute[i].m_quality);
-            return false;
-        }
-    }
-    return true;
-}
 
 bool TetWildMesh::vertex_is_on_surface(const size_t vid) const
 {
@@ -1803,7 +1775,11 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
     writer->add_cell_field("winding_number_tracked", wn_tracked);
     writer->add_cell_field("t_energy", t_energy);
     for (size_t i = 0; i < wn_per_input.size(); ++i) {
-        std::string wn_name = fmt::format("wn_{}", i);
+        // Named after the input when the caller supplied input_names, as in triwild's MSH
+        // groups; otherwise numbered.
+        const std::string wn_name = i < m_input_names.size()
+                                        ? fmt::format("wn_{}", m_input_names[i])
+                                        : fmt::format("wn_{}", i);
         writer->add_cell_field(wn_name, wn_per_input[i]);
     }
     writer->add_field("sizing_field", v_sizing_field);

@@ -46,20 +46,46 @@ public:
      *
      * There is no sorting or any check if the simplex already exists.
      */
+    // The faces are appended straight into this collection. Going through
+    // faces_from_simplex() would build a whole temporary SimplexCollection -- three heap
+    // allocations for a Tet -- copy it in, and destroy it; TetMeshSubstructure's link
+    // computation calls this ten times per edge.
     void add_with_faces(const Edge& s)
     {
         add(s);
-        add(faces_from_simplex(s));
+        const auto& v = s.vertices();
+        m_v.emplace_back(Vertex(v[0]));
+        m_v.emplace_back(Vertex(v[1]));
     }
     void add_with_faces(const Face& s)
     {
         add(s);
-        add(faces_from_simplex(s));
+        const auto& v = s.vertices();
+        m_v.emplace_back(Vertex(v[0]));
+        m_v.emplace_back(Vertex(v[1]));
+        m_v.emplace_back(Vertex(v[2]));
+        m_e.emplace_back(Edge(v[0], v[1]));
+        m_e.emplace_back(Edge(v[0], v[2]));
+        m_e.emplace_back(Edge(v[1], v[2]));
     }
     void add_with_faces(const Tet& s)
     {
         add(s);
-        add(faces_from_simplex(s));
+        const auto& v = s.vertices();
+        m_v.emplace_back(Vertex(v[0]));
+        m_v.emplace_back(Vertex(v[1]));
+        m_v.emplace_back(Vertex(v[2]));
+        m_v.emplace_back(Vertex(v[3]));
+        m_e.emplace_back(Edge(v[0], v[1]));
+        m_e.emplace_back(Edge(v[0], v[2]));
+        m_e.emplace_back(Edge(v[0], v[3]));
+        m_e.emplace_back(Edge(v[1], v[2]));
+        m_e.emplace_back(Edge(v[1], v[3]));
+        m_e.emplace_back(Edge(v[2], v[3]));
+        m_f.emplace_back(Face(v[0], v[1], v[2]));
+        m_f.emplace_back(Face(v[0], v[1], v[3]));
+        m_f.emplace_back(Face(v[0], v[2], v[3]));
+        m_f.emplace_back(Face(v[1], v[2], v[3]));
     }
 
     void add(const SimplexCollection& simplex_collection);

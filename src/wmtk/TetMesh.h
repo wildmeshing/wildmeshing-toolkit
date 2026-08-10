@@ -360,6 +360,21 @@ public:
     size_t tet_capacity() const { return current_tet_size; }
 
     /**
+     * @name Dimension-generic cell accessors
+     *
+     * A "cell" is the top-dimensional element: a tet here, a triangle in TriMesh. These
+     * three members plus EDGES_PER_CELL are the whole interface the dimension-generic
+     * helpers in wmtk/utils (ParallelCollect, SizingField) need, so the same helper works
+     * on both meshes without traits or overloads.
+     * @{
+     */
+    static constexpr int EDGES_PER_CELL = 6;
+    static constexpr int FACES_PER_CELL = 4;
+    size_t cell_capacity() const { return tet_capacity(); }
+    Tuple tuple_from_cell(size_t cid) const { return tuple_from_tet(cid); }
+    /** @} */
+
+    /**
      * @brief get the number of unremoved verticies
      *
      */
@@ -799,6 +814,19 @@ protected:
      */
     virtual bool swap_edge_44_after(const Tuple& t) { return true; }
     /**
+     * @brief Filter which of the 4-4 orientations may be chosen.
+     *
+     * Called for every candidate 4-4 case (identified by its new edge) BEFORE the energy-based
+     * selection; a candidate whose new edge is rejected here is not considered. The default
+     * accepts everything, so interior edges keep the pure min-energy behavior. A derived mesh can
+     * override this to force a specific retetrahedralization (e.g. tetwild forces the case that
+     * realizes a surface diagonal flip).
+     *
+     * @param new_edge The two vertices of the candidate's new edge. The ordering is
+     * implementation-defined (currently new_edge[0] is the case-selector vertex).
+     */
+    virtual bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) { return true; }
+    /**
      * @brief User specified preparations and desideratas for a 5-6 edge swap before changing the
      * connectivity
      *
@@ -829,6 +857,19 @@ protected:
      * @return true if the modification succeed
      */
     virtual bool swap_edge_56_after(const Tuple& t) { return true; }
+    /**
+     * @brief Filter which of the 5-6 orientations may be chosen.
+     *
+     * Called for every candidate 5-6 case (identified by its new fan face) BEFORE the energy-based
+     * selection; a candidate whose new face is rejected here is not considered. The default accepts
+     * everything, so interior edges keep the pure min-energy behavior. `new_face[0]` is the fan
+     * apex. A derived mesh can override this to force a specific retetrahedralization (e.g. tetwild
+     * forces the fan that realizes a surface diagonal flip).
+     *
+     * @param new_face The candidate's new fan face; new_face[0] is the fan apex.
+     * @return true if this candidate case is allowed.
+     */
+    virtual bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) { return true; }
     /**
      * @brief User specified preparations and desideratas for an 3-2 edge swap before changing the
      * conenctivity
@@ -939,6 +980,25 @@ public:
      * @param vids Global vertex index of the face
      */
     std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
+
+    /**
+     * @brief Lowest tet id incident to all three vertices, or size_t(-1) if there is none.
+     *
+     * Costs O(smallest incident-tet fan) rather than O(largest), which matters when the
+     * fans are skewed -- see the implementation for the case that motivated it.
+     */
+    size_t lowest_common_tet(size_t v0_id, size_t v1_id, size_t v2_id) const;
+
+    /**
+     * @brief Number of tets incident to a vertex, in O(1).
+     *
+     * Around 20-30 on a well-shaped mesh. Worth checking before anything that walks the
+     * one ring, since a degenerate mesh can push it into the thousands.
+     */
+    size_t vertex_valence(const size_t vid) const
+    {
+        return m_vertex_connectivity[vid].m_conn_tets.size();
+    }
     std::tuple<Tuple, size_t> tuple_from_face(const simplex::Face& f) const;
 
     /**
@@ -1017,8 +1077,8 @@ public:
      * @param t a Tuple that refers to a vertex
      * @return std::vector<size_t> a vector of vids
      */
-    std::vector<size_t> get_one_ring_tids_for_vertex(const Tuple& t) const;
-    std::vector<size_t> get_one_ring_tids_for_vertex(const size_t vid) const;
+    const std::vector<size_t>& get_one_ring_tids_for_vertex(const Tuple& t) const;
+    const std::vector<size_t>& get_one_ring_tids_for_vertex(const size_t vid) const;
 
     /**
      * @brief Get the one ring vertices for a vertex

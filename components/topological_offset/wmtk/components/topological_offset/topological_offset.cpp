@@ -25,6 +25,7 @@ void topological_offset(nlohmann::json json_params)
     {
         const auto spec = jse::embed::wmtk_topological_offset_spec::topological_offset_spec::spec();
         jse::JSE spec_engine;
+        spec_engine.strict = true;
         bool r = spec_engine.verify_json(json_params, spec);
         if (!r) {
             log_and_throw_error(spec_engine.log2str());

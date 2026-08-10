@@ -1,4 +1,6 @@
 #include "SimWildMeshTri.hpp"
+
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 
@@ -26,6 +28,7 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
+#include <wmtk/utils/partition_utils.hpp>
 #include "expression_parser/Parser.hpp"
 
 namespace wmtk::components::simwild::tri {
@@ -70,96 +73,21 @@ void SimWildMeshTri::partition_mesh_morton()
     }
     logger().info("Number of parts: {} by morton", NUM_THREADS);
 
-    std::vector<Vector2d> V_v(vert_capacity());
-
-    threading::parallel_for(
-        threading::range(0, V_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V_v[i] = m_vertex_attribute[i].m_pos;
-            }
+    // The shared partitioner is 3D; a zero z leaves the bounding box, the scale and the
+    // Morton code exactly where a 2D-specific version would put them.
+    std::vector<size_t> partition_id;
+    wmtk::partition_vertex_morton(
+        vert_capacity(),
+        [this](size_t i) {
+            const Vector2d& p = m_vertex_attribute[i].m_pos;
+            return Eigen::Vector3d(p[0], p[1], 0);
         },
-        NUM_THREADS);
+        NUM_THREADS,
+        partition_id);
 
-    struct sortstruct
-    {
-        size_t order;
-        Resorting::MortonCode64 morton;
-    };
-
-    std::vector<sortstruct> list_v;
-    list_v.resize(V_v.size());
-    const int multi = 1000;
-    // since the morton code requires a correct scale of input vertices,
-    //  we need to scale the vertices if their coordinates are out of range
-    std::vector<Vector2d> V = V_v; // this is for rescaling vertices
-    Vector2d vmin, vmax;
-    vmin = V.front();
-    vmax = V.front();
-
-    for (size_t j = 0; j < V.size(); j++) {
-        for (int i = 0; i < 2; i++) {
-            vmin(i) = std::min(vmin(i), V[j](i));
-            vmax(i) = std::max(vmax(i), V[j](i));
-        }
+    for (size_t i = 0; i < partition_id.size(); i++) {
+        m_vertex_attribute[i].partition_id = partition_id[i];
     }
-
-    Vector2d center = (vmin + vmax) / 2;
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                V[i] = V[i] - center;
-            }
-        },
-        NUM_THREADS);
-
-    Vector2d scale_point =
-        vmax - center; // after placing box at origin, vmax and vmin are symetric.
-
-    double xscale, yscale;
-    xscale = fabs(scale_point[0]);
-    yscale = fabs(scale_point[1]);
-    double scale = std::max(xscale, yscale);
-    if (scale > 300) {
-        threading::parallel_for(
-            threading::range(0, V.size()),
-            [&](const threading::range& r) {
-                for (size_t i = r.begin(); i < r.end(); i++) {
-                    V[i] = V[i] / scale;
-                }
-            },
-            NUM_THREADS);
-    }
-
-    threading::parallel_for(
-        threading::range(0, V.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                list_v[i].morton =
-                    Resorting::MortonCode64(int(V[i][0] * multi), int(V[i][1] * multi), 0);
-                list_v[i].order = i;
-            }
-        },
-        NUM_THREADS);
-
-    const auto morton_compare = [](const sortstruct& a, const sortstruct& b) {
-        return (a.morton < b.morton);
-    };
-
-    std::sort(list_v.begin(), list_v.end(), morton_compare);
-
-    size_t interval = list_v.size() / NUM_THREADS + 1;
-
-    threading::parallel_for(
-        threading::range(0, list_v.size()),
-        [&](const threading::range& r) {
-            for (size_t i = r.begin(); i < r.end(); i++) {
-                m_vertex_attribute[list_v[i].order].partition_id = i / interval;
-            }
-        },
-        NUM_THREADS);
 }
 
 double SimWildMeshTri::get_length2(const Tuple& l) const
@@ -277,11 +205,16 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_E_envelope = tempE;
-        m_envelope = std::make_shared<SampleEnvelope>();
+        m_envelope = std::make_shared<SampleEnvelope>(!m_params.use_sample_envelope);
         m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+        logger().info(
+            "Envelope: {} (eps {:.6})",
+            m_envelope->use_exact ? "EXACT" : "sampled",
+            m_envelope_eps);
         m_envelope_orig = m_envelope;
-    } else if (m_params.operation == "remeshing") {
-        // All surface edges must be inside the envelope
+    } else if (m_params.operation == "remeshing" && m_params.check_envelope_at_init) {
+        // All surface edges must be inside the envelope. Opt-in: see
+        // Parameters::check_envelope_at_init for why it is not worth its cost by default.
         logger().info("Envelope sanity check");
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {
@@ -347,8 +280,12 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         m_E_envelope[i] = E.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>();
+    m_envelope = std::make_shared<SampleEnvelope>(!m_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_E_envelope, m_envelope_eps);
+    logger().info(
+        "Envelope: {} (eps {:.6})",
+        m_envelope->use_exact ? "EXACT" : "sampled",
+        m_envelope_eps);
 
     if (!m_envelope_orig) {
         m_envelope_orig = m_envelope;
@@ -433,6 +370,226 @@ void SimWildMeshTri::set_sizing_field(const nlohmann::json& sizing_field_json)
     }
 }
 
+void SimWildMeshTri::set_quality_field(const nlohmann::json& quality_field_json)
+{
+    if (!quality_field_json.is_array()) {
+        log_and_throw_error(
+            "quality_field should be an array of objects, each defining a region and its "
+            "target "
+            "quality.");
+    }
+
+    for (const auto& region_json : quality_field_json) {
+        if (!region_json.contains("tags")) {
+            log_and_throw_error("Each quality_field entry must contain a 'tags' field.");
+        }
+        if (!region_json.contains("quality")) {
+            log_and_throw_error("Each quality_field entry must contain a 'quality' field.");
+        }
+        const std::string tags_str_set = region_json["tags"];
+        auto& [expr, quality] = m_quality_field.emplace_back();
+        expr = expression_parser::parse(tags_str_set, m_tag_name_to_id);
+
+        quality = region_json["quality"];
+
+        logger().info("Added quality field: expr = {}, quality = {}", expr->to_string(), quality);
+    }
+}
+
+double SimWildMeshTri::target_quality(const size_t tid) const
+{
+    double quality = m_params.stop_energy; // default
+    for (const auto& [expr, q] : m_quality_field) {
+        if (expr->eval(m_face_attribute[tid].tags)) {
+            quality = q;
+        }
+    }
+    return quality;
+}
+
+double SimWildMeshTri::target_quality(const Tuple& t) const
+{
+    const auto tid = t.fid(*this);
+    return target_quality(tid);
+}
+
+double SimWildMeshTri::quality_rel(const size_t tid) const
+{
+    return m_face_attribute[tid].m_quality / target_quality(tid);
+}
+
+double SimWildMeshTri::quality_rel(const Tuple& t) const
+{
+    return quality_rel(t.fid(*this));
+}
+
+bool SimWildMeshTri::check_mesh_quality(double& max_rel_quality, const bool verbose) const
+{
+    bool all_good = true;
+    size_t num_bad = 0;
+    size_t num_total = 0;
+    max_rel_quality = 0;
+    for (int i = 0; i < tri_capacity(); i++) {
+        const Tuple tup = tuple_from_tri(i);
+        if (!tup.is_valid(*this)) {
+            continue;
+        }
+        num_total++;
+        double rel_quality = quality_rel(i);
+        max_rel_quality = std::max(max_rel_quality, rel_quality);
+        if (rel_quality > 1.0) {
+            all_good = false;
+            num_bad++;
+        }
+    }
+    if (verbose && num_bad > 0) {
+        logger().info(
+            "Bad elements: {} of {}, max relative quality: {:.6}",
+            num_bad,
+            num_total,
+            max_rel_quality);
+    }
+    return all_good;
+}
+
+size_t SimWildMeshTri::refine_sizing_around_worst()
+{
+    const int num_worst = std::max(0, m_params.stuck_refine_num_worst);
+    const int n_rings = std::max(0, m_params.stuck_refine_rings);
+    const double factor = m_params.stuck_refine_factor;
+    const double floor = m_params.stuck_refine_min_scalar;
+
+    const double filter_energy = m_params.stop_energy;
+
+    // Find the num_worst valid tets with the highest energy. `worst` is kept
+    // sorted ascending by quality, size <= num_worst (front = smallest kept).
+    std::vector<std::pair<double, size_t>> worst;
+    worst.reserve(num_worst);
+    for (size_t tid = 0; tid < tri_capacity(); ++tid) {
+        const Tuple t = tuple_from_tri(tid);
+        if (!t.is_valid(*this)) {
+            continue;
+        }
+        const double& q = m_face_attribute[tid].m_quality;
+        if (q < target_quality(tid)) {
+            continue;
+        }
+        if (num_worst > 0) {
+            if (static_cast<int>(worst.size()) < num_worst) {
+                worst.emplace_back(q, tid);
+                std::sort(worst.begin(), worst.end());
+            } else if (q > worst.front().first) {
+                worst.front() = {q, tid};
+                std::sort(worst.begin(), worst.end());
+            }
+        } else {
+            worst.emplace_back(q, tid);
+        }
+    }
+
+    if (num_worst == 0) {
+        std::sort(worst.begin(), worst.end());
+    }
+    if (worst.empty()) {
+        return 0;
+    }
+
+    // Seed the region with the worst tets' vertices, then BFS n_rings hops.
+    std::unordered_set<size_t> region;
+    std::vector<size_t> frontier;
+    for (const auto& [_, tid] : worst) {
+        const auto vs = oriented_tri_vids(tid);
+        for (const size_t v : vs) {
+            region.insert(v);
+        }
+    }
+    frontier.insert(frontier.end(), region.begin(), region.end());
+
+    // grow region by n rings starting from the worst tets' vertices
+    for (int r = 0; r < n_rings; ++r) {
+        std::vector<size_t> next;
+        for (const size_t v : frontier) {
+            for (const size_t u : get_one_ring_vids_for_vertex_duplicate(v)) {
+                if (region.insert(u).second) {
+                    next.push_back(u);
+                }
+            }
+        }
+        frontier.swap(next);
+    }
+
+    // Apply the multiplicative refinement, clamped at the floor.
+    std::vector<size_t> refined;
+    refined.reserve(region.size());
+    for (const size_t v : region) {
+        double& s = m_vertex_attribute[v].m_sizing_scalar;
+        const double ns = std::max(floor, s * factor);
+        if (ns < s) {
+            s = ns;
+            refined.push_back(v);
+        }
+    }
+
+    // Grade the refined region into its surroundings (monotone, only lowers).
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+    // restrict sizing scalar according to sizing field
+    for (const Tuple& t : get_faces()) {
+        const auto tid = t.fid(*this);
+        double sizing = std::numeric_limits<double>::max();
+        for (const auto& [expr, length] : m_sizing_field) {
+            if (expr->eval(m_face_attribute[tid].tags)) {
+                sizing = std::min(sizing, length / m_params.l);
+            }
+        }
+        const auto vs = oriented_tri_vids(tid);
+        for (const size_t& vid : vs) {
+            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
+            s = std::min(s, sizing);
+        }
+    }
+
+    logger().info(
+        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices",
+        worst.size(),
+        worst.back().first,
+        refined.size(),
+        region.size());
+    return refined.size();
+}
+
+void SimWildMeshTri::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
+{
+    if (grade <= 1.0) {
+        return;
+    }
+
+    // Min-relaxation (Dijkstra/Bellman-Ford style): vertex u caps each neighbor
+    // at grade * sizing[u]. Only ever decreases sizings, so it spreads more
+    // refinement outward without raising the already-refined (seed) values.
+    // Sizings are always in (0, 1], so once grade*sizing[u] >= 1 the cap can no
+    // longer lower any neighbor and propagation stops -- this bounds the halo.
+    std::queue<size_t> q;
+    for (const size_t v : seeds) {
+        q.push(v);
+    }
+    while (!q.empty()) {
+        const size_t u = q.front();
+        q.pop();
+        const double cap = grade * m_vertex_attribute[u].m_sizing_scalar;
+        if (cap >= 1.0) {
+            continue;
+        }
+        for (const size_t w : get_one_ring_vids_for_vertex_duplicate(u)) {
+            double& sw = m_vertex_attribute[w].m_sizing_scalar;
+            if (sw > cap) {
+                sw = cap;
+                q.push(w);
+            }
+        }
+    }
+}
+
 bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
 {
     wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
@@ -458,7 +615,7 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t fid = t.fid(*this);
-        if (m_face_attribute.at(fid).m_quality < filter_energy) {
+        if (m_face_attribute.at(fid).m_quality < target_quality(fid)) {
             continue;
         }
         const auto vs = oriented_tri_vids(t);
@@ -701,7 +858,9 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
     v_sizing_field.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tri_capacity(), 1));
-    Eigen::MatrixXd amips(tri_capacity(), 1);
+    VectorXd amips(tri_capacity());
+    VectorXd amips_target(tri_capacity());
+    VectorXd amips_rel(tri_capacity());
 
     int index = 0;
     for (const Tuple& t : faces) {
@@ -709,11 +868,12 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_face_attribute[tid].tags.count(j) ? 1 : 0;
         }
-        amips(index, 0) = m_face_attribute[tid].m_quality;
-
-        const auto& vs = oriented_tri_vids(t);
+        amips[index] = m_face_attribute[tid].m_quality;
+        amips_target[index] = target_quality(tid);
+        amips_rel[index] = quality_rel(tid);
+        const auto tv = oriented_tri_vids(t);
         for (size_t j = 0; j < 3; j++) {
-            F(index, j) = (int)vs[j];
+            F(index, j) = (int)tv[j];
         }
         ++index;
     }
@@ -737,6 +897,8 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
         writer->add_cell_field(fmt::format("tag_{}", j), tags[j]);
     }
     writer->add_cell_field("quality", amips);
+    writer->add_cell_field("quality_target", amips_target);
+    writer->add_cell_field("quality_rel", amips_rel);
     writer->add_field("sizing_field", v_sizing_field);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
@@ -789,9 +951,9 @@ void SimWildMeshTri::write_vtu_with_energies(const std::string& path) const
         }
         amips(index, 0) = m_face_attribute[tid].m_quality;
 
-        const auto& vs = oriented_tri_vids(t);
+        const auto tv = oriented_tri_vids(t);
         for (size_t j = 0; j < 3; j++) {
-            F(index, j) = (int)vs[j];
+            F(index, j) = (int)tv[j];
         }
         ++index;
     }
@@ -941,6 +1103,12 @@ bool SimWildMeshTri::split_edge_before(const Tuple& loc0)
 
     cache.old_e_attrs = m_edge_attribute[loc0.eid(*this)];
 
+    cache.max_quality_before = 0.;
+    for (const size_t fid : get_incident_fids_for_edge(loc0)) {
+        cache.max_quality_before =
+            std::max(cache.max_quality_before, m_face_attribute[fid].m_quality);
+    }
+
     const simplex::Edge edge(cache.v1_id, cache.v2_id);
 
     auto faces = get_incident_fids_for_edge(loc0);
@@ -1071,6 +1239,23 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
     }
 
     /// update quality
+    //
+    // A split is otherwise unconditional: it checks orientation and the envelope but never
+    // quality. That is right for a length-driven split of a long, well-behaved edge and
+    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
+    // land essentially on the opposite edge and leave a correctly-oriented element whose
+    // area/volume is too small for AMIPS -- get_quality then returns MAX_ENERGY, and every
+    // control decision that divides by the max energy is meaningless from then on. Refuse
+    // to be the operation that creates one; subdividing an already-degenerate region is
+    // still allowed, so a stuck region can keep being refined. See tetwild's EdgeSplitting
+    // for the measurement this comes from.
+    double max_quality_after = 0.;
+    for (const Tuple& loc : locs) {
+        max_quality_after = std::max(max_quality_after, get_quality(loc));
+    }
+    if (max_quality_after >= MAX_ENERGY && cache.max_quality_before < MAX_ENERGY) {
+        return false;
+    }
     for (const Tuple& loc : locs) {
         m_face_attribute[loc.fid(*this)].m_quality = get_quality(loc);
     }
@@ -1098,6 +1283,7 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
 
 void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
 {
+    m_collapse_limit_length = is_limit_length;
     std::vector<std::pair<std::string, Tuple>> all_ops;
 
     auto setup_and_execute = [&](auto& executor) {
@@ -1117,8 +1303,9 @@ void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
             size_t v1_id = tup.vid(*this);
             size_t v2_id = tup.switch_vertex(*this).vid(*this);
             double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-            if (is_limit_length && length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio)
-                return false;
+            // Deliberately NOT filtered on length here. An over-length edge stays a
+            // candidate and collapse_edge_before decides it on quality instead: it is kept
+            // only if it STRICTLY improves the worst element of the ring. See there.
             return true;
         };
 
@@ -1233,12 +1420,48 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
             return false;
         }
         double q = get_quality(vs);
-        if (q > m_params.stop_energy && q > cache.max_energy) {
+        if (q > target_quality(tid) && q > cache.max_energy) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
     }
     assert(cache.changed_energies.size() == cache.changed_fids.size());
+
+    // Length gate, applied here rather than when the candidate list is built.
+    //
+    // Coarsening a well-shaped mesh is what the length limit exists to prevent, so a short
+    // edge keeps the old behaviour. But applying it to the CANDIDATE LIST made any element
+    // whose edges are all longer than 0.8 * l invisible to this pass: it was never offered,
+    // so it produced no rejection record anywhere and looked untouched rather than refused.
+    //
+    // Measured in triwild on triwild20k 189017 at eps_rel 1e-4, where a collinear triangle
+    // with edges 55 / 165 / 220 against a gate of 38.7 survived every pass while stuck-refine
+    // split it -- halving its short edge and DOUBLING its energy each round, 6.7e16 -> 1.5e17
+    // -> 3.1e17 -> inverted -- and the mesh grew from 17k to 6.6M elements in ten iterations.
+    // Refinement cannot repair a shape defect (AMIPS is scale-invariant, so splitting a
+    // collinear element leaves it collinear); collapse is the only operation that can remove
+    // one, so it has to be allowed to see it. With this, that model converges in 21
+    // iterations, and the eps_rel 1e-3 run it already handled is unchanged at 12.
+    //
+    // The condition is strict improvement of the ring's worst element, which needs no
+    // threshold and is self-limiting: in a healthy mesh almost no long-edge collapse strictly
+    // improves anything. Note changed_fids excludes the faces the collapse deletes, so when
+    // the ring's worst is one of those the test passes by construction -- the rule admits
+    // precisely the collapses that remove a bad element.
+    if (m_collapse_limit_length) { // simwild's 2D vertices carry no rounded flag
+        const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
+        const double len2 = cache.edge_length * cache.edge_length;
+        if (len2 > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+            double max_after = 0.;
+            for (const double q : cache.changed_energies) {
+                max_after = std::max(max_after, q);
+            }
+            if (max_after >= cache.max_energy) {
+                return false;
+            }
+        }
+    }
+
 
     //
     const auto& n12_locs = get_incident_fids_for_edge(loc);
@@ -1553,123 +1776,46 @@ bool SimWildMeshTri::smooth_before(const Tuple& t)
 
 bool SimWildMeshTri::smooth_after(const Tuple& t)
 {
-    // Newton iterations are encapsulated here.
-    logger().trace("Newton iteration for vertex smoothing.");
-    const size_t vid = t.vid(*this);
+    // The body lives in wmtk::optimization::smooth_vertex_2d, shared with triwild.
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = m_params.w_amips;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = true;
+    opts.quality_veto_on_surface = false;
 
-    const auto& VA = m_vertex_attribute;
-
-    const auto& locs = get_one_ring_fids_for_vertex(t);
-    assert(locs.size() > 0);
-
-    double max_quality = 0.;
-    for (const size_t fid : locs) {
-        max_quality = std::max(max_quality, m_face_attribute[fid].m_quality);
-    }
-
-    auto& solver = m_solver.local();
-    if (!solver) {
-        solver = optimization::create_basic_solver();
-    }
-
-    std::vector<std::array<double, 6>> assembles = get_amips_assembles(t);
-
-    const Vector2d old_pos = VA[vid].m_pos;
-
-    // call to polysolve
-    std::shared_ptr<polysolve::nonlinear::Problem> total_energy;
-
-    auto amips_energy = get_amips_energy(t);
-
-    const auto surf_assembles = get_surface_assembles(t);
-    if (VA[vid].m_is_on_surface) {
-        assert(!surf_assembles.empty());
-
-        auto energy_sum = std::make_shared<optimization::EnergySum>();
-
-        if (m_params.w_amips > 0) {
-            energy_sum->add_energy(amips_energy);
-        }
-        if (m_params.w_envelope > 0) {
-            energy_sum->add_energy(get_envelope_energy(t));
-        }
-
-        total_energy = energy_sum;
-    } else {
-        total_energy = amips_energy;
-    }
-
-    // solve
-    {
-        VectorXd x = old_pos;
-        try {
-            solver->minimize(*total_energy, x);
-        } catch (const std::exception&) {
-            // polysolve might throw errors that we want to ignore (e.g., line search failed)
-        }
-        m_vertex_attribute[vid].m_pos = x;
-    }
-
-    logger().trace("old pos {} -> new pos {}", old_pos.transpose(), VA[vid].m_pos.transpose());
-
-    // check surface containment
-    if (VA[vid].m_is_on_surface) {
-        // write_vtu_with_energies(fmt::format("debug_smooth_{}", m_debug_print_counter++));
-
-        for (size_t i = 1; i < surf_assembles.size(); ++i) {
-            std::array<Eigen::Vector2d, 2> edge;
-            edge[0] = VA[vid].m_pos;
-            edge[1] = surf_assembles[i];
-            if (m_envelope->is_outside(edge)) {
-                return false;
-            }
-        }
-    }
-
-    // quality (only check if not on surface)
-    auto max_after_quality = 0.;
-    for (const size_t fid : locs) {
-        if (is_inverted(fid)) {
-            return false;
-        }
-        const double q = get_quality(fid);
-        m_face_attribute[fid].m_quality = q;
-        max_after_quality = std::max(max_after_quality, q);
-    }
-    if (!VA[vid].m_is_on_surface) {
-        if (max_after_quality > max_quality) {
-            return false;
-        }
-    }
-
-    return true;
+    return optimization::smooth_vertex_2d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }
 
-std::vector<Vector2d> SimWildMeshTri::get_surface_assembles(const Tuple& t) const
+Vector2d SimWildMeshTri::smoothing_position(const size_t vid) const
 {
-    const auto& VA = m_vertex_attribute;
-    const size_t vid = t.vid(*this);
-
-    std::vector<Vector2d> surface_pts;
-
-    if (!VA[vid].m_is_on_surface) {
-        return surface_pts;
-    }
-
-    const auto es = get_surface_edges_for_vertex(vid);
-
-    surface_pts.resize(es.size() + 1);
-    surface_pts[0] = VA[vid].m_pos;
-
-    for (size_t i = 0; i < es.edges().size(); ++i) {
-        const auto& vs = es.edges()[i].vertices();
-        size_t neighbor_id = vs[0] != vid ? vs[0] : vs[1];
-        surface_pts[i + 1] = VA[neighbor_id].m_pos;
-    }
-
-    return surface_pts;
+    return m_vertex_attribute[vid].m_pos;
 }
 
+void SimWildMeshTri::set_smoothing_position(const size_t vid, const Vector2d& p)
+{
+    // No exact position to keep in step here: this mesh stores only the double one.
+    m_vertex_attribute[vid].m_pos = p;
+}
+
+bool SimWildMeshTri::is_inverted_f(const size_t fid) const
+{
+    // Positions are doubles throughout, so the exact and floating predicates coincide.
+    return is_inverted(fid);
+}
+
+std::shared_ptr<SampleEnvelope> SimWildMeshTri::smoothing_energy_envelope(const size_t) const
+{
+    return m_envelope_orig;
+}
+
+std::shared_ptr<SampleEnvelope> SimWildMeshTri::smoothing_containment_envelope(const size_t) const
+{
+    // Not m_envelope_orig: the pull target and the containment test are different objects,
+    // the same split the 3D mesh has.
+    return m_envelope;
+}
 
 std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_envelope_energy(
     const Tuple& t) const
@@ -1731,6 +1877,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_amips_energy(
     assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_pos);
     return amips_energy;
 }
+
 
 void SimWildMeshTri::log_total_surface_energy()
 {
@@ -1889,59 +2036,59 @@ void SimWildMeshTri::mesh_improvement(int max_its)
     // write_vtu(fmt::format("debug_{}", m_m_debug_print_counter++));
 
     wmtk::logger().info("========it pre========");
+    const double stop_energy = m_params.stop_energy;
     local_operations({{0, 1, 0, 0}}, true);
 
     ////operation loops
-    bool is_hit_min_edge_length = false;
-    const int M = 2;
-    int m = 0;
-    double pre_max_energy = 0., pre_avg_energy = 0.;
+    double pre_quality_rel = 0.;
+    check_mesh_quality(pre_quality_rel, true);
+
+    int refine_cooldown =
+        m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
     for (int it = 0; it < max_its; it++) {
         ///ops
         wmtk::logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        double quality_rel = local_operations({{1, 1, 1, 1}});
 
         ///energy check
-        wmtk::logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) {
+        logger().info("max rel quality {}", quality_rel);
+        if (check_mesh_quality(quality_rel, true)) {
             break;
         }
         consolidate_mesh();
 
-        wmtk::logger().info("#V = {}, #T = {}", vert_capacity(), tri_capacity());
+        wmtk::logger().info("#V = {}, #F = {}", vert_capacity(), tri_capacity());
 
-        ///sizing field
-        if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
-            (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
-            m++;
-            if (m == M) {
-                wmtk::logger().info(">>>>adjust_sizing_field...");
-                is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
-                // is_hit_min_edge_length = adjust_sizing_field(max_energy);
-                wmtk::logger().info(">>>>adjust_sizing_field finished...");
-                m = 0;
-            }
-        } else {
-            m = 0;
-            pre_max_energy = max_energy;
-            pre_avg_energy = avg_energy;
+        /// sizing field: when the max energy stalls, refine around the worst
+        /// elements to escape stuck configurations (replaces the old global
+        /// adjust_sizing_field mechanism). After a refinement, wait
+        /// stuck_refine_cooldown iterations so the operations get full passes on
+        /// the new sizing field before more refinement is added.
+        logger().info("pre_quality_rel = {:.6}, quality_rel = {:.6}", pre_quality_rel, quality_rel);
+        if (refine_cooldown > 0) {
+            --refine_cooldown;
+        } else if (
+            it > 0 && quality_rel > 1.0 &&
+            (pre_quality_rel - quality_rel) <=
+                m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
+            refine_sizing_around_worst();
+            // adjust_sizing_field_serial(max_energy); // The old update
+            logger().info(">>>>stuck-refine finished...");
+            refine_cooldown = m_params.stuck_refine_cooldown;
         }
-        if (is_hit_min_edge_length) {
-            // todo: maybe to do sth
-        }
+        pre_quality_rel = std::min(pre_quality_rel, quality_rel);
     }
 
     wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 }
 
-std::tuple<double, double> SimWildMeshTri::local_operations(
-    const std::array<int, 4>& ops,
-    bool collapse_limit_length)
+double SimWildMeshTri::local_operations(const std::array<int, 4>& ops, bool collapse_limit_length)
 {
     igl::Timer timer;
 
-    std::tuple<double, double> energy;
+    double quality_rel = 0;
 
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) {
@@ -1974,9 +2121,9 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
     for (int i = 0; i < ops.size(); i++) {
         if (i == 0) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==splitting {}==", n);
+                logger().info("==splitting {}==", n);
                 split_all_edges();
-                wmtk::logger().info(
+                logger().info(
                     "#V = {}, #F = {} after split",
                     get_vertices().size(),
                     get_faces().size());
@@ -1984,14 +2131,13 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             if (m_params.debug_output) {
                 write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(quality_rel, true);
             sanity_checks();
         } else if (i == 1) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==collapsing {}==", n);
+                logger().info("==collapsing {}==", n);
                 collapse_all_edges(collapse_limit_length);
-                wmtk::logger().info(
+                logger().info(
                     "#V = {}, #F = {} after collapse",
                     get_vertices().size(),
                     get_faces().size());
@@ -1999,12 +2145,11 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             if (m_params.debug_output) {
                 write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(quality_rel, true);
             sanity_checks();
         } else if (i == 2) {
             for (int n = 0; n < ops[i]; n++) {
-                wmtk::logger().info("==swapping {}==", n);
+                logger().info("==swapping {}==", n);
                 size_t cnt_success = swap_all_edges();
                 if (cnt_success == 0) {
                     break;
@@ -2013,24 +2158,20 @@ std::tuple<double, double> SimWildMeshTri::local_operations(
             if (m_params.debug_output) {
                 write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
             }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(quality_rel, true);
             sanity_checks();
         } else if (i == 3) {
-            wmtk::logger().info("==smoothing ==");
+            logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            wmtk::logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(quality_rel, true);
             sanity_checks();
         }
     }
-    energy = get_max_avg_energy();
-    wmtk::logger().info("max energy = {:.6}", std::get<0>(energy));
-    wmtk::logger().info("avg energy = {:.6}", std::get<1>(energy));
-    wmtk::logger().info("time = {:.4}s", timer.getElapsedTimeInSec());
+    check_mesh_quality(quality_rel, true);
+    logger().info("time = {:.4}s", timer.getElapsedTimeInSec());
 
 
-    return energy;
+    return quality_rel;
 }
 
 std::tuple<double, double> SimWildMeshTri::get_max_avg_energy()

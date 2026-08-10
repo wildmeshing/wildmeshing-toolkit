@@ -316,9 +316,11 @@ void SimWildMesh::init_surfaces_and_boundaries()
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
         m_envelope_orig = m_envelope;
     } else if (m_params.operation == "remeshing") {
-        // All surface faces must be inside the envelope
+        // Deliberately NOT behind check_envelope_at_init, unlike its 2D counterpart and
+        // triwild's: the answer is not an assertion but a decision -- if any surface face
+        // starts outside, the envelope is rebuilt from the tet tags below. Skipping it would
+        // change the envelope the run uses, not just what it reports.
         logger().info("Envelope sanity check");
-        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
         bool is_outside = false;
         for_each_face([&](const Tuple& t) {
             const size_t fid = t.fid(*this);
@@ -430,8 +432,19 @@ void SimWildMesh::find_order_2_edges()
     }
 
     // init open boundary envelope
-    m_order_2_edge_envelope = std::make_shared<SampleEnvelope>();
-    m_order_2_edge_envelope->init(v_posf, order_2_edges, m_params.epsr * m_params.diag_l / 2.0);
+    //
+    // Follows the surface envelope's predicate: same input, same epsilon, so there is no
+    // reason for `use_sample_envelope: false` to hold for the surface and not for the order-2
+    // curves. It was hard-wired to sampled only because the exact envelope could not be built
+    // from edges until fast-envelope #6.
+    m_order_2_edge_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
+    // A FRACTION of eps here, deliberately, where the surface envelope uses all of it:
+    // widening a boundary-curve envelope buys no unblocking and costs elements. See
+    // /order2_envelope_ratio in the spec for the measurement.
+    m_order_2_edge_envelope->init(
+        v_posf,
+        order_2_edges,
+        m_params.epsr * m_params.diag_l * m_params.order2_envelope_ratio);
 }
 
 bool SimWildMesh::is_order_2_edge(const Tuple& e) const

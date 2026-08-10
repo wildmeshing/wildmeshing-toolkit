@@ -1514,6 +1514,7 @@ void TetWildMesh::init_from_Volumeremesher(
             if (m_vertex_attribute[vid].m_is_rounded) {
                 m_vertex_attribute[vid].m_pos = v_rational[vid];
                 m_vertex_attribute[vid].m_is_rounded = false;
+                m_all_rounded.store(false, std::memory_order_relaxed);
             }
         }
     }
@@ -1619,8 +1620,25 @@ void TetWildMesh::find_open_boundary()
         return;
     }
 
-    // init open boundary envelope
-    m_open_boundary_envelope.init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+    // init the order-2 envelope (surface boundaries and non-manifold edges)
+    //
+    // It follows the surface envelope's choice of predicate rather than being hard-wired to
+    // the sampled one. Both are containment tests against the same input at the same epsilon,
+    // so having `use_sample_envelope: false` hold for the surface but not for its boundary
+    // curves was an accident of the exact envelope not supporting edges until now.
+    if (!m_order2_envelope) {
+        m_order2_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
+    }
+    // A FRACTION of eps here, deliberately, where the surface envelope in tetwild.cpp uses
+    // all of it. The two are not symmetric: on the surface, widening the envelope REMOVES a
+    // constraint that was blocking collapses, which is the whole point of that change; on an
+    // open-boundary curve there is no such blockage to relieve, so the extra room is only
+    // freedom for the boundary to wander within eps -- more geometry to resolve at the same
+    // final quality. See /order2_envelope_ratio in the spec for the measurement.
+    m_order2_envelope->init(
+        v_posf,
+        open_boundaries,
+        m_params.epsr * m_params.diag_l * m_params.order2_envelope_ratio);
 }
 
 bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
@@ -1631,7 +1649,7 @@ bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;
 
-    return !m_open_boundary_envelope.is_outside(
+    return !m_order2_envelope->is_outside(
         std::array<Eigen::Vector3d, 2>{
             {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
@@ -1644,7 +1662,7 @@ bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
         !m_vertex_attribute[v2].m_is_on_open_boundary)
         return false;
 
-    return !m_open_boundary_envelope.is_outside(
+    return !m_order2_envelope->is_outside(
         std::array<Eigen::Vector3d, 2>{
             {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }

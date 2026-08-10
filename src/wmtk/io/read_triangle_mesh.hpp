@@ -12,6 +12,11 @@ namespace wmtk::io {
  * in two ways: absolute and relative. Only one of them can be non-negative. If both are negative,
  * duplicated vertices will not be removed.
  *
+ * Throws if the result has no faces, so callers may assume a non-empty mesh. That covers both a
+ * file that is well-formed but empty (a binary STL with a triangle count of zero, for instance)
+ * and one whose faces were all degenerate and got cleaned away. An empty mesh has a zero-diagonal
+ * bounding box, which the eps_rel / length_rel parameters are all relative to.
+ *
  * @param path The file path to read the mesh from.
  * @param V Output vertex positions. Size is #V by 3.
  * @param F Output face indices. Size is #F by 3.

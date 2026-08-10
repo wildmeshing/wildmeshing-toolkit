@@ -9,6 +9,7 @@
 #include <wmtk/AttributeCollection.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 
 // clang-format off
@@ -101,6 +102,7 @@ public:
     double m_envelope_eps = -1;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
+    std::vector<std::tuple<ExprPtr, double>> m_quality_field;
 
     using VertAttCol = AttributeCollection<VertexAttributes>;
     using EdgeAttCol = AttributeCollection<EdgeAttributes>;
@@ -115,6 +117,21 @@ public:
 
     wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
         m_solver;
+
+    /// Why smoothing attempts were refused, reported once per pass.
+    optimization::SmoothRejectCounters m_smooth_rejects;
+
+    /// Hooks for the shared 2D smoothing driver. This mesh stores only a double position,
+    /// so is_inverted_f coincides with is_inverted.
+    Vector2d smoothing_position(const size_t vid) const;
+    void set_smoothing_position(const size_t vid, const Vector2d& p);
+    bool is_inverted_f(const size_t fid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
+
+    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
+    /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
+    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
 
     // scaling factors
     double m_s_amips = -1;
@@ -185,6 +202,38 @@ public:
 
     void set_sizing_field(const nlohmann::json& sizing_field_json);
 
+    void set_quality_field(const nlohmann::json& quality_field_json);
+
+    double target_quality(const size_t tid) const;
+    double target_quality(const Tuple& t) const;
+    double quality_rel(const size_t tid) const;
+    double quality_rel(const Tuple& t) const;
+    bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+
+    /**
+     * @brief Escape a stuck max energy by refining the sizing field around the
+     * worst elements.
+     *
+     * Finds the m_params.stuck_refine_num_worst tets with the highest energy,
+     * gathers all vertices within m_params.stuck_refine_rings graph rings of
+     * them, and multiplies each such vertex's m_sizing_scalar by
+     * m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar).
+     * Then runs gradation_smooth_sizing so the refined region blends smoothly
+     * into the surrounding resolution. Replaces the old global
+     * adjust_sizing_field mechanism. Returns the number of vertices refined.
+     */
+    size_t refine_sizing_around_worst();
+
+    /**
+     * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
+     *
+     * Enforces m_sizing_scalar[v] <= grade * m_sizing_scalar[u] for every edge
+     * (u,v), propagating outward from `seeds` with a min-relaxation. It never
+     * raises a sizing value, so it only ever spreads more refinement into the
+     * halo around already-refined vertices, avoiding sharp resolution jumps.
+     */
+    void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
+
     bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file, const bool write_envelope = true);
@@ -253,9 +302,7 @@ public:
     bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;
     //
     void mesh_improvement(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
+    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     std::tuple<double, double> get_max_avg_energy();
 
     /**
@@ -348,6 +395,10 @@ private:
         size_t v1_id;
         size_t v2_id;
         std::vector<size_t> v1_param_type;
+        /// Worst quality among the elements incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate element" from "this
+        /// split subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v2_param_type;
 
         EdgeAttributes old_e_attrs;
@@ -362,6 +413,10 @@ private:
         std::map<size_t, FaceAttributes> faces;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
+
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
 
     struct CollapseInfoCache
     {

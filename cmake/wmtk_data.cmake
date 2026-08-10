@@ -16,7 +16,10 @@ ExternalProject_Add(
     SOURCE_DIR ${WMTK_DATA_ROOT}
 
     GIT_REPOSITORY https://github.com/wildmeshing/data2.git
-    GIT_TAG f5363122a5ae8ca1679788a9373ce3af2e4b1cf5
+    # Adds the challenging-low-stop-energy models: the 30 meshes that exhausted
+    # max_iterations = 80 at stop_energy 10 before this branch. Hidden test group, never
+    # runs in CI -- see the challenging-low-stop-energy-models case in integration_tests.cpp.
+    GIT_TAG d1c5dffab5043a9307c0b00c9b7e81bdba0026e6
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

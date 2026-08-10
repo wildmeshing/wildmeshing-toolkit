@@ -73,6 +73,9 @@ private:
     {
         Eigen::Vector3d v1p;
         Eigen::Vector3d v2p;
+        // v1 is the endpoint the collapse removes, v2 the one it keeps.
+        bool v1_frozen = false;
+        bool v2_frozen = false;
     };
     wmtk::threading::enumerable_thread_specific<PositionInfoCache> position_cache;
 

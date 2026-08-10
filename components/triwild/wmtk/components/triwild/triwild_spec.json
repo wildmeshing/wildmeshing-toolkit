@@ -10,16 +10,47 @@
       "input_dir",
       "num_threads",
       "max_iterations",
+    "max_expected_iterations",
+      "skip_simplify",
+      "simplify_use_link_condition",
+      "simplify_envelope_ratio",
+      "simplify_use_sample_envelope",
+      "use_sample_envelope",
+      "filter",
+      "skip_winding_number",
       "eps_rel",
       "length_rel",
       "stop_energy",
+      "split_high_valence_threshold",
+      "w_amips",
+      "num_smoothing_passes",
+      "interleaved_smoothing",
+      "interleaved_smoothing_passes",
       "preserve_topology",
+      "preserve_feature_points",
+      "remove_duplicate_eps",
       "throw_on_fail",
       "log_file",
       "report",
       "write_vtu",
+      "preallocation_factor",
       "DEBUG_output",
-      "DEBUG_sanity_checks"
+      "DEBUG_sanity_checks",
+      "DEBUG_hausdorff",
+      "DEBUG_euler",
+      "DEBUG_feature_retention",
+      "DEBUG_disable_envelope",
+      "DEBUG_envelope_sanity_check",
+      "stuck_refine_stall_eps",
+      "stuck_refine_cooldown",
+      "stuck_refine_num_worst",
+      "stuck_refine_rings",
+      "stuck_refine_factor",
+      "stuck_refine_min_scalar",
+      "stuck_refine_gradation",
+      "stuck_refine_force_split",
+      "skip_good_regions",
+      "skip_good_regions_margin"
     ]
   },
   {
@@ -75,10 +106,89 @@
     "doc": "Maximum iterations before stopping."
   },
   {
+    "pointer": "/skip_simplify",
+    "type": "bool",
+    "default": false,
+    "doc": "If true, input simplification will be skipped. The input curves are otherwise coarsened first, by collapsing their shortest segments while staying inside the simplification envelope, so the exact arrangement and the initial mesh do not carry input detail far below the target edge length."
+  },
+  {
+    "pointer": "/simplify_use_link_condition",
+    "type": "bool",
+    "default": false,
+    "doc": "Require the link condition when simplifying the input curves. When true the simplification cannot change the topology of the curve network: junctions and vertices shared between two inputs are frozen, and any collapse that would leave a degenerate or duplicated segment is rejected. When false those collapses are allowed -- the segment that becomes degenerate or duplicated is dropped instead -- so a dirty input simplifies much further, at the cost of merging junctions and separate curves that pass within the envelope. Open endpoints stay frozen either way: the envelope is one-sided, so nothing would notice a curve eroding inwards from its own tip."
+  },
+  {
+    "pointer": "/simplify_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
+  },
+  {
+    "pointer": "/simplify_use_sample_envelope",
+    "type": "bool",
+    "default": true,
+    "doc": "Use the sampled envelope instead of the exact one for the input simplification only; the triangulation keeps whatever use_sample_envelope selects. The exact envelope dominates the cost of simplifying a large curve network, which is why this defaults the other way round from use_sample_envelope -- the same split tetwild makes. Both backends guarantee the same thing, that everything they accept lies within simplify_envelope_ratio * eps of the input; they differ only in how much of that budget they manage to use, so this does not change what simplify_envelope_ratio means."
+  },
+  {
+    "pointer": "/use_sample_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Use the sampled envelope instead of the exact one. Both describe the same envelope -- the eps-neighbourhood of the input -- and both are given the same eps; neither is wider than the other. They differ in how much of that eps they can use. The sampled test places points along a query and asks whether each is within some radius of the input; since it cannot see what happens between two samples, it shrinks that radius to stay conservative, and so rejects some geometry that is genuinely inside. The exact one decides coverage by the union of the input's eps-neighbourhoods directly and spends almost nothing on conservatism. The difference that matters in practice: a segment bridging a gap between two input curves is rejected by the exact envelope and accepted by the sampled one whenever the gap falls between samples."
+  },
+  {
+    "pointer": "/filter",
+    "type": "string",
+    "options": ["flood", "input", "none"],
+    "default": "none",
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill; the region that dominates the mesh boundary is dropped. 'input': winding number w.r.t. the inputs; faces inside no input are dropped. 'none': Do not filter. Both filters need closed input curves -- on an open polyline 'inside' is not defined and the result is arbitrary."
+  },
+  {
+    "pointer": "/skip_winding_number",
+    "type": "bool",
+    "default": false,
+    "doc": "Skip the finalize-phase winding-number and flood-fill computation. These per-face quantities are needed to filter the outside region (filter != 'none') and to tag the faces per input, which is what the MSH groups are built from -- so skipping them also empties the output groups. Ignored (with a warning) when filter != 'none', which requires them."
+  },
+  {
     "pointer": "/eps_rel",
     "type": "float",
-    "default": 2e-3,
+    "default": 1e-3,
     "doc": "Envelope thickness relative to the bounding box"
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": 0,
+    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the segment connectivity; negative skips the pass entirely."
+  },
+  {
+    "pointer": "/DEBUG_hausdorff",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the deviation between the input curves and the output's tracked edges, in both directions. Containment, d(output -> input), is the envelope invariant and should always be smaller than eps. Coverage, d(input -> output), is reported as a diagnostic and is NOT bounded by anything: the simplification is allowed to remove detail and the arrangement may drop segments, so a large value means the output no longer covers part of the input, not that the envelope was violated."
+  },
+  {
+    "pointer": "/DEBUG_euler",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: Compute and report the Euler characteristic of each connected component of the input curve network and of the output's tracked edges, and warn if they differ. For a graph this is V - E, i.e. 1 - (number of independent cycles) per component: 1 for an open polyline, 0 for a closed loop, -1 for a figure eight. It therefore detects curves merged or split, loops opened or closed, and whole components lost -- the changes the simplification is allowed to make with simplify_use_link_condition off, and the ones a collapse can make that the envelope cannot see (the envelope only bounds output-inside-input, so a curve eroding along itself is invisible to it). Off by default because on a network with many components it is a per-run cost with no effect on the result."
+  },
+  {
+    "pointer": "/DEBUG_feature_retention",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: count how many of the curve network's 0-dimensional features -- open polyline endpoints and junctions -- still have a mesh vertex within eps of them, and how far the worst one that does not is. Reports features_retained, features_total and features_worst_ratio. Off by default because it is pure diagnosis and the count is proportional to the input's feature count, which can be enormous: model 177574 of the 2D dataset has 821,954 of them. It costs one kd-tree build over the live vertices plus one nearest-neighbour query per feature. Note this measures a property the pipeline does not guarantee -- two anchors closer than eps may legitimately merge, and such merges cascade -- so a value below 100% is information, not a failure."
+  },
+  {
+    "pointer": "/DEBUG_disable_envelope",
+    "type": "bool",
+    "default": false,
+    "doc": "Diagnostic only. Disables every envelope containment check during the triangulation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used."
+  },
+  {
+    "pointer": "/DEBUG_envelope_sanity_check",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity Check: verify at init that every constrained edge of the arrangement already lies inside the envelope, and abort if one does not. The invariant is real and not trivially true -- the envelope is built around the input curves at eps, while the constrained edges come from curves the simplification was free to move by simplify_envelope_ratio * eps -- so this asks whether the simplification stayed inside its share of the budget. Everything downstream assumes it did: an operation vetoed by the envelope is only meaningful if the starting mesh was inside it. Off by default because it costs one sampled segment query per constrained edge, serially -- 22s on a 3.5M-edge input, paid on every run -- to catch a condition that has fired once in 15665 models, and that time is charged against the run's own budget. Turn it on when changing the simplification, the envelope, or their two eps values."
   },
   {
     "pointer": "/length_rel",
@@ -89,8 +199,44 @@
   {
     "pointer": "/stop_energy",
     "type": "float",
-    "default": 10,
-    "doc": "Target energy. If all tets have an energy below this, triwild will stop."
+    "default": 100,
+    "doc": "Target energy. If all triangles have an energy below this, triwild will stop. Held numerically equal to tetwild's for parity, but note the two numbers are not the same quantity: this is the raw AMIPS2D energy, whose floor (an equilateral triangle) is 2, while tetwild compares the cube root of AMIPS3D, whose floor is 3. So 100 is 50x the floor here against ~33x there, i.e. a looser target in 2D than the same number buys in 3D. Making the two comparable would mean normalizing both energies by their dimension, which would change every logged figure and break comparison with existing runs; parity of the knob was chosen over parity of the target. At 100 a 300-model trial finished with a median max energy of 88.9 and a median iteration count of 1, i.e. one pass and stop; the 19686-model sweep converged 100% with a median max energy of 19.8 because most of it ran at the older target of 20."
+  },
+  {
+    "pointer": "/split_high_valence_threshold",
+    "type": "int",
+    "default": 200,
+    "doc": "Incident-triangle count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped triangle mesh has vertex valence around 6; a split cascade can drive one vertex much higher, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex opposite the edge, so the gate applies to those. Expect this to fire far less often than in 3D, where the edge's link is a whole ring rather than one or two vertices."
+  },
+  {
+    "pointer": "/w_amips",
+    "type": "float",
+    "default": 0.0001,
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing; the envelope weight is 1 - w_amips. The small default makes smoothing primarily about staying on the input curves, with quality as a secondary preference."
+  },
+  {
+    "pointer": "/num_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Number of smoothing passes per optimization iteration. Smoothing is the only phase that improves quality without changing connectivity, so when split, collapse and swap have run out of useful moves it is the only thing that can still lower the energy. Was 10; lowered to 2 once surface vertices stopped being skipped by skip_good_regions, which made each pass do real work -- on Thingi10K 240280 a pass costs 41-51s and moves fewer vertices each time (accepted 18606 -> 17077 over five passes, envelope rejections 11316 -> 12237), so the later passes in a run of 10 buy very little for their cost."
+  },
+  {
+    "pointer": "/interleaved_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Interleave smoothing between the topology passes: split + smoothing, collapse + smoothing, swaps + smoothing, instead of split, collapse, swaps followed by num_smoothing_passes smoothing passes. On by default in triwild: per iteration it reaches a given energy sooner than the batched schedule (on 122839, 102 vs 535 at iteration 5 and 25 vs 69 at iteration 13), at the cost of roughly 3x the work per iteration since each topology pass gets its own smoothing. tetwild still defaults to off, pending the same measurement there."
+  },
+  {
+    "pointer": "/interleaved_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "doc": "Smoothing passes to run after each topology pass when interleaved_smoothing is set. One is enough with interleaving on, since there are three of them per iteration."
+  },
+  {
+    "pointer": "/preserve_feature_points",
+    "type": "bool",
+    "default": true,
+    "doc": "Keep the curve network's 0-dimensional features -- the endpoints of open polylines, and junctions -- within eps of where the arrangement placed them. Each such vertex is bound to a specific feature point, so a collapse is refused when it would leave that point unrepresented or move it further than eps, and smoothing may move the vertex anywhere inside that ball but no further. Without this the collapse pass deletes open polylines outright: a polyline erodes into its own tip until a single segment is left, and that segment carries a feature at BOTH ends, which the surface order test does not refuse (it only forbids collapsing a feature into a non-feature). Measured on the 2D dataset, model 215292 went from 28 open components after the arrangement to 0 in the output. Turn off only to reproduce the old behaviour."
   },
   {
     "pointer": "/preserve_topology",
@@ -119,7 +265,7 @@
   {
     "pointer": "/write_vtu",
     "type": "bool",
-    "default": false,
+    "default": true,
     "doc": "Write not just MSH but also VTU output."
   },
   {
@@ -133,5 +279,81 @@
     "type": "bool",
     "default": false,
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/preallocation_factor",
+    "type": "float",
+    "default": 6.0,
+    "min": 1.0,
+    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement."
+  },
+  {
+
+      "pointer": "/max_expected_iterations",
+      "type": "int",
+      "default": 0,
+      "doc": "Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches."
+  },
+  {
+    "pointer": "/stuck_refine_stall_eps",
+    "type": "float",
+    "default": 0.1,
+    "doc": "Refine when the last iteration's improvement was at most this fraction of the distance the max energy still has to cover: (prev_max - max) <= eps * (max - stop_energy). Equivalently, refine unless the mesh is on course to reach the target within about 1/eps more iterations. 0 => only when it does not improve at all."
+  },
+  {
+    "pointer": "/stuck_refine_cooldown",
+    "type": "int",
+    "default": 0,
+    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
+  },
+  {
+    "pointer": "/stuck_refine_num_worst",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "Number of worst triangles whose neighborhoods are refined when stuck. 0 => refine all triangles with energy above the filter_energy, which is max(max_energy / 100, stop_energy). Note that the AMIPS2D energy of an equilateral triangle is 2, so with a small stop_energy the filter catches nearly the whole mesh; set this to a positive value there."
+  },
+  {
+    "pointer": "/stuck_refine_rings",
+    "type": "int",
+    "default": 0,
+    "min": 0,
+    "doc": "Graph rings around each worst triangle included in the stuck refinement. 0 => only the worst triangle itself, 1 => its neighbors, 2 => neighbors of neighbors, etc."
+  },
+  {
+    "pointer": "/stuck_refine_factor",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Multiplicative reduction of the sizing scalar per stuck refinement (0.5 => halve)."
+  },
+  {
+    "pointer": "/stuck_refine_min_scalar",
+    "type": "float",
+    "default": 0.001,
+    "doc": "Lower bound on the sizing scalar during stuck refinement."
+  },
+  {
+    "pointer": "/stuck_refine_gradation",
+    "type": "float",
+    "default": 2.0,
+    "doc": "Gradation cap for the monotone sizing smoothing: adjacent sizings may differ by at most this factor (smoothing only lowers values)."
+  },
+  {
+    "pointer": "/stuck_refine_force_split",
+    "type": "bool",
+    "default": true,
+    "doc": "When the max energy stalls, split each worst triangle's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst triangle per stall -- but 'worst' means every triangle above the filter energy when stuck_refine_num_worst is 0, so on a mesh whose stop_energy sits close to the AMIPS2D floor of 2 this can force thousands of splits in one pass and blow up the element count. Bound stuck_refine_num_worst or turn this off in that regime."
+  },
+  {
+    "pointer": "/skip_good_regions",
+    "type": "bool",
+    "default": false,
+    "doc": "Only smooth vertices incident to a triangle whose energy is at least skip_good_regions_margin * stop_energy; skip smoothing already-good regions. OFF by default: smoothing is the only phase that improves quality without changing connectivity, and the premise that a vertex surrounded by good elements has nothing to gain is not reliable -- for surface vertices the move is driven by the envelope term rather than by element quality, which is why active_vertices() has to append every surface vertex unconditionally to keep the filter from freezing them outright. With the filter off that special case stops carrying the correctness of the pass. Measured in 2D on 122839 at stop_energy 20, filtering also cost more than it saved: 60 iterations ending at max energy 21.03 with it on, against convergence to 19.9998 in 54 iterations and less wall time (875s vs 947s) with it off. Note the threshold scales with stop_energy, so the filter skips far more at 100 than at 20."
+  },
+  {
+    "pointer": "/skip_good_regions_margin",
+    "type": "float",
+    "default": 0.9,
+    "doc": "A triangle is 'active' (worth smoothing around) when its energy is at least this fraction of stop_energy. The AMIPS2D energy of an equilateral triangle is 2, so the filter only skips anything once skip_good_regions_margin * stop_energy exceeds 2."
   }
 ]

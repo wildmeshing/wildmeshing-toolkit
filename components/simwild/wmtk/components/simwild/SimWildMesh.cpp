@@ -6,6 +6,7 @@
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -59,22 +60,19 @@ void SimWildMesh::mesh_improvement(int max_its)
     local_operations({{0, 1, 0, 0}});
 
     ////operation loops
-    double pre_max_energy = 0.;
-    {
-        auto [max_energy, avg_energy] = get_max_avg_energy();
-        pre_max_energy = max_energy;
-        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
-    }
+    double pre_quality_rel = 0.;
+    check_mesh_quality(pre_quality_rel, true);
+
     int refine_cooldown =
         m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
     for (int it = 0; it < max_its; it++) {
         ///ops
         logger().info("\n========it {}========", it);
-        auto [max_energy, avg_energy] = local_operations({{1, 1, 1, 1}});
+        double quality_rel = local_operations({{1, 1, 1, 1}});
 
         ///energy check
-        logger().info("max energy {} stop {}", max_energy, m_params.stop_energy);
-        if (max_energy < m_params.stop_energy) {
+        logger().info("max rel quality {}", quality_rel);
+        if (check_mesh_quality(quality_rel, true)) {
             break;
         }
         consolidate_mesh();
@@ -122,31 +120,35 @@ void SimWildMesh::mesh_improvement(int max_its)
         /// adjust_sizing_field mechanism). After a refinement, wait
         /// stuck_refine_cooldown iterations so the operations get full passes on
         /// the new sizing field before more refinement is added.
+        logger().info(
+            "pre_quality_rel = {:.6}, quality_rel = {:.6}, ratio = {:.4}",
+            pre_quality_rel,
+            quality_rel,
+            (pre_quality_rel - quality_rel) / pre_quality_rel);
         if (refine_cooldown > 0) {
             --refine_cooldown;
         } else if (
-            it > 0 && max_energy > m_params.stop_energy &&
-            (pre_max_energy - max_energy) <= m_params.stuck_refine_stall_eps * pre_max_energy) {
-            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
-            refine_sizing_around_worst(max_energy);
-            // adjust_sizing_field_serial(max_energy); // The old update
+            it > 0 && quality_rel > 1.0 &&
+            (pre_quality_rel - quality_rel) <=
+                m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
+            refine_sizing_around_worst();
+            // adjust_sizing_field_serial(); // The old update
             logger().info(">>>>stuck-refine finished...");
             refine_cooldown = m_params.stuck_refine_cooldown;
         }
-        pre_max_energy = std::min(pre_max_energy, max_energy);
+        pre_quality_rel = std::min(pre_quality_rel, quality_rel);
     }
 
     logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
 }
 
-std::tuple<double, double> SimWildMesh::local_operations(
-    const std::array<int, 4>& ops,
-    bool collapse_limit_length)
+double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collapse_limit_length)
 {
     igl::Timer timer;
 
-    std::tuple<double, double> energy;
+    double quality_rel = 0;
 
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) {
@@ -194,25 +196,13 @@ std::tuple<double, double> SimWildMesh::local_operations(
                     "#vertices {}, #tets {} after split",
                     get_vertices().size(),
                     get_tets().size());
-                // auto faces = get_faces();
-                // for (auto f : faces) {
-                //     auto x = f.fid(*this);
-                // }
-                // if (!check_vertex_param_type()) {
-                //     std::cout << "missing param!!!!!!!!" << std::endl;
-                //     output_faces("bug_surface_miss_param_after_split.obj", [](auto& f) {
-                //         return f.m_is_surface_fs;
-                //     });
-                //     // exit(0);
-                // }
                 if (m_params.debug_output) {
                     write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
                 }
-                auto [max_energy, avg_energy] = get_max_avg_energy();
-                logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                check_mesh_quality(quality_rel, true);
                 sanity_checks();
-                if (max_energy < m_params.stop_energy) {
-                    return std::make_tuple(max_energy, avg_energy);
+                if (quality_rel < 1.0) {
+                    return quality_rel;
                 }
             }
         } else if (i == 1) {
@@ -223,25 +213,13 @@ std::tuple<double, double> SimWildMesh::local_operations(
                     "#vertices {}, #tets {} after collapse",
                     get_vertices().size(),
                     get_tets().size());
-                // auto faces = get_faces();
-                // for (auto f : faces) {
-                //     auto x = f.fid(*this);
-                // }
-                // if (!check_vertex_param_type()) {
-                //     std::cout << "missing param!!!!!!!!" << std::endl;
-                //     output_faces("buf_surface_miss_param_after_collpase.obj", [](auto& f) {
-                //         return f.m_is_surface_fs;
-                //     });
-                //     // exit(0);
-                // }
                 if (m_params.debug_output) {
                     write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
                 }
-                auto [max_energy, avg_energy] = get_max_avg_energy();
-                logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+                check_mesh_quality(quality_rel, true);
                 sanity_checks();
-                if (max_energy < m_params.stop_energy) {
-                    return std::make_tuple(max_energy, avg_energy);
+                if (quality_rel < 1.0) {
+                    return quality_rel;
                 }
             }
         } else if (i == 2) {
@@ -249,41 +227,33 @@ std::tuple<double, double> SimWildMesh::local_operations(
                 logger().info("==swapping {}==", n);
                 int cnt_success = 0;
                 cnt_success += swap_all_edges_all();
-                // cnt_success += swap_all_edges_56();
-                // cnt_success += swap_all_edges_44();
-                // cnt_success += swap_all_edges();
                 cnt_success += swap_all_faces();
                 if (m_params.debug_output) {
                     write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
                 }
-                auto [max_energy, avg_energy] = get_max_avg_energy();
-                logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
                 logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
+                check_mesh_quality(quality_rel, true);
                 sanity_checks();
-                if (max_energy < m_params.stop_energy) {
-                    return std::make_tuple(max_energy, avg_energy);
+                if (quality_rel < 1.0) {
+                    return quality_rel;
                 }
             }
         } else if (i == 3) {
             logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
+            check_mesh_quality(quality_rel, true);
             sanity_checks();
-            if (ops[i] > 0 && max_energy < m_params.stop_energy) {
-                return std::make_tuple(max_energy, avg_energy);
+            if (ops[i] > 0 && quality_rel < 1.0) {
+                return quality_rel;
             }
         }
         // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
     }
-    // write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-    energy = get_max_avg_energy();
-    logger().info("max energy = {:.6}", std::get<0>(energy));
-    logger().info("avg energy = {:.6}", std::get<1>(energy));
+    check_mesh_quality(quality_rel, true);
     logger().info("time = {}", timer.getElapsedTime());
 
 
-    return energy;
+    return quality_rel;
 }
 
 CellTag wmtk::components::simwild::SimWildMesh::string_set_to_cell_tag(
@@ -365,131 +335,140 @@ void SimWildMesh::set_sizing_field(const nlohmann::json& sizing_field_json)
     }
 }
 
-size_t SimWildMesh::refine_sizing_around_worst(double max_energy)
+void SimWildMesh::set_quality_field(const nlohmann::json& quality_field_json)
 {
-    const int num_worst = std::max(0, m_params.stuck_refine_num_worst);
+    if (!quality_field_json.is_array()) {
+        log_and_throw_error(
+            "quality_field should be an array of objects, each defining a region and its "
+            "target "
+            "quality.");
+    }
+
+    for (const auto& region_json : quality_field_json) {
+        if (!region_json.contains("tags")) {
+            log_and_throw_error("Each quality_field entry must contain a 'tags' field.");
+        }
+        if (!region_json.contains("quality")) {
+            log_and_throw_error("Each quality_field entry must contain a 'quality' field.");
+        }
+        const std::string tags_str_set = region_json["tags"];
+        auto& [expr, quality] = m_quality_field.emplace_back();
+        expr = expression_parser::parse(tags_str_set, m_tag_name_to_id);
+
+        quality = region_json["quality"];
+
+        logger().info("Added quality field: expr = {}, quality = {}", expr->to_string(), quality);
+    }
+}
+
+double SimWildMesh::target_quality(const size_t tid) const
+{
+    double quality = m_params.stop_energy; // default
+    for (const auto& [expr, q] : m_quality_field) {
+        if (expr->eval(m_tet_attribute[tid].tags)) {
+            quality = q;
+        }
+    }
+    return quality;
+}
+
+double SimWildMesh::target_quality(const Tuple& t) const
+{
+    const auto tid = t.tid(*this);
+    return target_quality(tid);
+}
+
+double SimWildMesh::quality_rel(const size_t tid) const
+{
+    return std::cbrt(m_tet_attribute[tid].m_quality) / target_quality(tid);
+}
+
+double SimWildMesh::quality_rel(const Tuple& t) const
+{
+    return quality_rel(t.tid(*this));
+}
+
+bool SimWildMesh::check_mesh_quality(double& max_rel_quality, const bool verbose) const
+{
+    bool all_good = true;
+    size_t num_bad = 0;
+    size_t num_total = 0;
+    max_rel_quality = 0;
+    for (int i = 0; i < tet_capacity(); i++) {
+        const Tuple tup = tuple_from_tet(i);
+        if (!tup.is_valid(*this)) {
+            continue;
+        }
+        num_total++;
+        double rel_quality = quality_rel(i);
+        max_rel_quality = std::max(max_rel_quality, rel_quality);
+        if (rel_quality > 1.0) {
+            all_good = false;
+            num_bad++;
+        }
+    }
+    if (verbose) {
+        logger().info(
+            "Bad elements: {} of {}, max relative quality: {:.6}",
+            num_bad,
+            num_total,
+            max_rel_quality);
+    }
+    return all_good;
+}
+
+
+size_t SimWildMesh::refine_sizing_around_worst()
+{
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    const double factor = m_params.stuck_refine_factor;
-    const double floor = m_params.stuck_refine_min_scalar;
+    const double filter_energy = m_params.stop_energy;
 
-    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+    // m_quality stores AMIPS^3, so the energy the "max energy" refers to is its cube root.
+    const auto worst = utils::select_worst_cells(
+        tet_capacity(),
+        [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
+        [this](size_t tid) {
+            const double target = target_quality(tid);
+            return std::cbrt(m_tet_attribute[tid].m_quality) / target; // relative quality
+        },
+        1.0,
+        m_params.stuck_refine_num_worst);
 
-    // Find the num_worst valid tets with the highest energy. `worst` is kept
-    // sorted ascending by quality, size <= num_worst (front = smallest kept).
-    std::vector<std::pair<double, size_t>> worst;
-    worst.reserve(num_worst);
-    for (size_t tid = 0; tid < tet_capacity(); ++tid) {
-        const Tuple t = tuple_from_tet(tid);
-        if (!t.is_valid(*this)) {
-            continue;
-        }
-        const double& q = m_tet_attribute[tid].m_quality;
-        if (std::cbrt(q) < filter_energy) {
-            continue;
-        }
-        if (num_worst > 0) {
-            if (static_cast<int>(worst.size()) < num_worst) {
-                worst.emplace_back(q, tid);
-                std::sort(worst.begin(), worst.end());
-            } else if (q > worst.front().first) {
-                worst.front() = {q, tid};
-                std::sort(worst.begin(), worst.end());
-            }
-        } else {
-            worst.emplace_back(q, tid);
-        }
-    }
-
-    if (num_worst == 0) {
-        std::sort(worst.begin(), worst.end());
-    }
     if (worst.empty()) {
         return 0;
     }
 
-    // compute maximum sizing scalar for each vertex based on the sizing field
-    std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());
-    for (const Tuple& t : get_tets()) {
-        const auto tid = t.tid(*this);
-        double sizing = std::numeric_limits<double>::max();
-        bool tet_has_sizing_field = false;
-        for (const auto& [expr, length] : m_sizing_field) {
-            if (expr->eval(m_tet_attribute[tid].tags)) {
-                sizing = std::min(sizing, length / m_params.l);
-                tet_has_sizing_field = true;
-            }
-        }
-        if (!tet_has_sizing_field) {
-            sizing = 1.0; // default sizing scalar
-        }
-        const auto vs = oriented_tet_vids(tid);
-        for (const size_t& vid : vs) {
-            max_sizing_scalars[vid] = std::min(max_sizing_scalars[vid], sizing);
-        }
-    }
-
-    // Record the worst tets' own vertices (for the exact-rational split fallback)
-    // and, if force-split is on, the LONGEST edge of each worst tet. split_all_edges
-    // force-splits exactly those edges (bypasses the length gate), so a stuck
-    // sliver's long edge is split immediately -- WITHOUT changing the sizing field.
+    // If force-split is on, record the LONGEST edge of each worst tet. split_all_edges
+    // force-splits exactly those edges (bypasses the length gate), so a stuck sliver's
+    // long edge is split immediately -- WITHOUT changing the sizing field.
     m_force_split_edges.clear();
-    for (const auto& [q, tid] : worst) {
-        const auto vs = oriented_tet_vids(tid);
-        if (m_params.stuck_refine_force_split) {
-            double l2max = -1;
-            size_t ea = vs[0];
-            size_t eb = vs[1];
-            for (size_t a = 0; a < 4; ++a) {
-                for (size_t b = a + 1; b < 4; ++b) {
-                    const Vector3d& pa = m_vertex_attribute[vs[a]].m_posf;
-                    const Vector3d& pb = m_vertex_attribute[vs[b]].m_posf;
-                    const double l2 = (pa - pb).squaredNorm();
-                    if (l2 > l2max) {
-                        l2max = l2;
-                        ea = vs[a];
-                        eb = vs[b];
-                    }
-                }
-            }
-            m_force_split_edges.insert(simplex::Edge(ea, eb));
+    if (m_params.stuck_refine_force_split) {
+        for (const auto& [q, tid] : worst) {
+            m_force_split_edges.insert(
+                utils::longest_edge(oriented_tet_vids(tid), [this](size_t vid) -> const Vector3d& {
+                    return m_vertex_attribute[vid].m_posf;
+                }));
         }
     }
 
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.
-    std::unordered_set<size_t> region;
-    std::vector<size_t> frontier;
+    std::vector<size_t> seeds;
+    seeds.reserve(4 * worst.size());
     for (const auto& [_, tid] : worst) {
-        const auto vs = oriented_tet_vids(tid);
-        for (const size_t v : vs) {
-            region.insert(v);
+        for (const size_t v : oriented_tet_vids(tid)) {
+            seeds.push_back(v);
         }
     }
-    frontier.insert(frontier.end(), region.begin(), region.end());
-
-    // grow region by n rings starting from the worst tets' vertices
-    for (int r = 0; r < n_rings; ++r) {
-        std::vector<size_t> next;
-        for (const size_t v : frontier) {
-            for (const size_t u : get_one_ring_vids_for_vertex_adj(v)) {
-                if (region.insert(u).second) {
-                    next.push_back(u);
-                }
-            }
-        }
-        frontier.swap(next);
-    }
+    const auto region = utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
+        return get_one_ring_vids_for_vertex_adj(v);
+    });
 
     // Apply the multiplicative refinement, clamped at the floor.
-    std::vector<size_t> refined;
-    refined.reserve(region.size());
-    for (const size_t v : region) {
-        double& s = m_vertex_attribute[v].m_sizing_scalar;
-        const double ns = std::max(floor, s * factor);
-        if (ns < s) {
-            s = ns;
-            refined.push_back(v);
-        }
-    }
+    const auto refined = utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        m_params.stuck_refine_min_scalar,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
 
     // Grade the refined region into its surroundings (monotone, only lowers).
     gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
@@ -512,55 +491,30 @@ size_t SimWildMesh::refine_sizing_around_worst(double max_energy)
 
     // m_quality stores AMIPS^3; report its cube root to match the "max energy".
     logger().info(
-        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices, "
-        "filter_energy {:.4}",
+        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices",
         worst.size(),
         std::cbrt(worst.back().first),
         refined.size(),
-        region.size(),
-        filter_energy);
+        region.size());
     return refined.size();
 }
 
 void SimWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
 {
-    if (grade <= 1.0) {
-        return;
-    }
-
-    // Min-relaxation (Dijkstra/Bellman-Ford style): vertex u caps each neighbor
-    // at grade * sizing[u]. Only ever decreases sizings, so it spreads more
-    // refinement outward without raising the already-refined (seed) values.
-    // Sizings are always in (0, 1], so once grade*sizing[u] >= 1 the cap can no
-    // longer lower any neighbor and propagation stops -- this bounds the halo.
-    std::queue<size_t> q;
-    for (const size_t v : seeds) {
-        q.push(v);
-    }
-    while (!q.empty()) {
-        const size_t u = q.front();
-        q.pop();
-        const double cap = grade * m_vertex_attribute[u].m_sizing_scalar;
-        if (cap >= 1.0) {
-            continue;
-        }
-        for (const size_t w : get_one_ring_vids_for_vertex_adj(u)) {
-            double& sw = m_vertex_attribute[w].m_sizing_scalar;
-            if (sw > cap) {
-                sw = cap;
-                q.push(w);
-            }
-        }
-    }
+    utils::gradation_smooth_sizing(
+        grade,
+        seeds,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
+        [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
 }
 
-bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
+bool SimWildMesh::adjust_sizing_field_serial()
 {
     logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
 
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
-    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
-    filter_energy = std::min(filter_energy, 100.);
+    // const double stop_filter_energy = m_params.stop_energy * 0.8;
+    // double filter_energy = std::max(max_energy / 100, stop_filter_energy);
+    // filter_energy = std::min(filter_energy, 100.);
 
     const double recover_scalar = 1.5;
     const double refine_scalar = 0.5;
@@ -579,7 +533,7 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
+        if (std::cbrt(m_tet_attribute[tid].m_quality) < target_quality(tid)) {
             continue;
         }
         const auto vs = oriented_tet_vids(t);
@@ -594,7 +548,7 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
         pts.emplace_back(c / 4);
     }
 
-    logger().info("filter energy = {}; Number of low quality tets {}", filter_energy, pts.size());
+    logger().info("Number of low quality tets {}", pts.size());
 
     // compute maximum sizing scalar for each vertex based on the sizing field
     std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());
@@ -693,78 +647,6 @@ bool SimWildMesh::adjust_sizing_field_serial(double max_energy)
     return is_hit_min_edge_length;
 }
 
-void bfs_orient(const Eigen::MatrixXi& F, Eigen::MatrixXi& FF, Eigen::VectorXi& C)
-{
-    Eigen::SparseMatrix<int> A;
-    igl::orientable_patches(F, C, A);
-
-    // number of faces
-    const int m = F.rows();
-    // number of patches
-    const int num_cc = C.maxCoeff() + 1;
-    Eigen::VectorXi seen = Eigen::VectorXi::Zero(m);
-
-    // Edge sets
-    const int ES[3][2] = {{1, 2}, {2, 0}, {0, 1}};
-
-    if (((void*)&FF) != ((void*)&F)) FF = F;
-
-    // loop over patches
-    for (int c = 0; c < num_cc; c++) {
-        std::queue<int> Q;
-        // find first member of patch c
-        int cnt = 0;
-        for (int f = 0; f < FF.rows(); f++) {
-            if (C(f) == c) {
-                if (cnt == 0) Q.push(f);
-                cnt++;
-                //                break;
-            }
-        }
-        if (cnt < 5) continue;
-
-        int cnt_inverted = 0;
-        assert(!Q.empty());
-        while (!Q.empty()) {
-            const int f = Q.front();
-            Q.pop();
-            if (seen(f) > 0) continue;
-
-            seen(f)++;
-            // loop over neighbors of f
-            for (Eigen::SparseMatrix<int>::InnerIterator it(A, f); it; ++it) {
-                // might be some lingering zeros, and skip self-adjacency
-                if (it.value() != 0 && it.row() != f) {
-                    const int n = it.row();
-                    assert(n != f);
-                    // loop over edges of f
-                    for (int efi = 0; efi < 3; efi++) {
-                        // efi'th edge of face f
-                        Eigen::Vector2i ef(FF(f, ES[efi][0]), FF(f, ES[efi][1]));
-                        // loop over edges of n
-                        for (int eni = 0; eni < 3; eni++) {
-                            // eni'th edge of face n
-                            Eigen::Vector2i en(FF(n, ES[eni][0]), FF(n, ES[eni][1]));
-                            // Match (half-edges go same direction)
-                            if (ef(0) == en(0) && ef(1) == en(1)) {
-                                // flip face n
-                                FF.row(n) = FF.row(n).reverse().eval();
-                                cnt_inverted++;
-                            }
-                        }
-                    }
-                    // add neighbor to queue
-                    Q.push(n);
-                }
-            }
-        }
-        if (cnt_inverted < cnt / 2) continue;
-
-        for (int f = 0; f < FF.rows(); f++) {
-            if (C(f) == c) FF.row(f) = FF.row(f).reverse().eval();
-        }
-    }
-}
 
 /////////////////////////////////////////////////////////////////////
 void SimWildMesh::output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond)
@@ -955,31 +837,18 @@ std::tuple<double, double> SimWildMesh::get_max_avg_energy()
 
 std::vector<size_t> SimWildMesh::active_vertices() const
 {
-    const double thr = active_quality_threshold();
-    std::vector<char> seen(vert_capacity(), 0);
-    std::vector<size_t> out;
-    for (size_t i = 0; i < tet_capacity(); ++i) {
-        if (!tuple_from_tet(i).is_valid(*this)) {
-            continue;
-        }
-        if (m_tet_attribute[i].m_quality < thr) {
-            continue;
-        }
-        for (const size_t v : oriented_tet_vids(i)) {
-            if (!seen[v]) {
-                seen[v] = 1;
-                out.push_back(v);
-            }
-        }
-    }
-    // add surface vertices
-    for (size_t i = 0; i < vert_capacity(); ++i) {
-        if (!seen[i] && m_vertex_attribute[i].m_is_on_surface) {
-            seen[i] = 1;
-            out.push_back(i);
-        }
-    }
-    return out;
+    // "Surface vertices are always active, independent of the incident tet quality" used to
+    // be open-coded here. It now lives in utils::active_vertices, so tetwild and triwild --
+    // which lacked it, and consequently smoothed nothing at all on well-shaped meshes -- get
+    // it too.
+    return utils::active_vertices(
+        vert_capacity(),
+        tet_capacity(),
+        [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
+        [this](size_t tid) { return m_tet_attribute[tid].m_quality; },
+        [this](size_t tid) { return oriented_tet_vids(tid); },
+        active_quality_threshold(),
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
 }
 
 bool SimWildMesh::is_inverted_f(const Tuple& loc) const
@@ -1205,85 +1074,6 @@ bool SimWildMesh::is_edge_on_bbox(const Tuple& loc)
     return false;
 }
 
-bool SimWildMesh::check_attributes()
-{
-    for (auto& f : get_faces()) {
-        auto fid = f.fid(*this);
-        auto vs = get_face_vertices(f);
-
-        if (m_face_attribute[fid].m_is_surface_fs) {
-            if (!(m_vertex_attribute[vs[0].vid(*this)].m_is_on_surface &&
-                  m_vertex_attribute[vs[1].vid(*this)].m_is_on_surface &&
-                  m_vertex_attribute[vs[2].vid(*this)].m_is_on_surface)) {
-                logger().critical("surface track wrong");
-                return false;
-            }
-            bool is_out = m_envelope->is_outside(
-                {{m_vertex_attribute[vs[0].vid(*this)].m_posf,
-                  m_vertex_attribute[vs[1].vid(*this)].m_posf,
-                  m_vertex_attribute[vs[2].vid(*this)].m_posf}});
-            if (is_out) {
-                logger().critical(
-                    "is_out f {} {} {}",
-                    vs[0].vid(*this),
-                    vs[1].vid(*this),
-                    vs[2].vid(*this));
-                return false;
-            }
-        }
-        if (m_face_attribute[fid].m_is_bbox_fs >= 0) {
-            if (!(!m_vertex_attribute[vs[0].vid(*this)].on_bbox_faces.empty() &&
-                  !m_vertex_attribute[vs[1].vid(*this)].on_bbox_faces.empty() &&
-                  !m_vertex_attribute[vs[2].vid(*this)].on_bbox_faces.empty())) {
-                logger().critical("bbox track wrong {}", fid);
-                return false;
-            }
-        }
-    }
-
-    const auto& vs = get_vertices();
-    for (const auto& v : vs) {
-        size_t i = v.vid(*this);
-        if (m_vertex_attribute[i].m_is_on_surface) {
-            bool is_out = m_envelope->is_outside(m_vertex_attribute[i].m_posf);
-            if (is_out) {
-                logger().critical("is_out v");
-                return false;
-            }
-        }
-
-        // check rounding
-        if (m_vertex_attribute[i].m_is_rounded) {
-            if (m_vertex_attribute[i].m_pos[0] != m_vertex_attribute[i].m_posf[0] ||
-                m_vertex_attribute[i].m_pos[1] != m_vertex_attribute[i].m_posf[1] ||
-                m_vertex_attribute[i].m_pos[2] != m_vertex_attribute[i].m_posf[2]) {
-                logger().critical("rounding error {} rounded", i);
-                return false;
-            }
-        } else {
-            Vector3d p = to_double(m_vertex_attribute[i].m_pos);
-            if (p != m_vertex_attribute[i].m_posf) {
-                logger().critical("rounding error {} unrounded", i);
-                return false;
-            }
-        }
-    }
-
-    // check quality
-    const auto& tets = get_tets();
-    for (const auto& t : tets) {
-        size_t i = t.tid(*this);
-        double q = get_quality(t);
-        if (q != m_tet_attribute[i].m_quality) {
-            logger().critical(
-                "q!=m_tet_attribute[i].m_quality {} {}",
-                q,
-                m_tet_attribute[i].m_quality);
-            return false;
-        }
-    }
-    return true;
-}
 
 // util functions for union find
 int find_uf(int v, std::vector<int>& parent)
@@ -1344,7 +1134,9 @@ void SimWildMesh::write_vtu(const std::string& path)
     v_id.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
-    Eigen::MatrixXd amips(tet_capacity(), 1);
+    VectorXd amips(tet_capacity());
+    VectorXd amips_target(tet_capacity());
+    VectorXd amips_rel(tet_capacity());
 
     int index = 0;
     for (const Tuple& t : tets) {
@@ -1352,11 +1144,13 @@ void SimWildMesh::write_vtu(const std::string& path)
         for (size_t j = 0; j < m_tags_count; ++j) {
             tags[j](index, 0) = m_tet_attribute[tid].tags.count(j) ? 1 : 0;
         }
-        amips(index, 0) = std::cbrt(m_tet_attribute[tid].m_quality);
+        amips[index] = std::cbrt(m_tet_attribute[tid].m_quality);
+        amips_target[index] = target_quality(tid);
+        amips_rel[index] = quality_rel(tid);
 
-        const auto& vs = oriented_tet_vertices(t);
+        const auto& tv = oriented_tet_vertices(t);
         for (int j = 0; j < 4; j++) {
-            T(index, j) = vs[j].vid(*this);
+            T(index, j) = tv[j].vid(*this);
         }
         ++index;
     }
@@ -1390,6 +1184,8 @@ void SimWildMesh::write_vtu(const std::string& path)
         }
     }
     writer.add_cell_field("quality", amips);
+    writer.add_cell_field("quality_target", amips_target);
+    writer.add_cell_field("quality_rel", amips_rel);
     writer.add_field("sizing_field", v_sizing_field);
     writer.add_field("vid", v_id);
     writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);

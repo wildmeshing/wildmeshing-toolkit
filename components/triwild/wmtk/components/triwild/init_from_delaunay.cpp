@@ -20,8 +20,8 @@ namespace {
 // The remesher hands back exact coordinates; which concrete bignum type depends on
 // how VolumeRemesher was configured (see cmake/recipes/volumemesher.cmake). Go
 // through wmtk::Rational -- the same conversion the 3D insertion uses -- so both
-// backends are handled, then round once to double.
-double to_double(const vol_rem::bigrational& r)
+// backends are handled.
+Rational to_rational(const vol_rem::bigrational& r)
 {
     Rational q;
 #ifdef USE_GNU_GMP_CLASSES
@@ -29,7 +29,7 @@ double to_double(const vol_rem::bigrational& r)
 #else
     q.init_from_bin(r.get_str());
 #endif
-    return q.to_double();
+    return q;
 }
 
 /**
@@ -121,6 +121,7 @@ void init_from_delaunay_box_mesh(
     const MatrixXd& V,
     const MatrixXi& E,
     MatrixXd& V_out,
+    std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
     MatrixXi& E_out)
 {
@@ -172,11 +173,22 @@ void init_from_delaunay_box_mesh(
     }
     assert(vertices.size() % 2 == 0);
 
+    // Keep the exact coordinates and hand back the rounding alongside them. Rounding here
+    // and throwing the rationals away is what used to make distinct arrangement vertices
+    // collide on the same double -- see the header.
     const int nv = int(vertices.size() / 2);
+    V_rational.resize(nv);
     V_out.resize(nv, 2);
+    size_t n_indirect = 0;
     for (int v = 0; v < nv; ++v) {
-        V_out(v, 0) = to_double(vertices[2 * v + 0]);
-        V_out(v, 1) = to_double(vertices[2 * v + 1]);
+        V_rational[v][0] = to_rational(vertices[2 * v + 0]);
+        V_rational[v][1] = to_rational(vertices[2 * v + 1]);
+        V_out(v, 0) = V_rational[v][0].to_double();
+        V_out(v, 1) = V_rational[v][1].to_double();
+        if (Rational(V_out(v, 0)) != V_rational[v][0] ||
+            Rational(V_out(v, 1)) != V_rational[v][1]) {
+            ++n_indirect;
+        }
     }
 
     F_out.resize(tris.size(), 3);
@@ -213,66 +225,62 @@ void init_from_delaunay_box_mesh(
     }
 
     logger().info(
-        "2D arrangement: #V = {}, #F = {}, #E_constrained = {}",
+        "2D arrangement: #V = {}, #F = {}, #E_constrained = {} ({} vertices have no exact "
+        "double representation)",
         V_out.rows(),
         F_out.rows(),
-        E_out.rows());
+        E_out.rows(),
+        n_indirect);
 }
 
-void init_from_paths(
+void read_input_curves(
     const std::vector<std::string>& input_paths,
-    MatrixXd& V_out,
-    MatrixXi& F_out,
-    MatrixXi& E_out)
+    double remove_duplicate_eps,
+    MatrixXd& V_all,
+    MatrixXi& E_all,
+    std::vector<MatrixXd>& Vs_out,
+    std::vector<MatrixXi>& Es_out)
 {
-    std::vector<MatrixXd> Vs;
-    std::vector<MatrixXi> Es;
+    Vs_out.clear();
+    Es_out.clear();
+
     // read input edge meshes
     for (const std::string& path : input_paths) {
         MatrixXd V;
         MatrixXi E;
-        io::read_edge_mesh(path, V, E);
+        io::read_edge_mesh(path, V, E, remove_duplicate_eps);
         logger().info("Read edge mesh {}: #V = {}, #E = {}", path, V.rows(), E.rows());
         V = V.block(0, 0, V.rows(), 2).eval(); // only keep x, y
-        Vs.push_back(V);
-        Es.push_back(E);
-    }
-    if (Vs.size() != Es.size()) {
-        log_and_throw_error("Vs and Es size mismatch!");
+        Vs_out.push_back(V);
+        Es_out.push_back(E);
     }
 
-    // generate Delaunay triangulation of the input vertices as the initial mesh
-    {
-        size_t num_vertices = 0;
-        MatrixXd V_all;
-        MatrixXi E_all;
-        std::vector<Eigen::Vector2d> V_vec;
-        std::vector<Eigen::Vector2i> E_vec;
-        for (size_t i = 0; i < Vs.size(); i++) {
-            for (int j = 0; j < Vs[i].rows(); j++) {
-                V_vec.push_back(Vs[i].row(j));
-            }
-            MatrixXi E = Es[i];
-            E.array() += num_vertices; // offset the vertex indices
-            for (int j = 0; j < E.rows(); j++) {
-                E_vec.push_back(E.row(j));
-            }
-            num_vertices += Vs[i].rows();
+    // Concatenate them into one segment network. The simplification and the arrangement
+    // both work on the union so that curves sharing a boundary stay coincident; the
+    // per-input copies are kept for the winding-number tags.
+    size_t num_vertices = 0;
+    std::vector<Eigen::Vector2d> V_vec;
+    std::vector<Eigen::Vector2i> E_vec;
+    for (size_t i = 0; i < Vs_out.size(); i++) {
+        for (int j = 0; j < Vs_out[i].rows(); j++) {
+            V_vec.push_back(Vs_out[i].row(j));
         }
-
-        V_all.resize(V_vec.size(), 2);
-        for (int i = 0; i < V_vec.size(); i++) {
-            V_all.row(i) = V_vec[i];
+        MatrixXi E = Es_out[i];
+        E.array() += num_vertices; // offset the vertex indices
+        for (int j = 0; j < E.rows(); j++) {
+            E_vec.push_back(E.row(j));
         }
-        E_all.resize(E_vec.size(), 2);
-        for (int i = 0; i < E_vec.size(); i++) {
-            E_all.row(i) = E_vec[i];
-        }
-        init_from_delaunay_box_mesh(V_all, E_all, V_out, F_out, E_out);
+        num_vertices += Vs_out[i].rows();
     }
 
-    // logger().info("CDT mesh: #V = {}, #F = {}, #E = {}", V_out.rows(), F_out.rows(),
-    // E_out.rows());
+    V_all.resize(V_vec.size(), 2);
+    for (size_t i = 0; i < V_vec.size(); i++) {
+        V_all.row(i) = V_vec[i];
+    }
+    E_all.resize(E_vec.size(), 2);
+    for (size_t i = 0; i < E_vec.size(); i++) {
+        E_all.row(i) = E_vec[i];
+    }
 }
 
 } // namespace wmtk::components::triwild

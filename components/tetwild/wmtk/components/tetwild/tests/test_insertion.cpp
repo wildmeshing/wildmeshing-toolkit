@@ -216,6 +216,10 @@ TEST_CASE("vertex_order", "[tetwild]")
     }
     REQUIRE(surf_mesh.check_mesh_connectivity_validity());
 
+    // TetWildMesh now holds the envelope by shared_ptr; surf_mesh owns this one and
+    // outlives both meshes below, so alias it with a no-op deleter rather than copying the
+    // BVH. Same aliasing the old `SampleEnvelope&` parameter gave.
+    const std::shared_ptr<SampleEnvelope> env(&surf_mesh.m_envelope, [](SampleEnvelope*) {});
 
     std::vector<Vector3r> v_rational;
     std::vector<std::array<size_t, 3>> facets;
@@ -223,7 +227,7 @@ TEST_CASE("vertex_order", "[tetwild]")
     std::vector<std::array<size_t, 4>> tets;
     std::vector<bool> tet_face_on_input_surface;
     {
-        TetWildMesh mesh_insertion(params, surf_mesh.m_envelope, 0);
+        TetWildMesh mesh_insertion(params, env, 0);
         mesh_insertion.insertion_by_volumeremesher(
             vertices,
             faces,
@@ -235,7 +239,7 @@ TEST_CASE("vertex_order", "[tetwild]")
     }
 
     // generate new mesh
-    TetWildMesh mesh(params, surf_mesh.m_envelope, 0);
+    TetWildMesh mesh(params, env, 0);
 
     mesh.init_from_Volumeremesher(
         v_rational,

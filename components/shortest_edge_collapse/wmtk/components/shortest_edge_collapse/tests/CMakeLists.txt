@@ -9,6 +9,7 @@ add_component_test(${COMPONENT_NAME})
 
 set(SRC_FILES
     test_sec.cpp
+    test_sec_boundary.cpp
 )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
