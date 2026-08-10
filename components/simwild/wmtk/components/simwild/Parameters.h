@@ -88,6 +88,10 @@ struct Parameters
 
 
     double epsr_simplify = 2e-3; // relative error bound (wrt diagonal) for simplification
+    /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
+    /// surface envelope's. Deliberately below 1 where the surface envelope uses the full eps;
+    /// see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5.
+    double order2_envelope_ratio = 0.5;
     double eps_simplify = -1.; // absolute error bound for simplification
 
     // parameters set in `init` function based on mesh bbox
@@ -151,6 +155,7 @@ struct Parameters
         preserve_topology = json_params["preserve_topology"];
 
         epsr_simplify = json_params["eps_simplify_rel"];
+        order2_envelope_ratio = json_params["order2_envelope_ratio"];
         eps_simplify = json_params["eps_simplify"];
 
         w_amips = json_params["w_amips"];
