@@ -10,7 +10,7 @@
 
 #include "Parameters.h"
 #include "TriWildMesh.h"
-#include "init_from_delaunay.hpp"
+#include <wmtk/utils/EmbedSegments.hpp>
 
 #include <triwild_spec.hpp>
 
@@ -209,7 +209,7 @@ void triwild(nlohmann::json json_params)
     MatrixXi E_in;
     std::vector<MatrixXd> Vs;
     std::vector<MatrixXi> Es;
-    read_input_curves(input_paths, json_params["remove_duplicate_eps"], V_in, E_in, Vs, Es);
+    wmtk::utils::read_input_curves(input_paths, json_params["remove_duplicate_eps"], V_in, E_in, Vs, Es);
 
     // Informational input-topology report; gated behind DEBUG_euler because it is only
     // meaningful next to the matching computations later in the run.
@@ -320,7 +320,7 @@ void triwild(nlohmann::json json_params)
     std::vector<Vector2r> V_rational; // the same vertices, exact
     MatrixXi F;
     MatrixXi E; // constraint edges in the arrangement
-    init_from_delaunay_box_mesh(V_simp, E_simp, V, V_rational, F, E);
+    wmtk::utils::embed_segments(V_simp, E_simp, V, V_rational, F, E);
 
     // The arrangement is the baseline for everything after it. It is EXPECTED to differ
     // from the input: resolving a crossing inserts a vertex shared by both curves, which
