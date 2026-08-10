@@ -26,6 +26,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
@@ -553,79 +554,46 @@ bool SimWildMeshTri::check_mesh_quality(double& max_rel_quality, const bool verb
 
 size_t SimWildMeshTri::refine_sizing_around_worst()
 {
-    const int num_worst = std::max(0, m_params.stuck_refine_num_worst);
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    const double factor = m_params.stuck_refine_factor;
-    const double floor = m_params.stuck_refine_min_scalar;
 
-    // Find the num_worst valid tets with the highest energy. `worst` is kept
-    // sorted ascending by quality, size <= num_worst (front = smallest kept).
-    std::vector<std::pair<double, size_t>> worst;
-    worst.reserve(num_worst);
-    for (size_t tid = 0; tid < tri_capacity(); ++tid) {
-        const Tuple t = tuple_from_tri(tid);
-        if (!t.is_valid(*this)) {
-            continue;
-        }
-        const double& q = m_face_attribute[tid].m_quality;
-        if (q < target_quality(tid)) {
-            continue;
-        }
-        if (num_worst > 0) {
-            if (static_cast<int>(worst.size()) < num_worst) {
-                worst.emplace_back(q, tid);
-                std::sort(worst.begin(), worst.end());
-            } else if (q > worst.front().first) {
-                worst.front() = {q, tid};
-                std::sort(worst.begin(), worst.end());
-            }
-        } else {
-            worst.emplace_back(q, tid);
-        }
-    }
+    // Relative quality against the per-cell target, filtered at 1.0 -- the same selection the
+    // hand-rolled version made with `if (q < target_quality(tid)) continue;`, and the same
+    // shape the 3D mesh uses. target_quality defaults to m_params.stop_energy and is only
+    // overridden by the per-tag quality_field, so this is simwild's relative-quality model,
+    // not tetwild/triwild's absolute filter_energy.
+    //
+    // m_quality is the AMIPS2D energy itself here, so no cube root (unlike the 3D mesh).
+    const auto worst = utils::select_worst_cells(
+        tri_capacity(),
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) {
+            return m_face_attribute[fid].m_quality / target_quality(fid); // relative quality
+        },
+        1.0,
+        m_params.stuck_refine_num_worst);
 
-    if (num_worst == 0) {
-        std::sort(worst.begin(), worst.end());
-    }
     if (worst.empty()) {
         return 0;
     }
 
-    // Seed the region with the worst tets' vertices, then BFS n_rings hops.
-    std::unordered_set<size_t> region;
-    std::vector<size_t> frontier;
-    for (const auto& [_, tid] : worst) {
-        const auto vs = oriented_tri_vids(tid);
-        for (const size_t v : vs) {
-            region.insert(v);
+    // Seed the region with the worst triangles' vertices, then BFS n_rings hops.
+    std::vector<size_t> seeds;
+    seeds.reserve(3 * worst.size());
+    for (const auto& [_, fid] : worst) {
+        for (const size_t v : oriented_tri_vids(fid)) {
+            seeds.push_back(v);
         }
     }
-    frontier.insert(frontier.end(), region.begin(), region.end());
-
-    // grow region by n rings starting from the worst tets' vertices
-    for (int r = 0; r < n_rings; ++r) {
-        std::vector<size_t> next;
-        for (const size_t v : frontier) {
-            for (const size_t u : get_one_ring_vids_for_vertex_duplicate(v)) {
-                if (region.insert(u).second) {
-                    next.push_back(u);
-                }
-            }
-        }
-        frontier.swap(next);
-    }
+    const auto region = utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
+        return get_one_ring_vids_for_vertex_duplicate(v);
+    });
 
     // Apply the multiplicative refinement, clamped at the floor.
-    std::vector<size_t> refined;
-    refined.reserve(region.size());
-    for (const size_t v : region) {
-        double& s = m_vertex_attribute[v].m_sizing_scalar;
-        const double ns = std::max(floor, s * factor);
-        if (ns < s) {
-            s = ns;
-            refined.push_back(v);
-        }
-    }
+    const auto refined = utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        m_params.stuck_refine_min_scalar,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
 
     // Grade the refined region into its surroundings (monotone, only lowers).
     gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
@@ -647,7 +615,7 @@ size_t SimWildMeshTri::refine_sizing_around_worst()
     }
 
     logger().info(
-        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices",
+        "[stuck-refine] worst {} tris (relE {:.4}), refined {} of {} region vertices",
         worst.size(),
         worst.back().first,
         refined.size(),
@@ -657,34 +625,11 @@ size_t SimWildMeshTri::refine_sizing_around_worst()
 
 void SimWildMeshTri::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)
 {
-    if (grade <= 1.0) {
-        return;
-    }
-
-    // Min-relaxation (Dijkstra/Bellman-Ford style): vertex u caps each neighbor
-    // at grade * sizing[u]. Only ever decreases sizings, so it spreads more
-    // refinement outward without raising the already-refined (seed) values.
-    // Sizings are always in (0, 1], so once grade*sizing[u] >= 1 the cap can no
-    // longer lower any neighbor and propagation stops -- this bounds the halo.
-    std::queue<size_t> q;
-    for (const size_t v : seeds) {
-        q.push(v);
-    }
-    while (!q.empty()) {
-        const size_t u = q.front();
-        q.pop();
-        const double cap = grade * m_vertex_attribute[u].m_sizing_scalar;
-        if (cap >= 1.0) {
-            continue;
-        }
-        for (const size_t w : get_one_ring_vids_for_vertex_duplicate(u)) {
-            double& sw = m_vertex_attribute[w].m_sizing_scalar;
-            if (sw > cap) {
-                sw = cap;
-                q.push(w);
-            }
-        }
-    }
+    utils::gradation_smooth_sizing(
+        grade,
+        seeds,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
+        [this](size_t v) { return get_one_ring_vids_for_vertex_duplicate(v); });
 }
 
 void SimWildMeshTri::write_msh(std::string file, const bool write_envelope)

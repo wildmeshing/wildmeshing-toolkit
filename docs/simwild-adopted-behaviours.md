@@ -91,3 +91,24 @@ the ring's worst element; triwild permits it as long as the result is still belo
 They disagree with each other, so "take the tetwild/triwild implementation" cannot resolve it.
 Left alone pending a decision and a measurement. See also 1i, the other tetwild/triwild
 disagreement.
+
+### 1g. simwild-2D uses the shared `utils::SizingField` helpers
+
+| | |
+|---|---|
+| **was** | `refine_sizing_around_worst` and `gradation_smooth_sizing` hand-rolled the top-N selection, the BFS region growth, the refinement clamp and the Dijkstra min-relaxation — ~100 lines re-implementing `src/wmtk/utils/SizingField.hpp`, which the other three meshes call |
+| **now** | `utils::select_worst_cells`, `grow_vertex_region`, `apply_sizing_refinement`, `gradation_smooth_sizing`; 92 lines deleted |
+| **source** | simwild-3D's `refine_sizing_around_worst`, which already had this shape |
+| **measured** | No output change on any config. |
+
+**Semantics deliberately preserved, not "corrected" to triwild's.** triwild filters worst cells
+on an absolute `filter_energy = min(max(max_energy/100, stop_energy), 100.)`; simwild filters on
+**relative** quality against the per-cell `target_quality(tid)` at a threshold of 1.0. That is
+simwild's model — its whole stop condition is per-cell relative quality — and simwild-3D already
+expresses it that way through the same shared helper. The hand-rolled 2D filter
+(`if (q < target_quality(tid)) continue;`) is exactly equivalent to it.
+
+**Still missing in simwild-2D, not addressed here** (feature ports, not de-duplication):
+force-split of the worst cells' longest edges (`m_force_split_edges`), which tetwild, triwild and
+simwild-3D all have; and `skip_good_regions` / `active_vertices`, which the other three use to
+restrict smoothing.
