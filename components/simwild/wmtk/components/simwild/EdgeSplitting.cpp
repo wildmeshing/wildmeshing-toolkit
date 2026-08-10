@@ -202,7 +202,12 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
 
     // If a Voronoi split function is set, binary-search vmid onto its zero-crossing.
     // p0 stays on the negative side, p1 on the positive side.
-    if (m_voronoi_split_fn) {
+    //
+    // Skipped for an un-rounded vertex: the exact midpoint is then the only position known to
+    // keep every incident tet valid, and this search only considers doubles -- including the
+    // plain double midpoint it reverts to, which is the position that just inverted. The 2D
+    // twin carries the same guard.
+    if (m_voronoi_split_fn && m_vertex_attribute[v_id].m_is_rounded) {
         Vector3d p0 = m_vertex_attribute[v1_id].m_posf;
         Vector3d p1 = m_vertex_attribute[v2_id].m_posf;
         if (m_voronoi_split_fn(p0) >= 0) {
