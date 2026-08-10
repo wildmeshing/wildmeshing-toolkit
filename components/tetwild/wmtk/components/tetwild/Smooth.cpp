@@ -1,5 +1,7 @@
 
 #include "TetWildMesh.h"
+
+#include <cstdlib>
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -46,7 +48,6 @@ bool TetWildMesh::smooth_after(const Tuple& t)
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = true;
-    opts.quality_veto_on_surface = false;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }

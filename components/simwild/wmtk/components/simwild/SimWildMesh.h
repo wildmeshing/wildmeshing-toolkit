@@ -426,6 +426,10 @@ private:
         size_t v2_id;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        /// Worst quality among the elements incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate element" from "this
+        /// split subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
@@ -438,6 +442,10 @@ private:
         std::map<simplex::Edge, TetAttributes> tets;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
+
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
 
     struct CollapseInfoCache
     {

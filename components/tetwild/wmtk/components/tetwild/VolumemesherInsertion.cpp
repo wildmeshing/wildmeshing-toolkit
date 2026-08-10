@@ -1629,7 +1629,16 @@ void TetWildMesh::find_open_boundary()
     if (!m_order2_envelope) {
         m_order2_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
     }
-    m_order2_envelope->init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+    // A FRACTION of eps here, deliberately, where the surface envelope in tetwild.cpp uses
+    // all of it. The two are not symmetric: on the surface, widening the envelope REMOVES a
+    // constraint that was blocking collapses, which is the whole point of that change; on an
+    // open-boundary curve there is no such blockage to relieve, so the extra room is only
+    // freedom for the boundary to wander within eps -- more geometry to resolve at the same
+    // final quality. See /order2_envelope_ratio in the spec for the measurement.
+    m_order2_envelope->init(
+        v_posf,
+        open_boundaries,
+        m_params.epsr * m_params.diag_l * m_params.order2_envelope_ratio);
 }
 
 bool TetWildMesh::is_open_boundary_edge(const Tuple& e)

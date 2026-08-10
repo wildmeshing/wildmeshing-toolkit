@@ -121,6 +121,12 @@ bool TriWildMesh::split_edge_before(const Tuple& loc0)
     cache.v1_id = loc0.vid(*this);
     cache.v2_id = loc0.switch_vertex(*this).vid(*this);
 
+    cache.max_quality_before = 0.;
+    for (const size_t fid : get_incident_fids_for_edge(loc0)) {
+        cache.max_quality_before =
+            std::max(cache.max_quality_before, m_face_attribute[fid].m_quality);
+    }
+
     cache.old_e_attrs = m_edge_attribute[loc0.eid(*this)];
 
     const simplex::Edge edge(cache.v1_id, cache.v2_id);
@@ -284,6 +290,23 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
     }
 
     /// update quality
+    //
+    // A split is otherwise unconditional: it checks orientation and the envelope but never
+    // quality. That is right for a length-driven split of a long, well-behaved edge and
+    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
+    // land essentially on the opposite edge and leave a correctly-oriented element whose
+    // area/volume is too small for AMIPS -- get_quality then returns MAX_ENERGY, and every
+    // control decision that divides by the max energy is meaningless from then on. Refuse
+    // to be the operation that creates one; subdividing an already-degenerate region is
+    // still allowed, so a stuck region can keep being refined. See tetwild's EdgeSplitting
+    // for the measurement this comes from.
+    double max_quality_after = 0.;
+    for (const Tuple& loc : locs) {
+        max_quality_after = std::max(max_quality_after, get_quality(loc));
+    }
+    if (max_quality_after >= MAX_ENERGY && cache.max_quality_before < MAX_ENERGY) {
+        return false;
+    }
     for (const Tuple& loc : locs) {
         m_face_attribute[loc.fid(*this)].m_quality = get_quality(loc);
     }

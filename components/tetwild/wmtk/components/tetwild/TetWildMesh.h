@@ -123,6 +123,7 @@ public:
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
 
+
     /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
     /// budget is visible as such, and asserted against in the integration tests.
     int m_iterations_used = 0;
@@ -472,12 +473,20 @@ private:
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
         size_t edge_order = 0;
+        /// Worst quality among the tets incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate tet" from "this split
+        /// subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
+
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
 
     struct CollapseInfoCache
     {

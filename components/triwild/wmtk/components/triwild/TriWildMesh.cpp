@@ -1,6 +1,8 @@
 
 #include "TriWildMesh.h"
 
+#include <tuple>
+
 #include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
@@ -67,15 +69,32 @@ void TriWildMesh::mesh_improvement(int max_its)
         // One iteration is either split/collapse/swaps followed by all the smoothing, or --
         // with interleaved_smoothing -- each topology pass followed by its own smoothing, so
         // the next pass sees a relaxed mesh rather than the raw output of the previous one.
-        auto [max_energy, avg_energy] = [&]() -> std::tuple<double, double> {
-            if (!m_params.interleaved_smoothing) {
-                return local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
-            }
+        // With interleaved_smoothing an iteration is THREE local_operations calls, and only
+        // the last one's value used to be tested against the target. Two thirds of the
+        // states the optimizer produces were therefore never offered to the stopping
+        // criterion: a run converged only if it happened to be good at the end of a SWAP
+        // pass. On triwild20k 179282 the mesh reached 9.9515 four separate times, every one
+        // of them in a split pass, and the run went to the iteration cap having never shown
+        // the convergence check anything below 10.0499.
+        //
+        // So test after every pass and stop on the state that met the target, rather than on
+        // whatever the two passes after it turn that state into. Breaking early leaves the
+        // remaining passes of this iteration unrun, which is the point: they are not needed.
+        double max_energy = 0., avg_energy = 0.;
+        if (!m_params.interleaved_smoothing) {
+            std::tie(max_energy, avg_energy) =
+                local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+        } else {
             const int k = m_params.interleaved_smoothing_passes;
-            local_operations({{1, 0, 0, k}});
-            local_operations({{0, 1, 0, k}});
-            return local_operations({{0, 0, 1, k}});
-        }();
+            const std::array<std::array<int, 4>, 3> passes = {
+                {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}};
+            for (const std::array<int, 4>& ops : passes) {
+                std::tie(max_energy, avg_energy) = local_operations(ops);
+                if (max_energy < m_params.stop_energy) {
+                    break;
+                }
+            }
+        }
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
@@ -544,10 +563,15 @@ void TriWildMesh::init_mesh(
     }
 }
 
+
 size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
 {
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+    // Clamped above, as adjust_sizing_field_serial below always did. Without the clamp a
+    // single degenerate face (quality MAX_ENERGY) sets filter_energy astronomically high and
+    // select_worst_cells then picks out only the degenerate faces -- refinement stops seeing
+    // the merely-bad ones it exists to fix.
+    const double filter_energy = std::min(std::max(max_energy / 100, m_params.stop_energy), 100.);
 
     // m_quality is the AMIPS2D energy itself here, so no cube root (unlike tetwild/simwild).
     const auto worst = utils::select_worst_cells(
@@ -1215,12 +1239,12 @@ std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) co
         // eps of this anchor", true whether or not that vertex carries the id. Ids drive the
         // per-collapse policy because they are local and cheap; counting them here would
         // under-report the legitimate merge the policy allows.
-        if (sq <= m_envelope_eps * m_envelope_eps) {
+        if (sq <= m_feature_eps * m_feature_eps) {
             ++kept;
         } else if (worst_ratio) {
             // How far the nearest vertex actually is, in units of eps -- what separates an
             // anchor that drifted just past the ball from a curve that was deleted.
-            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_envelope_eps);
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
         }
     }
     return {kept, m_feature_points.size()};
@@ -1234,7 +1258,7 @@ bool TriWildMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d
     }
     // A ball, not a pin. The vertex may move anywhere within eps of the feature it stands
     // for, which is exactly the guarantee the envelope gives everywhere else.
-    return (p - m_feature_points[f]).squaredNorm() <= m_envelope_eps * m_envelope_eps;
+    return (p - m_feature_points[f]).squaredNorm() <= m_feature_eps * m_feature_eps;
 }
 
 bool TriWildMesh::collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const
@@ -1259,7 +1283,7 @@ bool TriWildMesh::collapse_breaks_feature(const size_t v1_id, const size_t v2_id
     // Two anchors further apart than eps are still protected, because then v2 -- sitting on
     // one of them -- is more than eps from the other and fails this same test.
     return (m_vertex_attribute[v2_id].m_posf - m_feature_points[f1]).squaredNorm() >
-           m_envelope_eps * m_envelope_eps;
+           m_feature_eps * m_feature_eps;
 }
 
 size_t TriWildMesh::round_all_vertices()
