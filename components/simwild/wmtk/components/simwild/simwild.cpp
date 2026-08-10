@@ -207,6 +207,14 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     double time = timer.getElapsedTime();
     logger().info("total optimization time {}s", time);
 
+    // The output is what the caller consumes, and write_msh emits m_posf unconditionally --
+    // for an un-rounded vertex that double is not the vertex's real position, so the written
+    // mesh can contain inverted tets. Report it rather than letting it pass silently.
+    const bool all_rounded = mesh.all_rounded();
+    if (!all_rounded) {
+        logger().error("Not all vertices rounded!");
+    }
+
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     const std::string report_file = json_params["report"];
@@ -220,6 +228,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         report["eps"] = params.eps;
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
+        report["all_rounded"] = all_rounded;
         fout << std::setw(4) << report;
         fout.close();
     }

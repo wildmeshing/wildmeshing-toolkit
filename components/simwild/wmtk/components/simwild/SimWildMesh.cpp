@@ -73,7 +73,13 @@ void SimWildMesh::mesh_improvement(int max_its)
         ///energy check
         logger().info("max rel quality {}", quality_rel);
         if (check_mesh_quality(quality_rel, true)) {
-            break;
+            // Energy alone is not a sufficient termination condition -- see
+            // round_and_check_all_rounded. Keep iterating while anything is un-rounded, and
+            // let max_its bound the run as before.
+            if (round_and_check_all_rounded()) {
+                break;
+            }
+            logger().info("quality target reached, but some vertices are un-rounded; continuing");
         }
         consolidate_mesh();
 
@@ -142,6 +148,11 @@ void SimWildMesh::mesh_improvement(int max_its)
 
     logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
+
+    // The post pass is collapse-only, so it cannot un-round anything; this is the last
+    // chance to reclaim a vertex that the loop left rational because it ran out of
+    // iterations.
+    round_all_vertices();
 }
 
 double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collapse_limit_length)
@@ -201,7 +212,11 @@ double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collaps
                 }
                 check_mesh_quality(quality_rel, true);
                 sanity_checks();
-                if (quality_rel < 1.0) {
+                // Quality is met, but an un-rounded vertex means the mesh is not finished --
+                // see round_and_check_all_rounded. Returning here regardless would skip the
+                // smoothing pass, which is what frees a stuck vertex, so the run would spin
+                // to max_its without ever reclaiming it.
+                if (quality_rel < 1.0 && round_and_check_all_rounded()) {
                     return quality_rel;
                 }
             }
@@ -218,7 +233,7 @@ double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collaps
                 }
                 check_mesh_quality(quality_rel, true);
                 sanity_checks();
-                if (quality_rel < 1.0) {
+                if (quality_rel < 1.0 && round_and_check_all_rounded()) {
                     return quality_rel;
                 }
             }
@@ -234,16 +249,27 @@ double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collaps
                 logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
                 check_mesh_quality(quality_rel, true);
                 sanity_checks();
-                if (quality_rel < 1.0) {
+                if (quality_rel < 1.0 && round_and_check_all_rounded()) {
                     return quality_rel;
                 }
             }
         } else if (i == 3) {
             logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
+            // Reclaim whatever smoothing just made roundable, before the quality check that
+            // may return. Smoothing is what frees a stuck vertex, and a vertex left rational
+            // makes every incident tet take the exact-arithmetic path in get_quality, so
+            // rounding here also keeps the following passes on doubles.
+            //
+            // Guarded on ops[i] so it really is once per iteration: this branch is also
+            // entered by the collapse-only pre and post passes, which pass ops[3] == 0 and
+            // have no smoothing for the sweep to follow.
+            if (ops[i] > 0) {
+                round_all_vertices();
+            }
             check_mesh_quality(quality_rel, true);
             sanity_checks();
-            if (ops[i] > 0 && quality_rel < 1.0) {
+            if (ops[i] > 0 && quality_rel < 1.0 && round_and_check_all_rounded()) {
                 return quality_rel;
             }
         }
@@ -999,6 +1025,42 @@ std::vector<std::array<size_t, 3>> SimWildMesh::get_faces_by_condition(
     return res;
 }
 
+size_t SimWildMesh::round_all_vertices()
+{
+    if (m_all_rounded.load(std::memory_order_relaxed)) {
+        return 0;
+    }
+
+    size_t reclaimed = 0, still_unrounded = 0;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+            continue;
+        }
+        if (round(v)) {
+            ++reclaimed;
+        } else {
+            ++still_unrounded;
+        }
+    }
+
+    if (still_unrounded == 0) {
+        m_all_rounded.store(true, std::memory_order_relaxed);
+    }
+    if (reclaimed > 0 || still_unrounded > 0) {
+        logger().info(
+            "rounding sweep: reclaimed {}, still unrounded {}",
+            reclaimed,
+            still_unrounded);
+    }
+    return reclaimed;
+}
+
+bool SimWildMesh::round_and_check_all_rounded()
+{
+    round_all_vertices();
+    return m_all_rounded.load(std::memory_order_relaxed);
+}
+
 bool SimWildMesh::all_rounded() const
 {
     size_t cnt_round = 0;
@@ -1132,6 +1194,11 @@ void SimWildMesh::write_vtu(const std::string& path)
     v_order.setZero();
     VectorXd v_id(vert_capacity());
     v_id.setZero();
+    // A vertex whose exact position has no double representation. V.row(vid) below is its
+    // rounding, which is NOT where the vertex is -- so an inverted-looking tet in ParaView is
+    // expected here and nowhere else.
+    VectorXd v_is_rounded(vert_capacity());
+    v_is_rounded.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
     VectorXd amips(tet_capacity());
@@ -1172,6 +1239,7 @@ void SimWildMesh::write_vtu(const std::string& path)
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_order[vid] = m_vertex_attribute[vid].m_order;
         v_id[vid] = vid;
+        v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
     }
 
     paraviewo::VTUWriter writer;
@@ -1188,6 +1256,7 @@ void SimWildMesh::write_vtu(const std::string& path)
     writer.add_cell_field("quality_rel", amips_rel);
     writer.add_field("sizing_field", v_sizing_field);
     writer.add_field("vid", v_id);
+    writer.add_field("is_rounded", v_is_rounded);
     writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface

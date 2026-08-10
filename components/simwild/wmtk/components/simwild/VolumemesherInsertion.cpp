@@ -144,6 +144,7 @@ void SimWildMesh::init_from_image(
                 if (m_vertex_attribute[vid].m_is_rounded) {
                     m_vertex_attribute[vid].m_pos = V.row(vid);
                     m_vertex_attribute[vid].m_is_rounded = false;
+                    m_all_rounded.store(false, std::memory_order_relaxed);
                 }
             }
         }

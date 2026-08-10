@@ -22,6 +22,7 @@
 // clang-format on
 
 #include <igl/remove_unreferenced.h>
+#include <atomic>
 #include <memory>
 
 #include <wmtk/utils/SurfaceTopology.hpp>
@@ -392,6 +393,47 @@ public:
     bool round(const Tuple& loc);
 
     /**
+     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
+     *
+     * round() is otherwise only attempted as a side effect of another operation
+     * (smooth_before on the vertex being smoothed, collapse_edge_after on the merged one),
+     * and neither reaches a vertex that only becomes roundable later: smoothing skips
+     * "good" regions by default. Without a sweep such a vertex keeps exact coordinates
+     * into the output for no geometric reason.
+     *
+     * Skipped outright when m_all_rounded says there is nothing to do.
+     */
+    size_t round_all_vertices();
+
+    /**
+     * @brief Run the rounding sweep, then report whether the mesh is now fully rounded.
+     *
+     * The termination condition of the operation loop. Energy alone is not sufficient: a mesh
+     * that hits the quality target while some vertex still carries exact coordinates is not
+     * finished, because the output is what the caller consumes and rational coordinates in it
+     * are a defect regardless of how good the elements are.
+     *
+     * This is also what makes the exact-rational fallback in split_edge_after safe. A split is
+     * the only operation that can un-round a vertex; collapse, the swaps and smoothing never
+     * do; and the post-optimization pass is collapse-only.
+     *
+     * O(1) once m_all_rounded is set, so it is cheap enough to sit on every early-out.
+     */
+    bool round_and_check_all_rounded();
+
+    /**
+     * @brief True when every vertex is known to be rounded.
+     *
+     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
+     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
+     * Atomic because operations that clear it run in parallel.
+     *
+     * Distinct from all_rounded(), which counts. This is the cheap "is there anything to
+     * do" flag; that is the answer.
+     */
+    std::atomic<bool> m_all_rounded = false;
+
+    /**
      * @brief Check if all vertices of the mesh are rounded.
      *
      */
@@ -542,6 +584,15 @@ public:
     /// Count of force-splits taken in the current split pass (atomic_ref from the
     /// parallel split; reset + logged by split_all_edges). Diagnostic only.
     size_t m_force_split_count = 0;
+    /**
+     * @brief Splits in the last pass that fell back to the exact rational midpoint.
+     *
+     * A split is the only operation that can un-round a vertex, so this is exactly how often
+     * the mesh acquired exact coordinates during optimization -- the counterpart of the
+     * "rounded n/m" line, which says how many it still carries. Non-zero on real inputs: on
+     * the challenging-model set it ranges from 1 to 44 per run.
+     */
+    size_t m_exact_split_count = 0;
 
     /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
     bool is_force_split_edge(size_t v1, size_t v2) const
