@@ -8,9 +8,9 @@
 #include <wmtk/utils/SimplifySegments.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <wmtk/utils/EmbedSegments.hpp>
 #include "Parameters.h"
 #include "TriWildMesh.h"
-#include <wmtk/utils/EmbedSegments.hpp>
 
 #include <triwild_spec.hpp>
 
@@ -209,7 +209,13 @@ void triwild(nlohmann::json json_params)
     MatrixXi E_in;
     std::vector<MatrixXd> Vs;
     std::vector<MatrixXi> Es;
-    wmtk::utils::read_input_curves(input_paths, json_params["remove_duplicate_eps"], V_in, E_in, Vs, Es);
+    wmtk::utils::read_input_curves(
+        input_paths,
+        json_params["remove_duplicate_eps"],
+        V_in,
+        E_in,
+        Vs,
+        Es);
 
     // Informational input-topology report; gated behind DEBUG_euler because it is only
     // meaningful next to the matching computations later in the run.
