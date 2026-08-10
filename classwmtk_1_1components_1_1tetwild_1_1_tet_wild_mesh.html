@@ -852,6 +852,8 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:ad6cbbf0f365756c67b7e0539b1acc71d" id="r_ad6cbbf0f365756c67b7e0539b1acc71d"><td class="memItemLeft" align="right" valign="top"><a id="ad6cbbf0f365756c67b7e0539b1acc71d" name="ad6cbbf0f365756c67b7e0539b1acc71d"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_split_info_cache.html">SplitInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_cache</b></td></tr>
 <tr class="separator:ad6cbbf0f365756c67b7e0539b1acc71d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ae7deab5ac421db9fae9ddbdf9d1b61" id="r_a3ae7deab5ac421db9fae9ddbdf9d1b61"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a3ae7deab5ac421db9fae9ddbdf9d1b61">m_collapse_limit_length</a> = true</td></tr>
+<tr class="separator:a3ae7deab5ac421db9fae9ddbdf9d1b61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8e088ac05542d1f5b577f312894a699" id="r_ab8e088ac05542d1f5b577f312894a699"><td class="memItemLeft" align="right" valign="top"><a id="ab8e088ac05542d1f5b577f312894a699" name="ab8e088ac05542d1f5b577f312894a699"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_collapse_info_cache.html">CollapseInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_cache</b></td></tr>
 <tr class="separator:ab8e088ac05542d1f5b577f312894a699"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2156,6 +2158,29 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 
 <p>True when every vertex is known to be rounded. </p>
 <p>Only trusted when true, and only <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ab3485063a512c867b01cef85e1331e73" title="Try to round every un-rounded vertex; returns the number reclaimed.">round_all_vertices()</a> sets it that way. Any code that leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever. Atomic because operations that clear it run in parallel. </p>
+
+</div>
+</div>
+<a id="a3ae7deab5ac421db9fae9ddbdf9d1b61" name="a3ae7deab5ac421db9fae9ddbdf9d1b61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ae7deab5ac421db9fae9ddbdf9d1b61">&#9670;&#160;</a></span>m_collapse_limit_length</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::tetwild::TetWildMesh::m_collapse_limit_length = true</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the current collapse pass applies the target-length limit; read by collapse_edge_before, which is where that limit is now enforced. </p>
 
 </div>
 </div>

@@ -101,6 +101,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>eps</b> = -1.</td><
 <tr class="memitem:a5b734dad4c9a9f0c0d69740bc19d91c9" id="r_a5b734dad4c9a9f0c0d69740bc19d91c9"><td class="memItemLeft" align="right" valign="top"><a id="a5b734dad4c9a9f0c0d69740bc19d91c9" name="a5b734dad4c9a9f0c0d69740bc19d91c9"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>lr</b> = 5e-2</td></tr>
 <tr class="separator:a5b734dad4c9a9f0c0d69740bc19d91c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7ed2109c7f32cc4fa9a0a548fda50e1" id="r_af7ed2109c7f32cc4fa9a0a548fda50e1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#af7ed2109c7f32cc4fa9a0a548fda50e1">order2_envelope_ratio</a> = 0.5</td></tr>
+<tr class="separator:af7ed2109c7f32cc4fa9a0a548fda50e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c9b0e6d591711700914e87d1ea01184" id="r_a9c9b0e6d591711700914e87d1ea01184"><td class="memItemLeft" align="right" valign="top"><a id="a9c9b0e6d591711700914e87d1ea01184" name="a9c9b0e6d591711700914e87d1ea01184"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>l</b> = -1.</td></tr>
 <tr class="separator:a9c9b0e6d591711700914e87d1ea01184"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -224,6 +226,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 </div><div class="memdoc">
 <p>How many smoothing passes each optimization iteration runs.</p>
 <p>This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was hard-coded to 1. Smoothing is the only phase that improves element quality without changing connectivity, so on meshes where split/collapse/swap have run out of useful moves it is the only thing left that can lower the energy. </p>
+
+</div>
+</div>
+<a id="af7ed2109c7f32cc4fa9a0a548fda50e1" name="af7ed2109c7f32cc4fa9a0a548fda50e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7ed2109c7f32cc4fa9a0a548fda50e1">&#9670;&#160;</a></span>order2_envelope_ratio</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::tetwild::Parameters::order2_envelope_ratio = 0.5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the surface envelope's. Deliberately below 1 where the surface envelope uses the full eps; see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5. </p>
 
 </div>
 </div>

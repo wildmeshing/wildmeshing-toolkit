@@ -698,6 +698,8 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a47b84cd6356a21ce6afbcdcb89ba33ff" id="r_a47b84cd6356a21ce6afbcdcb89ba33ff"><td class="memItemLeft" align="right" valign="top"><a id="a47b84cd6356a21ce6afbcdcb89ba33ff" name="a47b84cd6356a21ce6afbcdcb89ba33ff"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_split_info_cache.html">SplitInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_cache</b></td></tr>
 <tr class="separator:a47b84cd6356a21ce6afbcdcb89ba33ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae63f354a03857c1eb0b6afba104a5a14" id="r_ae63f354a03857c1eb0b6afba104a5a14"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#ae63f354a03857c1eb0b6afba104a5a14">m_collapse_limit_length</a> = true</td></tr>
+<tr class="separator:ae63f354a03857c1eb0b6afba104a5a14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84ccc725f23e1da4174bacd23ca9665a" id="r_a84ccc725f23e1da4174bacd23ca9665a"><td class="memItemLeft" align="right" valign="top"><a id="a84ccc725f23e1da4174bacd23ca9665a" name="a84ccc725f23e1da4174bacd23ca9665a"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri_1_1_collapse_info_cache.html">CollapseInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_cache</b></td></tr>
 <tr class="separator:a84ccc725f23e1da4174bacd23ca9665a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1498,6 +1500,30 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 </dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#aa8480bb4bdf57ff81231d29237f19cf9">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ae63f354a03857c1eb0b6afba104a5a14" name="ae63f354a03857c1eb0b6afba104a5a14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae63f354a03857c1eb0b6afba104a5a14">&#9670;&#160;</a></span>m_collapse_limit_length</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::tri::SimWildMeshTri::m_collapse_limit_length = true</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the current collapse pass applies the target-length limit; read by collapse_edge_before, which is where that limit is now enforced. </p>
 
 </div>
 </div>

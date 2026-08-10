@@ -97,6 +97,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_open_boundary
 <tr class="memitem:a2420556f65f5aae93600b1de6e59bb23" id="r_a2420556f65f5aae93600b1de6e59bb23"><td class="memItemLeft" align="right" valign="top"><a id="a2420556f65f5aae93600b1de6e59bb23" name="a2420556f65f5aae93600b1de6e59bb23"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>edge_order</b> = 0</td></tr>
 <tr class="separator:a2420556f65f5aae93600b1de6e59bb23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b1654676ea025d0cc84c60836edc271" id="r_a6b1654676ea025d0cc84c60836edc271"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_split_info_cache.html#a6b1654676ea025d0cc84c60836edc271">max_quality_before</a> = 0.</td></tr>
+<tr class="separator:a6b1654676ea025d0cc84c60836edc271"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90c82a13f280d7e6086e48b392b2f296" id="r_a90c82a13f280d7e6086e48b392b2f296"><td class="memItemLeft" align="right" valign="top"><a id="a90c82a13f280d7e6086e48b392b2f296" name="a90c82a13f280d7e6086e48b392b2f296"></a>
 std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>v1_param_type</b></td></tr>
 <tr class="separator:a90c82a13f280d7e6086e48b392b2f296"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -107,6 +109,23 @@ std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 std::vector&lt; std::pair&lt; <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_face_attributes.html">FaceAttributes</a>, std::array&lt; size_t, 3 &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>changed_faces</b></td></tr>
 <tr class="separator:a97a4359cd0d837508cc26ce4ec79d46f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a6b1654676ea025d0cc84c60836edc271" name="a6b1654676ea025d0cc84c60836edc271"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b1654676ea025d0cc84c60836edc271">&#9670;&#160;</a></span>max_quality_before</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::tetwild::TetWildMesh::SplitInfoCache::max_quality_before = 0.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Worst quality among the tets incident to the edge BEFORE the split, so split_edge_after can tell "this split created a degenerate tet" from "this split
+subdivided a region that was already degenerate". </p>
+
+</div>
+</div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/tetwild/wmtk/components/tetwild/<a class="el" href="_tet_wild_mesh_8h_source.html">TetWildMesh.h</a></li>
 </ul>

@@ -600,12 +600,16 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">Samp
 <tr class="memitem:afcfe97ec98fb74a06dcc473fbd5486b6" id="r_afcfe97ec98fb74a06dcc473fbd5486b6"><td class="memItemLeft" align="right" valign="top"><a id="afcfe97ec98fb74a06dcc473fbd5486b6" name="afcfe97ec98fb74a06dcc473fbd5486b6"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = -1</td></tr>
 <tr class="separator:afcfe97ec98fb74a06dcc473fbd5486b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba25173fd04604e1d4cc8e3c7eb5b641" id="r_aba25173fd04604e1d4cc8e3c7eb5b641"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#aba25173fd04604e1d4cc8e3c7eb5b641">m_feature_eps</a> = -1</td></tr>
+<tr class="separator:aba25173fd04604e1d4cc8e3c7eb5b641"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a905291694b802ccf03e224ea95e20990" id="r_a905291694b802ccf03e224ea95e20990"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a905291694b802ccf03e224ea95e20990">m_feature_points</a></td></tr>
 <tr class="separator:a905291694b802ccf03e224ea95e20990"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d4b9e08d550e3643bc1e1c596640993" id="r_a1d4b9e08d550e3643bc1e1c596640993"><td class="memItemLeft" align="right" valign="top"><a id="a1d4b9e08d550e3643bc1e1c596640993" name="a1d4b9e08d550e3643bc1e1c596640993"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_rejects</b> = 0</td></tr>
 <tr class="memdesc:a1d4b9e08d550e3643bc1e1c596640993"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collapses refused because they would drop or displace a feature point. Diagnostic. <br /></td></tr>
 <tr class="separator:a1d4b9e08d550e3643bc1e1c596640993"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a6b72d0a4660c91b0e4e1e89d7e3484" id="r_a6a6b72d0a4660c91b0e4e1e89d7e3484"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a6a6b72d0a4660c91b0e4e1e89d7e3484">m_collapse_limit_length</a> = true</td></tr>
+<tr class="separator:a6a6b72d0a4660c91b0e4e1e89d7e3484"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a514e0887740a80d56a7b2dbc54247a2d" id="r_a514e0887740a80d56a7b2dbc54247a2d"><td class="memItemLeft" align="right" valign="top"><a id="a514e0887740a80d56a7b2dbc54247a2d" name="a514e0887740a80d56a7b2dbc54247a2d"></a>
 <a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_attribute</b></td></tr>
 <tr class="separator:a514e0887740a80d56a7b2dbc54247a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1459,6 +1463,37 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 <p>True when every vertex is known to be rounded. </p>
 <p>Only trusted when true, and only <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ab3d396f6d1ed610b249f9d7507ac69b8" title="Try to round every un-rounded vertex; returns the number reclaimed.">round_all_vertices()</a> sets it that way. Any code that leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever. Atomic because operations that clear it run in parallel. </p>
+
+</div>
+</div>
+<a id="a6a6b72d0a4660c91b0e4e1e89d7e3484" name="a6a6b72d0a4660c91b0e4e1e89d7e3484"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a6b72d0a4660c91b0e4e1e89d7e3484">&#9670;&#160;</a></span>m_collapse_limit_length</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::triwild::TriWildMesh::m_collapse_limit_length = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether the current collapse pass applies the target-length limit; read by collapse_edge_before, which is where that limit is now enforced. </p>
+
+</div>
+</div>
+<a id="aba25173fd04604e1d4cc8e3c7eb5b641" name="aba25173fd04604e1d4cc8e3c7eb5b641"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba25173fd04604e1d4cc8e3c7eb5b641">&#9670;&#160;</a></span>m_feature_eps</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::triwild::TriWildMesh::m_feature_eps = -1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Radius of the ball a feature-carrying vertex must stay inside.</p>
+<p>Presently equal to m_envelope_eps, but deliberately a separate name: the two are different quantities &ndash; the envelope bounds how far the CURVE may deviate, this bounds how far a SURVIVOR VERTEX may sit from an anchor &ndash; so tying them means a tighter envelope silently tightens feature retention by the same factor. Measured on triwild20k 189017 at eps_rel 1e-4, giving this its own (10x wider) value cut collapse refusals 75270 -&gt; 61666 and delayed the mesh blow-up by two iterations. That was not enough to fix that model on its own &ndash; the collapse length gate was the real cause &ndash; so the value is left alone here and only the coupling is made visible. </p>
 
 </div>
 </div>

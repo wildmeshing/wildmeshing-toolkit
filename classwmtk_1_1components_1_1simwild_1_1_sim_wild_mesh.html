@@ -842,6 +842,8 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a8a042bb3d5df3fe9a601c37a20fef00e" id="r_a8a042bb3d5df3fe9a601c37a20fef00e"><td class="memItemLeft" align="right" valign="top"><a id="a8a042bb3d5df3fe9a601c37a20fef00e" name="a8a042bb3d5df3fe9a601c37a20fef00e"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_split_info_cache.html">SplitInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_cache</b></td></tr>
 <tr class="separator:a8a042bb3d5df3fe9a601c37a20fef00e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5d56136fcd05ee4a3147ef2044318cd" id="r_ab5d56136fcd05ee4a3147ef2044318cd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ab5d56136fcd05ee4a3147ef2044318cd">m_collapse_limit_length</a> = true</td></tr>
+<tr class="separator:ab5d56136fcd05ee4a3147ef2044318cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68c3d379a00f0f9651cadb77659d5c33" id="r_a68c3d379a00f0f9651cadb77659d5c33"><td class="memItemLeft" align="right" valign="top"><a id="a68c3d379a00f0f9651cadb77659d5c33" name="a68c3d379a00f0f9651cadb77659d5c33"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_collapse_info_cache.html">CollapseInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_cache</b></td></tr>
 <tr class="separator:a68c3d379a00f0f9651cadb77659d5c33"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2069,6 +2071,29 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="ab5d56136fcd05ee4a3147ef2044318cd" name="ab5d56136fcd05ee4a3147ef2044318cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5d56136fcd05ee4a3147ef2044318cd">&#9670;&#160;</a></span>m_collapse_limit_length</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::m_collapse_limit_length = true</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the current collapse pass applies the target-length limit; read by collapse_edge_before, which is where that limit is now enforced. </p>
+
+</div>
+</div>
 <a id="a59fab4ba48473b4cea4811f73e8f25e0" name="a59fab4ba48473b4cea4811f73e8f25e0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a59fab4ba48473b4cea4811f73e8f25e0">&#9670;&#160;</a></span>m_force_split_count</h2>
 

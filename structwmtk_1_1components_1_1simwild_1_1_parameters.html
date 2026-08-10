@@ -155,6 +155,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions_m
 <tr class="memitem:a1d3344d40990071178097c45667f6073" id="r_a1d3344d40990071178097c45667f6073"><td class="memItemLeft" align="right" valign="top"><a id="a1d3344d40990071178097c45667f6073" name="a1d3344d40990071178097c45667f6073"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>epsr_simplify</b> = 2e-3</td></tr>
 <tr class="separator:a1d3344d40990071178097c45667f6073"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a974a89306c43ec0d98fb654467863911" id="r_a974a89306c43ec0d98fb654467863911"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html#a974a89306c43ec0d98fb654467863911">order2_envelope_ratio</a> = 0.5</td></tr>
+<tr class="separator:a974a89306c43ec0d98fb654467863911"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6640cfda542fcde84456ac01c52dc771" id="r_a6640cfda542fcde84456ac01c52dc771"><td class="memItemLeft" align="right" valign="top"><a id="a6640cfda542fcde84456ac01c52dc771" name="a6640cfda542fcde84456ac01c52dc771"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>eps_simplify</b> = -1.</td></tr>
 <tr class="separator:a6640cfda542fcde84456ac01c52dc771"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -246,6 +248,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>write_envelope</b> = 
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        std::numeric_limits&lt;double&gt;::max()</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="a974a89306c43ec0d98fb654467863911" name="a974a89306c43ec0d98fb654467863911"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a974a89306c43ec0d98fb654467863911">&#9670;&#160;</a></span>order2_envelope_ratio</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::simwild::Parameters::order2_envelope_ratio = 0.5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the surface envelope's. Deliberately below 1 where the surface envelope uses the full eps; see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5. </p>
+
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
