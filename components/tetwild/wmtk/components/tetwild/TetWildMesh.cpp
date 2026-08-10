@@ -173,7 +173,6 @@ void TetWildMesh::mesh_improvement(int max_its)
                 m_params.stuck_refine_stall_eps * (max_energy - m_params.stop_energy)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
             refine_sizing_around_worst(max_energy);
-            // adjust_sizing_field_serial(max_energy); // The old update
             logger().info(">>>>stuck-refine finished...");
             refine_cooldown = m_params.stuck_refine_cooldown;
         }
@@ -635,113 +634,11 @@ std::tuple<double, double> TetWildMesh::local_operations(
     return energy;
 }
 
-bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
-{
-    logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
-
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
-    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
-    filter_energy = std::min(filter_energy, 100.);
-
-    const double recover_scalar = 1.5;
-    const double refine_scalar = 0.5;
-    const double min_refine_scalar = m_params.l_min / m_params.l;
-
-    // // outputs scale_multipliers
-    // std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
-
-    std::vector<Vector3d> pts;
-    std::map<size_t, double> pts_scalars;
-    std::queue<size_t> v_queue;
-
-    for (int i = 0; i < tet_capacity(); i++) {
-        const Tuple t = tuple_from_tet(i);
-        if (!t.is_valid(*this)) {
-            continue;
-        }
-        const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < filter_energy) {
-            continue;
-        }
-        const auto vs = oriented_tet_vids(t);
-        Vector3d c(0, 0, 0);
-        double s = 0;
-        for (int j = 0; j < 4; j++) {
-            c += (m_vertex_attribute[vs[j]].m_posf);
-            v_queue.emplace(vs[j]);
-            s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
-        }
-        pts_scalars[pts.size()] = s;
-        pts.emplace_back(c / 4);
-    }
-
-    logger().info("filter energy = {}; Number of low quality tets {}", filter_energy, pts.size());
-
-    const double R = m_params.l * 1.8;
-
-    int sum = 0;
-    int adjcnt = 0;
-
-    KNN knn(pts);
-
-    bool is_hit_min_edge_length = false;
-    /**
-     * Iterate through all vertices.
-     * For each vertex, find all pts in the R-ball neighborhood.
-     * Compute scalar based on the distance to the point.
-     * Take smallest of all computed values.
-     *
-     * If no neighbor, multiply by recover_scalar.
-     */
-    for (int i = 0; i < vert_capacity(); i++) {
-        const Tuple v = tuple_from_vertex(i);
-        if (!v.is_valid(*this)) {
-            continue;
-        }
-        const size_t vid = v.vid(*this);
-        const auto& pos_v = m_vertex_attribute[vid].m_posf;
-
-        // all low quality tet centroids within R-ball of vertex
-        std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
-        knn.r_nearest_neighbors(pos_v, R * R, matches);
-
-        auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
-
-        if (matches.empty()) {
-            // if no low quality tet within R-ball, increase sizing scalar to recover from previous
-            // refinement
-            v_scalar = std::min(recover_scalar * v_scalar, 1.0);
-            continue;
-        }
-
-        for (const auto& [index, sq_dist] : matches) {
-            const auto& pt = pts[index];
-            const double dist = std::sqrt(sq_dist);
-            const double R_tet = R * pts_scalars[index]; // scale R by sizing scalar of tet
-            if (dist > R_tet) {
-                continue;
-            }
-            // linear interpolate between refine_scalar and 1 based on distance
-            // double u = dist / R * (1 - refine_scalar) + refine_scalar;
-            double u = dist / R_tet * (1 - refine_scalar) + refine_scalar;
-            double scalar = u * pts_scalars[index];
-            v_scalar = std::min(v_scalar, scalar);
-        }
-
-        if (v_scalar < min_refine_scalar) {
-            v_scalar = min_refine_scalar;
-            is_hit_min_edge_length = true;
-        }
-    }
-
-    return is_hit_min_edge_length;
-}
-
 size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
 {
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    // Clamped above, as adjust_sizing_field_serial always did and as the original TetWild's
-    // updateScalarField target does by ratcheting down from 1e6. Without the clamp a single
+    // Clamped above, as the original TetWild's updateScalarField target does by ratcheting
+    // down from 1e6. Without the clamp a single
     // degenerate tet (quality MAX_ENERGY, reported as 4.6e16) sets filter_energy to 4.6e14,
     // and select_worst_cells then picks out only the degenerate tets -- refinement stops
     // seeing the merely-bad ones it exists to fix.
@@ -1567,13 +1464,6 @@ void TetWildMesh::init_vertex_order()
             }
         },
         NUM_THREADS);
-}
-
-bool TetWildMesh::check_vertex_param_type()
-{
-    // std::ofstream file("missing_param_v.obj");
-    bool flag = true;
-    return flag;
 }
 
 int TetWildMesh::flood_fill()

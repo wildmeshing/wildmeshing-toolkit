@@ -281,7 +281,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     }
     surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
 
-    params.output_path = output_path;
 
     //// get the simplified input
     std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
@@ -381,8 +380,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     igl::Timer insertion_timer;
     insertion_timer.start();
 
-    // Fast tetrahedralization: use the remesher's own tets directly instead of
-    // the centroid-coning path in insertion_by_volumeremesher_old.
+    // Exact arrangement of the simplified surface against a Delaunay background
+    // mesh; the remesher's own tets are used directly, so no Steiner points.
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,

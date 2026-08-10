@@ -18,7 +18,7 @@ set(SRC_FILES
 	EdgeSwapping.cpp
 	Smooth.cpp
 
-	TriangleInsertion.cpp
+	DelaunayBoxMesh.cpp
 	VolumemesherInsertion.cpp
 
 	tetwild.hpp

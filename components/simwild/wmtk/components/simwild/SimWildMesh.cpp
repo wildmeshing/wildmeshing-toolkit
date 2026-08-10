@@ -96,31 +96,6 @@ void SimWildMesh::mesh_improvement(int max_its)
             break;
         }
 
-        // ///sizing field
-        // if (it > 0 && pre_max_energy - max_energy < 5e-1 &&
-        //     (pre_avg_energy - avg_energy) / avg_energy < 0.1) {
-        //     m++;
-        //     if (m == M) {
-        //         logger().info(">>>>adjust_sizing_field...");
-        //         if (is_hit_min_edge_length) {
-        //             logger().warn(
-        //                 "Adjust sizing field although min edge length was already hit. This
-        //                 should " "not happen.");
-        //         }
-        //         is_hit_min_edge_length = adjust_sizing_field_serial(max_energy);
-        //         logger().info(">>>>adjust_sizing_field finished...");
-        //         m = 0;
-        //     }
-        // } else {
-        //     m = 0;
-        //     /**
-        //      * Update pre energies only if they are smaller than current energies. This helps to
-        //      * adjust the sizing field in case the energy alternates between two states.
-        //      */
-        //     pre_max_energy = std::min(pre_max_energy, max_energy);
-        //     pre_avg_energy = std::min(pre_avg_energy, avg_energy);
-        // }
-
         /// sizing field: when the max energy stalls, refine around the worst
         /// elements to escape stuck configurations (replaces the old global
         /// adjust_sizing_field mechanism). After a refinement, wait
@@ -139,7 +114,6 @@ void SimWildMesh::mesh_improvement(int max_its)
                 m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
             refine_sizing_around_worst();
-            // adjust_sizing_field_serial(); // The old update
             logger().info(">>>>stuck-refine finished...");
             refine_cooldown = m_params.stuck_refine_cooldown;
         }
@@ -532,146 +506,6 @@ void SimWildMesh::gradation_smooth_sizing(double grade, const std::vector<size_t
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
         [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
 }
-
-bool SimWildMesh::adjust_sizing_field_serial()
-{
-    logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
-
-    // const double stop_filter_energy = m_params.stop_energy * 0.8;
-    // double filter_energy = std::max(max_energy / 100, stop_filter_energy);
-    // filter_energy = std::min(filter_energy, 100.);
-
-    const double recover_scalar = 1.5;
-    const double refine_scalar = 0.5;
-    const double min_refine_scalar = m_params.l_min / m_params.l;
-
-    // // outputs scale_multipliers
-    // std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
-
-    std::vector<Vector3d> pts;
-    std::map<size_t, double> pts_scalars;
-    std::queue<size_t> v_queue;
-
-    for (int i = 0; i < tet_capacity(); i++) {
-        const Tuple t = tuple_from_tet(i);
-        if (!t.is_valid(*this)) {
-            continue;
-        }
-        const size_t tid = t.tid(*this);
-        if (std::cbrt(m_tet_attribute[tid].m_quality) < target_quality(tid)) {
-            continue;
-        }
-        const auto vs = oriented_tet_vids(t);
-        Vector3d c(0, 0, 0);
-        double s = 0;
-        for (int j = 0; j < 4; j++) {
-            c += (m_vertex_attribute[vs[j]].m_posf);
-            v_queue.emplace(vs[j]);
-            s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
-        }
-        pts_scalars[pts.size()] = s;
-        pts.emplace_back(c / 4);
-    }
-
-    logger().info("Number of low quality tets {}", pts.size());
-
-    // compute maximum sizing scalar for each vertex based on the sizing field
-    std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());
-    for (const Tuple& t : get_tets()) {
-        const auto tid = t.tid(*this);
-        double sizing = std::numeric_limits<double>::max();
-        bool tet_has_sizing_field = false;
-        for (const auto& [expr, length] : m_sizing_field) {
-            if (expr->eval(m_tet_attribute[tid].tags)) {
-                sizing = std::min(sizing, length / m_params.l);
-                tet_has_sizing_field = true;
-            }
-        }
-        if (!tet_has_sizing_field) {
-            sizing = 1.0; // default sizing scalar
-        }
-        const auto vs = oriented_tet_vids(tid);
-        for (const size_t& vid : vs) {
-            max_sizing_scalars[vid] = std::min(max_sizing_scalars[vid], sizing);
-        }
-    }
-
-    const double R = m_params.l * 1.8;
-
-    int sum = 0;
-    int adjcnt = 0;
-
-    KNN knn(pts);
-
-    bool is_hit_min_edge_length = false;
-    /**
-     * Iterate through all vertices.
-     * For each vertex, find all pts in the R-ball neighborhood.
-     * Compute scalar based on the distance to the point.
-     * Take smallest of all computed values.
-     *
-     * If no neighbor, multiply by recover_scalar.
-     */
-    for (int i = 0; i < vert_capacity(); i++) {
-        const Tuple v = tuple_from_vertex(i);
-        if (!v.is_valid(*this)) {
-            continue;
-        }
-        const size_t vid = v.vid(*this);
-        const auto& pos_v = m_vertex_attribute[vid].m_posf;
-
-        // all low quality tet centroids within R-ball of vertex
-        std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
-        knn.r_nearest_neighbors(pos_v, R * R, matches);
-
-        auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
-
-        if (matches.empty()) {
-            // if no low quality tet within R-ball, increase sizing scalar to recover from previous
-            // refinement
-            v_scalar = std::min(recover_scalar * v_scalar, max_sizing_scalars[vid]);
-            continue;
-        }
-
-        for (const auto& [index, sq_dist] : matches) {
-            const auto& pt = pts[index];
-            const double dist = std::sqrt(sq_dist);
-            const double R_tet = R * pts_scalars[index]; // scale R by sizing scalar of tet
-            if (dist > R_tet) {
-                continue;
-            }
-            // linear interpolate between refine_scalar and 1 based on distance
-            // double u = dist / R * (1 - refine_scalar) + refine_scalar;
-            double u = dist / R_tet * (1 - refine_scalar) + refine_scalar;
-            double scalar = u * pts_scalars[index];
-            v_scalar = std::min(v_scalar, scalar);
-        }
-
-        if (v_scalar < min_refine_scalar) {
-            v_scalar = min_refine_scalar;
-            is_hit_min_edge_length = true;
-        }
-    }
-
-    // restrict sizing scalar according to sizing field
-    for (const Tuple& t : get_tets()) {
-        const auto tid = t.tid(*this);
-        double sizing = std::numeric_limits<double>::max();
-        for (const auto& [expr, length] : m_sizing_field) {
-            if (expr->eval(m_tet_attribute[tid].tags)) {
-                sizing = std::min(sizing, length / m_params.l);
-            }
-        }
-        const auto vs = oriented_tet_vids(tid);
-        for (const size_t& vid : vs) {
-            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
-            s = std::min(s, sizing);
-        }
-    }
-
-    return is_hit_min_edge_length;
-}
-
 
 /////////////////////////////////////////////////////////////////////
 void SimWildMesh::output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond)

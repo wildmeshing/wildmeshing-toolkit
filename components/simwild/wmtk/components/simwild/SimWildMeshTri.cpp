@@ -685,146 +685,6 @@ void SimWildMeshTri::gradation_smooth_sizing(double grade, const std::vector<siz
     }
 }
 
-bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
-{
-    wmtk::logger().info("#V {}, #F {}", vert_capacity(), tri_capacity());
-
-    const double stop_filter_energy = m_params.stop_energy * 0.8;
-    double filter_energy = std::max(max_energy / 100, stop_filter_energy);
-    filter_energy = std::min(filter_energy, 100.);
-
-    const auto recover_scalar = 1.5;
-    const auto refine_scalar = 0.5;
-    const auto min_refine_scalar = m_params.l_min / m_params.l;
-
-    // outputs scale_multipliers
-    std::vector<double> scale_multipliers(vert_capacity(), recover_scalar);
-
-    std::vector<Vector3d> pts;
-    std::map<size_t, double> pts_scalars;
-    std::queue<size_t> v_queue;
-
-    for (int i = 0; i < tri_capacity(); i++) {
-        const Tuple t = tuple_from_tri(i);
-        if (!t.is_valid(*this)) {
-            continue;
-        }
-        const size_t fid = t.fid(*this);
-        if (m_face_attribute.at(fid).m_quality < target_quality(fid)) {
-            continue;
-        }
-        const auto vs = oriented_tri_vids(t);
-        Vector2d c(0, 0); // center
-        double s = 0;
-        for (int j = 0; j < 3; j++) {
-            c += m_vertex_attribute.at(vs[j]).m_posf;
-            v_queue.emplace(vs[j]);
-            s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
-        }
-        c /= 3;
-        pts_scalars[pts.size()] = s;
-        pts.emplace_back(Vector3d(c[0], c[1], 0));
-    }
-
-    wmtk::logger().info("filter energy {} Low Quality Tets {}", filter_energy, pts.size());
-
-    // compute maximum sizing scalar for each vertex based on the sizing field
-    std::vector<double> max_sizing_scalars(vert_capacity(), std::numeric_limits<double>::max());
-    for (const Tuple& t : get_faces()) {
-        const auto tid = t.fid(*this);
-        double sizing = std::numeric_limits<double>::max();
-        bool tet_has_sizing_field = false;
-        for (const auto& [expr, length] : m_sizing_field) {
-            if (expr->eval(m_face_attribute[tid].tags)) {
-                sizing = std::min(sizing, length / m_params.l);
-                tet_has_sizing_field = true;
-            }
-        }
-        if (!tet_has_sizing_field) {
-            sizing = 1.0; // default sizing scalar
-        }
-        const auto vs = oriented_tri_vids(tid);
-        for (const size_t& vid : vs) {
-            max_sizing_scalars[vid] = std::min(max_sizing_scalars[vid], sizing);
-        }
-    }
-
-    const double R = m_params.l * 1.8;
-
-    int sum = 0;
-    int adjcnt = 0;
-
-    KNN knn(pts);
-
-    bool is_hit_min_edge_length = false;
-    /**
-     * Iterate through all vertices.
-     * For each vertex, find all pts in the R-ball neighborhood.
-     * Compute scalar based on the distance to the point.
-     * Take smallest of all computed values.
-     *
-     * If no neighbor, multiply by recover_scalar.
-     */
-    for (int i = 0; i < vert_capacity(); i++) {
-        const Tuple v = tuple_from_vertex(i);
-        if (!v.is_valid(*this)) {
-            continue;
-        }
-        const size_t vid = v.vid(*this);
-        const auto& pos_v = m_vertex_attribute[vid].m_posf;
-
-        // all low quality tet centroids within R-ball of vertex
-        std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
-        knn.r_nearest_neighbors(Vector3d(pos_v[0], pos_v[1], 0), R * R, matches);
-
-        auto& v_scalar = m_vertex_attribute[vid].m_sizing_scalar;
-
-        if (matches.empty()) {
-            // if no low quality tet within R-ball, increase sizing scalar to recover from previous
-            // refinement
-            v_scalar = std::min(recover_scalar * v_scalar, max_sizing_scalars[vid]);
-            continue;
-        }
-
-        for (const auto& [index, sq_dist] : matches) {
-            const auto& pt = pts[index];
-            const double dist = std::sqrt(sq_dist);
-            const double R_tet = R * pts_scalars[index]; // scale R by sizing scalar of tet
-            if (dist > R_tet) {
-                continue;
-            }
-            // linear interpolate between refine_scalar and 1 based on distance
-            // double u = dist / R * (1 - refine_scalar) + refine_scalar;
-            double u = dist / R_tet * (1 - refine_scalar) + refine_scalar;
-            double scalar = u * pts_scalars[index];
-            v_scalar = std::min(v_scalar, scalar);
-        }
-
-        if (v_scalar < min_refine_scalar) {
-            v_scalar = min_refine_scalar;
-            is_hit_min_edge_length = true;
-        }
-    }
-
-    // restrict sizing scalar according to sizing field
-    for (const Tuple& t : get_faces()) {
-        const auto tid = t.fid(*this);
-        double sizing = std::numeric_limits<double>::max();
-        for (const auto& [expr, length] : m_sizing_field) {
-            if (expr->eval(m_face_attribute[tid].tags)) {
-                sizing = std::min(sizing, length / m_params.l);
-            }
-        }
-        const auto vs = oriented_tri_vids(tid);
-        for (const size_t& vid : vs) {
-            auto& s = m_vertex_attribute[vid].m_sizing_scalar;
-            s = std::min(s, sizing);
-        }
-    }
-
-    return is_hit_min_edge_length;
-}
-
 void SimWildMeshTri::write_msh(std::string file, const bool write_envelope)
 {
     consolidate_mesh();
@@ -1447,10 +1307,6 @@ void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
             if (length != -weight) {
                 return false;
             }
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
             // Deliberately NOT filtered on length here. An over-length edge stays a
             // candidate and collapse_edge_before decides it on quality instead: it is kept
             // only if it STRICTLY improves the worst element of the ring. See there.
@@ -2322,7 +2178,6 @@ void SimWildMeshTri::mesh_improvement(int max_its)
                 m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
             refine_sizing_around_worst();
-            // adjust_sizing_field_serial(max_energy); // The old update
             logger().info(">>>>stuck-refine finished...");
             refine_cooldown = m_params.stuck_refine_cooldown;
         }

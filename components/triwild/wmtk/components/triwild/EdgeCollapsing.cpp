@@ -56,10 +56,6 @@ void TriWildMesh::collapse_all_edges(bool is_limit_length)
             if (length != -weight) {
                 return false;
             }
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
             // Deliberately NOT filtered on length here. An over-length edge stays a
             // candidate and collapse_edge_before decides it on quality instead: it is kept
             // only if it STRICTLY improves the worst element of the ring. See there.

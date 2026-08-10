@@ -270,7 +270,6 @@ public:
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
-    bool adjust_sizing_field_serial(double max_energy);
 
     void write_msh(std::string file, const bool write_envelope = true);
 
@@ -482,12 +481,10 @@ private:
         size_t v_new;
         size_t v1_id;
         size_t v2_id;
-        std::vector<size_t> v1_param_type;
         /// Worst quality among the elements incident to the edge BEFORE the split, so
         /// split_edge_after can tell "this split created a degenerate element" from "this
         /// split subdivided a region that was already degenerate".
         double max_quality_before = 0.;
-        std::vector<size_t> v2_param_type;
 
         EdgeAttributes old_e_attrs;
 
@@ -512,7 +509,6 @@ private:
         size_t v2_id;
         double max_energy;
         double edge_length;
-        bool is_limit_length;
 
         std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
         // all faces incident to the delete vertex (v1) that are on the tracked surface

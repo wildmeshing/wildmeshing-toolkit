@@ -484,8 +484,6 @@ private:
         /// split_edge_after can tell "this split created a degenerate element" from "this
         /// split subdivided a region that was already degenerate".
         double max_quality_before = 0.;
-        std::vector<size_t> v1_param_type;
-        std::vector<size_t> v2_param_type;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
 
@@ -507,7 +505,6 @@ private:
         size_t v2_id;
         double max_energy;
         double edge_length;
-        bool is_limit_length;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         // all faces incident to the delete vertex (v1) that are on the tracked surface
@@ -558,7 +555,6 @@ public:
 
     void init_surfaces_and_boundaries();
 
-    std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
 
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the
@@ -584,7 +580,6 @@ public:
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
-    bool adjust_sizing_field_serial();
 
     /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
     /// split_all_edges force-splits exactly these edges (bypasses the length gate),

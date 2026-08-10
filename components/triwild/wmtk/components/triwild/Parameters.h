@@ -24,7 +24,6 @@ struct Parameters
      * which nothing else refuses. Off only for A/B against the old behaviour.
      */
     bool preserve_feature_points = true;
-    std::string output_path;
 
     double splitting_l2 = -1.; // the lower bound length (squared) for edge split
     double collapsing_l2 =
@@ -186,8 +185,6 @@ struct Parameters
      */
     Parameters(const nlohmann::json& json_params)
     {
-        output_path = json_params["output"];
-
         epsr = json_params["eps_rel"];
         lr = json_params["length_rel"];
         stop_energy = json_params["stop_energy"];

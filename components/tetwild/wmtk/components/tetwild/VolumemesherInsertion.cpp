@@ -12,883 +12,31 @@
 
 namespace wmtk::components::tetwild {
 
-void TetWildMesh::output_embedded_polygon_mesh(
-    std::string output_dir,
-    const std::vector<Vector3r>& v_rational,
-    const std::vector<std::vector<size_t>>& polygon_faces,
-    const std::vector<std::vector<size_t>>& polygon_cells,
-    const std::vector<bool>& polygon_faces_on_input)
-{
-    assert(polygon_faces.size() == polygon_faces_on_input.size());
-
-    std::ofstream output(output_dir);
-    output.precision(15);
-    for (size_t i = 0; i < v_rational.size(); i++) {
-        output << "v ";
-        for (int j = 0; j < 3; j++) {
-            output << v_rational[i][j].get_num_str() << " " << v_rational[i][j].get_den_str()
-                   << " ";
-        }
-        output << std::endl;
-    }
-
-
-    for (size_t i = 0; i < polygon_faces.size(); i++) {
-        output << "f ";
-        for (int j = 0; j < polygon_faces[i].size(); j++) {
-            output << polygon_faces[i][j] << " ";
-        }
-        output << std::endl;
-    }
-
-    for (size_t i = 0; i < polygon_faces_on_input.size(); i++) {
-        output << "s " << polygon_faces_on_input[i] << std::endl;
-    }
-
-    for (size_t i = 0; i < polygon_cells.size(); i++) {
-        output << "c ";
-        for (int j = 0; j < polygon_cells[i].size(); j++) {
-            output << polygon_cells[i][j] << " ";
-        }
-        output << std::endl;
-    }
-
-    output.close();
-}
-
-void TetWildMesh::output_embedded_polygon_surface_mesh(
-    std::string output_dir,
-    const std::vector<Vector3r>& v_rational,
-    const std::vector<std::vector<size_t>>& polygon_faces,
-    const std::vector<bool>& polygon_faces_on_input)
-{
-    assert(polygon_faces.size() == polygon_faces_on_input.size());
-
-    std::ofstream output(output_dir);
-    output.precision(15);
-    for (size_t i = 0; i < v_rational.size(); i++) {
-        output << "v ";
-        for (int j = 0; j < 3; j++) {
-            output << v_rational[i][j].to_double() << " ";
-        }
-        output << std::endl;
-    }
-
-
-    for (size_t i = 0; i < polygon_faces.size(); i++) {
-        if (!polygon_faces_on_input[i]) continue;
-        output << "f ";
-        for (int j = 0; j < polygon_faces[i].size(); j++) {
-            output << polygon_faces[i][j] + 1 << " ";
-        }
-        output << std::endl;
-    }
-
-    output.close();
-}
-
-
-void TetWildMesh::output_tetrahedralized_embedded_mesh(
-    std::string output_dir,
-    const std::vector<Vector3r>& v_rational,
-    const std::vector<std::array<size_t, 3>>& facets,
-    const std::vector<std::array<size_t, 4>>& tets,
-    const std::vector<bool>& tet_face_on_input_surface)
-{
-    assert(tets.size() * 4 == tet_face_on_input_surface.size());
-
-    std::ofstream output(output_dir);
-    output.precision(15);
-
-    for (size_t i = 0; i < v_rational.size(); i++) {
-        output << "v ";
-        for (int j = 0; j < 3; j++) {
-            output << v_rational[i][j].get_num_str() << " " << v_rational[i][j].get_den_str()
-                   << " ";
-        }
-        output << std::endl;
-    }
-
-    for (size_t i = 0; i < facets.size(); i++) {
-        output << "f ";
-        for (int j = 0; j < 3; j++) {
-            output << facets[i][j] << " ";
-        }
-        output << std::endl;
-    }
-
-
-    for (size_t i = 0; i < tets.size(); i++) {
-        output << "t ";
-        for (int j = 0; j < 4; j++) {
-            output << tets[i][j] << " ";
-        }
-        output << std::endl;
-    }
-
-    for (size_t i = 0; i < tet_face_on_input_surface.size(); i++) {
-        output << "s ";
-        for (int j = 0; j < 4; j++) {
-            output << tet_face_on_input_surface[i] << " ";
-        }
-        output << std::endl;
-    }
-
-    output.close();
-}
-
-void TetWildMesh::output_init_tetmesh(std::string output_dir)
-{
-    consolidate_mesh();
-    std::ofstream output(output_dir);
-    output.precision(15);
-
-    auto vs = get_vertices();
-    auto fs = get_faces();
-    auto ts = get_tets();
-
-    output << vs.size() << std::endl;
-    output << fs.size() << std::endl;
-    output << ts.size() << std::endl;
-
-    for (auto v : vs) {
-        auto vid = v.vid(*this);
-        output << "v " << m_vertex_attribute[vid].m_pos[0].get_num_str() << " "
-               << m_vertex_attribute[vid].m_pos[0].get_den_str() << " "
-               << m_vertex_attribute[vid].m_pos[1].get_num_str() << " "
-               << m_vertex_attribute[vid].m_pos[1].get_den_str() << " "
-               << m_vertex_attribute[vid].m_pos[2].get_num_str() << " "
-               << m_vertex_attribute[vid].m_pos[2].get_den_str() << " "
-               << m_vertex_attribute[vid].m_is_on_surface << std::endl;
-    }
-
-    for (auto f : fs) {
-        auto fid = f.fid(*this);
-        auto v1 = f.vid(*this);
-        auto v2 = f.switch_vertex(*this).vid(*this);
-        auto v3 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
-
-        output << fid << " " << v1 << " " << v2 << " " << v3 << " "
-               << m_face_attribute[fid].m_is_surface_fs << " " << m_face_attribute[fid].m_is_bbox_fs
-               << std::endl;
-    }
-
-    for (auto t : ts) {
-        auto tid = t.tid(*this);
-        auto vids = oriented_tet_vids(t);
-
-        output << "t " << vids[0] << " " << vids[1] << " " << vids[2] << " " << vids[3]
-               << std::endl;
-    }
-
-    output.close();
-}
-
-void TetWildMesh::output_tracked_surface(std::string output_file)
-{
-    logger().info("Write {}", output_file);
-    output_faces(output_file, [](auto& f) { return f.m_is_surface_fs; });
-}
-
-
-bool TetWildMesh::check_polygon_face_validity(std::vector<Vector3r> points)
-{
-    if (points.size() == 3) return true;
-    if (points.size() < 3) return false;
-    for (int i = 0; i < points.size() - 3; i++) {
-        Eigen::Matrix<wmtk::Rational, 4, 4> tet;
-        tet << points[i][0], points[i][1], points[i][2], 1, //
-            points[i + 1][0], points[i + 1][1], points[i + 1][2], 1, //
-            points[i + 2][0], points[i + 2][1], points[i + 2][2], 1, //
-            points[i + 3][0], points[i + 3][1], points[i + 3][2], 1;
-        wmtk::Rational tet_volume = tet.determinant();
-        if (tet_volume != 0) {
-            std::cout << tet_volume.to_double() << std::endl;
-            return false;
-        }
-    }
-    return true;
-}
-
-std::vector<std::array<size_t, 3>> TetWildMesh::triangulate_polygon_face(
-    std::vector<Vector3r> points)
-{
-    // triangulate weak convex polygons
-    std::vector<std::array<size_t, 3>> triangulated_faces;
-
-    std::vector<std::pair<Vector3r, int>> points_vector;
-    for (int i = 0; i < points.size(); i++) {
-        points_vector.push_back(std::pair<Vector3r, int>(points[i], i));
-    }
-
-    // find the first colinear ABC with nonlinear BCD and delete C from vector
-    while (points_vector.size() > 3) {
-        bool no_colinear = true;
-        for (int i = 0; i < points_vector.size(); i++) {
-            auto cur = points_vector[i];
-            auto next = points_vector[(i + 1) % points_vector.size()];
-            auto prev = points_vector[(i + points_vector.size() - 1) % points_vector.size()];
-            auto nextnext = points_vector[(i + 2) % points_vector.size()];
-
-            Vector3r a = cur.first - prev.first;
-            Vector3r b = next.first - cur.first;
-            Vector3r c = nextnext.first - next.first;
-
-            if (((a[0] * b[1] - a[1] * b[0]) == 0 && (a[1] * b[2] - a[2] * b[1]) == 0 &&
-                 (a[0] * b[2] - a[2] * b[0]) == 0) &&
-                (((b[0] * c[1] - b[1] * c[0]) != 0 || (b[1] * c[2] - b[2] * c[1]) != 0 ||
-                  (b[0] * c[2] - b[2] * c[0]) != 0))) {
-                no_colinear = false;
-                std::array<size_t, 3> t = {
-                    {size_t(cur.second), size_t(next.second), size_t(nextnext.second)}};
-                triangulated_faces.push_back(t);
-                points_vector.erase(points_vector.begin() + ((i + 1) % points_vector.size()));
-                break;
-            } else {
-                continue;
-            }
-        }
-
-        if (no_colinear) break;
-    }
-
-    // cleanup convex polygon
-    while (points_vector.size() >= 3) {
-        std::array<size_t, 3> t = {
-            {size_t(points_vector[0].second),
-             size_t(points_vector[1].second),
-             size_t(points_vector[points_vector.size() - 1].second)}};
-        triangulated_faces.push_back(t);
-        points_vector.erase(points_vector.begin());
-    }
-
-    return triangulated_faces;
-}
-
 // ---------------------------------------------------------------------------
-// insertion_by_volumeremesher_old
+// insertion_by_volumeremesher
 //
-// Conformally insert an input triangle surface mesh into a tetrahedral
-// background mesh using the external "VolumeRemesher" library
-// (vol_rem::embed_tri_in_poly_mesh, Cherchi et al.). The output is a
-// tetrahedralization of the (bounding-box padded) domain whose faces exactly
-// conform to the input surface, expressed in exact rational coordinates,
-// together with the bookkeeping needed downstream: which faces lie on the input
-// surface and which vertices lie on the input surface.
+// Conformally insert the input surface into a background tet mesh via
+// vol_rem::embed_tri_in_poly_mesh:
 //
-// High-level pipeline:
-//   1. Build a Delaunay background tet mesh of the bbox-padded input points.
-//   2. Flatten the background tets and the input triangles into the plain
-//      double / uint32 arrays the remesher expects.
-//   3. Call embed_tri_in_poly_mesh, which computes the exact arrangement of the
-//      input triangles cut into the background mesh and returns it as a
-//      *polygonal* complex: rational vertices, polygon faces, and polyhedral
-//      cells, plus the list of which faces sit on the input surface.
-//   4. Decode that polygonal complex, triangulate every polygon face, and
-//      tetrahedralize every polyhedral cell (trivially when it is already a
-//      tet, otherwise by coning all of its triangulated faces to its centroid).
-//   5. Emit the triangle faces, the tets, and the on-surface tags for faces and
-//      vertices.
+//   1. Build a Delaunay background mesh over the input vertices plus a padded
+//      voxel lattice (init_from_delaunay_box_mesh).
+//   2. Flatten the input surface and the background tets into the flat coordinate
+//      and index arrays the remesher expects.
+//   3. Call embed_tri_in_poly_mesh, which computes the exact arrangement and
+//      returns a conforming tetrahedralization with surface-tracking metadata.
+//   4. Convert the remesher's bigrational coordinates to Vector3r, decode the
+//      facets (already triangles, fixed stride of 4: one size prefix + 3 vertex
+//      ids) and recover which output faces lie on the input surface, using
+//      final_tets_parent (which polygonal cell each tet came from),
+//      final_tets_parent_faces (which polygon faces bound it) and
+//      cells_with_faces_on_input (a fast skip for cells touching no input face).
+//   5. Compact away vertices left unreferenced by out_tets and remap all indices.
 //
-// This "_old" variant tetrahedralizes the polygonal cells itself (steps 4-5) by
-// coning each cell to a per-cell centroid. It is kept for reference; the default
-// path is now insertion_by_volumeremesher, which consumes the tetrahedralization
-// the remesher returns directly. See the header comment on
-// insertion_by_volumeremesher below for a side-by-side of the differences.
-//
-// Parameters:
-//   vertices                  [in]  input surface vertices (double precision)
-//   faces                     [in]  input surface triangles (indices into vertices)
-//   v_rational                [out] all output vertices, exact rational coords
-//   facets_after              [out] triangulated faces of the arrangement
-//   is_v_on_input             [out] per-vertex: is this vertex on the input surface
-//   tets_after                [out] output tetrahedra (indices into v_rational)
-//   tet_face_on_input_surface [out] flat per-tet-face flags, 4 per tet in WMTK
-//                                   local face order, marking on-surface faces
-// ---------------------------------------------------------------------------
-
-// we have the vertices and triangles
-// to generate what we need for volumemesher
-// coords, ncoords, tri_idx, ntri_idx
-
-// embed input surface on generated back ground mesh
-
-void TetWildMesh::insertion_by_volumeremesher_old(
-    const std::vector<Vector3d>& vertices, // input surface vertices (double)
-    const std::vector<std::array<size_t, 3>>& faces, // input surface triangles
-    std::vector<Vector3r>& v_rational, // out: arrangement vertices (rational)
-    std::vector<std::array<size_t, 3>>& facets_after, // out: triangulated faces
-    std::vector<bool>& is_v_on_input, // out: vertex-on-input-surface flags
-    std::vector<std::array<size_t, 4>>& tets_after, // out: output tets
-    std::vector<bool>& tet_face_on_input_surface) // out: 4 face-on-surface flags per tet
-{
-    logger().info("Insertion #v = {}, #f = {}", vertices.size(), faces.size());
-
-    // Step 1: build the background mesh. init_from_delaunay_box_mesh pads the
-    // input points with a bounding box and computes a Delaunay
-    // tetrahedralization, storing both float (m_posf) and rational (m_pos)
-    // vertex positions.
-    // generate background mesh
-    init_from_delaunay_box_mesh(vertices);
-
-    // Step 2: flatten the background tet mesh into the plain arrays the remesher
-    // consumes. tet_ver_coord is xyz-interleaved vertex coordinates (double) and
-    // tet_index is 4 vertex ids per tet.
-    // prepare tet vertices and tet index info
-
-    auto tet_vers = get_vertices();
-    auto tets = get_tets();
-    std::vector<double> tet_ver_coord(3 * tet_vers.size());
-    std::vector<uint32_t> tet_index(4 * tets.size());
-    logger().info("after delaunay #V = {}, #T = {}", tet_vers.size(), tets.size());
-
-    // vertex coordinates: use the double positions (m_posf); vertex i occupies
-    // slots [3*i, 3*i+2]. The mesh was just built, so vertex ids are contiguous
-    // and m_vertex_attribute can be indexed directly by i.
-    for (int i = 0; i < tet_vers.size(); ++i) {
-        tet_ver_coord[3 * i] = m_vertex_attribute[i].m_posf[0];
-        tet_ver_coord[3 * i + 1] = m_vertex_attribute[i].m_posf[1];
-        tet_ver_coord[3 * i + 2] = m_vertex_attribute[i].m_posf[2];
-    }
-
-    // tet connectivity: oriented_tet_vids returns the 4 vertex ids in positive
-    // orientation, stored as 4 consecutive entries per tet.
-    for (int i = 0; i < tets.size(); ++i) {
-        auto tet_vids = oriented_tet_vids(tets[i]);
-        tet_index[4 * i] = (int)tet_vids[0];
-        tet_index[4 * i + 1] = (int)tet_vids[1];
-        tet_index[4 * i + 2] = (int)tet_vids[2];
-        tet_index[4 * i + 3] = (int)tet_vids[3];
-    }
-
-    // Same flattening for the input surface: tri_ver_coord is xyz-interleaved
-    // vertex coordinates (double) and tri_index is 3 vertex ids per triangle.
-    // prepare input surfaces info
-    std::vector<double> tri_ver_coord(3 * vertices.size());
-    std::vector<uint32_t> tri_index(3 * faces.size());
-
-    for (int i = 0; i < vertices.size(); ++i) {
-        tri_ver_coord[3 * i] = vertices[i][0];
-        tri_ver_coord[3 * i + 1] = vertices[i][1];
-        tri_ver_coord[3 * i + 2] = vertices[i][2];
-    }
-
-    for (int i = 0; i < faces.size(); ++i) {
-        tri_index[3 * i] = (int)faces[i][0];
-        tri_index[3 * i + 1] = (int)faces[i][1];
-        tri_index[3 * i + 2] = (int)faces[i][2];
-    }
-
-    // Outputs of the remesher (step 3). The arrangement is returned as a
-    // polygonal complex:
-    //   embedded_vertices        exact rational coords, xyz-interleaved
-    //   embedded_facets          polygon faces, size-prefixed: [n, v0..v(n-1), ...]
-    //   embedded_cells           polyhedral cells, size-prefixed by face count:
-    //                            [m, f0..f(m-1), ...] (indices into the faces)
-    //   embedded_facets_on_input indices (into the decoded polygon face list) of
-    //                            the faces that lie on the input surface
-    std::vector<vol_rem::bigrational> embedded_vertices;
-    std::vector<uint32_t> embedded_facets;
-    std::vector<uint32_t> embedded_cells;
-    std::vector<uint32_t> embedded_facets_on_input;
-
-    // These describe an alternative tet-based output of the remesher. They are
-    // filled in by embed_tri_in_poly_mesh but only consumed by the newer
-    // insertion_by_volumeremesher; this "_old" routine tetrahedralizes the
-    // polygonal cells (embedded_cells) itself and ignores them.
-    std::vector<std::array<uint32_t, 4>> out_tets;
-    std::vector<uint32_t> final_tets_parent;
-    std::vector<bool> cells_with_faces_on_input;
-    std::vector<std::vector<uint32_t>> final_tets_parent_faces;
-
-    // Sanity check the flattened inputs before handing them to the remesher:
-    // warn about collinear (degenerate) input triangles and coplanar
-    // (degenerate) background tets. These are warnings only; embedding proceeds.
-    if (m_params.perform_sanity_checks) {
-        logger().info("Check degenerate before embedding...");
-        for (int i = 0; i < tri_index.size(); i += 3) {
-            int id0 = tri_index[i + 0];
-            int id1 = tri_index[i + 1];
-            int id2 = tri_index[i + 2];
-            Eigen::Vector3d v0;
-            Eigen::Vector3d v1;
-            Eigen::Vector3d v2;
-            v0 << tri_ver_coord[3 * id0 + 0], tri_ver_coord[3 * id0 + 1],
-                tri_ver_coord[3 * id0 + 2];
-            v1 << tri_ver_coord[3 * id1 + 0], tri_ver_coord[3 * id1 + 1],
-                tri_ver_coord[3 * id1 + 2];
-            v2 << tri_ver_coord[3 * id2 + 0], tri_ver_coord[3 * id2 + 1],
-                tri_ver_coord[3 * id2 + 2];
-
-            if (utils::predicates::is_degenerate(v0, v1, v2)) {
-                logger().warn(
-                    "Face ({}, {}, {}) is collinear!",
-                    v0.transpose(),
-                    v1.transpose(),
-                    v2.transpose());
-            }
-        }
-
-        for (int i = 0; i < tet_index.size(); i += 4) {
-            int id0 = tet_index[i + 0];
-            int id1 = tet_index[i + 1];
-            int id2 = tet_index[i + 2];
-            int id3 = tet_index[i + 3];
-            Eigen::Vector3d v0;
-            Eigen::Vector3d v1;
-            Eigen::Vector3d v2;
-            Eigen::Vector3d v3;
-            v0 << tet_ver_coord[3 * id0 + 0], tet_ver_coord[3 * id0 + 1],
-                tet_ver_coord[3 * id0 + 2];
-            v1 << tet_ver_coord[3 * id1 + 0], tet_ver_coord[3 * id1 + 1],
-                tet_ver_coord[3 * id1 + 2];
-            v2 << tet_ver_coord[3 * id2 + 0], tet_ver_coord[3 * id2 + 1],
-                tet_ver_coord[3 * id2 + 2];
-            v3 << tet_ver_coord[3 * id3 + 0], tet_ver_coord[3 * id3 + 1],
-                tet_ver_coord[3 * id3 + 2];
-
-            if (utils::predicates::is_degenerate(v0, v1, v2, v3)) {
-                logger().warn(
-                    "Tet ({}, {}, {}) is coplanar!",
-                    v0.transpose(),
-                    v1.transpose(),
-                    v2.transpose(),
-                    v3.transpose());
-            }
-        }
-        logger().info("done");
-    }
-
-    // Step 3: compute the exact arrangement. This intersects the input triangles
-    // with the background tets and returns the conforming polygonal complex in
-    // the embedded_* / out_* outputs declared above. The trailing `true`
-    // requests the on-input-surface tagging (embedded_facets_on_input).
-    // volumeremesher embed
-    // PR #12 (wildmeshing/VolumeRemesher) added input edges/points and per-simplex
-    // provenance outputs. tetwild only embeds triangles, so the edge/point inputs
-    // are empty and the provenance outputs are unused.
-    std::vector<double> vr_edge_coords, vr_point_coords;
-    std::vector<uint32_t> vr_edge_indexes;
-    std::vector<std::vector<std::array<uint32_t, 4>>> vr_tri_provenance;
-    std::vector<std::vector<std::array<uint32_t, 3>>> vr_edge_provenance;
-    std::vector<std::array<uint32_t, 2>> vr_point_provenance;
-    vol_rem::embed_tri_in_poly_mesh(
-        tri_ver_coord,
-        tri_index,
-        tet_ver_coord,
-        tet_index,
-        embedded_vertices,
-        embedded_facets,
-        embedded_cells,
-        out_tets,
-        final_tets_parent,
-        embedded_facets_on_input,
-        cells_with_faces_on_input,
-        final_tets_parent_faces,
-        vr_edge_coords,
-        vr_edge_indexes,
-        vr_point_coords,
-        vr_tri_provenance,
-        vr_edge_provenance,
-        vr_point_provenance,
-        true);
-
-    // Step 4a: copy the arrangement vertices into wmtk rational Vector3r. The
-    // remesher stores them as vol_rem::bigrational; convert exactly (no rounding).
-    // The backend differs by build: with the GNU GMP C++ classes we hand over the
-    // mpq_t directly, otherwise we round-trip through the binary string form.
-    for (int i = 0; i < embedded_vertices.size() / 3; i++) {
-        v_rational.push_back(Vector3r());
-#ifdef USE_GNU_GMP_CLASSES
-        v_rational.back()[0].init(embedded_vertices[3 * i].get_mpq_t());
-        v_rational.back()[1].init(embedded_vertices[3 * i + 1].get_mpq_t());
-        v_rational.back()[2].init(embedded_vertices[3 * i + 2].get_mpq_t());
-#else
-        v_rational.back()[0].init_from_bin(embedded_vertices[3 * i].get_str());
-        v_rational.back()[1].init_from_bin(embedded_vertices[3 * i + 1].get_str());
-        v_rational.back()[2].init_from_bin(embedded_vertices[3 * i + 2].get_str());
-#endif
-    }
-
-    // Step 4b: decode the size-prefixed embedded_facets array into an explicit
-    // list of polygon faces. Layout: at position i, embedded_facets[i] is the
-    // vertex count n of the face, followed by its n vertex ids; then jump past
-    // them (i += polysize, plus the loop's i++) to the next face's count.
-    // Faces may have more than 3 vertices (the arrangement produces polygons).
-    std::vector<std::vector<size_t>> polygon_faces;
-    int polycnt = 0;
-    for (int i = 0; i < embedded_facets.size(); i++) {
-        int polysize = embedded_facets[i];
-        std::vector<size_t> polygon;
-        for (int j = i + 1; j <= i + polysize; j++) {
-            polygon.push_back(embedded_facets[j]);
-        }
-        polycnt++;
-        polygon_faces.push_back(polygon);
-        i += polysize;
-    }
-
-    // Debug check: any polygon face that is already a triangle must be
-    // non-degenerate. Report (but do not fix) collinear triangles.
-    // test polygon faces - only the triangles
-    for (int i = 0; i < polygon_faces.size(); ++i) {
-        if (polygon_faces[i].size() != 3) {
-            continue;
-        }
-
-        const Vector3r v0 = v_rational[polygon_faces[i][0]];
-        const Vector3r v1 = v_rational[polygon_faces[i][1]];
-        const Vector3r v2 = v_rational[polygon_faces[i][2]];
-        const Vector3r v01 = (v1 - v0);
-        const Vector3r v02 = (v2 - v0);
-        const Vector3r r = v01.cross(v02);
-        if (r[0] == 0 && r[1] == 0 && r[2] == 0) {
-            logger().error("Collinear triangle in polygon faces. ID = {}", i);
-            logger().error("v0 = {}", to_double(v0));
-            logger().error("v1 = {}", to_double(v1));
-            logger().error("v2 = {}", to_double(v2));
-        }
-    }
-
-    // Step 4c: decode the size-prefixed embedded_cells array the same way, but
-    // each cell is a list of *face* indices (into polygon_faces) rather than
-    // vertex ids. tets_final will collect the tetrahedra produced from the cells.
-    std::vector<std::vector<size_t>> polygon_cells;
-    std::vector<std::array<size_t, 4>> tets_final;
-    for (int i = 0; i < embedded_cells.size(); i++) {
-        std::vector<size_t> polygon_cell;
-        int cellsize = embedded_cells[i];
-        for (int j = i + 1; j <= i + cellsize; j++) {
-            polygon_cell.push_back(embedded_cells[j]);
-        }
-        polygon_cells.push_back(polygon_cell);
-        i += cellsize;
-    }
-
-    logger().info("#polygon cells = {}", polygon_cells.size());
-
-    // Build a per-polygon-face flag marking faces that lie on the input surface.
-    // embedded_facets_on_input holds the indices of those faces.
-    std::vector<bool> polygon_faces_on_input_surface(polygon_faces.size(), false);
-    // for (int i = 0; i < polygon_faces.size(); i++) {
-    //     polygon_faces_on_input_surface[i] = false;
-    // }
-    for (int i = 0; i < embedded_facets_on_input.size(); i++) {
-        polygon_faces_on_input_surface[embedded_facets_on_input[i]] = true;
-    }
-
-    // Step 4d: triangulate every polygon face. triangulated_faces accumulates
-    // the resulting triangles; triangulated_faces_on_input mirrors the
-    // on-surface flag for each; map_poly_to_tri_face[i] records which triangle
-    // indices came from polygon face i (needed later to rebuild each cell's
-    // triangular faces during tetrahedralization).
-    std::vector<std::array<size_t, 3>> triangulated_faces;
-    std::vector<bool> triangulated_faces_on_input;
-    std::vector<std::vector<size_t>> map_poly_to_tri_face(polygon_faces.size());
-
-    int poly_cnt = 0;
-
-    // triangulate polygon faces
-    for (int i = 0; i < polygon_faces.size(); i++) {
-        // Skip faces already triangulated. Each face is visited once here, so
-        // this is a safety net against processing the same face twice.
-        // already clipped in other polygon
-        if (map_poly_to_tri_face[i].size() != 0) continue;
-
-        // new polygon face to clip
-        std::vector<std::array<size_t, 3>> clipped_indices;
-        std::vector<Vector3r> poly_coordinates;
-        std::vector<size_t> polygon_face = polygon_faces[i];
-        assert(polygon_face.size() >= 3);
-
-        if (polygon_face.size() == 3) {
-            // Already a triangle: copy it straight through and inherit its
-            // on-surface flag.
-            // already a triangle
-            std::array<size_t, 3> triangle_face = {
-                {polygon_face[0], polygon_face[1], polygon_face[2]}};
-            size_t idx = triangulated_faces.size();
-            triangulated_faces.push_back(triangle_face);
-            if (polygon_faces_on_input_surface[i]) {
-                triangulated_faces_on_input.push_back(true);
-            } else {
-                triangulated_faces_on_input.push_back(false);
-            }
-            map_poly_to_tri_face[i].push_back(idx);
-        } else {
-            // Convex polygon (>3 vertices): gather its rational coordinates and
-            // triangulate. triangulate_polygon_face returns triangles as *local*
-            // indices into polygon_face, which are remapped back to global ids.
-            poly_cnt++;
-            for (int j = 0; j < polygon_faces[i].size(); j++) {
-                poly_coordinates.push_back(v_rational[polygon_face[j]]);
-            }
-
-            clipped_indices = triangulate_polygon_face(poly_coordinates);
-            // std::cout<<"clipped indices size: "<<clipped_indices.size()<<std::endl;
-            for (int j = 0; j < clipped_indices.size(); j++) {
-                // need to map oldface index to new face indices
-                std::array<size_t, 3> triangle_face = {
-                    {polygon_face[clipped_indices[j][0]],
-                     polygon_face[clipped_indices[j][1]],
-                     polygon_face[clipped_indices[j][2]]}};
-                // std::cout<<triangle_face[0]<<" "<<triangle_face[1]<<"
-                // "<<triangle_face[2]<<std::endl;
-                size_t idx = triangulated_faces.size();
-                triangulated_faces.push_back(triangle_face);
-
-                // track input faces
-                if (polygon_faces_on_input_surface[i]) {
-                    triangulated_faces_on_input.push_back(true);
-                } else {
-                    triangulated_faces_on_input.push_back(false);
-                }
-                map_poly_to_tri_face[i].push_back(idx);
-            }
-        }
-    }
-
-    logger().info("#triangulated polygons = {}", poly_cnt);
-
-    // Step 4e: tetrahedralize every polyhedral cell into tets_final, tagging
-    // each resulting tet's 4 faces with whether they lie on the input surface.
-    // tetrahedralize cells
-
-    int was_tet_cnt = 0; // number of cells that were already tetrahedra
-    for (int i = 0; i < polygon_cells.size(); i++) {
-        auto polygon_cell = polygon_cells[i];
-
-        // gather the cell's unique vertices from all of its faces
-        // get polygon vertices
-        std::vector<size_t> polygon_vertices;
-        for (auto f : polygon_cell) {
-            for (auto v : polygon_faces[f]) {
-                polygon_vertices.push_back(v);
-            }
-        }
-        wmtk::vector_unique(polygon_vertices);
-
-        // total number of triangles across all of the cell's (triangulated)
-        // faces. A cell bounded by exactly 4 triangles is already a tetrahedron.
-        // compute number of triangle faces
-        size_t num_faces = 0;
-        for (size_t f : polygon_cell) {
-            num_faces += map_poly_to_tri_face[f].size();
-        }
-
-        // Case A: the cell is already a tetrahedron (4 triangular faces). Emit it
-        // directly, no Steiner point needed.
-        // polygon already a tet
-        if (num_faces == 4) {
-            was_tet_cnt++;
-            assert(polygon_vertices.size() == 4);
-            // Take the first face as (v0, v1, v2) and pick the apex v3 as the one
-            // vertex of the second face not shared with the first.
-            // get the correct orientation here
-            size_t v0 = polygon_faces[polygon_cell[0]][0];
-            size_t v1 = polygon_faces[polygon_cell[0]][1];
-            size_t v2 = polygon_faces[polygon_cell[0]][2];
-            size_t v3;
-            for (auto v : polygon_faces[polygon_cell[1]]) {
-                if (v != v0 && v != v1 && v != v2) {
-                    v3 = v;
-                    break;
-                }
-            }
-
-            std::array<size_t, 4> tetra = {{v0, v1, v2, v3}};
-
-            // Enforce positive orientation: if the signed volume is negative,
-            // swap v0 and v1. Uses exact rational arithmetic.
-            // if inverted then fix the orientation
-            Vector3r v0v1 = v_rational[v1] - v_rational[v0];
-            Vector3r v0v2 = v_rational[v2] - v_rational[v0];
-            Vector3r v0v3 = v_rational[v3] - v_rational[v0];
-            if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
-                tetra = {{v1, v0, v2, v3}};
-            }
-
-            // push the tet to final queue;
-            tets_final.push_back(tetra);
-
-            // The four faces in WMTK local order: f0=(v0,v1,v2), f1=(v0,v2,v3),
-            // f2=(v0,v1,v3), f3=(v1,v2,v3). Compared as unordered vertex sets so
-            // each of the cell's faces can be matched to its local slot.
-            std::set<size_t> local_f1 = {tetra[0], tetra[1], tetra[2]};
-            std::set<size_t> local_f2 = {tetra[0], tetra[2], tetra[3]};
-            std::set<size_t> local_f3 = {tetra[0], tetra[1], tetra[3]};
-            std::set<size_t> local_f4 = {tetra[1], tetra[2], tetra[3]};
-
-            // For each of the cell's faces, find which local slot it is and copy
-            // that face's on-input flag into the matching position.
-            // track surface     need to be fixed
-            bool tet_face_on_input[4];
-            for (auto f : polygon_cell) {
-                std::set<size_t> f_vs = {
-                    polygon_faces[f][0],
-                    polygon_faces[f][1],
-                    polygon_faces[f][2]};
-
-                int local_f_idx;
-
-                // decide which face it is
-
-                if (f_vs == local_f1) {
-                    local_f_idx = 0;
-                } else if (f_vs == local_f2) {
-                    local_f_idx = 1;
-                } else if (f_vs == local_f3) {
-                    local_f_idx = 2;
-                } else {
-                    local_f_idx = 3;
-                }
-
-                tet_face_on_input[local_f_idx] = polygon_faces_on_input_surface[f];
-            }
-
-            for (int k = 0; k < 4; k++) {
-                tet_face_on_input_surface.push_back(tet_face_on_input[k]);
-            }
-            continue;
-        }
-
-        // Case B: general polyhedral cell. Add a Steiner point at the cell
-        // centroid and cone (connect) every boundary triangle to it, producing
-        // one tet per boundary triangle. The centroid is a new rational vertex
-        // appended to v_rational. Note: this is why the "_old" path introduces
-        // extra interior vertices that the remesher's own tets would not have.
-        // compute centroid
-        Vector3r centroid(0, 0, 0);
-        for (auto v : polygon_vertices) {
-            centroid = centroid + v_rational[v];
-        }
-        centroid = centroid / polygon_vertices.size();
-
-        // trahedralize
-        size_t centroid_idx = v_rational.size();
-        v_rational.push_back(centroid);
-
-        for (auto f : polygon_cell) {
-            for (auto t : map_poly_to_tri_face[f]) {
-                // Tet = boundary triangle + centroid apex.
-                std::array<size_t, 4> tetra = {
-                    {triangulated_faces[t][0],
-                     triangulated_faces[t][1],
-                     triangulated_faces[t][2],
-                     centroid_idx}};
-                // std::sort(tetra.begin(), tetra.end());
-                // Enforce positive orientation (swap the first two base vertices
-                // if the signed volume is negative).
-                // check inverted tet and fix
-                Vector3r v0v1 = v_rational[tetra[1]] - v_rational[tetra[0]];
-                Vector3r v0v2 = v_rational[tetra[2]] - v_rational[tetra[0]];
-                Vector3r v0v3 = v_rational[tetra[3]] - v_rational[tetra[0]];
-                if ((v0v1.cross(v0v2)).dot(v0v3) < 0) {
-                    tetra = {
-                        {triangulated_faces[t][1],
-                         triangulated_faces[t][0],
-                         triangulated_faces[t][2],
-                         centroid_idx}};
-                }
-
-                // Only the base face (local index 0, the original boundary
-                // triangle) can lie on the input surface; the three side faces
-                // all touch the interior centroid and never do, hence false.
-                tets_final.push_back(tetra);
-                tet_face_on_input_surface.push_back(triangulated_faces_on_input[t]);
-                tet_face_on_input_surface.push_back(false);
-                tet_face_on_input_surface.push_back(false);
-                tet_face_on_input_surface.push_back(false);
-            }
-        }
-    }
-
-    // std::cout << "polygon was tet num: " << was_tet_cnt << std::endl;
-    // std::cout << "vertices final num: " << v_rational.size() << std::endl;
-    // std::cout << "tets final num: " << tets_final.size() << std::endl;
-    // std::cout << "track face size: " << tet_face_on_input_surface.size() << std::endl;
-
-    // Step 5: publish the results. Note v_rational now also contains the centroid
-    // Steiner points appended above, so it is the full output vertex set.
-    facets_after = triangulated_faces;
-    tets_after = tets_final;
-
-    // A vertex is on the input surface iff it is a corner of some triangulated
-    // face that lies on the input surface. Initialize all to false, then flag the
-    // three corners of every on-surface face.
-    // track vertices on input
-    is_v_on_input.reserve(v_rational.size());
-    for (int i = 0; i < v_rational.size(); i++) is_v_on_input.push_back(false);
-    for (int i = 0; i < triangulated_faces.size(); i++) {
-        if (triangulated_faces_on_input[i]) {
-            is_v_on_input[triangulated_faces[i][0]] = true;
-            is_v_on_input[triangulated_faces[i][1]] = true;
-            is_v_on_input[triangulated_faces[i][2]] = true;
-        }
-    }
-
-    size_t on_surface_v_cnt = 0;
-    for (size_t i = 0; i < is_v_on_input.size(); i++) {
-        if (is_v_on_input[i]) on_surface_v_cnt++;
-    }
-    logger().info("{} of {} vertices are on the surface", on_surface_v_cnt, is_v_on_input.size());
-
-    // Final sanity check: every output tet must be positively oriented, i.e. the
-    // signed volume ((p1-p0)x(p2-p0)).(p3-p0) must be strictly positive. This
-    // exact rational test catches any tet the per-tet orientation fixes missed.
-    for (const auto& t : tets_after) {
-        const Vector3r p0 = v_rational[t[0]];
-        const Vector3r p1 = v_rational[t[1]];
-        const Vector3r p2 = v_rational[t[2]];
-        const Vector3r p3 = v_rational[t[3]];
-        Vector3r n = (p1 - p0).cross(p2 - p0);
-        Vector3r d = p3 - p0;
-        auto res = n.dot(d);
-        if (res <= 0) {
-            logger().error("Inverted tet {}", t);
-        }
-    }
-}
-
-
-// ---------------------------------------------------------------------------
-// insertion_by_volumeremesher  (the fast variant -- the default path)
-//
-// Same goal as insertion_by_volumeremesher_old: conformally insert the input
-// surface into a background tet mesh via vol_rem::embed_tri_in_poly_mesh. Steps
-// 1-3 (build background mesh, flatten inputs, run the remesher) are identical.
-// The difference is entirely in what it does with the remesher output.
-//
-// This is the variant actually used. It consumes the tetrahedralization the
-// remesher now returns directly (see the VolumeRemesher changes that emit a full
-// conforming tetrahedralization with surface-tracking metadata), which is
-// cheaper and adds no interior Steiner points. The older "_old" routine, which
-// re-tetrahedralizes the polygonal cells by coning to per-cell centroids, is
-// kept for reference.
-//
-// How it differs from insertion_by_volumeremesher_old (steps 4-5):
-//   * Tets come straight from the remesher. It consumes the remesher's own
-//     tetrahedra (out_tets) directly instead of re-tetrahedralizing the
-//     polygonal cells. Consequently it adds NO centroid Steiner points -- the
-//     output has fewer, better-shaped tets and no extra interior vertices.
-//   * Facets are already triangles. The remesher triangulates every face, so
-//     embedded_facets is parsed with a fixed stride of 4 (1 size prefix + 3
-//     vertex ids), whereas "_old" triangulates arbitrary polygon faces itself.
-//   * Surface tracking uses remesher metadata. It relies on final_tets_parent
-//     (which polygonal cell each output tet came from), final_tets_parent_faces
-//     (which polygon faces bound that tet) and cells_with_faces_on_input (a fast
-//     skip for cells that touch no input face), instead of "_old"'s per-cell
-//     unordered-set face matching.
-//   * Vertices are compacted. Vertices left unreferenced by out_tets are removed
-//     and all indices are remapped (see the "removing unreferenced vertices"
-//     block); "_old" keeps every vertex.
-//   * Orientation is passed through. The remesher already emits WMTK-positively
-//     oriented tets, so out_tets is copied straight into tets_after (only the 4
-//     per-tet face flags are reordered to WMTK's local face order).
-//
-// The `polygon_faces` OUTPUT parameter here is a list of triangles
-// (std::array<size_t,3>), reflecting that facets are already triangles; in
-// "_old" the corresponding internal structure was a variable-length polygon list.
+// Tets come straight from the remesher, so no centroid Steiner points are added
+// and the output has no extra interior vertices. Orientation is passed through:
+// the remesher already emits WMTK-positively oriented tets, so out_tets is copied
+// into tets_after unchanged and only the 4 per-tet face flags are reordered into
+// WMTK's local face order.
 // ---------------------------------------------------------------------------
 void TetWildMesh::insertion_by_volumeremesher(
     const std::vector<Vector3d>& vertices, // input surface vertices (double)
@@ -901,7 +49,7 @@ void TetWildMesh::insertion_by_volumeremesher(
 {
     logger().info("Insertion Surface: #V = {}, #F = {}", vertices.size(), faces.size());
 
-    // Step 1: build the Delaunay background mesh (same as the "_old" variant).
+    // Step 1: build the Delaunay background mesh.
     // generate background mesh
     init_from_delaunay_box_mesh(vertices);
 
@@ -917,7 +65,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
 
     // Step 2: flatten the background tet mesh into plain double / uint32 arrays
-    // (xyz-interleaved coords, 4 vertex ids per tet), exactly as in "_old".
+    // (xyz-interleaved coords, 4 vertex ids per tet).
     // prepare tet vertices and tet index info
 
 
@@ -963,11 +111,10 @@ void TetWildMesh::insertion_by_volumeremesher(
         triangle_indices[3 * i + 2] = (int)faces[i][2];
     }
 
-    // Remesher outputs. Unlike "_old", this variant actually uses the tet-based
-    // outputs: out_tets (the remesher's tetrahedra), final_tets_parent (parent
-    // polyhedral cell of each tet), cells_with_faces_on_input (per-cell flag),
-    // and final_tets_parent_faces (the parent faces bounding each tet). The
-    // embedded_cells polygonal-cell decoding used by "_old" is not needed here.
+    // Remesher outputs. The tet-based ones are what this consumes: out_tets (the
+    // remesher's tetrahedra), final_tets_parent (parent polyhedral cell of each
+    // tet), cells_with_faces_on_input (per-cell flag) and final_tets_parent_faces
+    // (the parent faces bounding each tet). embedded_cells is not decoded.
     std::vector<vol_rem::bigrational> embedded_vertices;
     std::vector<uint32_t> embedded_facets;
     std::vector<uint32_t> embedded_cells;
@@ -1009,7 +156,7 @@ void TetWildMesh::insertion_by_volumeremesher(
         logger().warn("Check done");
     }
 
-    // Step 3: run the exact arrangement (identical call to the "_old" variant).
+    // Step 3: run the exact arrangement.
     // volumeremesher embed
     std::vector<double> vr_edge_coords, vr_point_coords;
     std::vector<uint32_t> vr_edge_indexes;
@@ -1037,8 +184,8 @@ void TetWildMesh::insertion_by_volumeremesher(
         vr_point_provenance,
         true);
 
-    // Step 4a: copy the arrangement vertices to exact rational Vector3r (same as
-    // "_old"). No compaction yet -- unused vertices are pruned near the end.
+    // Step 4a: copy the arrangement vertices to exact rational Vector3r. No
+    // compaction yet -- unused vertices are pruned near the end.
     for (int i = 0; i < embedded_vertices.size() / 3; i++) {
         v_rational.push_back(Vector3r());
 #ifdef USE_GNU_GMP_CLASSES
@@ -1079,10 +226,10 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
 
 
-    // Step 4b: decode embedded_facets into triangles. KEY DIFFERENCE vs "_old":
+    // Step 4b: decode embedded_facets into triangles.
     // here every facet must already be a triangle, so the array has a fixed
     // stride of 4 (1 size prefix + 3 vertex ids). If the remesher ever returns a
-    // non-triangular facet this throws, rather than triangulating it like "_old".
+    // non-triangular facet this throws rather than triangulating it.
     logger().info("Facets loop...");
     polygon_faces.reserve(embedded_facets.size() / 4);
     for (size_t i = 0; i < embedded_facets.size(); i += 4) {
@@ -1098,7 +245,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
     logger().info("done");
 
-    // Per-face on-input-surface flags, same as "_old".
+    // Per-face on-input-surface flags.
     logger().info("Tags loop...");
     std::vector<bool> polygon_faces_on_input(polygon_faces.size(), false);
     for (size_t i = 0; i < embedded_facets_on_input.size(); ++i) {
@@ -1106,11 +253,10 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
     logger().info("done");
 
-    // Step 4c: surface tracking. KEY DIFFERENCE vs "_old": rather than matching
-    // each cell's faces by unordered vertex sets after self-tetrahedralizing, it
-    // uses the remesher-provided metadata. For each output tet it looks at its
-    // parent cell (final_tets_parent) and the parent polygon faces bounding it
-    // (final_tets_parent_faces), and marks the corresponding local tet face.
+    // Step 4c: surface tracking, from the remesher-provided metadata. For each
+    // output tet it looks at its parent cell (final_tets_parent) and the parent
+    // polygon faces bounding it (final_tets_parent_faces), and marks the
+    // corresponding local tet face.
     logger().info("tracking surface...");
     assert(final_tets_parent_faces.size() == out_tets.size());
     for (size_t i = 0; i < out_tets.size(); ++i) {
@@ -1175,7 +321,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
 
     // A vertex is on the input surface iff it is a corner of an on-input facet
-    // (same rule as "_old").
+
     // track vertices on input
     is_v_on_input.resize(v_rational.size(), false);
     for (int i = 0; i < polygon_faces.size(); i++) {
@@ -1187,11 +333,10 @@ void TetWildMesh::insertion_by_volumeremesher(
     }
     logger().info("done");
 
-    // Step 4d: compact the vertex set. KEY DIFFERENCE vs "_old", which keeps all
-    // vertices (and even adds centroids): here the remesher's arrangement may
-    // contain vertices not referenced by any output tet, so drop the unused ones.
-    // Build v_map (old id -> new id) over the used vertices, rebuild the coord
-    // and on-input arrays in the new numbering, then remap tets and facets.
+    // Step 4d: compact the vertex set. The arrangement may contain vertices not
+    // referenced by any output tet, so drop the unused ones: build v_map (old id
+    // -> new id) over the used vertices, rebuild the coord and on-input arrays in
+    // the new numbering, then remap tets and facets.
     logger().info("removing unreferenced vertices...");
     std::vector<bool> v_is_used_in_tet(v_rational.size(), false);
     for (const auto& t : out_tets) {
@@ -1304,31 +449,6 @@ void TetWildMesh::insertion_by_volumeremesher(
             face_set.insert(f);
         }
     }
-}
-
-bool TetWildMesh::check_nondegenerate_tets()
-{
-    auto tets = get_tets();
-    // std::cout << tets.size();
-    for (int i = 0; i < tets.size(); i++) {
-        // std::cout << "-----tet " << i << "-----" << std::endl;
-        auto v1 = tets[i].vid(*this);
-        auto v2 = tets[i].switch_vertex(*this).vid(*this);
-        auto v3 = tets[i].switch_edge(*this).switch_vertex(*this).vid(*this);
-        auto v4 = tets[i].switch_face(*this).switch_edge(*this).switch_vertex(*this).vid(*this);
-
-        Vector3r a(m_vertex_attribute[v2].m_pos - m_vertex_attribute[v1].m_pos);
-        Vector3r b(m_vertex_attribute[v3].m_pos - m_vertex_attribute[v1].m_pos);
-        Vector3r c(m_vertex_attribute[v4].m_pos - m_vertex_attribute[v1].m_pos);
-
-        // std::cout << v1 << " " << v2 << " " << v3 << " " << v4 << std::endl;
-
-        if (a.dot(b.cross(c)) > 0)
-            continue;
-        else
-            return false;
-    }
-    return true;
 }
 
 void TetWildMesh::init_from_Volumeremesher(
@@ -1667,41 +787,6 @@ bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
             {m_vertex_attribute[v1].m_posf, m_vertex_attribute[v2].m_posf}});
 }
 
-int TetWildMesh::orient3D(
-    vol_rem::bigrational px,
-    vol_rem::bigrational py,
-    vol_rem::bigrational pz,
-    vol_rem::bigrational qx,
-    vol_rem::bigrational qy,
-    vol_rem::bigrational qz,
-    vol_rem::bigrational rx,
-    vol_rem::bigrational ry,
-    vol_rem::bigrational rz,
-    vol_rem::bigrational sx,
-    vol_rem::bigrational sy,
-    vol_rem::bigrational sz)
-{
-    vol_rem::bigrational fadx, fbdx, fcdx, fady, fbdy, fcdy, fadz, fbdz, fcdz, eb;
-    vol_rem::bigrational fbdxcdy, fcdxbdy, fcdxady, fadxcdy, fadxbdy, fbdxady, det;
-    fadx = qx - px;
-    fbdx = rx - px;
-    fcdx = sx - px;
-    fady = qy - py;
-    fbdy = ry - py;
-    fcdy = sy - py;
-    fadz = qz - pz;
-    fbdz = rz - pz;
-    fcdz = sz - pz;
-    fbdxcdy = fbdx * fcdy * fadz;
-    fcdxbdy = fcdx * fbdy * fadz;
-    fcdxady = fcdx * fady * fbdz;
-    fadxcdy = fadx * fcdy * fbdz;
-    fadxbdy = fadx * fbdy * fcdz;
-    fbdxady = fbdx * fady * fcdz;
-    det = (fbdxcdy - fcdxbdy) + (fcdxady - fadxcdy) + (fadxbdy - fbdxady);
-    return sgn(det);
-}
-
 // After having called the following:
 // embed_tri_in_poly_mesh(
 //    tri_vrt_coords,
@@ -1776,120 +861,5 @@ int TetWildMesh::orient3D(
 //     }
 //     return true;
 // }
-
-int TetWildMesh::orient3D_wmtk_rational(
-    wmtk::Rational px,
-    wmtk::Rational py,
-    wmtk::Rational pz,
-    wmtk::Rational qx,
-    wmtk::Rational qy,
-    wmtk::Rational qz,
-    wmtk::Rational rx,
-    wmtk::Rational ry,
-    wmtk::Rational rz,
-    wmtk::Rational sx,
-    wmtk::Rational sy,
-    wmtk::Rational sz)
-{
-    wmtk::Rational fadx, fbdx, fcdx, fady, fbdy, fcdy, fadz, fbdz, fcdz, eb;
-    wmtk::Rational fbdxcdy, fcdxbdy, fcdxady, fadxcdy, fadxbdy, fbdxady, det;
-    fadx = qx - px;
-    fbdx = rx - px;
-    fcdx = sx - px;
-    fady = qy - py;
-    fbdy = ry - py;
-    fcdy = sy - py;
-    fadz = qz - pz;
-    fbdz = rz - pz;
-    fcdz = sz - pz;
-    fbdxcdy = fbdx * fcdy * fadz;
-    fcdxbdy = fcdx * fbdy * fadz;
-    fcdxady = fcdx * fady * fbdz;
-    fadxcdy = fadx * fcdy * fbdz;
-    fadxbdy = fadx * fbdy * fcdz;
-    fbdxady = fbdx * fady * fcdz;
-    det = (fbdxcdy - fcdxbdy) + (fcdxady - fadxcdy) + (fadxbdy - fbdxady);
-    if (det > 0)
-        return 1;
-    else if (det == 0)
-        return 0;
-    else
-        return -1;
-}
-
-// After having called the following:
-// embed_tri_in_poly_mesh(
-//    tri_vrt_coords,
-//    triangle_indexes,
-//    tet_vrt_coords,
-//    tet_indexes,
-//    vertices,
-//    facets,
-//    cells,
-//    facets_on_input,
-//    verbose
-// );
-//
-// the tracked surface can be verified by calling:
-//
-// if (!checkTrackedFaces(vertices, tri_vrt_coords, facets, facets_on_input, triangle_indexes)) {
-//  ... at least a facet in 'facets_on_input' is not coplanar with any facet in 'triangle_indexes'
-// }
-//
-bool TetWildMesh::checkTrackedFaces_wmtk_rational(
-    std::vector<wmtk::Rational>& vol_coords,
-    const std::vector<double>& surf_coords,
-    std::vector<uint32_t>& facets,
-    std::vector<uint32_t>& facets_on_input,
-    const std::vector<uint32_t>& surf_tris)
-{
-    std::vector<uint32_t> fstart; // Vector containing the starting index of each face in 'facets'
-    for (uint32_t f_i = 0; f_i < facets.size(); f_i += (facets[f_i] + 1)) fstart.push_back(f_i);
-    wmtk::Rational v1[3], v2[3], v3[3], v4[3];
-    for (uint32_t ti : facets_on_input) // For each facet in the tracked surface
-    {
-        uint32_t start = fstart[ti];
-        uint32_t fnv = facets[start]; // num face vertices
-        const uint32_t* face_vrts = facets.data() + start + 1;
-        size_t i = 0;
-        for (; i < surf_tris.size(); i += 3) { // For each input triangular facet 'i'
-            v2[0] = surf_coords[surf_tris[i] * 3]; // Let v2,v3,v4 be the coordinates of its three
-                                                   // vertices
-            v2[1] = surf_coords[surf_tris[i] * 3 + 1];
-            v2[2] = surf_coords[surf_tris[i] * 3 + 2];
-            v3[0] = surf_coords[surf_tris[i + 1] * 3];
-            v3[1] = surf_coords[surf_tris[i + 1] * 3 + 1];
-            v3[2] = surf_coords[surf_tris[i + 1] * 3 + 2];
-            v4[0] = surf_coords[surf_tris[i + 2] * 3];
-            v4[1] = surf_coords[surf_tris[i + 2] * 3 + 1];
-            v4[2] = surf_coords[surf_tris[i + 2] * 3 + 2];
-            uint32_t v = 0;
-            for (; v < fnv; v++) { // For each vertex 'v' of 'ti'
-                const uint32_t vid = face_vrts[v];
-                v1[0] = vol_coords[vid * 3]; // Let v1 be v's coordinates
-                v1[1] = vol_coords[vid * 3 + 1];
-                v1[2] = vol_coords[vid * 3 + 2];
-                if (orient3D_wmtk_rational(
-                        v1[0],
-                        v1[1],
-                        v1[2],
-                        v2[0],
-                        v2[1],
-                        v2[2],
-                        v3[0],
-                        v3[1],
-                        v3[2],
-                        v4[0],
-                        v4[1],
-                        v4[2]) != 0)
-                    break; // 'v' is not coplanar with triangular facet 'i'
-            }
-            if (v == fnv) break; // All vertices of 'ti' are coplanar with triangular facet 'i'
-        }
-        if (i == surf_tris.size())
-            return false; // 'ti' is not coplanar with any triangular facet in surf_tris
-    }
-    return true;
-}
 
 } // namespace wmtk::components::tetwild

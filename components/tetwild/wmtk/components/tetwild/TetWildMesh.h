@@ -240,15 +240,6 @@ public:
 
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
-    void finalize_triangle_insertion(const std::vector<std::array<size_t, 3>>& faces);
-
-    void init_from_input_surface(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
-        const std::vector<size_t>& partition_id);
-    bool triangle_insertion_before(const std::vector<Tuple>& faces) override;
-    bool triangle_insertion_after(const std::vector<std::vector<Tuple>>& new_faces) override;
-
 public:
     void split_all_edges();
     bool split_edge_before(const Tuple& t) override;
@@ -477,8 +468,6 @@ private:
         /// split_edge_after can tell "this split created a degenerate tet" from "this split
         /// subdivided a region that was already degenerate".
         double max_quality_before = 0.;
-        std::vector<size_t> v1_param_type;
-        std::vector<size_t> v2_param_type;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };
@@ -494,7 +483,6 @@ private:
         size_t v2_id;
         double max_energy;
         double edge_length;
-        bool is_limit_length;
 
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
         // all faces incident to the delete vertex (v1) that are on the tracked surface
@@ -503,20 +491,6 @@ private:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
-
-        std::vector<std::array<size_t, 2>> failed_edges;
-
-        std::map<std::pair<size_t, size_t>, int> edge_link;
-        std::map<size_t, int> vertex_link;
-        size_t global_nonmani_ver_cnt;
-
-        // debug use
-        std::vector<size_t> one_ring_surface_vertices;
-        std::vector<std::pair<size_t, size_t>> one_ring_surface_edges;
-        std::vector<std::array<size_t, 3>> one_ring_surface;
-
-        // for geometry preservation
-        std::vector<size_t> edge_incident_param_type;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -542,20 +516,10 @@ private:
     // for incremental tetwild
 public:
     /**
-     * Will be removed as soon as the bug in the faster version is fixed.
-     */
-    void insertion_by_volumeremesher_old(
-        const std::vector<Vector3d>& vertices,
-        const std::vector<std::array<size_t, 3>>& faces,
-        std::vector<Vector3r>& v_rational,
-        std::vector<std::array<size_t, 3>>& facets_after,
-        std::vector<bool>& is_v_on_input,
-        std::vector<std::array<size_t, 4>>& tets_after,
-        std::vector<bool>& tet_face_on_input_surface);
-
-    /**
-     * This version of insertion should be faster BUT IS BROKEN!!!
-     * DO NOT USE!!!!!
+     * @brief Conformally insert the input surface into a background tet mesh,
+     * via the exact arrangement (vol_rem::embed_tri_in_poly_mesh).
+     *
+     * This is the insertion path. See the banner in VolumemesherInsertion.cpp.
      */
     void insertion_by_volumeremesher(
         const std::vector<Vector3d>& vertices,
@@ -575,35 +539,6 @@ public:
 
     void init_from_file(std::string input_dir);
 
-    std::vector<std::array<size_t, 3>> triangulate_polygon_face(std::vector<Vector3r> points);
-    bool check_polygon_face_validity(std::vector<Vector3r> points);
-
-    bool check_nondegenerate_tets();
-    void output_embedded_polygon_mesh(
-        std::string output_dir,
-        const std::vector<Vector3r>& v_rational,
-        const std::vector<std::vector<size_t>>& polygon_faces,
-        const std::vector<std::vector<size_t>>& polygon_cells,
-        const std::vector<bool>& polygon_faces_on_input_surface);
-
-    void output_embedded_polygon_surface_mesh(
-        std::string output_dir,
-        const std::vector<Vector3r>& v_rational,
-        const std::vector<std::vector<size_t>>& polygon_faces,
-        const std::vector<bool>& polygon_faces_on_input_surface);
-
-    void output_tetrahedralized_embedded_mesh(
-        std::string output_dir,
-        const std::vector<Vector3r>& v_rational,
-        const std::vector<std::array<size_t, 3>>& facets,
-        const std::vector<std::array<size_t, 4>>& tets,
-        const std::vector<bool>& tet_face_on_input_surface);
-
-    void output_init_tetmesh(std::string output_dir);
-
-    void output_tracked_surface(std::string output_file);
-
-    bool adjust_sizing_field_serial(double max_energy);
 
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the
@@ -675,51 +610,6 @@ public:
     void init_vertex_order();
 
 public:
-    // debug functions
-    int orient3D(
-        vol_rem::bigrational px,
-        vol_rem::bigrational py,
-        vol_rem::bigrational pz,
-        vol_rem::bigrational qx,
-        vol_rem::bigrational qy,
-        vol_rem::bigrational qz,
-        vol_rem::bigrational rx,
-        vol_rem::bigrational ry,
-        vol_rem::bigrational rz,
-        vol_rem::bigrational sx,
-        vol_rem::bigrational sy,
-        vol_rem::bigrational sz);
-
-    // bool checkTrackedFaces(
-    //     std::vector<vol_rem::bigrational>& vol_coords,
-    //     const std::vector<double>& surf_coords,
-    //     std::vector<uint32_t>& facets,
-    //     std::vector<uint32_t>& facets_on_input,
-    //     const std::vector<uint32_t>& surf_tris);
-
-    int orient3D_wmtk_rational(
-        wmtk::Rational px,
-        wmtk::Rational py,
-        wmtk::Rational pz,
-        wmtk::Rational qx,
-        wmtk::Rational qy,
-        wmtk::Rational qz,
-        wmtk::Rational rx,
-        wmtk::Rational ry,
-        wmtk::Rational rz,
-        wmtk::Rational sx,
-        wmtk::Rational sy,
-        wmtk::Rational sz);
-
-    bool checkTrackedFaces_wmtk_rational(
-        std::vector<wmtk::Rational>& vol_coords,
-        const std::vector<double>& surf_coords,
-        std::vector<uint32_t>& facets,
-        std::vector<uint32_t>& facets_on_input,
-        const std::vector<uint32_t>& surf_tris);
-
-    bool check_vertex_param_type();
-
     // for boolean operations
     int flood_fill();
 

@@ -18,7 +18,6 @@ struct Parameters
     Vector3d box_min = Vector3d::Zero();
     Vector3d box_max = Vector3d::Ones();
     bool preserve_topology = false;
-    std::string output_path;
 
     // Allow the edge swaps (3->2, 4-4, 5-6) to operate on surface edges as a
     // topology-preserving surface diagonal flip, instead of forbidding them

@@ -130,7 +130,6 @@ struct Parameters
     bool skip_simplify = true;
     bool use_sample_envelope = false;
     int NUM_THREADS = 0;
-    int max_its = 80;
     bool write_vtu = false;
     bool write_envelope = true;
 
@@ -142,7 +141,6 @@ struct Parameters
         skip_simplify = json_params["skip_simplify"];
         use_sample_envelope = json_params["use_sample_envelope"];
         NUM_THREADS = json_params["num_threads"];
-        max_its = json_params["max_iterations"];
         write_vtu = json_params["write_vtu"];
         write_envelope = json_params["write_envelope"];
 

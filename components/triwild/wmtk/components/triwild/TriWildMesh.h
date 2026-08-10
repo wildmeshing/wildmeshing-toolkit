@@ -283,7 +283,6 @@ public:
      * triangle). Superseded by refine_sizing_around_worst, but kept compiled and callable
      * so the two can be compared -- tetwild and simwild keep theirs for the same reason.
      */
-    bool adjust_sizing_field_serial(double max_energy);
 
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the worst
@@ -483,12 +482,10 @@ private:
         //        VertexAttributes vertex_info;
         size_t v1_id;
         size_t v2_id;
-        std::vector<size_t> v1_param_type;
         /// Worst quality among the elements incident to the edge BEFORE the split, so
         /// split_edge_after can tell "this split created a degenerate element" from "this
         /// split subdivided a region that was already degenerate".
         double max_quality_before = 0.;
-        std::vector<size_t> v2_param_type;
 
         EdgeAttributes old_e_attrs;
 
@@ -509,7 +506,6 @@ private:
         size_t v2_id;
         double max_energy;
         double edge_length;
-        bool is_limit_length;
 
         std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
         // all faces incident to the delete vertex (v1) that are on the tracked surface
