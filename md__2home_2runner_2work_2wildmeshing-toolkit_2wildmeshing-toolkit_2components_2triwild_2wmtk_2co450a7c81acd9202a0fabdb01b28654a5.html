@@ -72,7 +72,7 @@ $(function() {
   <div class="headertitle"><div class="title">triwild sweep scripts</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md37"></a> Batch-run triwild over a large 2D dataset, collect per-model results, and report. Written for the 20k 2D curve dataset on <code>kirby.cs.nyu.edu</code>, but nothing here is kirby-specific beyond the default paths.</p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md37"></a> Batch-run triwild over a large 2D dataset, collect per-model results, and report — plus a viewer for looking at one result once the numbers point at it. Written for the 20k 2D curve dataset on <code>kirby.cs.nyu.edu</code>, but nothing here is kirby-specific beyond the default paths.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">file   </th><th class="markdownTableHeadNone">what it is    </th></tr>
@@ -81,7 +81,9 @@ $(function() {
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>sweep2d.sh</code>   </td><td class="markdownTableBodyNone">tmux wrapper — start / stop / attach / status / report    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>failure_report.py</code>   </td><td class="markdownTableBodyNone">post-hoc: where each failed model died, how far it got, at what energy   </td></tr>
+<td class="markdownTableBodyNone"><code>failure_report.py</code>   </td><td class="markdownTableBodyNone">post-hoc: where each failed model died, how far it got, at what energy    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>visualize_triwild.py</code>   </td><td class="markdownTableBodyNone">polyscope viewer for a single result: input curves, envelope curves, output mesh   </td></tr>
 </table>
 <h1><a class="anchor" id="autotoc_md38"></a>
 Layout</h1>
@@ -156,6 +158,35 @@ Reading the two Hausdorff numbers</h2>
 </ul>
 <p>Runs made before the direction was corrected stored coverage under the name <code>hausdorff</code> and have no <code>coverage</code> key. The report detects them by that absence, labels them <code>metric=legacy-coverage</code>, and keeps them out of the containment statistics rather than pooling two different quantities.</p>
 <h1><a class="anchor" id="autotoc_md44"></a>
+Looking at one result — &lt;tt&gt;visualize_triwild.py&lt;/tt&gt;</h1>
+<p>The sweep says <em>which</em> model is interesting; this says <em>why</em>. It opens a <a href="https://polyscope.run">polyscope</a> window with three independently toggleable layers.</p>
+<div class="fragment"><div class="line">python3 -m venv .venv &amp;&amp; ./.venv/bin/pip install polyscope meshio numpy</div>
+<div class="line"> </div>
+<div class="line">./.venv/bin/python visualize_triwild.py runs/full/success/10433   # a sweep output dir</div>
+<div class="line">./.venv/bin/python visualize_triwild.py input.obj output.msh      # explicit pair</div>
+<div class="line">./.venv/bin/python visualize_triwild.py output.msh                # mesh alone</div>
+</div><!-- fragment --><table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">layer   </th><th class="markdownTableHeadNone">colour   </th><th class="markdownTableHeadNone">what it is    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">input curves   </td><td class="markdownTableBodyNone">orange   </td><td class="markdownTableBodyNone">the <code>.obj</code> segment network handed to triwild    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">envelope curves   </td><td class="markdownTableBodyNone">blue   </td><td class="markdownTableBodyNone">the <b>simplified</b> curves, read back out of the <code>.msh</code>    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">output mesh   </td><td class="markdownTableBodyNone">grey   </td><td class="markdownTableBodyNone">the triangulation   </td></tr>
+</table>
+<p>Orange and blue rather than the usual red and green, so the two curve networks stay separable under the common colour vision deficiencies.</p>
+<p>Given a directory it finds the mesh (<code>output.msh</code>, <code>out.msh</code>, or the only <code>*.msh</code>), then the input: an <code>input.obj</code> beside it, else the path recorded in that run's <code>config.json</code> — which is what lets it run on a sweep <code>success/&lt;id&gt;/</code> directory unchanged, where the input still lives back in the dataset. Without an input you get the other two layers.</p>
+<p>The mesh also carries a per-face <b>AMIPS2D energy</b> quantity and an <code>inverted</code> flag, since that is usually the reason for opening it at all. The energy is transcribed from <code>wmtk::AMIPS2D_energy</code>; a startup assertion pins an equilateral triangle at the floor of 2, and on every model tried the maximum reproduces that run's <code>report.json</code> <code>max_energy</code> exactly. Note that <code>report.json</code> and <code>out.log</code> show <code>1e+50</code> for an inverted or degenerate triangle — <code>MAX_ENERGY</code>, substituted by <code>get_quality</code> — whereas the viewer shows the raw expression and flags the orientation separately, so a broken triangle stays a number you can look at.</p>
+<h2><a class="anchor" id="autotoc_md45"></a>
+Two things about the data worth knowing</h2>
+<ul>
+<li><b>The <code>.msh</code> node array is not the mesh.</b> Gmsh entities own their nodes, so a triwild output holds two disjoint blocks: the dim-2 entity's nodes are the mesh vertices, and the dim-1 <code>EnvelopeSurface</code> entity's nodes are the simplified input curve — whose points sit exactly on input <code>.obj</code> vertices. Passing the whole array to a surface-mesh constructor draws the mesh plus several hundred unreferenced stray vertices.</li>
+<li><b>An OBJ <code>l</code> record is a polyline, not a segment</b> — <em>n</em> indices mean *n*−1 segments. This dataset uses both forms, so reading one segment per record silently drops most of the network on the files that use long polylines.</li>
+</ul>
+<p>The view opens looking straight down, orthographic, with drag to pan and scroll to zoom; an <b>allow rotation</b> checkbox unlocks turntable navigation and <b>top view</b> snaps back. (The data is flat in <em>z</em> = 0, so a <em>z</em>-up camera would sit in that plane and show the mesh edge-on as a line.)</p>
+<p>What it deliberately does <b>not</b> show is which output <em>edges</em> are constrained — tracked to the curves. The <code>.msh</code> does not tag them, and inferring them by proximity would be a guess presented as data.</p>
+<h1><a class="anchor" id="autotoc_md46"></a>
 Caveat on comparing runs</h1>
 <p>The report pools whatever is in <code>success/</code>, so a directory filled across several builds or several <code>stop_energy</code> targets yields statistics that mix them. The 19,686-model run of August 2026 is exactly that case: most of it ran at <code>stop_energy</code> 20 and the tail at 100, which is why its median max energy is 19.8. For a quotable dataset, run the whole corpus once on one build. </p>
 </div></div><!-- contents -->

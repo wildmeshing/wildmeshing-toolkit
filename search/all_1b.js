@@ -1,7 +1,7 @@
 var searchData=
 [
   ['sampleenvelope_0',['SampleEnvelope',['../classwmtk_1_1_sample_envelope.html',1,'wmtk']]],
-  ['scheduling_1',['Parallel Scheduling',['../index.html#autotoc_md58',1,'']]],
+  ['scheduling_1',['Parallel Scheduling',['../index.html#autotoc_md60',1,'']]],
   ['scripts_2',['scripts',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2tetwild_2wmtk_2coe5723c6c50ff9f53e8eab7a5f6f1a826.html',1,'tetwild sweep scripts'],['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html',1,'triwild sweep scripts']]],
   ['seal_20topo_3',['6. Tight Seal Topo',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2_r_e_a_d_m_e.html#autotoc_md14',1,'']]],
   ['select_5fboundary_5ffaces_4',['select_boundary_faces',['../namespacesimwild_1_1polyfem__ops_1_1mesh__core.html#a33ce2310e82f144511fc364bcd7a11c1',1,'simwild::polyfem_ops::mesh_core']]],
@@ -12,7 +12,7 @@ var searchData=
   ['set_5foffset_5ftri_5ftags_9',['set_offset_tri_tags',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a22c2c56b12efefeb7cc67ef7d89f40e0',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
   ['set_5fpreallocation_5ffactor_10',['set_preallocation_factor',['../classwmtk_1_1_tri_mesh.html#a0611d5127a3704d39d5afb045ced5ace',1,'wmtk::TriMesh::set_preallocation_factor()'],['../classwmtk_1_1_tet_mesh.html#a262276d320a4261eddfb27c8edd361b5',1,'wmtk::TetMesh::set_preallocation_factor()']]],
   ['set_5fuse_5flink_5fcondition_11',['set_use_link_condition',['../classwmtk_1_1_tri_mesh.html#ae9d6418ae7ceec36e2560e99aea201dd',1,'wmtk::TriMesh']]],
-  ['shortest_20edge_20collapse_12',['Example: Shortest Edge Collapse',['../index.html#autotoc_md50',1,'']]],
+  ['shortest_20edge_20collapse_12',['Example: Shortest Edge Collapse',['../index.html#autotoc_md52',1,'']]],
   ['shortestedgecollapse_13',['ShortestEdgeCollapse',['../classwmtk_1_1components_1_1shortest__edge__collapse_1_1_shortest_edge_collapse.html',1,'wmtk::components::shortest_edge_collapse']]],
   ['should_5frenew_14',['should_renew',['../structwmtk_1_1_execute_pass.html#addd10a3e42d324239dc3c970580d373f',1,'wmtk::ExecutePass']]],
   ['signed_5fvolumes_15',['signed_volumes',['../namespacegeo.html#aa7b9902d9e2a399b33d7bab4671cf2e7',1,'geo']]],
