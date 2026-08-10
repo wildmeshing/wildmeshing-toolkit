@@ -1,5 +1,7 @@
 
 #include "TetWildMesh.h"
+
+#include <cstdlib>
 #include "wmtk/ExecutionScheduler.hpp"
 
 #include <Eigen/src/Core/util/Constants.h>
@@ -47,6 +49,12 @@ bool TetWildMesh::smooth_after(const Tuple& t)
     opts.s_envelope = m_s_envelope;
     opts.two_stage = true;
     opts.quality_veto_on_surface = false;
+    // DEBUG: WMTK_SURF_VETO=1 refuses a surface-vertex move that worsens the worst incident
+    // element, the way interior vertices are already treated.
+    if (const char* e = std::getenv("WMTK_SURF_VETO")) opts.quality_veto_on_surface = std::atoi(e) != 0;
+    // DEBUG: WMTK_GLOBAL_CAP=0 turns the narrow guard off.
+    const char* gc = std::getenv("WMTK_GLOBAL_CAP");
+    if (!gc || std::atoi(gc) != 0) opts.global_max_quality = m_smooth_global_max_quality;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }
@@ -78,6 +86,12 @@ void TetWildMesh::smooth_all_vertices()
     double time;
     timer.start();
     m_smooth_rejects.reset();
+    m_smooth_global_max_quality = -1.;
+    for (int i_ = 0; i_ < tet_capacity(); ++i_) {
+        if (!tuple_from_tet(i_).is_valid(*this)) continue;
+        m_smooth_global_max_quality =
+            std::max(m_smooth_global_max_quality, m_tet_attribute[i_].m_quality);
+    }
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     if (m_params.skip_good_regions) {
         // Only smooth vertices incident to an "active" (non-good) tet -- smoothing

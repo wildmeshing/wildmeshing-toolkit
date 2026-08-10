@@ -84,6 +84,22 @@ struct SmoothVertexOptions
      * never returns. Left false, matching simwild.
      */
     bool quality_veto_on_surface = false;
+
+    /**
+     * Ceiling a move may not push an incident element above, in the mesh's quality units.
+     * The caller sets it to the mesh's current worst quality at the start of the pass.
+     *
+     * This is the narrow form of the veto above, for the vertices that veto does not cover.
+     * A surface vertex is deliberately allowed to worsen an incident element -- that is what
+     * lets it move back toward the input when the envelope pulls it -- but there is no reason
+     * to let it create the new global worst element, which is exactly what makes the reported
+     * max energy go UP and strands a mesh that was nearly converged. Measured on triwild20k
+     * 191265: smoothing raised the max energy in 38% of passes, and the run oscillated in a
+     * 10.0-13.6 band for 43 iterations against a target of 10.
+     *
+     * <= 0 disables it.
+     */
+    double global_max_quality = -1.;
 };
 
 /**
@@ -226,6 +242,11 @@ bool smooth_vertex_3d(
             if (counters) ++counters->quality;
             return false;
         }
+    } else if (opts.global_max_quality > 0 && max_after_quality > opts.global_max_quality) {
+        // Local worsening is allowed for a surface vertex; becoming the new global worst is
+        // not. See global_max_quality.
+        if (counters) ++counters->quality;
+        return false;
     }
 
     if (counters) ++counters->accepted;
@@ -400,6 +421,11 @@ bool smooth_vertex_2d(
             if (counters) ++counters->quality;
             return false;
         }
+    } else if (opts.global_max_quality > 0 && max_after_quality > opts.global_max_quality) {
+        // Local worsening is allowed for a surface vertex; becoming the new global worst is
+        // not. See global_max_quality.
+        if (counters) ++counters->quality;
+        return false;
     }
 
     if (counters) ++counters->accepted;
