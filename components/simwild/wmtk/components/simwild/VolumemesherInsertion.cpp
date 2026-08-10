@@ -438,10 +438,10 @@ void SimWildMesh::find_order_2_edges()
     // curves. It was hard-wired to sampled only because the exact envelope could not be built
     // from edges until fast-envelope #6.
     m_order_2_edge_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
-    // The whole eps, matching this mesh's surface envelope, which is already built at
-    // params.eps (simwild.cpp constructs SimWildMesh with it). The halving here was the odd
-    // one out. See the comment on tet_eps in tetwild.cpp.
-    m_order_2_edge_envelope->init(v_posf, order_2_edges, m_params.epsr * m_params.diag_l);
+    // Half eps here, deliberately, unlike the surface envelope: widening a boundary-curve
+    // envelope buys no unblocking and costs elements. See the measurement in tetwild's
+    // find_open_boundary.
+    m_order_2_edge_envelope->init(v_posf, order_2_edges, m_params.epsr * m_params.diag_l / 2.0);
 }
 
 bool SimWildMesh::is_order_2_edge(const Tuple& e) const
