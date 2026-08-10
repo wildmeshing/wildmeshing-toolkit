@@ -1,6 +1,8 @@
 
 #include "TriWildMesh.h"
 
+#include <tuple>
+
 #include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
@@ -67,15 +69,32 @@ void TriWildMesh::mesh_improvement(int max_its)
         // One iteration is either split/collapse/swaps followed by all the smoothing, or --
         // with interleaved_smoothing -- each topology pass followed by its own smoothing, so
         // the next pass sees a relaxed mesh rather than the raw output of the previous one.
-        auto [max_energy, avg_energy] = [&]() -> std::tuple<double, double> {
-            if (!m_params.interleaved_smoothing) {
-                return local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
-            }
+        // With interleaved_smoothing an iteration is THREE local_operations calls, and only
+        // the last one's value used to be tested against the target. Two thirds of the
+        // states the optimizer produces were therefore never offered to the stopping
+        // criterion: a run converged only if it happened to be good at the end of a SWAP
+        // pass. On triwild20k 179282 the mesh reached 9.9515 four separate times, every one
+        // of them in a split pass, and the run went to the iteration cap having never shown
+        // the convergence check anything below 10.0499.
+        //
+        // So test after every pass and stop on the state that met the target, rather than on
+        // whatever the two passes after it turn that state into. Breaking early leaves the
+        // remaining passes of this iteration unrun, which is the point: they are not needed.
+        double max_energy = 0., avg_energy = 0.;
+        if (!m_params.interleaved_smoothing) {
+            std::tie(max_energy, avg_energy) =
+                local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+        } else {
             const int k = m_params.interleaved_smoothing_passes;
-            local_operations({{1, 0, 0, k}});
-            local_operations({{0, 1, 0, k}});
-            return local_operations({{0, 0, 1, k}});
-        }();
+            const std::array<std::array<int, 4>, 3> passes = {
+                {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}};
+            for (const std::array<int, 4>& ops : passes) {
+                std::tie(max_energy, avg_energy) = local_operations(ops);
+                if (max_energy < m_params.stop_energy) {
+                    break;
+                }
+            }
+        }
 
         ///energy check
         logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
