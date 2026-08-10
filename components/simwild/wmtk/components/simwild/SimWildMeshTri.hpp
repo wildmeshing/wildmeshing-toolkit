@@ -29,7 +29,7 @@ namespace wmtk::components::simwild::tri {
 
 struct VertexAttributes
 {
-    Vector2d m_pos;
+    Vector2d m_posf;
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces;
 
@@ -39,7 +39,7 @@ struct VertexAttributes
 
     VertexAttributes() {}
     VertexAttributes(const Vector2d& p)
-        : m_pos(p)
+        : m_posf(p)
     {}
 };
 

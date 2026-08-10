@@ -79,7 +79,7 @@ void SimWildMeshTri::partition_mesh_morton()
     wmtk::partition_vertex_morton(
         vert_capacity(),
         [this](size_t i) {
-            const Vector2d& p = m_vertex_attribute[i].m_pos;
+            const Vector2d& p = m_vertex_attribute[i].m_posf;
             return Eigen::Vector3d(p[0], p[1], 0);
         },
         NUM_THREADS,
@@ -93,8 +93,8 @@ void SimWildMeshTri::partition_mesh_morton()
 double SimWildMeshTri::get_length2(const Tuple& l) const
 {
     const auto vs = get_edge_vids(l);
-    const Vector2d& p0 = m_vertex_attribute.at(vs[0]).m_pos;
-    const Vector2d& p1 = m_vertex_attribute.at(vs[1]).m_pos;
+    const Vector2d& p0 = m_vertex_attribute.at(vs[0]).m_posf;
+    const Vector2d& p1 = m_vertex_attribute.at(vs[1]).m_posf;
 
     return (p1 - p0).squaredNorm();
 }
@@ -121,7 +121,7 @@ void SimWildMeshTri::init_from_image(
     m_edge_attribute.resize(T.rows() * 3);
 
     for (int i = 0; i < vert_capacity(); i++) {
-        m_vertex_attribute[i].m_pos = V.row(i);
+        m_vertex_attribute[i].m_posf = V.row(i);
     }
 
     // init quality and check for inverted mesh
@@ -200,7 +200,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         // build envelopes
         std::vector<Vector2d> tempV(vert_capacity());
         for (int i = 0; i < vert_capacity(); i++) {
-            tempV[i] = m_vertex_attribute[i].m_pos;
+            tempV[i] = m_vertex_attribute[i].m_posf;
         }
 
         m_V_envelope = tempV;
@@ -219,7 +219,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : surf_edges) {
             std::array<Vector2d, 2> pp = {
-                {m_vertex_attribute[verts[0]].m_pos, m_vertex_attribute[verts[1]].m_pos}};
+                {m_vertex_attribute[verts[0]].m_posf, m_vertex_attribute[verts[1]].m_posf}};
             if (m_envelope->is_outside(pp)) {
                 log_and_throw_error("Edge {} is outside!", verts);
             }
@@ -232,13 +232,13 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         const auto vids = get_edge_vids(edges[i]);
         int on_bbox = -1;
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k]) {
+            if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_min[k]) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k]) {
+            if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_max[k]) {
                 on_bbox = k * 2 + 1;
                 break;
             }
@@ -620,7 +620,7 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
         Vector2d c(0, 0); // center
         double s = 0;
         for (int j = 0; j < 3; j++) {
-            c += m_vertex_attribute.at(vs[j]).m_pos;
+            c += m_vertex_attribute.at(vs[j]).m_posf;
             v_queue.emplace(vs[j]);
             s = std::max(s, m_vertex_attribute[vs[j]].m_sizing_scalar);
         }
@@ -674,7 +674,7 @@ bool SimWildMeshTri::adjust_sizing_field_serial(double max_energy)
             continue;
         }
         const size_t vid = v.vid(*this);
-        const auto& pos_v = m_vertex_attribute[vid].m_pos;
+        const auto& pos_v = m_vertex_attribute[vid].m_posf;
 
         // all low quality tet centroids within R-ball of vertex
         std::vector<nanoflann::ResultItem<uint32_t, double>> matches;
@@ -737,7 +737,7 @@ void SimWildMeshTri::write_msh(std::string file, const bool write_envelope)
     const auto& vtx = get_vertices();
     msh.add_face_vertices(vtx.size(), [&](size_t k) {
         auto i = vtx[k].vid(*this);
-        Vector2d p2 = m_vertex_attribute[i].m_pos;
+        Vector2d p2 = m_vertex_attribute[i].m_posf;
         return Vector3d(p2[0], p2[1], 0);
     });
 
@@ -884,7 +884,7 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
 
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
-        V.row(vid) = m_vertex_attribute[vid].m_pos;
+        V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
     }
 
@@ -964,8 +964,8 @@ void SimWildMeshTri::write_vtu_with_energies(const std::string& path) const
 
     for (const Tuple& v : vs) {
         const size_t vid = v.vid(*this);
-        const Vector2d& x = m_vertex_attribute.at(vid).m_pos;
-        V.row(vid) = m_vertex_attribute[vid].m_pos;
+        const Vector2d& x = m_vertex_attribute.at(vid).m_posf;
+        V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
 
         if (m_vertex_attribute.at(vid).m_is_on_surface) {
@@ -1154,8 +1154,8 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
     const size_t v2_id = cache.v2_id;
 
     /// check inversion & rounding
-    auto& p = m_vertex_attribute[v_id].m_pos;
-    p = (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+    auto& p = m_vertex_attribute[v_id].m_posf;
+    p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
 
     for (const Tuple& t : locs) {
         if (is_inverted(t)) {
@@ -1166,8 +1166,8 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
     // If a Voronoi split function is set, binary-search vmid onto its zero-crossing.
     // p0 stays on the negative side, p1 on the positive side.
     if (m_voronoi_split_fn) {
-        Vector2d p0 = m_vertex_attribute[v1_id].m_pos;
-        Vector2d p1 = m_vertex_attribute[v2_id].m_pos;
+        Vector2d p0 = m_vertex_attribute[v1_id].m_posf;
+        Vector2d p1 = m_vertex_attribute[v2_id].m_posf;
         if (m_voronoi_split_fn(p0) >= 0) {
             std::swap(p0, p1); // ensure p0 is negative side
         }
@@ -1201,7 +1201,7 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
             }
         }
         if (inv) {
-            p = (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+            p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
         }
     }
 
@@ -1359,7 +1359,7 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
     cache.v1_id = v1_id;
     cache.v2_id = v2_id;
 
-    cache.edge_length = (VA[v1_id].m_pos - VA[v2_id].m_pos).norm();
+    cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
 
     ///check if on bbox/surface/boundary
     // bbox
@@ -1378,7 +1378,7 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        // if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_pos)) {
+        // if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_posf)) {
         //     return false;
         // }
         if (!VA[v2_id].m_is_on_surface) {
@@ -1555,8 +1555,8 @@ bool SimWildMeshTri::collapse_edge_after(const Tuple& loc)
     // surface
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_edges) {
-            const Vector2d a = VA.at(vids[0]).m_pos;
-            const Vector2d b = VA.at(vids[1]).m_pos;
+            const Vector2d a = VA.at(vids[0]).m_posf;
+            const Vector2d b = VA.at(vids[1]).m_posf;
             // surface envelope
             bool is_out = m_envelope->is_outside(std::array<Vector2d, 2>{{a, b}});
             if (is_out) {
@@ -1788,13 +1788,13 @@ bool SimWildMeshTri::smooth_after(const Tuple& t)
 
 Vector2d SimWildMeshTri::smoothing_position(const size_t vid) const
 {
-    return m_vertex_attribute[vid].m_pos;
+    return m_vertex_attribute[vid].m_posf;
 }
 
 void SimWildMeshTri::set_smoothing_position(const size_t vid, const Vector2d& p)
 {
     // No exact position to keep in step here: this mesh stores only the double one.
-    m_vertex_attribute[vid].m_pos = p;
+    m_vertex_attribute[vid].m_posf = p;
 }
 
 bool SimWildMeshTri::is_inverted_f(const size_t fid) const
@@ -1856,7 +1856,7 @@ std::vector<std::array<double, 6>> SimWildMeshTri::get_amips_assembles(const Tup
         std::array<double, 6> T;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 2; j++) {
-                T[i * 2 + j] = VA[local_verts[i]].m_pos[j];
+                T[i * 2 + j] = VA[local_verts[i]].m_posf[j];
             }
         }
         assembles.push_back(T);
@@ -1872,7 +1872,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_amips_energy(
 
     const auto assembles = get_amips_assembles(t);
     auto amips_energy = std::make_shared<optimization::AMIPSEnergy2D>(assembles, w);
-    assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_pos);
+    assert(amips_energy->initial_position() == m_vertex_attribute.at(t.vid(*this)).m_posf);
     return amips_energy;
 }
 
@@ -1892,7 +1892,7 @@ void SimWildMeshTri::log_total_surface_energy()
             continue;
         }
 
-        const Vector2d old_pos = VA[vid].m_pos;
+        const Vector2d old_pos = VA[vid].m_posf;
 
         auto amips_energy = get_amips_energy(t);
 
@@ -1922,9 +1922,9 @@ bool SimWildMeshTri::is_inverted(const std::array<size_t, 3>& vs) const
 {
     igl::predicates::exactinit();
     auto res = igl::predicates::orient2d(
-        m_vertex_attribute[vs[0]].m_pos,
-        m_vertex_attribute[vs[1]].m_pos,
-        m_vertex_attribute[vs[2]].m_pos);
+        m_vertex_attribute[vs[0]].m_posf,
+        m_vertex_attribute[vs[1]].m_posf,
+        m_vertex_attribute[vs[2]].m_posf);
     if (res == igl::predicates::Orientation::POSITIVE) {
         return false;
     }
@@ -1945,7 +1945,7 @@ double SimWildMeshTri::get_quality(const std::array<size_t, 3>& vs) const
 {
     std::array<Vector2d, 3> ps;
     for (size_t k = 0; k < 3; k++) {
-        ps[k] = m_vertex_attribute[vs[k]].m_pos;
+        ps[k] = m_vertex_attribute[vs[k]].m_posf;
     }
     double energy = -1.;
     {
@@ -1975,9 +1975,9 @@ double SimWildMeshTri::get_quality(const size_t fid) const
 double SimWildMeshTri::triangle_area(const size_t fid) const
 {
     const auto vs = oriented_tri_vids(fid);
-    const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
-    const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
-    const Vector2d& p2 = m_vertex_attribute[vs[2]].m_pos;
+    const Vector2d& p0 = m_vertex_attribute[vs[0]].m_posf;
+    const Vector2d& p1 = m_vertex_attribute[vs[1]].m_posf;
+    const Vector2d& p2 = m_vertex_attribute[vs[2]].m_posf;
     const double area =
         0.5 * std::abs((p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]));
     return area;
@@ -2095,8 +2095,8 @@ double SimWildMeshTri::local_operations(const std::array<int, 4>& ops, bool coll
         logger().info("Perform sanity checks...");
         const auto faces = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {
-            const auto& p0 = m_vertex_attribute[verts[0]].m_pos;
-            const auto& p1 = m_vertex_attribute[verts[1]].m_pos;
+            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
             if (m_envelope->is_outside(std::array<Vector2d, 2>{{p0, p1}})) {
                 logger().error("Edge {} is outside!", verts);
             }

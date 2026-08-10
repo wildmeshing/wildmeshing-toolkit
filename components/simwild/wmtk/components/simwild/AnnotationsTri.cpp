@@ -222,8 +222,8 @@ void SimWildMeshTri::compute_tag_boundary(const CellTag& tag, MatrixXd& V, Matri
                 size_t v1 = edge_tup.switch_vertex(*this).vid(*this);
                 size_t nv = vertices.size();
                 edges.emplace_back(nv, nv + 1);
-                vertices.push_back(m_vertex_attribute.at(v0).m_pos);
-                vertices.push_back(m_vertex_attribute.at(v1).m_pos);
+                vertices.push_back(m_vertex_attribute.at(v0).m_posf);
+                vertices.push_back(m_vertex_attribute.at(v1).m_posf);
             }
         }
     }
@@ -295,9 +295,9 @@ void SimWildMeshTri::seal_connected_components(
 {
     auto get_center = [&](const size_t fid) {
         const auto vs = oriented_tri_vids(fid);
-        const Vector2d& p0 = m_vertex_attribute[vs[0]].m_pos;
-        const Vector2d& p1 = m_vertex_attribute[vs[1]].m_pos;
-        const Vector2d& p2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2d& p0 = m_vertex_attribute[vs[0]].m_posf;
+        const Vector2d& p1 = m_vertex_attribute[vs[1]].m_posf;
+        const Vector2d& p2 = m_vertex_attribute[vs[2]].m_posf;
         return (p0 + p1 + p2) / 3;
     };
 
@@ -346,8 +346,8 @@ void SimWildMeshTri::seal_connected_components(
                 const size_t v1 = t.switch_vertex(*this).vid(*this);
                 vids.insert(v0);
                 vids.insert(v1);
-                const double d0 = m_voronoi_split_fn(m_vertex_attribute.at(v0).m_pos);
-                const double d1 = m_voronoi_split_fn(m_vertex_attribute.at(v1).m_pos);
+                const double d0 = m_voronoi_split_fn(m_vertex_attribute.at(v0).m_posf);
+                const double d1 = m_voronoi_split_fn(m_vertex_attribute.at(v1).m_posf);
                 // only split edges if their endpoints aren't already on the surface
                 if ((d0 < -1e-20 && d1 > 1e-20) || (d1 < -1e-20 && d0 > 1e-20)) {
                     split_edges.emplace_back(v0, v1);
@@ -355,7 +355,7 @@ void SimWildMeshTri::seal_connected_components(
             }
         }
         for (const size_t vid : vids) {
-            const double d = m_voronoi_split_fn(m_vertex_attribute.at(vid).m_pos);
+            const double d = m_voronoi_split_fn(m_vertex_attribute.at(vid).m_posf);
             if (d < 0) {
                 vids_left.insert(vid);
             }
@@ -406,7 +406,7 @@ void SimWildMeshTri::seal_connected_components(
                     log_and_throw_error("Could not find edge-vertex after split.");
                 }
 
-                // const Vector2d& p = m_vertex_attribute[vid].m_pos;
+                // const Vector2d& p = m_vertex_attribute[vid].m_posf;
                 // const double d = m_voronoi_split_fn(p);
                 // auto& tag = m_face_attribute[fid].tags;
                 // if (d < 0) {

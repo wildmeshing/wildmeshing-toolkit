@@ -92,8 +92,8 @@ TEST_CASE("scale-invariance", test_groups + test_release_only)
             }
             REQUIRE(n.is_valid(mesh));
 
-            const Vector2d& x = VA[vid].m_pos;
-            const Vector2d& y = VA[n.vid(mesh)].m_pos;
+            const Vector2d& x = VA[vid].m_posf;
+            const Vector2d& y = VA[n.vid(mesh)].m_posf;
 
             Energies e;
             e.amips = amips_energy->value(x);
