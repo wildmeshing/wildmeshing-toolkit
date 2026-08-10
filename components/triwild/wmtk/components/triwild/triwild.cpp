@@ -226,9 +226,12 @@ void triwild(nlohmann::json json_params)
     // 13% larger.)
     params.init(V_in.colwise().minCoeff(), V_in.colwise().maxCoeff());
 
-    // Half of eps around the original input, as in tetwild -- the arrangement gets the other
-    // half, which is what leaves room for the optimizer to move.
-    const double envelope_eps = params.eps / 2;
+    // The whole eps around the original input, as in tetwild. This used to be params.eps / 2
+    // on the grounds that "the arrangement gets the other half, which is what leaves room for
+    // the optimizer to move" -- but reserving that room is what simplify_envelope_ratio does,
+    // immediately below, so the two compounded and the simplification ran at eps/4 while the
+    // optimizer was held to half the tolerance its result is judged against.
+    const double envelope_eps = params.eps;
     // The simplification and the triangulation used to share one envelope object at the same
     // eps, which leaves the optimizer no room: a simplification free to place a vertex right
     // at the limit hands the optimizer a mesh where almost every move is already outside.

@@ -18,6 +18,7 @@
       "eps",
       "eps_simplify_rel",
       "eps_simplify",
+      "order2_envelope_ratio",
       "length",
       "length_rel",
       "sizing_field",
@@ -182,6 +183,12 @@
     "type": "float",
     "default": -1,
     "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+  },
+  {
+    "pointer": "/order2_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness for the order-2 envelope -- the open boundaries of the surface and non-manifold edges -- as a fraction of the one used for the surface. Kept below 1 deliberately, unlike the surface envelope which uses the full eps. The two are not symmetric: on the surface a wider envelope REMOVES a constraint that was blocking collapses, whereas a boundary curve has no such blockage to relieve, so the extra room is only freedom for the boundary to wander within eps -- more geometry to resolve at the same final quality. Measured in tetwild on Thingi10K 36075 at stop_energy 5: 14 iterations and 31125 tets at 0.5, against 24 iterations and 41463 tets at 1.0, both converging to a max energy of about 4.95. 1.0 gives the boundary curves the full eps."
   },
   {
     "pointer": "/length",

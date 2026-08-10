@@ -82,6 +82,39 @@ TEST_CASE("Integration_Tests", tags_integration)
     }
 }
 
+/**
+ * Models that exhausted max_iterations = 80 at stop_energy 10 before #997 -- 14 Thingi10K
+ * meshes for tetwild and 16 triwild20k curve networks. They exercise the optimizer right at
+ * its convergence limit, which is what makes them worth keeping and also what makes them
+ * expensive: minutes to hours each, serial, and hundreds of thousands of elements.
+ *
+ * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
+ *
+ *     ./wmtk_integration_tests "[challenging]"
+ *
+ * Each config sets throw_on_fail, so reaching stop_energy is the assertion.
+ */
+TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging][.]")
+{
+    namespace fs = std::filesystem;
+
+    nlohmann::json j;
+    REQUIRE_NOTHROW(
+        j = load_json(integration_tests_dir / "challenging_low_stop_energy_models.json"));
+
+    std::vector<std::string> input_files;
+    REQUIRE_NOTHROW(input_files = j["integration_tests"]);
+    REQUIRE(!input_files.empty());
+
+    for (const auto& input_file : input_files) {
+        const path& f = integration_tests_dir / input_file;
+        logger().info(">>>>>>>>>> Challenging model: {} <<<<<<<<<<", f.filename().string());
+        CHECK(fs::exists(f));
+        CHECK_NOTHROW(wmtk_wrapper(f));
+    }
+    logger().info("Tested {} challenging models.", input_files.size());
+}
+
 TEST_CASE("TetWild", tags_integration + "[.]")
 {
     const path f = integration_tests_dir / "tetwild_octocat.json";

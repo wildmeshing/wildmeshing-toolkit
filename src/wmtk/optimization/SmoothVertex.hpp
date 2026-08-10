@@ -76,14 +76,33 @@ struct SmoothVertexOptions
     bool two_stage = true;
 
     /**
-     * Refuse a move that makes the worst incident tet worse.
+     * Refuse a move that makes the worst incident element worse. Applied to every vertex.
      *
-     * Applied to interior vertices always. Applying it to *surface* vertices as well is
-     * what deadlocks a mesh whose surface vertices have drifted: the envelope pulls the
-     * vertex back, that pull worsens some incident tet, the move is refused, and the vertex
-     * never returns. Left false, matching simwild.
+     * This used to be false for SURFACE vertices, on the grounds that vetoing them deadlocks
+     * a mesh whose surface vertices have drifted: the envelope pulls such a vertex back, the
+     * pull worsens some incident element, the move is refused, and the vertex never returns.
+     *
+     * That reasoning was sound but conditional -- it described a mesh built against an
+     * envelope of eps/2, where surface vertices had drifted most of the way to the wall (a
+     * population of ~100 sitting at 0.5-0.8 eps on Thingi10K 101954, never returning). With
+     * the whole eps the drift is gone, the vertices start near the input, and the veto costs
+     * them nothing.
+     *
+     * What it buys is large. Without it, smoothing raised the max energy in 38% of passes,
+     * and a mesh that had descended to ~10.5 would then oscillate in a 10-13 band for tens
+     * of iterations until a reading happened to fall below the target -- convergence by
+     * random walk. Over 31 models (14 Thingi10K + 17 triwild20k, stop_energy 10) turning it
+     * on cut total iterations from 691 to 350 with no model regressing by more than one
+     * iteration and none left above target: triwild20k 166331 78 -> 13, 191265 58 -> 8,
+     * 191874 58 -> 15, 202302 47 -> 12.
+     *
+     * A narrower form was tried and does not work: refusing only moves that create a new
+     * GLOBAL worst element still lets a pass fill the mesh with elements just under the
+     * current worst, which a later topology pass tips over. Bounding the maximum does not
+     * bound the degradation (191265: 42 iterations against 58 baseline and 8 with the full
+     * veto).
      */
-    bool quality_veto_on_surface = false;
+    bool quality_veto_on_surface = true;
 };
 
 /**

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <polysolve/nonlinear/Problem.hpp>
@@ -120,6 +122,19 @@ public:
     std::vector<Vector2i> m_E_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_envelope_eps = -1;
+    /**
+     * Radius of the ball a feature-carrying vertex must stay inside.
+     *
+     * Presently equal to m_envelope_eps, but deliberately a separate name: the two are
+     * different quantities -- the envelope bounds how far the CURVE may deviate, this bounds
+     * how far a SURVIVOR VERTEX may sit from an anchor -- so tying them means a tighter
+     * envelope silently tightens feature retention by the same factor. Measured on
+     * triwild20k 189017 at eps_rel 1e-4, giving this its own (10x wider) value cut collapse
+     * refusals 75270 -> 61666 and delayed the mesh blow-up by two iterations. That was not
+     * enough to fix that model on its own -- the collapse length gate was the real cause --
+     * so the value is left alone here and only the coupling is made visible.
+     */
+    double m_feature_eps = -1;
 
     /**
      * Anchor positions of the curve network's 0-dimensional features, indexed by
@@ -140,6 +155,9 @@ public:
     std::vector<Vector2d> m_feature_points;
     /// Collapses refused because they would drop or displace a feature point. Diagnostic.
     std::atomic<size_t> m_feature_rejects = 0;
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
 
     /**
      * @brief May vertex `vid` sit at `p`?
@@ -175,6 +193,7 @@ public:
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
 
+
     /// Position hooks for the shared 2D smoothing driver. triwild keeps both a working
     /// double position and an exact rational one, so writing goes through here.
     Vector2d smoothing_position(const size_t vid) const;
@@ -189,6 +208,7 @@ public:
     TriWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
+        , m_feature_eps(envelope_eps)
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
@@ -464,6 +484,10 @@ private:
         size_t v1_id;
         size_t v2_id;
         std::vector<size_t> v1_param_type;
+        /// Worst quality among the elements incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate element" from "this
+        /// split subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v2_param_type;
 
         EdgeAttributes old_e_attrs;

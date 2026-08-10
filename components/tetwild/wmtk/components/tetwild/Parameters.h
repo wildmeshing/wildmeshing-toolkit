@@ -6,6 +6,10 @@ struct Parameters
     double epsr = 2e-3; // relative error bound (wrt diagonal)
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
+    /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
+    /// surface envelope's. Deliberately below 1 where the surface envelope uses the full eps;
+    /// see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5.
+    double order2_envelope_ratio = 0.5;
     double l = -1.;
     double l_min = -1;
     double diag_l = -1.;
