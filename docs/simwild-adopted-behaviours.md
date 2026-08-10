@@ -63,3 +63,31 @@ Columns: what simwild did, what it does now, which copy won, and what actually m
 | **why it matters** | A stale `m_is_on_surface` flag makes a genuine surface edge look interior, and swapping it tears the surface. The face-count route consults only the face attributes. |
 | **measured** | No output change on the 6 simwild 3D configs — the flags are not stale on these inputs. |
 | **not changed here** | simwild still *rejects* surface edges in 4-4 and 5-6 where tetwild allows a surface flip via its generalized `prepare_surface_flip`. That is a larger decision, deferred to the 3D base-class merge. |
+
+### 1e. The collapse quality gate — NO CHANGE, the premise was wrong
+
+The duplication survey reported "four mutually incompatible spellings" of the quality gate in
+`collapse_edge_before`:
+
+```
+tetwild     VA[v1_id].m_is_rounded && q > cache.max_energy
+simwild-3D  m_collapse_check_quality && VA[v1_id].m_is_rounded && q > cache.max_energy
+triwild     VA[v1_id].m_is_rounded && q > m_params.stop_energy && q > cache.max_energy
+simwild-2D  VA[v1_id].m_is_rounded && q > target_quality(tid)  && q > cache.max_energy
+```
+
+Checked before changing anything, and they are **two** rules, not four — one per dimension,
+each correctly adapted in simwild:
+
+* `SimWildMeshTri::target_quality(tid)` **defaults to `m_params.stop_energy`** and is only
+  overridden by the per-tag `quality_field`. So simwild-2D's gate *is* triwild's, generalized
+  to per-region targets. Replacing it with `stop_energy` would delete a simwild feature, not
+  fix a divergence.
+* `m_collapse_check_quality` is an extra simwild-only toggle (switched off around `simplify()`),
+  not a changed rule. simwild-3D's gate is otherwise tetwild's exactly.
+
+**The real open question is tetwild vs triwild.** tetwild never permits a collapse that worsens
+the ring's worst element; triwild permits it as long as the result is still below the target.
+They disagree with each other, so "take the tetwild/triwild implementation" cannot resolve it.
+Left alone pending a decision and a measurement. See also 1i, the other tetwild/triwild
+disagreement.
