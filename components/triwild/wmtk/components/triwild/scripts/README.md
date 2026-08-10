@@ -1,6 +1,7 @@
 # triwild sweep scripts
 
-Batch-run triwild over a large 2D dataset, collect per-model results, and report.
+Batch-run triwild over a large 2D dataset, collect per-model results, and report — plus a
+viewer for looking at one result once the numbers point at it.
 Written for the 20k 2D curve dataset on `kirby.cs.nyu.edu`, but nothing here is
 kirby-specific beyond the default paths.
 
@@ -9,6 +10,7 @@ kirby-specific beyond the default paths.
 | `run_triwild_sweep.py` | the driver: one triwild run per model, capped in time and memory, then the report |
 | `sweep2d.sh` | tmux wrapper — start / stop / attach / status / report |
 | `failure_report.py` | post-hoc: where each failed model died, how far it got, at what energy |
+| `visualize_triwild.py` | polyscope viewer for a single result: input curves, envelope curves, output mesh |
 
 ## Layout
 
@@ -115,6 +117,62 @@ Runs made before the direction was corrected stored coverage under the name `hau
 and have no `coverage` key. The report detects them by that absence, labels them
 `metric=legacy-coverage`, and keeps them out of the containment statistics rather than
 pooling two different quantities.
+
+## Looking at one result — `visualize_triwild.py`
+
+The sweep says *which* model is interesting; this says *why*. It opens a
+[polyscope](https://polyscope.run) window with three independently toggleable layers.
+
+```sh
+python3 -m venv .venv && ./.venv/bin/pip install polyscope meshio numpy
+
+./.venv/bin/python visualize_triwild.py runs/full/success/10433   # a sweep output dir
+./.venv/bin/python visualize_triwild.py input.obj output.msh      # explicit pair
+./.venv/bin/python visualize_triwild.py output.msh                # mesh alone
+```
+
+| layer | colour | what it is |
+|---|---|---|
+| input curves | orange | the `.obj` segment network handed to triwild |
+| envelope curves | blue | the **simplified** curves, read back out of the `.msh` |
+| output mesh | grey | the triangulation |
+
+Orange and blue rather than the usual red and green, so the two curve networks stay
+separable under the common colour vision deficiencies.
+
+Given a directory it finds the mesh (`output.msh`, `out.msh`, or the only `*.msh`), then
+the input: an `input.obj` beside it, else the path recorded in that run's `config.json` —
+which is what lets it run on a sweep `success/<id>/` directory unchanged, where the input
+still lives back in the dataset. Without an input you get the other two layers.
+
+The mesh also carries a per-face **AMIPS2D energy** quantity and an `inverted` flag, since
+that is usually the reason for opening it at all. The energy is transcribed from
+`wmtk::AMIPS2D_energy`; a startup assertion pins an equilateral triangle at the floor of
+2, and on every model tried the maximum reproduces that run's `report.json` `max_energy`
+exactly. Note that `report.json` and `out.log` show `1e+50` for an inverted or degenerate
+triangle — `MAX_ENERGY`, substituted by `get_quality` — whereas the viewer shows the raw
+expression and flags the orientation separately, so a broken triangle stays a number you
+can look at.
+
+### Two things about the data worth knowing
+
+- **The `.msh` node array is not the mesh.** Gmsh entities own their nodes, so a triwild
+  output holds two disjoint blocks: the dim-2 entity's nodes are the mesh vertices, and
+  the dim-1 `EnvelopeSurface` entity's nodes are the simplified input curve — whose points
+  sit exactly on input `.obj` vertices. Passing the whole array to a surface-mesh
+  constructor draws the mesh plus several hundred unreferenced stray vertices.
+- **An OBJ `l` record is a polyline, not a segment** — *n* indices mean *n*−1 segments.
+  This dataset uses both forms, so reading one segment per record silently drops most of
+  the network on the files that use long polylines.
+
+The view opens looking straight down, orthographic, with drag to pan and scroll to zoom;
+an **allow rotation** checkbox unlocks turntable navigation and **top view** snaps back.
+(The data is flat in *z* = 0, so a *z*-up camera would sit in that plane and show the mesh
+edge-on as a line.)
+
+What it deliberately does **not** show is which output *edges* are constrained — tracked
+to the curves. The `.msh` does not tag them, and inferring them by proximity would be a
+guess presented as data.
 
 ## Caveat on comparing runs
 
