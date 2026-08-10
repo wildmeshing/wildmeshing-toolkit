@@ -3,7 +3,10 @@
     "doc": "[README](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/simwild/README.md)",
     "pointer": "/",
     "type": "object",
-    "required": ["application", "input"],
+    "required": [
+      "application",
+      "input"
+    ],
     "optional": [
       "operation",
       "output",
@@ -62,19 +65,32 @@
   {
     "pointer": "/application",
     "type": "string",
-    "options": ["simwild"],
+    "options": [
+      "simwild"
+    ],
     "doc": "Application name must be simwild."
   },
   {
     "pointer": "/input",
     "type": "list",
-    "doc": "List of triangular input meshes.",
+    "doc": "List of input files. A .msh is an already-tagged mesh and is used as-is. Anything else is inserted by VolumeRemesher: a triangular surface mesh in 3D, or an OBJ curve network ('v'/'l' polylines) in 2D. See /dimension.",
     "min": 1
   },
   {
     "pointer": "/input/*",
     "type": "string",
-    "doc": "Triangular input mesh."
+    "doc": "One input file."
+  },
+  {
+    "pointer": "/dimension",
+    "type": "string",
+    "default": "auto",
+    "options": [
+      "auto",
+      "2",
+      "3"
+    ],
+    "doc": "Whether the input is 2D or 3D, as a string. 'auto' looks at the first input: a .msh decides from its own content, an OBJ with 'f' records is a 3D surface, an OBJ with 'l' records and no 'f' is a 2D curve network. A curve network and a surface are both .obj, so the extension alone cannot separate them. Setting \"2\" or \"3\" forces the route and errors if the file disagrees, rather than failing later with a confusing parse error."
   },
   {
     "pointer": "/input_names",
@@ -117,13 +133,13 @@
   {
     "pointer": "/input_transform/*",
     "type": "list",
-    "doc": "Transformation matrix (4x4 homogeneous coordinates) for one input.",
+    "doc": "Homogeneous transformation matrix for one input: 4x4 for a 3D input, 3x3 for a 2D one. An empty list means identity.",
     "max": 4
   },
   {
     "pointer": "/input_transform/*/*",
     "type": "list",
-    "min": 4,
+    "min": 3,
     "max": 4
   },
   {
@@ -163,7 +179,7 @@
   {
     "pointer": "/eps_rel",
     "type": "float",
-    "default": 2e-3,
+    "default": 0.002,
     "doc": "Envelope thickness relative to the bounding box"
   },
   {
@@ -175,7 +191,7 @@
   {
     "pointer": "/eps_simplify_rel",
     "type": "float",
-    "default": 2e-4,
+    "default": 0.0002,
     "doc": "Envelope thickness relative to the bounding box for the initial simplification. Will be ignored if skip_simplify is true or the input is already a tet mesh."
   },
   {
@@ -199,7 +215,7 @@
   {
     "pointer": "/length_rel",
     "type": "float",
-    "default": 5e-2,
+    "default": 0.05,
     "doc": "Target edge length relative to the bounding box"
   },
   {
@@ -211,8 +227,13 @@
   {
     "pointer": "/sizing_field/*",
     "type": "object",
-    "required": ["tags"],
-    "optional": ["length", "length_rel"],
+    "required": [
+      "tags"
+    ],
+    "optional": [
+      "length",
+      "length_rel"
+    ],
     "doc": "A region and its target length."
   },
   {
@@ -229,7 +250,7 @@
   {
     "pointer": "/sizing_field/*/length_rel",
     "type": "float",
-    "default": 5e-2,
+    "default": 0.05,
     "doc": "Target edge length relative to the bounding box for the region."
   },
   {
@@ -241,7 +262,10 @@
   {
     "pointer": "/quality_field/*",
     "type": "object",
-    "required": ["tags", "quality"],
+    "required": [
+      "tags",
+      "quality"
+    ],
     "doc": "A region and its target quality."
   },
   {
@@ -276,7 +300,7 @@
   {
     "pointer": "/w_amips",
     "type": "float",
-    "default": 1e-4,
+    "default": 0.0001,
     "min": 0,
     "max": 1,
     "doc": "AMIPS energy"

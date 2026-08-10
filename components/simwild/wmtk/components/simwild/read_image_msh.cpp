@@ -3,12 +3,41 @@
 #include <igl/predicates/predicates.h>
 #include <set>
 #include <wmtk/Types.hpp>
+#include <wmtk/components/simwild/EmbedCurves.hpp>
 #include <wmtk/components/simwild/EmbedSurface.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
 
 namespace wmtk::components::simwild {
+
+Matrix3d get_input_transform_2d(const nlohmann::json& json_params, const size_t input_index)
+{
+    const nlohmann::json& its_j = json_params["input_transform"];
+
+    if (input_index >= its_j.size() || its_j[input_index].size() == 0) {
+        return Matrix3d::Identity();
+    }
+    if (its_j[input_index].size() != 3) {
+        log_and_throw_error(
+            "Input transform for input {} is invalid: a 2D input takes a 3x3 homogeneous "
+            "matrix, not {}x{}.",
+            input_index,
+            its_j[input_index].size(),
+            its_j[input_index].size());
+    }
+
+    const std::array<std::array<double, 3>, 3> it_arr = its_j[input_index];
+    Matrix3d A;
+    for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            A(i, j) = it_arr[i][j];
+        }
+    }
+    logger().info("Input transform for input {}:\n{}", input_index, A);
+
+    return A;
+}
 
 Matrix4d get_input_transform(const nlohmann::json& json_params, const size_t input_index)
 {
@@ -466,5 +495,137 @@ InputData read_mesh(
     return input_data;
 }
 
+InputData read_curves(
+    const std::vector<std::string>& input_paths,
+    const std::string& output_filename,
+    const nlohmann::json& json_params)
+{
+    InputData input_data;
+
+    std::vector<Matrix3d> input_transforms(input_paths.size());
+    for (size_t i = 0; i < input_transforms.size(); ++i) {
+        input_transforms[i] = get_input_transform_2d(json_params, i);
+    }
+
+    const int NUM_THREADS = json_params["num_threads"];
+    const bool debug_output = json_params["DEBUG_output"];
+    const bool preserve_topology = json_params["preserve_topology"];
+    const bool skip_simplify = json_params["skip_simplify"];
+    const double epsr_simplify = json_params["eps_simplify_rel"];
+    double eps_simplify = json_params["eps_simplify"];
+    const std::vector<std::string> input_names = json_params["input_names"];
+
+    double tol_rel = -1;
+    double tol_abs = -1;
+    if (!preserve_topology) {
+        tol_rel = 0.1 * epsr_simplify;
+        tol_abs = 0.1 * eps_simplify;
+    }
+
+    EmbedCurves curves(input_paths, input_transforms, tol_rel, tol_abs);
+    curves.m_num_threads = NUM_THREADS;
+
+    if (debug_output) {
+        curves.write_curves_obj(output_filename + "_input.obj");
+    }
+
+    if (!preserve_topology && !skip_simplify) {
+        // Same condition the 3D route uses: simplification can change the topology of the
+        // input, so it only runs when the caller has said that is acceptable.
+        const auto [bbox_min, bbox_max] = curves.bbox_curves_minmax();
+        const double diag = (bbox_max - bbox_min).norm();
+        if (epsr_simplify > 0) {
+            eps_simplify = diag * epsr_simplify;
+        }
+        curves.simplify_curves(eps_simplify, !json_params["use_sample_envelope"], NUM_THREADS);
+
+        if (debug_output) {
+            curves.write_curves_obj(output_filename + "_input_simplified.obj");
+        }
+    }
+
+    // The envelope is built from the SIMPLIFIED input curves, taken here -- after
+    // simplification, before the arrangement -- exactly as read_mesh does in 3D.
+    input_data.V_envelope = curves.V_curves();
+    input_data.F_envelope = curves.E_curves();
+
+    const bool all_rounded = curves.embed_curves();
+    curves.consolidate();
+
+    input_data.V_input = curves.V_emb();
+    if (!all_rounded) {
+        input_data.V_input_r = curves.V_emb_r();
+    }
+    input_data.T_input = curves.F_emb();
+    input_data.T_input_tag = curves.F_tags();
+    for (int i = 0; i < input_data.T_input_tag.cols(); ++i) {
+        input_data.tag_names.push_back(
+            i < int(input_names.size()) ? input_names[i] : "tag_" + std::to_string(i));
+    }
+
+    wmtk::logger().info("======= finish curve-triangle conversion =========");
+
+    return input_data;
+}
+
+int resolve_input_dimension(
+    const std::vector<std::string>& input_paths,
+    const nlohmann::json& json_params)
+{
+    // 0 means "let the .msh reader decide from the file's content", which is what it has
+    // always done: a msh with faces and no tets is 2D, one with tets is 3D.
+    const std::string extension = std::filesystem::path(input_paths[0]).extension().string();
+
+    int sniffed = 0;
+    if (extension != ".msh") {
+        // A curve network and a surface are both OBJ, so the extension cannot separate them.
+        // 'f' records mean a surface; 'l' records with no 'f' mean a curve network.
+        bool has_f = false, has_l = false;
+        std::ifstream in(input_paths[0]);
+        if (!in) {
+            log_and_throw_error("Could not open input file {}", input_paths[0]);
+        }
+        std::string line;
+        while (std::getline(in, line)) {
+            if (line.size() < 2 || line[1] != ' ') {
+                continue;
+            }
+            if (line[0] == 'f') {
+                has_f = true;
+                break; // a surface: no need to read further
+            }
+            if (line[0] == 'l') {
+                has_l = true;
+            }
+        }
+        sniffed = has_f ? 3 : (has_l ? 2 : 3);
+    }
+
+    const std::string d = json_params.value("dimension", std::string("auto"));
+    if (d == "auto") {
+        logger().info(
+            "dimension: auto -> {}",
+            sniffed == 0 ? "from the msh content" : (sniffed == 2 ? "2D curves" : "3D surface"));
+        return sniffed;
+    }
+
+    const int forced = std::stoi(d);
+    if (forced != 2 && forced != 3) {
+        log_and_throw_error("dimension must be \"auto\", \"2\" or \"3\", not \"{}\"", d);
+    }
+    if (sniffed != 0 && sniffed != forced) {
+        // Disagree loudly rather than proceeding: without the sniff, a curve network read as
+        // a surface surfaces much later as an empty-face assertion inside EmbedSurface.
+        log_and_throw_error(
+            "dimension is set to {} but {} looks like a {}D input ({}). Remove the dimension "
+            "key to accept the detected one.",
+            forced,
+            input_paths[0],
+            sniffed,
+            sniffed == 2 ? "OBJ with 'l' polylines and no 'f' faces" : "OBJ with 'f' faces");
+    }
+    logger().info("dimension: {} (forced)", forced);
+    return forced;
+}
 
 } // namespace wmtk::components::simwild

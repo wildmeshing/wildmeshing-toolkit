@@ -217,6 +217,19 @@ public:
         const MatrixSi& T_tags,
         const std::vector<std::string>& tag_names);
 
+    /**
+     * @brief Same, from EXACT input positions.
+     *
+     * Taken when the 2D arrangement produced a vertex with no double representation -- a
+     * crossing between two input segments generally has none. Rounds what it can and leaves
+     * the rest rational; the optimization loop reclaims them.
+     */
+    void init_from_image(
+        const MatrixXr& V,
+        const MatrixXi& T,
+        const MatrixSi& T_tags,
+        const std::vector<std::string>& tag_names);
+
     void init_surfaces_and_boundaries();
 
     void init_envelope(const MatrixXd& V, const MatrixXi& F);

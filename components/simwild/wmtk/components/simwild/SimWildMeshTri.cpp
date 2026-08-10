@@ -120,8 +120,8 @@ void SimWildMeshTri::init_from_image(
     m_face_attribute.resize(T.rows());
     m_edge_attribute.resize(T.rows() * 3);
 
-    // The 2D input is float (simwild.cpp refuses a rational one), so every vertex is exactly
-    // representable and starts rounded. Only a split can un-round one after this.
+    // A float input is exactly representable by construction, so every vertex starts rounded.
+    // Only a split can un-round one after this.
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_posf = V.row(i);
         m_vertex_attribute[i].m_pos = to_rational(m_vertex_attribute[i].m_posf);
@@ -150,6 +150,95 @@ void SimWildMeshTri::init_from_image(
     // add tags
     for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         // m_face_attribute[i].tags.resize(m_tags_count);
+        for (size_t j = 0; j < m_tags_count; ++j) {
+            if (T_tags.coeff(i, j) != 0) {
+                m_face_attribute[i].tags.insert(j);
+            }
+        }
+    }
+
+    // add tag names
+    for (size_t i = 0; i < tag_names.size(); ++i) {
+        m_tag_id_to_name[i] = tag_names[i];
+        m_tag_name_to_id[tag_names[i]] = i;
+    }
+
+    init_surfaces_and_boundaries();
+}
+
+void SimWildMeshTri::init_from_image(
+    const MatrixXr& V,
+    const MatrixXi& T,
+    const MatrixSi& T_tags,
+    const std::vector<std::string>& tag_names)
+{
+    assert(V.cols() == 2);
+    assert(T.cols() == 3);
+    assert(T_tags.rows() == T.rows());
+    assert(T_tags.cols() == tag_names.size());
+
+    init(T);
+
+    assert(check_mesh_connectivity_validity());
+
+    m_tags_count = T_tags.cols();
+
+    m_vertex_attribute.resize(V.rows());
+    m_face_attribute.resize(T.rows());
+    m_edge_attribute.resize(T.rows() * 3);
+
+    // A vertex is "direct" when its exact coordinate IS a double -- the round trip through
+    // to_double/to_rational returns it unchanged. Those start rounded; the rest are the
+    // arrangement's crossing vertices, which generally have no double representation at all.
+    size_t n_indirect = 0;
+    for (int i = 0; i < vert_capacity(); i++) {
+        VertexAttributes& va = m_vertex_attribute[i];
+        va.m_pos = V.row(i);
+        va.m_posf = to_double(va.m_pos);
+        va.m_is_rounded = (to_rational(va.m_posf) == va.m_pos);
+        if (!va.m_is_rounded) {
+            ++n_indirect;
+        }
+    }
+    if (n_indirect > 0) {
+        m_all_rounded.store(false, std::memory_order_relaxed);
+    }
+
+    // Orientation is checked in EXACT arithmetic: an un-rounded vertex sends is_inverted down
+    // the rational path, which is the whole point of keeping V. Rounding first and checking
+    // after would reject valid input, because two exactly-distinct arrangement vertices can
+    // round onto the same double and make a valid triangle look degenerate.
+    bool is_mesh_inverted = false;
+    for (const Tuple& t : get_faces()) {
+        if (is_mesh_inverted ^ is_inverted(t)) {
+            if (!is_mesh_inverted) {
+                is_mesh_inverted = true;
+            } else {
+                log_and_throw_error("Faces with different orientations in the input!");
+            }
+        }
+    }
+    if (is_mesh_inverted) {
+        log_and_throw_error(
+            "Input mesh is fully inverted! This should not happen... Might be a bug.");
+    }
+
+    // Reclaim what can be rounded without inverting an incident face. round() takes the
+    // vertices one at a time, so a vertex that only becomes roundable once a neighbour has
+    // committed is still picked up -- the sweep is serial for exactly that reason.
+    const size_t reclaimed = round_all_vertices();
+    logger().info(
+        "init: {} of {} vertices had no exact double representation, {} reclaimed by rounding",
+        n_indirect,
+        vert_capacity(),
+        reclaimed);
+
+    for (const Tuple& t : get_faces()) {
+        m_face_attribute[t.fid(*this)].m_quality = get_quality(t);
+    }
+
+    // add tags
+    for (size_t i = 0; i < (size_t)T_tags.rows(); ++i) {
         for (size_t j = 0; j < m_tags_count; ++j) {
             if (T_tags.coeff(i, j) != 0) {
                 m_face_attribute[i].tags.insert(j);

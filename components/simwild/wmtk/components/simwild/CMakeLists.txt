@@ -12,6 +12,9 @@ set(SRC_FILES
 	EmbedSurface.hpp
 	EmbedSurface.cpp
 
+	EmbedCurves.hpp
+	EmbedCurves.cpp
+
 	Parameters.h
 
 	EdgeSplitting.cpp

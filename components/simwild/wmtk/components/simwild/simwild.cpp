@@ -255,14 +255,20 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
     }
-    if (input_data.V_input_r.size() != 0) {
-        log_and_throw_error("Input must be float for 2D!");
+    if (input_data.V_input_r.size() == 0) {
+        mesh.init_from_image(
+            input_data.V_input,
+            input_data.T_input,
+            input_data.T_input_tag,
+            input_data.tag_names);
+    } else {
+        logger().warn("Use RATIONAL input for 2D");
+        mesh.init_from_image(
+            input_data.V_input_r,
+            input_data.T_input,
+            input_data.T_input_tag,
+            input_data.tag_names);
     }
-    mesh.init_from_image(
-        input_data.V_input,
-        input_data.T_input,
-        input_data.T_input_tag,
-        input_data.tag_names);
 
     auto write_unique_vtu = [&params, &mesh]() {
         static size_t vtu_counter = 0;
@@ -371,11 +377,17 @@ void simwild(nlohmann::json json_params)
     igl::Timer timer;
     timer.start();
 
-    // read image or .msh
+    // Three input routes, one per kind of input:
+    //   .msh          -> an already-tagged mesh, 2D or 3D by content (no insertion)
+    //   surface OBJ   -> EmbedSurface, the 3D VolumeRemesher arrangement
+    //   curve OBJ     -> EmbedCurves,  the 2D VolumeRemesher arrangement
     InputData input_data;
-    std::string extension = std::filesystem::path(input_paths[0]).extension().string();
+    const std::string extension = std::filesystem::path(input_paths[0]).extension().string();
+    const int dimension = resolve_input_dimension(input_paths, json_params);
     if (extension == ".msh") {
         input_data = read_image_msh(input_paths[0]);
+    } else if (dimension == 2) {
+        input_data = read_curves(input_paths, output_filename.string(), json_params);
     } else {
         input_data = read_mesh(input_paths, output_filename.string(), json_params);
     }
