@@ -24,6 +24,8 @@
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/EnvelopeEnergy.hpp>
 #include <wmtk/optimization/solver.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
@@ -1604,20 +1606,16 @@ bool SimWildMeshTri::collapse_edge_after(const Tuple& loc)
 
 size_t SimWildMeshTri::swap_all_edges()
 {
-    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
-    {
-        igl::Timer timer;
-        timer.start();
-        const auto edges = get_edges();
-        collect_all_ops.reserve(edges.size());
-        for (const Tuple& t : edges) {
-            collect_all_ops.emplace_back("edge_swap", t);
-        }
-        timer.stop();
-        logger().info("edge collapse prepare time: {:.4}s", timer.getElapsedTimeInSec());
-    }
+    igl::Timer timer;
+    timer.start();
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](SimWildMeshTri&, const Tuple& e, auto& out) { out.emplace_back("edge_swap", e); });
     logger().info("#E = {}", collect_all_ops.size());
+    logger().info("edge swap prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
+    size_t total_success = 0;
     auto setup_and_execute = [&](auto& executor) {
         executor.renew_neighbor_tuples = renew;
         executor.num_threads = NUM_THREADS;
@@ -1630,7 +1628,9 @@ size_t SimWildMeshTri::swap_all_edges()
             const double w = m.swap_weight(e);
             return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
         };
-        executor(*this, collect_all_ops);
+        // Retry a failed swap only where the mesh actually changed this round
+        // (dirty-epoch localized retry).
+        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
     };
     if (NUM_THREADS > 0) {
         auto executor = ExecutePass<SimWildMeshTri>(ExecutionPolicy::kPartition);
@@ -1641,7 +1641,11 @@ size_t SimWildMeshTri::swap_all_edges()
         setup_and_execute(executor);
     }
 
-    return true;
+    // The caller (local_operations) stops the swap loop once a pass changes nothing, so this
+    // has to be the real count -- it used to return `true`, i.e. always 1, which meant the
+    // early exit could never fire and every requested swap round ran in full. triwild carries
+    // the same fix and the same note.
+    return total_success;
 }
 
 double SimWildMeshTri::swap_weight(const Tuple& t) const
