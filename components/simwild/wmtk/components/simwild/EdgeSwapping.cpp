@@ -169,7 +169,10 @@ bool SimWildMesh::swap_edge_before(const Tuple& t)
     // Surface edges are allowed only as a topology-preserving surface diagonal
     // flip (see prepare_surface_flip_32). If disabled, keep the old behavior of
     // rejecting all surface-edge swaps.
-    if (is_edge_on_surface(t)) {
+    // Route on the direct incident-surface-face count so a genuine surface edge is never
+    // mistaken for interior because of a stale m_is_on_surface flag, which would tear the
+    // surface. tetwild routes all three swap paths this way.
+    if (edge_incident_surface_face_count(t) > 0) {
         if (!m_params.allow_surface_swap) {
             return false;
         }
@@ -592,7 +595,7 @@ bool SimWildMesh::swap_edge_44_before(const Tuple& t)
         return false;
     }
 
-    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+    if (edge_incident_surface_face_count(t) > 0 || is_edge_on_bbox(t)) {
         return false;
     }
 
@@ -705,7 +708,7 @@ bool SimWildMesh::swap_edge_56_before(const Tuple& t)
     if (incident_tets.size() != 5) {
         return false;
     }
-    if (is_edge_on_surface(t) || is_edge_on_bbox(t)) {
+    if (edge_incident_surface_face_count(t) > 0 || is_edge_on_bbox(t)) {
         return false;
     }
 
@@ -723,6 +726,8 @@ bool SimWildMesh::swap_edge_56_before(const Tuple& t)
         //        TA[l].tags); // for debugging
         //}
     }
+
+    swap_cache.local().max_energy = max_energy;
 
     face_attribute_tracker(
         *this,

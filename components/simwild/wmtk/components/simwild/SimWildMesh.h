@@ -453,6 +453,15 @@ public:
 
     //
     bool is_edge_on_surface(const Tuple& loc);
+    /**
+     * @brief How many faces incident to this edge are tracked surface.
+     *
+     * Unlike is_edge_on_surface this does NOT short-circuit on the vertices'
+     * m_is_on_surface flags, so a genuine surface edge cannot be mistaken for interior
+     * because a flag went stale -- which in a swap would tear the surface. Same helper
+     * tetwild routes its swap surface test through.
+     */
+    int edge_incident_surface_face_count(const Tuple& e);
     bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);

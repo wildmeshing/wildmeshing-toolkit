@@ -940,6 +940,31 @@ bool SimWildMesh::is_edge_on_surface(const Tuple& loc)
     return false;
 }
 
+int SimWildMesh::edge_incident_surface_face_count(const Tuple& e)
+{
+    const size_t v1_id = e.vid(*this);
+    const size_t v2_id = e.switch_vertex(*this).vid(*this);
+
+    const auto tets = get_incident_tets_for_edge(e);
+    std::vector<size_t> n_vids;
+    for (const auto& t : tets) {
+        const auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; ++j) {
+            const size_t v = vs[j].vid(*this);
+            if (v != v1_id && v != v2_id) n_vids.push_back(v);
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    int count = 0;
+    for (const size_t vid : n_vids) {
+        auto [ftup, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        (void)ftup;
+        if (fid != static_cast<size_t>(-1) && m_face_attribute[fid].m_is_surface_fs) ++count;
+    }
+    return count;
+}
+
 
 bool SimWildMesh::is_edge_on_bbox(const Tuple& loc)
 {
