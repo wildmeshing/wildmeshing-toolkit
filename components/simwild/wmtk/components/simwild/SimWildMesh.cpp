@@ -447,7 +447,6 @@ bool SimWildMesh::check_mesh_quality(double& max_rel_quality, const bool verbose
 size_t SimWildMesh::refine_sizing_around_worst()
 {
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    const double filter_energy = m_params.stop_energy;
 
     // m_quality stores AMIPS^3, so the energy the "max energy" refers to is its cube root.
     const auto worst = utils::select_worst_cells(

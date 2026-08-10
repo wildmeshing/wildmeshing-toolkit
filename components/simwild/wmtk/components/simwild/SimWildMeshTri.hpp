@@ -92,7 +92,17 @@ public:
     std::map<int64_t, std::string> m_tag_id_to_name;
     std::map<std::string, int64_t> m_tag_name_to_id;
 
-    const double MAX_ENERGY = std::numeric_limits<double>::max();
+    /**
+     * @brief The sentinel get_quality returns for a face AMIPS2D cannot score.
+     *
+     * Not an energy: a positively oriented triangle whose area is too small for AMIPS, or one
+     * that produces inf/nan, gets this instead. Unlike the 3D mesh this stores AMIPS2D
+     * directly, so it surfaces in the logs verbatim as 1e+50.
+     *
+     * 1e50 rather than double::max, matching tetwild and triwild -- see SimWildMesh::MAX_ENERGY
+     * for why the arithmetic headroom matters.
+     */
+    const double MAX_ENERGY = 1e50;
 
     Parameters& m_params;
     std::vector<Vector2d> m_V_envelope;

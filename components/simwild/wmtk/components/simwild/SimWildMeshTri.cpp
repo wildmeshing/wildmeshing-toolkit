@@ -459,8 +459,6 @@ size_t SimWildMeshTri::refine_sizing_around_worst()
     const double factor = m_params.stuck_refine_factor;
     const double floor = m_params.stuck_refine_min_scalar;
 
-    const double filter_energy = m_params.stop_energy;
-
     // Find the num_worst valid tets with the highest energy. `worst` is kept
     // sorted ascending by quality, size <= num_worst (front = smallest kept).
     std::vector<std::pair<double, size_t>> worst;

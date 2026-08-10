@@ -129,7 +129,19 @@ public:
 
     double time_env = 0.0;
     igl::Timer isout_timer;
-    const double MAX_ENERGY = std::numeric_limits<double>::max();
+    /**
+     * @brief The sentinel get_quality returns for an element AMIPS cannot score.
+     *
+     * Not an energy: a positively oriented tet whose volume is too small for AMIPS, or one
+     * that produces inf/nan, gets this instead. m_quality holds AMIPS^3, so it surfaces in
+     * the logs as its cube root, cbrt(1e50) = 4.6e16.
+     *
+     * 1e50 rather than double::max, matching tetwild and triwild, because every downstream
+     * arithmetic on it must stay finite -- avg_energy sums qualities, so a single degenerate
+     * tet turned the reported average into inf, and every ratio that divides by the max was
+     * meaningless from then on. 1e50 leaves headroom for all of it.
+     */
+    const double MAX_ENERGY = 1e50;
 
     Parameters& m_params;
     std::vector<Vector3d> m_V_envelope;
