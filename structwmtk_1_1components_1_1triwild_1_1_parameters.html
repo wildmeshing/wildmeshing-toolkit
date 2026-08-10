@@ -124,6 +124,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>preserve_topology</b>
 <tr class="separator:ae0b3dd1df72fd1558084896f5e5b8a55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0ddf933c7388d9e2d9123b738ec1988" id="r_aa0ddf933c7388d9e2d9123b738ec1988"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">preserve_feature_points</a> = true</td></tr>
 <tr class="separator:aa0ddf933c7388d9e2d9123b738ec1988"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37a8f0cf2a46fca6c01bbf93cad53b5a" id="r_a37a8f0cf2a46fca6c01bbf93cad53b5a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a37a8f0cf2a46fca6c01bbf93cad53b5a">allow_junction_cleanup</a> = true</td></tr>
+<tr class="separator:a37a8f0cf2a46fca6c01bbf93cad53b5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20ddea7105522f294d9ccdf2d3b0c6d0" id="r_a20ddea7105522f294d9ccdf2d3b0c6d0"><td class="memItemLeft" align="right" valign="top"><a id="a20ddea7105522f294d9ccdf2d3b0c6d0" name="a20ddea7105522f294d9ccdf2d3b0c6d0"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>output_path</b></td></tr>
 <tr class="separator:a20ddea7105522f294d9ccdf2d3b0c6d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -222,6 +224,24 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions_m
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a37a8f0cf2a46fca6c01bbf93cad53b5a" name="a37a8f0cf2a46fca6c01bbf93cad53b5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37a8f0cf2a46fca6c01bbf93cad53b5a">&#9670;&#160;</a></span>allow_junction_cleanup</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::triwild::Parameters::allow_junction_cleanup = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Let the operations clean up junctions, anchoring only open-polyline endpoints.</p>
+<p>The erosion argument above is about ENDPOINTS: a polyline eats its own tip. A junction &ndash; valence &gt;= 3 in the constrained edges &ndash; cannot erode a curve away, because every curve through it stays a constrained edge and the envelope still holds it within eps. Anchoring it buys little and costs a great deal, because on a self-intersecting input nearly every arrangement vertex is a crossing: on 2D model 242427, 79615 of 87610 vertices are junctions, so almost every edge joins two of them and collapse &ndash; the only operation that removes a bad element outright &ndash; is refused everywhere. That model then never leaves MAX_ENERGY: it sat at 1e50 for the whole run while the sizing field saturated and the split pass grew it from 13k to 621k vertices.</p>
+<p>With junctions free it converges to max energy 10.48, fully rounded, in 12 iterations. Measured no change on the two models the endpoint guard was introduced for (215292 and 134005): identical energies, iteration counts and Euler characteristics either way.</p>
+<p>Ignored when preserve_feature_points is off, which already anchors nothing. </p>
+
+</div>
+</div>
 <a id="ab78031b3b87e66abd0b6c2653c1c8758" name="ab78031b3b87e66abd0b6c2653c1c8758"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab78031b3b87e66abd0b6c2653c1c8758">&#9670;&#160;</a></span>check_envelope_at_init</h2>
 
