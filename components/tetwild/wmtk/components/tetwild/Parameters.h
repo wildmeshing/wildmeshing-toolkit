@@ -3,7 +3,7 @@
 namespace wmtk::components::tetwild {
 struct Parameters
 {
-    double epsr = 2e-3; // relative error bound (wrt diagonal)
+    double epsr = 1e-3; // relative error bound (wrt diagonal)
     double eps = -1.; // absolute error bound
     double lr = 5e-2; // target edge length (relative)
     /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
@@ -54,9 +54,9 @@ struct Parameters
     // is converging, so a separate cooldown only delays the next escape.
     int stuck_refine_cooldown = 0;
     // Number of worst tets (by energy) whose neighborhoods are refined.
-    int stuck_refine_num_worst = 50;
+    int stuck_refine_num_worst = 0;
     // Graph rings around each worst tet's vertices included in the refinement.
-    int stuck_refine_rings = 3;
+    int stuck_refine_rings = 0;
     // Multiplicative reduction of m_sizing_scalar per refinement (0.5 => /2).
     double stuck_refine_factor = 0.5;
     // Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;
@@ -86,7 +86,7 @@ struct Parameters
     // passes). Only smoothing is gated: gating the topology/sizing ops
     // (split/collapse/swap) starves the optimizer and blows up the element
     // count, so those always run over the whole mesh.
-    bool skip_good_regions = true;
+    bool skip_good_regions = false;
     // Safety margin on the "active" threshold: a tet is active when its energy
     // (cbrt of m_quality) is >= this fraction of stop_energy, so vertices near
     // tets sitting just below the target are still smoothed.
@@ -96,7 +96,7 @@ struct Parameters
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
-    double stop_energy = 10;
+    double stop_energy = 100;
 
     /**
      * Incident-tet count above which a vertex is treated as pathological, or 0 to
@@ -142,8 +142,8 @@ struct Parameters
     // only phase that improves quality without changing connectivity, so giving each topology
     // pass a chance to be relaxed before the next one runs may keep the optimizer off the
     // plateaus where split, collapse and swap simply undo each other.
-    bool interleaved_smoothing = false;
-    int interleaved_smoothing_passes = 2;
+    bool interleaved_smoothing = true;
+    int interleaved_smoothing_passes = 1;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;

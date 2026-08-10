@@ -29,7 +29,7 @@ struct Parameters
     double collapsing_l2 =
         std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
 
-    double stop_energy = 20;
+    double stop_energy = 100;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;

@@ -11,7 +11,7 @@ struct Parameters
     double lr = 5e-2; // target edge length (relative)
     double l = -1.; // target edge length (absolute)
     double l_min = -1;
-    bool preserve_topology = false;
+    bool preserve_topology = true;
     std::string output_path;
 
     // Allow the 3->2 edge swap to operate on surface edges (a surface diagonal
@@ -48,9 +48,9 @@ struct Parameters
     // is converging, so a separate cooldown only delays the next escape.
     int stuck_refine_cooldown = 0;
     // Number of worst tets (by energy) whose neighborhoods are refined.
-    int stuck_refine_num_worst = 50;
+    int stuck_refine_num_worst = 0;
     // Graph rings around each worst tet's vertices included in the refinement.
-    int stuck_refine_rings = 3;
+    int stuck_refine_rings = 0;
     // Multiplicative reduction of m_sizing_scalar per refinement (0.5 => /2).
     double stuck_refine_factor = 0.5;
     // Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;
@@ -80,14 +80,14 @@ struct Parameters
     // passes). Only smoothing is gated: gating the topology/sizing ops
     // (split/collapse/swap) starves the optimizer and blows up the element
     // count, so those always run over the whole mesh.
-    bool skip_good_regions = true;
+    bool skip_good_regions = false;
     // Safety margin on the "active" threshold: a tet is active when its energy
     // (cbrt of m_quality) is >= this fraction of stop_energy, so vertices near
     // tets sitting just below the target are still smoothed.
     double skip_good_regions_margin = 0.9;
 
 
-    double epsr_simplify = 2e-3; // relative error bound (wrt diagonal) for simplification
+    double epsr_simplify = 2e-4; // relative error bound (wrt diagonal) for simplification
     /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
     /// surface envelope's. Deliberately below 1 where the surface envelope uses the full eps;
     /// see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5.
@@ -127,7 +127,7 @@ struct Parameters
 
     std::string operation = "remeshing";
 
-    bool skip_simplify = true;
+    bool skip_simplify = false;
     bool use_sample_envelope = false;
     int NUM_THREADS = 0;
     bool write_vtu = false;

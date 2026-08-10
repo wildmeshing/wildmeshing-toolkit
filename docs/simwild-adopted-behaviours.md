@@ -112,3 +112,60 @@ expresses it that way through the same shared helper. The hand-rolled 2D filter
 force-split of the worst cells' longest edges (`m_force_split_edges`), which tetwild, triwild and
 simwild-3D all have; and `skip_good_regions` / `active_vertices`, which the other three use to
 restrict smoothing.
+
+---
+
+## Decisions taken, not applied
+
+Two divergences turned out to be **tetwild vs triwild**, where "take the tetwild/triwild
+implementation" has no answer because the two reference apps disagree with each other.
+
+### The collapse quality gate (see 1e) — deferred, decide with measurement
+
+tetwild and simwild-3D never permit a collapse that worsens the ring's worst element; triwild
+and simwild-2D permit it while the result stays below the target. Each fork already matches its
+own sibling, so nothing is inconsistent *within* a pair. Answering which rule is better is an
+optimizer-behaviour question needing a sweep of both variants on the challenging set, not a
+de-duplication question. **Left as is.** The 3D/2D base-class merge should surface it as one
+named virtual (e.g. `collapse_allows_worsening_below_target()`) so the choice is explicit in one
+place instead of implicit in four.
+
+### tetwild's stale `m_posf` after the exact-midpoint split — separate PR
+
+triwild, simwild-3D and simwild-2D all set `p = to_double(m_pos)` after falling back to the
+exact rational midpoint; tetwild alone keeps the average of the two endpoint doubles. triwild
+documents why its version is better: when an endpoint is itself un-rounded, rounding the exact
+midpoint once beats averaging two approximations.
+
+Fixing tetwild necessarily **moves tetwild output**, which is the signal every de-duplication
+stage is validated against. **Deferred to its own PR after the refactor**, where a real output
+change is the expected result rather than a warning sign.
+
+---
+
+## Stage 1h — `Parameters` struct defaults now match their own spec defaults
+
+Fourteen fields had a C++ struct default that disagreed with the JSON spec default for the same
+key, so any code path that builds `Parameters` **without** going through jse — which is what the
+unit tests do — ran a different configuration than every driver run:
+
+| app | field | struct was | spec (now both) |
+|---|---|---|---|
+| tetwild | `eps_rel` | 2e-3 | **1e-3** |
+| tetwild | `stop_energy` | 10 | **100** |
+| tetwild | `interleaved_smoothing` | false | **true** |
+| tetwild | `interleaved_smoothing_passes` | 2 | **1** |
+| tetwild | `stuck_refine_num_worst` | 50 | **0** |
+| tetwild | `stuck_refine_rings` | 3 | **0** |
+| tetwild | `skip_good_regions` | true | **false** |
+| triwild | `stop_energy` | 20 | **100** |
+| simwild | `skip_simplify` | true | **false** |
+| simwild | `eps_simplify_rel` | 2e-3 | **2e-4** (10x) |
+| simwild | `preserve_topology` | false | **true** |
+| simwild | `stuck_refine_num_worst` | 50 | **0** |
+| simwild | `stuck_refine_rings` | 3 | **0** |
+| simwild | `skip_good_regions` | true | **false** |
+
+The spec is authoritative: it is what every driver run injects. **No integration output moved**,
+which is the expected result — the configs all go through jse. ctest 107/107, so the unit tests
+that construct `Parameters` directly either set these explicitly or are insensitive to them.
