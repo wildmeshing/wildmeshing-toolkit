@@ -175,11 +175,6 @@ public:
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
 
-    /// Worst element quality at the start of the current smoothing pass. A surface vertex
-    /// may worsen an incident element but may not create a new global worst; see
-    /// SmoothVertexOptions::global_max_quality. Snapshotted per pass rather than tracked
-    /// live: it only ever makes the bound slightly permissive, and it costs one sweep.
-    double m_smooth_global_max_quality = -1.;
 
     /// Position hooks for the shared 2D smoothing driver. triwild keeps both a working
     /// double position and an exact rational one, so writing goes through here.

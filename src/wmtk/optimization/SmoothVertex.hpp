@@ -76,30 +76,33 @@ struct SmoothVertexOptions
     bool two_stage = true;
 
     /**
-     * Refuse a move that makes the worst incident tet worse.
+     * Refuse a move that makes the worst incident element worse. Applied to every vertex.
      *
-     * Applied to interior vertices always. Applying it to *surface* vertices as well is
-     * what deadlocks a mesh whose surface vertices have drifted: the envelope pulls the
-     * vertex back, that pull worsens some incident tet, the move is refused, and the vertex
-     * never returns. Left false, matching simwild.
+     * This used to be false for SURFACE vertices, on the grounds that vetoing them deadlocks
+     * a mesh whose surface vertices have drifted: the envelope pulls such a vertex back, the
+     * pull worsens some incident element, the move is refused, and the vertex never returns.
+     *
+     * That reasoning was sound but conditional -- it described a mesh built against an
+     * envelope of eps/2, where surface vertices had drifted most of the way to the wall (a
+     * population of ~100 sitting at 0.5-0.8 eps on Thingi10K 101954, never returning). With
+     * the whole eps the drift is gone, the vertices start near the input, and the veto costs
+     * them nothing.
+     *
+     * What it buys is large. Without it, smoothing raised the max energy in 38% of passes,
+     * and a mesh that had descended to ~10.5 would then oscillate in a 10-13 band for tens
+     * of iterations until a reading happened to fall below the target -- convergence by
+     * random walk. Over 31 models (14 Thingi10K + 17 triwild20k, stop_energy 10) turning it
+     * on cut total iterations from 691 to 350 with no model regressing by more than one
+     * iteration and none left above target: triwild20k 166331 78 -> 13, 191265 58 -> 8,
+     * 191874 58 -> 15, 202302 47 -> 12.
+     *
+     * A narrower form was tried and does not work: refusing only moves that create a new
+     * GLOBAL worst element still lets a pass fill the mesh with elements just under the
+     * current worst, which a later topology pass tips over. Bounding the maximum does not
+     * bound the degradation (191265: 42 iterations against 58 baseline and 8 with the full
+     * veto).
      */
-    bool quality_veto_on_surface = false;
-
-    /**
-     * Ceiling a move may not push an incident element above, in the mesh's quality units.
-     * The caller sets it to the mesh's current worst quality at the start of the pass.
-     *
-     * This is the narrow form of the veto above, for the vertices that veto does not cover.
-     * A surface vertex is deliberately allowed to worsen an incident element -- that is what
-     * lets it move back toward the input when the envelope pulls it -- but there is no reason
-     * to let it create the new global worst element, which is exactly what makes the reported
-     * max energy go UP and strands a mesh that was nearly converged. Measured on triwild20k
-     * 191265: smoothing raised the max energy in 38% of passes, and the run oscillated in a
-     * 10.0-13.6 band for 43 iterations against a target of 10.
-     *
-     * <= 0 disables it.
-     */
-    double global_max_quality = -1.;
+    bool quality_veto_on_surface = true;
 };
 
 /**
@@ -242,11 +245,6 @@ bool smooth_vertex_3d(
             if (counters) ++counters->quality;
             return false;
         }
-    } else if (opts.global_max_quality > 0 && max_after_quality > opts.global_max_quality) {
-        // Local worsening is allowed for a surface vertex; becoming the new global worst is
-        // not. See global_max_quality.
-        if (counters) ++counters->quality;
-        return false;
     }
 
     if (counters) ++counters->accepted;
@@ -421,11 +419,6 @@ bool smooth_vertex_2d(
             if (counters) ++counters->quality;
             return false;
         }
-    } else if (opts.global_max_quality > 0 && max_after_quality > opts.global_max_quality) {
-        // Local worsening is allowed for a surface vertex; becoming the new global worst is
-        // not. See global_max_quality.
-        if (counters) ++counters->quality;
-        return false;
     }
 
     if (counters) ++counters->accepted;
