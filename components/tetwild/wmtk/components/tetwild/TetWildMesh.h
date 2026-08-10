@@ -484,6 +484,10 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
+
     struct CollapseInfoCache
     {
         size_t v1_id;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdlib>
+
 #include <wmtk/utils/PartitionMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <polysolve/nonlinear/Problem.hpp>
@@ -120,6 +122,19 @@ public:
     std::vector<Vector2i> m_E_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_envelope_eps = -1;
+    /**
+     * Radius of the ball a feature-carrying vertex must stay inside.
+     *
+     * Presently equal to m_envelope_eps, but deliberately a separate name: the two are
+     * different quantities -- the envelope bounds how far the CURVE may deviate, this bounds
+     * how far a SURVIVOR VERTEX may sit from an anchor -- so tying them means a tighter
+     * envelope silently tightens feature retention by the same factor. Measured on
+     * triwild20k 189017 at eps_rel 1e-4, giving this its own (10x wider) value cut collapse
+     * refusals 75270 -> 61666 and delayed the mesh blow-up by two iterations. That was not
+     * enough to fix that model on its own -- the collapse length gate was the real cause --
+     * so the value is left alone here and only the coupling is made visible.
+     */
+    double m_feature_eps = -1;
 
     /**
      * Anchor positions of the curve network's 0-dimensional features, indexed by
@@ -140,6 +155,9 @@ public:
     std::vector<Vector2d> m_feature_points;
     /// Collapses refused because they would drop or displace a feature point. Diagnostic.
     std::atomic<size_t> m_feature_rejects = 0;
+    /// Whether the current collapse pass applies the target-length limit; read by
+    /// collapse_edge_before, which is where that limit is now enforced.
+    bool m_collapse_limit_length = true;
 
     /**
      * @brief May vertex `vid` sit at `p`?
@@ -190,6 +208,7 @@ public:
     TriWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : m_params(_m_params)
         , m_envelope_eps(envelope_eps)
+        , m_feature_eps(envelope_eps)
     {
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
