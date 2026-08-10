@@ -120,8 +120,12 @@ void SimWildMeshTri::init_from_image(
     m_face_attribute.resize(T.rows());
     m_edge_attribute.resize(T.rows() * 3);
 
+    // The 2D input is float (simwild.cpp refuses a rational one), so every vertex is exactly
+    // representable and starts rounded. Only a split can un-round one after this.
     for (int i = 0; i < vert_capacity(); i++) {
         m_vertex_attribute[i].m_posf = V.row(i);
+        m_vertex_attribute[i].m_pos = to_rational(m_vertex_attribute[i].m_posf);
+        m_vertex_attribute[i].m_is_rounded = true;
     }
 
     // init quality and check for inverted mesh
@@ -231,14 +235,18 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
     for (size_t i = 0; i < edges.size(); i++) {
         const auto vids = get_edge_vids(edges[i]);
         int on_bbox = -1;
+        // Read the EXACT coordinate, as triwild does. An == against a domain bound is
+        // precisely where rounding decides membership: two vertices that are exactly on the
+        // boundary can round off it, or off it can round onto it, and the bbox tag is what
+        // keeps the domain from collapsing.
         for (int k = 0; k < 2; k++) {
-            if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_min[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k]) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_posf[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_posf[k] == m_params.box_max[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k]) {
                 on_bbox = k * 2 + 1;
                 break;
             }
@@ -1156,6 +1164,10 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
     /// check inversion & rounding
     auto& p = m_vertex_attribute[v_id].m_posf;
     p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    // The new vertex was default-constructed, so it starts un-rounded with no exact
+    // position. Both have to be set before the first is_inverted, which dispatches on them.
+    m_vertex_attribute[v_id].m_pos = to_rational(p);
+    m_vertex_attribute[v_id].m_is_rounded = true;
 
     for (const Tuple& t : locs) {
         if (is_inverted(t)) {
@@ -1173,6 +1185,7 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
         }
         for (int i = 0; i < 20; ++i) {
             p = 0.5 * (p0 + p1);
+            m_vertex_attribute[v_id].m_pos = to_rational(p);
             bool inv = false;
             for (const Tuple& t : locs) {
                 if (is_inverted(t)) {
@@ -1202,6 +1215,7 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
         }
         if (inv) {
             p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+            m_vertex_attribute[v_id].m_pos = to_rational(p);
         }
     }
 
@@ -1793,14 +1807,23 @@ Vector2d SimWildMeshTri::smoothing_position(const size_t vid) const
 
 void SimWildMeshTri::set_smoothing_position(const size_t vid, const Vector2d& p)
 {
-    // No exact position to keep in step here: this mesh stores only the double one.
     m_vertex_attribute[vid].m_posf = p;
+    m_vertex_attribute[vid].m_pos = to_rational(p);
 }
 
 bool SimWildMeshTri::is_inverted_f(const size_t fid) const
 {
-    // Positions are doubles throughout, so the exact and floating predicates coincide.
-    return is_inverted(fid);
+    const auto vs = oriented_tri_vids(fid);
+
+    igl::predicates::exactinit();
+    const auto res = igl::predicates::orient2d(
+        m_vertex_attribute[vs[0]].m_posf,
+        m_vertex_attribute[vs[1]].m_posf,
+        m_vertex_attribute[vs[2]].m_posf);
+    if (res == igl::predicates::Orientation::POSITIVE) {
+        return false;
+    }
+    return true;
 }
 
 std::shared_ptr<SampleEnvelope> SimWildMeshTri::smoothing_energy_envelope(const size_t) const
@@ -1920,15 +1943,26 @@ void SimWildMeshTri::log_total_surface_energy()
 
 bool SimWildMeshTri::is_inverted(const std::array<size_t, 3>& vs) const
 {
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient2d(
-        m_vertex_attribute[vs[0]].m_posf,
-        m_vertex_attribute[vs[1]].m_posf,
-        m_vertex_attribute[vs[2]].m_posf);
-    if (res == igl::predicates::Orientation::POSITIVE) {
-        return false;
+    if (m_vertex_attribute[vs[0]].m_is_rounded && m_vertex_attribute[vs[1]].m_is_rounded &&
+        m_vertex_attribute[vs[2]].m_is_rounded) {
+        igl::predicates::exactinit();
+        const auto res = igl::predicates::orient2d(
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf);
+        if (res == igl::predicates::Orientation::POSITIVE) {
+            return false;
+        }
+        return true;
+    } else {
+        const Vector2r& v0 = m_vertex_attribute[vs[0]].m_pos;
+        const Vector2r& v1 = m_vertex_attribute[vs[1]].m_pos;
+        const Vector2r& v2 = m_vertex_attribute[vs[2]].m_pos;
+        const Vector2r a = v1 - v0;
+        const Vector2r b = v2 - v0;
+        const Rational res = a.x() * b.y() - a.y() * b.x();
+        return !(res > 0);
     }
-    return true;
 }
 
 bool SimWildMeshTri::is_inverted(const Tuple& loc) const
@@ -1970,6 +2004,65 @@ double SimWildMeshTri::get_quality(const Tuple& loc) const
 double SimWildMeshTri::get_quality(const size_t fid) const
 {
     return get_quality(oriented_tri_vids(fid));
+}
+
+bool SimWildMeshTri::round(const Tuple& v)
+{
+    const size_t i = v.vid(*this);
+    if (m_vertex_attribute[i].m_is_rounded) {
+        return true;
+    }
+
+    const Vector2r old_pos = m_vertex_attribute[i].m_pos;
+    m_vertex_attribute[i].m_pos = to_rational(m_vertex_attribute[i].m_posf);
+    // Set before the loop so is_inverted takes the float path: the question being asked is
+    // exactly whether the ROUNDED position keeps every incident face valid.
+    m_vertex_attribute[i].m_is_rounded = true;
+    for (const Tuple& f : get_one_ring_tris_for_vertex(v)) {
+        if (is_inverted(f)) {
+            m_vertex_attribute[i].m_is_rounded = false;
+            m_vertex_attribute[i].m_pos = old_pos;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+size_t SimWildMeshTri::round_all_vertices()
+{
+    if (m_all_rounded.load(std::memory_order_relaxed)) {
+        return 0;
+    }
+
+    size_t reclaimed = 0, still_unrounded = 0;
+    for (const Tuple& v : get_vertices()) {
+        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+            continue;
+        }
+        if (round(v)) {
+            ++reclaimed;
+        } else {
+            ++still_unrounded;
+        }
+    }
+
+    if (still_unrounded == 0) {
+        m_all_rounded.store(true, std::memory_order_relaxed);
+    }
+    if (reclaimed > 0 || still_unrounded > 0) {
+        logger().info(
+            "rounding sweep: reclaimed {}, still unrounded {}",
+            reclaimed,
+            still_unrounded);
+    }
+    return reclaimed;
+}
+
+bool SimWildMeshTri::round_and_check_all_rounded()
+{
+    round_all_vertices();
+    return m_all_rounded.load(std::memory_order_relaxed);
 }
 
 double SimWildMeshTri::triangle_area(const size_t fid) const

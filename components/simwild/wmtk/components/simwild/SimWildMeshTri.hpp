@@ -29,7 +29,15 @@ namespace wmtk::components::simwild::tri {
 
 struct VertexAttributes
 {
-    Vector2d m_posf;
+    Vector2d m_posf; // position as double
+    Vector2r m_pos; // exact position in rational
+    /**
+     * If a vertex cannot be rounded without inverting an incident face, the exact position
+     * must be used. Once the vertex can be rounded to double precision, the rational
+     * representation is obsolete.
+     */
+    bool m_is_rounded = false;
+
     bool m_is_on_surface = false;
     std::vector<int> on_bbox_faces;
 
@@ -40,6 +48,12 @@ struct VertexAttributes
     VertexAttributes() {}
     VertexAttributes(const Vector2d& p)
         : m_posf(p)
+        , m_pos(to_rational(p))
+        , m_is_rounded(true)
+    {}
+    VertexAttributes(const Vector2r& p)
+        : m_posf(to_double(p))
+        , m_pos(p)
     {}
 };
 
@@ -131,8 +145,7 @@ public:
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
 
-    /// Hooks for the shared 2D smoothing driver. This mesh stores only a double position,
-    /// so is_inverted_f coincides with is_inverted.
+    /// Hooks for the shared 2D smoothing driver.
     Vector2d smoothing_position(const size_t vid) const;
     void set_smoothing_position(const size_t vid, const Vector2d& p);
     bool is_inverted_f(const size_t fid) const;
@@ -294,7 +307,12 @@ public:
     void log_total_surface_energy();
     //
     /**
-     * @brief Inversion check using only floating point numbers.
+     * @brief Orientation check, exact for the coordinates the vertices actually carry.
+     *
+     * Takes the floating path when all three vertices are rounded -- igl::predicates::orient2d
+     * is exact for the doubles it is handed -- and the Rational cross product otherwise. The
+     * rational branch exists because for an un-rounded vertex the double is the wrong number,
+     * not because orient2d is imprecise.
      */
     bool is_inverted(const std::array<size_t, 3>& vs) const;
     bool is_inverted(const Tuple& loc) const;
@@ -302,6 +320,44 @@ public:
     double get_quality(const std::array<size_t, 3>& vs) const;
     double get_quality(const Tuple& loc) const;
     double get_quality(const size_t fid) const;
+
+    /**
+     * @brief Round a vertex position to floating point.
+     *
+     * Only rounds the vertex position if it does not invert an incident face.
+     *
+     * @return True if successful or already rounded, false otherwise.
+     */
+    bool round(const Tuple& v);
+
+    /**
+     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
+     *
+     * round() is otherwise only attempted as a side effect of another operation, and that
+     * never reaches a vertex which only becomes roundable later. Without a sweep such a vertex
+     * keeps exact coordinates into the output for no geometric reason.
+     *
+     * Skipped outright when m_all_rounded says there is nothing to do.
+     */
+    size_t round_all_vertices();
+
+    /**
+     * @brief Run the rounding sweep, then report whether the mesh is now fully rounded.
+     *
+     * The termination condition of the operation loop, and what makes the exact-rational
+     * fallback in split_edge_after safe: a split is the only operation that can un-round a
+     * vertex, so the loop only has to outlast the sweep. See SimWildMesh's counterpart.
+     */
+    bool round_and_check_all_rounded();
+
+    /**
+     * @brief True when every vertex is known to be rounded.
+     *
+     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
+     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
+     * Atomic because operations that clear it run in parallel.
+     */
+    std::atomic<bool> m_all_rounded = false;
 
     double triangle_area(const size_t fid) const;
 
