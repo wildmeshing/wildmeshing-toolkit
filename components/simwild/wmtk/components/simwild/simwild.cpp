@@ -281,6 +281,20 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     double time = timer.getElapsedTime();
     logger().info("total optimization time {}s", time);
 
+    // write_msh emits m_posf unconditionally -- for an un-rounded vertex that double is not
+    // the vertex's real position, so the written mesh can contain inverted faces. Report it
+    // rather than letting it pass silently. Same check run_3D makes.
+    bool all_rounded = true;
+    for (const auto& v : mesh.get_vertices()) {
+        if (!mesh.m_vertex_attribute[v.vid(mesh)].m_is_rounded) {
+            all_rounded = false;
+            break;
+        }
+    }
+    if (!all_rounded) {
+        logger().error("Not all vertices rounded!");
+    }
+
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     const std::string report_file = json_params["report"];
@@ -294,6 +308,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
         report["eps"] = params.eps;
         report["threads"] = params.NUM_THREADS;
         report["time"] = time;
+        report["all_rounded"] = all_rounded;
         fout << std::setw(4) << report;
         fout.close();
     }

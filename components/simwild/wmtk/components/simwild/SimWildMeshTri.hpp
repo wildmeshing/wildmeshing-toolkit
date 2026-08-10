@@ -359,6 +359,15 @@ public:
      */
     std::atomic<bool> m_all_rounded = false;
 
+    /**
+     * @brief Splits in the last pass that fell back to the exact rational midpoint.
+     *
+     * A split is the only operation that can un-round a vertex, so this is exactly how often
+     * the mesh acquired exact coordinates during optimization -- the counterpart of the
+     * "rounding sweep" line, which says how many were given back.
+     */
+    size_t m_exact_split_count = 0;
+
     double triangle_area(const size_t fid) const;
 
     //

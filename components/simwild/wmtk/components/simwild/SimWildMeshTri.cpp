@@ -1038,6 +1038,7 @@ void SimWildMeshTri::split_all_edges()
 {
     igl::Timer timer;
     double time;
+    m_exact_split_count = 0;
     timer.start();
     auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
     for (const Tuple& loc : get_edges()) {
@@ -1094,6 +1095,11 @@ void SimWildMeshTri::split_all_edges()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         wmtk::logger().info("edge split operation time serial: {:.4}s", time);
+    }
+    if (m_exact_split_count > 0) {
+        wmtk::logger().info(
+            "{} splits fell back to the exact rational midpoint",
+            m_exact_split_count);
     }
 }
 
@@ -1171,13 +1177,54 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
 
     for (const Tuple& t : locs) {
         if (is_inverted(t)) {
-            return false;
+            m_vertex_attribute[v_id].m_is_rounded = false;
+            break;
         }
+    }
+    if (!m_vertex_attribute[v_id].m_is_rounded) {
+        // The rounded (double) midpoint inverts an incident triangle, so place the new vertex
+        // at the EXACT rational midpoint of the two endpoints instead. That midpoint lies on
+        // the shared edge, so it can never invert a previously-valid incident triangle: the
+        // split always succeeds and a stuck region can keep being refined. The vertex stays
+        // un-rounded (m_pos exact, m_is_rounded = false) until a later round() reclaims it.
+        //
+        // This used to return false instead -- refusing the split outright exactly where the
+        // mesh is degenerate, which is where refinement is needed. triwild ran the refusing
+        // version and diagnosed it as a stall cause: the stuck-refine machinery then hammers
+        // the region from outside, driving the max energy up by orders of magnitude per pass.
+        // On Thingi10K 509315 it cost 5 of 8 triwild runs, which diverged to 1e16..1e20 and
+        // hit the sweep's one-hour timeout; without it 8 of 8 converge, in 2-5 iterations.
+        //
+        // Exact coordinates reaching the output is prevented by the iteration, not here: a
+        // split is the only operation that can un-round a vertex (collapse, swap and smoothing
+        // never do), the post-optimization pass is collapse-only, and mesh_improvement does
+        // not stop until every vertex is rounded as well as the quality target being met.
+        std::atomic_ref<size_t>(m_exact_split_count).fetch_add(1, std::memory_order_relaxed);
+        m_vertex_attribute[v_id].m_pos =
+            (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        // Keep m_posf in step with the exact position rather than with the two endpoint
+        // approximations: when an endpoint is itself un-rounded, rounding the exact midpoint
+        // once is the better approximation. Same as triwild.
+        p = to_double(m_vertex_attribute[v_id].m_pos);
+        // Guard against a pre-existing inverted incident triangle: re-check in exact
+        // arithmetic (un-rounded v_id => is_inverted uses the rational path).
+        for (const Tuple& t : locs) {
+            if (is_inverted(t)) {
+                return false;
+            }
+        }
+        // This split keeps an un-rounded vertex, so the sweep must not skip the next pass.
+        // Set after the rollback checks above, which leave the mesh unchanged.
+        m_all_rounded.store(false, std::memory_order_relaxed);
     }
 
     // If a Voronoi split function is set, binary-search vmid onto its zero-crossing.
     // p0 stays on the negative side, p1 on the positive side.
-    if (m_voronoi_split_fn) {
+    //
+    // Skipped for an un-rounded vertex: the exact midpoint is then the only position known to
+    // keep every incident triangle valid, and this search only considers doubles -- including
+    // the plain double midpoint it reverts to, which is the position that just inverted.
+    if (m_voronoi_split_fn && m_vertex_attribute[v_id].m_is_rounded) {
         Vector2d p0 = m_vertex_attribute[v1_id].m_posf;
         Vector2d p1 = m_vertex_attribute[v2_id].m_posf;
         if (m_voronoi_split_fn(p0) >= 0) {
@@ -1391,15 +1438,21 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
     }
 
     // surface
+    //
+    // Both rules are gated on v1 being rounded, as triwild's are. An un-rounded vertex is
+    // stuck: the optimizer could not place it at any double, and a collapse that removes it
+    // also removes the exact coordinate. Refusing that collapse for the sake of a preference
+    // -- staying on the surface, not moving a singular vertex -- keeps the rational
+    // coordinate in the mesh, which is the more expensive outcome.
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
         // if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_posf)) {
         //     return false;
         // }
-        if (!VA[v2_id].m_is_on_surface) {
+        if (VA[v1_id].m_is_rounded && !VA[v2_id].m_is_on_surface) {
             return false; // do not collapse away from surface
         }
 
-        if (get_order_of_vertex(v1_id) > 1) {
+        if (VA[v1_id].m_is_rounded && get_order_of_vertex(v1_id) > 1) {
             return false; // do not move singular vertices
         }
     }
@@ -1432,7 +1485,8 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
             return false;
         }
         double q = get_quality(vs);
-        if (q > target_quality(tid) && q > cache.max_energy) {
+        // Quality check only when v1 is rounded -- same reasoning as the surface rules above.
+        if (VA[v1_id].m_is_rounded && q > target_quality(tid) && q > cache.max_energy) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -1460,7 +1514,7 @@ bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
     // improves anything. Note changed_fids excludes the faces the collapse deletes, so when
     // the ring's worst is one of those the test passes by construction -- the rule admits
     // precisely the collapses that remove a bad element.
-    if (m_collapse_limit_length) { // simwild's 2D vertices carry no rounded flag
+    if (m_collapse_limit_length && VA[v1_id].m_is_rounded) {
         const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
         const double len2 = cache.edge_length * cache.edge_length;
         if (len2 > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
@@ -1778,12 +1832,21 @@ void SimWildMeshTri::smooth_all_vertices(const size_t n_iters)
 
 bool SimWildMeshTri::smooth_before(const Tuple& t)
 {
+    // Try to round first: smoothing is the operation that frees a vertex a split had to leave
+    // rational, and set_smoothing_position writes a double, so a vertex that will not round
+    // must not be smoothed -- its exact position is the only one keeping its ring valid.
+    const bool r = round(t);
+
     const size_t vid = t.vid(*this);
     if (!m_vertex_attribute.at(vid).on_bbox_faces.empty()) {
         return false;
     }
 
-    return true;
+    if (m_vertex_attribute[vid].m_is_rounded) {
+        return true;
+    }
+    // Note: no need to roll back.
+    return r;
 }
 
 bool SimWildMeshTri::smooth_after(const Tuple& t)
@@ -2144,7 +2207,13 @@ void SimWildMeshTri::mesh_improvement(int max_its)
         ///energy check
         logger().info("max rel quality {}", quality_rel);
         if (check_mesh_quality(quality_rel, true)) {
-            break;
+            // Quality alone is not a sufficient termination condition -- see
+            // round_and_check_all_rounded. Keep iterating while anything is un-rounded, and
+            // let max_its bound the run as before.
+            if (round_and_check_all_rounded()) {
+                break;
+            }
+            logger().info("quality target reached, but some vertices are un-rounded; continuing");
         }
         consolidate_mesh();
 
@@ -2173,6 +2242,10 @@ void SimWildMeshTri::mesh_improvement(int max_its)
 
     wmtk::logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
+
+    // The post pass is collapse-only, so it cannot un-round anything; this is the last chance
+    // to reclaim a vertex the loop left rational because it ran out of iterations.
+    round_all_vertices();
 }
 
 double SimWildMeshTri::local_operations(const std::array<int, 4>& ops, bool collapse_limit_length)
@@ -2254,6 +2327,18 @@ double SimWildMeshTri::local_operations(const std::array<int, 4>& ops, bool coll
         } else if (i == 3) {
             logger().info("==smoothing ==");
             smooth_all_vertices(ops[i]);
+            // Reclaim whatever smoothing just made roundable: once per iteration, after all of
+            // its passes. Here rather than at the end of the run because smoothing is what
+            // frees a stuck vertex, and because a vertex left rational makes every incident
+            // face take the exact-arithmetic path in is_inverted -- so rounding early keeps
+            // the following passes on doubles.
+            //
+            // Guarded on ops[i] so it really is once per iteration: this branch is also
+            // entered by the collapse-only pre and post passes, which pass ops[3] == 0 and
+            // have no smoothing for the sweep to follow.
+            if (ops[i] > 0) {
+                round_all_vertices();
+            }
             check_mesh_quality(quality_rel, true);
             sanity_checks();
         }
