@@ -547,7 +547,12 @@ void TriWildMesh::init_mesh(
 size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
 {
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+    // Clamped above, as adjust_sizing_field_serial below always did. Without the clamp a
+    // single degenerate face (quality MAX_ENERGY) sets filter_energy astronomically high and
+    // select_worst_cells then picks out only the degenerate faces -- refinement stops seeing
+    // the merely-bad ones it exists to fix.
+    const double filter_energy =
+        std::min(std::max(max_energy / 100, m_params.stop_energy), 100.);
 
     // m_quality is the AMIPS2D energy itself here, so no cube root (unlike tetwild/simwild).
     const auto worst = utils::select_worst_cells(

@@ -464,6 +464,10 @@ private:
         size_t v1_id;
         size_t v2_id;
         std::vector<size_t> v1_param_type;
+        /// Worst quality among the elements incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate element" from "this
+        /// split subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v2_param_type;
 
         EdgeAttributes old_e_attrs;

@@ -721,7 +721,13 @@ bool TetWildMesh::adjust_sizing_field_serial(double max_energy)
 size_t TetWildMesh::refine_sizing_around_worst(double max_energy)
 {
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
-    const double filter_energy = std::max(max_energy / 100, m_params.stop_energy);
+    // Clamped above, as adjust_sizing_field_serial always did and as the original TetWild's
+    // updateScalarField target does by ratcheting down from 1e6. Without the clamp a single
+    // degenerate tet (quality MAX_ENERGY, reported as 4.6e16) sets filter_energy to 4.6e14,
+    // and select_worst_cells then picks out only the degenerate tets -- refinement stops
+    // seeing the merely-bad ones it exists to fix.
+    const double filter_energy =
+        std::min(std::max(max_energy / 100, m_params.stop_energy), 100.);
 
     // m_quality stores AMIPS^3, so the energy the "max energy" refers to is its cube root.
     const auto worst = utils::select_worst_cells(

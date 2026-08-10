@@ -1629,7 +1629,9 @@ void TetWildMesh::find_open_boundary()
     if (!m_order2_envelope) {
         m_order2_envelope = std::make_shared<SampleEnvelope>(m_envelope && m_envelope->use_exact);
     }
-    m_order2_envelope->init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l / 2.0);
+    // The whole eps, matching the surface envelope: every envelope the optimizer is checked
+    // against carries the caller's full tolerance. See the comment on tet_eps in tetwild.cpp.
+    m_order2_envelope->init(v_posf, open_boundaries, m_params.epsr * m_params.diag_l);
 }
 
 bool TetWildMesh::is_open_boundary_edge(const Tuple& e)

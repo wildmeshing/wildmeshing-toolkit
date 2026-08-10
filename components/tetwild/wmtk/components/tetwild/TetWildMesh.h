@@ -472,6 +472,10 @@ private:
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
         size_t edge_order = 0;
+        /// Worst quality among the tets incident to the edge BEFORE the split, so
+        /// split_edge_after can tell "this split created a degenerate tet" from "this split
+        /// subdivided a region that was already degenerate".
+        double max_quality_before = 0.;
         std::vector<size_t> v1_param_type;
         std::vector<size_t> v2_param_type;
 
