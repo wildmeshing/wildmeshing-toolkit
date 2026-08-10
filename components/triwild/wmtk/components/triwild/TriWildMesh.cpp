@@ -440,20 +440,29 @@ void TriWildMesh::init_mesh(
             if (val == 0 || val == 2) {
                 continue;
             }
-            m_vertex_attribute[v].m_feature_id = m_feature_points.size();
-            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
             if (val == 1) {
                 ++n_endpoints;
             } else {
                 ++n_junctions;
+                // The erosion above is an ENDPOINT property. A junction cannot erode a curve
+                // away -- every curve through it stays constrained and inside the envelope --
+                // while anchoring it can freeze the whole mesh, because on a self-intersecting
+                // input almost every arrangement vertex is a crossing. See
+                // Parameters::allow_junction_cleanup.
+                if (m_params.allow_junction_cleanup) {
+                    continue;
+                }
             }
+            m_vertex_attribute[v].m_feature_id = m_feature_points.size();
+            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
         }
-        if (!m_feature_points.empty()) {
+        if (n_endpoints + n_junctions > 0) {
             logger().info(
-                "feature points: {} polyline endpoints, {} junctions (kept within {:.6} of "
-                "their input positions)",
+                "feature points: {} polyline endpoints, {} junctions; anchoring {} of them "
+                "within {:.6} of their input positions",
                 n_endpoints,
                 n_junctions,
+                m_feature_points.size(),
                 m_envelope_eps);
         }
     }
