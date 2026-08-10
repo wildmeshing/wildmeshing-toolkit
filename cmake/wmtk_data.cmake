@@ -16,7 +16,11 @@ ExternalProject_Add(
     SOURCE_DIR ${WMTK_DATA_ROOT}
 
     GIT_REPOSITORY https://github.com/wildmeshing/data2.git
-    GIT_TAG 620524d866ffeb0661f1fc175f7843df18129664
+    # Raises thingi_36075's max_expected_iterations from 20 to 30, which the full-eps
+    # envelope in this branch needs: the open-boundary envelope going from eps/2 to eps
+    # costs that model ten iterations (13 -> 14 for the surface change alone, 14 -> 24 with
+    # the order-2 change), converging to the same quality throughout. See data2#3.
+    GIT_TAG 6235a72413849e226f1b434a6e94d5327e747c88
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
