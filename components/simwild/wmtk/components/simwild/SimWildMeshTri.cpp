@@ -908,7 +908,9 @@ void SimWildMeshTri::split_all_edges()
                 }
                 return true;
             };
-            executor(mesh, collect_all_ops);
+            // Retry a failed split only where the mesh actually changed this round
+            // (dirty-epoch localized retry), as triwild does.
+            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
     if (m_exact_split_count > 0) {
         wmtk::logger().info(
@@ -1157,7 +1159,16 @@ bool SimWildMeshTri::split_edge_after(const Tuple& loc)
 void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
 {
     m_collapse_limit_length = is_limit_length;
+
+    // Built once, up front. The retry driver re-queues what the mesh actually changed, so
+    // there is nothing left for the old rebuild-from-get_edges()-every-round loop to do.
+    // Filtering of too-long edges still happens in is_weight_up_to_date.
     std::vector<std::pair<std::string, Tuple>> all_ops;
+    for (const Tuple& loc : get_edges()) {
+        all_ops.emplace_back("edge_collapse", loc);
+        all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
+    }
+    logger().info("#E = {}", all_ops.size() / 2);
 
     wmtk::run_pass(
         *this,
@@ -1181,22 +1192,25 @@ void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
                 return true;
             };
 
-            // Execute!!
-            do {
-                all_ops.clear();
-                const auto all_edges = get_edges();
-                logger().info("#E = {}", all_edges.size());
-                for (const Tuple& loc : all_edges) {
-                    // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-                    all_ops.emplace_back("edge_collapse", loc);
-                    all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-                }
-                executor(mesh, all_ops);
-                logger().info(
-                    "success: {}, failed: {}",
-                    executor.get_cnt_success(),
-                    executor.get_cnt_fail());
-            } while (executor.get_cnt_success() > 0);
+            executor.renew_neighbor_tuples =
+                [](const wmtk::TriOptimizerMesh& m, Op op, const auto& newts) {
+                    std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
+                    op_tups.reserve(2 * newts.size());
+                    for (const Tuple& t : newts) {
+                        op_tups.emplace_back(op, t);
+                        op_tups.emplace_back(op, t.switch_vertex(m));
+                    }
+                    return op_tups;
+                };
+
+            // Retry a failed collapse only where the mesh actually changed this round
+            // (dirty-epoch localized retry), as triwild does. This replaces the loop that
+            // rebuilt the whole op list from get_edges() after every pass and re-ran the
+            // expensive geometric pre-checks on every failure, even where nothing could
+            // have changed.
+            const size_t total_success =
+                wmtk::run_localized_to_convergence(mesh, executor, all_ops);
+            logger().info("collapse success: {}", total_success);
         });
 }
 

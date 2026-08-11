@@ -3,6 +3,7 @@
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
@@ -100,8 +101,10 @@ size_t SimWildMesh::swap_all_edges_32()
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_edges;
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-            executor(mesh, collect_all_ops);
-            total_success = executor.get_cnt_success();
+            // Retry a failed swap only where the mesh actually changed this round
+            // (dirty-epoch localized retry), and report the total across rounds rather
+            // than the last round's count -- as tetwild does.
+            total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
     if (m_sim_params.check_surface_topology) {
         warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
@@ -367,8 +370,10 @@ size_t SimWildMesh::swap_all_faces()
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_faces;
             executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
-            executor(mesh, collect_all_ops);
-            total_success = executor.get_cnt_success();
+            // Retry a failed swap only where the mesh actually changed this round
+            // (dirty-epoch localized retry), and report the total across rounds rather
+            // than the last round's count -- as tetwild does.
+            total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
     return total_success;
 }
@@ -494,8 +499,10 @@ size_t SimWildMesh::swap_all_edges_all()
                     return op_tups;
                 };
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-            executor(mesh, collect_all_ops);
-            total_success = executor.get_cnt_success();
+            // Retry a failed swap only where the mesh actually changed this round
+            // (dirty-epoch localized retry), and report the total across rounds rather
+            // than the last round's count -- as tetwild does.
+            total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
     if (m_sim_params.check_surface_topology) {
         warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
@@ -523,8 +530,10 @@ size_t SimWildMesh::swap_all_edges_44()
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_edges;
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-            executor(mesh, collect_all_ops);
-            total_success = executor.get_cnt_success();
+            // Retry a failed swap only where the mesh actually changed this round
+            // (dirty-epoch localized retry), and report the total across rounds rather
+            // than the last round's count -- as tetwild does.
+            total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
     return total_success;
 }
@@ -611,8 +620,10 @@ size_t SimWildMesh::swap_all_edges_56()
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_edges;
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-            executor(mesh, collect_all_ops);
-            total_success = executor.get_cnt_success();
+            // Retry a failed swap only where the mesh actually changed this round
+            // (dirty-epoch localized retry), and report the total across rounds rather
+            // than the last round's count -- as tetwild does.
+            total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
     return total_success;
 }

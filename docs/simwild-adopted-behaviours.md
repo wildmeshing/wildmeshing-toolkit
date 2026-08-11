@@ -306,3 +306,47 @@ a total disagree about when that is. simwild-2D's swap already takes the shared 
 Adopting the localized form is a real behaviour change for simwild -- it changes which failed
 operations are re-tested and in what order -- so it wants its own commit and its own before/after,
 not a line in a refactor.
+
+---
+
+## Post-3c — simwild adopts the localized retry and the accumulated success count
+
+Closes the three differences Stage 3c recorded but deliberately left alone. Every driver now runs
+its pass the way its sibling does.
+
+| driver | was | now |
+|---|---|---|
+| 3D split, all five 3D swaps, 2D split | `executor(mesh, ops)` — **a single pass**, so an operation rejected early was dropped even when a later success next to it made it viable | `run_localized_to_convergence`, which re-runs until a pass yields nothing, re-queueing only failures adjacent to a vertex that moved that round |
+| 2D collapse | `do { all_ops.clear(); for (e : get_edges()) …; executor(…); } while (get_cnt_success() > 0)` — converged, but by re-enumerating every edge and re-running the full geometric pre-check on each one, every round | the same shared retry driver, off an op list built once |
+| the five 3D swaps' return value | `executor.get_cnt_success()`, the **last** round's count | the total accumulated across rounds |
+
+The return value is not bookkeeping: `local_operations` stops its swap loop when a pass reports
+zero, and a pass that has converged ends on a zero round by construction, so the old form made the
+loop stop after one round of swaps regardless of how much work remained.
+
+The 2D collapse needed a `renew_neighbor_tuples` — its rebuild-everything loop never had one, and
+the retry driver takes the modified region from exactly that callback. It is triwild's.
+
+**Not adopted here, still open:** simwild builds its op lists with a serial
+`for (const Tuple& e : get_edges())` where tetwild and triwild use `parallel_collect_edge_ops`. That
+changes the queue's insertion order, which breaks ties in the priority queue, so it is its own
+behaviour change and would have blurred this one's before/after.
+
+### Measured
+
+Four configs moved; every triwild and deterministic tetwild config is byte-identical, and the branch
+touches no file outside `components/simwild/`.
+
+| config | before | after |
+|---|---|---|
+| `simwild_curves_2d` | 572 tris, avg 2.385, max 8.294 | 384 tris, avg 2.499, max 8.494 |
+| `simwild_curves_two_inputs_2d` | 465 tris, avg 3.343, max 18.862 | 871 tris, avg **2.815**, max 18.844 |
+| `simwild_remeshing_2d` | 211 tris, avg 2.299, max 4.330 | 246 tris, avg 2.324, max **4.188** |
+| `simwild_double_sphere_notop_3d` | 21454 tets, avg 3.6171 | 21459 tets, avg 3.6170 |
+
+The direction is mixed, and the mechanism is visible in `simwild_curves_2d`'s log. The split pass
+now converges instead of running once, so the mesh refines far harder mid-run -- 1955 edges at
+iteration 5 where it used to reach 695 -- and the collapse pass then pulls it back further than
+before, to 378. The optimizer takes a different trajectory rather than a uniformly finer or coarser
+one. Collapse itself is unchanged in aggregate: the first call's rounds used to sum to ~316
+successes and the shared driver now reports 313.

@@ -2,6 +2,7 @@
 
 #include <igl/Timer.h>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/RunPass.hpp>
 
@@ -56,7 +57,9 @@ void SimWildMesh::split_all_edges()
                 }
                 return true;
             };
-            executor(mesh, collect_all_ops);
+            // Retry a failed split only where the mesh actually changed this round
+            // (dirty-epoch localized retry), as tetwild does.
+            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
