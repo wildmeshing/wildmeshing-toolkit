@@ -122,6 +122,7 @@ public:
     double quality_rel(const size_t tid) const;
     double quality_rel(const Tuple& t) const;
     bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+    std::vector<size_t> active_vertices() const override;
 
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the

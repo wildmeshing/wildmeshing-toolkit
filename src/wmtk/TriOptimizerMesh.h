@@ -226,7 +226,7 @@ public:
     {
         return m_params.skip_good_regions_margin * m_params.stop_energy;
     }
-    std::vector<size_t> active_vertices() const;
+    virtual std::vector<size_t> active_vertices() const;
 
     /**
      * @brief Round a vertex position to floating point, if that inverts no incident face.

@@ -68,7 +68,6 @@ public:
     Parameters& m_sim_params;
     std::vector<Vector3d> m_V_envelope;
     std::vector<Vector3i> m_F_envelope;
-    std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
@@ -82,10 +81,6 @@ public:
 
     /// Envelope a vertex is pulled toward while smoothing.
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
-
-    /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
-    /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
 
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
@@ -167,6 +162,7 @@ public:
     double quality_rel(const size_t tid) const;
     double quality_rel(const Tuple& t) const;
     bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+    std::vector<size_t> active_vertices() const override;
 
 
     ////// Attributes related

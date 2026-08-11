@@ -319,7 +319,6 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         "Envelope: {} (eps {:.6})",
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
-
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)
@@ -453,6 +452,19 @@ double SimWildMeshTri::quality_rel(const Tuple& t) const
     return quality_rel(t.fid(*this));
 }
 
+std::vector<size_t> SimWildMeshTri::active_vertices() const
+{
+    // Normalize by the tag-dependent target before applying the shared activity margin.
+    return utils::active_vertices(
+        vert_capacity(),
+        tri_capacity(),
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) { return quality_rel(fid); },
+        [this](size_t fid) { return oriented_tri_vids(fid); },
+        m_params.skip_good_regions_margin,
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
+}
+
 bool SimWildMeshTri::check_mesh_quality(double& max_rel_quality, const bool verbose) const
 {
     bool all_good = true;
@@ -504,6 +516,18 @@ size_t SimWildMeshTri::refine_sizing_around_worst()
 
     if (worst.empty()) {
         return 0;
+    }
+
+    // Match TriWild: the next split pass must take the longest edge of each selected worst
+    // triangle even when its ordinary length gate says no.
+    m_force_split_edges.clear();
+    if (m_params.stuck_refine_force_split) {
+        for (const auto& [_, fid] : worst) {
+            m_force_split_edges.insert(
+                utils::longest_edge(oriented_tri_vids(fid), [this](size_t vid) -> const Vector2d& {
+                    return m_vertex_attribute[vid].m_posf;
+                }));
+        }
     }
 
     // Seed the region with the worst triangles' vertices, then BFS n_rings hops.

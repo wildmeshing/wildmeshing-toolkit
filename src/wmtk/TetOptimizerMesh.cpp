@@ -20,8 +20,8 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
-#include <queue>
 #include <cstdlib>
+#include <queue>
 
 namespace wmtk {
 
@@ -149,8 +149,8 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 
 std::shared_ptr<SampleEnvelope> TetOptimizerMesh::smoothing_containment_envelope(const size_t) const
 {
-    // tetwild keeps one surface envelope, so pull target and containment test coincide --
-    // unlike simwild, which has a separate working envelope.
+    // Both applications keep one surface envelope. The pull energy may additionally select
+    // an order-2 feature envelope, but containment remains against the surface envelope.
     return m_envelope;
 }
 

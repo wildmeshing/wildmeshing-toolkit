@@ -270,10 +270,9 @@ while measuring them are recorded here so they are not lost:
 * simwild reads the success count from `executor.get_cnt_success()` after the lambda has returned;
   tetwild accumulates it into a captured local.
 
-`smoothing_energy_envelope` also stays per-application: simwild pulls order-2 vertices toward
-`m_order_2_edge_envelope` and everything else toward `m_envelope_orig`, while tetwild has a single
-surface envelope. `smoothing_containment_envelope` did move -- both applications' versions return
-`m_envelope`, only their comments differed.
+At this stage `smoothing_energy_envelope` stayed per-application. Stage 6 below subsequently
+removed SimWild's redundant surface-envelope alias and adopted TetWild's order-`>= 2` selection;
+only the application-specific order-2 envelope object remains virtual.
 
 `smooth_after` stays in **both** applications even though their bodies are byte-identical: the body
 is the shared `optimization::smooth_vertex_3d` template, which reaches `m_tet_attribute` and
@@ -594,3 +593,26 @@ The serial conformance fixture runs TriWild first and tag-homogeneous SimWild se
 2D meshes, then compares connectivity, floating and exact positions, per-face qualities, and tags.
 It separately enables `skip_good_regions`, makes every face good, and verifies both applications
 schedule zero vertices. Full TriWild and SimWild test suites pass.
+
+---
+
+## Stage 6 — envelope and refinement parity
+
+SimWild 3D now has the same envelope model as TetWild: one surface `m_envelope`, plus the separate
+order-2 feature envelope. The old `m_envelope_orig` pointer was always assigned from `m_envelope`
+and is deleted. Feature pulling now uses TetWild's exact condition, order `>= 2`, including
+order-3 junction vertices, and falls back to the surface envelope when no initialized feature
+envelope exists.
+
+The remaining refinement gaps are also closed:
+
+- SimWild 2D records the longest edge of each selected worst triangle in `m_force_split_edges`,
+  matching TriWild.
+- SimWild 3D applies TetWild's oversized-only force-split guard, including the JSON option.
+- `active_vertices()` is virtual at the optimizer bases. Wild keeps its absolute global threshold;
+  SimWild overrides it by normalizing every cell against its tag-dependent `target_quality()`.
+
+The serial conformance suite now also covers 3D 4→4, 5→6, 2→3, and combined swaps; order-3
+feature-envelope selection; 2D/3D force-split refinement; per-tag active-region filtering; and
+heterogeneous-tag split/collapse invariants in both dimensions. Whole-iteration driver parity is
+deferred with the outer-driver unification because those drivers are still intentionally distinct.

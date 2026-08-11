@@ -254,7 +254,7 @@ public:
 
     /// vids of the vertices incident to at least one "active" cell, for the
     /// skip-good-regions filter.
-    std::vector<size_t> active_vertices() const;
+    virtual std::vector<size_t> active_vertices() const;
 
     // TetWild's split engine. SimWild inherits it and customizes only application data,
     // annotation-only placement, and order-2 metadata through the hooks below.
@@ -316,8 +316,8 @@ public:
     /**
      * @brief Envelope the resulting surface triangles are checked against.
      *
-     * Virtual because tetwild keeps one surface envelope, so its pull target and containment
-     * test coincide, while simwild has a separate working envelope.
+     * The surface envelope is shared by both applications. A derived mesh may additionally
+     * select an order-2 feature envelope for the pull energy.
      */
     virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
     virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
