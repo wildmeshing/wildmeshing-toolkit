@@ -1,3 +1,4 @@
+#include <limits>
 #include "TetWildMesh.h"
 
 #include <igl/Timer.h>
@@ -250,8 +251,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split is otherwise unconditional: it checks orientation and the envelope but never
-    // quality. That is right for a length-driven split of a long, well-behaved edge and
+    // A split checks orientation, rounding and (above) the envelope, but never quality. That is right for a length-driven split of a long, well-behaved edge and
     // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
     // land essentially on the opposite edge. The result is a POSITIVELY ORIENTED tet whose
     // volume is too small for AMIPS, so get_quality returns MAX_ENERGY, the reported max
@@ -271,6 +271,52 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     }
     for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
+    }
+
+    /// containment: the new surface triangles must stay inside the envelope
+    //
+    // Every other operation that moves or creates surface geometry tests this --- collapse
+    // in collapse_edge_before/after, all four swaps in their *_after --- and split did not.
+    // The comment above claiming it "checks orientation and the envelope" was wrong: this
+    // file contained no envelope query at all.
+    //
+    // It matters because split is the operation that CREATES surface vertices, and it puts
+    // the new one at the chord midpoint. On a curved region the midpoint of a chord lies off
+    // the surface by about L^2/8R, so a long enough edge over a tight enough curve places it
+    // outside the envelope the moment it is created, and nothing afterwards is obliged to
+    // bring it back. Smoothing is the only operation that could, and with
+    // quality_veto_on_surface it refuses whenever the pull-back worsens an incident element.
+    //
+    // Measured on Thingi10K 243014 (exact envelope, serial): 19 of 24702 surface vertices
+    // outside the envelope by iteration 12 --- a silent violation of the containment
+    // invariant, invisible in the sweep because DEBUG_hausdorff is off by default.
+    //
+    // The face split is (v1,v2,other) -> (v1,v_id,other) + (v2,v_id,other), which is the same
+    // pair of new triangles the attribute update below writes.
+    if (cache.is_edge_on_surface) {
+        const auto& VA = m_vertex_attribute;
+        for (const auto& info : cache.changed_faces) {
+            if (!info.first.m_is_surface_fs) continue;
+            const auto& old_vids = info.second;
+            size_t other = std::numeric_limits<size_t>::max();
+            int n_shared = 0;
+            for (int j = 0; j < 3; j++) {
+                if (old_vids[j] == v1_id || old_vids[j] == v2_id) {
+                    ++n_shared;
+                } else {
+                    other = old_vids[j];
+                }
+            }
+            if (n_shared != 2) continue; // face does not contain the split edge
+            if (m_envelope->is_outside(
+                    {{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+            if (m_envelope->is_outside(
+                    {{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+        }
     }
 
     /// update vertex attribute

@@ -1,3 +1,4 @@
+#include <limits>
 #include "SimWildMesh.h"
 
 #include <igl/Timer.h>
@@ -281,6 +282,43 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
     }
     for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
+    }
+
+    /// containment: the new surface triangles must stay inside the envelope
+    //
+    // Collapse and the swaps test this; split did not, and split is the operation that
+    // CREATES surface vertices. It puts the new one at the chord midpoint, which on a curved
+    // region lies off the surface by about L^2/8R, and nothing afterwards is obliged to
+    // bring it back -- so the tracked surface walks outward one subdivision at a time.
+    //
+    // Measured on the tetwild counterpart of this hole (Thingi10K 243014, exact envelope,
+    // serial): 19 of 24702 surface vertices outside the envelope by iteration 12, while the
+    // end-of-run Hausdorff check still reported "inside the envelope (as expected)" -- that
+    // check samples by AREA and is blind to violations on vanishingly small elements.
+    if (cache.is_edge_on_surface) {
+        const auto& VA = m_vertex_attribute;
+        for (const auto& info : cache.changed_faces) {
+            if (!info.first.m_is_surface_fs) continue;
+            const auto& old_vids = info.second;
+            size_t other = std::numeric_limits<size_t>::max();
+            int n_shared = 0;
+            for (int j = 0; j < 3; j++) {
+                if (old_vids[j] == v1_id || old_vids[j] == v2_id) {
+                    ++n_shared;
+                } else {
+                    other = old_vids[j];
+                }
+            }
+            if (n_shared != 2) continue;
+            if (m_envelope->is_outside(
+                    {{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+            if (m_envelope->is_outside(
+                    {{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+        }
     }
 
     /// update vertex attribute

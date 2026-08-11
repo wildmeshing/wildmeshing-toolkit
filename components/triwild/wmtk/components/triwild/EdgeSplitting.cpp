@@ -268,6 +268,31 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
         const auto [_1, eid1] = tuple_from_edge(edge1.vertices());
         const auto [_2, eid2] = tuple_from_edge(edge2.vertices());
 
+        // Containment: the two new constrained segments must stay inside the envelope.
+        //
+        // Collapse tests this (EdgeCollapsing.cpp) and split did not --- this file had no
+        // envelope query at all, despite the comment below claiming otherwise. It matters
+        // because split is the operation that CREATES curve vertices, and it puts the new one
+        // at the chord midpoint, which on a curved region lies off the curve by about L^2/8R.
+        // Nothing afterwards is obliged to bring it back, so the tracked curve walks outward
+        // one subdivision at a time.
+        //
+        // The 3D counterpart of this hole put 19 of 24702 surface vertices outside the exact
+        // envelope on Thingi10K 243014, while the end-of-run Hausdorff check still reported
+        // "inside the envelope (as expected)" --- that check samples by AREA and cannot see
+        // violations that live on vanishingly small elements.
+        if (cache.old_e_attrs.m_is_surface_fs) {
+            const Vector2d& pm = m_vertex_attribute[v_id].m_posf;
+            const Vector2d& p1 = m_vertex_attribute[v1_id].m_posf;
+            const Vector2d& p2 = m_vertex_attribute[v2_id].m_posf;
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p1, pm}})) {
+                return false;
+            }
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{pm, p2}})) {
+                return false;
+            }
+        }
+
         m_edge_attribute[eid1] = cache.old_e_attrs;
         m_edge_attribute[eid2] = cache.old_e_attrs;
         for (const auto& [vid, _] : cache.faces) {
@@ -278,8 +303,7 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split is otherwise unconditional: it checks orientation and the envelope but never
-    // quality. That is right for a length-driven split of a long, well-behaved edge and
+    // A split checks orientation, rounding and (above) the envelope, but never quality. That is right for a length-driven split of a long, well-behaved edge and
     // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
     // land essentially on the opposite edge and leave a correctly-oriented element whose
     // area/volume is too small for AMIPS -- get_quality then returns MAX_ENERGY, and every
