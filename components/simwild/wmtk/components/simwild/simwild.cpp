@@ -222,7 +222,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     if (!report_file.empty()) {
         std::ofstream fout(report_file);
         nlohmann::json report;
-        report["#t"] = mesh.get_faces().size();
+        report["#t"] = mesh.get_tets().size();
         report["#v"] = mesh.get_vertices().size();
         report["max_energy"] = max_energy;
         report["avg_energy"] = avg_energy;

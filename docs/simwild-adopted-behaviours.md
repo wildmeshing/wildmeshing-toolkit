@@ -169,3 +169,20 @@ unit tests do — ran a different configuration than every driver run:
 The spec is authoritative: it is what every driver run injects. **No integration output moved**,
 which is the expected result — the configs all go through jse. ctest 107/107, so the unit tests
 that construct `Parameters` directly either set these explicitly or are insensitive to them.
+
+---
+
+## Stage 2 — extractions
+
+### `report["#t"]` counted faces, not tets, in simwild 3D
+
+| | |
+|---|---|
+| **was** | `report["#t"] = mesh.get_faces().size();` in `run_3D` — on a `TetMesh` that is the number of **faces** |
+| **now** | `mesh.get_tets().size()` |
+| **source** | tetwild reports `tet_size()`, triwild reports `tri_capacity()`; both mean *cells* |
+| **measured** | The 6 simwild 3D configs report `#t` roughly halved — e.g. `simwild_double_sphere_3d` 22456 -> 10897, a ratio of 2.06, which is what a closed tet mesh gives since each interior face is shared by two tets. **The mesh is unchanged**; only the reported number was wrong. |
+
+`run_2D` was already correct: on a `TriMesh` the faces *are* the cells.
+
+Note for future baselines: simwild 3D `#t` values recorded before this change are face counts.
