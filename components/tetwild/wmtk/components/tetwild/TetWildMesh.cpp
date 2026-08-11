@@ -45,6 +45,16 @@ static int debug_print_counter = 0;
 
 namespace wmtk::components::tetwild {
 
+std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
+{
+    // Order 2 means the vertex is on a surface boundary or a non-manifold edge. This is
+    // broader than the old m_is_on_open_boundary flag, which covered only open boundaries.
+    if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
+        return m_order2_envelope;
+    }
+    return m_envelope;
+}
+
 
 void TetWildMesh::mesh_improvement(int max_its)
 {

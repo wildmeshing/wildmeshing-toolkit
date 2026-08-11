@@ -86,13 +86,15 @@ public:
     {
         m_tet_attribute[tid].m_quality = q;
     }
+    bool allow_surface_swap() const override { return m_tet_params.allow_surface_swap; }
+    bool check_surface_topology() const override { return m_tet_params.check_surface_topology; }
 
     /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
     /// budget is visible as such, and asserted against in the integration tests.
     int m_iterations_used = 0;
 
     /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
     TetWildMesh(
         Parameters& _m_params,
         std::shared_ptr<SampleEnvelope> _m_envelope,
@@ -158,71 +160,9 @@ public:
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& loc) override;
 
-    bool smooth_after(const Tuple& t) override;
-
-    void smooth_all_vertices();
     void collapse_all_edges(bool is_limit_length = true);
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
-
-    size_t swap_all_edges_44();
-    bool swap_edge_44_before(const Tuple& t) override;
-    bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) override;
-    bool swap_edge_44_after(const Tuple& t) override;
-
-    size_t swap_all_edges_56();
-    bool swap_edge_56_before(const Tuple& t) override;
-    bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) override;
-    bool swap_edge_56_after(const Tuple& t) override;
-
-    size_t swap_all_edges_32();
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
-
-    /**
-     * @brief Prepare a surface edge swap (a surface diagonal flip), any ring size.
-     *
-     * Called from swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped
-     * edge (a,b) is on the surface. Regardless of how many tets share (a,b), the surface change is
-     * always the 2D diagonal flip of the two incident surface faces (a,b,c),(a,b,d) into
-     * (a,c,d),(b,c,d). This verifies the ring-size-independent guards that guarantee the flip
-     * preserves surface manifoldness / topology and fills the surface-flip fields of swap_cache.
-     * The specific retetrahedralization that realizes (c,d) is selected later by
-     * swap_edge_44_accept_case / swap_edge_56_accept_case (the 3->2 path always realizes it).
-     * Returns false (rejecting the swap) if any guard fails: open-boundary edge, non-manifold edge
-     * (!= 2 surface faces incident to (a,b)), the target edge (c,d) already carries a surface face,
-     * or one of the two would-be new surface faces (a,c,d),(b,c,d) is already tagged surface. The
-     * tets sharing (a,b) are passed in to avoid recomputation.
-     */
-    bool prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets);
-
-    /// A topological fingerprint of the tracked surface (m_is_surface_fs). See
-    /// wmtk/utils/SurfaceTopology.hpp.
-    using SurfaceTopoSignature = wmtk::utils::SurfaceTopoSignature;
-
-    SurfaceTopoSignature surface_topology_signature() const
-    {
-        return wmtk::utils::surface_topology_signature(*this, [this](size_t fid) {
-            return m_face_attribute[fid].m_is_surface_fs;
-        });
-    }
-
-    /**
-     * @brief Compare a surface signature against the current one and log an
-     * error if it changed. Used (when m_tet_params.check_surface_topology is set) to
-     * guard swap passes that can flip surface edges.
-     */
-    void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
-        const
-    {
-        wmtk::utils::warn_if_surface_topology_changed(before, surface_topology_signature(), where);
-    }
-
-    size_t swap_all_faces();
-    bool swap_face_before(const Tuple& t) override;
-    bool swap_face_after(const Tuple& t) override;
-
-    size_t swap_all_edges_all();
 
     //
     /**
@@ -273,12 +213,7 @@ public:
 
 
     // debug use
-    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
-    // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
-    // cnt_surface_swap is the grand total; the per-type counters break it down by the swap that
-    // realized the flip (3->2, 4-4, 5-6).
-    std::atomic<int> cnt_surface_swap = 0;
-    std::atomic<int> cnt_surface_swap_32 = 0, cnt_surface_swap_44 = 0, cnt_surface_swap_56 = 0;
+    std::atomic<int> cnt_split = 0, cnt_collapse = 0;
 
 private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
@@ -329,25 +264,6 @@ private:
         std::vector<double> changed_energies;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
-
-
-    struct SwapInfoCache
-    {
-        double max_energy;
-        std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-
-        // Surface diagonal-flip bookkeeping (filled by prepare_surface_flip from
-        // swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped edge (a,b)
-        // lies on the surface). a,b are the removed-edge endpoints, c,d are the new surface-edge
-        // endpoints (the apexes of the two incident surface faces). sf_face_attr is copied onto the
-        // two new surface faces (a,c,d),(b,c,d). is_surface_flip gates the accept-case case-forcing
-        // and the extra retag/envelope handling in the swap *_after callbacks.
-        bool is_surface_flip = false;
-        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
-        FaceAttributes sf_face_attr;
-    };
-    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
-
 
     // for incremental tetwild
 public:

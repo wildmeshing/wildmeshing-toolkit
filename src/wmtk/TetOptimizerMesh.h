@@ -10,11 +10,13 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include <wmtk/utils/SurfaceTopology.hpp>
 
 #include <igl/Timer.h>
 
 #include <atomic>
 #include <functional>
+#include <map>
 #include <memory>
 #include <set>
 #include <vector>
@@ -34,10 +36,9 @@ namespace wmtk {
  * **Cell attributes stay per-application.** tetwild's tets carry winding numbers and a
  * flood-fill id, simwild's carry a CellTag set, and an AttributeCollection member cannot change
  * type in a derived class. The base therefore reaches the one field it needs -- the quality --
- * through cell_quality()/set_cell_quality(). That costs a virtual call, but only in
- * active_vertices() and get_max_avg_energy(): of everything moved here, those are the only two
- * that touch a cell attribute at all, and both are once-per-pass sweeps rather than
- * per-operation code.
+ * through cell_quality()/set_cell_quality(). This keeps the shared pass, swap and smoothing
+ * implementations independent of the derived cell-attribute layout; the virtual dispatch is
+ * negligible beside their geometric predicates and energy evaluations.
  */
 class TetOptimizerMesh : public wmtk::TetMesh, public wmtk::RationalPositions
 {
@@ -146,7 +147,9 @@ public:
      * @brief The quality of cell `tid`, and how to write it.
      *
      * The cell attribute types differ between the applications, so the base reaches the one
-     * field it shares through these. Both are AMIPS^3; see MAX_ENERGY.
+ * field it shares through these. Both are AMIPS^3; see MAX_ENERGY. Topological operations and
+ * smoothing use the accessors so the shared algorithms remain independent of each application's
+ * cell-attribute type.
      */
     virtual double cell_quality(const size_t tid) const = 0;
     virtual void set_cell_quality(const size_t tid, const double q) = 0;
@@ -243,6 +246,47 @@ public:
     /// skip-good-regions filter.
     std::vector<size_t> active_vertices() const;
 
+    // TetWild's complete swap engine. SimWild inherits these operations and customizes only
+    // the tag bookkeeping through the hooks below.
+    size_t swap_all_edges_32();
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
+
+    size_t swap_all_edges_44();
+    bool swap_edge_44_before(const Tuple& t) override;
+    bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) override;
+    bool swap_edge_44_after(const Tuple& t) override;
+
+    size_t swap_all_edges_56();
+    bool swap_edge_56_before(const Tuple& t) override;
+    bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) override;
+    bool swap_edge_56_after(const Tuple& t) override;
+
+    size_t swap_all_faces();
+    bool swap_face_before(const Tuple& t) override;
+    bool swap_face_after(const Tuple& t) override;
+    size_t swap_all_edges_all();
+
+    bool prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets);
+
+    using SurfaceTopoSignature = wmtk::utils::SurfaceTopoSignature;
+    SurfaceTopoSignature surface_topology_signature() const
+    {
+        return wmtk::utils::surface_topology_signature(*this, [this](size_t fid) {
+            return m_face_attribute[fid].m_is_surface_fs;
+        });
+    }
+    void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
+        const
+    {
+        wmtk::utils::warn_if_surface_topology_changed(before, surface_topology_signature(), where);
+    }
+
+    // Operation diagnostics shared by TetWild and SimWild.
+    std::atomic<int> cnt_swap = 0;
+    std::atomic<int> cnt_surface_swap = 0;
+    std::atomic<int> cnt_surface_swap_32 = 0, cnt_surface_swap_44 = 0, cnt_surface_swap_56 = 0;
+
     double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
         override;
     double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
@@ -255,10 +299,42 @@ public:
      * test coincide, while simwild has a separate working envelope.
      */
     virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
+    virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
     bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
+    void smooth_all_vertices(const size_t n_iters = 1);
 
     bool invariants(const std::vector<Tuple>& t) override;
+
+protected:
+    virtual bool allow_surface_swap() const = 0;
+    virtual bool check_surface_topology() const = 0;
+
+    /// Application data attached to the old cells. TetWild has none; SimWild caches tags.
+    virtual bool swap_before_interior(const std::vector<size_t>&) { return true; }
+    virtual bool swap_before_surface(
+        const std::vector<size_t>&,
+        size_t,
+        size_t,
+        size_t,
+        size_t)
+    {
+        return true;
+    }
+    /// Propagate application data to the cells made by a successful topological swap.
+    virtual bool swap_after_cells(const std::vector<size_t>&, bool) { return true; }
+
+    struct SwapInfoCache
+    {
+        double max_energy;
+        std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
+
+        bool is_surface_flip = false;
+        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
+        FaceAttributes sf_face_attr;
+    };
+    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 };
 
 } // namespace wmtk

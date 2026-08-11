@@ -177,6 +177,18 @@ public:
     std::tuple<double, double> get_max_avg_energy();
 
     /**
+     * @brief Run TriWild's quality-improving interior edge-flip pass.
+     *
+     * This operation is shared verbatim by TriWild and SimWild. Face tags are copied from
+     * the old pair to the new pair, so a tag-homogeneous SimWild mesh follows exactly the
+     * same path as TriWild.
+     */
+    size_t swap_all_edges();
+    double swap_weight(const Tuple& t) const;
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
+
+    /**
      * @brief Round a vertex position to floating point, if that inverts no incident face.
      * @return True if successful or already rounded, false otherwise.
      */
@@ -230,6 +242,15 @@ public:
      * avoiding sharp resolution jumps.
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
+
+private:
+    struct SwapInfoCache
+    {
+        double max_energy;
+        std::map<simplex::Edge, EdgeAttributes> changed_edges;
+        std::set<int64_t> face_tags;
+    };
+    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 };
 
 } // namespace wmtk

@@ -253,16 +253,6 @@ public:
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
-    size_t swap_all_edges();
-    /**
-     * @brief The quality improvement of a swap.
-     *
-     * Used to determine the priority and weight of a swap operation.
-     */
-    double swap_weight(const Tuple& t) const;
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
-
     void smooth_all_vertices(const size_t n_iters = 1);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
@@ -349,14 +339,6 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
-
-    struct SwapInfoCache
-    {
-        double max_energy;
-        std::map<simplex::Edge, EdgeAttributes> changed_edges;
-        std::set<int64_t> face_tags;
-    };
-    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 };
 
 

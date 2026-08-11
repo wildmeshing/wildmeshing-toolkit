@@ -643,6 +643,13 @@ void SimWildMesh::replace_tags(
     const std::vector<CellTag>& tags_in,
     const std::vector<CellTag>& tags_out)
 {
+    if (tags_in.size() != tags_out.size()) {
+        log_and_throw_error(
+            "replace_tags: tags_in and tags_out must have the same size. Got {} and {}.",
+            tags_in.size(),
+            tags_out.size());
+    }
+
     for (const Tuple& t : get_tets()) {
         CellTag& tags = m_tet_attribute[t.tid(*this)].tags;
         std::vector<bool> found_tags(tags_in.size(), false);

@@ -117,7 +117,7 @@ struct SmoothVertexOptions
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
- *   - m_tet_attribute[tid].m_quality
+ *   - cell_quality(tid) / set_cell_quality(tid, quality)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
  *   - std::shared_ptr<SampleEnvelope> smoothing_envelope(size_t vid) const
  *     (null is allowed and means "no envelope term for this vertex")
@@ -136,14 +136,12 @@ bool smooth_vertex_3d(
 
     const size_t vid = t.vid(m);
     auto& VA = m.m_vertex_attribute;
-    auto& TA = m.m_tet_attribute;
-
     const auto locs = m.get_one_ring_tets_for_vertex(t);
     assert(!locs.empty());
 
     double max_quality = 0.;
     for (const Tuple& tet : locs) {
-        max_quality = std::max(max_quality, TA[tet.tid(m)].m_quality);
+        max_quality = std::max(max_quality, m.cell_quality(tet.tid(m)));
         if (m.is_inverted_f(tet)) {
             // A neighbour that is not rounded can leave a tet inverted in floats even
             // though it is fine in exact arithmetic; there is nothing to optimize from.
@@ -236,8 +234,9 @@ bool smooth_vertex_3d(
             return false;
         }
         const size_t tid = loc.tid(m);
-        TA[tid].m_quality = m.get_quality(loc);
-        max_after_quality = std::max(max_after_quality, TA[tid].m_quality);
+        const double quality = m.get_quality(loc);
+        m.set_cell_quality(tid, quality);
+        max_after_quality = std::max(max_after_quality, quality);
     }
 
     if (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {

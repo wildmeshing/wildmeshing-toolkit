@@ -81,7 +81,7 @@ public:
     std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope;
 
     /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
 
     /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
     /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
@@ -122,6 +122,8 @@ public:
     {
         m_tet_attribute[tid].m_quality = q;
     }
+    bool allow_surface_swap() const override { return m_sim_params.allow_surface_swap; }
+    bool check_surface_topology() const override { return m_sim_params.check_surface_topology; }
 
     // only used with unit tests
     void create_mesh_attributes(
@@ -176,100 +178,11 @@ public:
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& loc) override;
 
-    void smooth_all_vertices(const size_t n_iters);
-    bool smooth_after(const Tuple& t) override;
-
     void collapse_all_edges(bool is_limit_length = true);
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
 
     void simplify();
-
-    size_t swap_all_edges_44();
-    bool swap_edge_44_before(const Tuple& t) override;
-    bool swap_edge_44_after(const Tuple& t) override;
-    /// Steers the 4-4 swap to the diagonal that realizes a surface flip. See
-    /// prepare_surface_flip; identical to tetwild's.
-    bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) override;
-
-    size_t swap_all_edges_56();
-    bool swap_edge_56_before(const Tuple& t) override;
-    bool swap_edge_56_after(const Tuple& t) override;
-    /// Steers the 5-6 swap to the fan that realizes a surface flip. See prepare_surface_flip;
-    /// identical to tetwild's.
-    bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) override;
-
-    size_t swap_all_edges_32();
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
-
-    /**
-     * @brief Prepare a surface edge swap (a surface diagonal flip).
-     *
-     * Called from swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped
-     * edge (a,b) is on the surface. Verifies the local guards that guarantee the flip preserves
-     * surface manifoldness / topology, and fills the surface-flip fields of swap_cache. Returns
-     * false (rejecting the swap) if any guard fails: non-manifold edge (!= 2 surface faces), a
-     * surface face already incident to the new edge (c,d), or one of the two would-be new
-     * surface faces already tagged surface. The tets sharing (a,b) are passed in to avoid
-     * recomputation.
-     *
-     * This is tetwild's, generalized to any ring size (3->2, 4-4, 5-6); the specific
-     * retetrahedralization that realizes the flip is picked by the accept_case hooks above.
-     * On top of tetwild's it records which tag each side of the interface carries -- see
-     * SwapInfoCache::ring_tags.
-     */
-    bool prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets);
-
-    /**
-     * @brief Record the one tag every tet this swap produces must carry, for an interior swap.
-     *
-     * A face is a surface face exactly when it separates differently tagged tets, so a swap
-     * with no incident surface face acts entirely inside one tagged region and there is nothing
-     * to decide. Returns false if `tids` disagree anyway -- that means the tag/surface invariant
-     * is already broken here, and re-tagging would silently move tagged volume.
-     */
-    bool cache_interior_swap_tag(const std::vector<size_t>& tids);
-
-    /**
-     * @brief Give every tet the swap just created its tag.
-     *
-     * Interior swap: the single tag cache_interior_swap_tag recorded. Surface flip: the tag of
-     * the side of the interface the tet ended up on, read off the ring vertices it contains
-     * (see SwapInfoCache::ring_tags). Returns false if any new tet cannot be assigned a tag,
-     * which rejects the swap and rolls the writes back.
-     */
-    bool propagate_swap_tags(const std::vector<size_t>& tids);
-    bool propagate_swap_tags(const std::vector<Tuple>& tets);
-
-    /// A topological fingerprint of the tracked surface (m_is_surface_fs). See
-    /// wmtk/utils/SurfaceTopology.hpp.
-    using SurfaceTopoSignature = wmtk::utils::SurfaceTopoSignature;
-
-    SurfaceTopoSignature surface_topology_signature() const
-    {
-        return wmtk::utils::surface_topology_signature(*this, [this](size_t fid) {
-            return m_face_attribute[fid].m_is_surface_fs;
-        });
-    }
-
-    /**
-     * @brief Compare a surface signature against the current one and log an
-     * error if it changed. Used (when m_sim_params.check_surface_topology is set) to
-     * guard swap passes that can flip surface edges.
-     */
-    void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
-        const
-    {
-        wmtk::utils::warn_if_surface_topology_changed(before, surface_topology_signature(), where);
-    }
-
-    size_t swap_all_faces();
-    bool swap_face_before(const Tuple& t) override;
-    bool swap_face_after(const Tuple& t) override;
-
-    size_t swap_all_edges_all();
-
 
     /**
      * @brief Check if all vertices of the mesh are rounded.
@@ -282,12 +195,17 @@ public:
     void mesh_improvement(int max_its = 80);
     double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     // debug use
-    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
-    // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
-    // cnt_surface_swap is the grand total; the per-type counters break it down by the swap that
-    // realized the flip.
-    std::atomic<int> cnt_surface_swap = 0;
-    std::atomic<int> cnt_surface_swap_32 = 0, cnt_surface_swap_44 = 0, cnt_surface_swap_56 = 0;
+    std::atomic<int> cnt_split = 0, cnt_collapse = 0;
+
+protected:
+    bool swap_before_interior(const std::vector<size_t>& tids) override;
+    bool swap_before_surface(
+        const std::vector<size_t>& tids,
+        size_t a,
+        size_t b,
+        size_t c,
+        size_t d) override;
+    bool swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip) override;
 
 private:
     ////// Operations
@@ -333,33 +251,12 @@ private:
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
 
-    struct SwapInfoCache
+    struct SwapTagCache
     {
-        double max_energy;
-        std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-
-        /// The tag every new tet takes, for an interior swap. See cache_interior_swap_tag.
         CellTag tet_tags;
-        /**
-         * The tag on each side of the interface, for a surface flip, keyed by a ring vertex
-         * that identifies the side. Filled by prepare_surface_flip, read by
-         * propagate_swap_tags. c and d are deliberately absent: they sit ON the interface and
-         * so belong to both sides.
-         */
         std::map<size_t, CellTag> ring_tags;
-
-        // Surface diagonal-flip bookkeeping (filled by prepare_surface_flip from
-        // swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped edge
-        // (a,b) lies on the surface). a,b are the removed-edge endpoints, c,d are the new
-        // surface-edge endpoints (the apexes of the two incident surface faces). sf_face_attr
-        // is copied onto the two new surface faces (a,c,d),(b,c,d). is_surface_flip gates the
-        // accept-case case-forcing and the extra retag/envelope handling in the swap *_after
-        // callbacks.
-        bool is_surface_flip = false;
-        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
-        FaceAttributes sf_face_attr;
     };
-    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
+    wmtk::threading::enumerable_thread_specific<SwapTagCache> swap_tag_cache;
 
 public:
     /**

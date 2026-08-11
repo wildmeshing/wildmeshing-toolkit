@@ -11,6 +11,8 @@ set(SRC_FILES
     test_simwild_energies.cpp
     test_expression_parser.cpp
     test_simwild_swap_tags.cpp
+    test_wild_conformance.cpp
     )
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
+target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::triwild wmtk::tetwild)

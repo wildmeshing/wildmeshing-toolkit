@@ -7,6 +7,7 @@
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/parallel_for.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
@@ -20,6 +21,7 @@
 // clang-format on
 
 #include <queue>
+#include <cstdlib>
 
 namespace wmtk {
 
@@ -97,6 +99,51 @@ bool TetOptimizerMesh::smooth_before(const Tuple& t)
     // try to round.
     // Note: no need to roll back.
     return r;
+}
+
+bool TetOptimizerMesh::smooth_after(const Tuple& t)
+{
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = m_params.w_amips;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = true;
+
+    return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
+}
+
+void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
+{
+    for (size_t i = 0; i < n_iters; ++i) {
+        // Preserve TetWild's deterministic serial random-seed progression. The current
+        // collector does not consume rand(), but keeping the state transition makes the move
+        // behavior-neutral if its ordering is randomized again.
+        static int rnd_seed = 0;
+        srand(rnd_seed++);
+
+        igl::Timer timer;
+        timer.start();
+        m_smooth_rejects.reset();
+        std::vector<std::pair<std::string, Tuple>> collect_all_ops;
+        if (m_params.skip_good_regions) {
+            for (const size_t v : active_vertices()) {
+                collect_all_ops.emplace_back("vertex_smooth", tuple_from_vertex(v));
+            }
+        } else {
+            for (const Tuple& loc : get_vertices()) {
+                collect_all_ops.emplace_back("vertex_smooth", loc);
+            }
+        }
+        logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTime());
+        logger().debug("Num verts {}", collect_all_ops.size());
+        run_pass(
+            *this,
+            PassLock::VertexOneRing,
+            "vertex smoothing operation",
+            [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
+        logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
+    }
 }
 
 

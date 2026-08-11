@@ -528,3 +528,37 @@ The tag propagation is correct there for a simpler reason than in 3D: the 2D swa
 (`SimWildMeshTri::init_surfaces_and_boundaries`), so a 2D swap only ever runs on an edge whose two
 faces already agree. `cache.face_tags = FA[incident_faces[0]].tags` is then exact. There is no 2D
 counterpart to the 4-4 / 5-6 question because a 2-2 flip is the only edge swap a triangle mesh has.
+
+---
+
+## Stage 4 — one swap engine, with serial Wild/Sim conformance tests
+
+The identical implementations described above are no longer merely kept in sync:
+
+- TriWild's complete 2D swap pass now lives on `TriOptimizerMesh`. Both `TriWildMesh` and
+  `SimWildMeshTri` inherit the same collector, priority calculation, retry/termination logic,
+  before/after callbacks, quality gate, attribute tracker and face-tag propagation.
+- TetWild's complete 3D swap family now lives on `TetOptimizerMesh`: 3→2, 4→4, 5→6, 2→3 face
+  swaps, the combined pass, surface-diagonal handling and topology diagnostics. SimWild's old
+  858-line copy is a small adapter implementing only three tag hooks: cache one homogeneous
+  interior tag, cache the two surface-ring arcs, and propagate those tags to new cells.
+- TetWild's 3D smoothing pass and acceptance callback also live on `TetOptimizerMesh`. The only
+  application policy left virtual is which envelope supplies the surface energy/containment
+  check. Quality reads and writes go through the common cell-quality accessors, so TetWild's
+  pass ordering and rejection rules are used unchanged with SimWild's tagged cell attributes.
+
+`test_wild_conformance.cpp` enforces the intended oracle relationship directly. It constructs two
+identical meshes, runs the Wild implementation first and tag-homogeneous SimWild second with
+`NUM_THREADS == 0`, then compares operation counts, canonical connectivity, per-cell quality and
+vertex positions; the SimWild side must additionally preserve its homogeneous tag. There is one
+fixture for TriWild/SimWild 2D and one for TetWild/SimWild 3→2. These are deliberately serial: a
+parallel A/B test can turn shared global state or nondeterministic scheduling into noise and does
+not establish that SimWild followed the Wild path. A third fixture runs the shared TetWild/SimWild
+3D smoothing pass serially and compares the same geometry, exact positions and qualities while
+checking that SimWild's cell tags are untouched.
+
+Two audit fixes were made alongside the extraction:
+
+- `stop_at_float` now applies to SimWild 2D as well as 3D.
+- the public 3D `replace_tags` rejects mismatched input/output vector lengths, matching its 2D
+  counterpart instead of indexing past `found_tags`.
