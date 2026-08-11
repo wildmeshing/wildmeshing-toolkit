@@ -474,8 +474,7 @@ bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
 {
     size_t v1 = e.vid(*this);
     size_t v2 = e.switch_vertex(*this).vid(*this);
-    if (!m_vertex_extra[v1].m_is_on_open_boundary ||
-        !m_vertex_extra[v2].m_is_on_open_boundary)
+    if (!m_vertex_extra[v1].m_is_on_open_boundary || !m_vertex_extra[v2].m_is_on_open_boundary)
         return false;
 
     return !m_order2_envelope->is_outside(
@@ -487,8 +486,7 @@ bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
 {
     size_t v1 = e[0];
     size_t v2 = e[1];
-    if (!m_vertex_extra[v1].m_is_on_open_boundary ||
-        !m_vertex_extra[v2].m_is_on_open_boundary)
+    if (!m_vertex_extra[v1].m_is_on_open_boundary || !m_vertex_extra[v2].m_is_on_open_boundary)
         return false;
 
     return !m_order2_envelope->is_outside(
