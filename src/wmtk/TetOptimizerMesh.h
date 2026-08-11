@@ -184,6 +184,14 @@ public:
     double get_quality(const Tuple& loc) const;
     std::tuple<double, double> get_max_avg_energy();
 
+    /// Shared TetWild/SimWild outer optimization schedule.
+    int m_iterations_used = 0;
+    int m_debug_print_counter = 0;
+    void mesh_improvement(int max_its = 80);
+    std::tuple<double, double> local_operations(
+        const std::array<int, 4>& ops,
+        bool collapse_limit_length = true);
+
     /**
      * @brief Round a vertex position to floating point, if that inverts no incident tet.
      * @return True if successful or already rounded, false otherwise.
@@ -329,26 +337,32 @@ public:
     bool invariants(const std::vector<Tuple>& t) override;
 
 protected:
+    /// Quality metric used by the driver. TetWild uses absolute AMIPS; SimWild overrides
+    /// this with quality normalized by each cell's tag-dependent target.
+    virtual std::tuple<double, double> optimization_quality_stats();
+    virtual double optimization_stop_metric() const { return m_params.stop_energy; }
+    virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+    virtual void write_optimization_debug_output(const std::string& path) = 0;
+    virtual void optimization_sanity_checks_extra() {}
+    virtual bool optimization_stop_at_float() const { return false; }
+
     virtual bool collapse_before_vertex(size_t, size_t, double) const { return true; }
     virtual bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const
     {
         return !m_vertex_attribute.at(v1).m_is_rounded || quality <= ring_max;
     }
     virtual bool collapse_is_order_2_edge(const std::array<size_t, 2>&) { return false; }
-    virtual bool collapse_after_connectivity(
-        size_t,
-        size_t,
-        const std::vector<std::array<size_t, 2>>&) { return true; }
+    virtual bool
+    collapse_after_connectivity(size_t, size_t, const std::vector<std::array<size_t, 2>>&)
+    {
+        return true;
+    }
     virtual void collapse_after_vertex(size_t, size_t) {}
 
     /// Cache application cell data before a split. TetWild needs none; SimWild caches tags.
     virtual bool split_before_cells(const Tuple&, const std::vector<Tuple>&) { return true; }
     /// Restore application cell data on the children made by a split.
-    virtual bool split_after_cells(
-        size_t,
-        size_t,
-        size_t,
-        const std::vector<Tuple>&)
+    virtual bool split_after_cells(size_t, size_t, size_t, const std::vector<Tuple>&)
     {
         return true;
     }
@@ -363,12 +377,7 @@ protected:
 
     /// Application data attached to the old cells. TetWild has none; SimWild caches tags.
     virtual bool swap_before_interior(const std::vector<size_t>&) { return true; }
-    virtual bool swap_before_surface(
-        const std::vector<size_t>&,
-        size_t,
-        size_t,
-        size_t,
-        size_t)
+    virtual bool swap_before_surface(const std::vector<size_t>&, size_t, size_t, size_t, size_t)
     {
         return true;
     }

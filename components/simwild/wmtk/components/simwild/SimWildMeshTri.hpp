@@ -136,7 +136,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst();
+    size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
     void write_msh(std::string file, const bool write_envelope = true);
 
@@ -162,9 +162,6 @@ public:
 
 
     double triangle_area(const size_t fid) const;
-
-    void mesh_improvement(int max_its = 80);
-    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
 
     /**
      * @brief Find all connected components that contain the `tag_in` tags.
@@ -237,6 +234,10 @@ private:
     size_t m_last_split_vertex = 0;
 
 protected:
+    std::tuple<double, double> optimization_quality_stats() override;
+    double optimization_stop_metric() const override { return 1.; }
+    bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
+
     void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }
 
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max)

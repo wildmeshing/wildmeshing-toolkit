@@ -1,15 +1,15 @@
 #include <wmtk/TriOptimizerMesh.h>
 
 #include <wmtk/utils/AMIPS2D.h>
+#include <wmtk/utils/PartitionMesh.h>
+#include <wmtk/utils/VectorUtils.h>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
-#include <wmtk/utils/PartitionMesh.h>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
-#include <wmtk/utils/TupleUtils.hpp>
-#include <wmtk/utils/VectorUtils.h>
-#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/SizingField.hpp>
+#include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 
 #include <igl/Timer.h>
@@ -23,6 +23,176 @@
 #include <queue>
 
 namespace wmtk {
+
+std::tuple<double, double> TriOptimizerMesh::optimization_quality_stats()
+{
+    return get_max_avg_energy();
+}
+
+void TriOptimizerMesh::mesh_improvement(int max_its)
+{
+    m_iterations_used = 0;
+    if (optimization_stop_at_float() && round_and_check_all_rounded()) {
+        logger().info("===== All vertices are rounded. Stop. =====");
+        return;
+    }
+
+    partition_mesh_morton();
+    logger().info("========it pre========");
+    local_operations({{0, 1, 0, 0}}, false);
+
+    double pre_max_metric = std::get<0>(optimization_quality_stats());
+    logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
+    int refine_cooldown = m_params.stuck_refine_cooldown;
+
+    for (int it = 0; it < max_its; ++it) {
+        m_iterations_used = it + 1;
+        logger().info("\n========it {}========", it);
+
+        double max_metric = 0.;
+        double avg_metric = 0.;
+        if (!m_params.interleaved_smoothing) {
+            std::tie(max_metric, avg_metric) =
+                local_operations({{1, 1, 1, m_params.num_smoothing_passes}});
+        } else {
+            const int k = m_params.interleaved_smoothing_passes;
+            const std::array<std::array<int, 4>, 3> passes = {
+                {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}};
+            for (const auto& ops : passes) {
+                std::tie(max_metric, avg_metric) = local_operations(ops);
+                if (max_metric < optimization_stop_metric()) break;
+            }
+        }
+
+        logger().info("max energy {:.6} | stop {:.6}", max_metric, optimization_stop_metric());
+
+        std::atomic<int> n_round = 0;
+        std::atomic<int> n_verts = 0;
+        TriMesh::for_each_vertex([&](auto& v) {
+            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
+                n_round.fetch_add(1, std::memory_order_relaxed);
+            }
+            n_verts.fetch_add(1, std::memory_order_relaxed);
+        });
+        const int cnt_round = n_round.load(std::memory_order_relaxed);
+        const int cnt_verts = n_verts.load(std::memory_order_relaxed);
+        if (cnt_round < cnt_verts) {
+            logger().info("rounded {}/{}", cnt_round, cnt_verts);
+        } else {
+            logger().info("All rounded!");
+        }
+
+        if (max_metric < optimization_stop_metric()) {
+            if (cnt_round == cnt_verts) break;
+            logger().info(
+                "energy target reached, but {} of {} vertices are still un-rounded; continuing",
+                cnt_verts - cnt_round,
+                cnt_verts);
+        }
+
+        consolidate_mesh();
+        logger().info("#V = {}, #F = {}", vert_capacity(), tri_capacity());
+
+        if (optimization_stop_at_float() && round_and_check_all_rounded()) {
+            logger().info("All vertices are rounded. Stop.");
+            break;
+        }
+
+        if (refine_cooldown > 0) {
+            --refine_cooldown;
+        } else if (
+            it > 0 && max_metric > optimization_stop_metric() &&
+            (pre_max_metric - max_metric) <=
+                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
+            refine_sizing_around_worst(max_metric);
+            logger().info(">>>>stuck-refine finished...");
+            refine_cooldown = m_params.stuck_refine_cooldown;
+        }
+        pre_max_metric = max_metric;
+    }
+
+    logger().info("========it post========");
+    local_operations({{0, 1, 0, 0}});
+}
+
+std::tuple<double, double> TriOptimizerMesh::local_operations(
+    const std::array<int, 4>& ops,
+    bool collapse_limit_length)
+{
+    igl::Timer timer;
+
+    auto sanity_checks = [this]() {
+        if (!m_params.perform_sanity_checks) return;
+        logger().info("Perform sanity checks...");
+        const auto edges = get_edges_by_condition([](const auto& e) { return e.m_is_surface_fs; });
+        for (const auto& verts : edges) {
+            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
+            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p0, p1}})) {
+                logger().error("Edge {} is outside!", verts);
+            }
+        }
+        for (const Tuple& t : get_faces()) {
+            if (is_inverted(t)) {
+                logger().error(
+                    "Face {} is inverted! Vertices = {}",
+                    t.fid(*this),
+                    oriented_tri_vids(t));
+            }
+        }
+        logger().info("Sanity checks done.");
+    };
+
+    sanity_checks();
+    for (int i = 0; i < int(ops.size()); ++i) {
+        timer.start();
+        if (i == 0) {
+            for (int n = 0; n < ops[i]; ++n) {
+                logger().info("==splitting {}==", n);
+                split_all_edges();
+                logger().info(
+                    "#V = {}, #F = {} after split",
+                    get_vertices().size(),
+                    get_faces().size());
+            }
+        } else if (i == 1) {
+            for (int n = 0; n < ops[i]; ++n) {
+                logger().info("==collapsing {}==", n);
+                collapse_all_edges(collapse_limit_length);
+                logger().info(
+                    "#V = {}, #F = {} after collapse",
+                    get_vertices().size(),
+                    get_faces().size());
+            }
+        } else if (i == 2) {
+            for (int n = 0; n < ops[i]; ++n) {
+                logger().info("==swapping {}==", n);
+                if (swap_all_edges() == 0) break;
+            }
+        } else {
+            logger().info("==smoothing ==");
+            smooth_all_vertices(size_t(ops[i]));
+            if (ops[i] > 0) round_all_vertices();
+        }
+
+        if (m_params.debug_output) {
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+        const auto [max_metric, avg_metric] = optimization_quality_stats();
+        static constexpr std::array<const char*, 4> names = {
+            {"split", "collapse", "swap", "smooth"}};
+        logger()
+            .info("{} max energy = {:.6} avg = {:.6}", names[size_t(i)], max_metric, avg_metric);
+        sanity_checks();
+    }
+
+    const auto stats = optimization_quality_stats();
+    logger().info("max energy = {:.6}", std::get<0>(stats));
+    logger().info("avg energy = {:.6}", std::get<1>(stats));
+    logger().info("time = {:.4}s", timer.getElapsedTimeInSec());
+    return stats;
+}
 
 namespace {
 
@@ -88,10 +258,8 @@ double TriOptimizerMesh::swap_weight(const Tuple& t) const
     const size_t v2 = tt.switch_edge().switch_vertex().vid();
     const size_t v3 = t_opp.value().switch_edge().switch_vertex().vid();
 
-    const double q_before =
-        std::max(get_quality({{v0, v1, v2}}), get_quality({{v0, v3, v1}}));
-    const double q_after =
-        std::max(get_quality({{v0, v3, v2}}), get_quality({{v2, v3, v1}}));
+    const double q_before = std::max(get_quality({{v0, v1, v2}}), get_quality({{v0, v3, v1}}));
+    const double q_after = std::max(get_quality({{v0, v3, v2}}), get_quality({{v2, v3, v1}}));
     return q_before - q_after;
 }
 

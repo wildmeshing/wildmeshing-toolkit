@@ -73,9 +73,6 @@ public:
     /// triwild-only fields (features, high valence, smoothing schedule, box).
     Parameters& m_tri_params;
 
-    /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
-    /// budget is visible as such, and asserted against in the integration tests.
-    int m_iterations_used = 0;
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
     /**
@@ -208,19 +205,13 @@ public:
      *
      * @return the number of vertices refined.
      */
-    size_t refine_sizing_around_worst(double max_energy);
+    size_t refine_sizing_around_worst(double max_energy) override;
 
     void write_msh_groups(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path) const;
 
 public:
-    void mesh_improvement(int max_its = 80);
-
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
-
     /**
      * @brief Tag every face with the inputs it lies inside, by winding number.
      *

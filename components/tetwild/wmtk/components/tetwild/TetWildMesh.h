@@ -118,10 +118,6 @@ public:
         }
     }
 
-    /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
-    /// budget is visible as such, and asserted against in the integration tests.
-    int m_iterations_used = 0;
-
     /// Envelope a vertex is pulled toward while smoothing.
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
     TetWildMesh(
@@ -192,14 +188,10 @@ public:
      */
     bool is_vertex_on_boundary(const size_t vid);
     //
-    void mesh_improvement(int max_its = 80);
     /**
      * @brief Call the original TetWild code.
      */
     void mesh_improvement_legacy(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
 
     /**
      * @brief Compute the winding number.
@@ -289,7 +281,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst(double max_energy);
+    size_t refine_sizing_around_worst(double max_energy) override;
 
     // for open boundary
     void find_open_boundary();
@@ -311,6 +303,11 @@ public:
     int flood_fill();
 
     void save_paraview(const std::string& path, const bool use_hdf5);
+    void write_optimization_debug_output(const std::string& path) override
+    {
+        save_paraview(path, false);
+    }
+    void optimization_sanity_checks_extra() override;
 
     // initialize sizing field (for topology preservation)
     void init_sizing_field();

@@ -452,6 +452,22 @@ double SimWildMeshTri::quality_rel(const Tuple& t) const
     return quality_rel(t.fid(*this));
 }
 
+std::tuple<double, double> SimWildMeshTri::optimization_quality_stats()
+{
+    double max_quality = -1.;
+    double avg_quality = 0.;
+    size_t count = 0;
+    for (size_t fid = 0; fid < tri_capacity(); ++fid) {
+        if (!tuple_from_tri(fid).is_valid(*this)) continue;
+        const double quality = quality_rel(fid);
+        max_quality = std::max(max_quality, quality);
+        avg_quality += quality;
+        ++count;
+    }
+    if (count > 0) avg_quality /= count;
+    return {max_quality, avg_quality};
+}
+
 std::vector<size_t> SimWildMeshTri::active_vertices() const
 {
     // Normalize by the tag-dependent target before applying the shared activity margin.
@@ -494,7 +510,7 @@ bool SimWildMeshTri::check_mesh_quality(double& max_rel_quality, const bool verb
     return all_good;
 }
 
-size_t SimWildMeshTri::refine_sizing_around_worst()
+size_t SimWildMeshTri::refine_sizing_around_worst(double)
 {
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
 
@@ -1059,183 +1075,6 @@ double SimWildMeshTri::triangle_area(const size_t fid) const
     const double area =
         0.5 * std::abs((p1[0] - p0[0]) * (p2[1] - p0[1]) - (p1[1] - p0[1]) * (p2[0] - p0[0]));
     return area;
-}
-
-void SimWildMeshTri::mesh_improvement(int max_its)
-{
-    if (m_sim_params.stop_at_float && round_and_check_all_rounded()) {
-        logger().info("===== All vertices are rounded. Stop. =====");
-        return;
-    }
-
-    ////preprocessing
-    partition_mesh_morton();
-
-    // write_vtu(fmt::format("debug_{}", m_m_debug_print_counter++));
-
-    wmtk::logger().info("========it pre========");
-    const double stop_energy = m_params.stop_energy;
-    local_operations({{0, 1, 0, 0}}, true);
-
-    ////operation loops
-    double pre_quality_rel = 0.;
-    check_mesh_quality(pre_quality_rel, true);
-
-    int refine_cooldown =
-        m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
-    for (int it = 0; it < max_its; it++) {
-        ///ops
-        wmtk::logger().info("\n========it {}========", it);
-        double quality_rel = local_operations({{1, 1, 1, 1}});
-
-        ///energy check
-        logger().info("max rel quality {}", quality_rel);
-        if (check_mesh_quality(quality_rel, true)) {
-            // Quality alone is not a sufficient termination condition -- see
-            // round_and_check_all_rounded. Keep iterating while anything is un-rounded, and
-            // let max_its bound the run as before.
-            if (round_and_check_all_rounded()) {
-                break;
-            }
-            logger().info("quality target reached, but some vertices are un-rounded; continuing");
-        }
-        consolidate_mesh();
-
-        wmtk::logger().info("#V = {}, #F = {}", vert_capacity(), tri_capacity());
-
-        if (m_sim_params.stop_at_float && round_and_check_all_rounded()) {
-            logger().info("All vertices are rounded. Stop.");
-            break;
-        }
-
-        /// sizing field: when the max energy stalls, refine around the worst
-        /// elements to escape stuck configurations (replaces the old global
-        /// adjust_sizing_field mechanism). After a refinement, wait
-        /// stuck_refine_cooldown iterations so the operations get full passes on
-        /// the new sizing field before more refinement is added.
-        logger().info("pre_quality_rel = {:.6}, quality_rel = {:.6}", pre_quality_rel, quality_rel);
-        if (refine_cooldown > 0) {
-            --refine_cooldown;
-        } else if (
-            it > 0 && quality_rel > 1.0 &&
-            (pre_quality_rel - quality_rel) <=
-                m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
-            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
-            refine_sizing_around_worst();
-            logger().info(">>>>stuck-refine finished...");
-            refine_cooldown = m_params.stuck_refine_cooldown;
-        }
-        pre_quality_rel = std::min(pre_quality_rel, quality_rel);
-    }
-
-    wmtk::logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
-
-    // The post pass is collapse-only, so it cannot un-round anything; this is the last chance
-    // to reclaim a vertex the loop left rational because it ran out of iterations.
-    round_all_vertices();
-}
-
-double SimWildMeshTri::local_operations(const std::array<int, 4>& ops, bool collapse_limit_length)
-{
-    igl::Timer timer;
-
-    double quality_rel = 0;
-
-    auto sanity_checks = [this]() {
-        if (!m_params.perform_sanity_checks) {
-            return;
-        }
-        logger().info("Perform sanity checks...");
-        const auto faces = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        for (const auto& verts : faces) {
-            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p0, p1}})) {
-                logger().error("Edge {} is outside!", verts);
-            }
-        }
-
-        // check for inverted faces
-        for (const Tuple& t : get_faces()) {
-            if (!is_inverted(t)) {
-                continue;
-            }
-            const auto vs = oriented_tri_vids(t);
-            logger().error("Face {} is inverted! Vertices = {}", t.fid(*this), vs);
-        }
-        logger().info("Sanity checks done.");
-    };
-
-    sanity_checks();
-
-    timer.start();
-    for (int i = 0; i < ops.size(); i++) {
-        if (i == 0) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==splitting {}==", n);
-                split_all_edges();
-                logger().info(
-                    "#V = {}, #F = {} after split",
-                    get_vertices().size(),
-                    get_faces().size());
-            }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            check_mesh_quality(quality_rel, true);
-            sanity_checks();
-        } else if (i == 1) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==collapsing {}==", n);
-                collapse_all_edges(collapse_limit_length);
-                logger().info(
-                    "#V = {}, #F = {} after collapse",
-                    get_vertices().size(),
-                    get_faces().size());
-            }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            check_mesh_quality(quality_rel, true);
-            sanity_checks();
-        } else if (i == 2) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==swapping {}==", n);
-                size_t cnt_success = swap_all_edges();
-                if (cnt_success == 0) {
-                    break;
-                }
-            }
-            if (m_params.debug_output) {
-                write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-            }
-            check_mesh_quality(quality_rel, true);
-            sanity_checks();
-        } else if (i == 3) {
-            logger().info("==smoothing ==");
-            smooth_all_vertices(ops[i]);
-            // Reclaim whatever smoothing just made roundable: once per iteration, after all of
-            // its passes. Here rather than at the end of the run because smoothing is what
-            // frees a stuck vertex, and because a vertex left rational makes every incident
-            // face take the exact-arithmetic path in is_inverted -- so rounding early keeps
-            // the following passes on doubles.
-            //
-            // Guarded on ops[i] so it really is once per iteration: this branch is also
-            // entered by the collapse-only pre and post passes, which pass ops[3] == 0 and
-            // have no smoothing for the sweep to follow.
-            if (ops[i] > 0) {
-                round_all_vertices();
-            }
-            check_mesh_quality(quality_rel, true);
-            sanity_checks();
-        }
-    }
-    check_mesh_quality(quality_rel, true);
-    logger().info("time = {:.4}s", timer.getElapsedTimeInSec());
-
-
-    return quality_rel;
 }
 
 } // namespace wmtk::components::simwild::tri

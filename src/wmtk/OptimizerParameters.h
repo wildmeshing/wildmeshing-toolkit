@@ -20,8 +20,8 @@ namespace wmtk {
  *     in one of them. tetwild additionally keeps `min`/`max` for the input bbox.
  *   * **`l_min`.** tetwild and triwild set it to `eps`, simwild to `0.5 * eps`.
  *
- * Defaults here are tetwild's and triwild's, which agree on 20 of the 26 fields below; simwild
- * overrides the four it differs on, in its own struct, where the divergence is visible.
+ * Defaults here are tetwild's and triwild's shared defaults; simwild overrides the four it
+ * deliberately differs on in its own struct, where the divergence is visible.
  */
 struct OptimizerParameters
 {
@@ -130,6 +130,11 @@ struct OptimizerParameters
      */
     double w_amips = 1e-4;
     double w_envelope = 1. - 1e-4; // derived; not read from json
+
+    /// Number and placement of smoothing passes in the shared Wild optimization driver.
+    int num_smoothing_passes = 2;
+    bool interleaved_smoothing = true;
+    int interleaved_smoothing_passes = 1;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;

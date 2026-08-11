@@ -614,5 +614,32 @@ The remaining refinement gaps are also closed:
 
 The serial conformance suite now also covers 3D 4→4, 5→6, 2→3, and combined swaps; order-3
 feature-envelope selection; 2D/3D force-split refinement; per-tag active-region filtering; and
-heterogeneous-tag split/collapse invariants in both dimensions. Whole-iteration driver parity is
-deferred with the outer-driver unification because those drivers are still intentionally distinct.
+heterogeneous-tag split/collapse invariants in both dimensions.
+
+---
+
+## Stage 7 — shared outer optimization drivers
+
+The outer schedules now live on the dimensional optimizer bases:
+
+- `TetOptimizerMesh` owns the complete TetWild/SimWild 3D driver and its `local_operations` pass.
+- `TriOptimizerMesh` owns the complete TriWild/SimWild-2D driver and its `local_operations` pass.
+- the smoothing placement parameters (`num_smoothing_passes`, `interleaved_smoothing`, and
+  `interleaved_smoothing_passes`) live in `OptimizerParameters`, so all three components configure
+  the same schedule.
+
+TetWild and TriWild remain the behavioral sources of truth: pre- and post-collapse, interleaved or
+batched split/collapse/swap/smooth ordering, per-phase convergence checks, rounding, consolidation,
+stuck refinement, swap termination, debug output, and sanity checks are executed by their shared
+base. The application classes no longer contain copies of either driver.
+
+Only explicit policy hooks differ. Wild uses absolute AMIPS and `stop_energy`; SimWild reports
+quality normalized by each cell's tag-dependent target and stops at relative quality 1. SimWild
+also supplies its existing optional `stop_at_float` policy and tag-aware refinement, while TetWild
+retains its extra open-boundary sanity diagnostic.
+
+The conformance suite now runs one complete iteration under both the batched and interleaved
+schedules, serially from identical meshes in each dimension: TriWild then homogeneous SimWild-2D,
+and TetWild then homogeneous SimWild-3D. It compares iteration counts, canonical connectivity,
+per-cell qualities, floating and exact positions, and checks that SimWild kept its homogeneous tags
+and derived interface invariant.

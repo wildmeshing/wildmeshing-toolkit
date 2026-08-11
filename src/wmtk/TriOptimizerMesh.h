@@ -176,6 +176,13 @@ public:
 
     std::tuple<double, double> get_max_avg_energy();
 
+    /// Shared TriWild/SimWild outer optimization schedule.
+    int m_iterations_used = 0;
+    void mesh_improvement(int max_its = 80);
+    std::tuple<double, double> local_operations(
+        const std::array<int, 4>& ops,
+        bool collapse_limit_length = true);
+
     std::set<simplex::Edge> m_force_split_edges;
     size_t m_force_split_count = 0;
     std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
@@ -235,13 +242,20 @@ public:
     bool round(const Tuple& v);
 
 protected:
+    /// Quality metric used by the driver. TriWild uses absolute AMIPS; SimWild overrides
+    /// this with quality normalized by each face's tag-dependent target.
+    virtual std::tuple<double, double> optimization_quality_stats();
+    virtual double optimization_stop_metric() const { return m_params.stop_energy; }
+    virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+    virtual bool optimization_stop_at_float() const { return false; }
+
     virtual void collapse_pass_begin() {}
     virtual void collapse_pass_end(size_t) {}
     virtual bool collapse_before_vertex(size_t, size_t) { return true; }
     virtual bool collapse_quality_allowed(size_t v1, size_t, double q, double ring_max) const
     {
-        return !m_vertex_attribute.at(v1).m_is_rounded ||
-               q <= m_params.stop_energy || q <= ring_max;
+        return !m_vertex_attribute.at(v1).m_is_rounded || q <= m_params.stop_energy ||
+               q <= ring_max;
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
 

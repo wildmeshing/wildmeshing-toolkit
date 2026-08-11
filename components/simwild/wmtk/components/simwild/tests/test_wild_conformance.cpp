@@ -81,6 +81,19 @@ size_t newest_vertex(const Mesh& mesh)
     return newest;
 }
 
+template <typename OracleMesh, typename SimMesh>
+void check_vertex_positions(const OracleMesh& oracle, const SimMesh& sim)
+{
+    REQUIRE(sim.get_vertices().size() == oracle.get_vertices().size());
+    for (const auto& vertex : oracle.get_vertices()) {
+        const size_t vid = vertex.vid(oracle);
+        CHECK(
+            (sim.m_vertex_attribute[vid].m_posf - oracle.m_vertex_attribute[vid].m_posf)
+                .squaredNorm() == 0.);
+        CHECK(bool(sim.m_vertex_attribute[vid].m_pos == oracle.m_vertex_attribute[vid].m_pos));
+    }
+}
+
 } // namespace
 
 TEST_CASE(
@@ -533,6 +546,42 @@ TEST_CASE(
 }
 
 TEST_CASE(
+    "tag-homogeneous SimWild follows one complete TriWild optimization iteration",
+    "[simwild][triwild][conformance][serial][orchestration]")
+{
+    for (const bool interleaved : {false, true}) {
+        CAPTURE(interleaved);
+        wmtk::components::triwild::Parameters tri_params;
+        wmtk::components::simwild::Parameters sim_params;
+        tri_params.l = sim_params.l = 0.8;
+        tri_params.stop_energy = sim_params.stop_energy = 1e-12;
+        tri_params.interleaved_smoothing = sim_params.interleaved_smoothing = interleaved;
+        tri_params.num_smoothing_passes = sim_params.num_smoothing_passes = 1;
+        tri_params.interleaved_smoothing_passes = sim_params.interleaved_smoothing_passes = 1;
+        tri_params.init(Vector2d(-1, -1), Vector2d(2, 2));
+        sim_params.init(Vector2d(-1, -1), Vector2d(2, 2));
+
+        wmtk::components::triwild::TriWildMesh tri(tri_params, tri_params.eps, 0);
+        wmtk::components::simwild::tri::SimWildMeshTri sim(sim_params, sim_params.eps, 0);
+        init_homogeneous_quad(tri);
+        init_homogeneous_quad(sim);
+
+        // The entire oracle driver completes before SimWild starts from its untouched copy.
+        tri.mesh_improvement(1);
+        sim.mesh_improvement(1);
+
+        CHECK(sim.m_iterations_used == tri.m_iterations_used);
+        CHECK(canonical_faces(sim) == canonical_faces(tri));
+        CHECK(qualities_by_face(sim) == qualities_by_face(tri));
+        check_vertex_positions(tri, sim);
+        for (const auto& f : sim.get_faces()) {
+            CHECK(sim.m_face_attribute[f.fid(sim)].tags == kHomogeneousTag);
+        }
+        check_2d_tag_interface_invariant(sim);
+    }
+}
+
+TEST_CASE(
     "tag-homogeneous SimWild follows TetWild's serial split and collapse",
     "[simwild][tetwild][conformance][serial]")
 {
@@ -710,6 +759,57 @@ TEST_CASE(
     }
     for (const auto& t : sim.get_tets()) {
         CHECK(sim.m_tet_attribute[t.tid(sim)].tags == kHomogeneousTag);
+    }
+}
+
+TEST_CASE(
+    "tag-homogeneous SimWild follows one complete TetWild optimization iteration",
+    "[simwild][tetwild][conformance][serial][orchestration]")
+{
+    for (const bool interleaved : {false, true}) {
+        CAPTURE(interleaved);
+        wmtk::components::tetwild::Parameters tet_params;
+        wmtk::components::simwild::Parameters sim_params;
+        tet_params.l = sim_params.l = 10.;
+        tet_params.stop_energy = sim_params.stop_energy = 1e-12;
+        tet_params.preserve_topology = sim_params.preserve_topology = true;
+        tet_params.interleaved_smoothing = sim_params.interleaved_smoothing = interleaved;
+        tet_params.num_smoothing_passes = sim_params.num_smoothing_passes = 1;
+        tet_params.interleaved_smoothing_passes = sim_params.interleaved_smoothing_passes = 1;
+        tet_params.init(Vector3d(-2, -2, -2), Vector3d(2, 2, 2));
+        sim_params.init(Vector3d(-2, -2, -2), Vector3d(2, 2, 2));
+
+        wmtk::components::tetwild::TetWildMesh tet(tet_params, nullptr, 0);
+        wmtk::components::simwild::SimWildMesh sim(sim_params, sim_params.eps, 0);
+        init_regular_tet_ring(tet, 3, 1., 1.);
+        init_regular_tet_ring(sim, 3, 1., 1.);
+        // Give each boundary vertex a distinct fixed-box classification. This keeps the fixture
+        // focused on the complete driver schedule; individual 3D topology passes are exercised
+        // by the operation-level oracle tests above.
+        for (size_t vid = 0; vid < 5; ++vid) {
+            tet.m_vertex_attribute[vid].on_bbox_faces = {int(vid)};
+            sim.m_vertex_attribute[vid].on_bbox_faces = {int(vid)};
+        }
+        for (const auto& t : tet.get_tets()) {
+            tet.set_cell_quality(t.tid(tet), tet.get_quality(tet.oriented_tet_vids(t)));
+        }
+        for (const auto& t : sim.get_tets()) {
+            sim.set_cell_quality(t.tid(sim), sim.get_quality(sim.oriented_tet_vids(t)));
+            sim.m_tet_attribute[t.tid(sim)].tags = kHomogeneousTag;
+        }
+
+        // As in 2D, the Wild oracle completes before SimWild starts from its identical copy.
+        tet.mesh_improvement(1);
+        sim.mesh_improvement(1);
+
+        CHECK(sim.m_iterations_used == tet.m_iterations_used);
+        CHECK(canonical_tets(sim) == canonical_tets(tet));
+        CHECK(qualities_by_tet(sim) == qualities_by_tet(tet));
+        check_vertex_positions(tet, sim);
+        for (const auto& t : sim.get_tets()) {
+            CHECK(sim.m_tet_attribute[t.tid(sim)].tags == kHomogeneousTag);
+        }
+        check_tag_interface_invariant(sim);
     }
 }
 

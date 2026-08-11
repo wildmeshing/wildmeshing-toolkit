@@ -58,7 +58,6 @@ class SimWildMesh : public wmtk::TetOptimizerMesh
 public:
     using ExprPtr = expression_parser::ExpressionPtr;
 
-    int m_debug_print_counter = 0;
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;
     std::map<std::string, int64_t> m_tag_name_to_id;
@@ -180,12 +179,15 @@ public:
 
     //
     //
-    void mesh_improvement(int max_its = 80);
-    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0;
 
 protected:
+    std::tuple<double, double> optimization_quality_stats() override;
+    double optimization_stop_metric() const override { return 1.; }
+    bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
+    void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
+
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) const override;
     bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
     bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override;
@@ -264,7 +266,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst();
+    size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
 
     /**

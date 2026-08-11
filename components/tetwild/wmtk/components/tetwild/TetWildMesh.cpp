@@ -39,11 +39,31 @@
 #include "orig/MeshRefinement.h"
 #include "orig/State.h"
 
-namespace {
-static int debug_print_counter = 0;
-}
-
 namespace wmtk::components::tetwild {
+
+void TetWildMesh::optimization_sanity_checks_extra()
+{
+    // Boundary edges may temporarily leave the envelope during collapse to remove thin
+    // ribbons. Preserve TetWild's diagnostic for every other open surface edge.
+    std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        ++edge_on_open_boundary[f.eid(*this)];
+        ++edge_on_open_boundary[f.switch_edge(*this).eid(*this)];
+        ++edge_on_open_boundary[f.switch_vertex(*this).switch_edge(*this).eid(*this)];
+    }
+
+    for (const Tuple& e : get_edges()) {
+        if (edge_on_open_boundary[e.eid(*this)] != 1 || is_open_boundary_edge(e)) continue;
+        const size_t v1 = e.vid(*this);
+        const size_t v2 = e.switch_vertex(*this).vid(*this);
+        if (!m_vertex_extra[v1].m_is_on_open_boundary ||
+            !m_vertex_extra[v2].m_is_on_open_boundary) {
+            continue;
+        }
+        logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
+    }
+}
 
 std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
@@ -55,137 +75,6 @@ std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const siz
     return m_envelope;
 }
 
-
-void TetWildMesh::mesh_improvement(int max_its)
-{
-    ////preprocessing
-    // TODO: refactor to eliminate repeated partition.
-    //
-
-    compute_vertex_partition_morton();
-
-    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
-
-    logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
-
-    ////operation loops
-    double pre_max_energy = 0.;
-    {
-        auto [max_energy, avg_energy] = get_max_avg_energy();
-        pre_max_energy = max_energy;
-        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
-    }
-    int refine_cooldown =
-        m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
-
-    for (int it = 0; it < max_its; it++) {
-        m_iterations_used = it + 1;
-        ///ops
-        logger().info("\n========it {}========", it);
-        // One iteration is either split/collapse/swaps followed by all the smoothing, or --
-        // with interleaved_smoothing -- each topology pass followed by its own smoothing, so
-        // the next pass sees a relaxed mesh rather than the raw output of the previous one.
-        // With interleaved_smoothing an iteration is THREE local_operations calls, and only
-        // the last one's value used to be tested against the target. Two thirds of the
-        // states the optimizer produces were therefore never offered to the stopping
-        // criterion: a run converged only if it happened to be good at the end of a SWAP
-        // pass. On triwild20k 179282 the mesh reached 9.9515 four separate times, every one
-        // of them in a split pass, and the run went to the iteration cap having never shown
-        // the convergence check anything below 10.0499.
-        //
-        // So test after every pass and stop on the state that met the target, rather than on
-        // whatever the two passes after it turn that state into. Breaking early leaves the
-        // remaining passes of this iteration unrun, which is the point: they are not needed.
-        double max_energy = 0., avg_energy = 0.;
-        if (!m_tet_params.interleaved_smoothing) {
-            std::tie(max_energy, avg_energy) =
-                local_operations({{1, 1, 1, m_tet_params.num_smoothing_passes}});
-        } else {
-            const int k = m_tet_params.interleaved_smoothing_passes;
-            const std::array<std::array<int, 4>, 3> passes = {
-                {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}};
-            for (const std::array<int, 4>& ops : passes) {
-                std::tie(max_energy, avg_energy) = local_operations(ops);
-                if (max_energy < m_params.stop_energy) {
-                    break;
-                }
-            }
-        }
-
-        ///energy check
-        logger().info("max energy {:.6} | stop {:.6}", max_energy, m_params.stop_energy);
-
-        // Count the rounded vertices BEFORE the stop check. This used to sit after the
-        // break, so the iteration that actually reached the energy target never reported
-        // its rounding: the last thing the log said was "All rounded!" from the previous
-        // iteration, and finalize could then still fail with "Not all vertices rounded!".
-        // The log was not wrong, it was one iteration stale, which reads exactly like a
-        // contradiction.
-        // Atomic because for_each_vertex runs threading::parallel_for whenever
-        // NUM_THREADS != 0. These were plain ints, which raced: octocat reported counts
-        // like "-37 of 4149 un-rounded", i.e. cnt_round > cnt_verts. Harmless while this
-        // only fed a log line, not harmless now that it decides whether to stop.
-        std::atomic<int> n_round = 0, n_verts = 0;
-        TetMesh::for_each_vertex([&](auto& v) {
-            if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
-                n_round.fetch_add(1, std::memory_order_relaxed);
-            }
-            n_verts.fetch_add(1, std::memory_order_relaxed);
-        });
-        const int cnt_round = n_round.load(std::memory_order_relaxed);
-        const int cnt_verts = n_verts.load(std::memory_order_relaxed);
-        if (cnt_round < cnt_verts) {
-            logger().info("rounded {}/{}", cnt_round, cnt_verts);
-        } else {
-            logger().info("All rounded!");
-        }
-
-        // Energy alone is not a sufficient termination condition. A mesh that hits the
-        // quality target while some vertex still carries exact coordinates is not
-        // finished: the output is what the caller consumes, and rational coordinates in
-        // it are a defect regardless of how good the elements are. So keep iterating
-        // while anything is un-rounded, and let max_its bound the run as before.
-        //
-        // The exact count is used rather than m_all_rounded, which is only maintained
-        // where the sweep runs (after smoothing) and would stay stale at
-        // num_smoothing_passes == 0, stranding the loop at max_its for no reason.
-        if (max_energy < m_params.stop_energy) {
-            if (cnt_round == cnt_verts) {
-                break;
-            }
-            logger().info(
-                "energy target reached, but {} of {} vertices are still un-rounded; "
-                "continuing",
-                cnt_verts - cnt_round,
-                cnt_verts);
-        }
-        consolidate_mesh();
-
-        logger().info("#V = {}, #T = {}", vert_capacity(), tet_capacity());
-
-        /// sizing field: when the max energy stalls, refine around the worst
-        /// elements to escape stuck configurations (replaces the old global
-        /// adjust_sizing_field mechanism). After a refinement, wait
-        /// stuck_refine_cooldown iterations so the operations get full passes on
-        /// the new sizing field before more refinement is added.
-        if (refine_cooldown > 0) {
-            --refine_cooldown;
-        } else if (
-            it > 0 && max_energy > m_params.stop_energy &&
-            (pre_max_energy - max_energy) <=
-                m_params.stuck_refine_stall_eps * (max_energy - m_params.stop_energy)) {
-            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_energy);
-            refine_sizing_around_worst(max_energy);
-            logger().info(">>>>stuck-refine finished...");
-            refine_cooldown = m_params.stuck_refine_cooldown;
-        }
-        pre_max_energy = max_energy;
-    }
-
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
-}
 
 void TetWildMesh::mesh_improvement_legacy(int max_its)
 {
@@ -421,193 +310,6 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         }
     }
     logger().info("Finish legacy mesh refinement.");
-}
-
-std::tuple<double, double> TetWildMesh::local_operations(
-    const std::array<int, 4>& ops,
-    bool collapse_limit_length)
-{
-    igl::Timer timer;
-
-    std::tuple<double, double> energy;
-
-    auto sanity_checks = [this]() {
-        if (!m_params.perform_sanity_checks) {
-            return;
-        }
-        logger().info("Perform sanity checks...");
-        const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        for (const auto& verts : faces) {
-            const auto p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto p1 = m_vertex_attribute[verts[1]].m_posf;
-            const auto p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope->is_outside({{p0, p1, p2}})) {
-                logger().error("Face {} is outside!", verts);
-            }
-        }
-
-        // check for inverted tets
-        for (const Tuple& t : get_tets()) {
-            if (!is_inverted(t)) {
-                continue;
-            }
-            const auto vs = oriented_tet_vids(t);
-            logger().error("Tet {} is inverted! Vertices = {}", t.tid(*this), vs);
-            // for (const size_t v : vs) {
-            //     logger().error(
-            //         "v{}, rounded = {}, on surface = {}, on open boundary = {}",
-            //         v,
-            //         m_vertex_attribute[v].m_is_rounded,
-            //         m_vertex_attribute[v].m_is_on_surface,
-            //         m_vertex_extra[v].m_is_on_open_boundary);
-            // }
-        }
-
-        // check boundary envelope
-        // note that edges can end up outside during collapse and that is desired behavior to
-        // collapse thin ribbons
-        {
-            const auto fs = get_faces();
-            const auto es = get_edges();
-            std::vector<int> edge_on_open_boundary(6 * tet_capacity(), 0);
-
-            for (const Tuple& f : fs) {
-                auto fid = f.fid(*this);
-                if (!m_face_attribute[fid].m_is_surface_fs) {
-                    continue;
-                }
-                size_t eid1 = f.eid(*this);
-                size_t eid2 = f.switch_edge(*this).eid(*this);
-                size_t eid3 = f.switch_vertex(*this).switch_edge(*this).eid(*this);
-
-                edge_on_open_boundary[eid1]++;
-                edge_on_open_boundary[eid2]++;
-                edge_on_open_boundary[eid3]++;
-            }
-
-            for (const Tuple& e : es) {
-                if (edge_on_open_boundary[e.eid(*this)] != 1) {
-                    continue;
-                }
-                if (!is_open_boundary_edge(e)) {
-                    size_t v1 = e.vid(*this);
-                    size_t v2 = e.switch_vertex(*this).vid(*this);
-                    if (!m_vertex_extra[v1].m_is_on_open_boundary ||
-                        !m_vertex_extra[v2].m_is_on_open_boundary) {
-                        continue;
-                    }
-                    logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
-                    // logger().error(
-                    //     "v{}, on surface = {}, on open boundary = {}",
-                    //     v1,
-                    //     m_vertex_attribute[v1].m_is_on_surface,
-                    //     m_vertex_extra[v1].m_is_on_open_boundary);
-                    // logger().error(
-                    //     "v{}, on surface = {}, on open boundary = {}",
-                    //     v2,
-                    //     m_vertex_attribute[v2].m_is_on_surface,
-                    //     m_vertex_extra[v2].m_is_on_open_boundary);
-                }
-            }
-        }
-        logger().info("Sanity checks done.");
-    };
-
-    sanity_checks();
-
-    for (int i = 0; i < ops.size(); i++) {
-        timer.start();
-        if (i == 0) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==splitting {}==", n);
-                split_all_edges();
-                logger().info(
-                    "#V = {}, #T = {} after split",
-                    get_vertices().size(),
-                    get_tets().size());
-            }
-            if (m_params.debug_output) {
-                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("split max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
-        } else if (i == 1) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==collapsing {}==", n);
-                collapse_all_edges(collapse_limit_length);
-                logger().info(
-                    "#V = {}, #T = {} after collapse",
-                    get_vertices().size(),
-                    get_tets().size());
-            }
-            if (m_params.debug_output) {
-                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("collapse max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
-        } else if (i == 2) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==swapping {}==", n);
-                size_t cnt_success = 0;
-                cnt_success += swap_all_edges_all();
-                // cnt_success += swap_all_edges_56();
-                // cnt_success += swap_all_edges_44();
-                // cnt_success += swap_all_edges();
-                cnt_success += swap_all_faces();
-                if (cnt_success == 0) {
-                    break;
-                }
-            }
-            if (m_params.debug_output) {
-                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("swap max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            logger().info(
-                "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
-                cnt_surface_swap.load(),
-                cnt_surface_swap_32.load(),
-                cnt_surface_swap_44.load(),
-                cnt_surface_swap_56.load());
-            sanity_checks();
-        } else if (i == 3) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==smoothing {}==", n);
-                smooth_all_vertices();
-            }
-            // Reclaim whatever smoothing just made roundable: once per iteration, after
-            // all of its smoothing passes. Here rather than at the end of the run because
-            // smoothing is what frees a stuck vertex, and because a vertex left rational
-            // makes every incident tet take the exact-arithmetic path in get_quality --
-            // so rounding early keeps the following passes on doubles.
-            //
-            // Guarded on ops[i] so it really is once per iteration: this branch is also
-            // entered by the collapse-only pre and post passes, which pass ops[3] == 0
-            // and have no smoothing for the sweep to follow.
-            //
-            // Skipped entirely once m_all_rounded is set.
-            if (ops[i] > 0) {
-                round_all_vertices();
-            }
-            if (m_params.debug_output) {
-                save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
-            }
-            auto [max_energy, avg_energy] = get_max_avg_energy();
-            logger().info("smooth max energy = {:.6} avg = {:.6}", max_energy, avg_energy);
-            sanity_checks();
-        }
-        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
-    }
-    // save_paraview(fmt::format("debug_{}", debug_print_counter++), false);
-    energy = get_max_avg_energy();
-    logger().info("max energy = {:.6}", std::get<0>(energy));
-    logger().info("avg energy = {:.6}", std::get<1>(energy));
-    logger().info("time = {:.4}s", timer.getElapsedTime());
-
-
-    return energy;
 }
 
 size_t TetWildMesh::refine_sizing_around_worst(double max_energy)

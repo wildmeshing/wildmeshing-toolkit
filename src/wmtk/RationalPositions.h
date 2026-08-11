@@ -14,9 +14,8 @@ namespace wmtk {
  * code may read. This holds that invariant, and the sweep that restores it, in one place.
  *
  * Dimension-free by construction: nothing here mentions a Tuple or a position type, so the
- * three hooks below are all a mesh has to supply. Unlike the improvement loop -- which the two
- * optimizer bases still duplicate, because 2D and 3D genuinely disagree about the stop
- * condition and the cbrt convention -- this really is the same code twice.
+ * three hooks below are all a mesh has to supply. The dimensional optimizer bases build their
+ * shared Wild/SimWild drivers on this bookkeeping.
  */
 class RationalPositions
 {

@@ -30,6 +30,9 @@
       "stop_at_float",
       "preserve_topology",
       "w_amips",
+      "num_smoothing_passes",
+      "interleaved_smoothing",
+      "interleaved_smoothing_passes",
       "write_vtu",
       "write_envelope",
       "log_file",
@@ -305,6 +308,26 @@
     "min": 0,
     "max": 1,
     "doc": "AMIPS energy"
+  },
+  {
+    "pointer": "/num_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "min": 0,
+    "doc": "Smoothing passes per optimization iteration when interleaved_smoothing is disabled. Matches the Wild driver."
+  },
+  {
+    "pointer": "/interleaved_smoothing",
+    "type": "bool",
+    "default": true,
+    "doc": "Run smoothing after each topology phase, matching TetWild and TriWild, instead of batching it after all topology operations."
+  },
+  {
+    "pointer": "/interleaved_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "min": 0,
+    "doc": "Smoothing passes after each topology phase when interleaved_smoothing is enabled."
   },
   {
     "pointer": "/write_vtu",
