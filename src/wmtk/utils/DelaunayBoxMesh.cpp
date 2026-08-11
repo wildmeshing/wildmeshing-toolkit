@@ -1,3 +1,4 @@
+#include <limits>
 #include <wmtk/utils/DelaunayBoxMesh.hpp>
 
 #include <wmtk/utils/Logger.hpp>
@@ -82,6 +83,45 @@ void delaunay_box_mesh(
         "after delaunay tets.size() = {} | points.size() = {}",
         tets.size(),
         points.size());
+
+    // Drop the points the tetrahedrization does not use, and renumber the tets onto what is
+    // left. delaunay3D dedups its input (unique_points) and maps the tets it returns back to
+    // ORIGINAL indices, so when two input points coincide exactly only one of the two indices
+    // is ever referenced -- the other belongs to no tet. Left in, the caller builds a vertex
+    // for it with an empty m_conn_tets that TetMesh::init() does not mark removed, and the
+    // first get_vertices() calls tuple_from_vertex on it, which reads m_conn_tets[0] on an
+    // empty vector. Release builds segfault; the assert that would name it is compiled out.
+    // (TetMesh::init_with_isolated_vertices has always marked tet-less vertices removed;
+    // plain init() never has.)
+    //
+    // Compacting rather than marking them removed, because the callers rely on vertex ids
+    // being contiguous: they size their attribute vectors from points.size() and index them
+    // by position.
+    //
+    // Found on Thingi10K 117682, which died 20 s in with SIGSEGV. Its simplified surface
+    // carries exactly two coincident vertex pairs.
+    {
+        std::vector<size_t> remap(points.size(), std::numeric_limits<size_t>::max());
+        for (const auto& t : tets) {
+            for (const size_t v : t) remap[v] = 0;
+        }
+        size_t live = 0;
+        for (size_t i = 0; i < points.size(); ++i) {
+            if (remap[i] == 0) {
+                points[live] = points[i];
+                remap[i] = live++;
+            }
+        }
+        if (live != points.size()) {
+            logger().info(
+                "dropped {} delaunay point(s) that no tet uses (exactly coincident input)",
+                points.size() - live);
+            points.resize(live);
+            for (auto& t : tets) {
+                for (size_t& v : t) v = remap[v];
+            }
+        }
+    }
 }
 
 } // namespace wmtk::utils
