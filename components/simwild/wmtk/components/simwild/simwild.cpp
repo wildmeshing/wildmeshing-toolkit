@@ -1,4 +1,5 @@
 #include "simwild.hpp"
+#include <wmtk/utils/DriverPrologue.hpp>
 
 
 #include <memory>
@@ -328,34 +329,11 @@ void simwild(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
 
-    // verify input and inject defaults
-    {
-        const auto spec = jse::embed::wmtk_simwild_spec::simwild_spec::spec();
-        jse::JSE spec_engine;
-        spec_engine.strict = true; // detect unknown parameters in the input json
-        bool r = spec_engine.verify_json(json_params, spec);
-        if (!r) {
-            log_and_throw_error(spec_engine.log2str());
-        }
-        json_params = spec_engine.inject_defaults(json_params, spec);
-    }
-
-    const std::filesystem::path root = json_params["input_dir"];
-
-    // logger settings
-    {
-        std::string log_file_name = json_params["log_file"];
-        if (!log_file_name.empty()) {
-            log_file_name = resolve_path(root, log_file_name).string();
-            wmtk::set_file_logger(log_file_name);
-            logger().flush_on(spdlog::level::info);
-        }
-    }
-
-    std::vector<std::string> input_paths = json_params["input"];
-    for (std::string& p : input_paths) {
-        p = resolve_path(root, p).string();
-    }
+    const std::filesystem::path root = utils::verify_and_setup_logger(
+        json_params,
+        jse::embed::wmtk_simwild_spec::simwild_spec::spec(),
+        true);
+    const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
 
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);
     std::filesystem::path output_filename = json_params["output"];
