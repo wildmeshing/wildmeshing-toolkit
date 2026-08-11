@@ -49,6 +49,22 @@ public:
 class TetWildMesh : public wmtk::TetOptimizerMesh
 {
 public:
+    /**
+     * @brief tetwild's per-vertex additions to the shared VertexAttributes.
+     *
+     * Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled
+     * back exactly like the shared collection -- which matters, because collapse_edge_after and
+     * split_edge_after both write it.
+     */
+    struct VertexExtras
+    {
+        /// Whether the vertex lies on an open boundary of the input surface. The 2D
+        /// counterpart is TriWildMesh::VertexExtras::m_feature_id, which differs deliberately
+        /// -- see the comment there.
+        bool m_is_on_open_boundary = false;
+    };
+    wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
+
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// tetwild-only fields.
     Parameters& m_tet_params;
@@ -84,9 +100,8 @@ public:
         : wmtk::TetOptimizerMesh(_m_params, std::move(_m_envelope))
         , m_tet_params(_m_params)
     {
+        m_vertex_attr_group.add(&m_vertex_extra);
         NUM_THREADS = _num_threads;
-        p_vertex_attrs = &m_vertex_attribute;
-        p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
@@ -105,6 +120,9 @@ public:
     {
         const size_t n_tet = _tet_attribute.size();
         m_vertex_attribute.resize(_vertex_attribute.size());
+        // The extras carry no data a caller supplies -- every field defaults -- so they only
+        // have to be sized alongside the shared collection.
+        m_vertex_extra.resize(_vertex_attribute.size());
         m_face_attribute.resize(4 * n_tet);
         m_tet_attribute.resize(n_tet);
 

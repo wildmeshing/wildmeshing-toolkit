@@ -34,12 +34,41 @@ using VertexAttributes = wmtk::TriOptimizerMesh::VertexAttributes;
 using EdgeAttributes = wmtk::TriOptimizerMesh::EdgeAttributes;
 using FaceAttributes = wmtk::TriOptimizerMesh::FaceAttributes;
 
-/// A vertex that stands for no input feature point. See VertexAttributes::m_feature_id.
+/// A vertex that stands for no input feature point. See VertexExtras::m_feature_id.
 inline constexpr size_t NO_FEATURE = std::numeric_limits<size_t>::max();
 
 class TriWildMesh : public wmtk::TriOptimizerMesh
 {
 public:
+    /**
+     * @brief triwild's per-vertex additions to the shared VertexAttributes.
+     *
+     * Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled
+     * back exactly like the shared collection -- which matters, because collapse_edge_after and
+     * split_edge_after both write it.
+     */
+    struct VertexExtras
+    {
+        /**
+         * Index into TriWildMesh::m_feature_points, or NO_FEATURE.
+         *
+         * A feature point is a 0-dimensional feature of the curve network: an open polyline's
+         * endpoint, or a junction. This is the 2D counterpart of tetwild's
+         * m_is_on_open_boundary, with one deliberate difference -- it names WHICH feature the
+         * vertex stands for, not merely that it stands for one.
+         *
+         * That difference is the whole point. tetwild asks "is the survivor inside the
+         * envelope of the boundary?", a containment question, and in 3D a boundary is a curve
+         * with many edges so collapsing one shortens it rather than deleting it. In 2D the
+         * feature is a single point, and a containment test passes trivially when one endpoint
+         * is collapsed onto another -- the target IS a feature point, distance zero -- while
+         * the first endpoint quietly stops being represented. Preserving features is a
+         * COVERAGE property, so the constraint has to bind a vertex to a specific point.
+         */
+        size_t m_feature_id = std::numeric_limits<size_t>::max();
+    };
+    wmtk::AttributeCollection<VertexExtras> m_vertex_extra;
+
     /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
     /// triwild-only fields (features, high valence, smoothing schedule, box).
     Parameters& m_tri_params;
@@ -65,7 +94,7 @@ public:
 
     /**
      * Anchor positions of the curve network's 0-dimensional features, indexed by
-     * VertexAttributes::m_feature_id.
+     * VertexExtras::m_feature_id.
      *
      * Filled in init_mesh from the arrangement's constrained edges: a vertex whose valence in
      * that edge set is neither 0 nor 2 is a feature -- valence 1 is an open polyline's
@@ -117,11 +146,9 @@ public:
         , m_tri_params(_m_params)
         , m_feature_eps(envelope_eps)
     {
+        m_vertex_attr_group.add(&m_vertex_extra);
         m_envelope_eps = envelope_eps;
         NUM_THREADS = _num_threads;
-        p_vertex_attrs = &m_vertex_attribute;
-        p_edge_attrs = &m_edge_attribute;
-        p_face_attrs = &m_face_attribute;
 
         optimization::deactivate_opt_logger();
 

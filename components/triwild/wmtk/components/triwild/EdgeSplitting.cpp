@@ -328,7 +328,7 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
     // A split midpoint stands for no input feature: the endpoints keep theirs, and the new
     // vertex is interior to the curve by construction. Set explicitly because attribute slots
     // are recycled and could carry a stale id.
-    m_vertex_attribute[v_id].m_feature_id = NO_FEATURE;
+    m_vertex_extra[v_id].m_feature_id = NO_FEATURE;
 
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
     m_vertex_attribute[v_id].m_sizing_scalar =

@@ -97,8 +97,6 @@ public:
     {
         m_envelope_eps = envelope_eps;
         NUM_THREADS = _num_threads;
-        p_vertex_attrs = &m_vertex_attribute;
-        p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;

@@ -434,7 +434,7 @@ void TriWildMesh::init_mesh(
             if (val == 0 || val == 2) {
                 continue;
             }
-            m_vertex_attribute[v].m_feature_id = m_feature_points.size();
+            m_vertex_extra[v].m_feature_id = m_feature_points.size();
             m_feature_points.push_back(m_vertex_attribute[v].m_posf);
             if (val == 1) {
                 ++n_endpoints;
@@ -1002,7 +1002,7 @@ std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) co
 
 bool TriWildMesh::smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const
 {
-    const size_t f = m_vertex_attribute[vid].m_feature_id;
+    const size_t f = m_vertex_extra[vid].m_feature_id;
     if (f == NO_FEATURE || !m_tri_params.preserve_feature_points) {
         return true;
     }
@@ -1018,7 +1018,7 @@ bool TriWildMesh::collapse_breaks_feature(const size_t v1_id, const size_t v2_id
     }
     // v1 disappears into v2, and v2 does not move. So the question is only whether the
     // feature v1 stood for is still represented afterwards, by v2.
-    const size_t f1 = m_vertex_attribute[v1_id].m_feature_id;
+    const size_t f1 = m_vertex_extra[v1_id].m_feature_id;
     if (f1 == NO_FEATURE) {
         return false;
     }

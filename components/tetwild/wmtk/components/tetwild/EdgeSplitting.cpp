@@ -296,7 +296,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_order = cache.edge_order;
 
     // open boundary
-    m_vertex_attribute[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
+    m_vertex_extra[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
 
     /// update face attribute
     // add new and erase old

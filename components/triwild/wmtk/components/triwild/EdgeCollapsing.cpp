@@ -350,8 +350,8 @@ bool TriWildMesh::collapse_edge_after(const Tuple& loc)
     // The survivor takes over whatever feature point v1 stood for. collapse_edge_before has
     // already established that it is within eps of it, and that v2 did not stand for a
     // different one, so the feature stays represented.
-    if (VA.at(v2_id).m_feature_id == NO_FEATURE) {
-        VA[v2_id].m_feature_id = VA.at(v1_id).m_feature_id;
+    if (m_vertex_extra.at(v2_id).m_feature_id == NO_FEATURE) {
+        m_vertex_extra[v2_id].m_feature_id = m_vertex_extra.at(v1_id).m_feature_id;
     }
 
     // no need to update on_bbox_faces

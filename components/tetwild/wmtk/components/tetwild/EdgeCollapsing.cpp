@@ -119,8 +119,8 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     }
 
     // open boundary
-    if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
-        if (!VA[v2_id].m_is_on_open_boundary && m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
+    if (cache.edge_length > 0 && m_vertex_extra[v1_id].m_is_on_open_boundary) {
+        if (!m_vertex_extra[v2_id].m_is_on_open_boundary && m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
             return false;
         }
     }
@@ -340,8 +340,8 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     // false;
 
     // open boundary - must be set before checking for open boundary
-    VA[v2_id].m_is_on_open_boundary =
-        VA.at(v1_id).m_is_on_open_boundary || VA.at(v2_id).m_is_on_open_boundary;
+    m_vertex_extra[v2_id].m_is_on_open_boundary =
+        m_vertex_extra.at(v1_id).m_is_on_open_boundary || m_vertex_extra.at(v2_id).m_is_on_open_boundary;
 
     // surface
     // and open boundary
@@ -381,10 +381,10 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
         //}
     }
 
-    if (VA.at(v2_id).m_is_on_open_boundary) {
+    if (m_vertex_extra.at(v2_id).m_is_on_open_boundary) {
         // check if boundary edges are topologically still boundaries
         if (!is_vertex_on_boundary(v2_id)) {
-            VA[v2_id].m_is_on_open_boundary = false;
+            m_vertex_extra[v2_id].m_is_on_open_boundary = false;
         }
     }
 

@@ -432,8 +432,8 @@ void TetWildMesh::find_open_boundary()
                     if (edge_on_open_boundary[e.eid(*this)] != 1) continue;
                     const size_t v1 = e.vid(*this);
                     const size_t v2 = e.switch_vertex(*this).vid(*this);
-                    std::atomic_ref<bool>(m_vertex_attribute[v1].m_is_on_open_boundary).store(true);
-                    std::atomic_ref<bool>(m_vertex_attribute[v2].m_is_on_open_boundary).store(true);
+                    std::atomic_ref<bool>(m_vertex_extra[v1].m_is_on_open_boundary).store(true);
+                    std::atomic_ref<bool>(m_vertex_extra[v2].m_is_on_open_boundary).store(true);
                     local.emplace_back(v1, v2);
                 }
                 if (local.empty()) return;
@@ -474,8 +474,8 @@ bool TetWildMesh::is_open_boundary_edge(const Tuple& e)
 {
     size_t v1 = e.vid(*this);
     size_t v2 = e.switch_vertex(*this).vid(*this);
-    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
-        !m_vertex_attribute[v2].m_is_on_open_boundary)
+    if (!m_vertex_extra[v1].m_is_on_open_boundary ||
+        !m_vertex_extra[v2].m_is_on_open_boundary)
         return false;
 
     return !m_order2_envelope->is_outside(
@@ -487,8 +487,8 @@ bool TetWildMesh::is_open_boundary_edge(const std::array<size_t, 2>& e)
 {
     size_t v1 = e[0];
     size_t v2 = e[1];
-    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
-        !m_vertex_attribute[v2].m_is_on_open_boundary)
+    if (!m_vertex_extra[v1].m_is_on_open_boundary ||
+        !m_vertex_extra[v2].m_is_on_open_boundary)
         return false;
 
     return !m_order2_envelope->is_outside(

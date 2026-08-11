@@ -45,7 +45,6 @@ void build_ring(TetWildMesh& mesh)
     for (int i = 0; i < 5; ++i) {
         va[i].m_is_rounded = true;
         va[i].m_pos = to_rational(va[i].m_posf);
-        va[i].m_is_on_open_boundary = false;
     }
     for (size_t i : {A, B, C, D}) {
         va[i].m_is_on_surface = true;
@@ -180,7 +179,7 @@ TEST_CASE("surface-flip-correctness", "[tetwild_operation][surface_swap]")
     CHECK_FALSE(mesh.m_vertex_attribute[E].m_is_on_surface);
     for (size_t v : {A, B, C, D}) CHECK(mesh.m_vertex_attribute[v].m_order == 1);
     CHECK(mesh.m_vertex_attribute[E].m_order == 0);
-    for (size_t v : {A, B, C, D, E}) CHECK_FALSE(mesh.m_vertex_attribute[v].m_is_on_open_boundary);
+    for (size_t v : {A, B, C, D, E}) CHECK_FALSE(mesh.m_vertex_extra[v].m_is_on_open_boundary);
 
     // The flip actually ran (counter incremented).
     CHECK(mesh.cnt_surface_swap.load() == 1);
@@ -386,7 +385,6 @@ void build_ring_n(TetWildMesh& mesh, int N, double half, double radius)
         va[i].m_is_rounded = true;
         va[i].m_pos = to_rational(va[i].m_posf);
         va[i].m_is_on_surface = false;
-        va[i].m_is_on_open_boundary = false;
         va[i].m_order = 0;
     }
     std::vector<TetAttributes> ta(N);

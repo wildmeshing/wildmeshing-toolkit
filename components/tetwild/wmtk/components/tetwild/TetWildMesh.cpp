@@ -201,7 +201,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         state.is_mesh_closed = true;
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
-            if (m_vertex_attribute[vid].m_is_on_open_boundary) {
+            if (m_vertex_extra[vid].m_is_on_open_boundary) {
                 state.is_mesh_closed = false;
                 break;
             }
@@ -282,6 +282,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         legacy_tetwild.tet_vertices.resize(vert_capacity());
         for (size_t i = 0; i < vert_capacity(); ++i) {
             const auto& VA = m_vertex_attribute[i];
+            const auto& VX = m_vertex_extra[i];
             orig::TetVertex& v = legacy_tetwild.tet_vertices[i];
             v.pos = VA.m_pos;
             v.posf = VA.m_posf;
@@ -308,7 +309,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
                     log_and_throw_error("Vertex should not be on more than 3 bbox faces");
                 }
             }
-            v.is_on_boundary = VA.m_is_on_open_boundary;
+            v.is_on_boundary = VX.m_is_on_open_boundary;
             v.is_on_surface = VA.m_is_on_surface;
             v.is_rounded = VA.m_is_rounded;
             for (const size_t tid : get_one_ring_tids_for_vertex(i)) {
@@ -348,6 +349,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
         assert(verts.size() >= vert_capacity());
         for (size_t i = 0; i < vert_capacity(); ++i) {
             auto& VA = m_vertex_attribute[i];
+            auto& VX = m_vertex_extra[i];
             const orig::TetVertex& v = verts[i];
             VA.m_is_rounded = v.is_rounded;
             if (v.is_rounded) {
@@ -359,7 +361,7 @@ void TetWildMesh::mesh_improvement_legacy(int max_its)
             }
             VA.m_sizing_scalar = v.adaptive_scale;
             VA.m_is_on_surface = v.is_on_surface;
-            VA.m_is_on_open_boundary = v.is_on_boundary;
+            VX.m_is_on_open_boundary = v.is_on_boundary;
             // logger().info("DEBUG on_bbox");
             if (v.is_on_bbox) {
                 VA.on_bbox_faces.clear();
@@ -447,7 +449,7 @@ std::tuple<double, double> TetWildMesh::local_operations(
             //         v,
             //         m_vertex_attribute[v].m_is_rounded,
             //         m_vertex_attribute[v].m_is_on_surface,
-            //         m_vertex_attribute[v].m_is_on_open_boundary);
+            //         m_vertex_extra[v].m_is_on_open_boundary);
             // }
         }
 
@@ -480,8 +482,8 @@ std::tuple<double, double> TetWildMesh::local_operations(
                 if (!is_open_boundary_edge(e)) {
                     size_t v1 = e.vid(*this);
                     size_t v2 = e.switch_vertex(*this).vid(*this);
-                    if (!m_vertex_attribute[v1].m_is_on_open_boundary ||
-                        !m_vertex_attribute[v2].m_is_on_open_boundary) {
+                    if (!m_vertex_extra[v1].m_is_on_open_boundary ||
+                        !m_vertex_extra[v2].m_is_on_open_boundary) {
                         continue;
                     }
                     logger().warn("Boundary edge ({},{}) is outside the envelope.", v1, v2);
@@ -489,12 +491,12 @@ std::tuple<double, double> TetWildMesh::local_operations(
                     //     "v{}, on surface = {}, on open boundary = {}",
                     //     v1,
                     //     m_vertex_attribute[v1].m_is_on_surface,
-                    //     m_vertex_attribute[v1].m_is_on_open_boundary);
+                    //     m_vertex_extra[v1].m_is_on_open_boundary);
                     // logger().error(
                     //     "v{}, on surface = {}, on open boundary = {}",
                     //     v2,
                     //     m_vertex_attribute[v2].m_is_on_surface,
-                    //     m_vertex_attribute[v2].m_is_on_open_boundary);
+                    //     m_vertex_extra[v2].m_is_on_open_boundary);
                 }
             }
         }
@@ -1043,7 +1045,7 @@ double TetWildMesh::get_length2(const wmtk::TetMesh::Tuple& l) const
 
 bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
 {
-    if (!m_vertex_attribute.at(e0).m_is_on_open_boundary) {
+    if (!m_vertex_extra.at(e0).m_is_on_open_boundary) {
         return false;
     }
 
@@ -1051,7 +1053,7 @@ bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
     const auto e0_tids = get_one_ring_tids_for_vertex(e0);
 
     for (const size_t e1 : neigh_vids) {
-        if (!m_vertex_attribute.at(e1).m_is_on_open_boundary) {
+        if (!m_vertex_extra.at(e1).m_is_on_open_boundary) {
             continue;
         }
         int cnt = 0;
@@ -1293,7 +1295,7 @@ void TetWildMesh::save_paraview(const std::string& path, const bool use_hdf5)
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_is_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1 : 0;
         v_is_on_surface[vid] = m_vertex_attribute[vid].m_is_on_surface ? 1 : 0;
-        v_is_on_open_boundary[vid] = m_vertex_attribute[vid].m_is_on_open_boundary ? 1 : 0;
+        v_is_on_open_boundary[vid] = m_vertex_extra[vid].m_is_on_open_boundary ? 1 : 0;
         v_order[vid] = m_vertex_attribute[vid].m_order;
     }
 

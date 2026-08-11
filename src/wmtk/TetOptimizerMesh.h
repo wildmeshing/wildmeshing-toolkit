@@ -68,16 +68,6 @@ public:
         /// Required for multi-threading.
         size_t partition_id = 0;
 
-        /**
-         * Whether the vertex lies on an open boundary of the input surface.
-         *
-         * Carried here rather than in the derived class because an attribute collection has one
-         * element type; simwild's 3D mesh never sets it. The 2D counterpart is
-         * TriOptimizerMesh::VertexAttributes::m_feature_id, which differs deliberately -- see
-         * the comment there.
-         */
-        bool m_is_on_open_boundary = false;
-
         VertexAttributes() {}
         VertexAttributes(const Vector3r& p);
     };
@@ -89,6 +79,14 @@ public:
 
     VertAttCol m_vertex_attribute;
     FaceAttCol m_face_attribute;
+
+    /**
+     * @brief What p_vertex_attrs points at, so a derived class can register more.
+     *
+     * VertexAttributes holds only what both 3D applications need. tetwild adds a per-vertex
+     * open-boundary flag through here; simwild never sets one, so it does not carry the field.
+     */
+    AttributeContainerGroup m_vertex_attr_group;
 
     /**
      * @brief The sentinel get_quality returns for an element AMIPS cannot score.
@@ -145,7 +143,11 @@ public:
     explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<SampleEnvelope> env)
         : m_params(params)
         , m_envelope(std::move(env))
-    {}
+    {
+        m_vertex_attr_group.add(&m_vertex_attribute);
+        p_vertex_attrs = &m_vertex_attr_group;
+        p_face_attrs = &m_face_attribute;
+    }
     ~TetOptimizerMesh() override = default;
 
     /**

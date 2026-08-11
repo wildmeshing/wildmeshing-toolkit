@@ -54,28 +54,6 @@ public:
 
         size_t partition_id = 0;
 
-        /**
-         * Index into TriWildMesh::m_feature_points, or NO_FEATURE.
-         *
-         * A feature point is a 0-dimensional feature of the curve network: an open polyline's
-         * endpoint, or a junction. This is the 2D counterpart of tetwild's
-         * m_is_on_open_boundary, with one deliberate difference -- it names WHICH feature the
-         * vertex stands for, not merely that it stands for one.
-         *
-         * That difference is the whole point. tetwild asks "is the survivor inside the
-         * envelope of the boundary?", a containment question, and in 3D a boundary is a curve
-         * with many edges so collapsing one shortens it rather than deleting it. In 2D the
-         * feature is a single point, and a containment test passes trivially when one endpoint
-         * is collapsed onto another -- the target IS a feature point, distance zero -- while
-         * the first endpoint quietly stops being represented. Preserving features is a
-         * COVERAGE property, so the constraint has to bind a vertex to a specific point.
-         *
-         * Carried here rather than in the derived class because an attribute collection has
-         * one element type; simwild's 2D mesh has no 0-dimensional features and leaves it at
-         * NO_FEATURE.
-         */
-        size_t m_feature_id = std::numeric_limits<size_t>::max();
-
         VertexAttributes() {}
         VertexAttributes(const Vector2d& p)
             : m_posf(p)
@@ -105,6 +83,15 @@ public:
     VertAttCol m_vertex_attribute;
     EdgeAttCol m_edge_attribute;
     FaceAttCol m_face_attribute;
+
+    /**
+     * @brief What p_vertex_attrs points at, so a derived class can register more.
+     *
+     * VertexAttributes holds only what both 2D applications need. triwild adds a per-vertex
+     * feature id through here; simwild-2D has no 0-dimensional features and registers nothing,
+     * so it does not carry the field.
+     */
+    AttributeContainerGroup m_vertex_attr_group;
 
     /**
      * @brief The sentinel get_quality returns for a face AMIPS2D cannot score.
@@ -153,6 +140,11 @@ public:
     explicit TriOptimizerMesh(OptimizerParameters& params)
         : m_params(params)
     {
+        m_vertex_attr_group.add(&m_vertex_attribute);
+        p_vertex_attrs = &m_vertex_attr_group;
+        p_edge_attrs = &m_edge_attribute;
+        p_face_attrs = &m_face_attribute;
+
         m_s_amips = 1.;
         /**
          * eps makes it such that the energy is relative to the envelope thickness. As it's a

@@ -74,9 +74,6 @@ public:
     {
         m_envelope_eps = envelope_eps;
         NUM_THREADS = _num_threads;
-        p_vertex_attrs = &m_vertex_attribute;
-        p_edge_attrs = &m_edge_attribute;
-        p_face_attrs = &m_face_attribute;
 
         optimization::deactivate_opt_logger();
 
