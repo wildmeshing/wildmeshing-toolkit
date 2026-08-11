@@ -19,7 +19,7 @@ void TetWildMesh::split_all_edges()
     // is preallocated per phase, so any vertex a split creates during this pass already
     // has an id below it (same invariant run_localized_to_convergence relies on for
     // vertex_epoch). make_unique value-initialises, so every slot starts at 0.
-    if (m_params.split_high_valence_threshold > 0) {
+    if (m_tet_params.split_high_valence_threshold > 0) {
         // Size to the preallocated capacity, not vert_capacity(). vert_capacity() returns
         // current_vert_size -- the live vertex count -- so every vertex a split creates during
         // this pass gets an id at or above it, trips the `vid >= m_high_valence_claim_size`
@@ -95,7 +95,7 @@ void TetWildMesh::split_all_edges()
         wmtk::logger().info(
             "[high-valence] {} splits refused to avoid growing a vertex past {} incident tets",
             n,
-            m_params.split_high_valence_threshold);
+            m_tet_params.split_high_valence_threshold);
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
@@ -151,8 +151,8 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
     // A vertex past the threshold accepts one such split per pass and refuses the rest,
     // which spreads the refinement instead of letting it pile onto the same vertex. Done
     // here, before the face caching below, so a refusal is cheap.
-    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
-        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
+    if (m_tet_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_tet_params.split_high_valence_threshold);
         std::vector<size_t> to_claim;
         for (const Tuple& t : tets) {
             const auto vs = oriented_tet_vertices(t);

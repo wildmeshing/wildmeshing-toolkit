@@ -247,15 +247,15 @@ void TetWildMesh::init_from_Volumeremesher(
                         {vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
                     int on_bbox = -1;
                     for (int k = 0; k < 3; k++) {
-                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                            m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-                            m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_min[k] &&
+                            m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_min[k] &&
+                            m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_min[k]) {
                             on_bbox = k * 2;
                             break;
                         }
-                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                            m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-                            m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+                        if (m_vertex_attribute[vids[0]].m_pos[k] == m_tet_params.box_max[k] &&
+                            m_vertex_attribute[vids[1]].m_pos[k] == m_tet_params.box_max[k] &&
+                            m_vertex_attribute[vids[2]].m_pos[k] == m_tet_params.box_max[k]) {
                             on_bbox = k * 2 + 1;
                             break;
                         }
@@ -467,7 +467,7 @@ void TetWildMesh::find_open_boundary()
     m_order2_envelope->init(
         v_posf,
         open_boundaries,
-        m_params.epsr * m_params.diag_l * m_params.order2_envelope_ratio);
+        m_params.epsr * m_params.diag_l * m_tet_params.order2_envelope_ratio);
 }
 
 bool TetWildMesh::is_open_boundary_edge(const Tuple& e)

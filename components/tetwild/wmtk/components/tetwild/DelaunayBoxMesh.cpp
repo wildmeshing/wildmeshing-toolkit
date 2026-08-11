@@ -29,24 +29,24 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
 
-    // The box is grown from the ORIGINAL input bbox (m_params.min/max), not from `vertices`,
+    // The box is grown from the ORIGINAL input bbox (m_tet_params.min/max), not from `vertices`,
     // which are the SIMPLIFIED surface -- so it is deliberately larger than the point set
-    // being triangulated. m_params.box_min/box_max then hold the padded box, which is what
+    // being triangulated. m_tet_params.box_min/box_max then hold the padded box, which is what
     // bbox-face tagging compares vertex coordinates against.
     std::vector<wmtk::delaunay::Tetrahedron> tets;
     Vector3d box_min, box_max;
     wmtk::utils::delaunay_box_mesh(
         *m_envelope,
-        m_params.min,
-        m_params.max,
+        m_tet_params.min,
+        m_tet_params.max,
         m_params.diag_l,
         points,
         tets,
         box_min,
         box_max);
 
-    m_params.box_min = box_min;
-    m_params.box_max = box_max;
+    m_tet_params.box_min = box_min;
+    m_tet_params.box_max = box_max;
 
     // conn
     init(points.size(), tets);
