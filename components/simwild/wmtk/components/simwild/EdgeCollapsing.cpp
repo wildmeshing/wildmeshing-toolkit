@@ -3,12 +3,12 @@
 
 #include <igl/Timer.h>
 #include <algorithm>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -30,57 +30,40 @@ void SimWildMesh::collapse_all_edges(bool is_limit_length)
     logger().info("#edges = {}", all_ops.size() / 2);
     logger().info("edge collapse prepare time: {:.4}s", time);
 
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
-            std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-            for (const Tuple& t : newts) {
-                op_tups.emplace_back(op, t);
-                op_tups.emplace_back(op, t.switch_vertex(m));
-            }
-            return op_tups;
-        };
-        executor.priority = [](const SimWildMesh& m, Op op, const Tuple& t) {
-            return -m.get_length2(t);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const SimWildMesh& m,
-                                            const std::tuple<double, Op, Tuple>& ele) {
-            auto& VA = m_vertex_attribute;
-            auto& [weight, op, tup] = ele;
-            auto length = m.get_length2(tup);
-            if (length != -weight) {
-                return false;
-            }
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-            // Deliberately NOT filtered on length here. An over-length edge stays a
-            // candidate and collapse_edge_before decides it on quality instead: it is kept
-            // only if it STRICTLY improves the worst element of the ring. See there.
-            return true;
-        };
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge collapse operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
+                std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+                for (const Tuple& t : newts) {
+                    op_tups.emplace_back(op, t);
+                    op_tups.emplace_back(op, t.switch_vertex(m));
+                }
+                return op_tups;
+            };
+            executor.priority = [](const wmtk::TetOptimizerMesh& m, Op op, const Tuple& t) {
+                return -m.get_length2(t);
+            };
+            executor.is_weight_up_to_date = [&](const wmtk::TetOptimizerMesh& m,
+                                                const std::tuple<double, Op, Tuple>& ele) {
+                auto& VA = m_vertex_attribute;
+                auto& [weight, op, tup] = ele;
+                auto length = m.get_length2(tup);
+                if (length != -weight) {
+                    return false;
+                }
+                // Deliberately NOT filtered on length here. An over-length edge stays a
+                // candidate and collapse_edge_before decides it on quality instead: it is kept
+                // only if it STRICTLY improves the worst element of the ring. See there.
+                return true;
+            };
 
-        // Retry a failed collapse only where the mesh actually changed this round
-        // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-        wmtk::run_localized_to_convergence(*this, executor, all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = ExecutePass<SimWildMesh>(ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](SimWildMesh& m, const Tuple& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = ExecutePass<SimWildMesh>(ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time serial: {:.4}s", time);
-    }
+            // Retry a failed collapse only where the mesh actually changed this round
+            // (dirty-epoch localized retry), instead of re-testing every failure every pass.
+            wmtk::run_localized_to_convergence(mesh, executor, all_ops);
+        });
 }
 
 bool SimWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
@@ -406,7 +389,7 @@ void SimWildMesh::simplify()
 
     // re-build envelope
     m_envelope->use_exact = false;
-    m_envelope->init(m_V_envelope, m_F_envelope, m_params.eps_simplify);
+    m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
 
     m_collapse_check_quality = false;
     collapse_all_edges();

@@ -2,7 +2,7 @@
 
 #include <wmtk/Types.hpp>
 
-namespace wmtk::components::triwild {
+namespace wmtk::utils {
 
 /**
  * @brief Initializes a triangulation from a 2D point set and edge set by computing the exact
@@ -29,7 +29,7 @@ namespace wmtk::components::triwild {
  * @param F_out output faces (Lx3)
  * @param E_out output edges (Px2) - the output edges tiling the input edges
  */
-void init_from_delaunay_box_mesh(
+void embed_segments(
     const MatrixXd& V,
     const MatrixXi& E,
     MatrixXd& V_out,
@@ -63,4 +63,4 @@ void read_input_curves(
     std::vector<MatrixXd>& Vs_out,
     std::vector<MatrixXi>& Es_out);
 
-} // namespace wmtk::components::triwild
+} // namespace wmtk::utils

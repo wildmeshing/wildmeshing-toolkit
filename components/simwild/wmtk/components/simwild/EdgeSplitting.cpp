@@ -1,9 +1,12 @@
+#include <limits>
 #include "SimWildMesh.h"
 
 #include <igl/Timer.h>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
+#include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -14,63 +17,52 @@ void SimWildMesh::split_all_edges()
     m_force_split_count = 0;
     m_exact_split_count = 0;
     timer.start();
-    std::vector<std::pair<std::string, Tuple>> collect_all_ops;
-    for (const Tuple& loc : get_edges()) {
-        collect_all_ops.emplace_back("edge_split", loc);
-    }
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](SimWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_edges;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge split operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = wmtk::renewal_edges;
 
-        executor.priority = [&](const SimWildMesh& m, std::string op, const Tuple& t) {
-            return m.get_length2(t);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const SimWildMesh& m,
-                                            const std::tuple<double, std::string, Tuple>& ele) {
-            auto [weight, op, tup] = ele;
-            auto length = m.get_length2(tup);
-            if (length != weight) {
-                return false;
-            }
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            // Force-split: a worst tet's longest edge (queued by
-            // refine_sizing_around_worst when the max energy stalls) is split once
-            // regardless of the length gate, to unstick a sliver without changing the
-            // sizing field. The new midpoint is not in m_force_split_edges, so the
-            // two halves are NOT force-split again -- exactly one split per edge.
-            if (is_force_split_edge(v1_id, v2_id)) {
+            executor.priority = [&](const wmtk::TetOptimizerMesh& m,
+                                    std::string op,
+                                    const Tuple& t) { return m.get_length2(t); };
+            executor.is_weight_up_to_date = [&](const wmtk::TetOptimizerMesh& m,
+                                                const std::tuple<double, std::string, Tuple>& ele) {
+                auto [weight, op, tup] = ele;
+                auto length = m.get_length2(tup);
+                if (length != weight) {
+                    return false;
+                }
+                //
+                size_t v1_id = tup.vid(*this);
+                size_t v2_id = tup.switch_vertex(*this).vid(*this);
+                // Force-split: a worst tet's longest edge (queued by
+                // refine_sizing_around_worst when the max energy stalls) is split once
+                // regardless of the length gate, to unstick a sliver without changing the
+                // sizing field. The new midpoint is not in m_force_split_edges, so the
+                // two halves are NOT force-split again -- exactly one split per edge.
+                if (is_force_split_edge(v1_id, v2_id)) {
+                    return true;
+                }
+                double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                       m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                      2;
+                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                    return false;
+                }
                 return true;
-            }
-            double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
-                                   m_vertex_attribute[v2_id].m_sizing_scalar) /
-                                  2;
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                return false;
-            }
-            return true;
-        };
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time serial: {:.4}s", time);
-    }
+            };
+            // Retry a failed split only where the mesh actually changed this round
+            // (dirty-epoch localized retry), as tetwild does.
+            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+        });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
             "[force-split] {} worst-tet longest edges force-split",
@@ -202,7 +194,12 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
 
     // If a Voronoi split function is set, binary-search vmid onto its zero-crossing.
     // p0 stays on the negative side, p1 on the positive side.
-    if (m_voronoi_split_fn) {
+    //
+    // Skipped for an un-rounded vertex: the exact midpoint is then the only position known to
+    // keep every incident tet valid, and this search only considers doubles -- including the
+    // plain double midpoint it reverts to, which is the position that just inverted. The 2D
+    // twin carries the same guard.
+    if (m_voronoi_split_fn && m_vertex_attribute[v_id].m_is_rounded) {
         Vector3d p0 = m_vertex_attribute[v1_id].m_posf;
         Vector3d p1 = m_vertex_attribute[v2_id].m_posf;
         if (m_voronoi_split_fn(p0) >= 0) {
@@ -285,6 +282,41 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
     }
     for (const Tuple& loc : locs) {
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
+    }
+
+    /// containment: the new surface triangles must stay inside the envelope
+    //
+    // Collapse and the swaps test this; split did not, and split is the operation that
+    // CREATES surface vertices. It puts the new one at the chord midpoint, which on a curved
+    // region lies off the surface by about L^2/8R, and nothing afterwards is obliged to
+    // bring it back -- so the tracked surface walks outward one subdivision at a time.
+    //
+    // Measured on the tetwild counterpart of this hole (Thingi10K 243014, exact envelope,
+    // serial): 19 of 24702 surface vertices outside the envelope by iteration 12, while the
+    // end-of-run Hausdorff check still reported "inside the envelope (as expected)" -- that
+    // check samples by AREA and is blind to violations on vanishingly small elements.
+    if (cache.is_edge_on_surface) {
+        const auto& VA = m_vertex_attribute;
+        for (const auto& info : cache.changed_faces) {
+            if (!info.first.m_is_surface_fs) continue;
+            const auto& old_vids = info.second;
+            size_t other = std::numeric_limits<size_t>::max();
+            int n_shared = 0;
+            for (int j = 0; j < 3; j++) {
+                if (old_vids[j] == v1_id || old_vids[j] == v2_id) {
+                    ++n_shared;
+                } else {
+                    other = old_vids[j];
+                }
+            }
+            if (n_shared != 2) continue;
+            if (m_envelope->is_outside({{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+            if (m_envelope->is_outside({{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+        }
     }
 
     /// update vertex attribute

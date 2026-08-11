@@ -7,12 +7,12 @@
 #include <atomic>
 #include <mutex>
 #include <unordered_set>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/threading/collector.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -35,51 +35,33 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
     logger().info("#edges = {}", collect_all_ops.size() / 2);
     time = timer.getElapsedTime();
     logger().info("edge collapse prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
-            std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-            for (const Tuple& t : newts) {
-                op_tups.emplace_back(op, t);
-                op_tups.emplace_back(op, t.switch_vertex(m));
-            }
-            return op_tups;
-        };
-        executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
-            auto& VA = m_vertex_attribute;
-            auto& [weight, op, tup] = ele;
-            auto length = m.get_length2(tup);
-            if (length != -weight) return false;
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-            // Deliberately NOT filtered on length here. An over-length edge stays a
-            // candidate and collapse_edge_before decides it on quality instead: it is kept
-            // only if it STRICTLY improves the worst element of the ring. See there.
-            return true;
-        };
-        // Retry a failed collapse only where the mesh actually changed this round
-        // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-        wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge collapse operation time serial: {:.4}s", time);
-    }
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge collapse operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
+                std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
+                for (const Tuple& t : newts) {
+                    op_tups.emplace_back(op, t);
+                    op_tups.emplace_back(op, t.switch_vertex(m));
+                }
+                return op_tups;
+            };
+            executor.priority = [&](auto& m, auto op, auto& t) { return -m.get_length2(t); };
+            executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
+                auto& [weight, op, tup] = ele;
+                auto length = m.get_length2(tup);
+                if (length != -weight) return false;
+                // Deliberately NOT filtered on length here. An over-length edge stays a
+                // candidate and collapse_edge_before decides it on quality instead: it is kept
+                // only if it STRICTLY improves the worst element of the ring. See there.
+                return true;
+            };
+            // Retry a failed collapse only where the mesh actually changed this round
+            // (dirty-epoch localized retry), instead of re-testing every failure every pass.
+            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+        });
 }
 
 bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
@@ -124,8 +106,9 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     }
 
     // open boundary
-    if (cache.edge_length > 0 && VA[v1_id].m_is_on_open_boundary) {
-        if (!VA[v2_id].m_is_on_open_boundary && m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
+    if (cache.edge_length > 0 && m_vertex_extra[v1_id].m_is_on_open_boundary) {
+        if (!m_vertex_extra[v2_id].m_is_on_open_boundary &&
+            m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
             return false;
         }
     }
@@ -345,8 +328,8 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     // false;
 
     // open boundary - must be set before checking for open boundary
-    VA[v2_id].m_is_on_open_boundary =
-        VA.at(v1_id).m_is_on_open_boundary || VA.at(v2_id).m_is_on_open_boundary;
+    m_vertex_extra[v2_id].m_is_on_open_boundary = m_vertex_extra.at(v1_id).m_is_on_open_boundary ||
+                                                  m_vertex_extra.at(v2_id).m_is_on_open_boundary;
 
     // surface
     // and open boundary
@@ -386,10 +369,10 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
         //}
     }
 
-    if (VA.at(v2_id).m_is_on_open_boundary) {
+    if (m_vertex_extra.at(v2_id).m_is_on_open_boundary) {
         // check if boundary edges are topologically still boundaries
         if (!is_vertex_on_boundary(v2_id)) {
-            VA[v2_id].m_is_on_open_boundary = false;
+            m_vertex_extra[v2_id].m_is_on_open_boundary = false;
         }
     }
 

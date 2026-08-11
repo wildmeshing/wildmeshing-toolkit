@@ -1,11 +1,12 @@
+#include <limits>
 #include "TetWildMesh.h"
 
 #include <igl/Timer.h>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -19,7 +20,7 @@ void TetWildMesh::split_all_edges()
     // is preallocated per phase, so any vertex a split creates during this pass already
     // has an id below it (same invariant run_localized_to_convergence relies on for
     // vertex_epoch). make_unique value-initialises, so every slot starts at 0.
-    if (m_params.split_high_valence_threshold > 0) {
+    if (m_tet_params.split_high_valence_threshold > 0) {
         // Size to the preallocated capacity, not vert_capacity(). vert_capacity() returns
         // current_vert_size -- the live vertex count -- so every vertex a split creates during
         // this pass gets an id at or above it, trips the `vid >= m_high_valence_claim_size`
@@ -40,52 +41,39 @@ void TetWildMesh::split_all_edges()
         [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_simple;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge split operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = wmtk::renewal_simple;
 
-        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
-            auto [weight, op, tup] = ele;
-            auto length = m.get_length2(tup);
-            if (length != weight) return false;
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            // Force-split: a worst tet's longest edge (queued by
-            // refine_sizing_around_worst when the max energy stalls) is split once
-            // regardless of the length gate, to unstick a sliver without changing the
-            // sizing field. The new midpoint is not in m_force_split_edges, so the
-            // two halves are NOT force-split again -- exactly one split per edge.
-            if (is_force_split_edge(v1_id, v2_id)) {
+            executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+            executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
+                auto [weight, op, tup] = ele;
+                auto length = m.get_length2(tup);
+                if (length != weight) return false;
+                //
+                size_t v1_id = tup.vid(*this);
+                size_t v2_id = tup.switch_vertex(*this).vid(*this);
+                // Force-split: a worst tet's longest edge (queued by
+                // refine_sizing_around_worst when the max energy stalls) is split once
+                // regardless of the length gate, to unstick a sliver without changing the
+                // sizing field. The new midpoint is not in m_force_split_edges, so the
+                // two halves are NOT force-split again -- exactly one split per edge.
+                if (is_force_split_edge(v1_id, v2_id)) {
+                    return true;
+                }
+                double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                       m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                      2;
+                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                    return false;
+                }
                 return true;
-            }
-            double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
-                                   m_vertex_attribute[v2_id].m_sizing_scalar) /
-                                  2;
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                return false;
-            }
-            return true;
-        };
-        wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time serial: {:.4}s", time);
-    }
+            };
+            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+        });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
             "[force-split] {} worst-tet longest edges force-split",
@@ -95,7 +83,7 @@ void TetWildMesh::split_all_edges()
         wmtk::logger().info(
             "[high-valence] {} splits refused to avoid growing a vertex past {} incident tets",
             n,
-            m_params.split_high_valence_threshold);
+            m_tet_params.split_high_valence_threshold);
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
@@ -151,8 +139,8 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
     // A vertex past the threshold accepts one such split per pass and refuses the rest,
     // which spreads the refinement instead of letting it pile onto the same vertex. Done
     // here, before the face caching below, so a refusal is cheap.
-    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
-        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
+    if (m_tet_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_tet_params.split_high_valence_threshold);
         std::vector<size_t> to_claim;
         for (const Tuple& t : tets) {
             const auto vs = oriented_tet_vertices(t);
@@ -263,15 +251,15 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split is otherwise unconditional: it checks orientation and the envelope but never
-    // quality. That is right for a length-driven split of a long, well-behaved edge and
-    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
-    // land essentially on the opposite edge. The result is a POSITIVELY ORIENTED tet whose
-    // volume is too small for AMIPS, so get_quality returns MAX_ENERGY, the reported max
-    // energy jumps to cbrt(1e50) = 4.6e16, and every control decision that divides by it --
-    // filter_energy, the stall test, the average -- is meaningless from then on. On
-    // Thingi10K 101954 that is exactly how the run died: the first 4.6e16 appears on the
-    // split line immediately after "[force-split] 92 worst-tet longest edges force-split".
+    // A split checks orientation, rounding and (above) the envelope, but never quality. That is
+    // right for a length-driven split of a long, well-behaved edge and wrong for the force-split of
+    // a stalled sliver's longest edge, where the midpoint can land essentially on the opposite
+    // edge. The result is a POSITIVELY ORIENTED tet whose volume is too small for AMIPS, so
+    // get_quality returns MAX_ENERGY, the reported max energy jumps to cbrt(1e50) = 4.6e16, and
+    // every control decision that divides by it -- filter_energy, the stall test, the average -- is
+    // meaningless from then on. On Thingi10K 101954 that is exactly how the run died: the
+    // first 4.6e16 appears on the split line immediately after "[force-split] 92 worst-tet longest
+    // edges force-split".
     //
     // Refuse to be the operation that creates one. A split that merely subdivides a region
     // that was already degenerate is still allowed, so a stuck region can keep being refined.
@@ -286,6 +274,50 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
     }
 
+    /// containment: the new surface triangles must stay inside the envelope
+    //
+    // Every other operation that moves or creates surface geometry tests this --- collapse
+    // in collapse_edge_before/after, all four swaps in their *_after --- and split did not.
+    // The comment above claiming it "checks orientation and the envelope" was wrong: this
+    // file contained no envelope query at all.
+    //
+    // It matters because split is the operation that CREATES surface vertices, and it puts
+    // the new one at the chord midpoint. On a curved region the midpoint of a chord lies off
+    // the surface by about L^2/8R, so a long enough edge over a tight enough curve places it
+    // outside the envelope the moment it is created, and nothing afterwards is obliged to
+    // bring it back. Smoothing is the only operation that could, and with
+    // quality_veto_on_surface it refuses whenever the pull-back worsens an incident element.
+    //
+    // Measured on Thingi10K 243014 (exact envelope, serial): 19 of 24702 surface vertices
+    // outside the envelope by iteration 12 --- a silent violation of the containment
+    // invariant, invisible in the sweep because DEBUG_hausdorff is off by default.
+    //
+    // The face split is (v1,v2,other) -> (v1,v_id,other) + (v2,v_id,other), which is the same
+    // pair of new triangles the attribute update below writes.
+    if (cache.is_edge_on_surface) {
+        const auto& VA = m_vertex_attribute;
+        for (const auto& info : cache.changed_faces) {
+            if (!info.first.m_is_surface_fs) continue;
+            const auto& old_vids = info.second;
+            size_t other = std::numeric_limits<size_t>::max();
+            int n_shared = 0;
+            for (int j = 0; j < 3; j++) {
+                if (old_vids[j] == v1_id || old_vids[j] == v2_id) {
+                    ++n_shared;
+                } else {
+                    other = old_vids[j];
+                }
+            }
+            if (n_shared != 2) continue; // face does not contain the split edge
+            if (m_envelope->is_outside({{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+            if (m_envelope->is_outside({{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+                return false;
+            }
+        }
+    }
+
     /// update vertex attribute
     // bbox
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
@@ -296,7 +328,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_order = cache.edge_order;
 
     // open boundary
-    m_vertex_attribute[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
+    m_vertex_extra[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
 
     /// update face attribute
     // add new and erase old

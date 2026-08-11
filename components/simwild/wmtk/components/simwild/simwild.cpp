@@ -1,4 +1,5 @@
 #include "simwild.hpp"
+#include <wmtk/utils/DriverPrologue.hpp>
 
 
 #include <memory>
@@ -221,7 +222,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     if (!report_file.empty()) {
         std::ofstream fout(report_file);
         nlohmann::json report;
-        report["#t"] = mesh.get_faces().size();
+        report["#t"] = mesh.get_tets().size();
         report["#v"] = mesh.get_vertices().size();
         report["max_energy"] = max_energy;
         report["avg_energy"] = avg_energy;
@@ -255,14 +256,20 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     if (input_data.V_envelope.size() != 0) {
         mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
     }
-    if (input_data.V_input_r.size() != 0) {
-        log_and_throw_error("Input must be float for 2D!");
+    if (input_data.V_input_r.size() == 0) {
+        mesh.init_from_image(
+            input_data.V_input,
+            input_data.T_input,
+            input_data.T_input_tag,
+            input_data.tag_names);
+    } else {
+        logger().warn("Use RATIONAL input for 2D");
+        mesh.init_from_image(
+            input_data.V_input_r,
+            input_data.T_input,
+            input_data.T_input_tag,
+            input_data.tag_names);
     }
-    mesh.init_from_image(
-        input_data.V_input,
-        input_data.T_input,
-        input_data.T_input_tag,
-        input_data.tag_names);
 
     auto write_unique_vtu = [&params, &mesh]() {
         static size_t vtu_counter = 0;
@@ -322,34 +329,11 @@ void simwild(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
 
-    // verify input and inject defaults
-    {
-        const auto spec = jse::embed::wmtk_simwild_spec::simwild_spec::spec();
-        jse::JSE spec_engine;
-        spec_engine.strict = true; // detect unknown parameters in the input json
-        bool r = spec_engine.verify_json(json_params, spec);
-        if (!r) {
-            log_and_throw_error(spec_engine.log2str());
-        }
-        json_params = spec_engine.inject_defaults(json_params, spec);
-    }
-
-    const std::filesystem::path root = json_params["input_dir"];
-
-    // logger settings
-    {
-        std::string log_file_name = json_params["log_file"];
-        if (!log_file_name.empty()) {
-            log_file_name = resolve_path(root, log_file_name).string();
-            wmtk::set_file_logger(log_file_name);
-            logger().flush_on(spdlog::level::info);
-        }
-    }
-
-    std::vector<std::string> input_paths = json_params["input"];
-    for (std::string& p : input_paths) {
-        p = resolve_path(root, p).string();
-    }
+    const std::filesystem::path root = utils::verify_and_setup_logger(
+        json_params,
+        jse::embed::wmtk_simwild_spec::simwild_spec::spec(),
+        true);
+    const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
 
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);
     std::filesystem::path output_filename = json_params["output"];
@@ -371,11 +355,17 @@ void simwild(nlohmann::json json_params)
     igl::Timer timer;
     timer.start();
 
-    // read image or .msh
+    // Three input routes, one per kind of input:
+    //   .msh          -> an already-tagged mesh, 2D or 3D by content (no insertion)
+    //   surface OBJ   -> EmbedSurface, the 3D VolumeRemesher arrangement
+    //   curve OBJ     -> EmbedCurves,  the 2D VolumeRemesher arrangement
     InputData input_data;
-    std::string extension = std::filesystem::path(input_paths[0]).extension().string();
+    const std::string extension = std::filesystem::path(input_paths[0]).extension().string();
+    const int dimension = resolve_input_dimension(input_paths, json_params);
     if (extension == ".msh") {
         input_data = read_image_msh(input_paths[0]);
+    } else if (dimension == 2) {
+        input_data = read_curves(input_paths, output_filename.string(), json_params);
     } else {
         input_data = read_mesh(input_paths, output_filename.string(), json_params);
     }

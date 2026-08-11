@@ -1,4 +1,4 @@
-#include "init_from_delaunay.hpp"
+#include "EmbedSegments.hpp"
 
 #include <VolumeRemesher/2d/embed2d.h>
 #include <VolumeRemesher/numerics.h>
@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <set>
 
-namespace wmtk::components::triwild {
+namespace wmtk::utils {
 
 namespace {
 
@@ -21,7 +21,7 @@ namespace {
 // how VolumeRemesher was configured (see cmake/recipes/volumemesher.cmake). Go
 // through wmtk::Rational -- the same conversion the 3D insertion uses -- so both
 // backends are handled.
-Rational to_rational(const vol_rem::bigrational& r)
+Rational bigrational_to_rational(const vol_rem::bigrational& r)
 {
     Rational q;
 #ifdef USE_GNU_GMP_CLASSES
@@ -86,17 +86,7 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
     }
 
     SampleEnvelope envelope;
-    {
-        std::vector<Vector2d> V_envelope;
-        std::vector<Vector2i> E_envelope;
-        for (int i = 0; i < E.rows(); i++) {
-            E_envelope.push_back(Vector2i(E(i, 0), E(i, 1)));
-        }
-        for (int i = 0; i < V.rows(); i++) {
-            V_envelope.push_back(V.row(i));
-        }
-        envelope.init(V_envelope, E_envelope, 0);
-    }
+    envelope.init(V, E, 0);
 
     const double min_dis = voxel_resolution * voxel_resolution / 4;
     for (size_t i = 0; i < ds[0].size(); i++) {
@@ -117,7 +107,7 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
 
 } // namespace
 
-void init_from_delaunay_box_mesh(
+void embed_segments(
     const MatrixXd& V,
     const MatrixXi& E,
     MatrixXd& V_out,
@@ -181,8 +171,8 @@ void init_from_delaunay_box_mesh(
     V_out.resize(nv, 2);
     size_t n_indirect = 0;
     for (int v = 0; v < nv; ++v) {
-        V_rational[v][0] = to_rational(vertices[2 * v + 0]);
-        V_rational[v][1] = to_rational(vertices[2 * v + 1]);
+        V_rational[v][0] = bigrational_to_rational(vertices[2 * v + 0]);
+        V_rational[v][1] = bigrational_to_rational(vertices[2 * v + 1]);
         V_out(v, 0) = V_rational[v][0].to_double();
         V_out(v, 1) = V_rational[v][1].to_double();
         if (Rational(V_out(v, 0)) != V_rational[v][0] ||
@@ -283,4 +273,4 @@ void read_input_curves(
     }
 }
 
-} // namespace wmtk::components::triwild
+} // namespace wmtk::utils

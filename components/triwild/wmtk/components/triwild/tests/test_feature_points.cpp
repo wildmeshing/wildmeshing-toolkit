@@ -55,7 +55,7 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
     TriWildMesh mesh(params, eps, 0);
     build_one_tri(mesh, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
     mesh.m_feature_points = {Vector2d(0, 0)};
-    mesh.m_vertex_attribute[0].m_feature_id = 0;
+    mesh.m_vertex_extra[0].m_feature_id = 0;
 
     SECTION("a vertex carrying no feature is never blocked")
     {
@@ -89,7 +89,7 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         // integration model it stranded a degenerate triangle and the max energy stayed at
         // 1e50 for all 82 iterations instead of converging in 3.
         mesh.m_feature_points.push_back(Vector2d(0.5, 0));
-        mesh.m_vertex_attribute[1].m_feature_id = 1;
+        mesh.m_vertex_extra[1].m_feature_id = 1;
         CHECK_FALSE(mesh.collapse_breaks_feature(0, 1));
         CHECK_FALSE(mesh.collapse_breaks_feature(1, 0));
     }
@@ -100,14 +100,14 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         // vertex within eps, and the plain distance test catches that without needing a
         // special case for "v2 already carries something".
         mesh.m_feature_points.push_back(Vector2d(5, 0));
-        mesh.m_vertex_attribute[2].m_feature_id = 1;
+        mesh.m_vertex_extra[2].m_feature_id = 1;
         CHECK(mesh.collapse_breaks_feature(0, 2));
         CHECK(mesh.collapse_breaks_feature(2, 0));
     }
 
     SECTION("a vertex already carrying the SAME feature is fine")
     {
-        mesh.m_vertex_attribute[1].m_feature_id = 0;
+        mesh.m_vertex_extra[1].m_feature_id = 0;
         CHECK_FALSE(mesh.collapse_breaks_feature(0, 1));
     }
 
@@ -125,7 +125,7 @@ TEST_CASE("triwild-feature-collapse-policy", "[triwild_operation][feature_points
         TriWildMesh off(params, eps, 0);
         build_one_tri(off, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
         off.m_feature_points = {Vector2d(0, 0)};
-        off.m_vertex_attribute[0].m_feature_id = 0;
+        off.m_vertex_extra[0].m_feature_id = 0;
         CHECK_FALSE(off.collapse_breaks_feature(0, 2));
     }
 }
@@ -137,7 +137,7 @@ TEST_CASE("triwild-feature-smoothing-is-a-ball-not-a-pin", "[triwild_operation][
     TriWildMesh mesh(params, eps, 0);
     build_one_tri(mesh, {Vector2d(0, 0), Vector2d(0.5, 0), Vector2d(5, 0)});
     mesh.m_feature_points = {Vector2d(0, 0)};
-    mesh.m_vertex_attribute[0].m_feature_id = 0;
+    mesh.m_vertex_extra[0].m_feature_id = 0;
 
     // A feature vertex is free to move, just not away: smoothing keeps whatever quality it
     // can find inside the ball. Freezing it outright would be simpler and worse.

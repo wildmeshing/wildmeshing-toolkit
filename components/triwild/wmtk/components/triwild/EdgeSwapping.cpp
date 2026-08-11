@@ -2,18 +2,18 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TriMesh.h>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 #include "wmtk/utils/TupleUtils.hpp"
 
 #include <cassert>
 
 namespace wmtk::components::triwild {
 
-auto renew = [](const TriWildMesh& m, auto op, auto& tris) {
+auto renew = [](const wmtk::TriOptimizerMesh& m, auto op, auto& tris) {
     using Tuple = TriMesh::Tuple;
     std::vector<Tuple> edges;
     for (const auto& t : tris) {
@@ -31,11 +31,6 @@ auto renew = [](const TriWildMesh& m, auto op, auto& tris) {
     return optup;
 };
 
-auto edge_locker = [](auto& m, const auto& e, int task_id) {
-    // TODO: this should not be here
-    return m.try_set_edge_mutex_two_ring(e, task_id);
-};
-
 size_t TriWildMesh::swap_all_edges()
 {
     igl::Timer timer;
@@ -48,30 +43,23 @@ size_t TriWildMesh::swap_all_edges()
     logger().info("edge swap prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
     size_t total_success = 0;
-    auto setup_and_execute = [&](auto& executor) {
+    wmtk::run_pass(*this, wmtk::PassLock::EdgeTwoRing, "", [&](auto& executor, auto& mesh) {
         executor.renew_neighbor_tuples = renew;
-        executor.num_threads = NUM_THREADS;
-        executor.priority = [](const TriWildMesh& m, std::string op, const Tuple& e) {
-            return m.swap_weight(e);
+        // `swap_weight` is triwild's own, so reach it through `this` rather than through the
+        // executor's mesh argument, which is the shared base.
+        executor.priority = [this](const wmtk::TriOptimizerMesh&, std::string op, const Tuple& e) {
+            return swap_weight(e);
         };
         executor.should_renew = [](auto val) { return (val > 0); };
-        executor.is_weight_up_to_date = [](const TriWildMesh& m, auto& ele) {
+        executor.is_weight_up_to_date = [this](const wmtk::TriOptimizerMesh&, auto& ele) {
             auto& [val, _, e] = ele;
-            const double w = m.swap_weight(e);
+            const double w = swap_weight(e);
             return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
         };
         // Retry a failed swap only where the mesh actually changed this round
         // (dirty-epoch localized retry).
-        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        auto executor = ExecutePass<TriWildMesh>(ExecutionPolicy::kPartition);
-        executor.lock_vertices = edge_locker;
-        setup_and_execute(executor);
-    } else {
-        auto executor = ExecutePass<TriWildMesh>(ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-    }
+        total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+    });
 
     // The caller (local_operations) stops the swap loop once a pass changes nothing, so
     // this has to be the real count -- it used to return `true`, i.e. always 1.

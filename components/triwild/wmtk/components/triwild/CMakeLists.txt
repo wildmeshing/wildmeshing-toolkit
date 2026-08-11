@@ -20,9 +20,6 @@ set(SRC_FILES
 
 	triwild.hpp
 	triwild.cpp
-
-	init_from_delaunay.hpp
-	init_from_delaunay.cpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})

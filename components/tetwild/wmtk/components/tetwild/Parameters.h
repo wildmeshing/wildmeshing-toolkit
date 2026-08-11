@@ -1,24 +1,19 @@
 #pragma once
 
+#include <wmtk/OptimizerParameters.h>
+
 namespace wmtk::components::tetwild {
-struct Parameters
+/// The fields shared with triwild and simwild live in wmtk::OptimizerParameters.
+struct Parameters : public wmtk::OptimizerParameters
 {
-    double epsr = 2e-3; // relative error bound (wrt diagonal)
-    double eps = -1.; // absolute error bound
-    double lr = 5e-2; // target edge length (relative)
     /// Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the
     /// surface envelope's. Deliberately below 1 where the surface envelope uses the full eps;
     /// see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5.
     double order2_envelope_ratio = 0.5;
-    double l = -1.;
-    double l_min = -1;
-    double diag_l = -1.;
     Vector3d min = Vector3d::Zero();
     Vector3d max = Vector3d::Ones();
     Vector3d box_min = Vector3d::Zero();
     Vector3d box_max = Vector3d::Ones();
-    bool preserve_topology = false;
-    std::string output_path;
 
     // Allow the edge swaps (3->2, 4-4, 5-6) to operate on surface edges as a
     // topology-preserving surface diagonal flip, instead of forbidding them
@@ -29,75 +24,6 @@ struct Parameters
     // (connected components, Euler characteristic, boundary loops) is unchanged
     // across each swap pass. Off by default (used by tests / debugging).
     bool check_surface_topology = false;
-
-    // ---- Stuck-element sizing refinement --------------------------------
-    // Trigger threshold: fire when the last iteration's improvement is small compared
-    // with the distance the max energy still has to cover, i.e. refine when
-    //     (prev_max - max) <= stall_eps * (max - target).
-    // Equivalently: refine unless the mesh is on course to reach the target within
-    // about 1/stall_eps more iterations. 0 => only when it does not improve at all.
-    //
-    // The denominator is the remaining distance, not prev_max, and that is the whole
-    // point. Measured against prev_max, a mesh grinding down at a steady 1.3% per
-    // iteration toward a target far below clears a 1% bar every single iteration and so
-    // never looks stalled -- even though at that rate it needs on the order of a hundred
-    // more iterations and the operations have in fact deadlocked. The escape hatch then
-    // never fires, which is exactly the regime it exists for.
-    double stuck_refine_stall_eps = 0.1;
-    // Cooldown: after a refinement, skip this many improvement iterations before
-    // refining again, so the operations get full passes to act on the new sizing
-    // field before more refinement is added. 0 => may refine every iteration.
-    //
-    // 0 by default: measured over 468 triwild20k models, a cooldown of 1 costs ~13% wall
-    // time for exactly the same mesh sizes (identical median and p90 vertex counts). The
-    // idea that the operations need an idle iteration to act on the new field does not
-    // survive contact with the data -- the trigger already declines to fire while the mesh
-    // is converging, so a separate cooldown only delays the next escape.
-    int stuck_refine_cooldown = 0;
-    // Number of worst tets (by energy) whose neighborhoods are refined.
-    int stuck_refine_num_worst = 50;
-    // Graph rings around each worst tet's vertices included in the refinement.
-    int stuck_refine_rings = 3;
-    // Multiplicative reduction of m_sizing_scalar per refinement (0.5 => /2).
-    double stuck_refine_factor = 0.5;
-    // Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;
-    // still far above the position-rounding scale so it stays numerically safe.
-    double stuck_refine_min_scalar = 1e-3;
-    // Gradation cap for the monotone sizing smoothing: neighboring sizings may
-    // differ by at most this factor. The smoothing only ever *lowers* sizings
-    // (spreads refinement outward), never raises the refined values, avoiding
-    // sharp resolution jumps that make operations ill-conditioned.
-    double stuck_refine_gradation = 2.0;
-    // Force-split: when the max energy stalls, split each worst tet's longest edge
-    // once, bypassing the split length gate. This unsticks a sliver whose edges are
-    // too short to be split-eligible, WITHOUT touching the sizing field (which the
-    // *factor ratchet above still drives). Adds at most one split per worst tet per
-    // stall, so it does not bloat the tet count.
-    bool stuck_refine_force_split = true;
-    // When a split's rounded (double) midpoint would invert an incident tet, the
-    // split is normally rejected. If this is on, splits of edges that belong to
-    // the current worst-tet set (the seeds used by refine_sizing_around_worst)
-    // instead fall back to the EXACT rational midpoint (never inverts) and keep
-    // the new vertex un-rounded, so the worst region can still be refined.
-
-    // ---- Skip good regions ----------------------------------------------
-    // Only smooth vertices incident to a tet whose energy is >=
-    // skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by
-    // good tets does nothing, so skipping it is free (14-16x faster smooth
-    // passes). Only smoothing is gated: gating the topology/sizing ops
-    // (split/collapse/swap) starves the optimizer and blows up the element
-    // count, so those always run over the whole mesh.
-    bool skip_good_regions = true;
-    // Safety margin on the "active" threshold: a tet is active when its energy
-    // (cbrt of m_quality) is >= this fraction of stop_energy, so vertices near
-    // tets sitting just below the target are still smoothed.
-    double skip_good_regions_margin = 0.9;
-
-    double splitting_l2 = -1.; // the lower bound length (squared) for edge split
-    double collapsing_l2 =
-        std::numeric_limits<double>::max(); // the upper bound length (squared) for edge collapse
-
-    double stop_energy = 10;
 
     /**
      * Incident-tet count above which a vertex is treated as pathological, or 0 to
@@ -114,15 +40,6 @@ struct Parameters
      * vertex in the edge's link, so the gate is applied to the link, not the endpoints.
      */
     int split_high_valence_threshold = 200;
-
-    /**
-     * Relative weight of the AMIPS (quality) term against the envelope (stay-on-surface)
-     * term during smoothing. w_envelope is derived as 1 - w_amips in the TetWildMesh
-     * constructor, so the small default means the envelope dominates and AMIPS acts as a
-     * light quality preference. Matches simwild.
-     */
-    double w_amips = 1e-4;
-    double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /**
      * How many smoothing passes each optimization iteration runs.
@@ -143,29 +60,14 @@ struct Parameters
     // only phase that improves quality without changing connectivity, so giving each topology
     // pass a chance to be relaxed before the next one runs may keep the optimizer off the
     // plateaus where split, collapse and swap simply undo each other.
-    bool interleaved_smoothing = false;
-    int interleaved_smoothing_passes = 2;
-
-    bool debug_output = false;
-    bool perform_sanity_checks = false;
+    bool interleaved_smoothing = true;
+    int interleaved_smoothing_passes = 1;
 
     void init(const Vector3d& min_, const Vector3d& max_)
     {
         min = min_;
         max = max_;
-        diag_l = (max - min).norm();
-        if (l > 0)
-            lr = l / diag_l;
-        else
-            l = lr * diag_l;
-        splitting_l2 = l * l * (16 / 9.);
-        collapsing_l2 = l * l * (16 / 25.);
-
-        if (eps > 0)
-            epsr = eps / diag_l;
-        else
-            eps = epsr * diag_l;
-
+        init_lengths_from_diagonal((max - min).norm());
         l_min = eps;
     }
     void init(

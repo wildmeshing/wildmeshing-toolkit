@@ -2,11 +2,11 @@
 
 #include <igl/Timer.h>
 #include <atomic>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 
 namespace wmtk::components::triwild {
 
@@ -22,7 +22,7 @@ void TriWildMesh::split_all_edges()
     // split_edge_before, and be exempted from the gate entirely -- and those are exactly the
     // ones that run away. The attribute collections are resized to the reservation, so their
     // size is the capacity to use. make_unique value-initialises, so every slot starts at 0.
-    if (m_params.split_high_valence_threshold > 0) {
+    if (m_tri_params.split_high_valence_threshold > 0) {
         m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }
@@ -35,66 +35,53 @@ void TriWildMesh::split_all_edges()
         [](TriWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     logger().info("edge split prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples =
-            [](const TriWildMesh& m, std::string op, const auto& newts) {
-                std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
-                for (const auto& t : newts) {
-                    op_tups.emplace_back(op, t);
-                    op_tups.emplace_back(op, t.switch_edge(m));
-                    op_tups.emplace_back(op, t.switch_vertex(m).switch_edge(m));
-                }
-                return op_tups;
-            };
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge split operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples =
+                [](const wmtk::TriOptimizerMesh& m, std::string op, const auto& newts) {
+                    std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
+                    for (const auto& t : newts) {
+                        op_tups.emplace_back(op, t);
+                        op_tups.emplace_back(op, t.switch_edge(m));
+                        op_tups.emplace_back(op, t.switch_vertex(m).switch_edge(m));
+                    }
+                    return op_tups;
+                };
 
-        executor.priority = [&](const TriWildMesh& m, std::string op, const Tuple& t) {
-            return m.get_length2(t);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const TriWildMesh& m, const auto& ele) {
-            auto [weight, op, tup] = ele;
-            auto length = m.get_length2(tup);
-            if (length != weight) {
-                return false;
-            }
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            // Force-split: a worst triangle's longest edge (queued by
-            // refine_sizing_around_worst when the max energy stalls) is split once
-            // regardless of the length gate, to unstick a sliver without changing the
-            // sizing field. The new midpoint is not in m_force_split_edges, so the two
-            // halves are NOT force-split again -- exactly one split per edge.
-            if (is_force_split_edge(v1_id, v2_id)) {
+            executor.priority = [&](const wmtk::TriOptimizerMesh& m,
+                                    std::string op,
+                                    const Tuple& t) { return m.get_length2(t); };
+            executor.is_weight_up_to_date = [&](const wmtk::TriOptimizerMesh& m, const auto& ele) {
+                auto [weight, op, tup] = ele;
+                auto length = m.get_length2(tup);
+                if (length != weight) {
+                    return false;
+                }
+                //
+                size_t v1_id = tup.vid(*this);
+                size_t v2_id = tup.switch_vertex(*this).vid(*this);
+                // Force-split: a worst triangle's longest edge (queued by
+                // refine_sizing_around_worst when the max energy stalls) is split once
+                // regardless of the length gate, to unstick a sliver without changing the
+                // sizing field. The new midpoint is not in m_force_split_edges, so the two
+                // halves are NOT force-split again -- exactly one split per edge.
+                if (is_force_split_edge(v1_id, v2_id)) {
+                    return true;
+                }
+                const auto& VA = m_vertex_attribute;
+                double sizing_ratio = 0.5 * (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar);
+                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                    return false;
+                }
                 return true;
-            }
-            const auto& VA = m_vertex_attribute;
-            double sizing_ratio = 0.5 * (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar);
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                return false;
-            }
-            return true;
-        };
-        // Retry a failed split only where the mesh actually changed this round
-        // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-        wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = ExecutePass<TriWildMesh>(ExecutionPolicy::kPartition);
-        executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = ExecutePass<TriWildMesh>(ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time serial: {:.4}s", time);
-    }
+            };
+            // Retry a failed split only where the mesh actually changed this round
+            // (dirty-epoch localized retry), instead of re-testing every failure every pass.
+            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+        });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
             "[force-split] {} worst-triangle longest edges force-split",
@@ -105,7 +92,7 @@ void TriWildMesh::split_all_edges()
             "[high-valence] {} splits refused to avoid growing a vertex past {} incident "
             "triangles",
             n,
-            m_params.split_high_valence_threshold);
+            m_tri_params.split_high_valence_threshold);
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
@@ -141,8 +128,8 @@ bool TriWildMesh::split_edge_before(const Tuple& loc0)
     // A vertex past the threshold accepts one such split per pass and refuses the rest, which
     // spreads the refinement instead of letting it pile onto the same vertex. Done here,
     // before the edge caching below, so a refusal is cheap.
-    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
-        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
+    if (m_tri_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_tri_params.split_high_valence_threshold);
         std::vector<size_t> to_claim;
         for (const size_t fid : faces) {
             const size_t vid = simplex_from_face(fid).opposite_vertex(edge).id();
@@ -281,6 +268,31 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
         const auto [_1, eid1] = tuple_from_edge(edge1.vertices());
         const auto [_2, eid2] = tuple_from_edge(edge2.vertices());
 
+        // Containment: the two new constrained segments must stay inside the envelope.
+        //
+        // Collapse tests this (EdgeCollapsing.cpp) and split did not --- this file had no
+        // envelope query at all, despite the comment below claiming otherwise. It matters
+        // because split is the operation that CREATES curve vertices, and it puts the new one
+        // at the chord midpoint, which on a curved region lies off the curve by about L^2/8R.
+        // Nothing afterwards is obliged to bring it back, so the tracked curve walks outward
+        // one subdivision at a time.
+        //
+        // The 3D counterpart of this hole put 19 of 24702 surface vertices outside the exact
+        // envelope on Thingi10K 243014, while the end-of-run Hausdorff check still reported
+        // "inside the envelope (as expected)" --- that check samples by AREA and cannot see
+        // violations that live on vanishingly small elements.
+        if (cache.old_e_attrs.m_is_surface_fs) {
+            const Vector2d& pm = m_vertex_attribute[v_id].m_posf;
+            const Vector2d& p1 = m_vertex_attribute[v1_id].m_posf;
+            const Vector2d& p2 = m_vertex_attribute[v2_id].m_posf;
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p1, pm}})) {
+                return false;
+            }
+            if (m_envelope->is_outside(std::array<Vector2d, 2>{{pm, p2}})) {
+                return false;
+            }
+        }
+
         m_edge_attribute[eid1] = cache.old_e_attrs;
         m_edge_attribute[eid2] = cache.old_e_attrs;
         for (const auto& [vid, _] : cache.faces) {
@@ -291,10 +303,10 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split is otherwise unconditional: it checks orientation and the envelope but never
-    // quality. That is right for a length-driven split of a long, well-behaved edge and
-    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
-    // land essentially on the opposite edge and leave a correctly-oriented element whose
+    // A split checks orientation, rounding and (above) the envelope, but never quality. That is
+    // right for a length-driven split of a long, well-behaved edge and wrong for the force-split of
+    // a stalled sliver's longest edge, where the midpoint can land essentially on the opposite edge
+    // and leave a correctly-oriented element whose
     // area/volume is too small for AMIPS -- get_quality then returns MAX_ENERGY, and every
     // control decision that divides by the max energy is meaningless from then on. Refuse
     // to be the operation that creates one; subdividing an already-degenerate region is
@@ -328,7 +340,7 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
     // A split midpoint stands for no input feature: the endpoints keep theirs, and the new
     // vertex is interior to the curve by construction. Set explicitly because attribute slots
     // are recycled and could carry a stale id.
-    m_vertex_attribute[v_id].m_feature_id = NO_FEATURE;
+    m_vertex_extra[v_id].m_feature_id = NO_FEATURE;
 
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
     m_vertex_attribute[v_id].m_sizing_scalar =

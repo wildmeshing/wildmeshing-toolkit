@@ -1,14 +1,13 @@
 
 #include "TetWildMesh.h"
 
-#include <cstdlib>
-#include "wmtk/ExecutionScheduler.hpp"
-
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
 #include <wmtk/utils/AMIPS.h>
 #include <array>
+#include <cstdlib>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
 
@@ -17,40 +16,6 @@
 
 namespace wmtk::components::tetwild {
 
-bool TetWildMesh::smooth_before(const Tuple& t)
-{
-    const bool r = round(t);
-
-    const size_t vid = t.vid(*this);
-
-    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return false;
-
-    if (m_vertex_attribute[vid].m_is_rounded) return true;
-    // try to round.
-    // Note: no need to roll back.
-    return r;
-}
-
-
-bool TetWildMesh::smooth_after(const Tuple& t)
-{
-    // The body lives in wmtk::optimization::smooth_vertex_3d, shared with simwild.
-    //
-    // This replaces the previous scheme, which optimized AMIPS alone and then snapped the
-    // vertex onto the envelope with nearest_point. That snap moved a drifted vertex the
-    // whole way in one jump, which almost always worsened an incident tet, so the operation
-    // was vetoed and the rollback discarded the projection -- a vertex near the envelope
-    // wall could never come back. The envelope is now a term in the objective instead, so
-    // the pull is gradual and the line search refuses steps that leave the envelope.
-    optimization::SmoothVertexOptions opts;
-    opts.w_amips = m_params.w_amips;
-    opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = m_s_amips;
-    opts.s_envelope = m_s_envelope;
-    opts.two_stage = true;
-
-    return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
-}
 
 std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
@@ -59,13 +24,6 @@ std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const siz
     if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
         return m_order2_envelope;
     }
-    return m_envelope;
-}
-
-std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_containment_envelope(const size_t) const
-{
-    // tetwild keeps one surface envelope, so pull target and containment test coincide --
-    // unlike simwild, which has a separate working envelope.
     return m_envelope;
 }
 
@@ -96,25 +54,32 @@ void TetWildMesh::smooth_all_vertices()
     time = timer.getElapsedTime();
     wmtk::logger().info("vertex smoothing prepare time: {:.4}s", time);
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_vertex_mutex_one_ring(e, task_id);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("vertex smoothing operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        // executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
-        executor(*this, collect_all_ops);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("vertex smoothing operation time serial: {:.4}s", time);
-    }
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::VertexOneRing,
+        "vertex smoothing operation",
+        [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
     wmtk::logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
+}
+
+bool TetWildMesh::smooth_after(const Tuple& t)
+{
+    // The body lives in wmtk::optimization::smooth_vertex_3d, shared with simwild.
+    //
+    // This replaces the previous scheme, which optimized AMIPS alone and then snapped the
+    // vertex onto the envelope with nearest_point. That snap moved a drifted vertex the
+    // whole way in one jump, which almost always worsened an incident tet, so the operation
+    // was vetoed and the rollback discarded the projection -- a vertex near the envelope
+    // wall could never come back. The envelope is now a term in the objective instead, so
+    // the pull is gradual and the line search refuses steps that leave the envelope.
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = m_params.w_amips;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = true;
+
+    return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }
 
 } // namespace wmtk::components::tetwild

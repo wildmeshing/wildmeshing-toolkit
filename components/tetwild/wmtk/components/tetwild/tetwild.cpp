@@ -1,4 +1,5 @@
 #include "tetwild.hpp"
+#include <wmtk/utils/DriverPrologue.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 
 #include "Parameters.h"
@@ -87,32 +88,11 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
 
-    // verify input and inject defaults
-    {
-        const auto spec = jse::embed::wmtk_tetwild_spec::tetwild_spec::spec();
-        jse::JSE spec_engine;
-        bool r = spec_engine.verify_json(json_params, spec);
-        if (!r) {
-            log_and_throw_error(spec_engine.log2str());
-        }
-        json_params = spec_engine.inject_defaults(json_params, spec);
-    }
-    const std::filesystem::path root = json_params["input_dir"];
-
-    // logger settings
-    {
-        std::string log_file_name = json_params["log_file"];
-        if (!log_file_name.empty()) {
-            log_file_name = resolve_path(root, log_file_name).string();
-            wmtk::set_file_logger(log_file_name);
-            logger().flush_on(spdlog::level::info);
-        }
-    }
-
-    std::vector<std::string> input_paths = json_params["input"];
-    for (std::string& p : input_paths) {
-        p = resolve_path(root, p).string();
-    }
+    const std::filesystem::path root = utils::verify_and_setup_logger(
+        json_params,
+        jse::embed::wmtk_tetwild_spec::tetwild_spec::spec(),
+        false);
+    const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
 
     tetwild::Parameters params;
 
@@ -151,6 +131,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.stuck_refine_rings = json_params["stuck_refine_rings"];
     params.stuck_refine_factor = json_params["stuck_refine_factor"];
     params.stuck_refine_force_split = json_params["stuck_refine_force_split"];
+    params.stuck_refine_force_split_oversized_only =
+        json_params["stuck_refine_force_split_oversized_only"];
     params.stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
     params.stuck_refine_gradation = json_params["stuck_refine_gradation"];
 
@@ -281,7 +263,6 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     }
     surf_mesh.write_triangle_mesh(output_path + "_simplified_input.obj");
 
-    params.output_path = output_path;
 
     //// get the simplified input
     std::vector<Eigen::Vector3d> vsimp(surf_mesh.vert_capacity());
@@ -381,8 +362,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     igl::Timer insertion_timer;
     insertion_timer.start();
 
-    // Fast tetrahedralization: use the remesher's own tets directly instead of
-    // the centroid-coning path in insertion_by_volumeremesher_old.
+    // Exact arrangement of the simplified surface against a Delaunay background
+    // mesh; the remesher's own tets are used directly, so no Steiner points.
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
@@ -631,26 +612,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             const int n_samples = 100000;
 
             SampleEnvelope env_in(true);
-            {
-                std::vector<Eigen::Vector3d> v_in;
-                std::vector<Eigen::Vector3i> f_in;
-                v_in.reserve(V.rows());
-                f_in.reserve(F.rows());
-                for (int i = 0; i < V.rows(); ++i) v_in.push_back(V.row(i));
-                for (int i = 0; i < F.rows(); ++i) f_in.push_back(F.row(i));
-                env_in.init(v_in, f_in, params.eps);
-            }
+            env_in.init(V, F, params.eps);
 
             SampleEnvelope env_out(true);
-            {
-                std::vector<Eigen::Vector3d> v_out;
-                std::vector<Eigen::Vector3i> f_out;
-                v_out.reserve(matV.rows());
-                f_out.reserve(matF.rows());
-                for (int i = 0; i < matV.rows(); ++i) v_out.push_back(matV.row(i));
-                for (int i = 0; i < matF.rows(); ++i) f_out.push_back(matF.row(i));
-                env_out.init(v_out, f_out, params.eps);
-            }
+            env_out.init(matV, matF, params.eps);
 
             // Max distance from points sampled on (Vs,Fs) to the surface behind `target`.
             const auto max_deviation = [&](const Eigen::MatrixXd& Vs,
