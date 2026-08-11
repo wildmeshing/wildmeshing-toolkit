@@ -29,3 +29,7 @@ CMakeCache.txt
 
 # Artifacts written into the working directory by the paraviewo unit tests
 /*_paraviewo_*.vtu
+
+# Viewer state written into the repo root by polyscope / imgui at runtime
+.polyscope.ini
+imgui.ini
