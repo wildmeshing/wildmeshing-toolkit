@@ -237,6 +237,13 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         // does not stop until every vertex is rounded as well as the energy target being met.
         m_vertex_attribute[v_id].m_pos =
             (m_vertex_attribute[v1_id].m_pos + m_vertex_attribute[v2_id].m_pos) / 2;
+        // Keep m_posf in step with the exact position. It was left holding the double
+        // midpoint, which is a different point -- and specifically the one just found to
+        // invert an incident tet. Every un-guarded m_posf read (edge length, the envelope
+        // tests, the smoothing seed) then works from a position the vertex does not have.
+        // When an endpoint is itself un-rounded the gap is not a rounding step but the whole
+        // distance between that endpoint's exact and approximate positions.
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
         // Guard against a pre-existing inverted incident tet: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path).
         for (const Tuple& loc : locs) {
