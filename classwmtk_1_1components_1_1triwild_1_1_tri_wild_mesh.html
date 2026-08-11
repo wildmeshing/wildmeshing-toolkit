@@ -75,7 +75,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
@@ -89,7 +88,9 @@ Inheritance diagram for wmtk::components::triwild::TriWildMesh:</div>
  <div class="center">
   <img src="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.png" usemap="#wmtk::components::triwild::TriWildMesh_map" alt=""/>
   <map id="wmtk::components::triwild::TriWildMesh_map" name="wmtk::components::triwild::TriWildMesh_map">
+<area href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share." alt="wmtk::TriOptimizerMesh" shape="rect" coords="118,56,345,80"/>
 <area href="classwmtk_1_1_tri_mesh.html" alt="wmtk::TriMesh" shape="rect" coords="0,0,227,24"/>
+<area href="classwmtk_1_1_rational_positions.html" title="The rounded/exact bookkeeping shared by every mesh that keeps both coordinates." alt="wmtk::RationalPositions" shape="rect" coords="237,0,464,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -101,23 +102,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh_1_1_swap_info_cache.html">SwapInfoCache</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
-Public Types</h2></td></tr>
-<tr class="memitem:aa64decd7f04822ff92d0b71993a3f656" id="r_aa64decd7f04822ff92d0b71993a3f656"><td class="memItemLeft" align="right" valign="top"><a id="aa64decd7f04822ff92d0b71993a3f656" name="aa64decd7f04822ff92d0b71993a3f656"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>VertAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_vertex_attributes.html">VertexAttributes</a> &gt;</td></tr>
-<tr class="separator:aa64decd7f04822ff92d0b71993a3f656"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b44f103f97568b909f8388d4042a579" id="r_a9b44f103f97568b909f8388d4042a579"><td class="memItemLeft" align="right" valign="top"><a id="a9b44f103f97568b909f8388d4042a579" name="a9b44f103f97568b909f8388d4042a579"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_edge_attributes.html">EdgeAttributes</a> &gt;</td></tr>
-<tr class="separator:a9b44f103f97568b909f8388d4042a579"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82ddccb9d205deebc3b3bba4d183de0c" id="r_a82ddccb9d205deebc3b3bba4d183de0c"><td class="memItemLeft" align="right" valign="top"><a id="a82ddccb9d205deebc3b3bba4d183de0c" name="a82ddccb9d205deebc3b3bba4d183de0c"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_face_attributes.html">FaceAttributes</a> &gt;</td></tr>
-<tr class="separator:a82ddccb9d205deebc3b3bba4d183de0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
-<tr class="memitem:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh" id="r_ae5819441284a260b3ce7682e019d174f"><td class="memTemplParams" colspan="2">
-template&lt;typename T &gt; </td></tr>
-<tr class="memitem:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
-<tr class="separator:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh_1_1_vertex_extras.html">VertexExtras</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">triwild's per-vertex additions to the shared VertexAttributes.  <a href="structwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh_1_1_vertex_extras.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -142,20 +129,9 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">Samp
 <tr class="memitem:a1dc890d09a69dccbadd33adcb6979171" id="r_a1dc890d09a69dccbadd33adcb6979171"><td class="memItemLeft" align="right" valign="top"><a id="a1dc890d09a69dccbadd33adcb6979171" name="a1dc890d09a69dccbadd33adcb6979171"></a>
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_containment_envelope</b> (const size_t vid) const</td></tr>
 <tr class="separator:a1dc890d09a69dccbadd33adcb6979171"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7cdd3374bab4310909003eb79004eb76" id="r_a7cdd3374bab4310909003eb79004eb76"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a7cdd3374bab4310909003eb79004eb76">TriWildMesh</a> (<a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
+<tr class="memitem:a7cdd3374bab4310909003eb79004eb76" id="r_a7cdd3374bab4310909003eb79004eb76"><td class="memItemLeft" align="right" valign="top"><a id="a7cdd3374bab4310909003eb79004eb76" name="a7cdd3374bab4310909003eb79004eb76"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TriWildMesh</b> (<a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;_m_params, double envelope_eps, int _num_threads=0)</td></tr>
 <tr class="separator:a7cdd3374bab4310909003eb79004eb76"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa22d854859b8f39c75da564daf32bb84" id="r_aa22d854859b8f39c75da564daf32bb84"><td class="memItemLeft" align="right" valign="top"><a id="aa22d854859b8f39c75da564daf32bb84" name="aa22d854859b8f39c75da564daf32bb84"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>partition_mesh</b> ()</td></tr>
-<tr class="separator:aa22d854859b8f39c75da564daf32bb84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77ab37296ba6aedcb7c2a18b726397c4" id="r_a77ab37296ba6aedcb7c2a18b726397c4"><td class="memItemLeft" align="right" valign="top"><a id="a77ab37296ba6aedcb7c2a18b726397c4" name="a77ab37296ba6aedcb7c2a18b726397c4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>partition_mesh_morton</b> ()</td></tr>
-<tr class="separator:a77ab37296ba6aedcb7c2a18b726397c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97a93398a496b30e61d82f44360203c3" id="r_a97a93398a496b30e61d82f44360203c3"><td class="memItemLeft" align="right" valign="top"><a id="a97a93398a496b30e61d82f44360203c3" name="a97a93398a496b30e61d82f44360203c3"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
-<tr class="separator:a97a93398a496b30e61d82f44360203c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9506789674a4234d3e727c63af4b178a" id="r_a9506789674a4234d3e727c63af4b178a"><td class="memItemLeft" align="right" valign="top"><a id="a9506789674a4234d3e727c63af4b178a" name="a9506789674a4234d3e727c63af4b178a"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_length2</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;l) const</td></tr>
-<tr class="separator:a9506789674a4234d3e727c63af4b178a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6bb795a33b2dc44c0e7dfacaada0192" id="r_ae6bb795a33b2dc44c0e7dfacaada0192"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae6bb795a33b2dc44c0e7dfacaada0192">init_mesh</a> (const MatrixXd &amp;V, const std::vector&lt; Vector2r &gt; &amp;V_rational, const MatrixXi &amp;F, const MatrixXi &amp;E, const std::vector&lt; std::string &gt; &amp;tag_names, const MatrixXd &amp;V_env, const MatrixXi &amp;E_env)</td></tr>
 <tr class="memdesc:ae6bb795a33b2dc44c0e7dfacaada0192"><td class="mdescLeft">&#160;</td><td class="mdescRight">Init mesh from IGL-style matrices.  <br /></td></tr>
 <tr class="separator:ae6bb795a33b2dc44c0e7dfacaada0192"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -165,16 +141,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init_surfaces_and_bou
 <tr class="memitem:a110d0b90ed24d8761360eec67c906d2f" id="r_a110d0b90ed24d8761360eec67c906d2f"><td class="memItemLeft" align="right" valign="top"><a id="a110d0b90ed24d8761360eec67c906d2f" name="a110d0b90ed24d8761360eec67c906d2f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_envelope</b> (const MatrixXd &amp;V, const MatrixXi &amp;F)</td></tr>
 <tr class="separator:a110d0b90ed24d8761360eec67c906d2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a272aea1ca629395ba97033cd84773036" id="r_a272aea1ca629395ba97033cd84773036"><td class="memItemLeft" align="right" valign="top"><a id="a272aea1ca629395ba97033cd84773036" name="a272aea1ca629395ba97033cd84773036"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>adjust_sizing_field_serial</b> (double max_energy)</td></tr>
-<tr class="memdesc:a272aea1ca629395ba97033cd84773036"><td class="mdescLeft">&#160;</td><td class="mdescRight">The old global sizing-field update (<a class="el" href="classwmtk_1_1_k_n_n.html">KNN</a> R-ball around every low-quality triangle). Superseded by refine_sizing_around_worst, but kept compiled and callable so the two can be compared &ndash; tetwild and simwild keep theirs for the same reason. <br /></td></tr>
-<tr class="separator:a272aea1ca629395ba97033cd84773036"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a13a33222d56844c0f9eae86b3daef5ba" id="r_a13a33222d56844c0f9eae86b3daef5ba"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a13a33222d56844c0f9eae86b3daef5ba">refine_sizing_around_worst</a> (double max_energy)</td></tr>
-<tr class="memdesc:a13a33222d56844c0f9eae86b3daef5ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Escape a stuck max energy by refining the sizing field around the worst elements.  <br /></td></tr>
+<tr class="memdesc:a13a33222d56844c0f9eae86b3daef5ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">The old global sizing-field update (<a class="el" href="classwmtk_1_1_k_n_n.html">KNN</a> R-ball around every low-quality triangle). Superseded by refine_sizing_around_worst, but kept compiled and callable so the two can be compared &ndash; tetwild and simwild keep theirs for the same reason.  <br /></td></tr>
 <tr class="separator:a13a33222d56844c0f9eae86b3daef5ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7eaf28b826f4e95f20360644d320018" id="r_ab7eaf28b826f4e95f20360644d320018"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ab7eaf28b826f4e95f20360644d320018">gradation_smooth_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
-<tr class="memdesc:ab7eaf28b826f4e95f20360644d320018"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotone (only-decreasing) gradation smoothing of the sizing field.  <br /></td></tr>
-<tr class="separator:ab7eaf28b826f4e95f20360644d320018"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6149aaeb2020d1e794da63009b0ef9f6" id="r_a6149aaeb2020d1e794da63009b0ef9f6"><td class="memItemLeft" align="right" valign="top"><a id="a6149aaeb2020d1e794da63009b0ef9f6" name="a6149aaeb2020d1e794da63009b0ef9f6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_force_split_edge</b> (size_t v1, size_t v2) const</td></tr>
 <tr class="memdesc:a6149aaeb2020d1e794da63009b0ef9f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">True iff edge (v1,v2) is a worst triangle's longest edge queued for force-split. <br /></td></tr>
@@ -185,9 +154,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>write_msh_groups</b> 
 <tr class="memitem:a4319003a1f0aa0f9b2afa7a6811f1517" id="r_a4319003a1f0aa0f9b2afa7a6811f1517"><td class="memItemLeft" align="right" valign="top"><a id="a4319003a1f0aa0f9b2afa7a6811f1517" name="a4319003a1f0aa0f9b2afa7a6811f1517"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_vtu</b> (const std::string &amp;path) const</td></tr>
 <tr class="separator:a4319003a1f0aa0f9b2afa7a6811f1517"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad7626f238854af276eee2c9d58554b5d" id="r_ad7626f238854af276eee2c9d58554b5d"><td class="memItemLeft" align="right" valign="top"><a id="ad7626f238854af276eee2c9d58554b5d" name="ad7626f238854af276eee2c9d58554b5d"></a>
-std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_edges_by_condition</b> (std::function&lt; bool(const <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_edge_attributes.html">EdgeAttributes</a> &amp;)&gt; cond) const</td></tr>
-<tr class="separator:ad7626f238854af276eee2c9d58554b5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad746b3f526506fe683ab69104bf172c" id="r_aad746b3f526506fe683ab69104bf172c"><td class="memItemLeft" align="right" valign="top"><a id="aad746b3f526506fe683ab69104bf172c" name="aad746b3f526506fe683ab69104bf172c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>split_all_edges</b> ()</td></tr>
 <tr class="separator:aad746b3f526506fe683ab69104bf172c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -227,56 +193,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_all_vertices</
 <tr class="memitem:aa00095781ead36d3e354c5ecd1dd564e" id="r_aa00095781ead36d3e354c5ecd1dd564e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#aa00095781ead36d3e354c5ecd1dd564e">smooth_after</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:aa00095781ead36d3e354c5ecd1dd564e"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideras after an edge smooth.  <br /></td></tr>
 <tr class="separator:aa00095781ead36d3e354c5ecd1dd564e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a615385cd7bd69656676ab114de996bcf" id="r_a615385cd7bd69656676ab114de996bcf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a615385cd7bd69656676ab114de996bcf">is_inverted_f</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
-<tr class="memdesc:a615385cd7bd69656676ab114de996bcf"><td class="mdescLeft">&#160;</td><td class="mdescRight">A vector containing the vertex position and all positions of the surface neighbors.  <br /></td></tr>
-<tr class="separator:a615385cd7bd69656676ab114de996bcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97f8a212b245f26a1b309c78487f82f6" id="r_a97f8a212b245f26a1b309c78487f82f6"><td class="memItemLeft" align="right" valign="top"><a id="a97f8a212b245f26a1b309c78487f82f6" name="a97f8a212b245f26a1b309c78487f82f6"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted_f</b> (const size_t fid) const</td></tr>
-<tr class="separator:a97f8a212b245f26a1b309c78487f82f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a638e70f007530eba9985701c02f6790f" id="r_a638e70f007530eba9985701c02f6790f"><td class="memItemLeft" align="right" valign="top"><a id="a638e70f007530eba9985701c02f6790f" name="a638e70f007530eba9985701c02f6790f"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted</b> (const std::array&lt; size_t, 3 &gt; &amp;vs) const</td></tr>
-<tr class="separator:a638e70f007530eba9985701c02f6790f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad15795bffcc2022c7bec35611e1a3ef5" id="r_ad15795bffcc2022c7bec35611e1a3ef5"><td class="memItemLeft" align="right" valign="top"><a id="ad15795bffcc2022c7bec35611e1a3ef5" name="ad15795bffcc2022c7bec35611e1a3ef5"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
-<tr class="separator:ad15795bffcc2022c7bec35611e1a3ef5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c2c69e69c52884c7d4e67fb44bace71" id="r_a4c2c69e69c52884c7d4e67fb44bace71"><td class="memItemLeft" align="right" valign="top"><a id="a4c2c69e69c52884c7d4e67fb44bace71" name="a4c2c69e69c52884c7d4e67fb44bace71"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted</b> (const size_t fid) const</td></tr>
-<tr class="separator:a4c2c69e69c52884c7d4e67fb44bace71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5463c0f554e548983cd63c8e860c5f3" id="r_af5463c0f554e548983cd63c8e860c5f3"><td class="memItemLeft" align="right" valign="top"><a id="af5463c0f554e548983cd63c8e860c5f3" name="af5463c0f554e548983cd63c8e860c5f3"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (const std::array&lt; size_t, 3 &gt; &amp;vs) const</td></tr>
-<tr class="separator:af5463c0f554e548983cd63c8e860c5f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1594684bb354244d7c9c797b63913ce9" id="r_a1594684bb354244d7c9c797b63913ce9"><td class="memItemLeft" align="right" valign="top"><a id="a1594684bb354244d7c9c797b63913ce9" name="a1594684bb354244d7c9c797b63913ce9"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
-<tr class="separator:a1594684bb354244d7c9c797b63913ce9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae55dc0fc0ce5acebca5ceaf5e10d0059" id="r_ae55dc0fc0ce5acebca5ceaf5e10d0059"><td class="memItemLeft" align="right" valign="top"><a id="ae55dc0fc0ce5acebca5ceaf5e10d0059" name="ae55dc0fc0ce5acebca5ceaf5e10d0059"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (const size_t fid) const</td></tr>
-<tr class="separator:ae55dc0fc0ce5acebca5ceaf5e10d0059"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9364e4237454ae9b7e9e911715bbf555" id="r_a9364e4237454ae9b7e9e911715bbf555"><td class="memItemLeft" align="right" valign="top"><a id="a9364e4237454ae9b7e9e911715bbf555" name="a9364e4237454ae9b7e9e911715bbf555"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>round</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc)</td></tr>
-<tr class="separator:a9364e4237454ae9b7e9e911715bbf555"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3d396f6d1ed610b249f9d7507ac69b8" id="r_ab3d396f6d1ed610b249f9d7507ac69b8"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ab3d396f6d1ed610b249f9d7507ac69b8">round_all_vertices</a> ()</td></tr>
-<tr class="memdesc:ab3d396f6d1ed610b249f9d7507ac69b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try to round every un-rounded vertex; returns the number reclaimed.  <br /></td></tr>
-<tr class="separator:ab3d396f6d1ed610b249f9d7507ac69b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a433950fdab17372c943ff6fda929c75f" id="r_a433950fdab17372c943ff6fda929c75f"><td class="memItemLeft" align="right" valign="top"><a id="a433950fdab17372c943ff6fda929c75f" name="a433950fdab17372c943ff6fda929c75f"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_surface</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
-<tr class="separator:a433950fdab17372c943ff6fda929c75f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a726a2baa4ecd93c0401df7a7f25454b2" id="r_a726a2baa4ecd93c0401df7a7f25454b2"><td class="memItemLeft" align="right" valign="top"><a id="a726a2baa4ecd93c0401df7a7f25454b2" name="a726a2baa4ecd93c0401df7a7f25454b2"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_surface</b> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
-<tr class="separator:a726a2baa4ecd93c0401df7a7f25454b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1497d031338aa95eb25e3ec73e0586f8" id="r_a1497d031338aa95eb25e3ec73e0586f8"><td class="memItemLeft" align="right" valign="top"><a id="a1497d031338aa95eb25e3ec73e0586f8" name="a1497d031338aa95eb25e3ec73e0586f8"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
-<tr class="separator:a1497d031338aa95eb25e3ec73e0586f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad60d866fa46e49538877d141f8431a2d" id="r_ad60d866fa46e49538877d141f8431a2d"><td class="memItemLeft" align="right" valign="top"><a id="ad60d866fa46e49538877d141f8431a2d" name="ad60d866fa46e49538877d141f8431a2d"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
-<tr class="separator:ad60d866fa46e49538877d141f8431a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5114e214e80e0c4c9fbabfd242dc2aed" id="r_a5114e214e80e0c4c9fbabfd242dc2aed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a5114e214e80e0c4c9fbabfd242dc2aed">mesh_improvement</a> (int max_its=80)</td></tr>
 <tr class="separator:a5114e214e80e0c4c9fbabfd242dc2aed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a0a8a545a8aaf3fd7bb2c840c2eb6b9" id="r_a0a0a8a545a8aaf3fd7bb2c840c2eb6b9"><td class="memItemLeft" align="right" valign="top"><a id="a0a0a8a545a8aaf3fd7bb2c840c2eb6b9" name="a0a0a8a545a8aaf3fd7bb2c840c2eb6b9"></a>
 std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>local_operations</b> (const std::array&lt; int, 4 &gt; &amp;ops, bool collapse_limit_length=true)</td></tr>
 <tr class="separator:a0a0a8a545a8aaf3fd7bb2c840c2eb6b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8da1c294a3537c01c793e81142ddea4" id="r_aa8da1c294a3537c01c793e81142ddea4"><td class="memItemLeft" align="right" valign="top"><a id="aa8da1c294a3537c01c793e81142ddea4" name="aa8da1c294a3537c01c793e81142ddea4"></a>
-std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_max_avg_energy</b> ()</td></tr>
-<tr class="separator:aa8da1c294a3537c01c793e81142ddea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8c24dce0f77d9c702b41bca68a5ce533" id="r_a8c24dce0f77d9c702b41bca68a5ce533"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a8c24dce0f77d9c702b41bca68a5ce533">active_quality_threshold</a> () const</td></tr>
 <tr class="memdesc:a8c24dce0f77d9c702b41bca68a5ce533"><td class="mdescLeft">&#160;</td><td class="mdescRight">m_quality threshold above which a face is "active" (worth operating on) for the skip-good-regions filter.  <br /></td></tr>
 <tr class="separator:a8c24dce0f77d9c702b41bca68a5ce533"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -298,12 +219,76 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>filter_with_flood_fil
 <tr class="memitem:ae07c555a593bbcd2f504f3f9db9a7f82" id="r_ae07c555a593bbcd2f504f3f9db9a7f82"><td class="memItemLeft" align="right" valign="top"><a id="ae07c555a593bbcd2f504f3f9db9a7f82" name="ae07c555a593bbcd2f504f3f9db9a7f82"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>flood_fill</b> ()</td></tr>
 <tr class="separator:ae07c555a593bbcd2f504f3f9db9a7f82"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c792d0ae449d800da095780750d5a06" id="r_a4c792d0ae449d800da095780750d5a06"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a4c792d0ae449d800da095780750d5a06">vertex_is_on_surface</a> (const size_t vid) const override</td></tr>
-<tr class="memdesc:a4c792d0ae449d800da095780750d5a06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a vertex part of the substructure.  <br /></td></tr>
-<tr class="separator:a4c792d0ae449d800da095780750d5a06"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a060b3ea48354354518de1d93bc6a8dcf" id="r_a060b3ea48354354518de1d93bc6a8dcf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a060b3ea48354354518de1d93bc6a8dcf">edge_is_on_surface</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
-<tr class="memdesc:a060b3ea48354354518de1d93bc6a8dcf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is an edge part of the substructure.  <br /></td></tr>
-<tr class="separator:a060b3ea48354354518de1d93bc6a8dcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
+<tr class="memitem:a82979ee23eb94c2488543dcfd827ac4a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a82979ee23eb94c2488543dcfd827ac4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a82979ee23eb94c2488543dcfd827ac4a">TriOptimizerMesh</a> (<a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;params)</td></tr>
+<tr class="separator:a82979ee23eb94c2488543dcfd827ac4a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3f31270434c883de9661b1983f0e916 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_af3f31270434c883de9661b1983f0e916"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
+<tr class="separator:af3f31270434c883de9661b1983f0e916 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af90b97be6677c62299f2509ec875a3dd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_af90b97be6677c62299f2509ec875a3dd"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>partition_mesh</b> ()</td></tr>
+<tr class="separator:af90b97be6677c62299f2509ec875a3dd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10e2eb705872659798d9a6030d30b050 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a10e2eb705872659798d9a6030d30b050"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>partition_mesh_morton</b> ()</td></tr>
+<tr class="separator:a10e2eb705872659798d9a6030d30b050 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1f5306e6866c5a04092f2cc8671facd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ad1f5306e6866c5a04092f2cc8671facd"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>get_length2</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;l) const</td></tr>
+<tr class="separator:ad1f5306e6866c5a04092f2cc8671facd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91f2602df92a75cc945be0d88bb4b95b inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a91f2602df92a75cc945be0d88bb4b95b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a91f2602df92a75cc945be0d88bb4b95b">is_inverted</a> (const std::array&lt; size_t, 3 &gt; &amp;vs) const</td></tr>
+<tr class="memdesc:a91f2602df92a75cc945be0d88bb4b95b inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Orientation check, exact for the coordinates the vertices actually carry.  <br /></td></tr>
+<tr class="separator:a91f2602df92a75cc945be0d88bb4b95b inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7ad2b2654719b7a751b7800a3cdadd6 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ad7ad2b2654719b7a751b7800a3cdadd6"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
+<tr class="separator:ad7ad2b2654719b7a751b7800a3cdadd6 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94e9436430037dd0d8da64402e6a1042 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a94e9436430037dd0d8da64402e6a1042"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted</b> (const size_t fid) const</td></tr>
+<tr class="separator:a94e9436430037dd0d8da64402e6a1042 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a139640ba005b4c11bf86c55fcac848e2 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a139640ba005b4c11bf86c55fcac848e2"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted_f</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
+<tr class="memdesc:a139640ba005b4c11bf86c55fcac848e2 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inversion check using only the double positions. <br /></td></tr>
+<tr class="separator:a139640ba005b4c11bf86c55fcac848e2 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a675fc897fd3c52e38611e54f2ead9270 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a675fc897fd3c52e38611e54f2ead9270"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_inverted_f</b> (const size_t fid) const</td></tr>
+<tr class="separator:a675fc897fd3c52e38611e54f2ead9270 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a105626d71b1dc08957ff7c30ba85e9 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a0a105626d71b1dc08957ff7c30ba85e9"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (const std::array&lt; size_t, 3 &gt; &amp;vs) const</td></tr>
+<tr class="separator:a0a105626d71b1dc08957ff7c30ba85e9 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2798b9374d5c997c1c52c2c89a004d8 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_aa2798b9374d5c997c1c52c2c89a004d8"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
+<tr class="separator:aa2798b9374d5c997c1c52c2c89a004d8 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d9d74c3ff01d83dcc894a92ec78a5e5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a4d9d74c3ff01d83dcc894a92ec78a5e5"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (const size_t fid) const</td></tr>
+<tr class="separator:a4d9d74c3ff01d83dcc894a92ec78a5e5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92a23b15da568030e09af5018526273c inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a92a23b15da568030e09af5018526273c"><td class="memItemLeft" align="right" valign="top">
+std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_max_avg_energy</b> ()</td></tr>
+<tr class="separator:a92a23b15da568030e09af5018526273c inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab989e6f3451dcddb7581029b0f822ce7 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ab989e6f3451dcddb7581029b0f822ce7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ab989e6f3451dcddb7581029b0f822ce7">round</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v)</td></tr>
+<tr class="memdesc:ab989e6f3451dcddb7581029b0f822ce7 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Round a vertex position to floating point, if that inverts no incident face.  <br /></td></tr>
+<tr class="separator:ab989e6f3451dcddb7581029b0f822ce7 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace203d9827f79468e964402b1aca8fa4 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ace203d9827f79468e964402b1aca8fa4"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_surface</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
+<tr class="separator:ace203d9827f79468e964402b1aca8fa4 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8494ae652856a624cf083dd373b5c95c inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a8494ae652856a624cf083dd373b5c95c"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_surface</b> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
+<tr class="separator:a8494ae652856a624cf083dd373b5c95c inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a29d0833d02cf00c854021d6d64baa340 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a29d0833d02cf00c854021d6d64baa340"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;loc) const</td></tr>
+<tr class="separator:a29d0833d02cf00c854021d6d64baa340 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a898aeb686199547150daadac364689fd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a898aeb686199547150daadac364689fd"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
+<tr class="separator:a898aeb686199547150daadac364689fd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17480dfdb43b5d7bde8e0cb3b68efd93 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a17480dfdb43b5d7bde8e0cb3b68efd93"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a17480dfdb43b5d7bde8e0cb3b68efd93">vertex_is_on_surface</a> (const size_t vid) const override</td></tr>
+<tr class="memdesc:a17480dfdb43b5d7bde8e0cb3b68efd93 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a vertex part of the substructure.  <br /></td></tr>
+<tr class="separator:a17480dfdb43b5d7bde8e0cb3b68efd93 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81c16b6bbee153e77d3cad21deb0c2a5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a81c16b6bbee153e77d3cad21deb0c2a5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a81c16b6bbee153e77d3cad21deb0c2a5">edge_is_on_surface</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
+<tr class="memdesc:a81c16b6bbee153e77d3cad21deb0c2a5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is an edge part of the substructure.  <br /></td></tr>
+<tr class="separator:a81c16b6bbee153e77d3cad21deb0c2a5 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d093c38bbc4d51e85a431cd36453e27 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a5d093c38bbc4d51e85a431cd36453e27"><td class="memItemLeft" align="right" valign="top">
+std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_edges_by_condition</b> (std::function&lt; bool(const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;)&gt; cond) const</td></tr>
+<tr class="separator:a5d093c38bbc4d51e85a431cd36453e27 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71dc273c32bad26ebc472f9343493965 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a71dc273c32bad26ebc472f9343493965"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a71dc273c32bad26ebc472f9343493965">gradation_smooth_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
+<tr class="memdesc:a71dc273c32bad26ebc472f9343493965 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotone (only-decreasing) gradation smoothing of the sizing field.  <br /></td></tr>
+<tr class="separator:a71dc273c32bad26ebc472f9343493965 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a8b73b58387664feb724e992e2395d3cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a8b73b58387664feb724e992e2395d3cc">init</a> (size_t n_vertices, const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;tris)</td></tr>
 <tr class="separator:a8b73b58387664feb724e992e2395d3cc inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -565,41 +550,29 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 <tr class="memitem:acfb1ab1ee5ce24afbeedab25a13e917b inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_acfb1ab1ee5ce24afbeedab25a13e917b"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
 <tr class="separator:acfb1ab1ee5ce24afbeedab25a13e917b inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_classwmtk_1_1_rational_positions"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1_rational_positions')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1_rational_positions.html">wmtk::RationalPositions</a></td></tr>
+<tr class="memitem:aad5464639e2996486c6123967b3db937 inherit pub_methods_classwmtk_1_1_rational_positions" id="r_aad5464639e2996486c6123967b3db937"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#aad5464639e2996486c6123967b3db937">round_all_vertices</a> ()</td></tr>
+<tr class="memdesc:aad5464639e2996486c6123967b3db937 inherit pub_methods_classwmtk_1_1_rational_positions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try to round every un-rounded vertex; returns the number reclaimed.  <br /></td></tr>
+<tr class="separator:aad5464639e2996486c6123967b3db937 inherit pub_methods_classwmtk_1_1_rational_positions"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a66355e7ed81acdace2d133b2af432a inherit pub_methods_classwmtk_1_1_rational_positions" id="r_a8a66355e7ed81acdace2d133b2af432a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#a8a66355e7ed81acdace2d133b2af432a">round_and_check_all_rounded</a> ()</td></tr>
+<tr class="memdesc:a8a66355e7ed81acdace2d133b2af432a inherit pub_methods_classwmtk_1_1_rational_positions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the sweep, then report whether the mesh is now fully rounded.  <br /></td></tr>
+<tr class="separator:a8a66355e7ed81acdace2d133b2af432a inherit pub_methods_classwmtk_1_1_rational_positions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ae9d855b2f06d57a7f4ad95628a370588" id="r_ae9d855b2f06d57a7f4ad95628a370588"><td class="memItemLeft" align="right" valign="top"><a id="ae9d855b2f06d57a7f4ad95628a370588" name="ae9d855b2f06d57a7f4ad95628a370588"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>m_debug_print_counter</b> = 0</td></tr>
-<tr class="separator:ae9d855b2f06d57a7f4ad95628a370588"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ee6ccb8a08818135f9ddb3ff90670df" id="r_a3ee6ccb8a08818135f9ddb3ff90670df"><td class="memItemLeft" align="right" valign="top"><a id="a3ee6ccb8a08818135f9ddb3ff90670df" name="a3ee6ccb8a08818135f9ddb3ff90670df"></a>
+<a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh_1_1_vertex_extras.html">VertexExtras</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_extra</b></td></tr>
+<tr class="separator:a3ee6ccb8a08818135f9ddb3ff90670df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a370989e4b783a4376261763e33df05b0" id="r_a370989e4b783a4376261763e33df05b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a370989e4b783a4376261763e33df05b0">m_tri_params</a></td></tr>
+<tr class="separator:a370989e4b783a4376261763e33df05b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23b0f8ee067f0b7b214bcb03649d3765" id="r_a23b0f8ee067f0b7b214bcb03649d3765"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a23b0f8ee067f0b7b214bcb03649d3765">m_iterations_used</a> = 0</td></tr>
 <tr class="separator:a23b0f8ee067f0b7b214bcb03649d3765"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb003270c0474ff8903d0e534fa41318" id="r_aeb003270c0474ff8903d0e534fa41318"><td class="memItemLeft" align="right" valign="top"><a id="aeb003270c0474ff8903d0e534fa41318" name="aeb003270c0474ff8903d0e534fa41318"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_tags_count</b> = 0</td></tr>
-<tr class="separator:aeb003270c0474ff8903d0e534fa41318"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a466b80fe6db8122723f73007b4236046" id="r_a466b80fe6db8122723f73007b4236046"><td class="memItemLeft" align="right" valign="top"><a id="a466b80fe6db8122723f73007b4236046" name="a466b80fe6db8122723f73007b4236046"></a>
-std::map&lt; int64_t, std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_id_to_name</b></td></tr>
-<tr class="separator:a466b80fe6db8122723f73007b4236046"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c75a72d6a1fd721cfb966dd1c558627" id="r_a3c75a72d6a1fd721cfb966dd1c558627"><td class="memItemLeft" align="right" valign="top"><a id="a3c75a72d6a1fd721cfb966dd1c558627" name="a3c75a72d6a1fd721cfb966dd1c558627"></a>
-std::map&lt; std::string, int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_name_to_id</b></td></tr>
-<tr class="separator:a3c75a72d6a1fd721cfb966dd1c558627"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6557eb1d9d570a159e04cda2ec059ad8" id="r_a6557eb1d9d570a159e04cda2ec059ad8"><td class="memItemLeft" align="right" valign="top"><a id="a6557eb1d9d570a159e04cda2ec059ad8" name="a6557eb1d9d570a159e04cda2ec059ad8"></a>
-const double&#160;</td><td class="memItemRight" valign="bottom"><b>MAX_ENERGY</b> = 1e50</td></tr>
-<tr class="separator:a6557eb1d9d570a159e04cda2ec059ad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e854a4cd3a7904a42b4eef4cab6c01f" id="r_a6e854a4cd3a7904a42b4eef4cab6c01f"><td class="memItemLeft" align="right" valign="top"><a id="a6e854a4cd3a7904a42b4eef4cab6c01f" name="a6e854a4cd3a7904a42b4eef4cab6c01f"></a>
-<a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_params</b></td></tr>
-<tr class="separator:a6e854a4cd3a7904a42b4eef4cab6c01f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a7344debf9ee79e5a381254f4413d37" id="r_a7a7344debf9ee79e5a381254f4413d37"><td class="memItemLeft" align="right" valign="top"><a id="a7a7344debf9ee79e5a381254f4413d37" name="a7a7344debf9ee79e5a381254f4413d37"></a>
 std::vector&lt; Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_V_envelope</b></td></tr>
 <tr class="separator:a7a7344debf9ee79e5a381254f4413d37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7875bd7c782836d0ed17f607d13e2eb2" id="r_a7875bd7c782836d0ed17f607d13e2eb2"><td class="memItemLeft" align="right" valign="top"><a id="a7875bd7c782836d0ed17f607d13e2eb2" name="a7875bd7c782836d0ed17f607d13e2eb2"></a>
 std::vector&lt; Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_E_envelope</b></td></tr>
 <tr class="separator:a7875bd7c782836d0ed17f607d13e2eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6cf74afe40035069da368214435e4c4" id="r_af6cf74afe40035069da368214435e4c4"><td class="memItemLeft" align="right" valign="top"><a id="af6cf74afe40035069da368214435e4c4" name="af6cf74afe40035069da368214435e4c4"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
-<tr class="separator:af6cf74afe40035069da368214435e4c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afcfe97ec98fb74a06dcc473fbd5486b6" id="r_afcfe97ec98fb74a06dcc473fbd5486b6"><td class="memItemLeft" align="right" valign="top"><a id="afcfe97ec98fb74a06dcc473fbd5486b6" name="afcfe97ec98fb74a06dcc473fbd5486b6"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = -1</td></tr>
-<tr class="separator:afcfe97ec98fb74a06dcc473fbd5486b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba25173fd04604e1d4cc8e3c7eb5b641" id="r_aba25173fd04604e1d4cc8e3c7eb5b641"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#aba25173fd04604e1d4cc8e3c7eb5b641">m_feature_eps</a> = -1</td></tr>
 <tr class="separator:aba25173fd04604e1d4cc8e3c7eb5b641"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a905291694b802ccf03e224ea95e20990" id="r_a905291694b802ccf03e224ea95e20990"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a905291694b802ccf03e224ea95e20990">m_feature_points</a></td></tr>
@@ -608,30 +581,6 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> 
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_feature_rejects</b> = 0</td></tr>
 <tr class="memdesc:a1d4b9e08d550e3643bc1e1c596640993"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collapses refused because they would drop or displace a feature point. Diagnostic. <br /></td></tr>
 <tr class="separator:a1d4b9e08d550e3643bc1e1c596640993"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a6b72d0a4660c91b0e4e1e89d7e3484" id="r_a6a6b72d0a4660c91b0e4e1e89d7e3484"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a6a6b72d0a4660c91b0e4e1e89d7e3484">m_collapse_limit_length</a> = true</td></tr>
-<tr class="separator:a6a6b72d0a4660c91b0e4e1e89d7e3484"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a514e0887740a80d56a7b2dbc54247a2d" id="r_a514e0887740a80d56a7b2dbc54247a2d"><td class="memItemLeft" align="right" valign="top"><a id="a514e0887740a80d56a7b2dbc54247a2d" name="a514e0887740a80d56a7b2dbc54247a2d"></a>
-<a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_attribute</b></td></tr>
-<tr class="separator:a514e0887740a80d56a7b2dbc54247a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7df66686f64bb3ec766ac71b5b51ea1b" id="r_a7df66686f64bb3ec766ac71b5b51ea1b"><td class="memItemLeft" align="right" valign="top"><a id="a7df66686f64bb3ec766ac71b5b51ea1b" name="a7df66686f64bb3ec766ac71b5b51ea1b"></a>
-<a class="el" href="structwmtk_1_1_attribute_collection.html">EdgeAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_attribute</b></td></tr>
-<tr class="separator:a7df66686f64bb3ec766ac71b5b51ea1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e9e7fb9bb49d3315d71fa03ad9b9b65" id="r_a0e9e7fb9bb49d3315d71fa03ad9b9b65"><td class="memItemLeft" align="right" valign="top"><a id="a0e9e7fb9bb49d3315d71fa03ad9b9b65" name="a0e9e7fb9bb49d3315d71fa03ad9b9b65"></a>
-<a class="el" href="structwmtk_1_1_attribute_collection.html">FaceAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_attribute</b></td></tr>
-<tr class="separator:a0e9e7fb9bb49d3315d71fa03ad9b9b65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af508d04ee1ebef77090cdaa7fa8c8245" id="r_af508d04ee1ebef77090cdaa7fa8c8245"><td class="memItemLeft" align="right" valign="top"><a id="af508d04ee1ebef77090cdaa7fa8c8245" name="af508d04ee1ebef77090cdaa7fa8c8245"></a>
-<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::unique_ptr&lt; polysolve::nonlinear::Solver &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_solver</b></td></tr>
-<tr class="separator:af508d04ee1ebef77090cdaa7fa8c8245"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85fcb1e1cd2a2208636e7ace79d9f686" id="r_a85fcb1e1cd2a2208636e7ace79d9f686"><td class="memItemLeft" align="right" valign="top"><a id="a85fcb1e1cd2a2208636e7ace79d9f686" name="a85fcb1e1cd2a2208636e7ace79d9f686"></a>
-<a class="el" href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html">optimization::SmoothRejectCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_rejects</b></td></tr>
-<tr class="memdesc:a85fcb1e1cd2a2208636e7ace79d9f686"><td class="mdescLeft">&#160;</td><td class="mdescRight">Why smoothing attempts were refused, reported once per pass. <br /></td></tr>
-<tr class="separator:a85fcb1e1cd2a2208636e7ace79d9f686"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afffe80959abd56cf2326f4f2765ce5cc" id="r_afffe80959abd56cf2326f4f2765ce5cc"><td class="memItemLeft" align="right" valign="top"><a id="afffe80959abd56cf2326f4f2765ce5cc" name="afffe80959abd56cf2326f4f2765ce5cc"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_amips</b> = -1</td></tr>
-<tr class="separator:afffe80959abd56cf2326f4f2765ce5cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a4755771f8a72bb39691794ddc3364e" id="r_a1a4755771f8a72bb39691794ddc3364e"><td class="memItemLeft" align="right" valign="top"><a id="a1a4755771f8a72bb39691794ddc3364e" name="a1a4755771f8a72bb39691794ddc3364e"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_envelope</b> = -1</td></tr>
-<tr class="separator:a1a4755771f8a72bb39691794ddc3364e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e06f0dd60b6a895f89c00b3c0e46325" id="r_a4e06f0dd60b6a895f89c00b3c0e46325"><td class="memItemLeft" align="right" valign="top">std::set&lt; <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a4e06f0dd60b6a895f89c00b3c0e46325">m_force_split_edges</a></td></tr>
 <tr class="separator:a4e06f0dd60b6a895f89c00b3c0e46325"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd5fed0309911d0c8a11bd3c57e895e3" id="r_afd5fed0309911d0c8a11bd3c57e895e3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#afd5fed0309911d0c8a11bd3c57e895e3">m_force_split_count</a> = 0</td></tr>
@@ -645,9 +594,54 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_clai
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_high_valence_rejects</b> = 0</td></tr>
 <tr class="memdesc:a7d2d148d5968098706b413cd5a51c78f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Splits refused by that gate in the current pass, reported once per pass. <br /></td></tr>
 <tr class="separator:a7d2d148d5968098706b413cd5a51c78f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9912ea093e1b6e34a363826f2282a08" id="r_ac9912ea093e1b6e34a363826f2282a08"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ac9912ea093e1b6e34a363826f2282a08">m_all_rounded</a> = false</td></tr>
-<tr class="memdesc:ac9912ea093e1b6e34a363826f2282a08"><td class="mdescLeft">&#160;</td><td class="mdescRight">True when every vertex is known to be rounded.  <br /></td></tr>
-<tr class="separator:ac9912ea093e1b6e34a363826f2282a08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
+<tr class="memitem:aac4a629ca26fe2db9be185d97c0ae0d0 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aac4a629ca26fe2db9be185d97c0ae0d0"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="structwmtk_1_1_attribute_collection.html">VertAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_attribute</b></td></tr>
+<tr class="separator:aac4a629ca26fe2db9be185d97c0ae0d0 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83b0fbb35b3ec202a6c2c0c6d9cffc00 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a83b0fbb35b3ec202a6c2c0c6d9cffc00"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="structwmtk_1_1_attribute_collection.html">EdgeAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_attribute</b></td></tr>
+<tr class="separator:a83b0fbb35b3ec202a6c2c0c6d9cffc00 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab89a5173b907aa8bdc43fbbb46691916 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_ab89a5173b907aa8bdc43fbbb46691916"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="structwmtk_1_1_attribute_collection.html">FaceAttCol</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_face_attribute</b></td></tr>
+<tr class="separator:ab89a5173b907aa8bdc43fbbb46691916 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f1876bfae472df2abec64e47b26bdf4 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a3f1876bfae472df2abec64e47b26bdf4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a3f1876bfae472df2abec64e47b26bdf4">m_vertex_attr_group</a></td></tr>
+<tr class="memdesc:a3f1876bfae472df2abec64e47b26bdf4 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_vertex_attrs points at, so a derived class can register more.  <br /></td></tr>
+<tr class="separator:a3f1876bfae472df2abec64e47b26bdf4 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f57778214a8fdf4c20b81055386f2b4 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a9f57778214a8fdf4c20b81055386f2b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a9f57778214a8fdf4c20b81055386f2b4">m_params</a></td></tr>
+<tr class="separator:a9f57778214a8fdf4c20b81055386f2b4 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9dcb86cd9d4f6e1e54abd5cc6840f859 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a9dcb86cd9d4f6e1e54abd5cc6840f859"><td class="memItemLeft" align="right" valign="top">
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope</b></td></tr>
+<tr class="separator:a9dcb86cd9d4f6e1e54abd5cc6840f859 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb7836d522c81f89a4c895aad2fb721e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_afb7836d522c81f89a4c895aad2fb721e"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_envelope_eps</b> = -1</td></tr>
+<tr class="separator:afb7836d522c81f89a4c895aad2fb721e inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa60213b39e8f40b355b17bd5a059cc01 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aa60213b39e8f40b355b17bd5a059cc01"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aa60213b39e8f40b355b17bd5a059cc01">m_s_amips</a> = -1</td></tr>
+<tr class="separator:aa60213b39e8f40b355b17bd5a059cc01 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a518e7ba602d4095d00efde95ecbf7e86 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a518e7ba602d4095d00efde95ecbf7e86"><td class="memItemLeft" align="right" valign="top">
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_s_envelope</b> = -1</td></tr>
+<tr class="separator:a518e7ba602d4095d00efde95ecbf7e86 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf394bac105233e7460e360501085e9b inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aaf394bac105233e7460e360501085e9b"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; std::unique_ptr&lt; polysolve::nonlinear::Solver &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_solver</b></td></tr>
+<tr class="separator:aaf394bac105233e7460e360501085e9b inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9dd713fdee5c8ae0cc770cda43438704 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a9dd713fdee5c8ae0cc770cda43438704"><td class="memItemLeft" align="right" valign="top">
+<a class="el" href="structwmtk_1_1optimization_1_1_smooth_reject_counters.html">optimization::SmoothRejectCounters</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_rejects</b></td></tr>
+<tr class="memdesc:a9dd713fdee5c8ae0cc770cda43438704 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Why smoothing attempts were refused, reported once per pass. <br /></td></tr>
+<tr class="separator:a9dd713fdee5c8ae0cc770cda43438704 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa886fbb9b040c0eed7fa1f956c731e02 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aa886fbb9b040c0eed7fa1f956c731e02"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_limit_length</b> = true</td></tr>
+<tr class="separator:aa886fbb9b040c0eed7fa1f956c731e02 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5817add2262a8907dd911191714ea69 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_ad5817add2262a8907dd911191714ea69"><td class="memItemLeft" align="right" valign="top">
+int&#160;</td><td class="memItemRight" valign="bottom"><b>m_debug_print_counter</b> = 0</td></tr>
+<tr class="separator:ad5817add2262a8907dd911191714ea69 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fccc11aeed0f5e5d84e402f7c9ba0ed inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a0fccc11aeed0f5e5d84e402f7c9ba0ed"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_tags_count</b> = 0</td></tr>
+<tr class="separator:a0fccc11aeed0f5e5d84e402f7c9ba0ed inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f7e07d57d77700abfdc3fb4a190659f inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a7f7e07d57d77700abfdc3fb4a190659f"><td class="memItemLeft" align="right" valign="top">
+std::map&lt; int64_t, std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_id_to_name</b></td></tr>
+<tr class="separator:a7f7e07d57d77700abfdc3fb4a190659f inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7476624369fc5dc1c21ec0e657362a1 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aa7476624369fc5dc1c21ec0e657362a1"><td class="memItemLeft" align="right" valign="top">
+std::map&lt; std::string, int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tag_name_to_id</b></td></tr>
+<tr class="separator:aa7476624369fc5dc1c21ec0e657362a1 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a0ab2ef76d0893ba8694c7a9c554fa76f inherit pub_attribs_classwmtk_1_1_tri_mesh" id="r_a0ab2ef76d0893ba8694c7a9c554fa76f"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1_abstract_attribute_container.html">AbstractAttributeContainer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>p_vertex_attrs</b> = nullptr</td></tr>
@@ -679,61 +673,52 @@ Private Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pub_types_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
+<tr class="memitem:a6837accbff920b117812dd51dd7d24d2 inherit pub_types_classwmtk_1_1_tri_optimizer_mesh" id="r_a6837accbff920b117812dd51dd7d24d2"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttributes</b> = <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">wmtk::SurfaceTagAttributes</a></td></tr>
+<tr class="separator:a6837accbff920b117812dd51dd7d24d2 inherit pub_types_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0942b1b68d70f65315dedb13c8b838a3 inherit pub_types_classwmtk_1_1_tri_optimizer_mesh" id="r_a0942b1b68d70f65315dedb13c8b838a3"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>VertAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_vertex_attributes.html">VertexAttributes</a> &gt;</td></tr>
+<tr class="separator:a0942b1b68d70f65315dedb13c8b838a3 inherit pub_types_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c947e165e743a14436a2665b8acb6bb inherit pub_types_classwmtk_1_1_tri_optimizer_mesh" id="r_a8c947e165e743a14436a2665b8acb6bb"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &gt;</td></tr>
+<tr class="separator:a8c947e165e743a14436a2665b8acb6bb inherit pub_types_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31fcd3a2278165f771df75d798f6752b inherit pub_types_classwmtk_1_1_tri_optimizer_mesh" id="r_a31fcd3a2278165f771df75d798f6752b"><td class="memItemLeft" align="right" valign="top">
+using&#160;</td><td class="memItemRight" valign="bottom"><b>FaceAttCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a>&lt; <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_face_attributes.html">FaceAttributes</a> &gt;</td></tr>
+<tr class="separator:a31fcd3a2278165f771df75d798f6752b inherit pub_types_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
+<tr class="memitem:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh" id="r_ae5819441284a260b3ce7682e019d174f"><td class="memTemplParams" colspan="2">
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
+<tr class="separator:ae5819441284a260b3ce7682e019d174f inherit pub_types_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_static_attribs_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
+<tr class="memitem:a7174cdec019d3ab2f6f5985f3a9ab6c3 inherit pub_static_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a7174cdec019d3ab2f6f5985f3a9ab6c3"><td class="memItemLeft" align="right" valign="top">static constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7174cdec019d3ab2f6f5985f3a9ab6c3">MAX_ENERGY</a> = 1e50</td></tr>
+<tr class="memdesc:a7174cdec019d3ab2f6f5985f3a9ab6c3 inherit pub_static_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sentinel get_quality returns for a face AMIPS2D cannot score.  <br /></td></tr>
+<tr class="separator:a7174cdec019d3ab2f6f5985f3a9ab6c3 inherit pub_static_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_attribs_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:ab9497bf06e5d322c0b0b3959cc401efc inherit pub_static_attribs_classwmtk_1_1_tri_mesh" id="r_ab9497bf06e5d322c0b0b3959cc401efc"><td class="memItemLeft" align="right" valign="top">
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES_PER_CELL</b> = 3</td></tr>
 <tr class="separator:ab9497bf06e5d322c0b0b3959cc401efc inherit pub_static_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
+<tr class="memitem:a19d53d1dc9738efde4715fefda30a4b3 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a19d53d1dc9738efde4715fefda30a4b3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a19d53d1dc9738efde4715fefda30a4b3">all_vertex_ids</a> () const override</td></tr>
+<tr class="memdesc:a19d53d1dc9738efde4715fefda30a4b3 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Every live vertex, in the mesh's own iteration order.  <br /></td></tr>
+<tr class="separator:a19d53d1dc9738efde4715fefda30a4b3 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a168baab56ceb5bb0b49b62f3d11195dd inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a168baab56ceb5bb0b49b62f3d11195dd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a168baab56ceb5bb0b49b62f3d11195dd">vertex_is_rounded</a> (const size_t vid) const override</td></tr>
+<tr class="memdesc:a168baab56ceb5bb0b49b62f3d11195dd inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether this vertex's double position is currently trusted.  <br /></td></tr>
+<tr class="separator:a168baab56ceb5bb0b49b62f3d11195dd inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab890484bc9585accbf72eaab0a3b87b1 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ab890484bc9585accbf72eaab0a3b87b1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ab890484bc9585accbf72eaab0a3b87b1">round_vertex</a> (const size_t vid) override</td></tr>
+<tr class="separator:ab890484bc9585accbf72eaab0a3b87b1 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></td></tr>
 <tr class="memitem:a144cf2df60cc0a6aeb76916d24931ebb inherit pro_methods_classwmtk_1_1_tri_mesh" id="r_a144cf2df60cc0a6aeb76916d24931ebb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a144cf2df60cc0a6aeb76916d24931ebb">vertex_fan_components</a> (size_t vid, std::vector&lt; size_t &gt; &amp;component_of, std::vector&lt; size_t &gt; &amp;representatives) const</td></tr>
 <tr class="separator:a144cf2df60cc0a6aeb76916d24931ebb inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh" id="r_ae1fa52701ce0be73479b416da52fd77e"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ae1fa52701ce0be73479b416da52fd77e inherit pro_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_attribs_classwmtk_1_1_rational_positions"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1_rational_positions')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1_rational_positions.html">wmtk::RationalPositions</a></td></tr>
+<tr class="memitem:ac89b9d5493d872c2e5b0aef93c5f30ed inherit pro_attribs_classwmtk_1_1_rational_positions" id="r_ac89b9d5493d872c2e5b0aef93c5f30ed"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_rational_positions.html#ac89b9d5493d872c2e5b0aef93c5f30ed">m_all_rounded</a> = false</td></tr>
+<tr class="memdesc:ac89b9d5493d872c2e5b0aef93c5f30ed inherit pro_attribs_classwmtk_1_1_rational_positions"><td class="mdescLeft">&#160;</td><td class="mdescRight">True when every vertex is known to be rounded.  <br /></td></tr>
+<tr class="separator:ac89b9d5493d872c2e5b0aef93c5f30ed inherit pro_attribs_classwmtk_1_1_rational_positions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a7cdd3374bab4310909003eb79004eb76" name="a7cdd3374bab4310909003eb79004eb76"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7cdd3374bab4310909003eb79004eb76">&#9670;&#160;</a></span>TriWildMesh()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">wmtk::components::triwild::TriWildMesh::TriWildMesh </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a> &amp;&#160;</td>
-          <td class="paramname"><em>_m_params</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>envelope_eps</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>_num_threads</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>eps makes it such that the energy is relative to the envelope thickness. As it's a squared energy, we need eps^2.</p>
-
-</div>
-</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a8c24dce0f77d9c702b41bca68a5ce533" name="a8c24dce0f77d9c702b41bca68a5ce533"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8c24dce0f77d9c702b41bca68a5ce533">&#9670;&#160;</a></span>active_quality_threshold()</h2>
@@ -870,42 +855,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
-<a id="a060b3ea48354354518de1d93bc6a8dcf" name="a060b3ea48354354518de1d93bc6a8dcf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a060b3ea48354354518de1d93bc6a8dcf">&#9670;&#160;</a></span>edge_is_on_surface()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::triwild::TriWildMesh::edge_is_on_surface </td>
-          <td>(</td>
-          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
-          <td class="paramname"><em>vids</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is an edge part of the substructure. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">vids</td><td>The vertex IDs of the edge </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a404b445350d439bb60724e5afdc38705">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
 <a id="a090ff9416ea1554fdf6a5f8fafda66b3" name="a090ff9416ea1554fdf6a5f8fafda66b3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a090ff9416ea1554fdf6a5f8fafda66b3">&#9670;&#160;</a></span>feature_retention()</h2>
 
@@ -924,37 +873,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 <p>{feature points still represented within eps, total feature points}. </p>
 <p>The invariant preserve_feature_points maintains, measured on the finished mesh rather than assumed from the per-operation checks. </p>
-
-</div>
-</div>
-<a id="ab7eaf28b826f4e95f20360644d320018" name="ab7eaf28b826f4e95f20360644d320018"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7eaf28b826f4e95f20360644d320018">&#9670;&#160;</a></span>gradation_smooth_sizing()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::triwild::TriWildMesh::gradation_smooth_sizing </td>
-          <td>(</td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>grade</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
-          <td class="paramname"><em>seeds</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Monotone (only-decreasing) gradation smoothing of the sizing field. </p>
-<p>Enforces m_sizing_scalar[v] &lt;= grade * m_sizing_scalar[u] for every edge (u,v), propagating outward from <code>seeds</code> with a min-relaxation. It never raises a sizing value, so it only ever spreads more refinement into the halo around already-refined vertices, avoiding sharp resolution jumps. </p>
 
 </div>
 </div>
@@ -1029,28 +947,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
-<a id="a615385cd7bd69656676ab114de996bcf" name="a615385cd7bd69656676ab114de996bcf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a615385cd7bd69656676ab114de996bcf">&#9670;&#160;</a></span>is_inverted_f()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::triwild::TriWildMesh::is_inverted_f </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>loc</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>A vector containing the vertex position and all positions of the surface neighbors. </p>
-<p>Returns an empty vector if vertex is not on the surface.</p>
-<p>Inversion check using only floating point numbers. </p>
-
-</div>
-</div>
 <a id="a5114e214e80e0c4c9fbabfd242dc2aed" name="a5114e214e80e0c4c9fbabfd242dc2aed"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5114e214e80e0c4c9fbabfd242dc2aed">&#9670;&#160;</a></span>mesh_improvement()</h2>
 
@@ -1088,30 +984,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
       </table>
 </div><div class="memdoc">
 
-<p>Escape a stuck max energy by refining the sizing field around the worst elements. </p>
+<p>The old global sizing-field update (<a class="el" href="classwmtk_1_1_k_n_n.html">KNN</a> R-ball around every low-quality triangle). Superseded by refine_sizing_around_worst, but kept compiled and callable so the two can be compared &ndash; tetwild and simwild keep theirs for the same reason. </p>
+<p>Escape a stuck max energy by refining the sizing field around the worst elements.</p>
 <p>Finds the m_params.stuck_refine_num_worst triangles with the highest energy (0 =&gt; all of them above the filter energy), gathers all vertices within m_params.stuck_refine_rings graph rings of them, and multiplies each such vertex's m_sizing_scalar by m_params.stuck_refine_factor (clamped at m_params.stuck_refine_min_scalar). Then runs gradation_smooth_sizing so the refined region blends smoothly into the surrounding resolution.</p>
 <dl class="section return"><dt>Returns</dt><dd>the number of vertices refined. </dd></dl>
-
-</div>
-</div>
-<a id="ab3d396f6d1ed610b249f9d7507ac69b8" name="ab3d396f6d1ed610b249f9d7507ac69b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3d396f6d1ed610b249f9d7507ac69b8">&#9670;&#160;</a></span>round_all_vertices()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t wmtk::components::triwild::TriWildMesh::round_all_vertices </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Try to round every un-rounded vertex; returns the number reclaimed. </p>
-<p>round() is otherwise only attempted as a side effect of another operation (smoothing the vertex, or the merged vertex of a collapse), and neither reaches a vertex that only becomes roundable later: smoothing skips "good" regions by default. Without a sweep such a vertex keeps exact coordinates into the output for no geometric reason &ndash; and split_edge_after now introduces them unconditionally whenever the rounded midpoint would invert, so the sweep is what keeps that from reaching the output.</p>
-<p>Skipped outright when m_all_rounded says there is nothing to do. </p>
 
 </div>
 </div>
@@ -1412,75 +1288,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
 
 </div>
 </div>
-<a id="a4c792d0ae449d800da095780750d5a06" name="a4c792d0ae449d800da095780750d5a06"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c792d0ae449d800da095780750d5a06">&#9670;&#160;</a></span>vertex_is_on_surface()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::triwild::TriWildMesh::vertex_is_on_surface </td>
-          <td>(</td>
-          <td class="paramtype">const size_t&#160;</td>
-          <td class="paramname"><em>vid</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Is a vertex part of the substructure. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">vid</td><td>Vertex ID </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#aa8480bb4bdf57ff81231d29237f19cf9">wmtk::TriMesh</a>.</p>
-
-</div>
-</div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="ac9912ea093e1b6e34a363826f2282a08" name="ac9912ea093e1b6e34a363826f2282a08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac9912ea093e1b6e34a363826f2282a08">&#9670;&#160;</a></span>m_all_rounded</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::atomic&lt;bool&gt; wmtk::components::triwild::TriWildMesh::m_all_rounded = false</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>True when every vertex is known to be rounded. </p>
-<p>Only trusted when true, and only <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ab3d396f6d1ed610b249f9d7507ac69b8" title="Try to round every un-rounded vertex; returns the number reclaimed.">round_all_vertices()</a> sets it that way. Any code that leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever. Atomic because operations that clear it run in parallel. </p>
-
-</div>
-</div>
-<a id="a6a6b72d0a4660c91b0e4e1e89d7e3484" name="a6a6b72d0a4660c91b0e4e1e89d7e3484"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a6b72d0a4660c91b0e4e1e89d7e3484">&#9670;&#160;</a></span>m_collapse_limit_length</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::triwild::TriWildMesh::m_collapse_limit_length = true</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Whether the current collapse pass applies the target-length limit; read by collapse_edge_before, which is where that limit is now enforced. </p>
-
-</div>
-</div>
 <a id="aba25173fd04604e1d4cc8e3c7eb5b641" name="aba25173fd04604e1d4cc8e3c7eb5b641"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aba25173fd04604e1d4cc8e3c7eb5b641">&#9670;&#160;</a></span>m_feature_eps</h2>
 
@@ -1508,7 +1316,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Anchor positions of the curve network's 0-dimensional features, indexed by <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_vertex_attributes.html#af473fbbf4d6b14d99d8c06d28ab0139d">VertexAttributes::m_feature_id</a>.</p>
+<p>Anchor positions of the curve network's 0-dimensional features, indexed by <a class="el" href="structwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh_1_1_vertex_extras.html#ae2b5ca9a1a59d09e8a10eaef3b07739e">VertexExtras::m_feature_id</a>.</p>
 <p>Filled in init_mesh from the arrangement's constrained edges: a vertex whose valence in that edge set is neither 0 nor 2 is a feature &ndash; valence 1 is an open polyline's endpoint, valence &gt;= 3 a junction. Reading it off the arrangement rather than the raw input is deliberate: it is the network the optimizer actually starts from, so a junction the simplification was allowed to merge (which it may, with simplify_use_link_condition off) is correctly absent, and no provenance or position-matching plumbing is needed.</p>
 <p>A vertex carrying feature f may never end up further than m_envelope_eps from m_feature_points[f]. Since the anchor never moves, no spatial index is required: the feature id is a direct lookup. </p>
 
@@ -1571,6 +1379,21 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_mutex</b> (siz
       </table>
 </div><div class="memdoc">
 <p>Iterations mesh_improvement actually used. Reported so a run that needs the whole budget is visible as such, and asserted against in the integration tests. </p>
+
+</div>
+</div>
+<a id="a370989e4b783a4376261763e33df05b0" name="a370989e4b783a4376261763e33df05b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a370989e4b783a4376261763e33df05b0">&#9670;&#160;</a></span>m_tri_params</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a>&amp; wmtk::components::triwild::TriWildMesh::m_tri_params</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The base holds only <a class="el" href="structwmtk_1_1_optimizer_parameters.html" title="The parameters tetwild, triwild and simwild all share.">wmtk::OptimizerParameters</a>; this is the same object, typed, for the triwild-only fields (features, high valence, smoothing schedule, box). </p>
 
 </div>
 </div>

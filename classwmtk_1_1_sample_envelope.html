@@ -115,6 +115,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::
 <tr class="memitem:aca94369bd1c385bde04b32d55d665e1b" id="r_aca94369bd1c385bde04b32d55d665e1b"><td class="memItemLeft" align="right" valign="top"><a id="aca94369bd1c385bde04b32d55d665e1b" name="aca94369bd1c385bde04b32d55d665e1b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::vector&lt; Eigen::Vector2d &gt; &amp;m_ver, const std::vector&lt; Eigen::Vector2i &gt; &amp;m_edges, const double)</td></tr>
 <tr class="separator:aca94369bd1c385bde04b32d55d665e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a098b04ef7da485b480d594dbb1da893f" id="r_a098b04ef7da485b480d594dbb1da893f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a098b04ef7da485b480d594dbb1da893f">init</a> (const Eigen::MatrixXd &amp;V, const Eigen::MatrixXi &amp;F, const double eps)</td></tr>
+<tr class="memdesc:a098b04ef7da485b480d594dbb1da893f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same, from Eigen matrices, dispatching on the column counts.  <br /></td></tr>
+<tr class="separator:a098b04ef7da485b480d594dbb1da893f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa85e901527be8ba142c3a71fef7faea0" id="r_aa85e901527be8ba142c3a71fef7faea0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#aa85e901527be8ba142c3a71fef7faea0">is_outside</a> (const std::array&lt; Eigen::Vector3d, 3 &gt; &amp;tris) const</td></tr>
 <tr class="separator:aa85e901527be8ba142c3a71fef7faea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c3d73ee05a3ae5f9e4fb9cab4e7aa45" id="r_a4c3d73ee05a3ae5f9e4fb9cab4e7aa45"><td class="memItemLeft" align="right" valign="top"><a id="a4c3d73ee05a3ae5f9e4fb9cab4e7aa45" name="a4c3d73ee05a3ae5f9e4fb9cab4e7aa45"></a>
@@ -226,8 +229,46 @@ fastEnvelope::FastEnvelope2D&#160;</td><td class="memItemRight" valign="bottom">
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a098b04ef7da485b480d594dbb1da893f" name="a098b04ef7da485b480d594dbb1da893f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a098b04ef7da485b480d594dbb1da893f">&#9670;&#160;</a></span>init() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::SampleEnvelope::init </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::MatrixXd &amp;&#160;</td>
+          <td class="paramname"><em>V</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Eigen::MatrixXi &amp;&#160;</td>
+          <td class="paramname"><em>F</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>eps</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Same, from Eigen matrices, dispatching on the column counts. </p>
+<p>V Nx3, F Mx3 -&gt; a 3D triangle envelope V Nx3, F Mx2 -&gt; a 3D edge envelope V Nx2, F Mx2 -&gt; a 2D edge envelope</p>
+<p>Marshals into the vector form above. Most callers already hold matrices and were each writing the same ten-line copy loop; this is that loop, once. </p>
+
+</div>
+</div>
 <a id="aefc94500d5ea8555afc5c14c7cb0f821" name="aefc94500d5ea8555afc5c14c7cb0f821"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aefc94500d5ea8555afc5c14c7cb0f821">&#9670;&#160;</a></span>init()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aefc94500d5ea8555afc5c14c7cb0f821">&#9670;&#160;</a></span>init() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

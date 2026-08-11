@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::tetwild::FaceAttributes Class Reference</title>
+<title>Wildmeshing Toolkit: wmtk::SurfaceTagAttributes Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,38 +69,49 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>tetwild</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_face_attributes.html">FaceAttributes</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="classwmtk_1_1components_1_1tetwild_1_1_face_attributes-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::tetwild::FaceAttributes Class Reference</div></div>
+<a href="classwmtk_1_1_surface_tag_attributes-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::SurfaceTagAttributes Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.  
+ <a href="classwmtk_1_1_surface_tag_attributes.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_surface_tag_attributes_8h_source.html">SurfaceTagAttributes.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a75988003d86d2d4ca3f770a59e9c62d5" id="r_a75988003d86d2d4ca3f770a59e9c62d5"><td class="memItemLeft" align="right" valign="top"><a id="a75988003d86d2d4ca3f770a59e9c62d5" name="a75988003d86d2d4ca3f770a59e9c62d5"></a>
+<tr class="memitem:a0f0b90f92ba5596a9cb9562ba0059da7" id="r_a0f0b90f92ba5596a9cb9562ba0059da7"><td class="memItemLeft" align="right" valign="top"><a id="a0f0b90f92ba5596a9cb9562ba0059da7" name="a0f0b90f92ba5596a9cb9562ba0059da7"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>reset</b> ()</td></tr>
-<tr class="separator:a75988003d86d2d4ca3f770a59e9c62d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e8692d82ff5e274c4506bdd5a0c885b" id="r_a7e8692d82ff5e274c4506bdd5a0c885b"><td class="memItemLeft" align="right" valign="top"><a id="a7e8692d82ff5e274c4506bdd5a0c885b" name="a7e8692d82ff5e274c4506bdd5a0c885b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>merge</b> (const <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_face_attributes.html">FaceAttributes</a> &amp;attr)</td></tr>
-<tr class="separator:a7e8692d82ff5e274c4506bdd5a0c885b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a0f0b90f92ba5596a9cb9562ba0059da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf84bb5ec5482935240c5e24711adc30" id="r_adf84bb5ec5482935240c5e24711adc30"><td class="memItemLeft" align="right" valign="top"><a id="adf84bb5ec5482935240c5e24711adc30" name="adf84bb5ec5482935240c5e24711adc30"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>merge</b> (const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">SurfaceTagAttributes</a> &amp;attr)</td></tr>
+<tr class="separator:adf84bb5ec5482935240c5e24711adc30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a04c74948cefbf15e645fad98b5ac51c1" id="r_a04c74948cefbf15e645fad98b5ac51c1"><td class="memItemLeft" align="right" valign="top"><a id="a04c74948cefbf15e645fad98b5ac51c1" name="a04c74948cefbf15e645fad98b5ac51c1"></a>
+<tr class="memitem:ad2497d5489b574c0eca9148b011d96d7" id="r_ad2497d5489b574c0eca9148b011d96d7"><td class="memItemLeft" align="right" valign="top"><a id="ad2497d5489b574c0eca9148b011d96d7" name="ad2497d5489b574c0eca9148b011d96d7"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_surface_fs</b> = false</td></tr>
-<tr class="separator:a04c74948cefbf15e645fad98b5ac51c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c48cd7827c080d31437b96551774ac3" id="r_a9c48cd7827c080d31437b96551774ac3"><td class="memItemLeft" align="right" valign="top"><a id="a9c48cd7827c080d31437b96551774ac3" name="a9c48cd7827c080d31437b96551774ac3"></a>
+<tr class="memdesc:ad2497d5489b574c0eca9148b011d96d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is this simplex part of the tracked surface. <br /></td></tr>
+<tr class="separator:ad2497d5489b574c0eca9148b011d96d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22316c4bab2301b2237e61e7d8e66fa0" id="r_a22316c4bab2301b2237e61e7d8e66fa0"><td class="memItemLeft" align="right" valign="top"><a id="a22316c4bab2301b2237e61e7d8e66fa0" name="a22316c4bab2301b2237e61e7d8e66fa0"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_bbox_fs</b> = -1</td></tr>
-<tr class="separator:a9c48cd7827c080d31437b96551774ac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:a22316c4bab2301b2237e61e7d8e66fa0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which bbox side this simplex is on; -1 for none. <br /></td></tr>
+<tr class="separator:a22316c4bab2301b2237e61e7d8e66fa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this class was generated from the following file:<ul>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/tetwild/wmtk/components/tetwild/<a class="el" href="_tet_wild_mesh_8h_source.html">TetWildMesh.h</a></li>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on. </p>
+<p>The 3D meshes attach this to faces, the 2D meshes to edges; the four copies were character-identical, <code>reset()</code> and <code>merge()</code> included.</p>
+<p><code>m_is_bbox_fs</code> is the bbox side the simplex lies on, or -1 for none: 0/1 = x min/max, 2/3 = y min/max, 4/5 = z min/max. Tagging it is what keeps the bounding box from collapsing. </p>
+</div><hr/>The documentation for this class was generated from the following file:<ul>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_surface_tag_attributes_8h_source.html">SurfaceTagAttributes.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

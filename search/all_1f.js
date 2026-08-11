@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['w_5famips_0',['w_amips',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#af28882131ce9c55ff3f138fa79ef8891',1,'wmtk::components::triwild::Parameters::w_amips'],['../structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a704d7da438a3e127505e7bb645125232',1,'wmtk::components::tetwild::Parameters::w_amips']]],
+  ['w_5famips_0',['w_amips',['../structwmtk_1_1_optimizer_parameters.html#a0d5ae5fc83380e897e37a7b7b0673f5b',1,'wmtk::OptimizerParameters']]],
   ['warn_5fif_5fsurface_5ftopology_5fchanged_1',['warn_if_surface_topology_changed',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a744dc40816511be0c2997e28796f2f1b',1,'wmtk::components::simwild::SimWildMesh::warn_if_surface_topology_changed()'],['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a110f3a3ab2ea158d205551622a79fc61',1,'wmtk::components::tetwild::TetWildMesh::warn_if_surface_topology_changed()']]],
   ['what_20the_20sweep_20fixes_20about_20the_20defaults_2',['What the sweep fixes about the defaults',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md41',1,'']]],
   ['wildmeshing_20toolkit_3a_20declarative_20specification_20for_20unstructured_20mesh_20editing_20algorithms_3',['Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms',['../index.html',1,'']]],

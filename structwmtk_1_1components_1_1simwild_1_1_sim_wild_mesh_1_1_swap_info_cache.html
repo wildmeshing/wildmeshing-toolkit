@@ -86,11 +86,14 @@ Public Attributes</h2></td></tr>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>max_energy</b></td></tr>
 <tr class="separator:a66489ad68978c30d97791a840efb31c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a48a42594db110fa26e9b04d346406d" id="r_a1a48a42594db110fa26e9b04d346406d"><td class="memItemLeft" align="right" valign="top"><a id="a1a48a42594db110fa26e9b04d346406d" name="a1a48a42594db110fa26e9b04d346406d"></a>
-std::map&lt; std::array&lt; size_t, 3 &gt;, <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_face_attributes.html">FaceAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>changed_faces</b></td></tr>
+std::map&lt; std::array&lt; size_t, 3 &gt;, <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>changed_faces</b></td></tr>
 <tr class="separator:a1a48a42594db110fa26e9b04d346406d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4309bba6ea4b6b9b11724906ae339a8" id="r_af4309bba6ea4b6b9b11724906ae339a8"><td class="memItemLeft" align="right" valign="top"><a id="af4309bba6ea4b6b9b11724906ae339a8" name="af4309bba6ea4b6b9b11724906ae339a8"></a>
 CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>tet_tags</b></td></tr>
+<tr class="memdesc:af4309bba6ea4b6b9b11724906ae339a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tag every new tet takes, for an interior swap. See cache_interior_swap_tag. <br /></td></tr>
 <tr class="separator:af4309bba6ea4b6b9b11724906ae339a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd0295c12098f114ac918bcc4e754fff" id="r_abd0295c12098f114ac918bcc4e754fff"><td class="memItemLeft" align="right" valign="top">std::map&lt; size_t, CellTag &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_info_cache.html#abd0295c12098f114ac918bcc4e754fff">ring_tags</a></td></tr>
+<tr class="separator:abd0295c12098f114ac918bcc4e754fff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03533c32265aa30d2f416484f8f96f0c" id="r_a03533c32265aa30d2f416484f8f96f0c"><td class="memItemLeft" align="right" valign="top"><a id="a03533c32265aa30d2f416484f8f96f0c" name="a03533c32265aa30d2f416484f8f96f0c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_surface_flip</b> = false</td></tr>
 <tr class="separator:a03533c32265aa30d2f416484f8f96f0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -106,13 +109,26 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>sf_c</b> = 0</td></
 <tr class="memitem:a1ce609070f96b71caae4e6d3054341f4" id="r_a1ce609070f96b71caae4e6d3054341f4"><td class="memItemLeft" align="right" valign="top"><a id="a1ce609070f96b71caae4e6d3054341f4" name="a1ce609070f96b71caae4e6d3054341f4"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>sf_d</b> = 0</td></tr>
 <tr class="separator:a1ce609070f96b71caae4e6d3054341f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47dfa3773c865e1d1b4423352675e60b" id="r_a47dfa3773c865e1d1b4423352675e60b"><td class="memItemLeft" align="right" valign="top"><a id="a47dfa3773c865e1d1b4423352675e60b" name="a47dfa3773c865e1d1b4423352675e60b"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>sf_e</b> = 0</td></tr>
-<tr class="separator:a47dfa3773c865e1d1b4423352675e60b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73d5e760b40476e359487a41f87adf6d" id="r_a73d5e760b40476e359487a41f87adf6d"><td class="memItemLeft" align="right" valign="top"><a id="a73d5e760b40476e359487a41f87adf6d" name="a73d5e760b40476e359487a41f87adf6d"></a>
-<a class="el" href="classwmtk_1_1components_1_1simwild_1_1_face_attributes.html">FaceAttributes</a>&#160;</td><td class="memItemRight" valign="bottom"><b>sf_face_attr</b></td></tr>
+<a class="el" href="classwmtk_1_1_surface_tag_attributes.html">FaceAttributes</a>&#160;</td><td class="memItemRight" valign="bottom"><b>sf_face_attr</b></td></tr>
 <tr class="separator:a73d5e760b40476e359487a41f87adf6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="abd0295c12098f114ac918bcc4e754fff" name="abd0295c12098f114ac918bcc4e754fff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd0295c12098f114ac918bcc4e754fff">&#9670;&#160;</a></span>ring_tags</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::map&lt;size_t, CellTag&gt; wmtk::components::simwild::SimWildMesh::SwapInfoCache::ring_tags</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The tag on each side of the interface, for a surface flip, keyed by a ring vertex that identifies the side. Filled by prepare_surface_flip, read by propagate_swap_tags. c and d are deliberately absent: they sit ON the interface and so belong to both sides. </p>
+
+</div>
+</div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/simwild/wmtk/components/simwild/<a class="el" href="_sim_wild_mesh_8h_source.html">SimWildMesh.h</a></li>
 </ul>

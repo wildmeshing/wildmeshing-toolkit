@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['face_5fis_5fon_5fsurface_0',['face_is_on_surface',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa2ba1f764fe8833bbe4562219de3eb5f',1,'wmtk::components::simwild::SimWildMesh::face_is_on_surface()'],['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a731e6266ce1e4162006a0c26456f30fb',1,'wmtk::components::tetwild::TetWildMesh::face_is_on_surface()'],['../classwmtk_1_1_tet_mesh.html#a33236c0cc24dc37be3e5c2b70ea5e1db',1,'wmtk::TetMesh::face_is_on_surface()']]],
+  ['face_5fis_5fon_5fsurface_0',['face_is_on_surface',['../classwmtk_1_1_tet_optimizer_mesh.html#afec96f98e92be934c95c018e1356f120',1,'wmtk::TetOptimizerMesh::face_is_on_surface()'],['../classwmtk_1_1_tet_mesh.html#a33236c0cc24dc37be3e5c2b70ea5e1db',1,'wmtk::TetMesh::face_is_on_surface()']]],
   ['faces_1',['faces',['../classwmtk_1_1simplex_1_1_tet.html#ac2d79cf9f1df2fce48c8ec71f877d19b',1,'wmtk::simplex::Tet']]],
   ['faces_5ffrom_5fsimplex_2',['faces_from_simplex',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a46970a11dd3d7ea314770707cdd08e35',1,'wmtk::simplex::SimplexCollection']]],
   ['feature_5fretention_3',['feature_retention',['../classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#a090ff9416ea1554fdf6a5f8fafda66b3',1,'wmtk::components::triwild::TriWildMesh']]],

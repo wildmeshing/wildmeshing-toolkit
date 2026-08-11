@@ -95,11 +95,12 @@ Inheritance diagram for wmtk::TetMesh:</div>
   <map id="wmtk::TetMesh_map" name="wmtk::TetMesh_map">
 <area href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html" alt="app::interior_tet_opt::InteriorTetOpt" shape="rect" coords="0,56,345,80"/>
 <area href="classharmonic__tet_1_1_harmonic_tet.html" alt="harmonic_tet::HarmonicTet" shape="rect" coords="355,56,700,80"/>
-<area href="classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html" alt="wmtk::components::c1_simplification::MMTetMesh" shape="rect" coords="710,56,1055,80"/>
-<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="1065,56,1410,80"/>
-<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="1420,56,1765,80"/>
-<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" alt="wmtk::components::topological_offset::TopoOffsetTetMesh" shape="rect" coords="1775,56,2120,80"/>
-<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="1775,112,2120,136"/>
+<area href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share." alt="wmtk::TetOptimizerMesh" shape="rect" coords="710,56,1055,80"/>
+<area href="classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html" alt="wmtk::components::c1_simplification::MMTetMesh" shape="rect" coords="1065,56,1410,80"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" alt="wmtk::components::topological_offset::TopoOffsetTetMesh" shape="rect" coords="1420,56,1765,80"/>
+<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="532,112,877,136"/>
+<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="887,112,1232,136"/>
+<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="1420,112,1765,136"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -468,7 +469,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top"><a id="a8e721b4f8d5679988869b984f03fe6e1" name="a8e721b4f8d5679988869b984f03fe6e1"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>
 <tr class="separator:a8e721b4f8d5679988869b984f03fe6e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adedd059784843bcc33e4ff3ecf1041c7" id="r_adedd059784843bcc33e4ff3ecf1041c7"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#adedd059784843bcc33e4ff3ecf1041c7">triangle_insertion_after</a> (const std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &gt; &amp;)</td></tr>
+<tr class="memitem:adedd059784843bcc33e4ff3ecf1041c7" id="r_adedd059784843bcc33e4ff3ecf1041c7"><td class="memItemLeft" align="right" valign="top"><a id="adedd059784843bcc33e4ff3ecf1041c7" name="adedd059784843bcc33e4ff3ecf1041c7"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_after</b> (const std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &gt; &amp;)</td></tr>
 <tr class="separator:adedd059784843bcc33e4ff3ecf1041c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89cb180465a9209daee2f99a182c1e10" id="r_a89cb180465a9209daee2f99a182c1e10"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a89cb180465a9209daee2f99a182c1e10">split_edge_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="memdesc:a89cb180465a9209daee2f99a182c1e10"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge split before changing the connectivity.  <br /></td></tr>
@@ -1031,7 +1033,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa2ba1f764fe8833bbe4562219de3eb5f">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a731e6266ce1e4162006a0c26456f30fb">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afec96f98e92be934c95c018e1356f120">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1416,7 +1418,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a59cc5da71e6fa3ec1a775547ad26ab2c">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aee6fb0e047a0ca86c220267b94e860a2">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6672653dda293576dfaf6f59c6b1e7c3">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1856,7 +1858,7 @@ false </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
-<p>Reimplemented in <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#adae4006c75133701b3eca8ac56622e80">app::interior_tet_opt::InteriorTetOpt</a>, <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#aa0c9e24e84a99c1ea7b7e6aa92e2bb6f">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a2c137aef9e20596fdefac0f90f87f785">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#adae4006c75133701b3eca8ac56622e80">app::interior_tet_opt::InteriorTetOpt</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab1c12ae9e6041f288d992571a8124402">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -2519,7 +2521,7 @@ false </dd></dl>
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aff0df9b93230842f696f0f56fb53f95f">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9fd0411cc34d7a0e371d922a8cf6c681">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aff0df9b93230842f696f0f56fb53f95f">wmtk::components::tetwild::TetWildMesh</a>.</p>
 
 </div>
 </div>
@@ -2642,7 +2644,7 @@ false </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>energy The swap giving the tets with the lowest energy are chosen. </dd></dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#abfc1cdb9befc1fda16ba58186879d6af">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a02e5ffad6510a4c50ae89d4794adb81c">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a144e553b641104f76a766145bfee2f55">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -2718,7 +2720,7 @@ false </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if this candidate case is allowed. </dd></dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a639a1f3d27fcf575639ff933b6d923c9">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a0f9760db1f72666e42e14b7c0f5eb98a">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a639a1f3d27fcf575639ff933b6d923c9">wmtk::components::tetwild::TetWildMesh</a>.</p>
 
 </div>
 </div>
@@ -2841,7 +2843,7 @@ false </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>energy The swap giving the tets with the lowest energy are chosen. </dd></dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a58b058afcaeeea32f85def2f90092301">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a0e59000f4825d379ae561f29cc25a7e8">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6afae375ecb270d675871e991c259e88">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -3143,34 +3145,6 @@ false </dd></dl>
 <p>track surface before</p>
 <p>subdivide</p>
 <p>track surface after</p>
-
-</div>
-</div>
-<a id="adedd059784843bcc33e4ff3ecf1041c7" name="adedd059784843bcc33e4ff3ecf1041c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adedd059784843bcc33e4ff3ecf1041c7">&#9670;&#160;</a></span>triangle_insertion_after()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TetMesh::triangle_insertion_after </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &gt; &amp;&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4dca9d24ba8de5a8c614dd6e47a6754b">wmtk::components::tetwild::TetWildMesh</a>.</p>
 
 </div>
 </div>
@@ -3769,7 +3743,7 @@ false </dd></dl>
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#afe9f679344a6b1fd0367cb5e711bbc84">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a8353e84af471799bb96fc29f70c0fbc3">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c216b0a1b2f288f2d01fdaa4145b232">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
