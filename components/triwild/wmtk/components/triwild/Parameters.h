@@ -22,6 +22,27 @@ struct Parameters : public wmtk::OptimizerParameters
     bool preserve_feature_points = true;
 
     /**
+     * Let the operations clean up junctions, anchoring only open-polyline endpoints.
+     *
+     * The erosion argument above is about ENDPOINTS: a polyline eats its own tip. A junction
+     * -- valence >= 3 in the constrained edges -- cannot erode a curve away, because every
+     * curve through it stays a constrained edge and the envelope still holds it within eps.
+     * Anchoring it buys little and costs a great deal, because on a self-intersecting input
+     * nearly every arrangement vertex is a crossing: on 2D model 242427, 79615 of 87610
+     * vertices are junctions, so almost every edge joins two of them and collapse -- the only
+     * operation that removes a bad element outright -- is refused everywhere. That model then
+     * never leaves MAX_ENERGY: it sat at 1e50 for the whole run while the sizing field
+     * saturated and the split pass grew it from 13k to 621k vertices.
+     *
+     * With junctions free it converges to max energy 10.48, fully rounded, in 12 iterations.
+     * Measured no change on the two models the endpoint guard was introduced for (215292 and
+     * 134005): identical energies, iteration counts and Euler characteristics either way.
+     *
+     * Ignored when preserve_feature_points is off, which already anchors nothing.
+     */
+    bool allow_junction_cleanup = true;
+
+    /**
      * Verify at init that every constrained edge starts inside the envelope.
      *
      * The invariant is real -- the envelope is built around the *input* curves while the
@@ -96,6 +117,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
         preserve_feature_points = json_params["preserve_feature_points"];
+        allow_junction_cleanup = json_params["allow_junction_cleanup"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
