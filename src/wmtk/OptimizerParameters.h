@@ -79,6 +79,23 @@ struct OptimizerParameters
     // stall, so it does not bloat the element count.
     bool stuck_refine_force_split = true;
 
+    /**
+     * Force-split only a cell that is too LARGE for its sizing field.
+     *
+     * Force-split exists to unstick a sliver, but it cannot: AMIPS is scale invariant, so
+     * subdividing a badly SHAPED cell yields two badly shaped cells of the same energy. The
+     * cell stays the worst one, is force-split again on the next stall, and its longest edge
+     * halves every time -- a ratchet with no exit. On Thingi10K 243014 that drove a legitimate
+     * 0.155 surface edge, the finest the simplified input has, down to 1.0e-4 in about eleven
+     * firings, ~1500x below anything in the input.
+     *
+     * Refinement only helps a cell that is too big for its target length, so require that.
+     * Measured serially on 243014 over 25 iterations: off gives final max energy 41.46 with a
+     * 1.02e-04 minimum edge and 0.373% of edges below 1e-3; on gives 20.87, 8.15e-04 and
+     * 0.019%. Without it the mesh reaches 20.87 then degrades to 41.46; with it 20.87 holds.
+     */
+    bool stuck_refine_force_split_oversized_only = true;
+
     // ---- Skip good regions ----------------------------------------------
     // Only smooth vertices incident to a cell whose energy is >=
     // skip_good_regions_margin * stop_energy. Smoothing a vertex surrounded by
