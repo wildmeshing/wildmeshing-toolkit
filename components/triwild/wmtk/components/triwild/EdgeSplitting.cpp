@@ -22,7 +22,7 @@ void TriWildMesh::split_all_edges()
     // split_edge_before, and be exempted from the gate entirely -- and those are exactly the
     // ones that run away. The attribute collections are resized to the reservation, so their
     // size is the capacity to use. make_unique value-initialises, so every slot starts at 0.
-    if (m_params.split_high_valence_threshold > 0) {
+    if (m_tri_params.split_high_valence_threshold > 0) {
         m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }
@@ -105,7 +105,7 @@ void TriWildMesh::split_all_edges()
             "[high-valence] {} splits refused to avoid growing a vertex past {} incident "
             "triangles",
             n,
-            m_params.split_high_valence_threshold);
+            m_tri_params.split_high_valence_threshold);
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
@@ -141,8 +141,8 @@ bool TriWildMesh::split_edge_before(const Tuple& loc0)
     // A vertex past the threshold accepts one such split per pass and refuses the rest, which
     // spreads the refinement instead of letting it pile onto the same vertex. Done here,
     // before the edge caching below, so a refusal is cheap.
-    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
-        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
+    if (m_tri_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_tri_params.split_high_valence_threshold);
         std::vector<size_t> to_claim;
         for (const size_t fid : faces) {
             const size_t vid = simplex_from_face(fid).opposite_vertex(edge).id();
