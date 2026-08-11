@@ -49,7 +49,6 @@ public:
 
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
-    std::shared_ptr<SampleEnvelope> m_envelope_orig;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
@@ -58,15 +57,9 @@ public:
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
-    /// Hooks for the shared 2D smoothing driver.
-    Vector2d smoothing_position(const size_t vid) const;
-    void set_smoothing_position(const size_t vid, const Vector2d& p);
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
-    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
-
     /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
     /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
+    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override { return true; }
 
     SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
@@ -150,10 +143,6 @@ public:
     void write_vtu_with_energies(const std::string& path) const;
 
 public:
-    void smooth_all_vertices(const size_t n_iters = 1);
-    bool smooth_before(const Tuple& t) override;
-    bool smooth_after(const Tuple& t) override;
-
     /**
      * @brief A vector containing the vertex position and all positions of the surface neighbors.
      *
@@ -247,6 +236,8 @@ private:
     size_t m_last_split_vertex = 0;
 
 protected:
+    void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }
+
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max)
         const override;
     void collapse_after_vertex(size_t v1, size_t v2) override;

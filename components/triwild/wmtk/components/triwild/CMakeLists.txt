@@ -13,8 +13,6 @@ set(SRC_FILES
 
 	Parameters.h
 
-	Smooth.cpp
-
 	triwild.hpp
 	triwild.cpp
 )

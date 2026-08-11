@@ -304,6 +304,66 @@ TEST_CASE(
 }
 
 TEST_CASE(
+    "tag-homogeneous SimWild follows TriWild's serial smoothing pass",
+    "[simwild][triwild][conformance][serial]")
+{
+    wmtk::components::triwild::Parameters tri_params;
+    tri_params.init(Vector2d(-1, -1), Vector2d(2, 2));
+    wmtk::components::simwild::Parameters sim_params;
+    sim_params.epsr = tri_params.epsr;
+    sim_params.stop_energy = tri_params.stop_energy;
+    sim_params.w_amips = tri_params.w_amips;
+    sim_params.init(Vector2d(-1, -1), Vector2d(2, 2));
+
+    wmtk::components::triwild::TriWildMesh tri(tri_params, tri_params.eps, 0);
+    wmtk::components::simwild::tri::SimWildMeshTri sim(sim_params, sim_params.eps, 0);
+    init_homogeneous_quad(tri);
+    init_homogeneous_quad(sim);
+
+    // Run the oracle first and SimWild second from its still-identical mesh.
+    tri.smooth_all_vertices(1);
+    sim.smooth_all_vertices(1);
+
+    CHECK(canonical_faces(sim) == canonical_faces(tri));
+    const auto tri_qualities = qualities_by_face(tri);
+    const auto sim_qualities = qualities_by_face(sim);
+    REQUIRE(sim_qualities.size() == tri_qualities.size());
+    for (const auto& [face, quality] : tri_qualities) {
+        CHECK(sim_qualities.at(face) == quality);
+    }
+    for (size_t vid = 0; vid < kQuadVertices.size(); ++vid) {
+        CHECK(
+            (sim.m_vertex_attribute[vid].m_posf - tri.m_vertex_attribute[vid].m_posf)
+                .squaredNorm() == 0.);
+        CHECK(bool(sim.m_vertex_attribute[vid].m_pos == tri.m_vertex_attribute[vid].m_pos));
+    }
+    for (const auto& f : sim.get_faces()) {
+        CHECK(sim.m_face_attribute[f.fid(sim)].tags == kHomogeneousTag);
+    }
+
+    // SimWild previously ignored this TriWild optimization and smoothed every vertex.
+    tri_params.skip_good_regions = true;
+    sim_params.skip_good_regions = true;
+    for (const auto& f : tri.get_faces()) tri.m_face_attribute[f.fid(tri)].m_quality = 1.;
+    for (const auto& f : sim.get_faces()) sim.m_face_attribute[f.fid(sim)].m_quality = 1.;
+    REQUIRE(tri.active_vertices().empty());
+    REQUIRE(sim.active_vertices().empty());
+
+    std::array<Vector2d, kQuadVertices.size()> positions_before;
+    for (size_t vid = 0; vid < positions_before.size(); ++vid) {
+        positions_before[vid] = sim.m_vertex_attribute[vid].m_posf;
+    }
+    tri.smooth_all_vertices(1);
+    sim.smooth_all_vertices(1);
+    for (size_t vid = 0; vid < positions_before.size(); ++vid) {
+        CHECK((sim.m_vertex_attribute[vid].m_posf - positions_before[vid]).squaredNorm() == 0.);
+        CHECK(
+            (sim.m_vertex_attribute[vid].m_posf - tri.m_vertex_attribute[vid].m_posf)
+                .squaredNorm() == 0.);
+    }
+}
+
+TEST_CASE(
     "tag-homogeneous SimWild follows TetWild's serial split and collapse",
     "[simwild][tetwild][conformance][serial]")
 {

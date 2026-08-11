@@ -108,10 +108,10 @@ simwild's model — its whole stop condition is per-cell relative quality — an
 expresses it that way through the same shared helper. The hand-rolled 2D filter
 (`if (q < target_quality(tid)) continue;`) is exactly equivalent to it.
 
-**Still missing in simwild-2D, not addressed here** (feature ports, not de-duplication):
+**Still missing in simwild-2D, not addressed here** (a feature port, not de-duplication):
 force-split of the worst cells' longest edges (`m_force_split_edges`), which tetwild, triwild and
-simwild-3D all have; and `skip_good_regions` / `active_vertices`, which the other three use to
-restrict smoothing.
+simwild-3D all have. `skip_good_regions` / `active_vertices` were adopted with the shared 2D
+smoothing pass in Stage 5 below.
 
 ---
 
@@ -562,3 +562,35 @@ Two audit fixes were made alongside the extraction:
 - `stop_at_float` now applies to SimWild 2D as well as 3D.
 - the public 3D `replace_tags` rejects mismatched input/output vector lengths, matching its 2D
   counterpart instead of indexing past `found_tags`.
+
+---
+
+## Stage 5 — one 2D smoothing pass
+
+TriWild's complete smoothing pass now lives on `TriOptimizerMesh`, matching the already-shared 3D
+pass on `TetOptimizerMesh`. Both `TriWildMesh` and `SimWildMeshTri` inherit the same vertex
+collection/order, rounding and bbox gate, two-stage solve, inversion/envelope/quality rejection,
+quality updates, rejection counters, and `skip_good_regions` selection. The shared base also owns
+the identical floating/exact position reads and writes.
+
+Both applications use the base's single `m_envelope` for the pull energy and containment. Its
+geometry is application-specific -- TriWild builds it around its input curves, while SimWild can
+build it around the interface between different cell tags -- but there is only one envelope per
+2D mesh. The only smoothing acceptance policy left virtual is the positional constraint: TriWild
+uses it to preserve feature points and SimWild, which has no separate 0-dimensional features,
+always accepts it.
+
+Two SimWild behaviors deliberately move to TriWild's ground truth:
+
+- SimWild no longer sets `quality_veto_on_surface = false`; a surface move that worsens the worst
+  incident triangle is rejected in both applications.
+- SimWild now honors `skip_good_regions`; a vertex incident only to triangles below
+  `skip_good_regions_margin * stop_energy` is not scheduled for smoothing.
+- SimWild's unused 2D `m_envelope_orig` alias is deleted. Energy and containment both use
+  `m_envelope`, exactly as in TriWild. This does not change the standard remeshing path because
+  the two pointers aliased the same object there.
+
+The serial conformance fixture runs TriWild first and tag-homogeneous SimWild second from identical
+2D meshes, then compares connectivity, floating and exact positions, per-face qualities, and tags.
+It separately enables `skip_good_regions`, makes every face good, and verifies both applications
+schedule zero vertices. Full TriWild and SimWild test suites pass.

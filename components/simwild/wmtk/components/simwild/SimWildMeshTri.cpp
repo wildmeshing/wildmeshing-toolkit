@@ -241,7 +241,6 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
             "Envelope: {} (eps {:.6})",
             m_envelope->use_exact ? "EXACT" : "sampled",
             m_envelope_eps);
-        m_envelope_orig = m_envelope;
     } else if (m_sim_params.operation == "remeshing" && m_sim_params.check_envelope_at_init) {
         // All surface edges must be inside the envelope. Opt-in: see
         // Parameters::check_envelope_at_init for why it is not worth its cost by default.
@@ -321,9 +320,6 @@ void SimWildMeshTri::init_envelope(const MatrixXd& V, const MatrixXi& E)
         m_envelope->use_exact ? "EXACT" : "sampled",
         m_envelope_eps);
 
-    if (!m_envelope_orig) {
-        m_envelope_orig = m_envelope;
-    }
 }
 
 CellTag SimWildMeshTri::string_set_to_cell_tag(const std::set<std::string>& str_set)
@@ -927,93 +923,12 @@ void SimWildMeshTri::collapse_after_vertex(size_t, size_t v2)
     }
 }
 
-void SimWildMeshTri::smooth_all_vertices(const size_t n_iters)
-{
-    for (size_t i = 0; i < n_iters; ++i) {
-        // log_total_surface_energy();
-        igl::Timer timer;
-        timer.start();
-        m_smooth_rejects.reset();
-        std::vector<std::pair<std::string, Tuple>> collect_all_ops;
-        for (const Tuple& t : get_vertices()) {
-            collect_all_ops.emplace_back("vertex_smooth", t);
-        }
-        logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
-        logger().info("#V = {}", collect_all_ops.size());
-        wmtk::run_pass(
-            *this,
-            wmtk::PassLock::VertexOneRing,
-            "vertex smoothing",
-            [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
-        logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
-        if (m_params.debug_output) {
-            write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-        }
-    }
-}
-
-bool SimWildMeshTri::smooth_before(const Tuple& t)
-{
-    // Try to round first: smoothing is the operation that frees a vertex a split had to leave
-    // rational, and set_smoothing_position writes a double, so a vertex that will not round
-    // must not be smoothed -- its exact position is the only one keeping its ring valid.
-    const bool r = round(t);
-
-    const size_t vid = t.vid(*this);
-    if (!m_vertex_attribute.at(vid).on_bbox_faces.empty()) {
-        return false;
-    }
-
-    if (m_vertex_attribute[vid].m_is_rounded) {
-        return true;
-    }
-    // Note: no need to roll back.
-    return r;
-}
-
-bool SimWildMeshTri::smooth_after(const Tuple& t)
-{
-    // The body lives in wmtk::optimization::smooth_vertex_2d, shared with triwild.
-    optimization::SmoothVertexOptions opts;
-    opts.w_amips = m_params.w_amips;
-    opts.w_envelope = m_params.w_envelope;
-    opts.s_amips = m_s_amips;
-    opts.s_envelope = m_s_envelope;
-    opts.two_stage = true;
-    opts.quality_veto_on_surface = false;
-
-    return optimization::smooth_vertex_2d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
-}
-
-Vector2d SimWildMeshTri::smoothing_position(const size_t vid) const
-{
-    return m_vertex_attribute[vid].m_posf;
-}
-
-void SimWildMeshTri::set_smoothing_position(const size_t vid, const Vector2d& p)
-{
-    m_vertex_attribute[vid].m_posf = p;
-    m_vertex_attribute[vid].m_pos = to_rational(p);
-}
-
-std::shared_ptr<SampleEnvelope> SimWildMeshTri::smoothing_energy_envelope(const size_t) const
-{
-    return m_envelope_orig;
-}
-
-std::shared_ptr<SampleEnvelope> SimWildMeshTri::smoothing_containment_envelope(const size_t) const
-{
-    // Not m_envelope_orig: the pull target and the containment test are different objects,
-    // the same split the 3D mesh has.
-    return m_envelope;
-}
-
 std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_envelope_energy(
     const Tuple& t) const
 {
     const double w = m_s_envelope * m_params.w_envelope;
 
-    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope_orig, w);
+    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, w);
     return envelope_energy;
 }
 

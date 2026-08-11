@@ -208,6 +208,27 @@ public:
     bool swap_edge_after(const Tuple& t) override;
 
     /**
+     * @brief Run TriWild's vertex-smoothing pass.
+     *
+     * TriWild is the behavioral source of truth. SimWild shares the pass verbatim, including
+     * the single m_envelope used for both smoothing energy and containment, the surface
+     * quality veto, and skip_good_regions selection.
+     */
+    void smooth_all_vertices(size_t n_iters = 1);
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
+
+    Vector2d smoothing_position(size_t vid) const;
+    void set_smoothing_position(size_t vid, const Vector2d& p);
+    virtual bool smoothing_position_is_allowed(size_t vid, const Vector2d& p) const = 0;
+
+    double active_quality_threshold() const
+    {
+        return m_params.skip_good_regions_margin * m_params.stop_energy;
+    }
+    std::vector<size_t> active_vertices() const;
+
+    /**
      * @brief Round a vertex position to floating point, if that inverts no incident face.
      * @return True if successful or already rounded, false otherwise.
      */
@@ -226,6 +247,8 @@ protected:
 
     virtual bool split_adjust_position(size_t, const std::vector<Tuple>&) { return true; }
     virtual void split_after_vertex(size_t) {}
+
+    virtual void write_smoothing_debug_output(const std::string& path) const = 0;
 
     // RationalPositions supplies round_all_vertices() and round_and_check_all_rounded() on
     // top of these three.

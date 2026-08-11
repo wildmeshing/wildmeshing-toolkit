@@ -948,19 +948,6 @@ int TriWildMesh::flood_fill()
 }
 
 
-std::vector<size_t> TriWildMesh::active_vertices() const
-{
-    return utils::active_vertices(
-        vert_capacity(),
-        tri_capacity(),
-        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
-        [this](size_t fid) { return m_face_attribute[fid].m_quality; },
-        [this](size_t fid) { return oriented_tri_vids(fid); },
-        active_quality_threshold(),
-        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
-}
-
-
 std::pair<size_t, size_t> TriWildMesh::feature_retention(double* worst_ratio) const
 {
     if (worst_ratio) {

@@ -120,7 +120,7 @@ public:
      * ball -- it is a containment test, not a freeze, so the optimizer keeps the quality it
      * can get near features.
      */
-    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const;
+    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const override;
     void split_after_vertex(const size_t vid) override
     {
         m_vertex_extra[vid].m_feature_id = NO_FEATURE;
@@ -137,13 +137,6 @@ public:
     /// True iff collapsing v1 into v2 would drop or displace a feature point.
     bool collapse_breaks_feature(const size_t v1_id, const size_t v2_id) const;
 
-
-    /// Position hooks for the shared 2D smoothing driver. triwild keeps both a working
-    /// double position and an exact rational one, so writing goes through here.
-    Vector2d smoothing_position(const size_t vid) const;
-    void set_smoothing_position(const size_t vid, const Vector2d& p);
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
-    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
     TriWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
@@ -222,35 +215,11 @@ public:
     void write_vtu(const std::string& path) const;
 
 public:
-    void smooth_all_vertices(const size_t n_iters = 1);
-    bool smooth_before(const Tuple& t) override;
-    bool smooth_after(const Tuple& t) override;
-
     void mesh_improvement(int max_its = 80);
 
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,
         bool collapse_limit_length = true);
-
-    /**
-     * @brief m_quality threshold above which a face is "active" (worth operating on) for
-     * the skip-good-regions filter.
-     *
-     * Unlike the tet applications, m_quality here *is* the AMIPS2D energy (tetwild stores
-     * AMIPS^3 and cube-roots it), so the threshold is the energy directly.
-     */
-    double active_quality_threshold() const
-    {
-        return m_params.skip_good_regions_margin * m_params.stop_energy;
-    }
-
-    /**
-     * @brief vids of the vertices incident to at least one "active" face
-     * (m_quality >= active_quality_threshold()). Used by the skip-good-regions filter to
-     * restrict smoothing to non-good regions (smoothing a vertex surrounded by good faces
-     * does nothing).
-     */
-    std::vector<size_t> active_vertices() const;
 
     /**
      * @brief Tag every face with the inputs it lies inside, by winding number.
@@ -268,6 +237,8 @@ public:
     int flood_fill();
 
 protected:
+    void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }
+
     void collapse_pass_begin() override { m_feature_rejects = 0; }
     void collapse_pass_end(size_t) override
     {

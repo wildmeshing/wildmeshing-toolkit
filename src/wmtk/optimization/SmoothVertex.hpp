@@ -265,10 +265,8 @@ bool smooth_vertex_3d(
  *   - is_inverted_f(size_t fid), is_inverted(size_t fid), get_quality(size_t fid)
  *   - Vector2d smoothing_position(size_t vid) const
  *   - void set_smoothing_position(size_t vid, const Vector2d& p)
- *       writes the working position and any exact/rational copy the mesh keeps; the meshes
- *       differ here (triwild carries m_posf plus a rational m_pos, simwild 2D carries only
- *       m_pos), which is why this is a hook rather than a field the driver writes directly
- *   - smoothing_energy_envelope(vid) / smoothing_containment_envelope(vid), as in 3D
+ *       writes the working position and its exact/rational copy together
+ *   - m_envelope, used for both the surface pull energy and containment
  */
 template <class Mesh>
 bool smooth_vertex_2d(
@@ -355,12 +353,12 @@ bool smooth_vertex_2d(
         assert(!surf_neighbors.empty());
     }
 
-    const std::shared_ptr<SampleEnvelope> pull_env =
-        VA[vid].m_is_on_surface ? m.smoothing_energy_envelope(vid) : nullptr;
+    const std::shared_ptr<SampleEnvelope> envelope =
+        VA[vid].m_is_on_surface ? m.m_envelope : nullptr;
 
-    if (pull_env) {
+    if (envelope) {
         auto envelope_energy =
-            std::make_shared<EnvelopeEnergy2D>(pull_env, opts.s_envelope * opts.w_envelope);
+            std::make_shared<EnvelopeEnergy2D>(envelope, opts.s_envelope * opts.w_envelope);
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();
@@ -389,13 +387,11 @@ bool smooth_vertex_2d(
     }
 
     // Containment, edge by edge rather than face by face as in 3D.
-    const std::shared_ptr<SampleEnvelope> check_env =
-        VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : nullptr;
-    if (check_env) {
+    if (envelope) {
         const Vector2d p = m.smoothing_position(vid);
         for (const Vector2d& q : surf_neighbors) {
             const std::array<Eigen::Vector2d, 2> edge = {{p, q}};
-            if (check_env->is_outside(edge)) {
+            if (envelope->is_outside(edge)) {
                 if (counters) ++counters->envelope;
                 return false;
             }
