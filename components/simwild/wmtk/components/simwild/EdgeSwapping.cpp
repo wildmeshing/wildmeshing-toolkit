@@ -356,9 +356,12 @@ size_t SimWildMesh::swap_all_faces()
     igl::Timer timer;
     double time;
     timer.start();
+    // Faces, not edges. This used to collect edge tuples and queue "face_swap" on them -- 6
+    // per tet instead of 4, with each face reachable from up to three of its edges, so the
+    // pass enumerated a different set from the one it is named for. tetwild's form.
     auto collect_all_ops =
-        wmtk::parallel_collect_edge_ops(*this, NUM_THREADS, [](auto&, const auto& e, auto& out) {
-            out.emplace_back("face_swap", e);
+        wmtk::parallel_collect_face_ops(*this, NUM_THREADS, [](auto&, const auto& f, auto& out) {
+            out.emplace_back("face_swap", f);
         });
     time = timer.getElapsedTime();
     logger().info("face swap prepare time: {:.4}s", time);

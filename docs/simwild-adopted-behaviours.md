@@ -369,3 +369,34 @@ That leaves simwild's op collection identical to its sibling's everywhere except
 which is still `parallel_collect_edge_ops` where tetwild uses `parallel_collect_face_ops` -- that
 one is a defect rather than a style difference (6 edge tuples per tet instead of 4 faces) and is
 recorded above with the rest of the swap family.
+
+---
+
+## Post-3c — `swap_all_faces` collects faces
+
+The defect recorded with the swap family, fixed on its own because it is a behaviour change rather
+than a sharing question.
+
+`SimWildMesh::swap_all_faces` called `parallel_collect_edge_ops` and queued `"face_swap"` operations
+on **edge** tuples -- 6 per tet, with each face reachable from up to three of its edges -- where
+tetwild calls `parallel_collect_face_ops` and queues them on faces, 4 per tet. The pass therefore
+enumerated a different set of simplices from the one it is named for, seeding the priority queue
+with duplicates of some faces and a different traversal for the rest.
+
+Two configs move, both of them the 3D ones that actually run face swaps:
+
+| config | before | after |
+|---|---|---|
+| `simwild_double_sphere_3d` | — | same `#t`/`#v`, different connectivity |
+| `simwild_double_sphere_notop_3d` | 21459 tets, avg 3.616959 | 21528 tets, avg 3.617020 |
+
+Everything else in the suite is byte-identical, and the branch touches no file outside
+`components/simwild/`.
+
+**Still open in the swap family:** simwild has `cnt_surface_swap` but not tetwild's per-type
+breakdown (`cnt_surface_swap_32/44/56`), and `prepare_surface_flip` is still per-application --
+tetwild's is generalized to any ring size and drives the 4-4 and 5-6 surface flips, while simwild
+has only `prepare_surface_flip_32`, rejects surface edges in 4-4/5-6, and `log_and_throw_error`s
+where tetwild returns `false`. Both belong with the sharing commit: the tag divergence that blocks
+sharing is three lines, so the hook is a pair of no-op virtuals (`cache_swap_cell_state` /
+`restore_swap_cell_state`) that tetwild never overrides.
