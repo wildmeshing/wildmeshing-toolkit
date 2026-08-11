@@ -278,3 +278,31 @@ surface envelope. `smoothing_containment_envelope` did move -- both applications
 `smooth_after` stays in **both** applications even though their bodies are byte-identical: the body
 is the shared `optimization::smooth_vertex_3d` template, which reaches `m_tet_attribute` and
 `smoothing_energy_envelope`, both per-application.
+
+---
+
+## Stage 3c — simwild adopts `wmtk::run_pass`
+
+The `if (NUM_THREADS > 0)` / build an `ExecutePass` / install a lock / log the time shell around
+every driver is now `wmtk::run_pass`, shared by all four meshes. **No simwild behaviour changed**:
+the shell was already identical to tetwild's and triwild's in all eleven simwild drivers, and what
+each driver does *inside* the executor is passed in as a callback, so the differences below survive
+the fold untouched rather than being silently adopted.
+
+They are listed here because folding the shell is what makes them visible, and because each one is
+now a one-line change instead of a rewrite:
+
+| | simwild | tetwild / triwild |
+|---|---|---|
+| how the pass runs | `executor(mesh, ops)` once, in 3D split, all four 3D swaps and 2D split/smooth | `run_localized_to_convergence(mesh, executor, ops)` — retries a failure only where the mesh actually changed that round |
+| 2D collapse | a hand-rolled `do { ... } while (executor.get_cnt_success() > 0)` that rebuilds the whole op list from `get_edges()` every round | the same localized retry as everything else |
+| success count | `executor.get_cnt_success()`, i.e. the last round's count | the total accumulated across rounds by the retry driver |
+
+The success-count row matters where the caller uses the return value to decide whether to keep
+going: `local_operations` stops its swap loop once a pass changes nothing, and a per-round count and
+a total disagree about when that is. simwild-2D's swap already takes the shared form (Stage 1a); the
+3D swaps do not.
+
+Adopting the localized form is a real behaviour change for simwild -- it changes which failed
+operations are re-tested and in what order -- so it wants its own commit and its own before/after,
+not a line in a refactor.

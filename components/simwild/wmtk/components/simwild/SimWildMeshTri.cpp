@@ -17,7 +17,6 @@
 #include <paraviewo/VTUWriter.hpp>
 #include <set>
 #include <unordered_map>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/envelope/KNN.hpp>
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/DirichletEnergy.hpp>
@@ -26,6 +25,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
@@ -36,7 +36,7 @@
 
 namespace wmtk::components::simwild::tri {
 
-auto renew = [](const SimWildMeshTri& m, auto op, auto& tris) {
+auto renew = [](const wmtk::TriOptimizerMesh& m, auto op, auto& tris) {
     using Tuple = TriMesh::Tuple;
     std::vector<Tuple> edges;
     for (const auto& t : tris) {
@@ -54,11 +54,6 @@ auto renew = [](const SimWildMeshTri& m, auto op, auto& tris) {
     return optup;
 };
 
-
-auto edge_locker = [](auto& m, const auto& e, int task_id) {
-    // TODO: this should not be here
-    return m.try_set_edge_mutex_two_ring(e, task_id);
-};
 
 void SimWildMeshTri::init_from_image(
     const MatrixXd& V,
@@ -878,56 +873,43 @@ void SimWildMeshTri::split_all_edges()
     }
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples =
-            [](const SimWildMeshTri& m, std::string op, const auto& newts) {
-                std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
-                for (const auto& t : newts) {
-                    op_tups.emplace_back(op, t);
-                    op_tups.emplace_back(op, t.switch_edge(m));
-                    op_tups.emplace_back(op, t.switch_vertex(m).switch_edge(m));
-                }
-                return op_tups;
-            };
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge split operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples =
+                [](const wmtk::TriOptimizerMesh& m, std::string op, const auto& newts) {
+                    std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
+                    for (const auto& t : newts) {
+                        op_tups.emplace_back(op, t);
+                        op_tups.emplace_back(op, t.switch_edge(m));
+                        op_tups.emplace_back(op, t.switch_vertex(m).switch_edge(m));
+                    }
+                    return op_tups;
+                };
 
-        executor.priority = [&](const SimWildMeshTri& m, std::string op, const Tuple& t) {
-            return m.get_length2(t);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const SimWildMeshTri& m, const auto& ele) {
-            auto [weight, op, tup] = ele;
-            auto length = m.get_length2(tup);
-            if (length != weight) {
-                return false;
-            }
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            const auto& VA = m_vertex_attribute;
-            double sizing_ratio = 0.5 * (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar);
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                return false;
-            }
-            return true;
-        };
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = ExecutePass<SimWildMeshTri>(ExecutionPolicy::kPartition);
-        executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = ExecutePass<SimWildMeshTri>(ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time serial: {:.4}s", time);
-    }
+            executor.priority = [&](const wmtk::TriOptimizerMesh& m,
+                                    std::string op,
+                                    const Tuple& t) { return m.get_length2(t); };
+            executor.is_weight_up_to_date = [&](const wmtk::TriOptimizerMesh& m, const auto& ele) {
+                auto [weight, op, tup] = ele;
+                auto length = m.get_length2(tup);
+                if (length != weight) {
+                    return false;
+                }
+                //
+                size_t v1_id = tup.vid(*this);
+                size_t v2_id = tup.switch_vertex(*this).vid(*this);
+                const auto& VA = m_vertex_attribute;
+                double sizing_ratio = 0.5 * (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar);
+                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                    return false;
+                }
+                return true;
+            };
+            executor(mesh, collect_all_ops);
+        });
     if (m_exact_split_count > 0) {
         wmtk::logger().info(
             "{} splits fell back to the exact rational midpoint",
@@ -1177,57 +1159,45 @@ void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
     m_collapse_limit_length = is_limit_length;
     std::vector<std::pair<std::string, Tuple>> all_ops;
 
-    auto setup_and_execute = [&](auto& executor) {
-        executor.priority = [](const SimWildMeshTri& m, Op op, const Tuple& t) {
-            return -m.get_length2(t);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const SimWildMeshTri& m,
-                                            const std::tuple<double, Op, Tuple>& ele) {
-            const auto& VA = m_vertex_attribute;
-            auto& [weight, op, tup] = ele;
-            const double length = m.get_length2(tup);
-            if (length != -weight) {
-                return false;
-            }
-            // Deliberately NOT filtered on length here. An over-length edge stays a
-            // candidate and collapse_edge_before decides it on quality instead: it is kept
-            // only if it STRICTLY improves the worst element of the ring. See there.
-            return true;
-        };
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge collapse",
+        [&](auto& executor, auto& mesh) {
+            executor.priority = [](const wmtk::TriOptimizerMesh& m, Op op, const Tuple& t) {
+                return -m.get_length2(t);
+            };
+            executor.is_weight_up_to_date = [&](const wmtk::TriOptimizerMesh& m,
+                                                const std::tuple<double, Op, Tuple>& ele) {
+                const auto& VA = m_vertex_attribute;
+                auto& [weight, op, tup] = ele;
+                const double length = m.get_length2(tup);
+                if (length != -weight) {
+                    return false;
+                }
+                // Deliberately NOT filtered on length here. An over-length edge stays a
+                // candidate and collapse_edge_before decides it on quality instead: it is kept
+                // only if it STRICTLY improves the worst element of the ring. See there.
+                return true;
+            };
 
-        // Execute!!
-        do {
-            all_ops.clear();
-            const auto all_edges = get_edges();
-            logger().info("#E = {}", all_edges.size());
-            for (const Tuple& loc : all_edges) {
-                // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
-                all_ops.emplace_back("edge_collapse", loc);
-                all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-            }
-            executor(*this, all_ops);
-            logger().info(
-                "success: {}, failed: {}",
-                executor.get_cnt_success(),
-                executor.get_cnt_fail());
-        } while (executor.get_cnt_success() > 0);
-    };
-
-    igl::Timer timer;
-    timer.start();
-    if (NUM_THREADS > 0) {
-        auto executor = ExecutePass<SimWildMeshTri>(ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](SimWildMeshTri& m, const Tuple& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        wmtk::logger().info("edge collapse time parallel: {:.4}s", timer.getElapsedTimeInSec());
-    } else {
-        auto executor = ExecutePass<SimWildMeshTri>(ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        wmtk::logger().info("edge collapse time serial: {:.4}s", timer.getElapsedTimeInSec());
-    }
+            // Execute!!
+            do {
+                all_ops.clear();
+                const auto all_edges = get_edges();
+                logger().info("#E = {}", all_edges.size());
+                for (const Tuple& loc : all_edges) {
+                    // collect all edges. Filtering too long edges happens in `is_weight_up_to_date`
+                    all_ops.emplace_back("edge_collapse", loc);
+                    all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
+                }
+                executor(mesh, all_ops);
+                logger().info(
+                    "success: {}, failed: {}",
+                    executor.get_cnt_success(),
+                    executor.get_cnt_fail());
+            } while (executor.get_cnt_success() > 0);
+        });
 }
 
 bool SimWildMeshTri::collapse_edge_before(const Tuple& loc)
@@ -1497,30 +1467,23 @@ size_t SimWildMeshTri::swap_all_edges()
     logger().info("edge swap prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
     size_t total_success = 0;
-    auto setup_and_execute = [&](auto& executor) {
+    wmtk::run_pass(*this, wmtk::PassLock::EdgeTwoRing, "", [&](auto& executor, auto& mesh) {
         executor.renew_neighbor_tuples = renew;
-        executor.num_threads = NUM_THREADS;
-        executor.priority = [](const SimWildMeshTri& m, std::string op, const Tuple& e) {
-            return m.swap_weight(e);
+        // `swap_weight` is simwild's own, so reach it through `this` rather than through the
+        // executor's mesh argument, which is the shared base.
+        executor.priority = [this](const wmtk::TriOptimizerMesh&, std::string op, const Tuple& e) {
+            return swap_weight(e);
         };
         executor.should_renew = [](auto val) { return (val > 0); };
-        executor.is_weight_up_to_date = [](const SimWildMeshTri& m, auto& ele) {
+        executor.is_weight_up_to_date = [this](const wmtk::TriOptimizerMesh&, auto& ele) {
             auto& [val, _, e] = ele;
-            const double w = m.swap_weight(e);
+            const double w = swap_weight(e);
             return (w > 1e-5) && ((w - val) * (w - val) < 1e-8);
         };
         // Retry a failed swap only where the mesh actually changed this round
         // (dirty-epoch localized retry).
-        total_success = wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        auto executor = ExecutePass<SimWildMeshTri>(ExecutionPolicy::kPartition);
-        executor.lock_vertices = edge_locker;
-        setup_and_execute(executor);
-    } else {
-        auto executor = ExecutePass<SimWildMeshTri>(ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-    }
+        total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+    });
 
     // The caller (local_operations) stops the swap loop once a pass changes nothing, so this
     // has to be the real count -- it used to return `true`, i.e. always 1, which meant the
@@ -1640,21 +1603,11 @@ void SimWildMeshTri::smooth_all_vertices(const size_t n_iters)
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTimeInSec());
         logger().info("#V = {}", collect_all_ops.size());
-        if (NUM_THREADS > 0) {
-            timer.start();
-            ExecutePass<SimWildMeshTri> executor(ExecutionPolicy::kPartition);
-            executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-                return m.try_set_vertex_mutex_one_ring(e, task_id);
-            };
-            executor.num_threads = NUM_THREADS;
-            executor(*this, collect_all_ops);
-            logger().info("vertex smoothing time parallel: {:.4}s", timer.getElapsedTimeInSec());
-        } else {
-            timer.start();
-            ExecutePass<SimWildMeshTri> executor(ExecutionPolicy::kSeq);
-            executor(*this, collect_all_ops);
-            logger().info("vertex smoothing time serial: {:.4}s", timer.getElapsedTimeInSec());
-        }
+        wmtk::run_pass(
+            *this,
+            wmtk::PassLock::VertexOneRing,
+            "vertex smoothing",
+            [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         if (m_params.debug_output) {
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));

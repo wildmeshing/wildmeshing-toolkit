@@ -2,7 +2,7 @@
 #include "SimWildMesh.h"
 
 #include <wmtk/optimization/SmoothVertex.hpp>
-#include "wmtk/ExecutionScheduler.hpp"
+#include <wmtk/utils/RunPass.hpp>
 
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
@@ -74,23 +74,11 @@ void SimWildMesh::smooth_all_vertices(const size_t n_iters = 1)
         time = timer.getElapsedTime();
         wmtk::logger().info("vertex smoothing prepare time: {:.4}s", time);
         wmtk::logger().debug("Num verts {}", collect_all_ops.size());
-        if (NUM_THREADS > 0) {
-            timer.start();
-            auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kPartition);
-            executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-                return m.try_set_vertex_mutex_one_ring(e, task_id);
-            };
-            executor.num_threads = NUM_THREADS;
-            executor(*this, collect_all_ops);
-            time = timer.getElapsedTime();
-            wmtk::logger().info("vertex smoothing operation time parallel: {:.4}s", time);
-        } else {
-            timer.start();
-            auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kSeq);
-            executor(*this, collect_all_ops);
-            time = timer.getElapsedTime();
-            wmtk::logger().info("vertex smoothing operation time serial: {:.4}s", time);
-        }
+        wmtk::run_pass(
+            *this,
+            wmtk::PassLock::VertexOneRing,
+            "vertex smoothing operation",
+            [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
         if (m_params.debug_output) {
             write_vtu(fmt::format("debug_{}", m_debug_print_counter++));

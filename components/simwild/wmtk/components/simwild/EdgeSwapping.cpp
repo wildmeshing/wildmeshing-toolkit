@@ -2,10 +2,10 @@
 
 #include <igl/Timer.h>
 #include <wmtk/TetMesh.h>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 #include "spdlog/spdlog.h"
 #include "wmtk/utils/TupleUtils.hpp"
 
@@ -92,36 +92,21 @@ size_t SimWildMesh::swap_all_edges_32()
     if (m_sim_params.check_surface_topology) {
         sig_before = surface_topology_signature();
     }
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_edges;
-        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap operation time parallel: {:.4}s", time);
-        if (m_sim_params.check_surface_topology) {
-            warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
-        }
-        return executor.get_cnt_success();
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap operation time serial: {:.4}s", time);
-        if (m_sim_params.check_surface_topology) {
-            warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
-        }
-        return executor.get_cnt_success();
+    size_t total_success = 0;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge swap operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = wmtk::renewal_edges;
+            executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+            executor(mesh, collect_all_ops);
+            total_success = executor.get_cnt_success();
+        });
+    if (m_sim_params.check_surface_topology) {
+        warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
     }
+    return total_success;
 }
 
 bool SimWildMesh::swap_edge_before(const Tuple& t)
@@ -374,30 +359,18 @@ size_t SimWildMesh::swap_all_faces()
         });
     time = timer.getElapsedTime();
     logger().info("face swap prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_faces;
-        executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_face_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("face swap operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("face swap operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
-    }
+    size_t total_success = 0;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::FaceTwoRing,
+        "face swap operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = wmtk::renewal_faces;
+            executor.priority = [](auto& m, auto op, auto& t) { return m.get_length2(t); };
+            executor(mesh, collect_all_ops);
+            total_success = executor.get_cnt_success();
+        });
+    return total_success;
 }
 
 bool SimWildMesh::swap_face_before(const Tuple& t)
@@ -495,54 +468,39 @@ size_t SimWildMesh::swap_all_edges_all()
     if (m_sim_params.check_surface_topology) {
         sig_before = surface_topology_signature();
     }
-    auto setup_and_execute = [&](auto& executor) {
-        // executor.renew_neighbor_tuples = wmtk::renewal_edges;
-        executor.renew_neighbor_tuples =
-            [](const TetMesh& m, const std::string& op, const std::vector<Tuple>& newt) {
-                std::vector<std::pair<std::string, TetMesh::Tuple>> op_tups;
-                std::vector<TetMesh::Tuple> new_edges;
-                for (const TetMesh::Tuple& ti : newt) {
-                    for (auto j = 0; j < 6; j++) {
-                        new_edges.push_back(m.tuple_from_edge(ti.tid(m), j));
+    size_t total_success = 0;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge swap operation",
+        [&](auto& executor, auto& mesh) {
+            // executor.renew_neighbor_tuples = wmtk::renewal_edges;
+            executor.renew_neighbor_tuples =
+                [](const TetMesh& m, const std::string& op, const std::vector<Tuple>& newt) {
+                    std::vector<std::pair<std::string, TetMesh::Tuple>> op_tups;
+                    std::vector<TetMesh::Tuple> new_edges;
+                    for (const TetMesh::Tuple& ti : newt) {
+                        for (auto j = 0; j < 6; j++) {
+                            new_edges.push_back(m.tuple_from_edge(ti.tid(m), j));
+                        }
+                    };
+                    wmtk::unique_edge_tuples(m, new_edges);
+                    op_tups.reserve(new_edges.size() * 3);
+                    for (const Tuple& loc : new_edges) {
+                        op_tups.emplace_back("edge_swap", loc);
+                        op_tups.emplace_back("edge_swap_44", loc);
+                        op_tups.emplace_back("edge_swap_56", loc);
                     }
+                    return op_tups;
                 };
-                wmtk::unique_edge_tuples(m, new_edges);
-                op_tups.reserve(new_edges.size() * 3);
-                for (const Tuple& loc : new_edges) {
-                    op_tups.emplace_back("edge_swap", loc);
-                    op_tups.emplace_back("edge_swap_44", loc);
-                    op_tups.emplace_back("edge_swap_56", loc);
-                }
-                return op_tups;
-            };
-        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap operation time parallel: {:.4}s", time);
-        if (m_sim_params.check_surface_topology) {
-            warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
-        }
-        return executor.get_cnt_success();
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap operation time serial: {:.4}s", time);
-        if (m_sim_params.check_surface_topology) {
-            warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
-        }
-        return executor.get_cnt_success();
+            executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+            executor(mesh, collect_all_ops);
+            total_success = executor.get_cnt_success();
+        });
+    if (m_sim_params.check_surface_topology) {
+        warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
     }
+    return total_success;
 }
 
 
@@ -557,30 +515,18 @@ size_t SimWildMesh::swap_all_edges_44()
         });
     time = timer.getElapsedTime();
     logger().info("edge swap 44 prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_edges;
-        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap 44 operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap 44 operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
-    }
+    size_t total_success = 0;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge swap 44 operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = wmtk::renewal_edges;
+            executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+            executor(mesh, collect_all_ops);
+            total_success = executor.get_cnt_success();
+        });
+    return total_success;
 }
 
 bool SimWildMesh::swap_edge_44_before(const Tuple& t)
@@ -657,30 +603,18 @@ size_t SimWildMesh::swap_all_edges_56()
         });
     time = timer.getElapsedTime();
     logger().info("edge swap 56 prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_edges;
-        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap 56 operation time parallel: {:.4}s", time);
-        return executor.get_cnt_success();
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<SimWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        logger().info("edge swap 56 operation time serial: {:.4}s", time);
-        return executor.get_cnt_success();
-    }
+    size_t total_success = 0;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge swap 56 operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = wmtk::renewal_edges;
+            executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+            executor(mesh, collect_all_ops);
+            total_success = executor.get_cnt_success();
+        });
+    return total_success;
 }
 
 bool SimWildMesh::swap_edge_56_before(const Tuple& t)
