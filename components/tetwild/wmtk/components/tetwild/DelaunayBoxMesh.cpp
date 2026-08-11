@@ -1,3 +1,4 @@
+#include <wmtk/utils/DelaunayBoxMesh.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include "TetWildMesh.h"
 
@@ -28,71 +29,24 @@ void TetWildMesh::init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>
         for (int j = 0; j < 3; j++) points[i][j] = vertices[i][j];
     }
 
-    // bbox
-    double delta = m_params.diag_l / 15.0;
-    Vector3d box_min(m_params.min[0] - delta, m_params.min[1] - delta, m_params.min[2] - delta);
-    Vector3d box_max(m_params.max[0] + delta, m_params.max[1] + delta, m_params.max[2] + delta);
-
-    // add corners of domain
-    for (int i = 0; i < 8; i++) {
-        Vector3d p;
-        std::bitset<sizeof(int) * 8> a(i);
-        for (int j = 0; j < 3; j++) {
-            if (a.test(j)) {
-                p[j] = box_max[j];
-            } else {
-                p[j] = box_min[j];
-            }
-        }
-        points.push_back({{p[0], p[1], p[2]}});
-    }
-
-    const double voxel_resolution = m_params.diag_l / 20.0;
-    std::array<int, 3> N; // number of grid points per dimension
-    std::array<double, 3> h; // distance between grid points per dimension
-    for (int i = 0; i < 3; i++) {
-        const double D = box_max[i] - box_min[i];
-        N[i] = (D / voxel_resolution) + 1;
-        h[i] = D / N[i];
-    }
-
-    std::array<std::vector<double>, 3> ds;
-    for (int i = 0; i < 3; i++) {
-        ds[i].push_back(box_min[i]);
-        for (int j = 0; j < N[i] - 1; j++) {
-            ds[i].push_back(box_min[i] + h[i] * (j + 1));
-        }
-        ds[i].push_back(box_max[i]);
-    }
-
-    const double min_dis = voxel_resolution * voxel_resolution / 4;
-    //    double min_dis = state.target_edge_len * state.target_edge_len;//epsilon*2
-    for (int i = 0; i < ds[0].size(); i++) {
-        for (int j = 0; j < ds[1].size(); j++) {
-            for (int k = 0; k < ds[2].size(); k++) {
-                if ((i == 0 || i == ds[0].size() - 1) && (j == 0 || j == ds[1].size() - 1) &&
-                    (k == 0 || k == ds[2].size() - 1)) {
-                    continue;
-                }
-                const Vector3d p(ds[0][i], ds[1][j], ds[2][k]);
-
-                Eigen::Vector3d n;
-                const double sqd = m_envelope->nearest_point(p, n);
-
-                if (sqd < min_dis) {
-                    continue;
-                }
-                points.push_back({{ds[0][i], ds[1][j], ds[2][k]}});
-            }
-        }
-    }
+    // The box is grown from the ORIGINAL input bbox (m_params.min/max), not from `vertices`,
+    // which are the SIMPLIFIED surface -- so it is deliberately larger than the point set
+    // being triangulated. m_params.box_min/box_max then hold the padded box, which is what
+    // bbox-face tagging compares vertex coordinates against.
+    std::vector<wmtk::delaunay::Tetrahedron> tets;
+    Vector3d box_min, box_max;
+    wmtk::utils::delaunay_box_mesh(
+        *m_envelope,
+        m_params.min,
+        m_params.max,
+        m_params.diag_l,
+        points,
+        tets,
+        box_min,
+        box_max);
 
     m_params.box_min = box_min;
     m_params.box_max = box_max;
-
-    ///delaunay
-    auto [unused_points, tets] = delaunay::delaunay3D(points);
-    logger().info("after delauney tets.size() {}  points.size() {}", tets.size(), points.size());
 
     // conn
     init(points.size(), tets);
