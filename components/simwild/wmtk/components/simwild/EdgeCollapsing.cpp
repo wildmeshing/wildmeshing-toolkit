@@ -402,7 +402,7 @@ void SimWildMesh::simplify()
 
     // re-build envelope
     m_envelope->use_exact = false;
-    m_envelope->init(m_V_envelope, m_F_envelope, m_params.eps_simplify);
+    m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
 
     m_collapse_check_quality = false;
     collapse_all_edges();

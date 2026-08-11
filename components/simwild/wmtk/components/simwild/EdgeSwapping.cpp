@@ -89,7 +89,7 @@ size_t SimWildMesh::swap_all_edges_32()
     time = timer.getElapsedTime();
     logger().info("edge swap prepare time: {:.4}s", time);
     SurfaceTopoSignature sig_before;
-    if (m_params.check_surface_topology) {
+    if (m_sim_params.check_surface_topology) {
         sig_before = surface_topology_signature();
     }
     auto setup_and_execute = [&](auto& executor) {
@@ -107,7 +107,7 @@ size_t SimWildMesh::swap_all_edges_32()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         logger().info("edge swap operation time parallel: {:.4}s", time);
-        if (m_params.check_surface_topology) {
+        if (m_sim_params.check_surface_topology) {
             warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
         }
         return executor.get_cnt_success();
@@ -117,7 +117,7 @@ size_t SimWildMesh::swap_all_edges_32()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         logger().info("edge swap operation time serial: {:.4}s", time);
-        if (m_params.check_surface_topology) {
+        if (m_sim_params.check_surface_topology) {
             warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
         }
         return executor.get_cnt_success();
@@ -173,7 +173,7 @@ bool SimWildMesh::swap_edge_before(const Tuple& t)
     // mistaken for interior because of a stale m_is_on_surface flag, which would tear the
     // surface. tetwild routes all three swap paths this way.
     if (edge_incident_surface_face_count(t) > 0) {
-        if (!m_params.allow_surface_swap) {
+        if (!m_sim_params.allow_surface_swap) {
             return false;
         }
         if (!prepare_surface_flip_32(t, incident_tets)) {
@@ -492,7 +492,7 @@ size_t SimWildMesh::swap_all_edges_all()
     time = timer.getElapsedTime();
     logger().info("edge swap prepare time: {:.4}s", time);
     SurfaceTopoSignature sig_before;
-    if (m_params.check_surface_topology) {
+    if (m_sim_params.check_surface_topology) {
         sig_before = surface_topology_signature();
     }
     auto setup_and_execute = [&](auto& executor) {
@@ -528,7 +528,7 @@ size_t SimWildMesh::swap_all_edges_all()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         logger().info("edge swap operation time parallel: {:.4}s", time);
-        if (m_params.check_surface_topology) {
+        if (m_sim_params.check_surface_topology) {
             warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
         }
         return executor.get_cnt_success();
@@ -538,7 +538,7 @@ size_t SimWildMesh::swap_all_edges_all()
         setup_and_execute(executor);
         time = timer.getElapsedTime();
         logger().info("edge swap operation time serial: {:.4}s", time);
-        if (m_params.check_surface_topology) {
+        if (m_sim_params.check_surface_topology) {
             warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
         }
         return executor.get_cnt_success();
@@ -618,21 +618,6 @@ bool SimWildMesh::swap_edge_44_before(const Tuple& t)
     face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
 
     return true;
-}
-
-double SimWildMesh::swap_edge_44_energy(
-    const std::vector<std::array<size_t, 4>>& tets,
-    const int op_case)
-{
-    double max_energy = -1;
-    for (const auto& vids : tets) {
-        if (is_inverted(vids)) {
-            return std::numeric_limits<double>::max();
-        }
-        const double e = get_quality(vids);
-        max_energy = std::max(max_energy, e);
-    }
-    return max_energy;
 }
 
 bool SimWildMesh::swap_edge_44_after(const Tuple& t)
@@ -736,21 +721,6 @@ bool SimWildMesh::swap_edge_56_before(const Tuple& t)
         swap_cache.local().changed_faces);
 
     return true;
-}
-
-double SimWildMesh::swap_edge_56_energy(
-    const std::vector<std::array<size_t, 4>>& tets,
-    const int op_case)
-{
-    double max_energy = -1;
-    for (const auto& vids : tets) {
-        if (is_inverted(vids)) {
-            return std::numeric_limits<double>::max();
-        }
-        const double e = get_quality(vids);
-        max_energy = std::max(max_energy, e);
-    }
-    return max_energy;
 }
 
 bool SimWildMesh::swap_edge_56_after(const Tuple& t)

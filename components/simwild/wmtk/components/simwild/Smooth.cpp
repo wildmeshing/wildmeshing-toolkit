@@ -23,20 +23,6 @@
 
 namespace wmtk::components::simwild {
 
-bool SimWildMesh::smooth_before(const Tuple& t)
-{
-    const bool r = round(t);
-
-    const size_t vid = t.vid(*this);
-
-    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return false;
-
-    if (m_vertex_attribute[vid].m_is_rounded) return true;
-    // try to round.
-    // Note: no need to roll back.
-    return r;
-}
-
 bool SimWildMesh::smooth_after(const Tuple& t)
 {
     // The body lives in wmtk::optimization::smooth_vertex_3d, shared with tetwild.
@@ -62,13 +48,6 @@ std::shared_ptr<SampleEnvelope> SimWildMesh::smoothing_energy_envelope(const siz
             m_vertex_attribute[vid].m_order);
     }
     return env;
-}
-
-std::shared_ptr<SampleEnvelope> SimWildMesh::smoothing_containment_envelope(const size_t) const
-{
-    // The working envelope, which is not m_envelope_orig: the pull target and the
-    // containment test are deliberately different objects here.
-    return m_envelope;
 }
 
 void SimWildMesh::smooth_all_vertices(const size_t n_iters = 1)

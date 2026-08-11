@@ -3,6 +3,7 @@
 #include <igl/Timer.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/TetOptimizerMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -32,47 +33,11 @@
 
 namespace wmtk::components::simwild {
 
-class VertexAttributes
-{
-public:
-    Vector3r m_pos; // exact position in rational
-    Vector3d m_posf; // position as double
-    /**
-     * If a vertex cannot be rounded without inverting a tet, the exact position must be used. Once
-     * the vertex can be rounded to double precision, the rational representation is obsolete.
-     */
-    bool m_is_rounded = false;
-
-    bool m_is_on_surface = false;
-    /**
-     * The order of a vertex in a TetMesh is as follows:
-     * 0: vertex is not on the surface
-     * 1: vertex is on the surface
-     * 2: vertex is on the boundary of the surface or a non-manifold edge
-     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
-     */
-    size_t m_order = 0;
-    std::vector<int> on_bbox_faces; // same as is_bbox_fs?
-
-    double m_sizing_scalar = 1;
-
-    /**
-     * Required for multi-threading.
-     */
-    size_t partition_id = 0;
-
-    VertexAttributes() {};
-    VertexAttributes(const Vector3r& p);
-};
-
-
-// class EdgeAttributes
-// {
-// public:
-//     bool m_is_on_open_boundary = false;
-// };
-
-using FaceAttributes = wmtk::SurfaceTagAttributes;
+/// The shared attribute types live on the base; keep the unqualified names working. The
+/// simwild copies were identical apart from tetwild's m_is_on_open_boundary, which simwild
+/// never sets.
+using VertexAttributes = wmtk::TetOptimizerMesh::VertexAttributes;
+using FaceAttributes = wmtk::TetOptimizerMesh::FaceAttributes;
 
 class TetAttributes
 {
@@ -88,7 +53,7 @@ public:
     CellTag tags;
 };
 
-class SimWildMesh : public wmtk::TetMesh
+class SimWildMesh : public wmtk::TetOptimizerMesh
 {
 public:
     using ExprPtr = expression_parser::ExpressionPtr;
@@ -98,26 +63,11 @@ public:
     std::map<int64_t, std::string> m_tag_id_to_name;
     std::map<std::string, int64_t> m_tag_name_to_id;
 
-    double time_env = 0.0;
-    igl::Timer isout_timer;
-    /**
-     * @brief The sentinel get_quality returns for an element AMIPS cannot score.
-     *
-     * Not an energy: a positively oriented tet whose volume is too small for AMIPS, or one
-     * that produces inf/nan, gets this instead. m_quality holds AMIPS^3, so it surfaces in
-     * the logs as its cube root, cbrt(1e50) = 4.6e16.
-     *
-     * 1e50 rather than double::max, matching tetwild and triwild, because every downstream
-     * arithmetic on it must stay finite -- avg_energy sums qualities, so a single degenerate
-     * tet turned the reported average into inf, and every ratio that divides by the max was
-     * meaningless from then on. 1e50 leaves headroom for all of it.
-     */
-    const double MAX_ENERGY = 1e50;
-
-    Parameters& m_params;
+    /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
+    /// simwild-only fields (tags, quality/sizing fields, the operation name).
+    Parameters& m_sim_params;
     std::vector<Vector3d> m_V_envelope;
     std::vector<Vector3i> m_F_envelope;
-    std::shared_ptr<SampleEnvelope> m_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope_orig;
     double m_envelope_eps = -1;
 
@@ -130,20 +80,8 @@ public:
     /// Follows m_envelope's use_exact; see where it is built in VolumemesherInsertion.cpp.
     std::shared_ptr<SampleEnvelope> m_order_2_edge_envelope;
 
-    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
-        m_solver;
-
-    // scaling factors
-    double m_s_amips = -1;
-    double m_s_envelope = -1;
-
-    /// Why smoothing attempts were refused, reported once per pass.
-    optimization::SmoothRejectCounters m_smooth_rejects;
-
     /// Envelope a vertex is pulled toward while smoothing.
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
-    /// Envelope the resulting surface triangles are checked against.
-    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
     /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
     /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
@@ -154,9 +92,10 @@ public:
     std::function<double(const Vector3d&)> m_voronoi_split_fn = nullptr;
 
     SimWildMesh(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
-        : m_params(_m_params)
-        , m_envelope_eps(envelope_eps)
+        : wmtk::TetOptimizerMesh(_m_params, nullptr)
+        , m_sim_params(_m_params)
     {
+        m_envelope_eps = envelope_eps;
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
         p_face_attrs = &m_face_attribute;
@@ -168,7 +107,6 @@ public:
 
         optimization::deactivate_opt_logger();
 
-        m_s_amips = 1.;
         m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
 
         double& wa = m_params.w_amips;
@@ -178,14 +116,14 @@ public:
     }
 
     ~SimWildMesh() {}
-    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
-    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
-    // using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
-    VertAttCol m_vertex_attribute;
-    FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
-    // EdgeAttCol m_edge_attribute;
+
+    double cell_quality(const size_t tid) const override { return m_tet_attribute[tid].m_quality; }
+    void set_cell_quality(const size_t tid, const double q) override
+    {
+        m_tet_attribute[tid].m_quality = q;
+    }
 
     // only used with unit tests
     void create_mesh_attributes(
@@ -210,39 +148,7 @@ public:
     }
 
     // TODO This should not be here but inside wmtk
-    void compute_vertex_partition()
-    {
-        auto partition_id = partition_TetMesh(*this, NUM_THREADS);
-        for (auto i = 0; i < vert_capacity(); i++)
-            m_vertex_attribute[i].partition_id = partition_id[i];
-    }
-
     // TODO This should not be here but inside wmtk
-    void compute_vertex_partition_morton()
-    {
-        if (NUM_THREADS == 0) {
-            return;
-        }
-
-        logger().info("Number of parts: {} by morton", NUM_THREADS);
-
-        std::vector<size_t> partition_id;
-        wmtk::partition_vertex_morton(
-            vert_capacity(),
-            [this](size_t i) { return m_vertex_attribute[i].m_posf; },
-            NUM_THREADS,
-            partition_id);
-
-        for (size_t i = 0; i < partition_id.size(); i++) {
-            m_vertex_attribute[i].partition_id = partition_id[i];
-        }
-    }
-
-    size_t get_partition_id(const Tuple& loc) const
-    {
-        return m_vertex_attribute[loc.vid(*this)].partition_id;
-    }
-
     void init_envelope(const MatrixXd& V, const MatrixXi& F, const bool use_exact);
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
@@ -262,7 +168,6 @@ public:
     ////// Attributes related
 
     void write_msh(std::string file, const bool write_envelope = true);
-    void output_faces(std::string file, std::function<bool(const FaceAttributes&)> cond);
 
 public:
     void split_all_edges();
@@ -270,7 +175,6 @@ public:
     bool split_edge_after(const Tuple& loc) override;
 
     void smooth_all_vertices(const size_t n_iters);
-    bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
     void collapse_all_edges(bool is_limit_length = true);
@@ -281,14 +185,10 @@ public:
 
     size_t swap_all_edges_44();
     bool swap_edge_44_before(const Tuple& t) override;
-    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
-        override;
     bool swap_edge_44_after(const Tuple& t) override;
 
     size_t swap_all_edges_56();
     bool swap_edge_56_before(const Tuple& t) override;
-    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
-        override;
     bool swap_edge_56_after(const Tuple& t) override;
 
     size_t swap_all_edges_32();
@@ -321,7 +221,7 @@ public:
 
     /**
      * @brief Compare a surface signature against the current one and log an
-     * error if it changed. Used (when m_params.check_surface_topology is set) to
+     * error if it changed. Used (when m_sim_params.check_surface_topology is set) to
      * guard swap passes that can flip surface edges.
      */
     void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
@@ -335,58 +235,6 @@ public:
     bool swap_face_after(const Tuple& t) override;
 
     size_t swap_all_edges_all();
-
-    /**
-     * @brief m_quality threshold above which a tet is "active" (worth operating
-     * on) for the skip-good-regions filter. m_quality stores AMIPS^3 and the
-     * energy is its cube root, so a tet is active when its energy is at least
-     * skip_good_regions_margin * stop_energy, i.e. m_quality >=
-     * (margin * stop_energy)^3.
-     */
-    double active_quality_threshold() const
-    {
-        const double e = m_params.skip_good_regions_margin * m_params.stop_energy;
-        return e * e * e;
-    }
-
-    /**
-     * @brief vids of the vertices incident to at least one "active" tet
-     * (m_quality >= active_quality_threshold()). Used by the skip-good-regions
-     * filter to restrict smoothing to non-good regions (smoothing a vertex
-     * surrounded by good tets does nothing).
-     */
-    std::vector<size_t> active_vertices() const;
-
-    /**
-     * @brief Inversion check using only floating point numbers.
-     */
-    bool is_inverted_f(const Tuple& loc) const;
-    bool is_inverted(const std::array<size_t, 4>& vs) const;
-    bool is_inverted(const Tuple& loc) const;
-    double get_quality(const std::array<size_t, 4>& vs) const;
-    double get_quality(const Tuple& loc) const;
-
-    /**
-     * @brief Round a vertex position to floating point.
-     *
-     * Only rounds the vertex position, if it does not cause inverted elements.
-     *
-     * @return True if successful or already rounded, false otherwise.
-     */
-    bool round(const Tuple& loc);
-
-    /**
-     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
-     *
-     * round() is otherwise only attempted as a side effect of another operation
-     * (smooth_before on the vertex being smoothed, collapse_edge_after on the merged one),
-     * and neither reaches a vertex that only becomes roundable later: smoothing skips
-     * "good" regions by default. Without a sweep such a vertex keeps exact coordinates
-     * into the output for no geometric reason.
-     *
-     * Skipped outright when m_all_rounded says there is nothing to do.
-     */
-    size_t round_all_vertices();
 
     /**
      * @brief Run the rounding sweep, then report whether the mesh is now fully rounded.
@@ -405,45 +253,15 @@ public:
     bool round_and_check_all_rounded();
 
     /**
-     * @brief True when every vertex is known to be rounded.
-     *
-     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
-     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
-     * Atomic because operations that clear it run in parallel.
-     *
-     * Distinct from all_rounded(), which counts. This is the cheap "is there anything to
-     * do" flag; that is the answer.
-     */
-    std::atomic<bool> m_all_rounded = false;
-
-    /**
      * @brief Check if all vertices of the mesh are rounded.
      *
      */
     bool all_rounded() const;
 
     //
-    bool is_edge_on_surface(const Tuple& loc);
-    /**
-     * @brief How many faces incident to this edge are tracked surface.
-     *
-     * Unlike is_edge_on_surface this does NOT short-circuit on the vertices'
-     * m_is_on_surface flags, so a genuine surface edge cannot be mistaken for interior
-     * because a flag went stale -- which in a swap would tear the surface. Same helper
-     * tetwild routes its swap surface test through.
-     */
-    int edge_incident_surface_face_count(const Tuple& e);
-    bool is_edge_on_bbox(const Tuple& loc);
     //
     void mesh_improvement(int max_its = 80);
     double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
-    std::tuple<double, double> get_max_avg_energy();
-
-    std::vector<std::array<size_t, 3>> get_faces_by_condition(
-        std::function<bool(const FaceAttributes&)> cond) const;
-
-    bool invariants(const std::vector<Tuple>& t) override; // this is now automatically checked
-
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
     // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
@@ -474,10 +292,6 @@ private:
         std::map<simplex::Edge, TetAttributes> tets;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    /// Whether the current collapse pass applies the target-length limit; read by
-    /// collapse_edge_before, which is where that limit is now enforced.
-    bool m_collapse_limit_length = true;
 
     struct CollapseInfoCache
     {
@@ -550,27 +364,7 @@ public:
      */
     size_t refine_sizing_around_worst();
 
-    /**
-     * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
-     *
-     * Enforces m_sizing_scalar[v] <= grade * m_sizing_scalar[u] for every edge
-     * (u,v), propagating outward from `seeds` with a min-relaxation. It never
-     * raises a sizing value, so it only ever spreads more refinement into the
-     * halo around already-refined vertices, avoiding sharp resolution jumps.
-     */
-    void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
 
-
-    /// The longest edge of each current worst tet (as a sorted {min,max} vid pair).
-    /// split_all_edges force-splits exactly these edges (bypasses the length gate),
-    /// so a stuck sliver's long edge is split immediately without changing the sizing
-    /// field. Populated serially by refine_sizing_around_worst; read-only during the
-    /// parallel split pass, then cleared once split_all_edges has consumed it.
-    std::set<simplex::Edge> m_force_split_edges;
-
-    /// Count of force-splits taken in the current split pass (atomic_ref from the
-    /// parallel split; reset + logged by split_all_edges). Diagnostic only.
-    size_t m_force_split_count = 0;
     /**
      * @brief Splits in the last pass that fell back to the exact rational midpoint.
      *
@@ -616,11 +410,6 @@ public:
 public:
     // substructure functions
 
-    bool vertex_is_on_surface(const size_t vid) const override;
-
-    bool face_is_on_surface(const size_t fid) const override;
-
-    size_t get_order_of_vertex(const size_t vid) const override;
     /**
      * @brief Compute the vertex order for every vertex.
      */

@@ -224,3 +224,57 @@ against a build of the pre-refactor commit: byte-identical.
 One thing to watch later: `SimWildMeshTri` keeps its own `round_and_check_all_rounded`,
 `m_exact_split_count` and `triangle_area`, none of which triwild has. The first two are the
 subject of Stage 4's `RationalPositions` mixin.
+
+---
+
+## Stage 3b — simwild-3D adopts `wmtk::TetOptimizerMesh`
+
+`SimWildMesh` now derives from the shared 3D base, dropping its copies of `VertexAttributes`,
+`FaceAttributes`, the vertex and face attribute collections, the envelope/solver/rounding members,
+`MAX_ENERGY`, and 23 method definitions.
+
+Of the 21 methods the base owns, **19 were already byte-identical** between the two applications and
+two (`get_quality`, `output_faces`) differed only cosmetically -- `auto` vs `bool` for a local, and an
+`(int)` cast on a row assignment into a matrix that is already `int`. That leaves exactly one
+behavioural adoption:
+
+### `round()` now marks the vertex rounded before the one-ring check
+
+| | |
+|---|---|
+| **was** | simwild left `m_is_rounded` false until every incident tet had been checked, so `is_inverted` took the **exact rational** branch throughout the check |
+| **now** | tetwild's: `m_is_rounded` is set before the loop and cleared again on failure, so `is_inverted` takes the **float** branch |
+| **source** | tetwild, triwild and simwild-2D all already did it this way; simwild-3D was the only one that did not |
+
+**This is answer-preserving, not merely close.** The check asks whether the ROUNDED position keeps
+every incident tet valid. Under the old order the vertex's `m_pos` had already been set to
+`to_rational(m_posf)` -- exactly the double, as a rational -- so the rational branch evaluated the
+orientation of the same four points that the float branch evaluates with `orient3d`, which is itself
+exact for the doubles it is handed. Both branches also fall back to rational identically when some
+*other* incident vertex is un-rounded, since `is_inverted` tests all four flags. The difference is
+cost, not result: simwild was paying for exact arithmetic to compute an answer the float predicate
+already decides exactly.
+
+### Not adopted in this commit
+
+The swap family stays per-application and is untouched here: `swap_face_before`, `swap_face_after`,
+`swap_edge_after` and `swap_all_faces` all propagate simwild's `CellTag` through the operation, which
+tetwild has no counterpart for. Sharing them needs a tag-propagation hook. Three differences found
+while measuring them are recorded here so they are not lost:
+
+* **`swap_all_faces` collects the wrong simplex.** simwild calls `parallel_collect_edge_ops` and
+  queues `"face_swap"` operations on **edge** tuples -- 6 per tet -- where tetwild calls
+  `parallel_collect_face_ops` and queues them on faces, 4 per tet. The face-swap pass therefore
+  enumerates a different set, with each face reachable from up to three of its edges.
+* simwild calls the executor directly where tetwild uses `run_localized_to_convergence`.
+* simwild reads the success count from `executor.get_cnt_success()` after the lambda has returned;
+  tetwild accumulates it into a captured local.
+
+`smoothing_energy_envelope` also stays per-application: simwild pulls order-2 vertices toward
+`m_order_2_edge_envelope` and everything else toward `m_envelope_orig`, while tetwild has a single
+surface envelope. `smoothing_containment_envelope` did move -- both applications' versions return
+`m_envelope`, only their comments differed.
+
+`smooth_after` stays in **both** applications even though their bodies are byte-identical: the body
+is the shared `optimization::smooth_vertex_3d` template, which reaches `m_tet_attribute` and
+`smoothing_energy_envelope`, both per-application.

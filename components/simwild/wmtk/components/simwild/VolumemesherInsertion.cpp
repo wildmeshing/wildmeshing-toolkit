@@ -316,7 +316,7 @@ void SimWildMesh::init_surfaces_and_boundaries()
         m_envelope->use_exact = true;
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
         m_envelope_orig = m_envelope;
-    } else if (m_params.operation == "remeshing") {
+    } else if (m_sim_params.operation == "remeshing") {
         // Deliberately NOT behind check_envelope_at_init, unlike its 2D counterpart and
         // triwild's: the answer is not an assertion but a decision -- if any surface face
         // starts outside, the envelope is rebuilt from the tet tags below. Skipping it would
@@ -364,15 +364,15 @@ void SimWildMesh::init_surfaces_and_boundaries()
         std::array<size_t, 3> vids = {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
         int on_bbox = -1;
         for (int k = 0; k < 3; k++) {
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_min[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_min[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_sim_params.box_min[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_sim_params.box_min[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_sim_params.box_min[k]) {
                 on_bbox = k * 2;
                 break;
             }
-            if (m_vertex_attribute[vids[0]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[1]].m_pos[k] == m_params.box_max[k] &&
-                m_vertex_attribute[vids[2]].m_pos[k] == m_params.box_max[k]) {
+            if (m_vertex_attribute[vids[0]].m_pos[k] == m_sim_params.box_max[k] &&
+                m_vertex_attribute[vids[1]].m_pos[k] == m_sim_params.box_max[k] &&
+                m_vertex_attribute[vids[2]].m_pos[k] == m_sim_params.box_max[k]) {
                 on_bbox = k * 2 + 1;
                 break;
             }
@@ -445,7 +445,7 @@ void SimWildMesh::find_order_2_edges()
     m_order_2_edge_envelope->init(
         v_posf,
         order_2_edges,
-        m_params.epsr * m_params.diag_l * m_params.order2_envelope_ratio);
+        m_params.epsr * m_params.diag_l * m_sim_params.order2_envelope_ratio);
 }
 
 bool SimWildMesh::is_order_2_edge(const Tuple& e) const
