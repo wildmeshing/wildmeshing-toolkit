@@ -310,12 +310,10 @@ bool SimWildMesh::split_edge_after(const Tuple& loc)
                 }
             }
             if (n_shared != 2) continue;
-            if (m_envelope->is_outside(
-                    {{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+            if (m_envelope->is_outside({{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
                 return false;
             }
-            if (m_envelope->is_outside(
-                    {{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+            if (m_envelope->is_outside({{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
                 return false;
             }
         }

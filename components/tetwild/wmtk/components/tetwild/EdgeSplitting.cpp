@@ -251,14 +251,15 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split checks orientation, rounding and (above) the envelope, but never quality. That is right for a length-driven split of a long, well-behaved edge and
-    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
-    // land essentially on the opposite edge. The result is a POSITIVELY ORIENTED tet whose
-    // volume is too small for AMIPS, so get_quality returns MAX_ENERGY, the reported max
-    // energy jumps to cbrt(1e50) = 4.6e16, and every control decision that divides by it --
-    // filter_energy, the stall test, the average -- is meaningless from then on. On
-    // Thingi10K 101954 that is exactly how the run died: the first 4.6e16 appears on the
-    // split line immediately after "[force-split] 92 worst-tet longest edges force-split".
+    // A split checks orientation, rounding and (above) the envelope, but never quality. That is
+    // right for a length-driven split of a long, well-behaved edge and wrong for the force-split of
+    // a stalled sliver's longest edge, where the midpoint can land essentially on the opposite
+    // edge. The result is a POSITIVELY ORIENTED tet whose volume is too small for AMIPS, so
+    // get_quality returns MAX_ENERGY, the reported max energy jumps to cbrt(1e50) = 4.6e16, and
+    // every control decision that divides by it -- filter_energy, the stall test, the average -- is
+    // meaningless from then on. On Thingi10K 101954 that is exactly how the run died: the
+    // first 4.6e16 appears on the split line immediately after "[force-split] 92 worst-tet longest
+    // edges force-split".
     //
     // Refuse to be the operation that creates one. A split that merely subdivides a region
     // that was already degenerate is still allowed, so a stuck region can keep being refined.
@@ -308,12 +309,10 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
                 }
             }
             if (n_shared != 2) continue; // face does not contain the split edge
-            if (m_envelope->is_outside(
-                    {{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+            if (m_envelope->is_outside({{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
                 return false;
             }
-            if (m_envelope->is_outside(
-                    {{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+            if (m_envelope->is_outside({{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
                 return false;
             }
         }

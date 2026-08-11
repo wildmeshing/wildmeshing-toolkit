@@ -303,9 +303,10 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split checks orientation, rounding and (above) the envelope, but never quality. That is right for a length-driven split of a long, well-behaved edge and
-    // wrong for the force-split of a stalled sliver's longest edge, where the midpoint can
-    // land essentially on the opposite edge and leave a correctly-oriented element whose
+    // A split checks orientation, rounding and (above) the envelope, but never quality. That is
+    // right for a length-driven split of a long, well-behaved edge and wrong for the force-split of
+    // a stalled sliver's longest edge, where the midpoint can land essentially on the opposite edge
+    // and leave a correctly-oriented element whose
     // area/volume is too small for AMIPS -- get_quality then returns MAX_ENERGY, and every
     // control decision that divides by the max energy is meaningless from then on. Refuse
     // to be the operation that creates one; subdividing an already-degenerate region is
