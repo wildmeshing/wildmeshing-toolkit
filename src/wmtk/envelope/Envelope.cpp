@@ -462,4 +462,35 @@ double SampleEnvelope::squared_distance(const Eigen::Vector2d& p) const
     return d2;
 }
 
+
+void SampleEnvelope::init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps)
+{
+    if (V.cols() == 3 && F.cols() == 3) {
+        std::vector<Eigen::Vector3d> v(V.rows());
+        std::vector<Eigen::Vector3i> f(F.rows());
+        for (int i = 0; i < V.rows(); ++i) v[i] = V.row(i);
+        for (int i = 0; i < F.rows(); ++i) f[i] = F.row(i);
+        init(v, f, eps);
+    } else if (V.cols() == 3 && F.cols() == 2) {
+        std::vector<Eigen::Vector3d> v(V.rows());
+        std::vector<Eigen::Vector2i> e(F.rows());
+        for (int i = 0; i < V.rows(); ++i) v[i] = V.row(i);
+        for (int i = 0; i < F.rows(); ++i) e[i] = F.row(i);
+        init(v, e, eps);
+    } else if (V.cols() == 2 && F.cols() == 2) {
+        std::vector<Eigen::Vector2d> v(V.rows());
+        std::vector<Eigen::Vector2i> e(F.rows());
+        for (int i = 0; i < V.rows(); ++i) v[i] = V.row(i);
+        for (int i = 0; i < F.rows(); ++i) e[i] = F.row(i);
+        init(v, e, eps);
+    } else {
+        log_and_throw_error(
+            "SampleEnvelope::init: unsupported shape V {}x{}, F {}x{}",
+            V.rows(),
+            V.cols(),
+            F.rows(),
+            F.cols());
+    }
+}
+
 } // namespace wmtk

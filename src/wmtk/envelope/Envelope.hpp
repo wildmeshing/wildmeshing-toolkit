@@ -123,6 +123,18 @@ public:
         const std::vector<Eigen::Vector2d>& m_ver,
         const std::vector<Eigen::Vector2i>& m_edges,
         const double);
+
+    /**
+     * @brief Same, from Eigen matrices, dispatching on the column counts.
+     *
+     *   V Nx3, F Mx3 -> a 3D triangle envelope
+     *   V Nx3, F Mx2 -> a 3D edge envelope
+     *   V Nx2, F Mx2 -> a 2D edge envelope
+     *
+     * Marshals into the vector form above. Most callers already hold matrices and were each
+     * writing the same ten-line copy loop; this is that loop, once.
+     */
+    void init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps);
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
     bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
     bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;

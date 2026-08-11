@@ -84,17 +84,7 @@ void EmbedCurves::simplify_curves(
     const int num_threads)
 {
     SampleEnvelope envelope(use_exact_envelope);
-    {
-        std::vector<Vector2d> v(m_V_curves.rows());
-        for (int i = 0; i < m_V_curves.rows(); ++i) {
-            v[i] = m_V_curves.row(i);
-        }
-        std::vector<Vector2i> e(m_E_curves.rows());
-        for (int i = 0; i < m_E_curves.rows(); ++i) {
-            e[i] = m_E_curves.row(i);
-        }
-        envelope.init(v, e, eps);
-    }
+    envelope.init(m_V_curves, m_E_curves, eps);
 
     const int nv_before = int(m_V_curves.rows());
     const int ne_before = int(m_E_curves.rows());

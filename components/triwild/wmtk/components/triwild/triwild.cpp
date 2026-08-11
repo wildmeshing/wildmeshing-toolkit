@@ -276,17 +276,7 @@ void triwild(nlohmann::json json_params)
         logger().info("skip simplification");
     } else {
         SampleEnvelope simplify_envelope(!simplify_use_sample_envelope);
-        {
-            std::vector<Vector2d> v(V_in.rows());
-            for (int i = 0; i < V_in.rows(); ++i) {
-                v[i] = V_in.row(i);
-            }
-            std::vector<Vector2i> e(E_in.rows());
-            for (int i = 0; i < E_in.rows(); ++i) {
-                e[i] = E_in.row(i);
-            }
-            simplify_envelope.init(v, e, simplify_eps);
-        }
+        simplify_envelope.init(V_in, E_in, simplify_eps);
         const size_t removed = wmtk::utils::simplify_segments(
             V_simp,
             E_simp,

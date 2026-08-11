@@ -86,17 +86,7 @@ void append_background_grid(const MatrixXd& V, const MatrixXi& E, std::vector<do
     }
 
     SampleEnvelope envelope;
-    {
-        std::vector<Vector2d> V_envelope;
-        std::vector<Vector2i> E_envelope;
-        for (int i = 0; i < E.rows(); i++) {
-            E_envelope.push_back(Vector2i(E(i, 0), E(i, 1)));
-        }
-        for (int i = 0; i < V.rows(); i++) {
-            V_envelope.push_back(V.row(i));
-        }
-        envelope.init(V_envelope, E_envelope, 0);
-    }
+    envelope.init(V, E, 0);
 
     const double min_dis = voxel_resolution * voxel_resolution / 4;
     for (size_t i = 0; i < ds[0].size(); i++) {

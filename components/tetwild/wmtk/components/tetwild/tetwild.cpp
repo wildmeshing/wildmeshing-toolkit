@@ -630,26 +630,10 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             const int n_samples = 100000;
 
             SampleEnvelope env_in(true);
-            {
-                std::vector<Eigen::Vector3d> v_in;
-                std::vector<Eigen::Vector3i> f_in;
-                v_in.reserve(V.rows());
-                f_in.reserve(F.rows());
-                for (int i = 0; i < V.rows(); ++i) v_in.push_back(V.row(i));
-                for (int i = 0; i < F.rows(); ++i) f_in.push_back(F.row(i));
-                env_in.init(v_in, f_in, params.eps);
-            }
+            env_in.init(V, F, params.eps);
 
             SampleEnvelope env_out(true);
-            {
-                std::vector<Eigen::Vector3d> v_out;
-                std::vector<Eigen::Vector3i> f_out;
-                v_out.reserve(matV.rows());
-                f_out.reserve(matF.rows());
-                for (int i = 0; i < matV.rows(); ++i) v_out.push_back(matV.row(i));
-                for (int i = 0; i < matF.rows(); ++i) f_out.push_back(matF.row(i));
-                env_out.init(v_out, f_out, params.eps);
-            }
+            env_out.init(matV, matF, params.eps);
 
             // Max distance from points sampled on (Vs,Fs) to the surface behind `target`.
             const auto max_deviation = [&](const Eigen::MatrixXd& Vs,
