@@ -1,11 +1,11 @@
 #include "TetWildMesh.h"
 
 #include <igl/Timer.h>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 
 namespace wmtk::components::tetwild {
 
@@ -40,52 +40,39 @@ void TetWildMesh::split_all_edges()
         [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = wmtk::renewal_simple;
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge split operation",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples = wmtk::renewal_simple;
 
-        executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
-            auto [weight, op, tup] = ele;
-            auto length = m.get_length2(tup);
-            if (length != weight) return false;
-            //
-            size_t v1_id = tup.vid(*this);
-            size_t v2_id = tup.switch_vertex(*this).vid(*this);
-            // Force-split: a worst tet's longest edge (queued by
-            // refine_sizing_around_worst when the max energy stalls) is split once
-            // regardless of the length gate, to unstick a sliver without changing the
-            // sizing field. The new midpoint is not in m_force_split_edges, so the
-            // two halves are NOT force-split again -- exactly one split per edge.
-            if (is_force_split_edge(v1_id, v2_id)) {
+            executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
+            executor.is_weight_up_to_date = [&](const auto& m, const auto& ele) {
+                auto [weight, op, tup] = ele;
+                auto length = m.get_length2(tup);
+                if (length != weight) return false;
+                //
+                size_t v1_id = tup.vid(*this);
+                size_t v2_id = tup.switch_vertex(*this).vid(*this);
+                // Force-split: a worst tet's longest edge (queued by
+                // refine_sizing_around_worst when the max energy stalls) is split once
+                // regardless of the length gate, to unstick a sliver without changing the
+                // sizing field. The new midpoint is not in m_force_split_edges, so the
+                // two halves are NOT force-split again -- exactly one split per edge.
+                if (is_force_split_edge(v1_id, v2_id)) {
+                    return true;
+                }
+                double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                       m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                      2;
+                if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+                    return false;
+                }
                 return true;
-            }
-            double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
-                                   m_vertex_attribute[v2_id].m_sizing_scalar) /
-                                  2;
-            if (length < m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
-                return false;
-            }
-            return true;
-        };
-        wmtk::run_localized_to_convergence(*this, executor, collect_all_ops);
-    };
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [&](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("edge split operation time serial: {:.4}s", time);
-    }
+            };
+            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+        });
     if (m_force_split_count > 0) {
         wmtk::logger().info(
             "[force-split] {} worst-tet longest edges force-split",

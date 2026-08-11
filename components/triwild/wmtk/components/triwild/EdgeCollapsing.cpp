@@ -7,11 +7,11 @@
 #include <algorithm>
 #include <atomic>
 #include <unordered_set>
-#include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/ParallelCollect.hpp>
+#include <wmtk/utils/RunPass.hpp>
 
 namespace wmtk::components::triwild {
 
@@ -34,62 +34,53 @@ void TriWildMesh::collapse_all_edges(bool is_limit_length)
     logger().info("#E = {}", all_ops.size() / 2);
     logger().info("edge collapse prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
-    auto setup_and_execute = [&](auto& executor) {
-        executor.renew_neighbor_tuples = [](const TriWildMesh& m, Op op, const auto& newts) {
-            std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
-            op_tups.reserve(2 * newts.size());
-            for (const Tuple& t : newts) {
-                op_tups.emplace_back(op, t);
-                op_tups.emplace_back(op, t.switch_vertex(m));
-            }
-            return op_tups;
-        };
-        executor.priority = [](const TriWildMesh& m, Op op, const Tuple& t) {
-            return -m.get_length2(t);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor.is_weight_up_to_date = [&](const TriWildMesh& m,
-                                            const std::tuple<double, Op, Tuple>& ele) {
-            const auto& VA = m_vertex_attribute;
-            auto& [weight, op, tup] = ele;
-            const double length = m.get_length2(tup);
-            if (length != -weight) {
-                return false;
-            }
-            // Deliberately NOT filtered on length here. An over-length edge stays a
-            // candidate and collapse_edge_before decides it on quality instead: it is kept
-            // only if it STRICTLY improves the worst element of the ring. See there.
-            return true;
-        };
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::EdgeTwoRing,
+        "edge collapse",
+        [&](auto& executor, auto& mesh) {
+            executor.renew_neighbor_tuples =
+                [](const wmtk::TriOptimizerMesh& m, Op op, const auto& newts) {
+                    std::vector<std::pair<std::string, TriMesh::Tuple>> op_tups;
+                    op_tups.reserve(2 * newts.size());
+                    for (const Tuple& t : newts) {
+                        op_tups.emplace_back(op, t);
+                        op_tups.emplace_back(op, t.switch_vertex(m));
+                    }
+                    return op_tups;
+                };
+            executor.priority = [](const wmtk::TriOptimizerMesh& m, Op op, const Tuple& t) {
+                return -m.get_length2(t);
+            };
+            executor.is_weight_up_to_date = [&](const wmtk::TriOptimizerMesh& m,
+                                                const std::tuple<double, Op, Tuple>& ele) {
+                const auto& VA = m_vertex_attribute;
+                auto& [weight, op, tup] = ele;
+                const double length = m.get_length2(tup);
+                if (length != -weight) {
+                    return false;
+                }
+                // Deliberately NOT filtered on length here. An over-length edge stays a
+                // candidate and collapse_edge_before decides it on quality instead: it is kept
+                // only if it STRICTLY improves the worst element of the ring. See there.
+                return true;
+            };
 
-        // Retry a failed collapse only where the mesh actually changed this round
-        // (dirty-epoch localized retry). This replaces the loop that rebuilt the whole op
-        // list from get_edges() after every pass and re-ran the expensive geometric
-        // pre-checks on every failure, even where nothing could have changed.
-        const size_t total_success = wmtk::run_localized_to_convergence(*this, executor, all_ops);
-        logger().info("collapse success: {}", total_success);
-        if (const size_t n = m_feature_rejects.load(); n > 0) {
-            logger().info(
-                "[feature] {} collapses refused to keep a polyline endpoint or junction "
-                "within {:.6} of its input position",
-                n,
-                m_envelope_eps);
-        }
-    };
-
-    timer.start();
-    if (NUM_THREADS > 0) {
-        auto executor = ExecutePass<TriWildMesh>(ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](TriWildMesh& m, const Tuple& e, int task_id) -> bool {
-            return m.try_set_edge_mutex_two_ring(e, task_id);
-        };
-        setup_and_execute(executor);
-        logger().info("edge collapse time parallel: {:.4}s", timer.getElapsedTimeInSec());
-    } else {
-        auto executor = ExecutePass<TriWildMesh>(ExecutionPolicy::kSeq);
-        setup_and_execute(executor);
-        logger().info("edge collapse time serial: {:.4}s", timer.getElapsedTimeInSec());
-    }
+            // Retry a failed collapse only where the mesh actually changed this round
+            // (dirty-epoch localized retry). This replaces the loop that rebuilt the whole op
+            // list from get_edges() after every pass and re-ran the expensive geometric
+            // pre-checks on every failure, even where nothing could have changed.
+            const size_t total_success =
+                wmtk::run_localized_to_convergence(mesh, executor, all_ops);
+            logger().info("collapse success: {}", total_success);
+            if (const size_t n = m_feature_rejects.load(); n > 0) {
+                logger().info(
+                    "[feature] {} collapses refused to keep a polyline endpoint or junction "
+                    "within {:.6} of its input position",
+                    n,
+                    m_envelope_eps);
+            }
+        });
 }
 
 bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge

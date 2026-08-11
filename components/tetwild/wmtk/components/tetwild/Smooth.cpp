@@ -1,14 +1,13 @@
 
 #include "TetWildMesh.h"
 
-#include <cstdlib>
-#include "wmtk/ExecutionScheduler.hpp"
-
 #include <Eigen/src/Core/util/Constants.h>
 #include <igl/Timer.h>
 #include <wmtk/utils/AMIPS.h>
 #include <array>
+#include <cstdlib>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
 
@@ -55,24 +54,11 @@ void TetWildMesh::smooth_all_vertices()
     time = timer.getElapsedTime();
     wmtk::logger().info("vertex smoothing prepare time: {:.4}s", time);
     wmtk::logger().debug("Num verts {}", collect_all_ops.size());
-    if (NUM_THREADS > 0) {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kPartition);
-        executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-            return m.try_set_vertex_mutex_one_ring(e, task_id);
-        };
-        executor.num_threads = NUM_THREADS;
-        executor(*this, collect_all_ops);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("vertex smoothing operation time parallel: {:.4}s", time);
-    } else {
-        timer.start();
-        auto executor = wmtk::ExecutePass<TetWildMesh>(wmtk::ExecutionPolicy::kSeq);
-        // executor.priority = [&](auto& m, auto op, auto& t) -> double { return rand(); };
-        executor(*this, collect_all_ops);
-        time = timer.getElapsedTime();
-        wmtk::logger().info("vertex smoothing operation time serial: {:.4}s", time);
-    }
+    wmtk::run_pass(
+        *this,
+        wmtk::PassLock::VertexOneRing,
+        "vertex smoothing operation",
+        [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
     wmtk::logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
 }
 
