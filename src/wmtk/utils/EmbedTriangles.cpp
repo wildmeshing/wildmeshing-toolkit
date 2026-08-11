@@ -3,6 +3,10 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/predicates.hpp>
 
+// MatrixBase::cross is declared by Eigen/Core but only DEFINED in Eigen/Geometry, so without
+// this the two normal computations below compile and then fail to link.
+#include <Eigen/Geometry>
+
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <VolumeRemesher/embed.h>
@@ -26,7 +30,6 @@ void embed_triangles_in_tets(
     std::vector<bool>& tet_face_on_input_surface,
     const EmbedTrianglesOptions& opts)
 {
-
     // Remesher outputs. The tet-based ones are what this consumes: out_tets (the
     // remesher's tetrahedra), final_tets_parent (parent polyhedral cell of each
     // tet), cells_with_faces_on_input (per-cell flag) and final_tets_parent_faces

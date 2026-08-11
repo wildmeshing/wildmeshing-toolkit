@@ -4,8 +4,8 @@
 #include <wmtk/utils/resolve_path.hpp>
 
 #include <jse/jse.h>
-#include <nlohmann/json.hpp>
 #include <spdlog/common.h>
+#include <nlohmann/json.hpp>
 
 #include <filesystem>
 #include <string>
