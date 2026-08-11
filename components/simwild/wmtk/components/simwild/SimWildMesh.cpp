@@ -214,7 +214,12 @@ double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collaps
                 if (m_params.debug_output) {
                     write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
                 }
-                logger().info("cnt_surface_swap (cumulative) = {}", cnt_surface_swap.load());
+                logger().info(
+                    "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
+                    cnt_surface_swap.load(),
+                    cnt_surface_swap_32.load(),
+                    cnt_surface_swap_44.load(),
+                    cnt_surface_swap_56.load());
                 check_mesh_quality(quality_rel, true);
                 sanity_checks();
                 if (quality_rel < 1.0 && round_and_check_all_rounded()) {

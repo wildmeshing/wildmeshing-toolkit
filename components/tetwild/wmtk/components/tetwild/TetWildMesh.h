@@ -408,7 +408,9 @@ public:
 
     // for open boundary
     void find_open_boundary();
-    bool is_open_boundary_edge(const Tuple& e);
+    /// tetwild's surface is the input mesh, which may be non-watertight, so the base's
+    /// "no open boundary" default does not hold here. See TetOptimizerMesh.
+    bool is_open_boundary_edge(const Tuple& e) override;
     bool is_open_boundary_edge(const std::array<size_t, 2>& e);
 
 public:

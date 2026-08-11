@@ -194,6 +194,18 @@ public:
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
     /**
+     * @brief Whether edge `e` lies on the *boundary* of the tracked surface.
+     *
+     * Flipping such an edge would change the surface's boundary loops, so prepare_surface_flip
+     * refuses it. Defaults to false, which is exact for simwild: its surface is the interface
+     * between differently tagged tets, and around an interior edge the tags change an even
+     * number of times going around the tet ring, so an interface can never terminate there. It
+     * can only end where it meets the bbox -- and is_edge_on_bbox() has already rejected those
+     * edges by the time this is asked. tetwild overrides it because its surface is the input
+     * mesh, which may be non-watertight anywhere.
+     */
+    virtual bool is_open_boundary_edge(const Tuple& e) { return false; }
+    /**
      * @brief How many of the faces incident to edge `e` are on the tracked surface.
      *
      * Unlike is_edge_on_surface(), this does NOT short-circuit on the (possibly stale)

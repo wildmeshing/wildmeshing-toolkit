@@ -393,10 +393,138 @@ Two configs move, both of them the 3D ones that actually run face swaps:
 Everything else in the suite is byte-identical, and the branch touches no file outside
 `components/simwild/`.
 
-**Still open in the swap family:** simwild has `cnt_surface_swap` but not tetwild's per-type
-breakdown (`cnt_surface_swap_32/44/56`), and `prepare_surface_flip` is still per-application --
-tetwild's is generalized to any ring size and drives the 4-4 and 5-6 surface flips, while simwild
-has only `prepare_surface_flip_32`, rejects surface edges in 4-4/5-6, and `log_and_throw_error`s
-where tetwild returns `false`. Both belong with the sharing commit: the tag divergence that blocks
-sharing is three lines, so the hook is a pair of no-op virtuals (`cache_swap_cell_state` /
-`restore_swap_cell_state`) that tetwild never overrides.
+Both remaining swap differences are settled below.
+
+---
+
+## Post-3c — simwild adopts tetwild's swap family, with tag propagation
+
+The last item in the de-duplication programme, and the largest single behaviour change in it.
+`components/simwild/.../EdgeSwapping.cpp` is now tetwild's file: after renaming the mesh class and
+the parameters struct, the only lines that differ are the tag handling described below and one
+`swap_all_faces` comment. Every remaining divergence has been resolved in tetwild's favour.
+
+### Why tags and the surface are the same question
+
+simwild's surface is not an input mesh — `init_surfaces_and_boundaries` tags a face
+`m_is_surface_fs` **exactly when its two tets carry different tags**. So a surface diagonal flip in
+simwild *is* a flip of the tag interface, and the volume it sweeps (the tet `(a,b,c,d)` between the
+old and new diagonal) moves from one tag to the other. That is the same thing tetwild's flip does
+across its inside/outside surface, and it is gated the same way, by the Hausdorff envelope check on
+the two new faces.
+
+Two consequences fall out and are used throughout:
+
+- An edge with **no** incident surface face has all its incident tets identically tagged, so an
+  interior swap has nothing to decide.
+- The two surface faces `(a,b,c)`, `(a,b,d)` cut the ring of incident tets into two arcs, one tag
+  each — and every tet a flip creates contains at least one ring vertex other than `c`,`d`, which
+  says which arc, hence which tag, it belongs to.
+
+### What simwild adopted
+
+| | before | after |
+|---|---|---|
+| `prepare_surface_flip` | `prepare_surface_flip_32`: exactly-3 ring only, `log_and_throw_error` on anything unexpected, `assert`s that `(c,d)` already exists | tetwild's, generalized to any ring size; rejects rather than throws; handles `(c,d)` not existing yet, which is the normal case for 4-4 and 5-6 |
+| 4-4 and 5-6 on a surface edge | rejected outright (`edge_incident_surface_face_count > 0` → `false`) | steered to the case that realizes the flip, by `swap_edge_44_accept_case` / `swap_edge_56_accept_case`, then envelope-checked and re-tagged like the 3→2 case |
+| the `(c,d)` non-manifold guard | `assert` + `get_surface_faces_for_edge` | tetwild's direct enumeration, which does not depend on the possibly-stale `m_is_on_surface` vertex flags |
+| the "would-be new faces already surface" guard | absent | tetwild's, gated on `lowest_common_tet` so a Debug build does not abort on every 4-4 flip |
+| `swap_edge_56_after` | re-checked `is_inverted` | tetwild's: `swap_edge_56_energy` returns `double::max()` for any inverted candidate and the case is only taken when strictly below the old energy, so the check could never fire |
+| `swap_all_edges_44` / `_56` | no `check_surface_topology` guard | tetwild's guard, now that these can change the surface |
+| `swap_all_edges_all` | logged its topology warning as `"swap_all_edges_32"` | its own name |
+| counters | `cnt_surface_swap` only | plus tetwild's `cnt_surface_swap_32/44/56` breakdown, and the same log line |
+| open-boundary edges | not considered | `wmtk::TetOptimizerMesh::is_open_boundary_edge`, a new virtual that defaults to `false` and that tetwild overrides — see below |
+
+`is_open_boundary_edge` defaulting to false is exact for simwild, not a stub: around an interior
+edge the tags change an even number of times going around the tet ring, so the interface can never
+terminate there; it can only end where it meets the bbox, and `is_edge_on_bbox` has already
+rejected those edges by the time the question is asked. Making it a virtual is what leaves the two
+`prepare_surface_flip` bodies byte-identical.
+
+### The tag rule
+
+Three simwild-only additions, and nothing else:
+
+- `cache_interior_swap_tag` — no incident surface face, so record the one tag the incident tets
+  share. If they *disagree* the swap is refused: that can only happen if the tag/surface invariant
+  is already broken elsewhere, and re-tagging would move tagged volume with no envelope check to
+  gate it. This replaces the old 3→2 rule (majority vote over at most two tags) and the old 4-4 /
+  5-6 rule (take `incident_tets[0]`, with a commented-out check that they all agree).
+- `prepare_surface_flip` additionally records `ring_tags`: for each ring vertex other than `c`,`d`,
+  the tag of its side.
+- `propagate_swap_tags` — interior swap: give every new tet the cached tag. Surface flip: give each
+  new tet the tag of the arc its ring vertices identify, and refuse if a tet straddles both arcs or
+  touches neither.
+
+On a well-formed mesh this leaves the 3→2 result unchanged: an interior edge has one tag, so the
+majority vote agreed with it, and on a surface edge the majority is by construction the arc holding
+two of the three tets, which is the arc both new tets land in.
+
+`SwapInfoCache::sf_e` is gone — the third apex of the 3→2 ring, which nothing read.
+
+### Measured
+
+**tetwild and triwild are byte-identical**, on all 53 registered configs — with `tetwild_crown` and
+`tetwild_octocat` re-run at `num_threads: 0`, since at their configured 10 they are nondeterministic
+by construction — and on all 30 hidden `[challenging]` models (14 tetwild Thingi10K, 16
+triwild20k), compared against two independent baselines: the run for #1011 and the run for #1009,
+which also agree with each other. The comparison is every `report.json` field except the timing
+keys, plus the md5 of every emitted mesh — `out_final.msh`, `out_simplified_input.obj`,
+`out_surface.obj` for tetwild and `out.msh`, `out.vtu`, `out_surf.vtu` for triwild.
+
+Two simwild configs move, the only two that run 3D swaps:
+
+| config | before | after |
+|---|---|---|
+| `simwild_double_sphere_3d` | 10897 tets, 2198 verts, avg 3.80078 | 10888 tets, 2197 verts, avg 3.79623 |
+| `simwild_double_sphere_notop_3d` | 21528 tets, 4257 verts, avg 3.61702, max 8.5319 | 21311 tets, 4215 verts, avg 3.59206, max 8.7158 |
+
+Both get slightly smaller at slightly better average energy, and the counters say exactly why:
+
+| config | surface flips before | surface flips after |
+|---|---|---|
+| `simwild_double_sphere_3d` | 4 | 85 = **4** (3→2) + 69 (4-4) + 12 (5-6) |
+| `simwild_double_sphere_notop_3d` | 0 | 89 = 1 (3→2) + 70 (4-4) + 18 (5-6) |
+
+The 3→2 count on the first config is *unchanged*, which is the claim above about the tag rule
+being behaviour-preserving there, measured rather than argued. All of the movement is the 4-4 and
+5-6 flips that simwild used to refuse outright — the ones that let the optimizer relieve a bad
+configuration on the interface instead of routing around it. (`notop`'s 3→2 going 0 → 1 is
+downstream: the mesh reaches configurations it never used to.)
+
+Re-running both with `check_surface_topology: true` — which takes a full topological signature of
+the tracked surface (V, E, F, Euler, components, boundary loops) before each swap pass and reports
+any change afterwards — gives **zero complaints across all 174 flips**. A diagonal flip is supposed
+to leave surface topology alone, and on real data it does.
+
+### Tested
+
+`test_simwild_swap_tags.cpp` builds an N-tet ring whose two arcs carry different tags, derives the
+surface from the tags the way `init_surfaces_and_boundaries` does, runs the flip, and checks that
+every face is surface **iff** its two tets still disagree — for the 3→2, 4-4 and 5-6 flips, plus an
+interior swap that must preserve its single tag. The 4-4 and 5-6 cases assert the resulting tets by
+vid, so a wrong side would fail rather than merely a wrong count. Release and Debug.
+
+Writing it turned up an unrelated latent defect in simwild's test-only `create_mesh_attributes`,
+fixed here: it assigned `m_tet_attribute.m_attributes` a vector sized to the *live* tet count,
+shrinking the collection below the connectivity capacity that `init()` had reserved. An
+`AttributeCollection` deliberately never grows during an operation, so a 5→6 swap indexed one past
+the end. tetwild carried the same bug and had already fixed it (ASan found it there); this is the
+same fix, and simwild's version segfaults outright rather than corrupting quietly because the field
+being written is a `std::set` and not a `double`.
+
+### 2D was already done
+
+For completeness, since "adopt all the swaps" covers both dimensions: the 2D swap family
+(`swap_all_edges`, `swap_weight`, `swap_edge_before`, `swap_edge_after`) is **already identical**
+between triwild and simwild-2D — after renaming the mesh class, the only differences are two
+comments. Stage 3a's shared `TriOptimizerMesh::FaceAttributes` carries `tags` for both, so even the
+tag lines are common code, and `SwapInfoCache::face_tags` is triwild's too. (triwild has carried an
+unused `std::set<int64_t> tags` per triangle since well before this programme — see
+`git show origin/main:.../TriWildMesh.h` — so that is pre-existing, not something the move added.)
+
+The tag propagation is correct there for a simpler reason than in 3D: the 2D swap opens with
+`if (is_edge_on_surface(t)) return false;`, and in 2D too the surface is the tag interface
+(`SimWildMeshTri::init_surfaces_and_boundaries`), so a 2D swap only ever runs on an edge whose two
+faces already agree. `cache.face_tags = FA[incident_faces[0]].tags` is then exact. There is no 2D
+counterpart to the 4-4 / 5-6 question because a 2-2 flip is the only edge swap a triangle mesh has.
