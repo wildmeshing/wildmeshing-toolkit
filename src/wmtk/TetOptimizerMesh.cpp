@@ -454,4 +454,15 @@ size_t TetOptimizerMesh::get_order_of_vertex(const size_t vid) const
     return m_vertex_attribute.at(vid).m_order;
 }
 
+double TetOptimizerMesh::get_length2(const Tuple& l) const
+{
+    auto& m = *this;
+    auto& v1 = l;
+    auto v2 = l.switch_vertex(m);
+    double length =
+        (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf)
+            .squaredNorm();
+    return length;
+}
+
 } // namespace wmtk

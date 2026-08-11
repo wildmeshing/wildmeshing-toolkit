@@ -168,6 +168,8 @@ public:
         return m_vertex_attribute[loc.vid(*this)].partition_id;
     }
 
+    double get_length2(const Tuple& l) const;
+
     bool is_inverted(const std::array<size_t, 4>& vs) const;
     bool is_inverted(const Tuple& loc) const;
     /// Inversion check using only the double positions.

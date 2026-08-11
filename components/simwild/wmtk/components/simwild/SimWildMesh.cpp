@@ -522,14 +522,6 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F, const bool
     m_envelope_orig = m_envelope;
 }
 
-double SimWildMesh::get_length2(const Tuple& l) const
-{
-    SmartTuple v1(*this, l);
-    SmartTuple v2 = v1.switch_vertex();
-    double length =
-        (m_vertex_attribute[v1.vid()].m_posf - m_vertex_attribute[v2.vid()].m_posf).squaredNorm();
-    return length;
-}
 
 void SimWildMesh::write_msh(std::string file, const bool write_envelope)
 {

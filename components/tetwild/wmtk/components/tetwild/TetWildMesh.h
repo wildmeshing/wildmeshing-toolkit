@@ -272,7 +272,6 @@ public:
     void filter_with_flood_fill();
 
 
-    double get_length2(const Tuple& loc) const;
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
     // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.

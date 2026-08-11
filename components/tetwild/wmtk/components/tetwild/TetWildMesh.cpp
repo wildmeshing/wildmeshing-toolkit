@@ -1031,18 +1031,6 @@ void TetWildMesh::output_mesh(std::string file)
 }
 
 
-double TetWildMesh::get_length2(const wmtk::TetMesh::Tuple& l) const
-{
-    auto& m = *this;
-    auto& v1 = l;
-    auto v2 = l.switch_vertex(m);
-    double length =
-        (m.m_vertex_attribute[v1.vid(m)].m_posf - m.m_vertex_attribute[v2.vid(m)].m_posf)
-            .squaredNorm();
-    return length;
-}
-
-
 bool TetWildMesh::is_vertex_on_boundary(const size_t e0)
 {
     if (!m_vertex_extra.at(e0).m_is_on_open_boundary) {
