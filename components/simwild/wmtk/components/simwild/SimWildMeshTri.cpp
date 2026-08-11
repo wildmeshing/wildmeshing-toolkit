@@ -1774,12 +1774,6 @@ void SimWildMeshTri::log_total_surface_energy()
 }
 
 
-bool SimWildMeshTri::round_and_check_all_rounded()
-{
-    round_all_vertices();
-    return m_all_rounded.load(std::memory_order_relaxed);
-}
-
 double SimWildMeshTri::triangle_area(const size_t fid) const
 {
     const auto vs = oriented_tri_vids(fid);

@@ -233,21 +233,6 @@ public:
 
     size_t swap_all_edges_all();
 
-    /**
-     * @brief Run the rounding sweep, then report whether the mesh is now fully rounded.
-     *
-     * The termination condition of the operation loop. Energy alone is not sufficient: a mesh
-     * that hits the quality target while some vertex still carries exact coordinates is not
-     * finished, because the output is what the caller consumes and rational coordinates in it
-     * are a defect regardless of how good the elements are.
-     *
-     * This is also what makes the exact-rational fallback in split_edge_after safe. A split is
-     * the only operation that can un-round a vertex; collapse, the swaps and smoothing never
-     * do; and the post-optimization pass is collapse-only.
-     *
-     * O(1) once m_all_rounded is set, so it is cheap enough to sit on every early-out.
-     */
-    bool round_and_check_all_rounded();
 
     /**
      * @brief Check if all vertices of the mesh are rounded.

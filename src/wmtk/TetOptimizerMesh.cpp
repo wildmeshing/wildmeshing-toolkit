@@ -107,34 +107,15 @@ std::shared_ptr<SampleEnvelope> TetOptimizerMesh::smoothing_containment_envelope
     return m_envelope;
 }
 
-size_t TetOptimizerMesh::round_all_vertices()
+std::vector<size_t> TetOptimizerMesh::all_vertex_ids() const
 {
-    if (m_all_rounded.load(std::memory_order_relaxed)) {
-        return 0;
+    const std::vector<Tuple> vs = get_vertices();
+    std::vector<size_t> ids;
+    ids.reserve(vs.size());
+    for (const Tuple& v : vs) {
+        ids.push_back(v.vid(*this));
     }
-
-    size_t reclaimed = 0, still_unrounded = 0;
-    for (const Tuple& v : get_vertices()) {
-        if (m_vertex_attribute[v.vid(*this)].m_is_rounded) {
-            continue;
-        }
-        if (round(v)) {
-            ++reclaimed;
-        } else {
-            ++still_unrounded;
-        }
-    }
-
-    if (still_unrounded == 0) {
-        m_all_rounded.store(true, std::memory_order_relaxed);
-    }
-    if (reclaimed > 0 || still_unrounded > 0) {
-        logger().info(
-            "rounding sweep: reclaimed {}, still unrounded {}",
-            reclaimed,
-            still_unrounded);
-    }
-    return reclaimed;
+    return ids;
 }
 
 void TetOptimizerMesh::gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds)

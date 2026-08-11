@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/OptimizerParameters.h>
+#include <wmtk/RationalPositions.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/Types.hpp>
@@ -38,7 +39,7 @@ namespace wmtk {
  * that touch a cell attribute at all, and both are once-per-pass sweeps rather than
  * per-operation code.
  */
-class TetOptimizerMesh : public wmtk::TetMesh
+class TetOptimizerMesh : public wmtk::TetMesh, public wmtk::RationalPositions
 {
 public:
     struct VertexAttributes
@@ -120,15 +121,6 @@ public:
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
 
-    /**
-     * @brief True when every vertex is known to be rounded.
-     *
-     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
-     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
-     * Atomic because operations that clear it run in parallel.
-     */
-    std::atomic<bool> m_all_rounded = false;
-
     /// Whether the current collapse pass applies the target-length limit; read by
     /// collapse_edge_before, which is where that limit is enforced.
     bool m_collapse_limit_length = true;
@@ -184,13 +176,21 @@ public:
      * @return True if successful or already rounded, false otherwise.
      */
     bool round(const Tuple& v);
-    /**
-     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
-     *
-     * Skipped outright when m_all_rounded says there is nothing to do.
-     */
-    size_t round_all_vertices();
 
+protected:
+    // RationalPositions supplies round_all_vertices() and round_and_check_all_rounded() on
+    // top of these three.
+    std::vector<size_t> all_vertex_ids() const override;
+    bool vertex_is_rounded(const size_t vid) const override
+    {
+        return m_vertex_attribute.at(vid).m_is_rounded;
+    }
+    // Equivalent to round() on the tuple get_vertices() would have yielded: round() reads only
+    // the vid and the one-ring, and the one-ring query is answered from
+    // m_vertex_connectivity[vid] regardless of which cell the tuple names.
+    bool round_vertex(const size_t vid) override { return round(tuple_from_vertex(vid)); }
+
+public:
     bool is_edge_on_surface(const Tuple& loc);
     bool is_edge_on_bbox(const Tuple& loc);
     /**

@@ -626,12 +626,6 @@ void SimWildMesh::write_msh(std::string file, const bool write_envelope)
 }
 
 
-bool SimWildMesh::round_and_check_all_rounded()
-{
-    round_all_vertices();
-    return m_all_rounded.load(std::memory_order_relaxed);
-}
-
 bool SimWildMesh::all_rounded() const
 {
     size_t cnt_round = 0;

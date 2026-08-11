@@ -188,14 +188,6 @@ public:
      */
     void log_total_surface_energy();
 
-    /**
-     * @brief Run the rounding sweep, then report whether the mesh is now fully rounded.
-     *
-     * The termination condition of the operation loop, and what makes the exact-rational
-     * fallback in split_edge_after safe: a split is the only operation that can un-round a
-     * vertex, so the loop only has to outlast the sweep. See SimWildMesh's counterpart.
-     */
-    bool round_and_check_all_rounded();
 
     /**
      * @brief Splits in the last pass that fell back to the exact rational midpoint.

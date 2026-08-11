@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/OptimizerParameters.h>
+#include <wmtk/RationalPositions.h>
 #include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/Types.hpp>
@@ -33,7 +34,7 @@ namespace wmtk {
  * the stop condition (absolute energy vs per-cell relative quality) abstracted first. Two
  * readable copies beat one over-parameterized one.
  */
-class TriOptimizerMesh : public wmtk::TriMesh
+class TriOptimizerMesh : public wmtk::TriMesh, public wmtk::RationalPositions
 {
 public:
     struct VertexAttributes
@@ -121,15 +122,6 @@ public:
     /// Why smoothing attempts were refused, reported once per pass.
     optimization::SmoothRejectCounters m_smooth_rejects;
 
-    /**
-     * @brief True when every vertex is known to be rounded.
-     *
-     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
-     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
-     * Atomic because operations that clear it run in parallel.
-     */
-    std::atomic<bool> m_all_rounded = false;
-
     bool m_collapse_limit_length = true;
     int m_debug_print_counter = 0;
 
@@ -189,20 +181,21 @@ public:
      * @return True if successful or already rounded, false otherwise.
      */
     bool round(const Tuple& v);
-    /**
-     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
-     *
-     * round() is otherwise only attempted as a side effect of another operation (smoothing
-     * the vertex, or the merged vertex of a collapse), and neither reaches a vertex that only
-     * becomes roundable later: smoothing skips "good" regions by default. Without a sweep such
-     * a vertex keeps exact coordinates into the output for no geometric reason -- and
-     * split_edge_after introduces them unconditionally whenever the rounded midpoint would
-     * invert, so the sweep is what keeps that from reaching the output.
-     *
-     * Skipped outright when m_all_rounded says there is nothing to do.
-     */
-    size_t round_all_vertices();
 
+protected:
+    // RationalPositions supplies round_all_vertices() and round_and_check_all_rounded() on
+    // top of these three.
+    std::vector<size_t> all_vertex_ids() const override;
+    bool vertex_is_rounded(const size_t vid) const override
+    {
+        return m_vertex_attribute.at(vid).m_is_rounded;
+    }
+    // Equivalent to round() on the tuple get_vertices() would have yielded: round() reads only
+    // the vid and the one-ring, and the one-ring query is answered from
+    // m_vertex_connectivity[vid] regardless of which cell the tuple names.
+    bool round_vertex(const size_t vid) override { return round(tuple_from_vertex(vid)); }
+
+public:
     bool is_edge_on_surface(const Tuple& loc) const;
     bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
     bool is_edge_on_bbox(const Tuple& loc) const;
