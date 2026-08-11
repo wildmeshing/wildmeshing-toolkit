@@ -1,435 +1,133 @@
 #include "SimWildMesh.h"
-#include "wmtk/TetMesh.h"
 
-#include <igl/Timer.h>
 #include <algorithm>
-#include <wmtk/threading/collector.hpp>
-#include <wmtk/utils/ExecutorUtils.hpp>
-#include <wmtk/utils/LocalizedRetry.hpp>
-#include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/ParallelCollect.hpp>
-#include <wmtk/utils/RunPass.hpp>
+#include <set>
 
 namespace wmtk::components::simwild {
 
-void SimWildMesh::collapse_all_edges(bool is_limit_length)
+bool SimWildMesh::collapse_before_vertex(size_t v1, size_t v2, double edge_length) const
 {
-    m_collapse_limit_length = is_limit_length;
-    igl::Timer timer;
-    double time;
-    timer.start();
-
-    std::vector<std::pair<std::string, Tuple>> all_ops = wmtk::parallel_collect_edge_ops(
-        *this,
-        NUM_THREADS,
-        [](SimWildMesh& m, const Tuple& e, auto& out) {
-            out.emplace_back("edge_collapse", e);
-            out.emplace_back("edge_collapse", e.switch_vertex(m));
-        });
-    time = timer.getElapsedTime();
-    logger().info("#edges = {}", all_ops.size() / 2);
-    logger().info("edge collapse prepare time: {:.4}s", time);
-
-    wmtk::run_pass(
-        *this,
-        wmtk::PassLock::EdgeTwoRing,
-        "edge collapse operation",
-        [&](auto& executor, auto& mesh) {
-            executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
-                std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
-                for (const Tuple& t : newts) {
-                    op_tups.emplace_back(op, t);
-                    op_tups.emplace_back(op, t.switch_vertex(m));
-                }
-                return op_tups;
-            };
-            executor.priority = [](const wmtk::TetOptimizerMesh& m, Op op, const Tuple& t) {
-                return -m.get_length2(t);
-            };
-            executor.is_weight_up_to_date = [&](const wmtk::TetOptimizerMesh& m,
-                                                const std::tuple<double, Op, Tuple>& ele) {
-                auto& VA = m_vertex_attribute;
-                auto& [weight, op, tup] = ele;
-                auto length = m.get_length2(tup);
-                if (length != -weight) {
-                    return false;
-                }
-                // Deliberately NOT filtered on length here. An over-length edge stays a
-                // candidate and collapse_edge_before decides it on quality instead: it is kept
-                // only if it STRICTLY improves the worst element of the ring. See there.
-                return true;
-            };
-
-            // Retry a failed collapse only where the mesh actually changed this round
-            // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            wmtk::run_localized_to_convergence(mesh, executor, all_ops);
-        });
+    if (edge_length <= 0 || m_vertex_attribute[v1].m_order != 2) return true;
+    return m_vertex_attribute[v2].m_order >= 2;
 }
 
-bool SimWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
+bool SimWildMesh::collapse_quality_allowed(size_t v1, double quality, double ring_max) const
 {
-    const auto& VA = m_vertex_attribute;
-    auto& cache = collapse_cache.local();
+    return !m_collapse_check_quality ||
+           TetOptimizerMesh::collapse_quality_allowed(v1, quality, ring_max);
+}
 
-    cache.changed_faces.clear();
-    cache.changed_tids.clear();
-    cache.changed_energies.clear();
-    cache.surface_faces.clear();
-    cache.boundary_edges.clear();
+bool SimWildMesh::collapse_is_order_2_edge(const std::array<size_t, 2>& e)
+{
+    // These extra curve-envelope checks are SimWild's preserve-topology policy. TetWild's
+    // shared surface link condition is already gated by the same flag in the common core.
+    return m_params.preserve_topology && is_order_2_edge(e);
+}
 
-    size_t v1_id = loc.vid(*this);
-    auto loc1 = switch_vertex(loc);
-    size_t v2_id = loc1.vid(*this);
+bool SimWildMesh::collapse_after_connectivity(
+    size_t v1,
+    size_t v2,
+    const std::vector<std::array<size_t, 2>>& boundary_edges)
+{
+    m_vertex_attribute[v2].m_order =
+        std::max(m_vertex_attribute[v1].m_order, m_vertex_attribute[v2].m_order);
 
-    cache.v1_id = v1_id;
-    cache.v2_id = v2_id;
-
-    cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
-
-    ///check if on bbox/surface/boundary
-    // bbox
-    if (!VA[v1_id].on_bbox_faces.empty()) {
-        if (VA[v2_id].on_bbox_faces.size() < VA[v1_id].on_bbox_faces.size()) return false;
-        for (int on_bbox : VA[v1_id].on_bbox_faces)
-            if (std::find(
-                    VA[v2_id].on_bbox_faces.begin(),
-                    VA[v2_id].on_bbox_faces.end(),
-                    on_bbox) == VA[v2_id].on_bbox_faces.end()) {
-                return false;
-            }
+    if (collapse_cache.local().edge_length <= 0) return true;
+    for (const auto& vids : boundary_edges) {
+        const std::array<Vector3d, 2> pts{
+            {m_vertex_attribute.at(vids[0]).m_posf, m_vertex_attribute.at(vids[1]).m_posf}};
+        if (m_order_2_edge_envelope->is_outside(pts)) return false;
     }
-
-    // surface
-    if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (VA[v1_id].m_is_rounded && !VA[v2_id].m_is_on_surface) {
-            // do not collapse away from surface
-            return false;
-        }
-    }
-
-    // open boundary
-    if (cache.edge_length > 0 && VA[v1_id].m_order == 2) {
-        if (VA[v2_id].m_order < 2) {
-            return false;
-        }
-    }
-
-
-    const auto n1_locs = get_one_ring_tids_for_vertex(loc);
-
-    cache.changed_tids.reserve(n1_locs.size());
-    cache.max_energy = 0;
-    for (const size_t& tid : n1_locs) {
-        const double q = m_tet_attribute.at(tid).m_quality;
-        cache.max_energy = std::max(cache.max_energy, q);
-        const auto vs = oriented_tet_vids(tid);
-        if (vs[0] != v2_id && vs[1] != v2_id && vs[2] != v2_id && vs[3] != v2_id) {
-            cache.changed_tids.emplace_back(tid);
-        }
-    }
-
-    // pre-compute after-collapse energies
-    cache.changed_energies.reserve(cache.changed_tids.size());
-    for (const size_t tid : cache.changed_tids) {
-        std::array<size_t, 4> vs = oriented_tet_vids(tid);
-        for (size_t i = 0; i < 4; ++i) {
-            if (vs[i] == v1_id) {
-                vs[i] = v2_id;
-                break;
-            }
-        }
-
-        if (is_inverted(vs)) {
-            return false;
-        }
-        double q = get_quality(vs);
-        // quality check only when v1 is rounded
-        if (m_collapse_check_quality && VA[v1_id].m_is_rounded && q > cache.max_energy) {
-            return false;
-        }
-        cache.changed_energies.emplace_back(q);
-    }
-    assert(cache.changed_energies.size() == cache.changed_tids.size());
-
-    // Length gate, applied here rather than when the candidate list is built.
-    //
-    // Coarsening a well-shaped mesh is what the length limit exists to prevent, so a short
-    // edge keeps the old behaviour. But applying it to the CANDIDATE LIST made any element
-    // whose edges are all longer than 0.8 * l invisible to this pass: it was never offered,
-    // so it produced no rejection record anywhere and looked untouched rather than refused.
-    //
-    // Measured in triwild on triwild20k 189017 at eps_rel 1e-4, where a collinear triangle
-    // with edges 55 / 165 / 220 against a gate of 38.7 survived every pass while stuck-refine
-    // split it -- halving its short edge and DOUBLING its energy each round, 6.7e16 -> 1.5e17
-    // -> 3.1e17 -> inverted -- and the mesh grew from 17k to 6.6M elements in ten iterations.
-    // Refinement cannot repair a shape defect (AMIPS is scale-invariant, so splitting a
-    // collinear element leaves it collinear); collapse is the only operation that can remove
-    // one, so it has to be allowed to see it. With this, that model converges in 21
-    // iterations, and the eps_rel 1e-3 run it already handled is unchanged at 12.
-    //
-    // The condition is strict improvement of the ring's worst element, which needs no
-    // threshold and is self-limiting: in a healthy mesh almost no long-edge collapse strictly
-    // improves anything. Note changed_tids excludes the tets the collapse deletes, so when
-    // the ring's worst is one of those the test passes by construction -- the rule admits
-    // precisely the collapses that remove a bad element.
-    if (m_collapse_limit_length && VA[v1_id].m_is_rounded) {
-        const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-        const double len2 = cache.edge_length * cache.edge_length;
-        if (len2 > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
-            double max_after = 0.;
-            for (const double q : cache.changed_energies) {
-                max_after = std::max(max_after, q);
-            }
-            if (max_after >= cache.max_energy) {
-                return false;
-            }
-        }
-    }
-
-
-    if (m_params.perform_sanity_checks) {
-        if (!link_condition(loc)) {
-            log_and_throw_error("link condition failed for edge ({}, {})", v1_id, v2_id);
-        }
-    }
-
-    //
-    const auto n12_locs = get_incident_tids_for_edge(loc);
-    for (const size_t& tid : n12_locs) {
-        auto vs = oriented_tet_vids(tid);
-        std::array<size_t, 3> f_vids = {{v1_id, 0, 0}};
-        int cnt = 1;
-        // get the two vertices that are not v1/v2, i.e., the edge-link vertices.
-        for (int j = 0; j < 4; j++) {
-            if (vs[j] != v1_id && vs[j] != v2_id) {
-                f_vids[cnt] = vs[j];
-                cnt++;
-            }
-        }
-        auto [_1, global_fid1] = tuple_from_face(f_vids);
-        auto [_2, global_fid2] = tuple_from_face({{v2_id, f_vids[1], f_vids[2]}});
-        auto f_attr = m_face_attribute.at(global_fid1);
-        f_attr.merge(m_face_attribute.at(global_fid2));
-        cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
-    }
-
-    if (VA[v1_id].m_is_on_surface) {
-        // this code must check if a face is tagged as surface face
-        // only checking the vertices is not enough
-
-        // std::vector<std::array<size_t, 3>> fs;
-        simplex::SimplexCollection fs = get_surface_faces_for_vertex(v1_id);
-        // for (const size_t& tid : n1_locs) {
-        //     const auto vs = oriented_tet_vids(tid);
-        //
-        //     int j_v1 = -1;
-        //     auto skip = [&]() {
-        //         for (int j = 0; j < 4; j++) {
-        //             const size_t vid = vs[j];
-        //             if (vid == v2_id) {
-        //                // ignore tets incident to the edge (v1,v2)
-        //                return true; // v1-v2 definitely not on surface.
-        //            }
-        //            if (vid == v1_id) j_v1 = j;
-        //        }
-        //        return false;
-        //    };
-        //    if (skip()) continue;
-        //
-        //    for (int k = 0; k < 3; k++) {
-        //        auto va = vs[(j_v1 + 1 + k) % 4];
-        //        auto vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
-        //        if ((VA[va].m_is_on_surface && VA[vb].m_is_on_surface)) {
-        //            std::array<size_t, 3> f = {{v1_id, va, vb}};
-        //            const auto [f_tuple, fid] = tuple_from_face(f);
-        //            if (!m_face_attribute.at(fid).m_is_surface_fs) {
-        //                // check if this face is actually on the surface
-        //                continue;
-        //            }
-        //            std::sort(f.begin(), f.end());
-        //            fs.push_back(f);
-        //        }
-        //    }
-        //}
-        // wmtk::vector_unique(fs);
-
-        cache.surface_faces.reserve(fs.faces().size());
-        for (auto& f : fs.faces()) {
-            const simplex::Edge e_opp = f.opposite_edge(v1_id);
-            const size_t e0 = e_opp.vertices()[0];
-            const size_t e1 = e_opp.vertices()[1];
-            if (e0 == v2_id || e1 == v2_id) {
-                continue;
-            }
-            cache.surface_faces.push_back({{v2_id, e0, e1}});
-        }
-
-        if (m_params.preserve_topology) {
-            std::vector<std::array<size_t, 2>> bs;
-            // iterate through all faces inicdent to v1
-            for (const size_t& tid : n1_locs) {
-                const auto vs = oriented_tet_vids(tid);
-
-                int j_v1 = -1;
-                for (int j = 0; j < 4; j++) {
-                    const size_t vid = vs[j];
-                    if (vid == v1_id) {
-                        j_v1 = j;
-                    }
-                }
-
-                for (int k = 0; k < 3; k++) {
-                    const size_t va = vs[(j_v1 + 1 + k) % 4];
-                    const size_t vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
-                    if ((!VA[va].m_is_on_surface || !VA[vb].m_is_on_surface)) {
-                        continue;
-                    }
-                    const auto [f_tuple, fid] = tuple_from_face({{v1_id, va, vb}});
-                    if (!m_face_attribute.at(fid).m_is_surface_fs) {
-                        // check if this face is actually on the surface
-                        continue;
-                    }
-                    if (va != v2_id) { // ignore collapsing edge (v1,v2)
-                        std::array<size_t, 2> ba = {{v1_id, va}};
-                        if (is_order_2_edge(ba)) {
-                            ba[0] = v2_id; // replace v1 with v2 for check in `after` function
-                            std::sort(ba.begin(), ba.end());
-                            bs.push_back(ba);
-                        }
-                    }
-                    if (vb != v2_id) { // ignore collapsing edge (v1,v2)
-                        std::array<size_t, 2> bb = {{v1_id, vb}};
-                        if (is_order_2_edge(bb)) {
-                            bb[0] = v2_id; // replace v1 with v2 for check in `after` function
-                            std::sort(bb.begin(), bb.end());
-                            bs.push_back(bb);
-                        }
-                    }
-                }
-            }
-            wmtk::vector_unique(bs);
-            cache.boundary_edges = bs;
-        }
-    }
-
-    if (m_params.preserve_topology && VA[v1_id].m_is_on_surface && VA[v2_id].m_is_on_surface) {
-        if (!substructure_link_condition(loc)) {
-            return false;
-        }
-    }
-
     return true;
 }
 
-bool SimWildMesh::collapse_edge_after(const Tuple& loc)
+void SimWildMesh::collapse_after_vertex(size_t, size_t v2)
 {
-    auto& VA = m_vertex_attribute;
-    auto& cache = collapse_cache.local();
-    size_t v1_id = cache.v1_id;
-    size_t v2_id = cache.v2_id;
+    // A SimWild surface is not inherited geometry: it is precisely the interface between
+    // unlike cell tags. Re-derive the affected faces after connectivity and tag data settle;
+    // OR-merging the two old face flags can leave a homogeneous face marked as an interface.
+    std::set<size_t> affected_vertices;
+    affected_vertices.insert(v2);
 
-    if (!TetMesh::collapse_edge_after(loc)) {
-        return false;
+    const auto tids = get_one_ring_tids_for_vertex(v2);
+    for (const size_t tid : tids) {
+        if (!tuple_from_tet(tid).is_valid(*this)) continue;
+        for (int j = 0; j < 4; ++j) {
+            const Tuple face = tuple_from_face(tid, j);
+            const size_t fid = face.fid(*this);
+            const auto opposite = face.switch_tetrahedron(*this);
+            const bool is_interface =
+                opposite.has_value() &&
+                m_tet_attribute[tid].tags != m_tet_attribute[opposite->tid(*this)].tags;
+            m_face_attribute[fid].m_is_surface_fs = is_interface;
+            const auto fvs = get_face_vids(face);
+            affected_vertices.insert(fvs.begin(), fvs.end());
+        }
     }
 
-    // open boundary - must be set before checking for open boundary
-    VA[v2_id].m_order = std::max(VA.at(v1_id).m_order, VA.at(v2_id).m_order);
-
-    // surface
-    // and order 2 edges
-    if (cache.edge_length > 0) {
-        for (auto& vids : cache.surface_faces) {
-            // surface envelope
-            bool is_out = m_envelope->is_outside(
-                {{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf, VA.at(vids[2]).m_posf}});
-            if (is_out) {
-                return false;
+    for (const size_t vid : affected_vertices) {
+        bool on_interface = false;
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            if (!tuple_from_tet(tid).is_valid(*this)) continue;
+            const auto tet = oriented_tet_vids(tid);
+            for (int j = 0; j < 4; ++j) {
+                const Tuple face = tuple_from_face(tid, j);
+                const auto fvs = get_face_vids(face);
+                if (std::find(fvs.begin(), fvs.end(), vid) == fvs.end()) continue;
+                if (m_face_attribute[face.fid(*this)].m_is_surface_fs) {
+                    on_interface = true;
+                    break;
+                }
             }
+            if (on_interface) break;
         }
-        for (const auto& vids : cache.boundary_edges) {
-            std::array<Vector3d, 2> pts{{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf}};
-            if (m_order_2_edge_envelope->is_outside(pts)) {
-                return false;
-            }
-        }
+        m_vertex_attribute[vid].m_is_on_surface = on_interface;
     }
-
-    //// update attrs
-    // tet attr
-    for (int i = 0; i < cache.changed_tids.size(); i++) {
-        m_tet_attribute[cache.changed_tids[i]].m_quality = cache.changed_energies[i];
+    for (const size_t vid : affected_vertices) {
+        m_vertex_attribute[vid].m_order =
+            m_vertex_attribute[vid].m_is_on_surface ? compute_vertex_order(vid) : 0;
     }
-    // vertex attr
-    round(loc);
-    VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
-
-    // no need to update on_bbox_faces
-    // face attr
-    for (auto& info : cache.changed_faces) {
-        auto& f_attr = info.first;
-        auto& old_vids = info.second;
-        //
-        auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
-        if (global_fid == -1) {
-            return false;
-        }
-        m_face_attribute[global_fid] = f_attr;
-    }
-
-    return true;
 }
 
 void SimWildMesh::simplify()
 {
     compute_vertex_partition_morton();
-    if (m_params.debug_output) {
-        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-    }
+    if (m_params.debug_output) write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     logger().info("===== Simplify =====");
 
-    // re-build envelope
     m_envelope->use_exact = false;
     m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
 
     m_collapse_check_quality = false;
     collapse_all_edges();
-    if (m_params.debug_output) {
-        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-    }
+    if (m_params.debug_output) write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     m_collapse_check_quality = true;
 
-    // re-build envelope
-    {
-        logger().warn("Update envelope");
-        MatrixXd V;
-        V.resize(vert_capacity(), 3);
-        V.setZero();
-        for (size_t i = 0; i < vert_capacity(); ++i) {
-            const Tuple v = tuple_from_vertex(i);
-            if (!v.is_valid(*this)) {
-                continue;
-            }
-            const size_t vid = v.vid(*this);
-            V.row(i) = m_vertex_attribute.at(vid).m_posf;
-        }
+    logger().warn("Update envelope");
+    MatrixXd V(vert_capacity(), 3);
+    V.setZero();
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        const Tuple v = tuple_from_vertex(i);
+        if (v.is_valid(*this)) V.row(i) = m_vertex_attribute.at(v.vid(*this)).m_posf;
+    }
 
-        const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        MatrixXi F;
-        F.resize(surf_faces.size(), 3);
-        for (size_t i = 0; i < surf_faces.size(); ++i) {
-            F.row(i) =
-                Vector3i((int)surf_faces[i][0], (int)surf_faces[i][1], (int)surf_faces[i][2]);
-        }
+    const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
+    MatrixXi F(surf_faces.size(), 3);
+    for (size_t i = 0; i < surf_faces.size(); ++i) {
+        F.row(i) = Vector3i(
+            int(surf_faces[i][0]),
+            int(surf_faces[i][1]),
+            int(surf_faces[i][2]));
+    }
 
-        bool use_exact = m_envelope->use_exact;
-        m_envelope = nullptr;
-        m_V_envelope.clear();
-        m_F_envelope.clear();
-        if (V.size() > 0 && F.size() > 0) {
-            init_envelope(V, F, use_exact);
-        } else {
-            logger().warn("No surface faces left after simplification, skip re-building envelope");
-        }
+    const bool use_exact = m_envelope->use_exact;
+    m_envelope = nullptr;
+    m_V_envelope.clear();
+    m_F_envelope.clear();
+    if (V.size() > 0 && F.size() > 0) {
+        init_envelope(V, F, use_exact);
+    } else {
+        logger().warn("No surface faces left after simplification, skip re-building envelope");
     }
     logger().info("===== Simplification done =====");
 }

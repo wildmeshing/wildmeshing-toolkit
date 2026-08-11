@@ -1,4 +1,4 @@
-#include "TriWildMesh.h"
+#include "TriOptimizerMesh.h"
 
 #include <cstdlib>
 #include "wmtk/TriMesh.h"
@@ -13,12 +13,12 @@
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
 
-namespace wmtk::components::triwild {
+namespace wmtk {
 
-void TriWildMesh::collapse_all_edges(bool is_limit_length)
+void TriOptimizerMesh::collapse_all_edges(bool is_limit_length)
 {
     m_collapse_limit_length = is_limit_length;
-    m_feature_rejects = 0;
+    collapse_pass_begin();
     igl::Timer timer;
     timer.start();
 
@@ -27,7 +27,7 @@ void TriWildMesh::collapse_all_edges(bool is_limit_length)
     auto all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
-        [](TriWildMesh& m, const Tuple& e, auto& out) {
+        [](TriOptimizerMesh& m, const Tuple& e, auto& out) {
             out.emplace_back("edge_collapse", e);
             out.emplace_back("edge_collapse", e.switch_vertex(m));
         });
@@ -73,17 +73,11 @@ void TriWildMesh::collapse_all_edges(bool is_limit_length)
             const size_t total_success =
                 wmtk::run_localized_to_convergence(mesh, executor, all_ops);
             logger().info("collapse success: {}", total_success);
-            if (const size_t n = m_feature_rejects.load(); n > 0) {
-                logger().info(
-                    "[feature] {} collapses refused to keep a polyline endpoint or junction "
-                    "within {:.6} of its input position",
-                    n,
-                    m_envelope_eps);
-            }
+            collapse_pass_end(total_success);
         });
 }
 
-bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
+bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 {
     const auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
@@ -103,16 +97,7 @@ bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
 
     ///check if on bbox/surface/boundary
-    // Feature points, i.e. polyline endpoints and junctions. Checked before everything else
-    // because it is a two-vector test and it is the one that keeps whole curves alive.
-    //
-    // Note this is NOT covered by the order test further down. That test refuses collapsing a
-    // feature into a non-feature; it says nothing about feature-into-feature, which is
-    // precisely how an open polyline dies -- its last remaining segment has a feature at both
-    // ends. Nor is it gated on m_is_rounded here: an un-rounded endpoint is just as much an
-    // endpoint.
-    if (collapse_breaks_feature(v1_id, v2_id)) {
-        m_feature_rejects.fetch_add(1, std::memory_order_relaxed);
+    if (!collapse_before_vertex(v1_id, v2_id)) {
         return false;
     }
 
@@ -185,8 +170,7 @@ bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
             return false;
         }
         double q = get_quality(vs);
-        // quality check only when v1 is rounded
-        if (VA[v1_id].m_is_rounded && q > m_params.stop_energy && q > cache.max_energy) {
+        if (!collapse_quality_allowed(v1_id, tid, q, cache.max_energy)) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -307,7 +291,7 @@ bool TriWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     return true;
 }
 
-bool TriWildMesh::collapse_edge_after(const Tuple& loc)
+bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
 {
     auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
@@ -338,13 +322,6 @@ bool TriWildMesh::collapse_edge_after(const Tuple& loc)
     }
     // vertex attr
     VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
-    // The survivor takes over whatever feature point v1 stood for. collapse_edge_before has
-    // already established that it is within eps of it, and that v2 did not stand for a
-    // different one, so the feature stays represented.
-    if (m_vertex_extra.at(v2_id).m_feature_id == NO_FEATURE) {
-        m_vertex_extra[v2_id].m_feature_id = m_vertex_extra.at(v1_id).m_feature_id;
-    }
-
     // no need to update on_bbox_faces
     // face attr
     for (auto& info : cache.changed_edges) {
@@ -358,7 +335,9 @@ bool TriWildMesh::collapse_edge_after(const Tuple& loc)
         m_edge_attribute[global_fid] = f_attr;
     }
 
+    collapse_after_vertex(v1_id, v2_id);
+
     return true;
 }
 
-} // namespace wmtk::components::triwild
+} // namespace wmtk

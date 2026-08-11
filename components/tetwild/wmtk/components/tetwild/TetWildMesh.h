@@ -88,6 +88,35 @@ public:
     }
     bool allow_surface_swap() const override { return m_tet_params.allow_surface_swap; }
     bool check_surface_topology() const override { return m_tet_params.check_surface_topology; }
+    void split_after_vertex(const size_t vid, const bool is_open_boundary) override
+    {
+        m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
+    }
+    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) const override
+    {
+        if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
+        return m_vertex_extra[v2].m_is_on_open_boundary ||
+               !m_order2_envelope->is_outside(m_vertex_attribute[v2].m_posf);
+    }
+    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
+    {
+        return is_open_boundary_edge(e);
+    }
+    bool collapse_after_connectivity(
+        size_t v1,
+        size_t v2,
+        const std::vector<std::array<size_t, 2>>&) override
+    {
+        m_vertex_extra[v2].m_is_on_open_boundary = m_vertex_extra[v1].m_is_on_open_boundary ||
+                                                   m_vertex_extra[v2].m_is_on_open_boundary;
+        return true;
+    }
+    void collapse_after_vertex(size_t, size_t v2) override
+    {
+        if (m_vertex_extra[v2].m_is_on_open_boundary && !is_vertex_on_boundary(v2)) {
+            m_vertex_extra[v2].m_is_on_open_boundary = false;
+        }
+    }
 
     /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
     /// budget is visible as such, and asserted against in the integration tests.
@@ -156,14 +185,6 @@ public:
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
 public:
-    void split_all_edges();
-    bool split_edge_before(const Tuple& t) override;
-    bool split_edge_after(const Tuple& loc) override;
-
-    void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
-
     //
     /**
      * brief Check if the vertex has an incident boundary edge.
@@ -229,42 +250,6 @@ private:
     wmtk::threading::enumerable_thread_specific<TriangleInsertionLocalInfoCache>
         triangle_insertion_local_cache;
 
-    ////// Operations
-
-    struct SplitInfoCache
-    {
-        //        VertexAttributes vertex_info;
-        size_t v1_id;
-        size_t v2_id;
-        bool is_edge_on_surface = false;
-        bool is_edge_open_boundary = false;
-        size_t edge_order = 0;
-        /// Worst quality among the tets incident to the edge BEFORE the split, so
-        /// split_edge_after can tell "this split created a degenerate tet" from "this split
-        /// subdivided a region that was already degenerate".
-        double max_quality_before = 0.;
-
-        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-    };
-    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    struct CollapseInfoCache
-    {
-        size_t v1_id;
-        size_t v2_id;
-        double max_energy;
-        double edge_length;
-
-        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 3>> surface_faces;
-        // all edges incident to the deleted vertex(v1) that are on the open boundary
-        std::vector<std::array<size_t, 2>> boundary_edges;
-        std::vector<size_t> changed_tids;
-        std::vector<double> changed_energies;
-    };
-    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
-
     // for incremental tetwild
 public:
     /**
@@ -305,22 +290,6 @@ public:
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
     size_t refine_sizing_around_worst(double max_energy);
-
-    /// Per-pass claim for the high-valence split gate: one slot per vertex, reset at the
-    /// start of every split pass. A high-valence vertex accepts the first
-    /// valence-increasing split of the pass and refuses the rest, so refinement spreads
-    /// instead of piling onto the same vertex. Atomic because splits run in parallel; a
-    /// plain array of unique_ptr rather than a vector because std::atomic is not movable.
-    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
-    size_t m_high_valence_claim_size = 0;
-    /// Splits refused by that gate in the current pass, reported once per pass.
-    std::atomic<size_t> m_high_valence_rejects = 0;
-
-    /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
-    bool is_force_split_edge(size_t v1, size_t v2) const
-    {
-        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
-    }
 
     // for open boundary
     void find_open_boundary();

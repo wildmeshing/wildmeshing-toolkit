@@ -34,6 +34,13 @@ struct OptimizerParameters
 
     bool preserve_topology = false;
 
+    /**
+     * Incident-cell count above which a link vertex accepts only one valence-increasing split
+     * per pass, or 0 to disable the gate. Shared by the 2D and 3D Wild optimizers; SimWild uses
+     * the same protection so tag-homogeneous runs follow the Wild path.
+     */
+    int split_high_valence_threshold = 200;
+
     // ---- Stuck-element sizing refinement --------------------------------
     // Trigger threshold: fire when the last iteration's improvement is small compared
     // with the distance the max energy still has to cover, i.e. refine when

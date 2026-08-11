@@ -329,6 +329,11 @@ void SimWildMesh::seal_connected_components(
 
         return da - db;
     };
+    struct ClearVoronoiSplit
+    {
+        std::function<double(const Vector3d&)>& fn;
+        ~ClearVoronoiSplit() { fn = nullptr; }
+    } clear_voronoi_split{m_voronoi_split_fn};
 
     // seal holes
     for (const ConnectedComponent& hole : components) {
@@ -380,7 +385,7 @@ void SimWildMesh::seal_connected_components(
                 continue;
             }
 
-            const size_t v_new = split_cache.local().v_new;
+            const size_t v_new = split_tag_cache.local().v_new;
             std::vector<size_t> tids = get_one_ring_tids_for_vertex(v_new);
 
             new_vertices.insert(v_new);

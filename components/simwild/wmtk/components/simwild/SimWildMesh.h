@@ -174,14 +174,6 @@ public:
     void write_msh(std::string file, const bool write_envelope = true);
 
 public:
-    void split_all_edges();
-    bool split_edge_before(const Tuple& t) override;
-    bool split_edge_after(const Tuple& loc) override;
-
-    void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
-
     void simplify();
 
     /**
@@ -198,6 +190,23 @@ public:
     std::atomic<int> cnt_split = 0, cnt_collapse = 0;
 
 protected:
+    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) const override;
+    bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
+    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override;
+    bool collapse_after_connectivity(
+        size_t v1,
+        size_t v2,
+        const std::vector<std::array<size_t, 2>>& boundary_edges) override;
+    void collapse_after_vertex(size_t v1, size_t v2) override;
+
+    bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
+    bool split_after_cells(
+        size_t v1,
+        size_t v2,
+        size_t v_new,
+        const std::vector<Tuple>& children) override;
+    bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
+
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
         const std::vector<size_t>& tids,
@@ -210,46 +219,13 @@ protected:
 private:
     ////// Operations
 
-    struct SplitInfoCache
+    struct SplitTagCache
     {
-        //        VertexAttributes vertex_info;
-        size_t v_new;
-        size_t v1_id;
-        size_t v2_id;
-        bool is_edge_on_surface = false;
-        bool is_edge_open_boundary = false;
-        /// Worst quality among the elements incident to the edge BEFORE the split, so
-        /// split_edge_after can tell "this split created a degenerate element" from "this
-        /// split subdivided a region that was already degenerate".
-        double max_quality_before = 0.;
-
-        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-
-        /**
-         * All tets incident to the splitted edge, identified by the link edge (the edge opposite to
-         * the splitted one).
-         */
+        size_t v_new = 0;
+        /// Parent cell data, keyed by the edge opposite the split edge.
         std::map<simplex::Edge, TetAttributes> tets;
     };
-    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    struct CollapseInfoCache
-    {
-        size_t v1_id;
-        size_t v2_id;
-        double max_energy;
-        double edge_length;
-
-        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 3>> surface_faces;
-        // all edges incident to the deleted vertex(v1) that are on the open boundary
-        std::vector<std::array<size_t, 2>> boundary_edges;
-        std::vector<size_t> changed_tids;
-        std::vector<double> changed_energies;
-    };
-    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
-
+    wmtk::threading::enumerable_thread_specific<SplitTagCache> split_tag_cache;
 
     struct SwapTagCache
     {
@@ -294,22 +270,6 @@ public:
      */
     size_t refine_sizing_around_worst();
 
-
-    /**
-     * @brief Splits in the last pass that fell back to the exact rational midpoint.
-     *
-     * A split is the only operation that can un-round a vertex, so this is exactly how often
-     * the mesh acquired exact coordinates during optimization -- the counterpart of the
-     * "rounded n/m" line, which says how many it still carries. Non-zero on real inputs: on
-     * the challenging-model set it ranges from 1 to 44 per run.
-     */
-    size_t m_exact_split_count = 0;
-
-    /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
-    bool is_force_split_edge(size_t v1, size_t v2) const
-    {
-        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
-    }
 
     /**
      * @brief Find open boundary edges of the embedded surface and initialize a BVH for the open

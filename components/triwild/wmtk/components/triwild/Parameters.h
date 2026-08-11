@@ -71,17 +71,6 @@ struct Parameters : public wmtk::OptimizerParameters
     bool use_sample_envelope = false;
 
     /**
-     * Incident-triangle count above which a vertex is treated as pathological, or 0 to
-     * disable the gate.
-     *
-     * The 2D counterpart of tetwild's gate. Splitting edge (a,b) leaves a's and b's own
-     * counts unchanged and adds one to every vertex in the edge's link, so the gate is
-     * applied to the link, not the endpoints -- but in 2D that link is one or two vertices,
-     * not a whole ring, so the runaway this guards against is far less likely here.
-     */
-    int split_high_valence_threshold = 200;
-
-    /**
      * How many smoothing passes each optimization iteration runs.
      *
      * This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was

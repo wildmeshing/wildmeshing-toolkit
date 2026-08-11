@@ -150,14 +150,6 @@ public:
     void write_vtu_with_energies(const std::string& path) const;
 
 public:
-    void split_all_edges();
-    bool split_edge_before(const Tuple& t) override;
-    bool split_edge_after(const Tuple& loc) override;
-
-    void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
-
     void smooth_all_vertices(const size_t n_iters = 1);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
@@ -178,15 +170,6 @@ public:
      */
     void log_total_surface_energy();
 
-
-    /**
-     * @brief Splits in the last pass that fell back to the exact rational midpoint.
-     *
-     * A split is the only operation that can un-round a vertex, so this is exactly how often
-     * the mesh acquired exact coordinates during optimization -- the counterpart of the
-     * "rounding sweep" line, which says how many were given back.
-     */
-    size_t m_exact_split_count = 0;
 
     double triangle_area(const size_t fid) const;
 
@@ -257,51 +240,18 @@ public:
     void tag_priority(const std::vector<int64_t>& tags_order);
 
 private:
-    ////// Operations
-
-    struct SplitInfoCache
-    {
-        //        VertexAttributes vertex_info;
-        size_t v_new;
-        size_t v1_id;
-        size_t v2_id;
-        /// Worst quality among the elements incident to the edge BEFORE the split, so
-        /// split_edge_after can tell "this split created a degenerate element" from "this
-        /// split subdivided a region that was already degenerate".
-        double max_quality_before = 0.;
-
-        EdgeAttributes old_e_attrs;
-
-        // std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
-        std::map<simplex::Edge, EdgeAttributes> changed_edges;
-
-        /**
-         * All faces incident to the splitted edge, identified by the link vertex (the vertex
-         * opposite to the splitted edge).
-         */
-        std::map<size_t, FaceAttributes> faces;
-    };
-    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    struct CollapseInfoCache
-    {
-        size_t v1_id;
-        size_t v2_id;
-        double max_energy;
-        double edge_length;
-
-        std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 2>> surface_edges;
-        std::vector<size_t> changed_fids;
-        std::vector<double> changed_energies;
-    };
-    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
-
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
     // Set before split_edge(), cleared immediately after.
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
+    size_t m_last_split_vertex = 0;
+
+protected:
+    bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max)
+        const override;
+    void collapse_after_vertex(size_t v1, size_t v2) override;
+    bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
+    void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }
 };
 
 } // namespace wmtk::components::simwild::tri

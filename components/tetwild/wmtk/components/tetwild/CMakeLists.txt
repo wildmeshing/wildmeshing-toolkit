@@ -13,8 +13,6 @@ set(SRC_FILES
 
 	Parameters.h
 
-	EdgeSplitting.cpp
-	EdgeCollapsing.cpp
 
 	DelaunayBoxMesh.cpp
 	VolumemesherInsertion.cpp

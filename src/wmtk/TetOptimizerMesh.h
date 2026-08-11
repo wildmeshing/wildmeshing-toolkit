@@ -133,6 +133,16 @@ public:
     /// Force-splits taken in the current split pass. Diagnostic only.
     size_t m_force_split_count = 0;
 
+    bool is_force_split_edge(const size_t v1, const size_t v2) const
+    {
+        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
+    }
+
+    /// Per-pass claims for the shared high-valence split gate.
+    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
+    size_t m_high_valence_claim_size = 0;
+    std::atomic<size_t> m_high_valence_rejects = 0;
+
     explicit TetOptimizerMesh(OptimizerParameters& params, std::shared_ptr<SampleEnvelope> env)
         : m_params(params)
         , m_envelope(std::move(env))
@@ -147,9 +157,9 @@ public:
      * @brief The quality of cell `tid`, and how to write it.
      *
      * The cell attribute types differ between the applications, so the base reaches the one
- * field it shares through these. Both are AMIPS^3; see MAX_ENERGY. Topological operations and
- * smoothing use the accessors so the shared algorithms remain independent of each application's
- * cell-attribute type.
+     * field it shares through these. Both are AMIPS^3; see MAX_ENERGY. Topological operations
+     * and smoothing use the accessors so the shared algorithms remain independent of each
+     * application's cell-attribute type.
      */
     virtual double cell_quality(const size_t tid) const = 0;
     virtual void set_cell_quality(const size_t tid, const double q) = 0;
@@ -246,6 +256,17 @@ public:
     /// skip-good-regions filter.
     std::vector<size_t> active_vertices() const;
 
+    // TetWild's split engine. SimWild inherits it and customizes only application data,
+    // annotation-only placement, and order-2 metadata through the hooks below.
+    void split_all_edges();
+    bool split_edge_before(const Tuple& t) override;
+    bool split_edge_after(const Tuple& loc) override;
+
+    // TetWild's collapse engine. SimWild customizes only application policy/metadata.
+    void collapse_all_edges(bool is_limit_length = true);
+    bool collapse_edge_before(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
+
     // TetWild's complete swap engine. SimWild inherits these operations and customizes only
     // the tag bookkeeping through the hooks below.
     size_t swap_all_edges_32();
@@ -308,6 +329,35 @@ public:
     bool invariants(const std::vector<Tuple>& t) override;
 
 protected:
+    virtual bool collapse_before_vertex(size_t, size_t, double) const { return true; }
+    virtual bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const
+    {
+        return !m_vertex_attribute.at(v1).m_is_rounded || quality <= ring_max;
+    }
+    virtual bool collapse_is_order_2_edge(const std::array<size_t, 2>&) { return false; }
+    virtual bool collapse_after_connectivity(
+        size_t,
+        size_t,
+        const std::vector<std::array<size_t, 2>>&) { return true; }
+    virtual void collapse_after_vertex(size_t, size_t) {}
+
+    /// Cache application cell data before a split. TetWild needs none; SimWild caches tags.
+    virtual bool split_before_cells(const Tuple&, const std::vector<Tuple>&) { return true; }
+    /// Restore application cell data on the children made by a split.
+    virtual bool split_after_cells(
+        size_t,
+        size_t,
+        size_t,
+        const std::vector<Tuple>&)
+    {
+        return true;
+    }
+    /// Optional annotation-only adjustment of the midpoint. Ordinary optimization returns true
+    /// without changing the shared TetWild position.
+    virtual bool split_adjust_position(size_t, const std::vector<Tuple>&) { return true; }
+    /// Application metadata not represented by the shared vertex attributes.
+    virtual void split_after_vertex(size_t, bool) {}
+
     virtual bool allow_surface_swap() const = 0;
     virtual bool check_surface_topology() const = 0;
 
@@ -335,6 +385,32 @@ protected:
         FaceAttributes sf_face_attr;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
+
+    struct SplitInfoCache
+    {
+        size_t v1_id = 0;
+        size_t v2_id = 0;
+        bool is_edge_on_surface = false;
+        bool is_edge_open_boundary = false;
+        size_t edge_order = 0;
+        double max_quality_before = 0.;
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+    };
+    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
+
+    struct CollapseInfoCache
+    {
+        size_t v1_id = 0;
+        size_t v2_id = 0;
+        double max_energy = 0.;
+        double edge_length = 0.;
+        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        std::vector<std::array<size_t, 3>> surface_faces;
+        std::vector<std::array<size_t, 2>> boundary_edges;
+        std::vector<size_t> changed_tids;
+        std::vector<double> changed_energies;
+    };
+    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 };
 
 } // namespace wmtk

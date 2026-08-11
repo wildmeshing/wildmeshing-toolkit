@@ -121,6 +121,10 @@ public:
      * can get near features.
      */
     bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const;
+    void split_after_vertex(const size_t vid) override
+    {
+        m_vertex_extra[vid].m_feature_id = NO_FEATURE;
+    }
 
     /**
      * @brief {feature points still represented within eps, total feature points}.
@@ -213,46 +217,11 @@ public:
      */
     size_t refine_sizing_around_worst(double max_energy);
 
-    /// The longest edge of each current worst triangle. split_all_edges force-splits
-    /// exactly these edges (bypassing the length gate), so a stuck sliver's long edge is
-    /// split immediately without changing the sizing field. Populated serially by
-    /// refine_sizing_around_worst; read-only during the parallel split pass, then cleared
-    /// once split_all_edges has consumed it.
-    std::set<simplex::Edge> m_force_split_edges;
-
-    /// Count of force-splits taken in the current split pass (atomic_ref from the parallel
-    /// split; reset + logged by split_all_edges). Diagnostic only.
-    size_t m_force_split_count = 0;
-
-    /// Per-pass claim for the high-valence split gate: one slot per vertex, reset at the
-    /// start of every split pass. A high-valence vertex accepts the first valence-increasing
-    /// split of the pass and refuses the rest, so refinement spreads instead of piling onto
-    /// the same vertex. Atomic because splits run in parallel; a plain array of unique_ptr
-    /// rather than a vector because std::atomic is not movable.
-    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
-    size_t m_high_valence_claim_size = 0;
-    /// Splits refused by that gate in the current pass, reported once per pass.
-    std::atomic<size_t> m_high_valence_rejects = 0;
-
-    /// True iff edge (v1,v2) is a worst triangle's longest edge queued for force-split.
-    bool is_force_split_edge(size_t v1, size_t v2) const
-    {
-        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
-    }
-
     void write_msh_groups(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path) const;
 
 public:
-    void split_all_edges();
-    bool split_edge_before(const Tuple& t) override;
-    bool split_edge_after(const Tuple& loc) override;
-
-    void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
-
     void smooth_all_vertices(const size_t n_iters = 1);
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
@@ -298,46 +267,30 @@ public:
 
     int flood_fill();
 
-private:
-    ////// Operations
-
-    struct SplitInfoCache
+protected:
+    void collapse_pass_begin() override { m_feature_rejects = 0; }
+    void collapse_pass_end(size_t) override
     {
-        //        VertexAttributes vertex_info;
-        size_t v1_id;
-        size_t v2_id;
-        /// Worst quality among the elements incident to the edge BEFORE the split, so
-        /// split_edge_after can tell "this split created a degenerate element" from "this
-        /// split subdivided a region that was already degenerate".
-        double max_quality_before = 0.;
-
-        EdgeAttributes old_e_attrs;
-
-        // std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
-        std::map<simplex::Edge, EdgeAttributes> changed_edges;
-
-        /**
-         * All faces incident to the splitted edge, identified by the link vertex (the vertex
-         * opposite to the splitted edge).
-         */
-        std::map<size_t, FaceAttributes> faces;
-    };
-    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    struct CollapseInfoCache
+        if (const size_t n = m_feature_rejects.load(); n > 0) {
+            logger().info(
+                "[feature] {} collapses refused to keep a polyline endpoint or junction "
+                "within {:.6} of its input position",
+                n,
+                m_envelope_eps);
+        }
+    }
+    bool collapse_before_vertex(size_t v1, size_t v2) override
     {
-        size_t v1_id;
-        size_t v2_id;
-        double max_energy;
-        double edge_length;
-
-        std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 2>> surface_edges;
-        std::vector<size_t> changed_fids;
-        std::vector<double> changed_energies;
-    };
-    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+        if (!collapse_breaks_feature(v1, v2)) return true;
+        m_feature_rejects.fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+    void collapse_after_vertex(size_t v1, size_t v2) override
+    {
+        if (m_vertex_extra[v2].m_feature_id == NO_FEATURE) {
+            m_vertex_extra[v2].m_feature_id = m_vertex_extra[v1].m_feature_id;
+        }
+    }
 
 };
 

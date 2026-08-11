@@ -1,5 +1,5 @@
 #include <limits>
-#include "TetWildMesh.h"
+#include <wmtk/TetOptimizerMesh.h>
 
 #include <igl/Timer.h>
 #include <wmtk/utils/ExecutorUtils.hpp>
@@ -8,9 +8,9 @@
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
 
-namespace wmtk::components::tetwild {
+namespace wmtk {
 
-void TetWildMesh::split_all_edges()
+void TetOptimizerMesh::split_all_edges()
 {
     igl::Timer timer;
     double time;
@@ -20,7 +20,7 @@ void TetWildMesh::split_all_edges()
     // is preallocated per phase, so any vertex a split creates during this pass already
     // has an id below it (same invariant run_localized_to_convergence relies on for
     // vertex_epoch). make_unique value-initialises, so every slot starts at 0.
-    if (m_tet_params.split_high_valence_threshold > 0) {
+    if (m_params.split_high_valence_threshold > 0) {
         // Size to the preallocated capacity, not vert_capacity(). vert_capacity() returns
         // current_vert_size -- the live vertex count -- so every vertex a split creates during
         // this pass gets an id at or above it, trips the `vid >= m_high_valence_claim_size`
@@ -38,7 +38,7 @@ void TetWildMesh::split_all_edges()
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
-        [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
+        [](TetOptimizerMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     wmtk::run_pass(
@@ -83,13 +83,13 @@ void TetWildMesh::split_all_edges()
         wmtk::logger().info(
             "[high-valence] {} splits refused to avoid growing a vertex past {} incident tets",
             n,
-            m_tet_params.split_high_valence_threshold);
+            m_params.split_high_valence_threshold);
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
 }
 
-bool TetWildMesh::split_edge_before(const Tuple& loc0)
+bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
 {
     auto& cache = split_cache.local();
 
@@ -105,7 +105,7 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
     cache.max_quality_before = 0.;
     for (const size_t tid : get_incident_tids_for_edge(loc0)) {
         cache.max_quality_before =
-            std::max(cache.max_quality_before, m_tet_attribute[tid].m_quality);
+            std::max(cache.max_quality_before, cell_quality(tid));
     }
 
     cache.is_edge_on_surface = is_edge_on_surface(loc0);
@@ -139,8 +139,8 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
     // A vertex past the threshold accepts one such split per pass and refuses the rest,
     // which spreads the refinement instead of letting it pile onto the same vertex. Done
     // here, before the face caching below, so a refusal is cheap.
-    if (m_tet_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
-        const size_t threshold = static_cast<size_t>(m_tet_params.split_high_valence_threshold);
+    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
         std::vector<size_t> to_claim;
         for (const Tuple& t : tets) {
             const auto vs = oriented_tet_vertices(t);
@@ -178,12 +178,12 @@ bool TetWildMesh::split_edge_before(const Tuple& loc0)
                 std::make_pair(m_face_attribute[global_fid], f_vids));
         }
     }
-    wmtk::vector_unique(split_cache.local().changed_faces, comp, is_equal);
+    wmtk::vector_unique(cache.changed_faces, comp, is_equal);
 
-    return true;
+    return split_before_cells(loc0, tets);
 }
 
-bool TetWildMesh::split_edge_after(const Tuple& loc)
+bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
 { // input: locs pointing to a list of tets and v_id
     if (!TetMesh::split_edge_after(
             loc)) // note: call from super class, cannot be done with pure virtual classes
@@ -256,6 +256,9 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         m_all_rounded.store(false, std::memory_order_relaxed);
     }
 
+    if (!split_adjust_position(v_id, locs)) return false;
+    if (!split_after_cells(v1_id, v2_id, v_id, locs)) return false;
+
     /// update quality
     //
     // A split checks orientation, rounding and (above) the envelope, but never quality. That is
@@ -278,7 +281,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
         return false;
     }
     for (const Tuple& loc : locs) {
-        m_tet_attribute[loc.tid(*this)].m_quality = get_quality(loc);
+        set_cell_quality(loc.tid(*this), get_quality(loc));
     }
 
     /// containment: the new surface triangles must stay inside the envelope
@@ -334,8 +337,7 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
     m_vertex_attribute[v_id].m_order = cache.edge_order;
 
-    // open boundary
-    m_vertex_extra[v_id].m_is_on_open_boundary = cache.is_edge_open_boundary;
+    split_after_vertex(v_id, cache.is_edge_open_boundary);
 
     /// update face attribute
     // add new and erase old
@@ -386,4 +388,4 @@ bool TetWildMesh::split_edge_after(const Tuple& loc)
     return true;
 }
 
-} // namespace wmtk::components::tetwild
+} // namespace wmtk
