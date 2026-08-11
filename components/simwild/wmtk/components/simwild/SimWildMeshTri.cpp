@@ -867,10 +867,10 @@ void SimWildMeshTri::split_all_edges()
     double time;
     m_exact_split_count = 0;
     timer.start();
-    auto collect_all_ops = std::vector<std::pair<std::string, Tuple>>();
-    for (const Tuple& loc : get_edges()) {
-        collect_all_ops.emplace_back("edge_split", loc);
-    }
+    auto collect_all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](SimWildMeshTri&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     wmtk::run_pass(
@@ -1160,14 +1160,16 @@ void SimWildMeshTri::collapse_all_edges(bool is_limit_length)
 {
     m_collapse_limit_length = is_limit_length;
 
-    // Built once, up front. The retry driver re-queues what the mesh actually changed, so
-    // there is nothing left for the old rebuild-from-get_edges()-every-round loop to do.
-    // Filtering of too-long edges still happens in is_weight_up_to_date.
-    std::vector<std::pair<std::string, Tuple>> all_ops;
-    for (const Tuple& loc : get_edges()) {
-        all_ops.emplace_back("edge_collapse", loc);
-        all_ops.emplace_back("edge_collapse", loc.switch_vertex(*this));
-    }
+    // Built once, up front (both edge directions). The retry driver re-queues what the mesh
+    // actually changed, so there is nothing left for the old rebuild-from-get_edges()-every-round
+    // loop to do. Filtering of too-long edges still happens in is_weight_up_to_date.
+    auto all_ops = wmtk::parallel_collect_edge_ops(
+        *this,
+        NUM_THREADS,
+        [](SimWildMeshTri& m, const Tuple& e, auto& out) {
+            out.emplace_back("edge_collapse", e);
+            out.emplace_back("edge_collapse", e.switch_vertex(m));
+        });
     logger().info("#E = {}", all_ops.size() / 2);
 
     wmtk::run_pass(

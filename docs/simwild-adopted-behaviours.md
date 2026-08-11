@@ -350,3 +350,22 @@ iteration 5 where it used to reach 695 -- and the collapse pass then pulls it ba
 before, to 378. The optimizer takes a different trajectory rather than a uniformly finer or coarser
 one. Collapse itself is unchanged in aggregate: the first call's rounds used to sum to ~316
 successes and the shared driver now reports 313.
+
+---
+
+## Post-3c — simwild adopts `parallel_collect_edge_ops`
+
+The last collection-side difference. simwild built three op lists with a serial
+`for (const Tuple& e : get_edges())` -- 3D split, 2D split, 2D collapse -- where tetwild and triwild
+use the shared parallel builder. Held back from the localized-retry change because it alters the
+queue's *insertion* order, which is what breaks ties between equal-priority operations, and mixing
+the two would have made neither before/after attributable.
+
+**Measured: nothing moved.** All 53 registered configs are byte-identical, simwild's four included
+-- the same four that moved for the retry adoption. The tie-breaking concern is real in principle
+and did not materialize on any config in the suite.
+
+That leaves simwild's op collection identical to its sibling's everywhere except `swap_all_faces`,
+which is still `parallel_collect_edge_ops` where tetwild uses `parallel_collect_face_ops` -- that
+one is a defect rather than a style difference (6 edge tuples per tet instead of 4 faces) and is
+recorded above with the rest of the swap family.
