@@ -1,6 +1,7 @@
 #pragma once
 
 #include <igl/Timer.h>
+#include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <polysolve/nonlinear/Problem.hpp>
@@ -71,37 +72,7 @@ public:
 //     bool m_is_on_open_boundary = false;
 // };
 
-class FaceAttributes
-{
-public:
-    /**
-     * Is this face a part of the surface.
-     */
-    bool m_is_surface_fs = false;
-
-    /**
-     * Keep track which bbox side the face is on
-     * -1: none
-     * 0/1: x min/max
-     * 2/3: y min/max
-     * 4/5: z min/max
-     *
-     * This bbox side ID is used to keep the bbox from collapsing.
-     */
-    int m_is_bbox_fs = -1; //-1; 0~5
-
-    void reset()
-    {
-        m_is_surface_fs = false;
-        m_is_bbox_fs = -1;
-    }
-
-    void merge(const FaceAttributes& attr)
-    {
-        m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
-        if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
-    }
-};
+using FaceAttributes = wmtk::SurfaceTagAttributes;
 
 class TetAttributes
 {

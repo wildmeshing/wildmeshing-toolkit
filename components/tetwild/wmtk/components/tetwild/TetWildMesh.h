@@ -1,6 +1,7 @@
 #pragma once
 
 #include <igl/Timer.h>
+#include <wmtk/SurfaceTagAttributes.h>
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/PartitionMesh.h>
 #include <algorithm>
@@ -66,25 +67,7 @@ public:
 //     bool m_is_on_open_boundary = false;
 // };
 
-// TODO: missing comments on what these attributes are
-class FaceAttributes
-{
-public:
-    bool m_is_surface_fs = false; // 0; 1
-    int m_is_bbox_fs = -1; //-1; 0~5
-
-    void reset()
-    {
-        m_is_surface_fs = false;
-        m_is_bbox_fs = -1;
-    }
-
-    void merge(const FaceAttributes& attr)
-    {
-        m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
-        if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
-    }
-};
+using FaceAttributes = wmtk::SurfaceTagAttributes;
 
 // TODO: missing comments on what these attributes are
 class TetAttributes

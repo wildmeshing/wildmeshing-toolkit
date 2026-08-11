@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/SurfaceTagAttributes.h>
 #include <cstdlib>
 
 #include <wmtk/utils/PartitionMesh.h>
@@ -66,34 +67,7 @@ public:
     VertexAttributes(const Vector2r& p);
 };
 
-class EdgeAttributes
-{
-public:
-    double tag; // TODO: is this used?
-
-    bool m_is_surface_fs = false; // 0; 1
-    /**
-     * Keep track which bbox side the face is on
-     * -1: none
-     * 0/1: x min/max
-     * 2/3: y min/max
-     *
-     * This bbox side ID is used to keep the bbox from collapsing.
-     */
-    int m_is_bbox_fs = -1; //-1; 0~3
-
-    void reset()
-    {
-        m_is_surface_fs = false;
-        m_is_bbox_fs = -1;
-    }
-
-    void merge(const EdgeAttributes& attr)
-    {
-        m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
-        if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
-    }
-};
+using EdgeAttributes = wmtk::SurfaceTagAttributes;
 
 class FaceAttributes
 {
