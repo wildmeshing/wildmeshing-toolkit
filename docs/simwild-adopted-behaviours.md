@@ -186,3 +186,41 @@ that construct `Parameters` directly either set these explicitly or are insensit
 `run_2D` was already correct: on a `TriMesh` the faces *are* the cells.
 
 Note for future baselines: simwild 3D `#t` values recorded before this change are face counts.
+
+---
+
+## Stage 3a — simwild-2D adopts `wmtk::TriOptimizerMesh`
+
+`SimWildMeshTri` now derives from the shared 2D base rather than from `wmtk::TriMesh`, and its
+copies of the three attribute types, the shared members and 13 methods are deleted in favour of
+the base's.
+
+**No simwild output moved, and no behaviour was adopted.** This is the rare case where the policy
+("when the two disagree, tetwild/triwild wins") had nothing to decide, because the two copies did
+not disagree anywhere. Every difference between simwild-2D's implementation and triwild's was
+cosmetic, and each was checked individually before the copy was deleted:
+
+| function | the only difference |
+|---|---|
+| `is_inverted(array)` | `const auto res` vs `auto res`; `return !(res > 0)` vs an `if/else`; triwild carries a stale comment about `orient3d` that simwild had dropped (dropped here too) |
+| `is_inverted(Tuple)`, `is_inverted(size_t)` | simwild inlines the `oriented_tri_vids` temporary |
+| `get_quality(Tuple)`, `get_quality(size_t)` | same inlining |
+| `get_quality(array)` | none — identical |
+| `is_inverted_f` | simwild has only the `size_t` overload; the bodies match. It now also inherits the `Tuple` one |
+| `round` | `m_pos << posf[0], posf[1]` vs `to_rational(m_posf)`, which are the same value; both set `m_is_rounded` before the one-ring check. simwild's comment explaining why was the better one and was kept |
+| `get_length2` | `get_edge_vids` vs `switch_vertex`, same two vertices |
+| `partition_mesh` | `auto i` vs `size_t i` as the loop variable (simwild's compares signed to unsigned) |
+| `round_all_vertices`, `get_max_avg_energy`, `gradation_smooth_sizing`, `get_edges_by_condition`, `is_edge_on_surface` x2, `is_edge_on_bbox` x2, `vertex_is_on_surface`, `edge_is_on_surface` | none — identical after normalisation |
+
+The attribute types matched too: `CellTag` is a `std::set<int64_t>`, so `FaceAttributes` was already
+character-identical, and `VertexAttributes` differed only by triwild's `m_feature_id`, which
+simwild-2D leaves at `NO_FEATURE`.
+
+**Measured:** all 53 registered configs byte-identical against the run immediately after the move
+commit — every simwild config included — plus ctest 107/107. `tetwild_crown` and `tetwild_octocat`
+run 10 threads and are nondeterministic there, so they were compared separately at `num_threads: 0`
+against a build of the pre-refactor commit: byte-identical.
+
+One thing to watch later: `SimWildMeshTri` keeps its own `round_and_check_all_rounded`,
+`m_exact_split_count` and `triangle_area`, none of which triwild has. The first two are the
+subject of Stage 4's `RationalPositions` mixin.

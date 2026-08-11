@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/TriOptimizerMesh.h>
+
 #include <wmtk/SurfaceTagAttributes.h>
 #include <limits>
 #include <unordered_set>
@@ -28,100 +30,37 @@
 
 namespace wmtk::components::simwild::tri {
 
-struct VertexAttributes
-{
-    Vector2d m_posf; // position as double
-    Vector2r m_pos; // exact position in rational
-    /**
-     * If a vertex cannot be rounded without inverting an incident face, the exact position
-     * must be used. Once the vertex can be rounded to double precision, the rational
-     * representation is obsolete.
-     */
-    bool m_is_rounded = false;
+/// The attribute types live on the shared base; keep the unqualified names working. The
+/// simwild copies were identical to triwild's apart from `m_feature_id`, which simwild leaves
+/// at NO_FEATURE (it has no 0-dimensional features), and spelling `CellTag` for what is the
+/// same `std::set<int64_t>`.
+using VertexAttributes = wmtk::TriOptimizerMesh::VertexAttributes;
+using EdgeAttributes = wmtk::TriOptimizerMesh::EdgeAttributes;
+using FaceAttributes = wmtk::TriOptimizerMesh::FaceAttributes;
 
-    bool m_is_on_surface = false;
-    std::vector<int> on_bbox_faces;
-
-    double m_sizing_scalar = 1;
-
-    size_t partition_id = 0;
-
-    VertexAttributes() {}
-    VertexAttributes(const Vector2d& p)
-        : m_posf(p)
-        , m_pos(to_rational(p))
-        , m_is_rounded(true)
-    {}
-    VertexAttributes(const Vector2r& p)
-        : m_posf(to_double(p))
-        , m_pos(p)
-    {}
-};
-
-using EdgeAttributes = wmtk::SurfaceTagAttributes;
-
-class FaceAttributes
-{
-public:
-    double m_quality;
-    double m_winding_number = 0;
-    CellTag tags;
-    int part_id = -1;
-};
-
-class SimWildMeshTri : public wmtk::TriMesh
+class SimWildMeshTri : public wmtk::TriOptimizerMesh
 {
 public:
     using ExprPtr = expression_parser::ExpressionPtr;
 
-    int m_debug_print_counter = 0;
-    size_t m_tags_count = 0;
-    std::map<int64_t, std::string> m_tag_id_to_name;
-    std::map<std::string, int64_t> m_tag_name_to_id;
+    /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
+    /// simwild-only fields (tags, the operation name, the raw input box).
+    Parameters& m_sim_params;
 
-    /**
-     * @brief The sentinel get_quality returns for a face AMIPS2D cannot score.
-     *
-     * Not an energy: a positively oriented triangle whose area is too small for AMIPS, or one
-     * that produces inf/nan, gets this instead. Unlike the 3D mesh this stores AMIPS2D
-     * directly, so it surfaces in the logs verbatim as 1e+50.
-     *
-     * 1e50 rather than double::max, matching tetwild and triwild -- see SimWildMesh::MAX_ENERGY
-     * for why the arithmetic headroom matters.
-     */
-    const double MAX_ENERGY = 1e50;
-
-    Parameters& m_params;
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
-    std::shared_ptr<SampleEnvelope> m_envelope;
     std::shared_ptr<SampleEnvelope> m_envelope_orig;
-    double m_envelope_eps = -1;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
-
-    using VertAttCol = AttributeCollection<VertexAttributes>;
-    using EdgeAttCol = AttributeCollection<EdgeAttributes>;
-    using FaceAttCol = AttributeCollection<FaceAttributes>;
-    VertAttCol m_vertex_attribute;
-    EdgeAttCol m_edge_attribute;
-    FaceAttCol m_face_attribute;
 
     bool m_collapse_check_link_condition = false; // classical link condition
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
-    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
-        m_solver;
-
-    /// Why smoothing attempts were refused, reported once per pass.
-    optimization::SmoothRejectCounters m_smooth_rejects;
-
     /// Hooks for the shared 2D smoothing driver.
     Vector2d smoothing_position(const size_t vid) const;
     void set_smoothing_position(const size_t vid, const Vector2d& p);
-    bool is_inverted_f(const size_t fid) const;
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
 
@@ -129,28 +68,17 @@ public:
     /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
     bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
 
-    // scaling factors
-    double m_s_amips = -1;
-    double m_s_envelope = -1;
-
     SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
-        : m_params(_m_params)
-        , m_envelope_eps(envelope_eps)
+        : wmtk::TriOptimizerMesh(_m_params)
+        , m_sim_params(_m_params)
     {
+        m_envelope_eps = envelope_eps;
         NUM_THREADS = _num_threads;
         p_vertex_attrs = &m_vertex_attribute;
         p_edge_attrs = &m_edge_attribute;
         p_face_attrs = &m_face_attribute;
 
         optimization::deactivate_opt_logger();
-
-        m_s_amips = 1.;
-        /**
-         * eps makes it such that the energy is relative to the envelope thickness. As it's a
-         * squared energy, we need eps^2.
-         */
-        m_s_envelope = 1. / (m_params.eps * m_params.eps);
-
 
         double& wa = m_params.w_amips;
         double& we = m_params.w_envelope;
@@ -159,20 +87,6 @@ public:
     }
 
     ~SimWildMeshTri() {}
-
-    // TODO: this should not be here
-    void partition_mesh();
-
-    // TODO: morton should not be here, but inside wmtk
-    void partition_mesh_morton();
-
-    size_t get_partition_id(const Tuple& loc) const
-    {
-        return m_vertex_attribute[loc.vid(*this)].partition_id;
-    }
-
-    double get_length2(const Tuple& l) const;
-
 
 public:
     /**
@@ -233,24 +147,10 @@ public:
      */
     size_t refine_sizing_around_worst();
 
-    /**
-     * @brief Monotone (only-decreasing) gradation smoothing of the sizing field.
-     *
-     * Enforces m_sizing_scalar[v] <= grade * m_sizing_scalar[u] for every edge
-     * (u,v), propagating outward from `seeds` with a min-relaxation. It never
-     * raises a sizing value, so it only ever spreads more refinement into the
-     * halo around already-refined vertices, avoiding sharp resolution jumps.
-     */
-    void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
-
-
     void write_msh(std::string file, const bool write_envelope = true);
 
     void write_vtu(const std::string& path) const;
     void write_vtu_with_energies(const std::string& path) const;
-
-    std::vector<std::array<size_t, 2>> get_edges_by_condition(
-        std::function<bool(const EdgeAttributes&)> cond) const;
 
 public:
     void split_all_edges();
@@ -290,41 +190,6 @@ public:
      * For debugging purposes.
      */
     void log_total_surface_energy();
-    //
-    /**
-     * @brief Orientation check, exact for the coordinates the vertices actually carry.
-     *
-     * Takes the floating path when all three vertices are rounded -- igl::predicates::orient2d
-     * is exact for the doubles it is handed -- and the Rational cross product otherwise. The
-     * rational branch exists because for an un-rounded vertex the double is the wrong number,
-     * not because orient2d is imprecise.
-     */
-    bool is_inverted(const std::array<size_t, 3>& vs) const;
-    bool is_inverted(const Tuple& loc) const;
-    bool is_inverted(const size_t fid) const;
-    double get_quality(const std::array<size_t, 3>& vs) const;
-    double get_quality(const Tuple& loc) const;
-    double get_quality(const size_t fid) const;
-
-    /**
-     * @brief Round a vertex position to floating point.
-     *
-     * Only rounds the vertex position if it does not invert an incident face.
-     *
-     * @return True if successful or already rounded, false otherwise.
-     */
-    bool round(const Tuple& v);
-
-    /**
-     * @brief Try to round every un-rounded vertex; returns the number reclaimed.
-     *
-     * round() is otherwise only attempted as a side effect of another operation, and that
-     * never reaches a vertex which only becomes roundable later. Without a sweep such a vertex
-     * keeps exact coordinates into the output for no geometric reason.
-     *
-     * Skipped outright when m_all_rounded says there is nothing to do.
-     */
-    size_t round_all_vertices();
 
     /**
      * @brief Run the rounding sweep, then report whether the mesh is now fully rounded.
@@ -334,15 +199,6 @@ public:
      * vertex, so the loop only has to outlast the sweep. See SimWildMesh's counterpart.
      */
     bool round_and_check_all_rounded();
-
-    /**
-     * @brief True when every vertex is known to be rounded.
-     *
-     * Only trusted when true, and only round_all_vertices() sets it that way. Any code that
-     * leaves a vertex un-rounded must clear it, or the sweep will skip the vertex forever.
-     * Atomic because operations that clear it run in parallel.
-     */
-    std::atomic<bool> m_all_rounded = false;
 
     /**
      * @brief Splits in the last pass that fell back to the exact rational midpoint.
@@ -355,15 +211,8 @@ public:
 
     double triangle_area(const size_t fid) const;
 
-    //
-    bool is_edge_on_surface(const Tuple& loc) const;
-    bool is_edge_on_surface(const std::array<size_t, 2>& vids) const;
-    bool is_edge_on_bbox(const Tuple& loc) const;
-    bool is_edge_on_bbox(const std::array<size_t, 2>& vids) const;
-    //
     void mesh_improvement(int max_its = 80);
     double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
-    std::tuple<double, double> get_max_avg_energy();
 
     /**
      * @brief Find all connected components that contain the `tag_in` tags.
@@ -428,23 +277,6 @@ public:
 
     void tag_priority(const std::vector<int64_t>& tags_order);
 
-    bool vertex_is_on_surface(const size_t vid) const override
-    {
-        return m_vertex_attribute.at(vid).m_is_on_surface ||
-               !m_vertex_attribute.at(vid).on_bbox_faces.empty();
-    }
-    bool edge_is_on_surface(const std::array<size_t, 2>& vids) const override
-    {
-        if (!vertex_is_on_surface(vids[0]) || !vertex_is_on_surface(vids[1])) {
-            return false;
-        }
-
-        const auto [_, eid] = tuple_from_edge(vids);
-        bool on_surface = m_edge_attribute.at(eid).m_is_surface_fs;
-        bool on_bbox = m_edge_attribute.at(eid).m_is_bbox_fs >= 0;
-        return on_surface || on_bbox;
-    }
-
 private:
     ////// Operations
 
@@ -471,10 +303,6 @@ private:
         std::map<size_t, FaceAttributes> faces;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    /// Whether the current collapse pass applies the target-length limit; read by
-    /// collapse_edge_before, which is where that limit is now enforced.
-    bool m_collapse_limit_length = true;
 
     struct CollapseInfoCache
     {
