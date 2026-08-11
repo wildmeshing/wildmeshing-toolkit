@@ -1,5 +1,5 @@
-#include <wmtk/TetOptimizerMesh.h>
 #include <wmtk/TetMesh.h>
+#include <wmtk/TetOptimizerMesh.h>
 
 #include <igl/Timer.h>
 #include <wmtk/utils/ExecutorUtils.hpp>
@@ -153,7 +153,9 @@ bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
     return true;
 }
 
-bool TetOptimizerMesh::prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets)
+bool TetOptimizerMesh::prepare_surface_flip(
+    const Tuple& t,
+    const std::vector<size_t>& incident_tets)
 {
     auto& cache = swap_cache.local();
     cache.is_surface_flip = false;
@@ -539,8 +541,7 @@ size_t TetOptimizerMesh::swap_all_edges_44()
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
             total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
-    if (check_surface_topology())
-        warn_if_surface_topology_changed(sig_before, "swap_all_edges_44");
+    if (check_surface_topology()) warn_if_surface_topology_changed(sig_before, "swap_all_edges_44");
     return total_success;
 }
 
@@ -667,8 +668,7 @@ size_t TetOptimizerMesh::swap_all_edges_56()
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
             total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
-    if (check_surface_topology())
-        warn_if_surface_topology_changed(sig_before, "swap_all_edges_56");
+    if (check_surface_topology()) warn_if_surface_topology_changed(sig_before, "swap_all_edges_56");
     return total_success;
 }
 

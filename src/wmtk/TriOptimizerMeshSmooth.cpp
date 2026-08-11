@@ -4,8 +4,8 @@
 #include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
 
-#include <fmt/format.h>
 #include <igl/Timer.h>
+#include <spdlog/fmt/bundled/format.h>
 
 namespace wmtk {
 

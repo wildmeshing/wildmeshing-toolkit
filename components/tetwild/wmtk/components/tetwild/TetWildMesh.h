@@ -107,8 +107,8 @@ public:
         size_t v2,
         const std::vector<std::array<size_t, 2>>&) override
     {
-        m_vertex_extra[v2].m_is_on_open_boundary = m_vertex_extra[v1].m_is_on_open_boundary ||
-                                                   m_vertex_extra[v2].m_is_on_open_boundary;
+        m_vertex_extra[v2].m_is_on_open_boundary =
+            m_vertex_extra[v1].m_is_on_open_boundary || m_vertex_extra[v2].m_is_on_open_boundary;
         return true;
     }
     void collapse_after_vertex(size_t, size_t v2) override

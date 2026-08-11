@@ -59,7 +59,10 @@ public:
 
     /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
     /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override { return true; }
+    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
+    {
+        return true;
+    }
 
     SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
@@ -240,8 +243,7 @@ protected:
 
     void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }
 
-    bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max)
-        const override;
+    bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
     void collapse_after_vertex(size_t v1, size_t v2) override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }

@@ -1,5 +1,5 @@
-#include <limits>
 #include <wmtk/TetOptimizerMesh.h>
+#include <limits>
 
 #include <igl/Timer.h>
 #include <wmtk/utils/ExecutorUtils.hpp>
@@ -104,8 +104,7 @@ bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
 
     cache.max_quality_before = 0.;
     for (const size_t tid : get_incident_tids_for_edge(loc0)) {
-        cache.max_quality_before =
-            std::max(cache.max_quality_before, cell_quality(tid));
+        cache.max_quality_before = std::max(cache.max_quality_before, cell_quality(tid));
     }
 
     cache.is_edge_on_surface = is_edge_on_surface(loc0);

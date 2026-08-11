@@ -198,11 +198,8 @@ protected:
     void collapse_after_vertex(size_t v1, size_t v2) override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
-    bool split_after_cells(
-        size_t v1,
-        size_t v2,
-        size_t v_new,
-        const std::vector<Tuple>& children) override;
+    bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
+        override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
 
     bool swap_before_interior(const std::vector<size_t>& tids) override;

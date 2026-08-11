@@ -42,9 +42,7 @@ bool SimWildMesh::swap_before_surface(
     return true;
 }
 
-bool SimWildMesh::swap_after_cells(
-    const std::vector<size_t>& tids,
-    const bool is_surface_flip)
+bool SimWildMesh::swap_after_cells(const std::vector<size_t>& tids, const bool is_surface_flip)
 {
     const auto& cache = swap_tag_cache.local();
     if (!is_surface_flip) {

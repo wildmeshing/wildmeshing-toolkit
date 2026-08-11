@@ -47,9 +47,7 @@ bool SimWildMesh::split_after_cells(
     return children1.size() + children2.size() == children.size();
 }
 
-bool SimWildMesh::split_adjust_position(
-    const size_t v_new,
-    const std::vector<Tuple>& children)
+bool SimWildMesh::split_adjust_position(const size_t v_new, const std::vector<Tuple>& children)
 {
     if (!m_voronoi_split_fn || !m_vertex_attribute[v_new].m_is_rounded) return true;
 

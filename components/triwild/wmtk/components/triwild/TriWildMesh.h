@@ -253,7 +253,6 @@ protected:
             m_vertex_extra[v2].m_feature_id = m_vertex_extra[v1].m_feature_id;
         }
     }
-
 };
 
 

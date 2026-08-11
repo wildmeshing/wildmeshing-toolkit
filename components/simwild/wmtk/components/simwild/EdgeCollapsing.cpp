@@ -114,10 +114,7 @@ void SimWildMesh::simplify()
     const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
     MatrixXi F(surf_faces.size(), 3);
     for (size_t i = 0; i < surf_faces.size(); ++i) {
-        F.row(i) = Vector3i(
-            int(surf_faces[i][0]),
-            int(surf_faces[i][1]),
-            int(surf_faces[i][2]));
+        F.row(i) = Vector3i(int(surf_faces[i][0]), int(surf_faces[i][1]), int(surf_faces[i][2]));
     }
 
     const bool use_exact = m_envelope->use_exact;

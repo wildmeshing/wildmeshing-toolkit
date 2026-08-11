@@ -878,9 +878,7 @@ void SimWildMeshTri::write_vtu_with_energies(const std::string& path) const
     }
 }
 
-bool SimWildMeshTri::split_adjust_position(
-    const size_t v_new,
-    const std::vector<Tuple>& children)
+bool SimWildMeshTri::split_adjust_position(const size_t v_new, const std::vector<Tuple>& children)
 {
     if (!m_voronoi_split_fn || !m_vertex_attribute[v_new].m_is_rounded) return true;
 
@@ -926,8 +924,8 @@ bool SimWildMeshTri::collapse_quality_allowed(
     double quality,
     double ring_max) const
 {
-    return !m_vertex_attribute.at(v1).m_is_rounded ||
-           quality <= target_quality(fid) || quality <= ring_max;
+    return !m_vertex_attribute.at(v1).m_is_rounded || quality <= target_quality(fid) ||
+           quality <= ring_max;
 }
 
 void SimWildMeshTri::collapse_after_vertex(size_t, size_t v2)
