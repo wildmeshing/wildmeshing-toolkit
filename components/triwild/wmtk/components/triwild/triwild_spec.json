@@ -28,6 +28,7 @@
       "interleaved_smoothing_passes",
       "preserve_topology",
       "preserve_feature_points",
+      "allow_junction_cleanup",
       "remove_duplicate_eps",
       "throw_on_fail",
       "log_file",
@@ -237,6 +238,12 @@
     "type": "bool",
     "default": true,
     "doc": "Keep the curve network's 0-dimensional features -- the endpoints of open polylines, and junctions -- within eps of where the arrangement placed them. Each such vertex is bound to a specific feature point, so a collapse is refused when it would leave that point unrepresented or move it further than eps, and smoothing may move the vertex anywhere inside that ball but no further. Without this the collapse pass deletes open polylines outright: a polyline erodes into its own tip until a single segment is left, and that segment carries a feature at BOTH ends, which the surface order test does not refuse (it only forbids collapsing a feature into a non-feature). Measured on the 2D dataset, model 215292 went from 28 open components after the arrangement to 0 in the output. Turn off only to reproduce the old behaviour."
+  },
+  {
+    "pointer": "/allow_junction_cleanup",
+    "type": "bool",
+    "default": true,
+    "doc": "Let the operations clean up junctions, anchoring only the endpoints of open polylines. The erosion the endpoint guard exists for is a property of ENDPOINTS -- a polyline eats its own tip -- and does not apply to a junction (valence >= 3 in the constrained edges), because every curve through a junction remains a constrained edge and the envelope still holds it within eps. Anchoring junctions buys little and costs a great deal on a self-intersecting input, where nearly every arrangement vertex is a crossing: on model 242427, 79615 of 87610 vertices are junctions, so almost every edge joins two of them and collapse -- the only operation that removes a bad element outright -- is refused across the whole mesh. That model never leaves MAX_ENERGY, sitting at 1e50 for the entire run while the sizing field saturates and the split pass grows it from 13k to 621k vertices. With junctions free it converges to max energy 10.48, fully rounded, in 12 iterations, and the two models the endpoint guard was introduced for (215292, 134005) are bit-identical either way. Ignored when preserve_feature_points is off."
   },
   {
     "pointer": "/preserve_topology",
