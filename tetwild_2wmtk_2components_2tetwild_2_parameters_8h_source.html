@@ -105,56 +105,38 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <span class="comment">// across each swap pass. Off by default (used by tests / debugging).</span></div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>    <span class="keywordtype">bool</span> check_surface_topology = <span class="keyword">false</span>;</div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">   42</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">split_high_valence_threshold</a> = 200;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">   52</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">num_smoothing_passes</a> = 2;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="comment">// Interleave smoothing between the topology passes instead of running it all at the end</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="comment">// of the iteration. With this on, one iteration is</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="comment">//     split   + interleaved_smoothing_passes smoothing passes</span></div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="comment">//     collapse + ...</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="comment">//     swaps    + ...</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="comment">// rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="comment">// only phase that improves quality without changing connectivity, so giving each topology</span></div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="comment">// pass a chance to be relaxed before the next one runs may keep the optimizer off the</span></div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="comment">// plateaus where split, collapse and swap simply undo each other.</span></div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keywordtype">bool</span> interleaved_smoothing = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keywordtype">int</span> interleaved_smoothing_passes = 1;</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector3d&amp; min_, <span class="keyword">const</span> Vector3d&amp; max_)</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    {</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        min = min_;</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        max = max_;</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        <a class="code hl_function" href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">init_lengths_from_diagonal</a>((max - min).norm());</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        l_min = eps;</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    }</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordtype">void</span> init(</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; vertices,</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    {</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        Vector3d min_, max_;</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>            <span class="keywordflow">if</span> (i == 0) {</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>                min_ = vertices[i];</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>                max_ = vertices[i];</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            }</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) min_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) max_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            }</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        }</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        init(min_, max_);</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    }</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>};</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector3d&amp; min_, <span class="keyword">const</span> Vector3d&amp; max_)</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    {</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>        min = min_;</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>        max = max_;</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        <a class="code hl_function" href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">init_lengths_from_diagonal</a>((max - min).norm());</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        l_min = eps;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    }</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keywordtype">void</span> init(</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        <span class="keyword">const</span> std::vector&lt;Vector3d&gt;&amp; vertices,</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    {</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        Vector3d min_, max_;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>            <span class="keywordflow">if</span> (i == 0) {</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>                min_ = vertices[i];</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>                max_ = vertices[i];</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            }</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 3; j++) {</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) min_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) max_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>            }</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        }</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        init(min_, max_);</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    }</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>};</div>
 </div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>} <span class="comment">// namespace wmtk::components::tetwild</span></div>
 <div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html">wmtk::OptimizerParameters</a></div><div class="ttdoc">The parameters tetwild, triwild and simwild all share.</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:27</div></div>
-<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_a78f7816473bd1a74aca85f74774a9a52"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">wmtk::OptimizerParameters::init_lengths_from_diagonal</a></div><div class="ttdeci">void init_lengths_from_diagonal(const double diag)</div><div class="ttdoc">Derive the edge-length and envelope quantities from the bounding-box diagonal.</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:137</div></div>
+<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_a78f7816473bd1a74aca85f74774a9a52"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">wmtk::OptimizerParameters::init_lengths_from_diagonal</a></div><div class="ttdeci">void init_lengths_from_diagonal(const double diag)</div><div class="ttdoc">Derive the edge-length and envelope quantities from the bounding-box diagonal.</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:149</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html">wmtk::components::tetwild::Parameters</a></div><div class="ttdoc">The fields shared with triwild and simwild live in wmtk::OptimizerParameters.</div><div class="ttdef"><b>Definition</b> Parameters.h:8</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_a49e1cda3810b8706568c4ffb80c9730d"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#a49e1cda3810b8706568c4ffb80c9730d">wmtk::components::tetwild::Parameters::num_smoothing_passes</a></div><div class="ttdeci">int num_smoothing_passes</div><div class="ttdef"><b>Definition</b> Parameters.h:52</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_acdbf8d5cc07818ff6b808bc5019bd688"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#acdbf8d5cc07818ff6b808bc5019bd688">wmtk::components::tetwild::Parameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> Parameters.h:42</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1tetwild_1_1_parameters_html_af7ed2109c7f32cc4fa9a0a548fda50e1"><div class="ttname"><a href="structwmtk_1_1components_1_1tetwild_1_1_parameters.html#af7ed2109c7f32cc4fa9a0a548fda50e1">wmtk::components::tetwild::Parameters::order2_envelope_ratio</a></div><div class="ttdeci">double order2_envelope_ratio</div><div class="ttdef"><b>Definition</b> Parameters.h:12</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

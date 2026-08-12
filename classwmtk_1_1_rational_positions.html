@@ -130,7 +130,7 @@ Protected Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The rounded/exact bookkeeping shared by every mesh that keeps both coordinates. </p>
 <p>All four application meshes store a vertex position twice &ndash; exactly, as rationals, and rounded, as doubles &ndash; and carry the same invariant about which of the two the rest of the code may read. This holds that invariant, and the sweep that restores it, in one place.</p>
-<p>Dimension-free by construction: nothing here mentions a Tuple or a position type, so the three hooks below are all a mesh has to supply. Unlike the improvement loop &ndash; which the two optimizer bases still duplicate, because 2D and 3D genuinely disagree about the stop condition and the cbrt convention &ndash; this really is the same code twice. </p>
+<p>Dimension-free by construction: nothing here mentions a Tuple or a position type, so the three hooks below are all a mesh has to supply. The dimensional optimizer bases build their shared Wild/SimWild drivers on this bookkeeping. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="ae89c7a16485d4ab591c5b2b7004deb70" name="ae89c7a16485d4ab591c5b2b7004deb70"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae89c7a16485d4ab591c5b2b7004deb70">&#9670;&#160;</a></span>all_vertex_ids()</h2>

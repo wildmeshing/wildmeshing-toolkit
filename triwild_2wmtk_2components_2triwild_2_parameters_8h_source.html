@@ -102,105 +102,89 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">   71</a></span>    <span class="keywordtype">bool</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">use_sample_envelope</a> = <span class="keyword">false</span>;</div>
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">   82</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">split_high_valence_threshold</a> = 200;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#abe978015899fe6f5011a2544b4729f23">   92</a></span>    <span class="keywordtype">int</span> <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#abe978015899fe6f5011a2544b4729f23">num_smoothing_passes</a> = 2;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
+<div class="foldopen" id="foldopen00080" data-start="{" data-end="}">
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">   80</a></span>    <a class="code hl_function" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">Parameters</a>(<span class="keyword">const</span> nlohmann::json&amp; json_params)</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    {</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        epsr = json_params[<span class="stringliteral">&quot;eps_rel&quot;</span>];</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        lr = json_params[<span class="stringliteral">&quot;length_rel&quot;</span>];</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        stop_energy = json_params[<span class="stringliteral">&quot;stop_energy&quot;</span>];</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        preserve_topology = json_params[<span class="stringliteral">&quot;preserve_topology&quot;</span>];</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">preserve_feature_points</a> = json_params[<span class="stringliteral">&quot;preserve_feature_points&quot;</span>];</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a37a8f0cf2a46fca6c01bbf93cad53b5a">allow_junction_cleanup</a> = json_params[<span class="stringliteral">&quot;allow_junction_cleanup&quot;</span>];</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>        debug_output = json_params[<span class="stringliteral">&quot;DEBUG_output&quot;</span>];</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        perform_sanity_checks = json_params[<span class="stringliteral">&quot;DEBUG_sanity_checks&quot;</span>];</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">check_envelope_at_init</a> = json_params[<span class="stringliteral">&quot;DEBUG_envelope_sanity_check&quot;</span>];</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">use_sample_envelope</a> = json_params[<span class="stringliteral">&quot;use_sample_envelope&quot;</span>];</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    <span class="comment">// Interleave smoothing between the topology passes instead of running it all at the end</span></div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    <span class="comment">// of the iteration. With this on, one iteration is</span></div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="comment">//     split    + interleaved_smoothing_passes smoothing passes</span></div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="comment">//     collapse + ...</span></div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    <span class="comment">//     swaps    + ...</span></div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    <span class="comment">// rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the</span></div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    <span class="comment">// only phase that improves quality without changing connectivity, so giving each topology</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    <span class="comment">// pass a chance to be relaxed before the next one runs may keep the optimizer off the</span></div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="comment">// plateaus where split, collapse and swap simply undo each other.</span></div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    <span class="keywordtype">bool</span> interleaved_smoothing = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="keywordtype">int</span> interleaved_smoothing_passes = 1;</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <a class="code hl_struct" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">Parameters</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
-<div class="foldopen" id="foldopen00113" data-start="{" data-end="}">
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno"><a class="line" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">  113</a></span>    <a class="code hl_function" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">Parameters</a>(<span class="keyword">const</span> nlohmann::json&amp; json_params)</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    {</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        epsr = json_params[<span class="stringliteral">&quot;eps_rel&quot;</span>];</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        lr = json_params[<span class="stringliteral">&quot;length_rel&quot;</span>];</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        stop_energy = json_params[<span class="stringliteral">&quot;stop_energy&quot;</span>];</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        preserve_topology = json_params[<span class="stringliteral">&quot;preserve_topology&quot;</span>];</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">preserve_feature_points</a> = json_params[<span class="stringliteral">&quot;preserve_feature_points&quot;</span>];</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a37a8f0cf2a46fca6c01bbf93cad53b5a">allow_junction_cleanup</a> = json_params[<span class="stringliteral">&quot;allow_junction_cleanup&quot;</span>];</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        debug_output = json_params[<span class="stringliteral">&quot;DEBUG_output&quot;</span>];</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        perform_sanity_checks = json_params[<span class="stringliteral">&quot;DEBUG_sanity_checks&quot;</span>];</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">check_envelope_at_init</a> = json_params[<span class="stringliteral">&quot;DEBUG_envelope_sanity_check&quot;</span>];</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">use_sample_envelope</a> = json_params[<span class="stringliteral">&quot;use_sample_envelope&quot;</span>];</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">split_high_valence_threshold</a> = json_params[<span class="stringliteral">&quot;split_high_valence_threshold&quot;</span>];</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        <a class="code hl_variable" href="structwmtk_1_1_optimizer_parameters.html#a0d5ae5fc83380e897e37a7b7b0673f5b">w_amips</a> = json_params[<span class="stringliteral">&quot;w_amips&quot;</span>];</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <a class="code hl_variable" href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#abe978015899fe6f5011a2544b4729f23">num_smoothing_passes</a> = json_params[<span class="stringliteral">&quot;num_smoothing_passes&quot;</span>];</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        interleaved_smoothing = json_params[<span class="stringliteral">&quot;interleaved_smoothing&quot;</span>];</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        interleaved_smoothing_passes = json_params[<span class="stringliteral">&quot;interleaved_smoothing_passes&quot;</span>];</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>        <span class="comment">// Stuck-element sizing refinement.</span></div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        stuck_refine_stall_eps = json_params[<span class="stringliteral">&quot;stuck_refine_stall_eps&quot;</span>];</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        stuck_refine_cooldown = json_params[<span class="stringliteral">&quot;stuck_refine_cooldown&quot;</span>];</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        stuck_refine_num_worst = json_params[<span class="stringliteral">&quot;stuck_refine_num_worst&quot;</span>];</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        stuck_refine_rings = json_params[<span class="stringliteral">&quot;stuck_refine_rings&quot;</span>];</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        stuck_refine_factor = json_params[<span class="stringliteral">&quot;stuck_refine_factor&quot;</span>];</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        stuck_refine_min_scalar = json_params[<span class="stringliteral">&quot;stuck_refine_min_scalar&quot;</span>];</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        stuck_refine_gradation = json_params[<span class="stringliteral">&quot;stuck_refine_gradation&quot;</span>];</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        stuck_refine_force_split = json_params[<span class="stringliteral">&quot;stuck_refine_force_split&quot;</span>];</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        <a class="code hl_variable" href="structwmtk_1_1_optimizer_parameters.html#a99fbd3031d9726ffa1af82b6977acfae">split_high_valence_threshold</a> = json_params[<span class="stringliteral">&quot;split_high_valence_threshold&quot;</span>];</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>        <a class="code hl_variable" href="structwmtk_1_1_optimizer_parameters.html#a0d5ae5fc83380e897e37a7b7b0673f5b">w_amips</a> = json_params[<span class="stringliteral">&quot;w_amips&quot;</span>];</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>        <a class="code hl_variable" href="structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2">num_smoothing_passes</a> = json_params[<span class="stringliteral">&quot;num_smoothing_passes&quot;</span>];</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        interleaved_smoothing = json_params[<span class="stringliteral">&quot;interleaved_smoothing&quot;</span>];</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        interleaved_smoothing_passes = json_params[<span class="stringliteral">&quot;interleaved_smoothing_passes&quot;</span>];</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        <span class="comment">// Stuck-element sizing refinement.</span></div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        stuck_refine_stall_eps = json_params[<span class="stringliteral">&quot;stuck_refine_stall_eps&quot;</span>];</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        stuck_refine_cooldown = json_params[<span class="stringliteral">&quot;stuck_refine_cooldown&quot;</span>];</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>        stuck_refine_num_worst = json_params[<span class="stringliteral">&quot;stuck_refine_num_worst&quot;</span>];</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        stuck_refine_rings = json_params[<span class="stringliteral">&quot;stuck_refine_rings&quot;</span>];</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        stuck_refine_factor = json_params[<span class="stringliteral">&quot;stuck_refine_factor&quot;</span>];</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        stuck_refine_min_scalar = json_params[<span class="stringliteral">&quot;stuck_refine_min_scalar&quot;</span>];</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        stuck_refine_gradation = json_params[<span class="stringliteral">&quot;stuck_refine_gradation&quot;</span>];</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        stuck_refine_force_split = json_params[<span class="stringliteral">&quot;stuck_refine_force_split&quot;</span>];</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        <span class="comment">// Skip good regions.</span></div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>        skip_good_regions = json_params[<span class="stringliteral">&quot;skip_good_regions&quot;</span>];</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        skip_good_regions_margin = json_params[<span class="stringliteral">&quot;skip_good_regions_margin&quot;</span>];</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    }</div>
+</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span> </div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector2d&amp; min_, <span class="keyword">const</span> Vector2d&amp; max_)</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    {</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        box_min = min_;</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        box_max = max_;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        <a class="code hl_function" href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">init_lengths_from_diagonal</a>((box_max - box_min).norm());</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        l_min = eps;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    }</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    <span class="keywordtype">void</span> init(</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keyword">const</span> std::vector&lt;Vector2d&gt;&amp; vertices,</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    {</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        Vector2d min_, max_;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            <span class="keywordflow">if</span> (i == 0) {</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>                min_ = vertices[i];</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                max_ = vertices[i];</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>            }</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 2; j++) {</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) {</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                    min_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>                }</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) {</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>                    max_[j] = vertices[i][j];</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>                }</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>            }</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        }</div>
 <div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span> </div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        <span class="comment">// Skip good regions.</span></div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        skip_good_regions = json_params[<span class="stringliteral">&quot;skip_good_regions&quot;</span>];</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        skip_good_regions_margin = json_params[<span class="stringliteral">&quot;skip_good_regions_margin&quot;</span>];</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    }</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        init(min_, max_);</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    }</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>};</div>
 </div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span> </div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    <span class="keywordtype">void</span> init(<span class="keyword">const</span> Vector2d&amp; min_, <span class="keyword">const</span> Vector2d&amp; max_)</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>    {</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        box_min = min_;</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        box_max = max_;</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>        <a class="code hl_function" href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">init_lengths_from_diagonal</a>((box_max - box_min).norm());</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        l_min = eps;</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    }</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>    <span class="keywordtype">void</span> init(</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>        <span class="keyword">const</span> std::vector&lt;Vector2d&gt;&amp; vertices,</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        <span class="keyword">const</span> std::vector&lt;std::array&lt;size_t, 3&gt;&gt;&amp; faces)</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>    {</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        Vector2d min_, max_;</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; vertices.size(); i++) {</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            <span class="keywordflow">if</span> (i == 0) {</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                min_ = vertices[i];</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>                max_ = vertices[i];</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>            }</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; 2; j++) {</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>                <span class="keywordflow">if</span> (vertices[i][j] &lt; min_[j]) {</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>                    min_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                }</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>                <span class="keywordflow">if</span> (vertices[i][j] &gt; max_[j]) {</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>                    max_[j] = vertices[i][j];</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>                }</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            }</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>        }</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span> </div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>        init(min_, max_);</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    }</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>};</div>
-</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>} <span class="comment">// namespace wmtk::components::triwild</span></div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>} <span class="comment">// namespace wmtk::components::triwild</span></div>
 <div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html">wmtk::OptimizerParameters</a></div><div class="ttdoc">The parameters tetwild, triwild and simwild all share.</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:27</div></div>
-<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_a0d5ae5fc83380e897e37a7b7b0673f5b"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#a0d5ae5fc83380e897e37a7b7b0673f5b">wmtk::OptimizerParameters::w_amips</a></div><div class="ttdeci">double w_amips</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:124</div></div>
-<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_a78f7816473bd1a74aca85f74774a9a52"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">wmtk::OptimizerParameters::init_lengths_from_diagonal</a></div><div class="ttdeci">void init_lengths_from_diagonal(const double diag)</div><div class="ttdoc">Derive the edge-length and envelope quantities from the bounding-box diagonal.</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:137</div></div>
+<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_a0d5ae5fc83380e897e37a7b7b0673f5b"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#a0d5ae5fc83380e897e37a7b7b0673f5b">wmtk::OptimizerParameters::w_amips</a></div><div class="ttdeci">double w_amips</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:131</div></div>
+<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_a78f7816473bd1a74aca85f74774a9a52"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#a78f7816473bd1a74aca85f74774a9a52">wmtk::OptimizerParameters::init_lengths_from_diagonal</a></div><div class="ttdeci">void init_lengths_from_diagonal(const double diag)</div><div class="ttdoc">Derive the edge-length and envelope quantities from the bounding-box diagonal.</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:149</div></div>
+<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_a99fbd3031d9726ffa1af82b6977acfae"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#a99fbd3031d9726ffa1af82b6977acfae">wmtk::OptimizerParameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:42</div></div>
+<div class="ttc" id="astructwmtk_1_1_optimizer_parameters_html_af94f54e1f48f13d77c5ff0afba9f05a2"><div class="ttname"><a href="structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2">wmtk::OptimizerParameters::num_smoothing_passes</a></div><div class="ttdeci">int num_smoothing_passes</div><div class="ttdoc">Number and placement of smoothing passes in the shared Wild optimization driver.</div><div class="ttdef"><b>Definition</b> OptimizerParameters.h:135</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html">wmtk::components::triwild::Parameters</a></div><div class="ttdoc">The fields shared with tetwild and simwild live in wmtk::OptimizerParameters.</div><div class="ttdef"><b>Definition</b> Parameters.h:10</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a284aca8f258fe8c3eacc4ff47294ecb9"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a284aca8f258fe8c3eacc4ff47294ecb9">wmtk::components::triwild::Parameters::split_high_valence_threshold</a></div><div class="ttdeci">int split_high_valence_threshold</div><div class="ttdef"><b>Definition</b> Parameters.h:82</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a28f57ac286ea9a1dab06783b4b194933"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">wmtk::components::triwild::Parameters::Parameters</a></div><div class="ttdeci">Parameters(const nlohmann::json &amp;json_params)</div><div class="ttdoc">Read every optimizer knob out of the (defaults-injected) JSON.</div><div class="ttdef"><b>Definition</b> Parameters.h:113</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a28f57ac286ea9a1dab06783b4b194933"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a28f57ac286ea9a1dab06783b4b194933">wmtk::components::triwild::Parameters::Parameters</a></div><div class="ttdeci">Parameters(const nlohmann::json &amp;json_params)</div><div class="ttdoc">Read every optimizer knob out of the (defaults-injected) JSON.</div><div class="ttdef"><b>Definition</b> Parameters.h:80</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a37a8f0cf2a46fca6c01bbf93cad53b5a"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a37a8f0cf2a46fca6c01bbf93cad53b5a">wmtk::components::triwild::Parameters::allow_junction_cleanup</a></div><div class="ttdeci">bool allow_junction_cleanup</div><div class="ttdef"><b>Definition</b> Parameters.h:43</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_a728094439aa48195fc2d36c8d25c1da2"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#a728094439aa48195fc2d36c8d25c1da2">wmtk::components::triwild::Parameters::use_sample_envelope</a></div><div class="ttdeci">bool use_sample_envelope</div><div class="ttdef"><b>Definition</b> Parameters.h:71</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_aa0ddf933c7388d9e2d9123b738ec1988"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988">wmtk::components::triwild::Parameters::preserve_feature_points</a></div><div class="ttdeci">bool preserve_feature_points</div><div class="ttdef"><b>Definition</b> Parameters.h:22</div></div>
 <div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_ab78031b3b87e66abd0b6c2653c1c8758"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758">wmtk::components::triwild::Parameters::check_envelope_at_init</a></div><div class="ttdeci">bool check_envelope_at_init</div><div class="ttdef"><b>Definition</b> Parameters.h:55</div></div>
-<div class="ttc" id="astructwmtk_1_1components_1_1triwild_1_1_parameters_html_abe978015899fe6f5011a2544b4729f23"><div class="ttname"><a href="structwmtk_1_1components_1_1triwild_1_1_parameters.html#abe978015899fe6f5011a2544b4729f23">wmtk::components::triwild::Parameters::num_smoothing_passes</a></div><div class="ttdeci">int num_smoothing_passes</div><div class="ttdef"><b>Definition</b> Parameters.h:92</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

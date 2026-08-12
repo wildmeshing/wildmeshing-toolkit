@@ -13,8 +13,6 @@ var searchData=
   ['parser_10',['Parser',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#a27f77ed4e0ebde1bda8c653688b6939e',1,'wmtk::components::simwild::expression_parser::Parser']]],
   ['parseunary_11',['parseUnary',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#a9c1626b174ac406bdee40f06f35f872c',1,'wmtk::components::simwild::expression_parser::Parser']]],
   ['polyfem_5fbin_12',['polyfem_bin',['../namespacesimwild_1_1polyfem__ops_1_1polyfem__utils.html#a98b415d322fdc2a59fde207a0722458c',1,'simwild::polyfem_ops::polyfem_utils']]],
-  ['prepare_5fsurface_5fflip_13',['prepare_surface_flip',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aa380e45168a502160e35533ce3eae433',1,'wmtk::components::tetwild::TetWildMesh::prepare_surface_flip()'],['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae331233a42df64a8b5a2595e8e026303',1,'wmtk::components::simwild::SimWildMesh::prepare_surface_flip()']]],
-  ['print_5finfo_14',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const']]],
-  ['propagate_5fswap_5ftags_15',['propagate_swap_tags',['../classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#af70cfd5215ffbe94ceff850b247f0d8d',1,'wmtk::components::simwild::SimWildMesh']]],
-  ['push_5fback_16',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]]
+  ['print_5finfo_13',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const']]],
+  ['push_5fback_14',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]]
 ];

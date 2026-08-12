@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['partition_5fid_0',['partition_id',['../structwmtk_1_1_tet_optimizer_mesh_1_1_vertex_attributes.html#a4e66e18fb3fbd912c63eac96b8f469f9',1,'wmtk::TetOptimizerMesh::VertexAttributes']]],
-  ['posf_1',['posf',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a63871cc4ff2d7215ca80b08e4e458ee8',1,'wmtk::components::tetwild::orig::TetVertex']]],
-  ['preserve_5ffeature_5fpoints_2',['preserve_feature_points',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988',1,'wmtk::components::triwild::Parameters']]],
-  ['priority_3',['priority',['../structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc',1,'wmtk::ExecutePass']]]
+  ['quality_0',['quality',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a9087a21df96d74f676b79e7f16707853',1,'wmtk::optimization::SmoothRejectCounters']]],
+  ['quality_5fveto_5fon_5fsurface_1',['quality_veto_on_surface',['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#a406d6b9e8f9ec0cf33de7bdd1f1db4dc',1,'wmtk::optimization::SmoothVertexOptions']]]
 ];

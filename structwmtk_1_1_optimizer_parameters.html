@@ -126,6 +126,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>diag_l</b> = -1.</t
 <tr class="memitem:a9b14bb91a58a22cb381c02bdf7e8ca85" id="r_a9b14bb91a58a22cb381c02bdf7e8ca85"><td class="memItemLeft" align="right" valign="top"><a id="a9b14bb91a58a22cb381c02bdf7e8ca85" name="a9b14bb91a58a22cb381c02bdf7e8ca85"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>preserve_topology</b> = false</td></tr>
 <tr class="separator:a9b14bb91a58a22cb381c02bdf7e8ca85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99fbd3031d9726ffa1af82b6977acfae" id="r_a99fbd3031d9726ffa1af82b6977acfae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a99fbd3031d9726ffa1af82b6977acfae">split_high_valence_threshold</a> = 200</td></tr>
+<tr class="separator:a99fbd3031d9726ffa1af82b6977acfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a268234aa3af6a0da6942a4b8ce0e86" id="r_a9a268234aa3af6a0da6942a4b8ce0e86"><td class="memItemLeft" align="right" valign="top"><a id="a9a268234aa3af6a0da6942a4b8ce0e86" name="a9a268234aa3af6a0da6942a4b8ce0e86"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>stuck_refine_stall_eps</b> = 0.1</td></tr>
 <tr class="separator:a9a268234aa3af6a0da6942a4b8ce0e86"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -171,6 +173,16 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>stop_energy</b> = 1
 <tr class="memitem:a09d8ee5683b9c06a3b291088f9bd873e" id="r_a09d8ee5683b9c06a3b291088f9bd873e"><td class="memItemLeft" align="right" valign="top"><a id="a09d8ee5683b9c06a3b291088f9bd873e" name="a09d8ee5683b9c06a3b291088f9bd873e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>w_envelope</b> = 1. - 1e-4</td></tr>
 <tr class="separator:a09d8ee5683b9c06a3b291088f9bd873e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af94f54e1f48f13d77c5ff0afba9f05a2" id="r_af94f54e1f48f13d77c5ff0afba9f05a2"><td class="memItemLeft" align="right" valign="top"><a id="af94f54e1f48f13d77c5ff0afba9f05a2" name="af94f54e1f48f13d77c5ff0afba9f05a2"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>num_smoothing_passes</b> = 2</td></tr>
+<tr class="memdesc:af94f54e1f48f13d77c5ff0afba9f05a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number and placement of smoothing passes in the shared Wild optimization driver. <br /></td></tr>
+<tr class="separator:af94f54e1f48f13d77c5ff0afba9f05a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab856b34a5d06bc26ee01467578c2d912" id="r_ab856b34a5d06bc26ee01467578c2d912"><td class="memItemLeft" align="right" valign="top"><a id="ab856b34a5d06bc26ee01467578c2d912" name="ab856b34a5d06bc26ee01467578c2d912"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>interleaved_smoothing</b> = true</td></tr>
+<tr class="separator:ab856b34a5d06bc26ee01467578c2d912"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af936a9f79977229b5b523e00cf572a89" id="r_af936a9f79977229b5b523e00cf572a89"><td class="memItemLeft" align="right" valign="top"><a id="af936a9f79977229b5b523e00cf572a89" name="af936a9f79977229b5b523e00cf572a89"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>interleaved_smoothing_passes</b> = 1</td></tr>
+<tr class="separator:af936a9f79977229b5b523e00cf572a89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5554f4d49ab032748a1a4d4be37066a1" id="r_a5554f4d49ab032748a1a4d4be37066a1"><td class="memItemLeft" align="right" valign="top"><a id="a5554f4d49ab032748a1a4d4be37066a1" name="a5554f4d49ab032748a1a4d4be37066a1"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>debug_output</b> = false</td></tr>
 <tr class="separator:a5554f4d49ab032748a1a4d4be37066a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -186,7 +198,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <li><b>The bounding box.</b> Its type differs by dimension (Vector3d / Vector2d / VectorXd) and, more importantly, so does its MEANING: tetwild's box_min/box_max are the <em>padded Delaunay box</em> while simwild's are the raw input bbox, and both are compared with <code>==</code> against vertex coordinates to tag bbox faces. Sharing one field would silently break the tagging in one of them. tetwild additionally keeps <code>min</code>/<code>max</code> for the input bbox.</li>
 <li>**<code>l_min</code>.** tetwild and triwild set it to <code>eps</code>, simwild to <code>0.5 * eps</code>.</li>
 </ul>
-<p>Defaults here are tetwild's and triwild's, which agree on 20 of the 26 fields below; simwild overrides the four it differs on, in its own struct, where the divergence is visible. </p>
+<p>Defaults here are tetwild's and triwild's shared defaults; simwild overrides the four it deliberately differs on in its own struct, where the divergence is visible. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a78f7816473bd1a74aca85f74774a9a52" name="a78f7816473bd1a74aca85f74774a9a52"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a78f7816473bd1a74aca85f74774a9a52">&#9670;&#160;</a></span>init_lengths_from_diagonal()</h2>
@@ -232,6 +244,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        std::numeric_limits&lt;double&gt;::max()</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="a99fbd3031d9726ffa1af82b6977acfae" name="a99fbd3031d9726ffa1af82b6977acfae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99fbd3031d9726ffa1af82b6977acfae">&#9670;&#160;</a></span>split_high_valence_threshold</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::OptimizerParameters::split_high_valence_threshold = 200</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Incident-cell count above which a link vertex accepts only one valence-increasing split per pass, or 0 to disable the gate. Shared by the 2D and 3D Wild optimizers; SimWild uses the same protection so tag-homogeneous runs follow the Wild path. </p>
+
 </div>
 </div>
 <a id="a1e6c67ca56cc3353330788e62b0b88cb" name="a1e6c67ca56cc3353330788e62b0b88cb"></a>
