@@ -261,20 +261,6 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
             relabel_face_from_tags(f.fid(*this));
         }
 
-        // A split is a refinement: it cannot legitimately change the region's topology, since
-        // both children of a parent inherit that parent's membership and stay joined along the
-        // edge from the new vertex to their shared apex. Measured, that is not always what
-        // happens -- the region fan at the APEX comes apart, which means the two children did
-        // not end up in the same region. Refuse the split when it does. A split that would
-        // have been harmless always passes, so this costs nothing except where the invariant
-        // is already broken.
-        const size_t v_new = t.vid(*this);
-        if (!region_fan_is_single(v_new)) return false;
-        for (const Tuple& e : get_one_ring_edges_for_vertex(v_new)) {
-            const size_t nb =
-                (e.vid(*this) == v_new) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
-            if (nb != v_new && !region_fan_is_single(nb)) return false;
-        }
         return true;
     }
     return marching_split_edge_after(t);

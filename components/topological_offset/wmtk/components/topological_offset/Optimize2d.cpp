@@ -43,6 +43,16 @@ bool TopoOffsetTriMesh::vertex_is_on_surface(const size_t vid) const
     return false;
 }
 
+bool TopoOffsetTriMesh::face_in_region(const size_t fid) const
+{
+    const CellTag& tags = m_face_attribute[fid].tags;
+    for (const int64_t t : m_offset_output_tag_ids) {
+        if (tags.count(t) != 0) return true; // in the offset band
+    }
+    const ExpressionPtr& expr = m_offset_params.offset_selection;
+    return expr && expr->eval(tags); // in the input complex it wraps
+}
+
 void TopoOffsetTriMesh::relabel_face_from_tags(const size_t fid)
 {
     {
@@ -175,64 +185,6 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
     for (const Tuple& e : get_one_ring_edges_for_vertex(tuple_from_vertex(c))) {
         const size_t nb = (e.vid(*this) == c) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
         if (nb == d) return false;
-    }
-    return true;
-}
-
-bool TopoOffsetTriMesh::region_fan_is_single(const size_t vid) const
-{
-    // The region faces incident to vid must form ONE fan. Two faces belong to the same fan
-    // when they share an edge through vid.
-    std::vector<size_t> fan;
-    for (const Tuple& f : get_one_ring_tris_for_vertex(tuple_from_vertex(vid))) {
-        const size_t fid = f.fid(*this);
-        if (m_face_extra[fid].label != 0) fan.push_back(fid);
-    }
-    if (fan.size() < 2) return true;
-
-    // Walk the fan from one face, hopping across shared edges that contain vid.
-    std::vector<char> seen(fan.size(), 0);
-    std::vector<size_t> stack{0};
-    seen[0] = 1;
-    size_t reached = 1;
-    while (!stack.empty()) {
-        const size_t cur = fan[stack.back()];
-        stack.pop_back();
-        const auto vs = oriented_tri_vids(cur);
-        for (int i = 0; i < 3; ++i) {
-            const size_t a = vs[i], b = vs[(i + 1) % 3];
-            if (a != vid && b != vid) continue; // only edges through vid connect the fan
-            const auto [et, eid] = tuple_from_edge({{a, b}});
-            if (eid == static_cast<size_t>(-1)) continue;
-            const std::optional<Tuple> opp = et.switch_face(*this);
-            if (!opp) continue;
-            const size_t other = (et.fid(*this) == cur) ? opp->fid(*this) : et.fid(*this);
-            for (size_t k = 0; k < fan.size(); ++k) {
-                if (!seen[k] && fan[k] == other) {
-                    seen[k] = 1;
-                    ++reached;
-                    stack.push_back(k);
-                }
-            }
-        }
-    }
-    return reached == fan.size();
-}
-
-bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
-{
-    if (!TriOptimizerMesh::collapse_edge_after(t)) {
-        return false;
-    }
-    // Not only the survivor. A collapse deletes the two faces incident to the collapsed edge,
-    // and each of their apexes loses a face from its own star -- which is enough to split that
-    // vertex's region fan in two even though the survivor's fan is fine. Every vertex whose
-    // star changed has to be checked, which is the survivor and its one-ring.
-    const size_t vs = t.vid(*this);
-    if (!region_fan_is_single(vs)) return false;
-    for (const Tuple& e : get_one_ring_edges_for_vertex(vs)) {
-        const size_t nb = (e.vid(*this) == vs) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
-        if (nb != vs && !region_fan_is_single(nb)) return false;
     }
     return true;
 }

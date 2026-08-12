@@ -10,8 +10,6 @@
 namespace wmtk::components::topological_offset {
 
 
-
-
 void TopoOffsetTriMesh::init_from_image(
     const MatrixXd& V,
     const MatrixXi& F,
@@ -135,7 +133,8 @@ void TopoOffsetTriMesh::label_input_complex()
         }
         logger().info("Using single body mode for '{}'", m_tag_id_to_name[m_single_tag]);
 
-        if (m_offset_params.offset_in && m_offset_params.offset_out) { // input complex is boundary simplices
+        if (m_offset_params.offset_in &&
+            m_offset_params.offset_out) { // input complex is boundary simplices
             auto faces = get_faces();
             for (const Tuple& f : faces) {
                 size_t f_id = f.fid(*this);
@@ -155,8 +154,9 @@ void TopoOffsetTriMesh::label_input_complex()
                     }
                 }
             }
-        } else if (m_offset_params.offset_in) { // input complex is everything outside body plus boundary
-                                         // faces (hacky but works)
+        } else if (m_offset_params
+                       .offset_in) { // input complex is everything outside body plus boundary
+            // faces (hacky but works)
             auto faces = get_faces();
             for (const Tuple& f : faces) {
                 size_t f_id = f.fid(*this);
@@ -165,12 +165,10 @@ void TopoOffsetTriMesh::label_input_complex()
                     // propagate to edges and verts in tri
                     m_edge_extra[f.eid(*this)].label = 1;
                     m_edge_extra[f.switch_edge(*this).eid(*this)].label = 1;
-                    m_edge_extra[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label =
-                        1;
+                    m_edge_extra[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
                     m_vertex_extra[f.vid(*this)].label = 1;
                     m_vertex_extra[f.switch_vertex(*this).vid(*this)].label = 1;
-                    m_vertex_extra[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label =
-                        1;
+                    m_vertex_extra[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
                 } else { // face is in body, check for boundary edges
                     auto vs = oriented_tri_vids(f_id);
                     for (int i = 0; i < 3; i++) {
@@ -193,12 +191,10 @@ void TopoOffsetTriMesh::label_input_complex()
                     // propagate to edges and verts in tri
                     m_edge_extra[f.eid(*this)].label = 1;
                     m_edge_extra[f.switch_edge(*this).eid(*this)].label = 1;
-                    m_edge_extra[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label =
-                        1;
+                    m_edge_extra[f.switch_vertex(*this).switch_edge(*this).eid(*this)].label = 1;
                     m_vertex_extra[f.vid(*this)].label = 1;
                     m_vertex_extra[f.switch_vertex(*this).vid(*this)].label = 1;
-                    m_vertex_extra[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label =
-                        1;
+                    m_vertex_extra[f.switch_edge(*this).switch_vertex(*this).vid(*this)].label = 1;
                 }
             }
         }
@@ -725,7 +721,9 @@ bool TopoOffsetTriMesh::offset_is_manifold()
     std::vector<Vector3i> offset_tris;
     for (const Tuple& t : tris) {
         size_t t_id = t.fid(*this);
-        if (m_face_extra[t_id].label != 0) {
+        // Region membership from the tags, which every operation propagates -- not from the
+        // label derived alongside them. See face_in_region().
+        if (face_in_region(t_id)) {
             auto vs = oriented_tri_vids(t_id);
             offset_tris.emplace_back(vs[0], vs[1], vs[2]);
             included_vids[vs[0]] = true;
