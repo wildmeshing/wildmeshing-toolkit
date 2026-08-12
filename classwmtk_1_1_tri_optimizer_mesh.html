@@ -264,6 +264,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="memitem:a81c16b6bbee153e77d3cad21deb0c2a5" id="r_a81c16b6bbee153e77d3cad21deb0c2a5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a81c16b6bbee153e77d3cad21deb0c2a5">edge_is_on_surface</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const override</td></tr>
 <tr class="memdesc:a81c16b6bbee153e77d3cad21deb0c2a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is an edge part of the substructure.  <br /></td></tr>
 <tr class="separator:a81c16b6bbee153e77d3cad21deb0c2a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a410bbb7857ffef7e474d39906fc4b733" id="r_a410bbb7857ffef7e474d39906fc4b733"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a410bbb7857ffef7e474d39906fc4b733">surface_envelope_for_edge</a> (const std::array&lt; size_t, 2 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:a410bbb7857ffef7e474d39906fc4b733"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface segment <code>vids</code> must stay inside.  <br /></td></tr>
+<tr class="separator:a410bbb7857ffef7e474d39906fc4b733"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ad5168dc1d54ac89a08941a8b6e7143" id="r_a8ad5168dc1d54ac89a08941a8b6e7143"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8ad5168dc1d54ac89a08941a8b6e7143">surface_segment_is_outside</a> (const size_t a, const size_t b) const</td></tr>
+<tr class="separator:a8ad5168dc1d54ac89a08941a8b6e7143"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d093c38bbc4d51e85a431cd36453e27" id="r_a5d093c38bbc4d51e85a431cd36453e27"><td class="memItemLeft" align="right" valign="top"><a id="a5d093c38bbc4d51e85a431cd36453e27" name="a5d093c38bbc4d51e85a431cd36453e27"></a>
 std::vector&lt; std::array&lt; size_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_edges_by_condition</b> (std::function&lt; bool(const <a class="el" href="classwmtk_1_1_surface_tag_attributes.html">EdgeAttributes</a> &amp;)&gt; cond) const</td></tr>
 <tr class="separator:a5d093c38bbc4d51e85a431cd36453e27"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -553,6 +558,12 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a3f1876bfae472df2abec64e47b26bdf4" id="r_a3f1876bfae472df2abec64e47b26bdf4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a3f1876bfae472df2abec64e47b26bdf4">m_vertex_attr_group</a></td></tr>
 <tr class="memdesc:a3f1876bfae472df2abec64e47b26bdf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_vertex_attrs points at, so a derived class can register more.  <br /></td></tr>
 <tr class="separator:a3f1876bfae472df2abec64e47b26bdf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b1df739b13ab6868264e8dc0ea3c09e" id="r_a2b1df739b13ab6868264e8dc0ea3c09e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a2b1df739b13ab6868264e8dc0ea3c09e">m_edge_attr_group</a></td></tr>
+<tr class="memdesc:a2b1df739b13ab6868264e8dc0ea3c09e"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_edge_attrs points at, so a derived class can register more.  <br /></td></tr>
+<tr class="separator:a2b1df739b13ab6868264e8dc0ea3c09e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a988928db6e3bdc6b6021dca12c564b81" id="r_a988928db6e3bdc6b6021dca12c564b81"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a988928db6e3bdc6b6021dca12c564b81">m_face_attr_group</a></td></tr>
+<tr class="memdesc:a988928db6e3bdc6b6021dca12c564b81"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_face_attrs points at, so a derived class can register more.  <br /></td></tr>
+<tr class="separator:a988928db6e3bdc6b6021dca12c564b81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f57778214a8fdf4c20b81055386f2b4" id="r_a9f57778214a8fdf4c20b81055386f2b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a9f57778214a8fdf4c20b81055386f2b4">m_params</a></td></tr>
 <tr class="separator:a9f57778214a8fdf4c20b81055386f2b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dcb86cd9d4f6e1e54abd5cc6840f859" id="r_a9dcb86cd9d4f6e1e54abd5cc6840f859"><td class="memItemLeft" align="right" valign="top"><a id="a9dcb86cd9d4f6e1e54abd5cc6840f859" name="a9dcb86cd9d4f6e1e54abd5cc6840f859"></a>
@@ -1247,6 +1258,73 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a410bbb7857ffef7e474d39906fc4b733" name="a410bbb7857ffef7e474d39906fc4b733"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a410bbb7857ffef7e474d39906fc4b733">&#9670;&#160;</a></span>surface_envelope_for_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::TriOptimizerMesh::surface_envelope_for_edge </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface segment <code>vids</code> must stay inside. </p>
+<p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1449fb08e36da2e02d5e1316674b1d23" title="Envelope the tracked-surface triangle vids must stay inside.">wmtk::TetOptimizerMesh::surface_envelope_for_face</a>. Null means this segment carries no containment requirement, and every containment check on it is skipped. Both applications that track a single surface keep one envelope for it, so the default answers with that; an application tracking more than one (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a7125d8d5b7ee4e67ee067e2297d62464" title="Which tracked surface this simplex belongs to, for applications that track more than one.">SurfaceTagAttributes::m_surface_class</a>) overrides this to answer per class.</p>
+<p>Keyed on the vertex ids rather than the eid because every caller is a topological operation asking about segments it is ABOUT to create or has just created. </p>
+
+</div>
+</div>
+<a id="a8ad5168dc1d54ac89a08941a8b6e7143" name="a8ad5168dc1d54ac89a08941a8b6e7143"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ad5168dc1d54ac89a08941a8b6e7143">&#9670;&#160;</a></span>surface_segment_is_outside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TriOptimizerMesh::surface_segment_is_outside </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the tracked-surface segment (a,b) is outside its containment envelope. False when it has none. Every surface containment check in the operations goes through here. </p>
+
+</div>
+</div>
 <a id="a78343bb74bdffa39e7ef2cd1a0945997" name="a78343bb74bdffa39e7ef2cd1a0945997"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a78343bb74bdffa39e7ef2cd1a0945997">&#9670;&#160;</a></span>swap_all_edges()</h2>
 
@@ -1408,6 +1486,41 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2b1df739b13ab6868264e8dc0ea3c09e" name="a2b1df739b13ab6868264e8dc0ea3c09e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b1df739b13ab6868264e8dc0ea3c09e">&#9670;&#160;</a></span>m_edge_attr_group</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a> wmtk::TriOptimizerMesh::m_edge_attr_group</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>What p_edge_attrs points at, so a derived class can register more. </p>
+<p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a8645d347a3109f9f892c57c7c288c66a" title="What p_face_attrs points at, so a derived class can register more.">wmtk::TetOptimizerMesh::m_face_attr_group</a>. An application whose edges carry data the shared operations know nothing about &ndash; topological_offset labels each edge by which part of the construction produced it &ndash; registers a second collection here, and it is resized, protected and rolled back with the shared one.</p>
+<p>Note what this does NOT do: the shared operations propagate edge data by copying <a class="el" href="classwmtk_1_1_surface_tag_attributes.html" title="Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.">SurfaceTagAttributes</a> values around (the split and collapse caches, the swap cache), and they only ever see their own collection. Anything registered here survives the mesh changing shape, but its values are the registering application's to maintain. </p>
+
+</div>
+</div>
+<a id="a988928db6e3bdc6b6021dca12c564b81" name="a988928db6e3bdc6b6021dca12c564b81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a988928db6e3bdc6b6021dca12c564b81">&#9670;&#160;</a></span>m_face_attr_group</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a> wmtk::TriOptimizerMesh::m_face_attr_group</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>What p_face_attrs points at, so a derived class can register more. </p>
+<p>Unlike the 3D mesh, whose cell attributes are per-application, the 2D base owns a concrete <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_face_attributes.html">FaceAttributes</a> &ndash; so a derived class that needs an extra per-face field cannot add it there and registers a second collection here instead. Same caveat as the edge group: the shared operations propagate face data by copying <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_face_attributes.html">FaceAttributes</a> values around and never see this, so its values are the registering application's to maintain. </p>
+
+</div>
+</div>
 <a id="a9f57778214a8fdf4c20b81055386f2b4" name="a9f57778214a8fdf4c20b81055386f2b4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9f57778214a8fdf4c20b81055386f2b4">&#9670;&#160;</a></span>m_params</h2>
 

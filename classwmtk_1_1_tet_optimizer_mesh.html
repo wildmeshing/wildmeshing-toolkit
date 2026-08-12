@@ -96,10 +96,12 @@ Inheritance diagram for wmtk::TetOptimizerMesh:</div>
  <div class="center">
   <img src="classwmtk_1_1_tet_optimizer_mesh.png" usemap="#wmtk::TetOptimizerMesh_map" alt=""/>
   <map id="wmtk::TetOptimizerMesh_map" name="wmtk::TetOptimizerMesh_map">
-<area href="classwmtk_1_1_tet_mesh.html" alt="wmtk::TetMesh" shape="rect" coords="0,0,239,24"/>
-<area href="classwmtk_1_1_rational_positions.html" title="The rounded/exact bookkeeping shared by every mesh that keeps both coordinates." alt="wmtk::RationalPositions" shape="rect" coords="249,0,488,24"/>
-<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="0,112,239,136"/>
-<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="249,112,488,136"/>
+<area href="classwmtk_1_1_tet_mesh.html" alt="wmtk::TetMesh" shape="rect" coords="177,0,522,24"/>
+<area href="classwmtk_1_1_rational_positions.html" title="The rounded/exact bookkeeping shared by every mesh that keeps both coordinates." alt="wmtk::RationalPositions" shape="rect" coords="532,0,877,24"/>
+<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="0,112,345,136"/>
+<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="355,112,700,136"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer." alt="wmtk::components::topological_offset::TopoOffsetTetMesh" shape="rect" coords="710,112,1055,136"/>
+<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="710,168,1055,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -200,6 +202,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_bbox</b> (
 <tr class="memitem:a88fe0eeba385539398ea620a99418a92" id="r_a88fe0eeba385539398ea620a99418a92"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a88fe0eeba385539398ea620a99418a92">edge_incident_surface_face_count</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e)</td></tr>
 <tr class="memdesc:a88fe0eeba385539398ea620a99418a92"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the faces incident to edge <code>e</code> are on the tracked surface.  <br /></td></tr>
 <tr class="separator:a88fe0eeba385539398ea620a99418a92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1449fb08e36da2e02d5e1316674b1d23" id="r_a1449fb08e36da2e02d5e1316674b1d23"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1449fb08e36da2e02d5e1316674b1d23">surface_envelope_for_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:a1449fb08e36da2e02d5e1316674b1d23"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside.  <br /></td></tr>
+<tr class="separator:a1449fb08e36da2e02d5e1316674b1d23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a491b19bab0edf5e47c56aa606317b4bc" id="r_a491b19bab0edf5e47c56aa606317b4bc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a491b19bab0edf5e47c56aa606317b4bc">surface_triangle_is_outside</a> (const size_t a, const size_t b, const size_t c) const</td></tr>
+<tr class="separator:a491b19bab0edf5e47c56aa606317b4bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c216b0a1b2f288f2d01fdaa4145b232" id="r_a1c216b0a1b2f288f2d01fdaa4145b232"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c216b0a1b2f288f2d01fdaa4145b232">vertex_is_on_surface</a> (const size_t vid) const override</td></tr>
 <tr class="memdesc:a1c216b0a1b2f288f2d01fdaa4145b232"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a vertex part of the substructure.  <br /></td></tr>
 <tr class="separator:a1c216b0a1b2f288f2d01fdaa4145b232"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -635,6 +642,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a1bef57efdf12f4cc7501189f243b7ee8" id="r_a1bef57efdf12f4cc7501189f243b7ee8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1bef57efdf12f4cc7501189f243b7ee8">m_vertex_attr_group</a></td></tr>
 <tr class="memdesc:a1bef57efdf12f4cc7501189f243b7ee8"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_vertex_attrs points at, so a derived class can register more.  <br /></td></tr>
 <tr class="separator:a1bef57efdf12f4cc7501189f243b7ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8645d347a3109f9f892c57c7c288c66a" id="r_a8645d347a3109f9f892c57c7c288c66a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a8645d347a3109f9f892c57c7c288c66a">m_face_attr_group</a></td></tr>
+<tr class="memdesc:a8645d347a3109f9f892c57c7c288c66a"><td class="mdescLeft">&#160;</td><td class="mdescRight">What p_face_attrs points at, so a derived class can register more.  <br /></td></tr>
+<tr class="separator:a8645d347a3109f9f892c57c7c288c66a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add3575ab09676dbf58dfe83f39323e6c" id="r_add3575ab09676dbf58dfe83f39323e6c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1_optimizer_parameters.html">OptimizerParameters</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#add3575ab09676dbf58dfe83f39323e6c">m_params</a></td></tr>
 <tr class="separator:add3575ab09676dbf58dfe83f39323e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae78cbaa3d12307aa044d4dee7663483c" id="r_ae78cbaa3d12307aa044d4dee7663483c"><td class="memItemLeft" align="right" valign="top"><a id="ae78cbaa3d12307aa044d4dee7663483c" name="ae78cbaa3d12307aa044d4dee7663483c"></a>
@@ -771,9 +781,8 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>optimization_
 <tr class="memitem:a5ebe2613389101bb71383b6175d53ea5" id="r_a5ebe2613389101bb71383b6175d53ea5"><td class="memItemLeft" align="right" valign="top"><a id="a5ebe2613389101bb71383b6175d53ea5" name="a5ebe2613389101bb71383b6175d53ea5"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>optimization_stop_at_float</b> () const</td></tr>
 <tr class="separator:a5ebe2613389101bb71383b6175d53ea5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abdde3ccfe1a7a471f5b0d95b8ffe34d7" id="r_abdde3ccfe1a7a471f5b0d95b8ffe34d7"><td class="memItemLeft" align="right" valign="top"><a id="abdde3ccfe1a7a471f5b0d95b8ffe34d7" name="abdde3ccfe1a7a471f5b0d95b8ffe34d7"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_before_vertex</b> (size_t, size_t, double) const</td></tr>
-<tr class="separator:abdde3ccfe1a7a471f5b0d95b8ffe34d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5bf5382c6788f0bbf646927c0f279152" id="r_a5bf5382c6788f0bbf646927c0f279152"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5bf5382c6788f0bbf646927c0f279152">collapse_before_vertex</a> (size_t, size_t, double)</td></tr>
+<tr class="separator:a5bf5382c6788f0bbf646927c0f279152"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3760b5f7637c02d24b662f4a674214e3" id="r_a3760b5f7637c02d24b662f4a674214e3"><td class="memItemLeft" align="right" valign="top"><a id="a3760b5f7637c02d24b662f4a674214e3" name="a3760b5f7637c02d24b662f4a674214e3"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_quality_allowed</b> (size_t v1, double quality, double ring_max) const</td></tr>
 <tr class="separator:a3760b5f7637c02d24b662f4a674214e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -797,8 +806,7 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_afte
 <tr class="memitem:a427c093773eb892ab7c0f779bbba4650" id="r_a427c093773eb892ab7c0f779bbba4650"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a427c093773eb892ab7c0f779bbba4650">split_after_vertex</a> (size_t, bool)</td></tr>
 <tr class="memdesc:a427c093773eb892ab7c0f779bbba4650"><td class="mdescLeft">&#160;</td><td class="mdescRight">Application metadata not represented by the shared vertex attributes.  <br /></td></tr>
 <tr class="separator:a427c093773eb892ab7c0f779bbba4650"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72b0290e20868e5cb05bff7bc84103d3" id="r_a72b0290e20868e5cb05bff7bc84103d3"><td class="memItemLeft" align="right" valign="top"><a id="a72b0290e20868e5cb05bff7bc84103d3" name="a72b0290e20868e5cb05bff7bc84103d3"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>allow_surface_swap</b> () const =0</td></tr>
+<tr class="memitem:a72b0290e20868e5cb05bff7bc84103d3" id="r_a72b0290e20868e5cb05bff7bc84103d3"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a72b0290e20868e5cb05bff7bc84103d3">allow_surface_swap</a> () const =0</td></tr>
 <tr class="separator:a72b0290e20868e5cb05bff7bc84103d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d066549145211e831acece99fa44e2d" id="r_a0d066549145211e831acece99fa44e2d"><td class="memItemLeft" align="right" valign="top"><a id="a0d066549145211e831acece99fa44e2d" name="a0d066549145211e831acece99fa44e2d"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_surface_topology</b> () const =0</td></tr>
@@ -942,6 +950,33 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a72b0290e20868e5cb05bff7bc84103d3" name="a72b0290e20868e5cb05bff7bc84103d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72b0290e20868e5cb05bff7bc84103d3">&#9670;&#160;</a></span>allow_surface_swap()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetOptimizerMesh::allow_surface_swap </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaaae353c7e13d0a070a6c320fa77ab94">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
 <a id="a591913486d64d18d27b226d6cd9a19a9" name="a591913486d64d18d27b226d6cd9a19a9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a591913486d64d18d27b226d6cd9a19a9">&#9670;&#160;</a></span>cell_quality()</h2>
 
@@ -969,7 +1004,52 @@ Protected Attributes</h2></td></tr>
 <p>The quality of cell <code>tid</code>, and how to write it. </p>
 <p>The cell attribute types differ between the applications, so the base reaches the one field it shares through these. Both are AMIPS^3; see MAX_ENERGY. Topological operations and smoothing use the accessors so the shared algorithms remain independent of each application's cell-attribute type. </p>
 
-<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9a3a80d8bddab28faed3d55a0db905b0">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ae074662c9b4173952aad6e0c2689dc59">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a9a3a80d8bddab28faed3d55a0db905b0">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#ae074662c9b4173952aad6e0c2689dc59">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af91813232c2e7ecdf843bdc224c25cc5">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a5bf5382c6788f0bbf646927c0f279152" name="a5bf5382c6788f0bbf646927c0f279152"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bf5382c6788f0bbf646927c0f279152">&#9670;&#160;</a></span>collapse_before_vertex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetOptimizerMesh::collapse_before_vertex </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Non-const: an override may cache what it measured before the collapse so its <code>after</code> counterpart can tell a regression from a defect that was already there. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a1da3dcddf4d592646a6579117fec63d1">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aa63838cde5d3594bd13a670be557a94a">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1103,6 +1183,8 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a33236c0cc24dc37be3e5c2b70ea5e1db">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5153c8b977a1eac6998ea68af8fd5e92">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="a6672653dda293576dfaf6f59c6b1e7c3" name="a6672653dda293576dfaf6f59c6b1e7c3"></a>
@@ -1141,6 +1223,8 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a19396b059d5afd8a5dd9c7f3439f41e9">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3788aaf8f699e1f26594efb2414851d9">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="ada3fc41dd5678e0384a8cbcf246d9f22" name="ada3fc41dd5678e0384a8cbcf246d9f22"></a>
@@ -1168,6 +1252,8 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a>.</p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abeaef293c4a15ce1927d949960438847">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1198,7 +1284,7 @@ Protected Attributes</h2></td></tr>
 <p>Whether edge <code>e</code> lies on the <em>boundary</em> of the tracked surface. </p>
 <p>Flipping such an edge would change the surface's boundary loops, so prepare_surface_flip refuses it. Defaults to false, which is exact for simwild: its surface is the interface between differently tagged tets, and around an interior edge the tags change an even number of times going around the tet ring, so an interface can never terminate there. It can only end where it meets the bbox &ndash; and is_edge_on_bbox() has already rejected those edges by the time this is asked. tetwild overrides it because its surface is the input mesh, which may be non-watertight anywhere. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4e3c3a7624c778932cf61113384ad114">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4e3c3a7624c778932cf61113384ad114">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aaafc60fab1f3b2a510e52844fd794913">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1254,7 +1340,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a8a434e5587b2de810fde1b98b14ad78c">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a418bfd444954d888bd96a61470a4cd8f">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a8a434e5587b2de810fde1b98b14ad78c">wmtk::components::tetwild::TetWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a418bfd444954d888bd96a61470a4cd8f">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a0eaa158ff18041a26c7f74ae7bcff1a5">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1343,6 +1429,8 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a1eebafc29aa4bac21e724b9aa29d9652">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afdb1ef6f32082160d6eeb41687d815e6">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="ab1c12ae9e6041f288d992571a8124402" name="ab1c12ae9e6041f288d992571a8124402"></a>
@@ -1379,6 +1467,8 @@ Protected Attributes</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a880ffd0d9e947b37dde0ef1b673cc36e">wmtk::TetMesh</a>.</p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1435,7 +1525,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ac0e488dfe0114de84bde95640bada707">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a86385958cca555a65f3fcb6749bf693b">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ac0e488dfe0114de84bde95640bada707">wmtk::components::simwild::SimWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a86385958cca555a65f3fcb6749bf693b">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7fa3fda580e6d9e0f0590809525d202c">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1526,7 +1616,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Restore application cell data on the children made by a split. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a5f23bc1b21f7194e124e45ac48c35868">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a5f23bc1b21f7194e124e45ac48c35868">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a407fe8b92fcaaf4a18da43a9c3aea1c9">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1566,7 +1656,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Application metadata not represented by the shared vertex attributes. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4f9bd1caa031d64f897d964e6e4042ec">wmtk::components::tetwild::TetWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#a4f9bd1caa031d64f897d964e6e4042ec">wmtk::components::tetwild::TetWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab15510c222ac6bdf3a3dc503aabd8151">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1606,7 +1696,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Cache application cell data before a split. TetWild needs none; SimWild caches tags. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a1aa939e2f0148437719cf29e81b01f8e">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a1aa939e2f0148437719cf29e81b01f8e">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adb7f5ca90fe375c8b6cad5deef8460fe">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1650,6 +1740,8 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#adbeb7d8547847843377d6d20ccc0f9b5">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a0b69076325a3b21cec82337e34f265c7">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="a9c6e55fa5d731bd9f87408e4d801ff02" name="a9c6e55fa5d731bd9f87408e4d801ff02"></a>
@@ -1687,6 +1779,83 @@ Protected Attributes</h2></td></tr>
 <p>save face track info</p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a89cb180465a9209daee2f99a182c1e10">wmtk::TetMesh</a>.</p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4a5c571718072187a20d3f1897000cb2">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a1449fb08e36da2e02d5e1316674b1d23" name="a1449fb08e36da2e02d5e1316674b1d23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1449fb08e36da2e02d5e1316674b1d23">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt; wmtk::TetOptimizerMesh::surface_envelope_for_face </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface triangle <code>vids</code> must stay inside. </p>
+<p>Null means this triangle carries no containment requirement, and every containment check on it is skipped. Both applications that track a single surface keep one envelope for it, so the default answers with that; an application tracking more than one surface (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a7125d8d5b7ee4e67ee067e2297d62464" title="Which tracked surface this simplex belongs to, for applications that track more than one.">SurfaceTagAttributes::m_surface_class</a>) overrides this to answer per class &ndash; the offset boundary, for instance, is free to move and is checked against nothing.</p>
+<p>Keyed on the vertex ids rather than the fid because every caller is a topological operation asking about the triangles it is ABOUT to create or has just created, where only the vids are known for certain. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa868fa301486f2278da5603fa746b1a7">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a491b19bab0edf5e47c56aa606317b4bc" name="a491b19bab0edf5e47c56aa606317b4bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a491b19bab0edf5e47c56aa606317b4bc">&#9670;&#160;</a></span>surface_triangle_is_outside()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::TetOptimizerMesh::surface_triangle_is_outside </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>c</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether the tracked-surface triangle (a,b,c) is outside its containment envelope. False when it has none. Every surface containment check in the operations goes through here. </p>
 
 </div>
 </div>
@@ -1726,7 +1895,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Propagate application data to the cells made by a successful topological swap. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a0dba8059ec0bf3b3c0ac4fb18aa79262">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a0dba8059ec0bf3b3c0ac4fb18aa79262">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1756,7 +1925,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Application data attached to the old cells. TetWild has none; SimWild caches tags. </p>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#af555c30daf8b4abd4c06b15e96830241">wmtk::components::simwild::SimWildMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#af555c30daf8b4abd4c06b15e96830241">wmtk::components::simwild::SimWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac6753a2f5c74382b0181132c6049004">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -2265,6 +2434,8 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#aad8ff59652ffd269251e99e86296ab33">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adbddfa6117588820840d3afe84b96bcd">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="af50fb94f6f5108968cbca1d7e4fbc8b3" name="af50fb94f6f5108968cbca1d7e4fbc8b3"></a>
@@ -2310,6 +2481,24 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Whether the current collapse pass applies the target-length limit; read by collapse_edge_before, which is where that limit is enforced. </p>
+
+</div>
+</div>
+<a id="a8645d347a3109f9f892c57c7c288c66a" name="a8645d347a3109f9f892c57c7c288c66a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8645d347a3109f9f892c57c7c288c66a">&#9670;&#160;</a></span>m_face_attr_group</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_attribute_container_group.html">AttributeContainerGroup</a> wmtk::TetOptimizerMesh::m_face_attr_group</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>What p_face_attrs points at, so a derived class can register more. </p>
+<p>The counterpart of m_vertex_attr_group for faces. An application whose faces carry data the shared operations know nothing about &ndash; topological_offset labels each face by which part of the construction produced it &ndash; registers a second collection here, and it is resized, protected and rolled back with the shared one.</p>
+<p>Note what this does NOT do: the shared operations propagate face data by copying <a class="el" href="classwmtk_1_1_surface_tag_attributes.html" title="Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.">SurfaceTagAttributes</a> values around (the split and collapse caches, the swap tracker), and they only ever see their own collection. Anything registered here survives the mesh changing shape, but its values are the registering application's to maintain. </p>
 
 </div>
 </div>

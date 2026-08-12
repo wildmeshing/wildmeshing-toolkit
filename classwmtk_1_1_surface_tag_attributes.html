@@ -105,12 +105,34 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_surface_fs</b> =
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_bbox_fs</b> = -1</td></tr>
 <tr class="memdesc:a22316c4bab2301b2237e61e7d8e66fa0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which bbox side this simplex is on; -1 for none. <br /></td></tr>
 <tr class="separator:a22316c4bab2301b2237e61e7d8e66fa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7125d8d5b7ee4e67ee067e2297d62464" id="r_a7125d8d5b7ee4e67ee067e2297d62464"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a7125d8d5b7ee4e67ee067e2297d62464">m_surface_class</a> = 0</td></tr>
+<tr class="memdesc:a7125d8d5b7ee4e67ee067e2297d62464"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which tracked surface this simplex belongs to, for applications that track more than one.  <br /></td></tr>
+<tr class="separator:a7125d8d5b7ee4e67ee067e2297d62464"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on. </p>
 <p>The 3D meshes attach this to faces, the 2D meshes to edges; the four copies were character-identical, <code>reset()</code> and <code>merge()</code> included.</p>
 <p><code>m_is_bbox_fs</code> is the bbox side the simplex lies on, or -1 for none: 0/1 = x min/max, 2/3 = y min/max, 4/5 = z min/max. Tagging it is what keeps the bounding box from collapsing. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a7125d8d5b7ee4e67ee067e2297d62464" name="a7125d8d5b7ee4e67ee067e2297d62464"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7125d8d5b7ee4e67ee067e2297d62464">&#9670;&#160;</a></span>m_surface_class</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::SurfaceTagAttributes::m_surface_class = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Which tracked surface this simplex belongs to, for applications that track more than one. </p>
+<p>0 is the application's primary surface, and is all tetwild and simwild ever use. topological_offset tracks two &ndash; the input complex it must stay in the envelope of, and the offset boundary it is free to move &ndash; and uses 1 for the latter. Meaningless, and left at 0, when m_is_surface_fs is false.</p>
+<p>The class lives here, on the attribute struct, rather than in a container of its own because the shared operations copy face attributes WHOLESALE &ndash; assignment in the split and collapse caches, merge() in collapse_edge_before, reset() in the swap tracker. A field here is carried by all of that for free; a parallel container would be silently dropped by every one of those operations. </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_surface_tag_attributes_8h_source.html">SurfaceTagAttributes.h</a></li>
 </ul>
 </div><!-- contents -->

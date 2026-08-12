@@ -97,6 +97,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>squared_dist</b> (c
 <tr class="memitem:a6899a9e1e2e98791894de731a9e3f9fc" id="r_a6899a9e1e2e98791894de731a9e3f9fc"><td class="memItemLeft" align="right" valign="top"><a id="a6899a9e1e2e98791894de731a9e3f9fc" name="a6899a9e1e2e98791894de731a9e3f9fc"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>dist</b> (const VectorXd &amp;p) const</td></tr>
 <tr class="separator:a6899a9e1e2e98791894de731a9e3f9fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae31e401060d510646fe7c18742f3836f" id="r_ae31e401060d510646fe7c18742f3836f"><td class="memItemLeft" align="right" valign="top">Vector3d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#ae31e401060d510646fe7c18742f3836f">nearest_point</a> (const VectorXd &amp;p) const</td></tr>
+<tr class="memdesc:ae31e401060d510646fe7c18742f3836f"><td class="mdescLeft">&#160;</td><td class="mdescRight">find the nearest point on the complex (triangles and edges) to p  <br /></td></tr>
+<tr class="separator:ae31e401060d510646fe7c18742f3836f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83f51a0f3b1bd81f383d1ca84b164a1c" id="r_a83f51a0f3b1bd81f383d1ca84b164a1c"><td class="memItemLeft" align="right" valign="top"><a id="a83f51a0f3b1bd81f383d1ca84b164a1c" name="a83f51a0f3b1bd81f383d1ca84b164a1c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clear</b> ()</td></tr>
 <tr class="separator:a83f51a0f3b1bd81f383d1ca84b164a1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -195,6 +198,35 @@ MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_T_T</b> = Matri
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="ae31e401060d510646fe7c18742f3836f" name="ae31e401060d510646fe7c18742f3836f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae31e401060d510646fe7c18742f3836f">&#9670;&#160;</a></span>nearest_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vector3d wmtk::components::topological_offset::SimplicialComplexBVH::nearest_point </td>
+          <td>(</td>
+          <td class="paramtype">const VectorXd &amp;&#160;</td>
+          <td class="paramname"><em>p</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>find the nearest point on the complex (triangles and edges) to p </p>
+<dl class="section note"><dt>Note</dt><dd>unlike <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#a9d5d282d4f59a94cc60d25c9b28822f0" title="compute distance to complex">squared_dist()</a>, this does not special-case points inside a tet of the complex &ndash; for those the returned point is still the nearest surface point, not p itself </dd></dl>
 
 </div>
 </div>

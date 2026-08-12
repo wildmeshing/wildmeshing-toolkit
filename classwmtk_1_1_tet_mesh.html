@@ -97,10 +97,10 @@ Inheritance diagram for wmtk::TetMesh:</div>
 <area href="classharmonic__tet_1_1_harmonic_tet.html" alt="harmonic_tet::HarmonicTet" shape="rect" coords="355,56,700,80"/>
 <area href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share." alt="wmtk::TetOptimizerMesh" shape="rect" coords="710,56,1055,80"/>
 <area href="classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html" alt="wmtk::components::c1_simplification::MMTetMesh" shape="rect" coords="1065,56,1410,80"/>
-<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" alt="wmtk::components::topological_offset::TopoOffsetTetMesh" shape="rect" coords="1420,56,1765,80"/>
-<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="532,112,877,136"/>
-<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="887,112,1232,136"/>
-<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="1420,112,1765,136"/>
+<area href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html" alt="wmtk::components::simwild::SimWildMesh" shape="rect" coords="355,112,700,136"/>
+<area href="classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html" alt="wmtk::components::tetwild::TetWildMesh" shape="rect" coords="710,112,1055,136"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer." alt="wmtk::components::topological_offset::TopoOffsetTetMesh" shape="rect" coords="1065,112,1410,136"/>
+<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTetMesh" shape="rect" coords="1065,168,1410,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -226,8 +226,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_tet_capac
 <tr class="memitem:aa8aaf9487edea3dc4c9105cee56fed41" id="r_aa8aaf9487edea3dc4c9105cee56fed41"><td class="memItemLeft" align="right" valign="top"><a id="aa8aaf9487edea3dc4c9105cee56fed41" name="aa8aaf9487edea3dc4c9105cee56fed41"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capacity</b> (size_t extra)</td></tr>
 <tr class="separator:aa8aaf9487edea3dc4c9105cee56fed41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f91416a429a4b8f8d0ece88b460b520" id="r_a2f91416a429a4b8f8d0ece88b460b520"><td class="memItemLeft" align="right" valign="top"><a id="a2f91416a429a4b8f8d0ece88b460b520" name="a2f91416a429a4b8f8d0ece88b460b520"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
+<tr class="memitem:a2f91416a429a4b8f8d0ece88b460b520" id="r_a2f91416a429a4b8f8d0ece88b460b520"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a2f91416a429a4b8f8d0ece88b460b520">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="separator:a2f91416a429a4b8f8d0ece88b460b520"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a994201bc6b9c05cca284e544228bffc3" id="r_a994201bc6b9c05cca284e544228bffc3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">tuple_from_edge</a> (size_t tid, int local_eid) const</td></tr>
 <tr class="memdesc:a994201bc6b9c05cca284e544228bffc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> from global tetra index and <b>local</b> edge index (from 0-5).  <br /></td></tr>
@@ -1033,7 +1032,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afec96f98e92be934c95c018e1356f120">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5153c8b977a1eac6998ea68af8fd5e92">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#afec96f98e92be934c95c018e1356f120">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1418,7 +1417,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6672653dda293576dfaf6f59c6b1e7c3">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3788aaf8f699e1f26594efb2414851d9">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a6672653dda293576dfaf6f59c6b1e7c3">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1605,6 +1604,34 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 <dl class="section return"><dt>Returns</dt><dd>true </dd>
 <dd>
 false </dd></dl>
+
+</div>
+</div>
+<a id="a2f91416a429a4b8f8d0ece88b460b520" name="a2f91416a429a4b8f8d0ece88b460b520"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f91416a429a4b8f8d0ece88b460b520">&#9670;&#160;</a></span>invariants()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetMesh::invariants </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abeaef293c4a15ce1927d949960438847">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>
@@ -1821,7 +1848,7 @@ false </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
-<p>Reimplemented in <a class="el" href="classharmonic__tet_1_1_harmonic_tet.html#adb026b4e581ea7a87963e4f8785a0ecf">harmonic_tet::HarmonicTet</a>, <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#a48716858d71fbd2b592ea3a533640023">app::interior_tet_opt::InteriorTetOpt</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aff86a2be179db163a9e5f2d410b664ee">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classharmonic__tet_1_1_harmonic_tet.html#adb026b4e581ea7a87963e4f8785a0ecf">harmonic_tet::HarmonicTet</a>, <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#a48716858d71fbd2b592ea3a533640023">app::interior_tet_opt::InteriorTetOpt</a>, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#afdb1ef6f32082160d6eeb41687d815e6">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#aff86a2be179db163a9e5f2d410b664ee">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1858,7 +1885,7 @@ false </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
-<p>Reimplemented in <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#adae4006c75133701b3eca8ac56622e80">app::interior_tet_opt::InteriorTetOpt</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab1c12ae9e6041f288d992571a8124402">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#adae4006c75133701b3eca8ac56622e80">app::interior_tet_opt::InteriorTetOpt</a>, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ab1c12ae9e6041f288d992571a8124402">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -3743,7 +3770,7 @@ false </dd></dl>
   </dd>
 </dl>
 
-<p>Reimplemented in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c216b0a1b2f288f2d01fdaa4145b232">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adbddfa6117588820840d3afe84b96bcd">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c216b0a1b2f288f2d01fdaa4145b232">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
