@@ -127,9 +127,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
         logger().info("Perform sanity checks...");
         const auto edges = get_edges_by_condition([](const auto& e) { return e.m_is_surface_fs; });
         for (const auto& verts : edges) {
-            const auto& p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto& p1 = m_vertex_attribute[verts[1]].m_posf;
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p0, p1}})) {
+            if (surface_segment_is_outside(verts[0], verts[1])) {
                 logger().error("Edge {} is outside!", verts);
             }
         }

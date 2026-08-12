@@ -134,9 +134,7 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         // if both vertices are on the surface, the collapsing edge should be inside the envelope
         const size_t eid = loc.eid(*this);
         if (VA[v2_id].m_is_on_surface && !m_edge_attribute.at(eid).m_is_surface_fs) {
-            const Vector2d& p1 = VA[v1_id].m_posf;
-            const Vector2d& p2 = VA[v2_id].m_posf;
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p1, p2}})) {
+            if (surface_segment_is_outside(v1_id, v2_id)) {
                 return false;
             }
         }
@@ -305,11 +303,8 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // surface
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_edges) {
-            const Vector2d a = VA.at(vids[0]).m_posf;
-            const Vector2d b = VA.at(vids[1]).m_posf;
             // surface envelope
-            bool is_out = m_envelope->is_outside(std::array<Vector2d, 2>{{a, b}});
-            if (is_out) {
+            if (surface_segment_is_outside(vids[0], vids[1])) {
                 return false;
             }
         }
