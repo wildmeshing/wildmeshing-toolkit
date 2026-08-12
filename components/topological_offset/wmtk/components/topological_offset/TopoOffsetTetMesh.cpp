@@ -1339,7 +1339,8 @@ bool TopoOffsetTetMesh::offset_is_manifold()
     std::vector<Vector4i> offset_tets;
     for (const Tuple& t : tets) {
         size_t t_id = t.tid(*this);
-        if (m_tet_attribute[t_id].label != 0) {
+        // Region membership from the tags the operations propagate, not the derived label.
+        if (cell_in_region(t_id)) {
             auto vs = oriented_tet_vids(t_id);
             offset_tets.emplace_back(vs[0], vs[1], vs[2], vs[3]);
         }

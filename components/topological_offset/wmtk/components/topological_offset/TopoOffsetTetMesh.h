@@ -221,6 +221,26 @@ public:
         m_vertex_attribute[vid].m_is_rounded = true;
     }
 
+    /**
+     * @brief Whether tet `tid` belongs to the closed offset region, read from its TAGS.
+     *
+     * The 3D counterpart of TopoOffsetTriMesh::face_in_region, and it fixes the same defect.
+     * The region is the offset band plus the input complex it wraps, both named by tags -- and
+     * tags are what the shared operations propagate. The construction label says the same
+     * thing but is derived state maintained alongside them, so it goes stale the moment a
+     * split or swap creates a cell the label was never written for, putting holes in the
+     * region that offset_is_manifold() then reports as non-manifold.
+     */
+    bool cell_in_region(const size_t tid) const
+    {
+        const CellTag& tags = m_tet_attribute[tid].tag;
+        for (const int64_t t : m_offset_output_tag_ids) {
+            if (tags.count(t) != 0) return true; // in the offset band
+        }
+        const ExpressionPtr& expr = m_offset_params.offset_selection;
+        return expr && expr->eval(tags); // in the input complex it wraps
+    }
+
     /// Whether face `fid` is on the offset boundary (as opposed to the input complex).
     bool face_is_offset(const size_t fid) const
     {
@@ -339,6 +359,7 @@ public:
      * the offset surface already was, so its `after` counterpart can tell a regression from a
      * defect that was there before.
      */
+    bool collapse_edge_before(const Tuple& t) override;
     bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
     bool collapse_after_connectivity(
         size_t v1,

@@ -141,6 +141,15 @@ struct Parameters : public wmtk::OptimizerParameters
         box_min = min_;
         box_max = max_;
 
+        // Not a user knob. A TOPOLOGICAL offset is defined by preserving the topology of the
+        // region it wraps, so the shared collapse must always apply the substructure link
+        // condition -- without it a collapse across a thin offset band pinches the two sides
+        // together and the region stops being manifold. The offset's own collapse applied this
+        // unconditionally before it moved onto the shared engine, where it is gated on this
+        // flag; tetwild and simwild leave the flag off, which is why it is set here and not
+        // changed in wmtk.
+        preserve_topology = true;
+
         // Fills diag_l, l/lr and splitting_l2 / collapsing_l2 -- the same 16/9 and 16/25
         // factors this used to spell out itself. It also derives eps from epsr, which the
         // offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
