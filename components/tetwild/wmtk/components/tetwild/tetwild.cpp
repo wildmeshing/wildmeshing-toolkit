@@ -117,6 +117,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.w_amips = json_params["w_amips"];
     params.spring_pull = json_params["spring_pull"];
     params.smooth_quality_gate = json_params["smooth_quality_gate"];
+    params.two_stage = json_params["two_stage"];
 
     params.preserve_topology = json_params["preserve_topology"];
 

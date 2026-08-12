@@ -33,6 +33,7 @@
       "w_amips",
       "spring_pull",
       "smooth_quality_gate",
+      "two_stage",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -315,8 +316,14 @@
     "type": "bool",
     "default": true,
     "doc": "Apply the quality gate after a smoothing move -- the check that refuses a move making the worst incident element worse. Turning it off lets every non-inverting smoothing move through."
-},
-{
+  },
+  {
+    "pointer": "/two_stage",
+    "type": "bool",
+    "default": true,
+    "doc": "Run the balanced warm-up solve (AMIPS and the pull at equal footing) before the weighted smoothing solve for surface vertices. The balanced objective contains no small weight, so the warm-up accepts tangential slides at any configured w_amips; measured on triwild20k_202090 this produces a weight-independent surface deviation floor (~4e-5) that disappears with the warm-up off, at unchanged max energy."
+  },
+  {
     "pointer": "/spring_pull",
     "type": "bool",
     "default": true,

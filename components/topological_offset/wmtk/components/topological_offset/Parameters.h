@@ -134,6 +134,7 @@ struct Parameters : public wmtk::OptimizerParameters
         w_amips = json_params["w_amips"];
         spring_pull = json_params["spring_pull"];
         smooth_quality_gate = json_params["smooth_quality_gate"];
+        two_stage = json_params["two_stage"];
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }

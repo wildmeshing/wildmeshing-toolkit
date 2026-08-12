@@ -141,6 +141,16 @@ struct OptimizerParameters
     bool spring_pull = true;
     /// Apply the quality gate after a smoothing move. See SmoothVertexOptions.
     bool smooth_quality_gate = true;
+
+    /**
+     * Run the balanced warm-up solve (AMIPS and the pull at equal footing) before the
+     * weighted smoothing solve, for surface vertices. The balanced objective contains no
+     * small weight, so the warm-up's line search accepts tangential slides at any configured
+     * w_amips -- measured on triwild20k_202090 this produces a weight-independent surface
+     * deviation floor (~4e-5) that disappears with the warm-up off, at unchanged max energy.
+     * Default on until the full-corpus A/B says otherwise.
+     */
+    bool two_stage = true;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.

@@ -29,7 +29,7 @@ bool TriOptimizerMesh::smooth_after(const Tuple& t)
     opts.w_envelope = m_params.w_envelope;
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
-    opts.two_stage = true;
+    opts.two_stage = m_params.two_stage;
     opts.spring_pull = m_params.spring_pull;
     opts.smooth_quality_gate = m_params.smooth_quality_gate;
 
