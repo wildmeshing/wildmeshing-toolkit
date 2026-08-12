@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/TetMesh.h>
+#include <wmtk/TetOptimizerMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -25,36 +26,25 @@ const CellTag TEMP_OFFSET_TET_TAG_SET{TEMP_OFFSET_TET_TAG};
 
 // for all attributes:
 // label: 0=default, 1=input, 2=offset
-class VertexAttributes
+
+/**
+ * @brief Per-vertex data the shared optimizer knows nothing about.
+ *
+ * Position, rounding, bbox membership, order, sizing and partition all live on
+ * wmtk::TetOptimizerMesh::VertexAttributes; this carries only what is the offset's own.
+ * Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled back
+ * with the shared collection.
+ *
+ * Note m_is_on_input / m_is_on_offset versus the base's m_is_on_surface: the offset tracks TWO
+ * surfaces, and the base's flag is their union. These two say which.
+ */
+class VertexExtra
 {
 public:
-    Vector3d m_posf;
     int label = 0;
     size_t component_id = 0;
-    bool m_is_on_surface = false; // is this vertex on the input surface
+    bool m_is_on_input = false; // is this vertex on the input complex
     bool m_is_on_offset = false; // is this vertex on the offset surface
-    std::vector<int> on_bbox_faces;
-    size_t partition_id =
-        0; // for parallel execution, see TopoOffsetTetMesh::compute_vertex_partition()
-
-    // Multiplier on the target edge length (splitting_l2/collapsing_l2), matching
-    // SimWildMesh::VertexAttributes::m_sizing_scalar: < 1 refines (shorter edges are kept
-    // around this vertex), > 1 coarsens, clamped to [Parameters::min_sizing_scalar,
-    // Parameters::max_sizing_scalar]. Updated once per optimize_offset() iteration by
-    // update_sizing_field().
-    double m_sizing_scalar = 1.0;
-
-    /**
-     * The order of a vertex in a TetMesh is as follows:
-     * 0: vertex is not on the surface
-     * 1: vertex is on the surface
-     * 2: vertex is on the boundary of the surface or a non-manifold edge
-     * 3: vertex is at the boundary of a non-manifold edge or a non-manifold vertex
-     */
-    size_t m_order = 0;
-
-    VertexAttributes() {};
-    VertexAttributes(const Vector3d& p);
 };
 
 
@@ -65,40 +55,23 @@ public:
 };
 
 
-class FaceAttributes
+/**
+ * @brief Per-face data the shared optimizer knows nothing about.
+ *
+ * Whether a face is tracked surface, which surface, and which bbox side it is on all live on
+ * wmtk::SurfaceTagAttributes. Only the construction label is the offset's own, and only the
+ * pre-optimization phase reads it (marching tets, simplicial embedding, the offset growth in
+ * Spatial.cpp) -- optimize_offset() consumes it once and ignores it from then on.
+ *
+ * Registered with the base's m_face_attr_group, so it survives the mesh changing shape. Its
+ * VALUES, though, are only maintained by the offset's own operations: the shared split,
+ * collapse and swap propagate face data by copying SurfaceTagAttributes around and never see
+ * this. That is sound precisely because the label is dead by the time they run.
+ */
+class FaceExtra
 {
 public:
     int label = 0; // label: 0=default, 1=input, 2=offset
-    /**
-     * Is this face a part of the input surfaces.
-     */
-    bool m_is_surface_fs = false;
-    bool m_is_offset_fs = false;
-
-    /**
-     * Keep track which bbox side the face is on
-     * -1: none
-     * 0/1: x min/max
-     * 2/3: y min/max
-     * 4/5: z min/max
-     *
-     * This bbox side ID is used to keep the bbox from collapsing.
-     */
-    int m_is_bbox_fs = -1; //-1; 0~5
-
-    void reset()
-    {
-        m_is_surface_fs = false;
-        m_is_offset_fs = false;
-        m_is_bbox_fs = -1;
-    }
-
-    void merge(const FaceAttributes& attr)
-    {
-        m_is_surface_fs = m_is_surface_fs || attr.m_is_surface_fs;
-        m_is_offset_fs = m_is_offset_fs || attr.m_is_offset_fs;
-        if (attr.m_is_bbox_fs >= 0) m_is_bbox_fs = attr.m_is_bbox_fs;
-    }
 };
 
 
@@ -128,8 +101,32 @@ struct OffsetSurfaceSample
 };
 
 
-class TopoOffsetTetMesh : public wmtk::TetMesh
+/**
+ * @brief The offset's tet mesh, on the shared 3D optimizer.
+ *
+ * The construction phase -- marching tets, simplicial embedding, growing the offset region --
+ * is entirely its own and uses TetMesh's face and tet splits directly. The optimization phase
+ * that follows is wmtk::TetOptimizerMesh's, with the offset supplying only its own policy
+ * through the hooks: which cell quality, which tags to propagate, which surface is
+ * envelope-constrained, and how an offset-surface vertex is smoothed.
+ *
+ * Two surfaces are tracked, not one. The input complex is class 0 and must stay inside
+ * m_envelope; the offset boundary is OFFSET_SURFACE_CLASS and is free to move, being defined by
+ * the tet labels rather than by input geometry. The base's m_is_surface_fs / m_is_on_surface
+ * are the UNION of the two -- that is what must not be torn by an operation -- and
+ * VertexExtra::m_is_on_input / m_is_on_offset say which.
+ */
+class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 {
+public:
+    /**
+     * @brief SurfaceTagAttributes::m_surface_class for the offset boundary.
+     *
+     * The input complex keeps the primary class 0, so a face carrying input geometry is
+     * envelope-checked by the shared operations exactly as in tetwild and simwild.
+     */
+    static constexpr int OFFSET_SURFACE_CLASS = 1;
+
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0, // used for simplicial embedding steps
@@ -163,10 +160,13 @@ public:
     bool m_has_envelope;
     std::vector<Vector3d> m_V_envelope;
     std::vector<Vector3i> m_F_envelope;
-    std::shared_ptr<SampleEnvelope> m_envelope;
+    // m_envelope itself lives on the base, which is what checks tracked-surface triangles
+    // against it.
     double m_envelope_eps = -1;
 
-    Parameters& m_params;
+    /// The base holds only wmtk::OptimizerParameters; this is the same object, typed, for the
+    /// offset-only fields.
+    Parameters& m_offset_params;
 
     // smoothing
     // thread-specific: a polysolve solver is not safe to call concurrently from multiple
@@ -175,27 +175,87 @@ public:
     wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
         m_smooth_solver;
 
-    using VertAttCol = wmtk::AttributeCollection<VertexAttributes>;
+    using VertexExtraCol = wmtk::AttributeCollection<VertexExtra>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
-    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes>;
+    using FaceExtraCol = wmtk::AttributeCollection<FaceExtra>;
     using TetAttCol = wmtk::AttributeCollection<TetAttributes>;
-    VertAttCol m_vertex_attribute;
+    // m_vertex_attribute and m_face_attribute are the base's; these two are registered
+    // alongside them in its attribute groups.
+    VertexExtraCol m_vertex_extra;
+    FaceExtraCol m_face_extra;
     EdgeAttCol m_edge_attribute;
-    FaceAttCol m_face_attribute;
     TetAttCol m_tet_attribute;
+
+    /**
+     * @brief A face's shared surface tags together with the offset's own label.
+     *
+     * The marching-tets splits snapshot a face and write it back onto the pieces it became,
+     * and both halves have to travel together.
+     */
+    struct FaceSnapshot
+    {
+        FaceAttributes tags;
+        FaceExtra extra;
+    };
+    FaceSnapshot face_snapshot(const size_t fid) const
+    {
+        return FaceSnapshot{m_face_attribute[fid], m_face_extra[fid]};
+    }
+    void restore_face(const size_t fid, const FaceSnapshot& s)
+    {
+        m_face_attribute[fid] = s.tags;
+        m_face_extra[fid] = s.extra;
+    }
+
+    /**
+     * @brief Place a vertex, keeping its exact and rounded coordinates in step.
+     *
+     * The offset works in doubles throughout -- its construction is driven by a BVH distance
+     * field to the input complex, which has no exact form -- so every vertex it places is
+     * rounded, and its rational position is just the exact value of the double it carries.
+     *
+     * Filling m_pos anyway is not bookkeeping for its own sake. The shared split falls back to
+     * the EXACT midpoint when the double one would invert an incident tet, which is what lets a
+     * degenerate region keep being refined instead of the split being refused; that fallback
+     * reads the endpoints' m_pos, and every quality and orientation test around an un-rounded
+     * vertex reads its neighbours'. A vertex placed here with a stale m_pos would silently feed
+     * those the wrong point.
+     */
+    void set_vertex_position(const size_t vid, const Vector3d& p)
+    {
+        m_vertex_attribute[vid].m_posf = p;
+        m_vertex_attribute[vid].m_pos = to_rational(p);
+        m_vertex_attribute[vid].m_is_rounded = true;
+    }
+
+    /// Whether face `fid` is on the offset boundary (as opposed to the input complex).
+    bool face_is_offset(const size_t fid) const
+    {
+        return m_face_attribute[fid].m_is_surface_fs &&
+               m_face_attribute[fid].m_surface_class == OFFSET_SURFACE_CLASS;
+    }
+    /// Whether face `fid` carries input-complex geometry.
+    bool face_is_input(const size_t fid) const
+    {
+        return m_face_attribute[fid].m_is_surface_fs &&
+               m_face_attribute[fid].m_surface_class != OFFSET_SURFACE_CLASS;
+    }
 
     // debug use
     std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
     // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
     std::atomic<int> cnt_surface_swap = 0;
 
-    TopoOffsetTetMesh(Parameters& _m_params, int _num_threads = 0)
-        : m_params(_m_params)
+    TopoOffsetTetMesh(Parameters& _m_offset_params, int _num_threads = 0)
+        : wmtk::TetOptimizerMesh(_m_offset_params, nullptr)
+        , m_offset_params(_m_offset_params)
     {
         NUM_THREADS = _num_threads;
-        p_vertex_attrs = &m_vertex_attribute;
+        // The base owns the vertex and face slots; register the offset's own data with its
+        // groups so it is resized, protected and rolled back with them.
+        m_vertex_attr_group.add(&m_vertex_extra);
+        m_face_attr_group.add(&m_face_extra);
         p_edge_attrs = &m_edge_attribute;
-        p_face_attrs = &m_face_attribute;
         p_tet_attrs = &m_tet_attribute;
 
         m_collapse_check_link_condition = false;
@@ -204,7 +264,59 @@ public:
         optimization::deactivate_opt_logger();
     }
 
-    ~TopoOffsetTetMesh() {}
+    ~TopoOffsetTetMesh() override = default;
+
+    ////// wmtk::TetOptimizerMesh hooks
+
+    double cell_quality(const size_t tid) const override { return m_tet_attribute[tid].m_quality; }
+    void set_cell_quality(const size_t tid, const double q) override
+    {
+        m_tet_attribute[tid].m_quality = q;
+    }
+
+    /**
+     * @brief Only the input complex is envelope-constrained.
+     *
+     * The offset boundary is defined by which tets carry the offset label, not by input
+     * geometry, so there is nothing for it to stay inside; the checks that keep it faithful to
+     * the implicit offset field are the normal-deviation ones in collapse and swap. Decided
+     * from the vertices rather than the face's own class because the shared operations ask
+     * about triangles they are creating, whose attributes are not written yet.
+     */
+    std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
+        const std::array<size_t, 3>& vids) const override
+    {
+        for (const size_t v : vids) {
+            if (!m_vertex_extra[v].m_is_on_input) return nullptr;
+        }
+        return m_envelope;
+    }
+
+    /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
+    /// surfaces need it: the offset boundary is re-triangulated constantly, and refusing to
+    /// flip its diagonals is what leaves the badly-shaped triangles the sizing field then
+    /// chases.
+    bool allow_surface_swap() const override { return true; }
+    bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
+
+    /// Input-complex vertices never move (smooth_before refuses them), and an offset-surface
+    /// vertex is pulled by the quadrics rather than by an envelope, so there is nothing to pull
+    /// anything toward.
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t) const override
+    {
+        return nullptr;
+    }
+
+    void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
+
+    /**
+     * @brief The offset's sizing refinement, as the base's stall escape hatch.
+     *
+     * The base fires this when the max energy stops improving; the offset also runs
+     * update_sizing_field() unconditionally once per iteration, since its sizing field is
+     * driven by the shape of the offset triangulation rather than by the optimizer stalling.
+     */
+    size_t refine_sizing_around_worst(double) override { return update_sizing_field(); }
 
     /**
      * @brief initialize TetMesh from vertex, tet, and tag data
@@ -234,7 +346,8 @@ public:
     bool ambient_assert();
 
     /**
-     * @brief label input simplicial complex simplices, as defined in m_params.offset_selection
+     * @brief label input simplicial complex simplices, as defined in
+     * m_offset_params.offset_selection
      */
     void label_input_complex();
 
@@ -251,7 +364,7 @@ public:
 
     /**
      * @deprecated
-     * @brief split edge at point by minimizing m_params.target_distance - d() (where d() is
+     * @brief split edge at point by minimizing m_offset_params.target_distance - d() (where d() is
      * distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes
      * distance field is monotonic along edge. May give weird results if not monotonic
      */
@@ -461,19 +574,19 @@ public:
 
     /**
      * @brief refine or coarsen the sizing field (VertexAttributes::m_sizing_scalar) based on
-     * the mean ratio metric of the offset triangulation (faces with m_is_offset_fs), following
+     * the mean ratio metric of the offset triangulation (offset-class surface faces), following
      * the reference's compute_target_edge_length(): for every vertex incident to at least one
      * offset-surface face, take the worst (minimum) mean_ratio_metric() among those faces, and
-     * halve the sizing scalar if it is below m_params.sizing_mrm_threshold, or multiply it by
-     * 1.5 (coarsen) if above -- clamped to [m_params.min_sizing_scalar,
-     * m_params.max_sizing_scalar]. Vertices not incident to any offset-surface face are left
+     * halve the sizing scalar if it is below m_offset_params.sizing_mrm_threshold, or multiply it
+     * by 1.5 (coarsen) if above -- clamped to [m_offset_params.min_sizing_scalar,
+     * m_offset_params.max_sizing_scalar]. Vertices not incident to any offset-surface face are left
      * untouched. The vertices actually refined this pass then seed
-     * wmtk::utils::gradation_smooth_sizing() (m_params.sizing_gradation), matching
+     * wmtk::utils::gradation_smooth_sizing() (m_offset_params.sizing_gradation), matching
      * SimWildMesh::gradation_smooth_sizing(), so a newly refined patch doesn't sit right next
      * to an unrelated coarse one. Called once per optimize_offset() iteration, after smoothing.
      * @note skeleton: unlike the reference, this doesn't also factor in normal deviation.
      */
-    void update_sizing_field();
+    size_t update_sizing_field();
     //// sizing field
 
     //// swap
@@ -535,10 +648,10 @@ public:
     /**
      * @brief OffsetSwapInvariant analogue: for the offset-surface diagonal flip (a,b) -> (c,d)
      * across the two current offset faces (a,b,c)/(a,b,d), reject only a regression -- if the
-     * *old* diagonal (a,b) was already poorly aligned (spread >= m_params.max_normal_deviation_deg)
-     * with the offset target-normal field sampled on both faces, the flip is not blocked on
-     * these grounds; if it was well aligned and the *new* diagonal (c,d) would not be, it is
-     * rejected. See
+     * *old* diagonal (a,b) was already poorly aligned (spread >=
+     * m_offset_params.max_normal_deviation_deg) with the offset target-normal field sampled on both
+     * faces, the flip is not blocked on these grounds; if it was well aligned and the *new*
+     * diagonal (c,d) would not be, it is rejected. See
      * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/OffsetSwapInvariant.cpp
      */
     bool offset_swap_normal_deviation_ok(
@@ -553,8 +666,8 @@ public:
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
      * are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field
-     * and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint,
-     * edges are split at the midpoint
+     * and the offset target distance (m_offset_params.target_distance). If
+     * m_edge_split_mode=Midpoint, edges are split at the midpoint
      */
     void marching_tets();
 
@@ -617,7 +730,7 @@ public:
 
     /**
      * @brief update 'tags' data for tets in the offset region (tets labelled 2) based on
-     * the given offset tag values in m_params.offset_tag_value
+     * the given offset tag values in m_offset_params.offset_tag_value
      */
     void set_offset_tet_tags();
 
@@ -646,7 +759,10 @@ private:
     {
         size_t v1_id;
         size_t v2_id;
-        VertexAttributes new_v;
+        // The marching-tets placement and the offset's own data for the new vertex. The
+        // shared attributes (position, rounding, bbox, order) are written in `after`.
+        Vector3d new_v_pos;
+        VertexExtra new_v_extra;
 
         bool is_edge_on_surface = false;
         bool is_edge_on_offset = false;
@@ -661,9 +777,9 @@ private:
         std::map<simplex::Edge, EdgeAttributes> link_e; // link edge around splitted edge
 
         // cache face attributes
-        std::map<size_t, FaceAttributes> split_f; // splitted faces
-        std::map<simplex::Edge, FaceAttributes> internal_f; // new faces created by split
-        std::map<std::pair<simplex::Edge, size_t>, FaceAttributes>
+        std::map<size_t, FaceSnapshot> split_f; // splitted faces
+        std::map<simplex::Edge, FaceSnapshot> internal_f; // new faces created by split
+        std::map<std::pair<simplex::Edge, size_t>, FaceSnapshot>
             external_f; // closed star boundary faces of splitted edge
 
         // cache tet attributes
@@ -681,7 +797,7 @@ private:
         std::map<simplex::Edge, EdgeAttributes> existing_e;
 
         // cache face attributes
-        std::map<simplex::Face, FaceAttributes> existing_f;
+        std::map<simplex::Face, FaceSnapshot> existing_f;
         int splitf_label;
 
         // cache tet attributes
@@ -697,7 +813,7 @@ private:
         std::map<simplex::Edge, EdgeAttributes> existing_e;
 
         // cache retained face attributes
-        std::map<simplex::Face, FaceAttributes> existing_f;
+        std::map<simplex::Face, FaceSnapshot> existing_f;
 
         // cache tet attribute
         TetAttributes tet;
@@ -882,7 +998,7 @@ public: // helpers
         auto verts = get_vertices();
         for (const Tuple& v : verts) {
             size_t v_id = v.vid(*this);
-            m_vertex_attribute[v_id].component_id = 0;
+            m_vertex_extra[v_id].component_id = 0;
         }
     }
 };

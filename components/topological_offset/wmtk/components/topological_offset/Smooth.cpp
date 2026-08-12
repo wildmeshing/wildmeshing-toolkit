@@ -65,7 +65,7 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return false;
 
     // the input surfaces must stay fixed
-    return !m_vertex_attribute[vid].m_is_on_surface;
+    return !m_vertex_extra[vid].m_is_on_input;
 }
 
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
@@ -83,7 +83,7 @@ bool TopoOffsetTetMesh::is_offset_face(const Tuple& f) const
 
 bool TopoOffsetTetMesh::is_offset_face(const size_t fid) const
 {
-    return m_face_attribute[fid].m_is_offset_fs;
+    return face_is_offset(fid);
 }
 
 std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::get_offset_surface_faces_for_vertex(
@@ -191,7 +191,7 @@ bool TopoOffsetTetMesh::smooth_after_interior(const Tuple& t)
         // polysolve reports a failed line search by throwing; the position it reached is
         // still the best it found, and the checks below decide whether to keep it.
     }
-    m_vertex_attribute[vid].m_posf = x;
+    set_vertex_position(vid, x);
 
     // Inversion is caught by invariants(), called right after this by TetMesh::smooth_vertex.
     // Only the quality veto needs to be checked here.
@@ -227,7 +227,7 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     // Move the vertex to `target`; if that inverts an incident tet, binary search along the
     // segment from the known-valid p0 to `target` for the furthest point that does not.
     auto move_to = [&](const Vector3d& target) {
-        m_vertex_attribute[vid].m_posf = target;
+        set_vertex_position(vid, target);
         if (!any_inverted()) return;
 
         double lo = 0.; // m_posf = p0 + lo * (target - p0), always valid
@@ -235,14 +235,14 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
         constexpr int max_iters = 10;
         for (int iter = 0; iter < max_iters; ++iter) {
             const double mid = 0.5 * (lo + hi);
-            m_vertex_attribute[vid].m_posf = p0 + mid * (target - p0);
+            set_vertex_position(vid, p0 + mid * (target - p0));
             if (any_inverted()) {
                 hi = mid;
             } else {
                 lo = mid;
             }
         }
-        m_vertex_attribute[vid].m_posf = p0 + lo * (target - p0);
+        set_vertex_position(vid, p0 + lo * (target - p0));
     };
 
     // Laplacian smoothing, restricted to neighbors that are also on the offset surface --
@@ -251,7 +251,7 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     {
         int n_neighs = 0;
         for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
-            if (!m_vertex_attribute[nb].m_is_on_offset) continue;
+            if (!m_vertex_extra[nb].m_is_on_offset) continue;
             p_laplace += m_vertex_attribute[nb].m_posf;
             ++n_neighs;
         }
@@ -278,7 +278,7 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
         Quadrics face_q(0., 0., 0., 0.);
         for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
             if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no valid normal
-            const Vector3d target = s.nearest + m_params.target_distance * s.normal;
+            const Vector3d target = s.nearest + m_offset_params.target_distance * s.normal;
             face_q += Quadrics(target, s.normal) * s.weight;
             any_sample = true;
         }
@@ -288,10 +288,10 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     }
     if (!any_sample) return false;
 
-    const Vector3d p_optimal = q.solve(p_laplace, m_params.quadrics_svd_threshold);
+    const Vector3d p_optimal = q.solve(p_laplace, m_offset_params.quadrics_svd_threshold);
 
-    const double w = m_params.smooth_quadrics_weight;
-    const double u = m_params.smooth_laplacian_weight;
+    const double w = m_offset_params.smooth_quadrics_weight;
+    const double u = m_offset_params.smooth_laplacian_weight;
     const Vector3d p_final = (1 - w - u) * p0 + w * p_optimal + u * p_laplace;
 
     move_to(p_final);

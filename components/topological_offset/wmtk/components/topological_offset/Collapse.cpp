@@ -97,18 +97,18 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
 
     cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
 
-    // if (VA[v1_id].m_is_on_surface || VA[v2_id].m_is_on_surface) {
+    // if (m_vertex_extra[v1_id].m_is_on_input || m_vertex_extra[v2_id].m_is_on_input) {
     //     // don't touch the input surface
     //     return false;
     // }
 
     // length, similar to SimWild: only collapse edges shorter than the target-length-derived
-    // cutoff (m_params.collapsing_l2, set in Parameters::init() from length/length_rel),
+    // cutoff (m_offset_params.collapsing_l2, set in Parameters::init() from length/length_rel),
     // scaled by the sizing field so a refined region resists collapsing back down
     {
         const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2.;
         if ((VA[v1_id].m_posf - VA[v2_id].m_posf).squaredNorm() >
-            m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+            m_offset_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
             return false;
         }
     }
@@ -127,14 +127,14 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
     }
 
     // surface
-    if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface) {
+    if (cache.edge_length > 0 && m_vertex_extra[v1_id].m_is_on_input) {
+        if (!m_vertex_extra[v2_id].m_is_on_input) {
             // do not collapse away from surface
             return false;
         }
     }
-    if (cache.edge_length > 0 && VA[v1_id].m_is_on_offset) {
-        if (!VA[v2_id].m_is_on_offset) {
+    if (cache.edge_length > 0 && m_vertex_extra[v1_id].m_is_on_offset) {
+        if (!m_vertex_extra[v2_id].m_is_on_offset) {
             // do not collapse away from offset
             return false;
         }
@@ -151,7 +151,7 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
     // sampled around the survivor disagrees with itself (relative to the collapse direction)
     // by more than the threshold -- that disagreement is the signature of a feature edge
     // nearby, and collapsing across it would flatten/cut through the feature.
-    if (collapse_normal_deviation(loc, v1_id) >= m_params.max_normal_deviation_deg) {
+    if (collapse_normal_deviation(loc, v1_id) >= m_offset_params.max_normal_deviation_deg) {
         return false;
     }
 
@@ -197,7 +197,7 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
     }
     assert(cache.changed_energies.size() == cache.changed_tids.size());
 
-    // if (m_params.perform_sanity_checks) {
+    // if (m_offset_params.perform_sanity_checks) {
     //     if (!link_condition(loc)) {
     //         log_and_throw_error("link condition failed for edge ({}, {})", v1_id, v2_id);
     //     }
@@ -222,7 +222,7 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
     }
 
-    if (VA[v1_id].m_is_on_surface) {
+    if (m_vertex_extra[v1_id].m_is_on_input) {
         simplex::SimplexCollection fs = get_surface_faces_for_vertex(v1_id);
 
         cache.surface_faces.reserve(fs.faces().size());
@@ -235,9 +235,9 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
                 continue;
             }
             const auto [f_tuple, fid] = tuple_from_face(f.vertices());
-            if (m_face_attribute.at(fid).m_is_offset_fs) {
+            if (face_is_offset(fid)) {
                 cache.offset_faces.push_back({{v2_id, e0, e1}});
-            } else if (m_face_attribute.at(fid).m_is_surface_fs) {
+            } else if (face_is_input(fid)) {
                 cache.surface_faces.push_back({{v2_id, e0, e1}});
             } else {
                 log_and_throw_error("Surface face {} is neither offset nor surface", fid);
@@ -261,11 +261,11 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
             for (int k = 0; k < 3; k++) {
                 const size_t va = vs[(j_v1 + 1 + k) % 4];
                 const size_t vb = vs[(j_v1 + 1 + (k + 1) % 3) % 4];
-                if ((!VA[va].m_is_on_surface || !VA[vb].m_is_on_surface)) {
+                if ((!m_vertex_extra[va].m_is_on_input || !m_vertex_extra[vb].m_is_on_input)) {
                     continue;
                 }
                 const auto [f_tuple, fid] = tuple_from_face({{v1_id, va, vb}});
-                if (!m_face_attribute.at(fid).m_is_surface_fs) {
+                if (!face_is_input(fid)) {
                     // check if this face is actually on the surface
                     continue;
                 }
@@ -291,8 +291,8 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& loc)
         cache.boundary_edges = bs;
     }
 
-    if ((VA[v1_id].m_is_on_surface || VA[v1_id].m_is_on_offset) &&
-        (VA[v2_id].m_is_on_surface || VA[v2_id].m_is_on_offset)) {
+    if ((m_vertex_extra[v1_id].m_is_on_input || m_vertex_extra[v1_id].m_is_on_offset) &&
+        (m_vertex_extra[v2_id].m_is_on_input || m_vertex_extra[v2_id].m_is_on_offset)) {
         if (!substructure_link_condition(loc)) {
             return false;
         }
@@ -320,9 +320,9 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& loc)
     // NormalDeviationAfterInvariant analogue: only reject a move that degrades an
     // already-good offset surface patch -- if it was already over the threshold before, don't
     // block a collapse from fixing (or merely not fixing) it.
-    if (cache.nd_before < m_params.max_normal_deviation_deg) {
+    if (cache.nd_before < m_offset_params.max_normal_deviation_deg) {
         const double nd_after = max_offset_surface_normal_deviation_at_vertex(loc.vid(*this));
-        if (nd_after >= m_params.max_normal_deviation_deg) {
+        if (nd_after >= m_offset_params.max_normal_deviation_deg) {
             return false;
         }
     }
@@ -352,7 +352,8 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& loc)
         m_tet_attribute[cache.changed_tids[i]].m_quality = cache.changed_energies[i];
     }
     // vertex attr
-    VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
+    m_vertex_extra[v2_id].m_is_on_input =
+        m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
 
     // no need to update on_bbox_faces
     // face attr
