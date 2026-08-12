@@ -13,6 +13,7 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <set>
 
 namespace wmtk::utils {
@@ -28,7 +29,8 @@ void embed_triangles_in_tets(
     std::vector<bool>& is_v_on_input,
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface,
-    const EmbedTrianglesOptions& opts)
+    const EmbedTrianglesOptions& opts,
+    EmbedTrianglesProvenance* provenance)
 {
     // Remesher outputs. The tet-based ones are what this consumes: out_tets (the
     // remesher's tetrahedra), final_tets_parent (parent polyhedral cell of each
@@ -80,6 +82,7 @@ void embed_triangles_in_tets(
     std::vector<double> vr_edge_coords, vr_point_coords;
     std::vector<uint32_t> vr_edge_indexes;
     std::vector<std::vector<std::array<uint32_t, 4>>> vr_tri_provenance;
+    std::vector<uint32_t> vr_tri_group;
     std::vector<std::vector<std::array<uint32_t, 3>>> vr_edge_provenance;
     std::vector<std::array<uint32_t, 2>> vr_point_provenance;
     vol_rem::embed_tri_in_poly_mesh(
@@ -99,6 +102,7 @@ void embed_triangles_in_tets(
         vr_edge_indexes,
         vr_point_coords,
         vr_tri_provenance,
+        vr_tri_group,
         vr_edge_provenance,
         vr_point_provenance,
         true);
@@ -164,13 +168,89 @@ void embed_triangles_in_tets(
     }
     logger().info("done");
 
-    // Per-face on-input-surface flags.
+    // Per-face on-input-surface flags, from the remesher's triangle provenance.
+    //
+    // vr_tri_provenance[g] lists, for coplanar group g of the input, the output faces tiling
+    // it as {tet, v0, v1, v2}; vr_tri_group maps each input triangle to its g. A face is on
+    // the input surface iff some group names it. The faces are named by vertex triple rather
+    // than by facet index, so index them the same way -- sorted triples in a sorted vector,
+    // which is both cheaper to build than a hash set and deterministic.
+    //
+    // What this replaces is the remesher's `facets_on_input`, which is every face coloured
+    // BLACK_A ("fully contained in one constraint"). The two agree on every model in the
+    // suite (measured, see the commit message), but provenance is the stronger statement:
+    // it is contained in a *genuine input* constraint, positive-area-overlapping it, whereas
+    // the colour also fires on the virtual constraints the arrangement adds for itself.
     logger().info("Tags loop...");
+    using FaceKey = std::pair<std::array<uint32_t, 3>, uint32_t>; // sorted triple -> group
+    std::vector<FaceKey> on_input_faces;
+    {
+        size_t n = 0;
+        for (const auto& group : vr_tri_provenance) {
+            n += group.size();
+        }
+        on_input_faces.reserve(n);
+        for (size_t g = 0; g < vr_tri_provenance.size(); ++g) {
+            for (const auto& e : vr_tri_provenance[g]) {
+                std::array<uint32_t, 3> key{{e[1], e[2], e[3]}};
+                std::sort(key.begin(), key.end());
+                on_input_faces.emplace_back(key, uint32_t(g));
+            }
+        }
+        // A face where two exactly-coplanar groups meet is listed under both, so the keys
+        // are unique as pairs but the triples are not.
+        std::sort(on_input_faces.begin(), on_input_faces.end());
+    }
+    // All the entries naming one output face, as a range in the sorted vector above.
+    const auto groups_of = [&on_input_faces](const std::array<size_t, 3>& f) {
+        std::array<uint32_t, 3> key{{uint32_t(f[0]), uint32_t(f[1]), uint32_t(f[2])}};
+        std::sort(key.begin(), key.end());
+        return std::equal_range(
+            on_input_faces.begin(),
+            on_input_faces.end(),
+            FaceKey{key, 0},
+            [](const FaceKey& a, const FaceKey& b) { return a.first < b.first; });
+    };
+
     polygon_faces_on_input.assign(polygon_faces.size(), false);
-    for (size_t i = 0; i < embedded_facets_on_input.size(); ++i) {
-        polygon_faces_on_input[embedded_facets_on_input[i]] = true;
+    if (provenance != nullptr) {
+        provenance->triangle_group = vr_tri_group;
+        provenance->face_groups.reserve(on_input_faces.size());
+    }
+    for (size_t i = 0; i < polygon_faces.size(); ++i) {
+        const auto [lo, hi] = groups_of(polygon_faces[i]);
+        polygon_faces_on_input[i] = lo != hi;
+        if (provenance != nullptr) {
+            for (auto it = lo; it != hi; ++it) {
+                provenance->face_groups.push_back({uint32_t(i), it->second});
+            }
+        }
     }
     logger().info("done");
+
+    // The old colour-based answer, kept only to be diffed against the one above. Off by
+    // default: it is what the check exists to retire, and holding both costs a second pass.
+    if (opts.check_surface_provenance) {
+        std::vector<bool> by_colour(polygon_faces.size(), false);
+        for (size_t i = 0; i < embedded_facets_on_input.size(); ++i) {
+            by_colour[embedded_facets_on_input[i]] = true;
+        }
+        size_t only_colour = 0, only_provenance = 0;
+        for (size_t i = 0; i < polygon_faces.size(); ++i) {
+            if (by_colour[i] && !polygon_faces_on_input[i]) {
+                ++only_colour;
+            } else if (!by_colour[i] && polygon_faces_on_input[i]) {
+                ++only_provenance;
+            }
+        }
+        logger().info(
+            "surface provenance check: {} faces on input by provenance, {} by colour, "
+            "{} only-colour, {} only-provenance",
+            std::count(polygon_faces_on_input.begin(), polygon_faces_on_input.end(), true),
+            std::count(by_colour.begin(), by_colour.end(), true),
+            only_colour,
+            only_provenance);
+    }
 
     // Step 4c: surface tracking, from the remesher-provided metadata. For each
     // output tet it looks at its parent cell (final_tets_parent) and the parent
@@ -180,12 +260,21 @@ void embed_triangles_in_tets(
     assert(final_tets_parent_faces.size() == out_tets.size());
     for (size_t i = 0; i < out_tets.size(); ++i) {
         const auto& tetra = out_tets[i];
-        const uint32_t tetra_parent = final_tets_parent[i];
 
-        // Fast path: if the parent cell has no faces on the input surface, none
-        // of this tet's faces can either -- push four false flags and move on.
-        if (!cells_with_faces_on_input[tetra_parent]) {
-            for (int i = 0; i < 4; ++i) {
+        // Fast path: if none of the parent faces bounding this tet is on the input surface,
+        // neither is any of its own faces -- push four false flags and skip the sorting
+        // below. This is the exact test rather than the remesher's per-cell
+        // cells_with_faces_on_input, which answers the same question one level coarser and
+        // in terms of the face colour this no longer reads.
+        bool any_on_input = false;
+        for (const auto& f : final_tets_parent_faces[i]) {
+            if (polygon_faces_on_input[f]) {
+                any_on_input = true;
+                break;
+            }
+        }
+        if (!any_on_input) {
+            for (int k = 0; k < 4; ++k) {
                 tet_face_on_input_surface.push_back(false);
             }
             continue;

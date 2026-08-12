@@ -18,6 +18,34 @@ struct EmbedTrianglesOptions
     /// Check every output tet's orientation in exact arithmetic, after embedding and again
     /// after the vertex compaction.
     bool check_orientation = false;
+    /// Report how the provenance-derived "face is on the input surface" answer differs from
+    /// the remesher's older colour-derived `facets_on_input`. Diagnostic only -- the surface
+    /// always comes from provenance; this just counts the disagreement.
+    bool check_surface_provenance = false;
+};
+
+/**
+ * @brief Which input triangles each output surface face came from.
+ *
+ * The arrangement answers this per *coplanar group* rather than per input triangle: the
+ * remesher first partitions the input into maximal sets of triangles that are transitively
+ * edge-adjacent and exactly coplanar, then tracks which output faces tile each set. A flat
+ * region tiled by many input triangles is therefore one group, and -- the case to design
+ * around -- a group can span triangles from several input surfaces where they meet
+ * coplanarly along a shared edge.
+ *
+ * Optional: pass nullptr (the default) if the boolean `polygon_faces_on_input` is enough,
+ * as it is for tetwild, and neither vector is built.
+ */
+struct EmbedTrianglesProvenance
+{
+    /// (facet, coplanar group) pairs, sorted, indexing `polygon_faces`. Only facets on the
+    /// input surface appear, and a facet where two exactly-coplanar groups meet appears once
+    /// per group.
+    std::vector<std::array<uint32_t, 2>> face_groups;
+    /// Per input triangle (same indexing as `triangle_indices`): its coplanar group, or
+    /// UINT32_MAX if it was degenerate and dropped before the arrangement.
+    std::vector<uint32_t> triangle_group;
 };
 
 /**
@@ -29,10 +57,10 @@ struct EmbedTrianglesOptions
  *   1. run the arrangement;
  *   2. convert the remesher's bigrational coordinates to Vector3r;
  *   3. decode embedded_facets into triangles (fixed stride of 4: one size prefix + 3 vertex
- *      ids) and recover which are on the input surface;
- *   4. track the surface onto the output tets, using the remesher's own metadata --
- *      final_tets_parent (which polyhedral cell each tet came from), final_tets_parent_faces
- *      (which polygon faces bound it) and cells_with_faces_on_input;
+ *      ids) and recover which are on the input surface, from the remesher's triangle
+ *      provenance -- the output faces each coplanar group of input triangles is tiled by;
+ *   4. track the surface onto the output tets, using final_tets_parent_faces (which polygon
+ *      faces bound each tet);
  *   5. compact away vertices left unreferenced by out_tets and remap every index;
  *   6. reorder the per-tet face flags into WMTK's local face order.
  *
@@ -53,6 +81,7 @@ struct EmbedTrianglesOptions
  * @param[out] is_v_on_input per vertex: is it a corner of an on-input facet
  * @param[out] tets_after    output tets
  * @param[out] tet_face_on_input_surface  4 flags per tet, in WMTK local face order
+ * @param[out] provenance    optional: which input triangles each surface face came from
  */
 void embed_triangles_in_tets(
     const std::vector<double>& tri_vrt_coord,
@@ -65,6 +94,7 @@ void embed_triangles_in_tets(
     std::vector<bool>& is_v_on_input,
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface,
-    const EmbedTrianglesOptions& opts = {});
+    const EmbedTrianglesOptions& opts = {},
+    EmbedTrianglesProvenance* provenance = nullptr);
 
 } // namespace wmtk::utils

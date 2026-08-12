@@ -118,6 +118,7 @@ void TetWildMesh::insertion_by_volumeremesher(
     utils::EmbedTrianglesOptions opts;
     opts.check_collinear_input = m_params.perform_sanity_checks;
     opts.check_orientation = m_params.perform_sanity_checks;
+    opts.check_surface_provenance = m_params.perform_sanity_checks;
     utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
