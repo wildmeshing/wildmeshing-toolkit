@@ -130,10 +130,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         logger().info("Perform sanity checks...");
         const auto faces = get_faces_by_condition([](const auto& f) { return f.m_is_surface_fs; });
         for (const auto& verts : faces) {
-            const auto p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto p1 = m_vertex_attribute[verts[1]].m_posf;
-            const auto p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope->is_outside({{p0, p1, p2}})) {
+            if (surface_triangle_is_outside(verts[0], verts[1], verts[2])) {
                 logger().error("Face {} is outside!", verts);
             }
         }

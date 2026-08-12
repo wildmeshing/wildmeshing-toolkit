@@ -100,7 +100,12 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
 
     // surface
     if (cache.edge_length > 0 && VA[v1_id].m_is_on_surface) {
-        if (!VA[v2_id].m_is_on_surface && m_envelope->is_outside(VA[v2_id].m_posf)) {
+        // Moving a surface vertex onto a non-surface one is only safe if the destination is
+        // inside the envelope. With no envelope to ask, that cannot be certified, so refuse --
+        // which is also what keeps this from dereferencing a null envelope. Both applications
+        // that reach here always have one, so the guard never fires for them.
+        if (!VA[v2_id].m_is_on_surface &&
+            (!m_envelope || m_envelope->is_outside(VA[v2_id].m_posf))) {
             return false;
         }
     }
@@ -331,9 +336,7 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     if (cache.edge_length > 0) {
         for (auto& vids : cache.surface_faces) {
             // surface envelope
-            bool is_out = m_envelope->is_outside(
-                {{VA.at(vids[0]).m_posf, VA.at(vids[1]).m_posf, VA.at(vids[2]).m_posf}});
-            if (is_out) {
+            if (surface_triangle_is_outside(vids[0], vids[1], vids[2])) {
                 return false;
             }
 

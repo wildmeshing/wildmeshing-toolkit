@@ -188,7 +188,7 @@ protected:
     bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
     void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
 
-    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) const override;
+    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
     bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const override;
     bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override;
     bool collapse_after_connectivity(

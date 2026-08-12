@@ -92,7 +92,7 @@ public:
     {
         m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
     }
-    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) const override
+    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override
     {
         if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
         return m_vertex_extra[v2].m_is_on_open_boundary ||

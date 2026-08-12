@@ -322,13 +322,8 @@ bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the
         // Hausdorff envelope, exactly like a surface-edge collapse.
-        const auto& VA = m_vertex_attribute;
-        if (m_envelope->is_outside(
-                {{VA[cache.sf_a].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
-            return false;
-        if (m_envelope->is_outside(
-                {{VA[cache.sf_b].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
-            return false;
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d)) return false;
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d)) return false;
     }
 
     tracker_assign_after(*this, twotets, cache.changed_faces, m_face_attribute);
@@ -613,13 +608,8 @@ bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope,
         // exactly like a surface-edge collapse / the 3->2 surface flip.
-        const auto& VA = m_vertex_attribute;
-        if (m_envelope->is_outside(
-                {{VA[cache.sf_a].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
-            return false;
-        if (m_envelope->is_outside(
-                {{VA[cache.sf_b].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
-            return false;
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d)) return false;
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d)) return false;
     }
 
     tracker_assign_after(*this, incident_tets, cache.changed_faces, m_face_attribute);
@@ -740,13 +730,8 @@ bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
 
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope.
-        const auto& VA = m_vertex_attribute;
-        if (m_envelope->is_outside(
-                {{VA[cache.sf_a].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
-            return false;
-        if (m_envelope->is_outside(
-                {{VA[cache.sf_b].m_posf, VA[cache.sf_c].m_posf, VA[cache.sf_d].m_posf}}))
-            return false;
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d)) return false;
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d)) return false;
     }
 
     tracker_assign_after(*this, tids, cache.changed_faces, m_face_attribute);
