@@ -303,6 +303,18 @@ void topological_offset(nlohmann::json json_params)
 
         if (mesh.m_offset_params.optimize) {
             mesh.optimize_offset(output_filename);
+
+            // The manifoldness check above ran on the offset as constructed. Optimization
+            // then re-triangulates it -- splits, collapses and four kinds of swap all touch
+            // the offset boundary -- so the property has to be re-established afterwards, not
+            // assumed to survive.
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed after optimization.");
+                } else {
+                    logger().error("Offset region is NOT manifold after optimization!");
+                }
+            }
         }
 
         double time = timer.getElapsedTime();
