@@ -19,10 +19,25 @@
       "edge_search_termination_len",
       "sorted_marching",
       "check_manifoldness",
+      "optimize",
       "save_vtu",
       "DEBUG_output",
       "log_file",
-      "report"
+      "report",
+      "num_threads",
+      "smoothing_iterations",
+      "optimization_iterations",
+      "length_rel",
+      "length",
+      "stop_energy",
+      "max_normal_deviation_deg",
+      "smooth_quadrics_weight",
+      "smooth_laplacian_weight",
+      "quadrics_svd_threshold",
+      "min_sizing_scalar",
+      "max_sizing_scalar",
+      "sizing_mrm_threshold",
+      "sizing_gradation"
     ]
   },
   {
@@ -131,6 +146,12 @@
     "doc": "After performing offset, check if offset region is manifold"
   },
   {
+    "pointer": "/optimize",
+    "type": "bool",
+    "default": false,
+    "doc": "Run optimization on the offset."
+  },
+  {
     "pointer": "/save_vtu",
     "type": "bool",
     "default": false,
@@ -153,5 +174,89 @@
     "type": "string",
     "default": "",
     "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+  },
+  {
+    "pointer": "/num_threads",
+    "type": "int",
+    "default": 0,
+    "doc": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded."
+  },
+  {
+    "pointer": "/smoothing_iterations",
+    "type": "int",
+    "default": 3,
+    "doc": "Number of smoothing passes run during offset optimization (only used if optimize is true)."
+  },
+  {
+    "pointer": "/length_rel",
+    "type": "float",
+    "default": 5e-2,
+    "doc": "Target edge length relative to the bounding box diagonal. Used to bound which edges edge collapse is allowed to touch (only edges shorter than 4/5 of this length are collapsed). Ignored if length >= 0."
+  },
+  {
+    "pointer": "/length",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Target edge length (absolute). If < 0, computed from length_rel."
+  },
+  {
+    "pointer": "/stop_energy",
+    "type": "float",
+    "default": 10.0,
+    "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
+  },
+  {
+    "pointer": "/optimization_iterations",
+    "type": "int",
+    "default": 3,
+    "doc": "Number of split/collapse/swap/smooth passes run during offset optimization (only used if optimize is true)."
+  },
+  {
+    "pointer": "/max_normal_deviation_deg",
+    "type": "float",
+    "default": 15.0,
+    "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
+  },
+  {
+    "pointer": "/smooth_quadrics_weight",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Blend weight (0-1) toward the quadrics-optimal target vertex during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
+  },
+  {
+    "pointer": "/smooth_laplacian_weight",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Blend weight (0-1) toward the Laplacian of neighboring offset-surface vertices during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
+  },
+  {
+    "pointer": "/quadrics_svd_threshold",
+    "type": "float",
+    "default": 1e-2,
+    "doc": "SVD threshold used when solving for the quadrics-optimal target vertex during offset-surface smoothing. Controls sensitivity to feature edges: lower means more sensitive."
+  },
+  {
+    "pointer": "/min_sizing_scalar",
+    "type": "float",
+    "default": 0.01,
+    "doc": "Lower bound for the per-vertex sizing field (see max_sizing_scalar). Refinement stops once a vertex's sizing scalar reaches this fraction of the base target length."
+  },
+  {
+    "pointer": "/max_sizing_scalar",
+    "type": "float",
+    "default": 1.0,
+    "doc": "Upper bound for the per-vertex sizing field, a multiplier on the target edge length (splitting_l2/collapsing_l2) refined/coarsened once per optimize_offset() iteration based on the mean ratio metric of the offset triangulation (see sizing_mrm_threshold). 1.0 means never coarser than the base target length."
+  },
+  {
+    "pointer": "/sizing_mrm_threshold",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Mean ratio metric threshold used to update the sizing field once per optimize_offset() iteration: for each offset-surface vertex, the sizing scalar is halved (refine) if the worst incident offset triangle's mean ratio metric is below this, or multiplied by 1.5 (coarsen) if above."
+  },
+  {
+    "pointer": "/sizing_gradation",
+    "type": "float",
+    "default": 2.0,
+    "doc": "Gradation cap for the sizing field: neighboring vertices' sizing scalars may differ by at most this factor. After each mean-ratio-metric refinement pass, the refined vertices' lower sizing scalar is propagated outward (monotone, only ever lowers a neighbor's scalar) so the mesh doesn't jump straight from fine to coarse. <= 1 disables gradation."
   }
 ]

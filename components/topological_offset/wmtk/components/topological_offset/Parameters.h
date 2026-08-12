@@ -20,8 +20,56 @@ struct Parameters
     double edge_search_term_len;
     bool sorted_marching;
     std::string output_path; // no extension
+    bool optimize; // whether to run optimization on the offset
     bool save_vtu;
     bool debug_output;
+
+    int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
+    int smoothing_iterations; // number of smoothing passes run during optimize_offset()
+    int optimization_iterations; // number of split/collapse/swap/smooth passes in optimize_offset()
+
+    // ---- collapse, similar to SimWild ----
+    double length_rel; // target edge length (relative to bbox diagonal)
+    double length; // target edge length (absolute). If < 0, computed from length_rel in init()
+    double stop_energy; // target AMIPS quality (see TopoOffsetTetMesh::get_quality()); a
+                        // collapse that would push an already-on-target region's quality back
+                        // above this is rejected
+
+    // max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the
+    // input-complex normal it is supposed to approximate, before collapse/swap reject a move
+    // that would push it further out of alignment.
+    double max_normal_deviation_deg;
+
+    // ---- offset-surface smoothing blend, see TopoOffsetTetMesh::smooth_after_offset_surface()
+    // ---- each offset-surface vertex moves to a weighted blend of its previous position,
+    // the quadrics-optimal target vertex, and the Laplacian of its offset-surface
+    // neighbors; the remaining weight (1 - w - u) stays with the previous position.
+    double smooth_quadrics_weight; // w: blend toward the quadrics-optimal target vertex
+    double smooth_laplacian_weight; // u: blend toward the offset-surface Laplacian
+    // SVD threshold used by Quadrics::solve() when solving for the quadrics-optimal target
+    // vertex. Controls sensitivity to feature edges: lower means more sensitive.
+    double quadrics_svd_threshold;
+
+    // ---- sizing field, see TopoOffsetTetMesh::update_sizing_field() ----
+    // bounds for VertexAttributes::m_sizing_scalar
+    double min_sizing_scalar;
+    double max_sizing_scalar;
+    // mean ratio metric strictly below this is "bad" (refine); strictly above is "good"
+    // (coarsen), matching the reference's compute_target_edge_length()
+    double sizing_mrm_threshold;
+    // gradation cap: neighboring vertices' sizing scalars may differ by at most this factor,
+    // enforced by propagating the refinement outward (monotone, only ever lowers a
+    // neighbor's scalar), matching SimWildMesh::Parameters::stuck_refine_gradation. <= 1
+    // disables gradation entirely.
+    double sizing_gradation;
+
+    VectorXd box_min;
+    VectorXd box_max;
+
+    // derived in init()
+    double collapsing_l2; // upper bound (squared) on edge length for edge collapse eligibility
+    double splitting_l2; // lower bound (squared) on edge length for edge split eligibility
+    double diag_l; // bounding box diagonal length
 
     Parameters() = default;
 
@@ -58,18 +106,51 @@ struct Parameters
         edge_search_term_len = json_params["edge_search_termination_len"];
         sorted_marching = json_params["sorted_marching"];
         output_path = json_params["output"];
+        optimize = json_params["optimize"];
         save_vtu = json_params["save_vtu"];
         debug_output = json_params["DEBUG_output"];
+
+        num_threads = json_params["num_threads"];
+        smoothing_iterations = json_params["smoothing_iterations"];
+        optimization_iterations = json_params["optimization_iterations"];
+
+        length_rel = json_params["length_rel"];
+        length = json_params["length"];
+        stop_energy = json_params["stop_energy"];
+
+        max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
+
+        smooth_quadrics_weight = json_params["smooth_quadrics_weight"];
+        smooth_laplacian_weight = json_params["smooth_laplacian_weight"];
+        quadrics_svd_threshold = json_params["quadrics_svd_threshold"];
+
+        min_sizing_scalar = json_params["min_sizing_scalar"];
+        max_sizing_scalar = json_params["max_sizing_scalar"];
+        sizing_mrm_threshold = json_params["sizing_mrm_threshold"];
+        sizing_gradation = json_params["sizing_gradation"];
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)
     {
-        double diag_l = (max_ - min_).norm();
+        box_min = min_;
+        box_max = max_;
+
+        diag_l = (max_ - min_).norm();
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;
         } else {
             target_distance = target_distance_rel * diag_l;
         }
+
+        if (length > 0) {
+            length_rel = length / diag_l;
+        } else {
+            length = length_rel * diag_l;
+        }
+        // only collapse edges shorter than 4/5 of the target length, matching SimWild
+        collapsing_l2 = length * length * (16. / 25.);
+        // only split edges longer than 4/3 of the target length, matching SimWild
+        splitting_l2 = length * length * (16. / 9.);
     }
 };
 } // namespace wmtk::components::topological_offset

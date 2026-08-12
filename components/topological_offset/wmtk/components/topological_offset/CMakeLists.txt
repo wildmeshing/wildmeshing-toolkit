@@ -10,13 +10,19 @@ endif()
 set(SRC_FILES
 	TopoOffsetTetMesh.h
 	TopoOffsetTetMesh.cpp
+	Smooth.cpp
+	Collapse.cpp
+	Swap.cpp
+	Quadrics.hpp
+	Quadrics.cpp
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp
 
 	Parameters.h
 
-	ComponentSplitting.cpp
+	EdgeSplittingTet.cpp
+	EdgeSplittingTri.cpp
 	SimplicialComplexBVH.hpp
 	Spatial.cpp
 	Circle.hpp
