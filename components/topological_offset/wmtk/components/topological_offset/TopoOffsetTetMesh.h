@@ -242,9 +242,7 @@ public:
     }
 
     // debug use
-    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
-    // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
-    std::atomic<int> cnt_surface_swap = 0;
+    std::atomic<int> cnt_split = 0, cnt_collapse = 0;
 
     TopoOffsetTetMesh(Parameters& _m_offset_params, int _num_threads = 0)
         : wmtk::TetOptimizerMesh(_m_offset_params, nullptr)
@@ -319,6 +317,33 @@ public:
     size_t refine_sizing_around_worst(double) override { return update_sizing_field(); }
 
     /**
+     * @brief Which tag the tets a swap creates should carry.
+     *
+     * A swap must not move the boundary between differently tagged regions, since that
+     * boundary IS the offset. Around an interior edge every incident tet already shares a tag
+     * (a face between differently tagged tets is a tracked surface face, and the base only
+     * takes this path when the edge has none), so this is a cheap safety net there. On a
+     * surface flip the ring genuinely spans two tags and the majority one wins.
+     *
+     * Returns false, refusing the swap, when three or more tags meet: there is then no single
+     * answer and any choice would relabel a tet.
+     */
+    bool swap_before_interior(const std::vector<size_t>& tids) override;
+    bool swap_before_surface(
+        const std::vector<size_t>& tids,
+        size_t a,
+        size_t b,
+        size_t c,
+        size_t d) override;
+    bool swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip) override;
+
+private:
+    bool swap_capture_tag(const std::vector<size_t>& tids);
+    /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
+    wmtk::threading::enumerable_thread_specific<CellTag> m_swap_tag;
+
+public:
+    /**
      * @brief initialize TetMesh from vertex, tet, and tag data
      * @param V: #V by 3 vertex matrix
      * @param T: #T by 4 tet matrix
@@ -336,9 +361,10 @@ public:
 
     void init_surfaces_and_boundaries();
 
-    bool is_edge_on_surface(const Tuple& loc);
+    /// Whether edge `loc` lies on the INPUT complex. The base's is_edge_on_input() asks
+    /// about the union of the two tracked surfaces, and is_edge_on_bbox() is the base's.
+    bool is_edge_on_input(const Tuple& loc);
     bool is_edge_on_offset(const Tuple& loc);
-    bool is_edge_on_bbox(const Tuple& loc);
 
     /**
      * @brief check that the ambient tag does not overlap with any other tags
@@ -406,18 +432,6 @@ public:
     bool smooth_after(const Tuple& t) override;
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
-    bool swap_edge_44_before(const Tuple& t) override;
-    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
-        override;
-    bool swap_edge_44_after(const Tuple& t) override;
-    bool swap_edge_56_before(const Tuple& t) override;
-    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
-        override;
-    bool swap_edge_56_after(const Tuple& t) override;
-    bool swap_face_before(const Tuple& t) override;
-    bool swap_face_after(const Tuple& t) override;
     //// overriden splits/invariants
 
     /**
@@ -590,60 +604,7 @@ public:
     //// sizing field
 
     //// swap
-    /**
-     * @brief swap_edge (2-3/3-2), restricted to edges whose 3 incident tets already share the
-     * same label and tag: the new tets/faces then unambiguously inherit that label/tag, and the
-     * offset/input region boundaries -- which live entirely in *which* tets carry which label
-     * -- cannot move, since a swap confined to a single-label neighborhood never changes any
-     * tet's label. An edge lying *on* the input or offset surface is additionally allowed as a
-     * topology-preserving surface diagonal flip (see prepare_surface_flip_32()), and is only
-     * accepted if it strictly improves the worst AMIPS quality among the affected tets,
-     * matching SimWildMesh::swap_edge_before/after.
-     */
-    void swap_all_edges();
 
-    /**
-     * @brief 4-4 edge swap (edges with exactly 4 incident tets), matching
-     * SimWildMesh::swap_all_edges_44(). Unlike swap_all_edges(), this never touches the input
-     * or offset surface (or the bbox) at all -- there is no surface-diagonal-flip case for it,
-     * so an edge on either surface is rejected outright in swap_edge_44_before().
-     */
-    void swap_all_edges_44();
-
-    /**
-     * @brief 5-6 edge swap (edges with exactly 5 incident tets), matching
-     * SimWildMesh::swap_all_edges_56(). Same surface/offset/bbox exclusion as
-     * swap_all_edges_44().
-     */
-    void swap_all_edges_56();
-
-    /**
-     * @brief 2-3 face swap (a bistellar flip turning the 2 tets sharing a face into 3 tets
-     * sharing an edge), matching SimWildMesh::swap_all_faces(). Never touches a face on the
-     * input surface, the offset surface, or the bbox.
-     */
-    void swap_all_faces();
-
-    /**
-     * @brief runs swap_edge, swap_edge_44, and swap_edge_56 together over the same edge op
-     * list, matching SimWildMesh::swap_all_edges_all(). This is what optimize_offset() calls;
-     * the three swap_all_edges*() above remain available individually (e.g. for tests).
-     */
-    void swap_all_edges_all();
-
-    /**
-     * @brief Prepare a surface or offset-surface 3->2 edge swap (a diagonal flip).
-     *
-     * Called from swap_edge_before when the swapped edge (a,b) is on the input surface or the
-     * offset surface and has exactly 3 incident tets. Verifies the local guards that guarantee
-     * the flip preserves surface manifoldness / topology, and fills the
-     * surface-flip fields of swap_cache. Returns false (rejecting the swap) if
-     * any guard fails: open-boundary edge, non-manifold edge (!= 2 surface/offset
-     * faces), one of the two would-be new faces already tagged surface/offset, or --
-     * for an offset-surface flip only -- offset_swap_normal_deviation_ok() rejects it. The
-     * tets sharing (a,b) are passed in to avoid recomputation.
-     */
-    bool prepare_surface_flip_32(const Tuple& t, const std::vector<size_t>& incident_tets);
 
     /**
      * @brief OffsetSwapInvariant analogue: for the offset-surface diagonal flip (a,b) -> (c,d)
@@ -764,7 +725,7 @@ private:
         Vector3d new_v_pos;
         VertexExtra new_v_extra;
 
-        bool is_edge_on_surface = false;
+        bool is_edge_on_input = false;
         bool is_edge_on_offset = false;
         bool is_edge_open_boundary = false;
 
@@ -851,31 +812,6 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<EdgeCollapseCache> edge_collapse_cache;
 
-    /**
-     * @brief snapshot for swap_edge, keyed by vertex ids for the same reason as
-     * EdgeCollapseCache: the 3 incident tets get replaced by 2 new ones, so eid()/fid() of the
-     * edges/faces that survive the swap can point at a different (unwritten) slot afterward.
-     * Unlike collapse, no vertex disappears here -- only the swapped edge itself and its 3
-     * incident faces vanish, and exactly one new face (the flipped-in triangle) appears -- so
-     * every other edge/face of the 3 old tets is cached and later restored verbatim.
-     */
-    struct SwapEdgeCache
-    {
-        double max_energy;
-        std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-        CellTag tet_tags;
-
-        // Surface 3->2 flip bookkeeping (filled by swap_edge_before when the
-        // swapped edge (a,b) lies on the surface). a,b are the removed-edge
-        // endpoints, c,d are the new surface-edge endpoints, e is the interior
-        // apex. sf_face_attr is copied onto the two new surface faces (a,c,d),
-        // (b,c,d). is_surface_flip gates the extra handling in swap_edge_after.
-        bool is_surface_flip = false;
-        bool is_offset_flip = false;
-        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0, sf_e = 0;
-        FaceAttributes sf_face_attr;
-    };
-    wmtk::threading::enumerable_thread_specific<SwapEdgeCache> swap_edge_cache;
 
 public:
     // substructure functions

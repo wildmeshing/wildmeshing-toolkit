@@ -140,7 +140,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     cache.v1_id = t.vid(*this);
     cache.v2_id = switch_vertex(t).vid(*this);
 
-    cache.is_edge_on_surface = is_edge_on_surface(t);
+    cache.is_edge_on_input = is_edge_on_input(t);
     cache.is_edge_on_offset = is_edge_on_offset(t);
 
     Vector3d p1 = VA[cache.v1_id].m_posf;
@@ -227,7 +227,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
             }
         }
 
-        cache.is_edge_open_boundary = cache.is_edge_on_surface && is_order_2_edge(t);
+        cache.is_edge_open_boundary = cache.is_edge_on_input && is_order_2_edge(t);
 
         /// save face track info
         auto comp = [](const std::pair<FaceAttributes, std::array<size_t, 3>>& v1,
@@ -383,9 +383,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 
 
         // surface
-        m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_surface;
+        m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_input;
         m_vertex_extra[v_id].m_is_on_offset = cache.is_edge_on_offset;
-        if (cache.is_edge_on_surface || cache.is_edge_on_offset) {
+        if (cache.is_edge_on_input || cache.is_edge_on_offset) {
             m_vertex_attribute[v_id].m_order = 1;
         } else {
             m_vertex_attribute[v_id].m_order = 0;
@@ -428,7 +428,7 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
         // vertex attribute
         m_vertex_extra[v_id] = cache.new_v_extra;
         set_vertex_position(v_id, cache.new_v_pos);
-        m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_surface;
+        m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_input;
         m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
             m_vertex_attribute[v1_id].on_bbox_faces,
             m_vertex_attribute[v2_id].on_bbox_faces);
