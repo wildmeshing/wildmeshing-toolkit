@@ -98,8 +98,9 @@ Public Member Functions</h2></td></tr>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>remove_duplicates</b> (const double eps)</td></tr>
 <tr class="memdesc:aa74c124f5249f70b274105df856a699a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merge vertices that are closer than eps. <br /></td></tr>
 <tr class="separator:aa74c124f5249f70b274105df856a699a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2a12c411f465cc8ca05e17deb166e23" id="r_aa2a12c411f465cc8ca05e17deb166e23"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#aa2a12c411f465cc8ca05e17deb166e23">embed_surface</a> (const bool flood_fill=false)</td></tr>
-<tr class="separator:aa2a12c411f465cc8ca05e17deb166e23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68c3ada213da2846c559aeac7050b909" id="r_a68c3ada213da2846c559aeac7050b909"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a68c3ada213da2846c559aeac7050b909">embed_surface</a> (const bool flood_fill=false, const bool tag_from_winding_number=true)</td></tr>
+<tr class="memdesc:a68c3ada213da2846c559aeac7050b909"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the arrangement and tag the resulting cells.  <br /></td></tr>
+<tr class="separator:a68c3ada213da2846c559aeac7050b909"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a247c5b4ea204873b007265da6815f155" id="r_a247c5b4ea204873b007265da6815f155"><td class="memItemLeft" align="right" valign="top"><a id="a247c5b4ea204873b007265da6815f155" name="a247c5b4ea204873b007265da6815f155"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate</b> ()</td></tr>
 <tr class="memdesc:a247c5b4ea204873b007265da6815f155"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove unreferenced vertices. <br /></td></tr>
@@ -173,6 +174,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>F_surf_from_vector</b
 <tr class="memitem:acc817f8f6500325879aff94703123805" id="r_acc817f8f6500325879aff94703123805"><td class="memItemLeft" align="right" valign="top"><a id="acc817f8f6500325879aff94703123805" name="acc817f8f6500325879aff94703123805"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>tag_from_winding_number</b> ()</td></tr>
 <tr class="separator:acc817f8f6500325879aff94703123805"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b585d6f7e94de8fbaaa4b3aa5c7f8db" id="r_a6b585d6f7e94de8fbaaa4b3aa5c7f8db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a6b585d6f7e94de8fbaaa4b3aa5c7f8db">tag_from_provenance</a> ()</td></tr>
+<tr class="memdesc:a6b585d6f7e94de8fbaaa4b3aa5c7f8db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decide the cell tags from the arrangement's surface provenance.  <br /></td></tr>
+<tr class="separator:a6b585d6f7e94de8fbaaa4b3aa5c7f8db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64fa450f9eaf635f92b0f1c8bba95668" id="r_a64fa450f9eaf635f92b0f1c8bba95668"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a64fa450f9eaf635f92b0f1c8bba95668">check_tag_surface_invariant</a> (const std::string &amp;how) const</td></tr>
+<tr class="memdesc:a64fa450f9eaf635f92b0f1c8bba95668"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count where the tagging and the arrangement's surface disagree.  <br /></td></tr>
+<tr class="separator:a64fa450f9eaf635f92b0f1c8bba95668"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -188,9 +195,12 @@ MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>m_V_surface</b></
 <tr class="memitem:abd401e31001d74a13892d613844f09d8" id="r_abd401e31001d74a13892d613844f09d8"><td class="memItemLeft" align="right" valign="top"><a id="abd401e31001d74a13892d613844f09d8" name="abd401e31001d74a13892d613844f09d8"></a>
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_surface</b></td></tr>
 <tr class="separator:abd401e31001d74a13892d613844f09d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad4366564f523c7ed883295be7c0e5e9e" id="r_ad4366564f523c7ed883295be7c0e5e9e"><td class="memItemLeft" align="right" valign="top"><a id="ad4366564f523c7ed883295be7c0e5e9e" name="ad4366564f523c7ed883295be7c0e5e9e"></a>
-std::vector&lt; std::vector&lt; std::pair&lt; size_t, size_t &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags_surface</b></td></tr>
-<tr class="separator:ad4366564f523c7ed883295be7c0e5e9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06e6d78df5e793c43de1414b2033b286" id="r_a06e6d78df5e793c43de1414b2033b286"><td class="memItemLeft" align="right" valign="top"><a id="a06e6d78df5e793c43de1414b2033b286" name="a06e6d78df5e793c43de1414b2033b286"></a>
+std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_input</b></td></tr>
+<tr class="separator:a06e6d78df5e793c43de1414b2033b286"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7361065746b3484ce46cb000c786a0e" id="r_aa7361065746b3484ce46cb000c786a0e"><td class="memItemLeft" align="right" valign="top"><a id="aa7361065746b3484ce46cb000c786a0e" name="aa7361065746b3484ce46cb000c786a0e"></a>
+std::vector&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags_surface</b></td></tr>
+<tr class="separator:aa7361065746b3484ce46cb000c786a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a429e59c375473a9ce24df98332db454d" id="r_a429e59c375473a9ce24df98332db454d"><td class="memItemLeft" align="right" valign="top"><a id="a429e59c375473a9ce24df98332db454d" name="a429e59c375473a9ce24df98332db454d"></a>
 std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_nonmanifold_v</b></td></tr>
 <tr class="separator:a429e59c375473a9ce24df98332db454d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -222,8 +232,37 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A class for reading an image and converting it into a tet mesh. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa2a12c411f465cc8ca05e17deb166e23" name="aa2a12c411f465cc8ca05e17deb166e23"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2a12c411f465cc8ca05e17deb166e23">&#9670;&#160;</a></span>embed_surface()</h2>
+<a id="a64fa450f9eaf635f92b0f1c8bba95668" name="a64fa450f9eaf635f92b0f1c8bba95668"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64fa450f9eaf635f92b0f1c8bba95668">&#9670;&#160;</a></span>check_tag_surface_invariant()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::EmbedSurface::check_tag_surface_invariant </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>how</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Count where the tagging and the arrangement's surface disagree. </p>
+<p>Everything downstream reads the surface off the tags &ndash; <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html">SimWildMesh</a> marks a face as surface exactly when its two tets' tags differ &ndash; so a tagging is only right if it reproduces the surface the arrangement computed. Diagnostic, under DEBUG_sanity_checks. </p>
+
+</div>
+</div>
+<a id="a68c3ada213da2846c559aeac7050b909" name="a68c3ada213da2846c559aeac7050b909"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68c3ada213da2846c559aeac7050b909">&#9670;&#160;</a></span>embed_surface()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -232,11 +271,30 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
           <td class="memname">bool wmtk::components::simwild::EmbedSurface::embed_surface </td>
           <td>(</td>
           <td class="paramtype">const bool&#160;</td>
-          <td class="paramname"><em>flood_fill</em> = <code>false</code></td><td>)</td>
+          <td class="paramname"><em>flood_fill</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>tag_from_winding_number</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Run the arrangement and tag the resulting cells. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">flood_fill</td><td>Unify the tags of each region bounded by the surface. </td></tr>
+    <tr><td class="paramname">tag_from_winding_number</td><td>Decide each cell's tags by evaluating the winding number of every input at its centroid (the default), rather than by propagating them across the arrangement's own surface provenance. See tag_from_provenance. </td></tr>
+  </table>
+  </dd>
+</dl>
 <p>Only do a trivial rounding here. The more complex rounding is performed later on.</p>
 <p>Cluster tags by flood-filling regions that are bounded by the surface. All tags within one region are unified by taking the tag with most occurances.</p>
 <p>This is for several reasons not the best way to do this.</p><ol type="1">
@@ -279,6 +337,34 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a6b585d6f7e94de8fbaaa4b3aa5c7f8db" name="a6b585d6f7e94de8fbaaa4b3aa5c7f8db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b585d6f7e94de8fbaaa4b3aa5c7f8db">&#9670;&#160;</a></span>tag_from_provenance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::EmbedSurface::tag_from_provenance </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Decide the cell tags from the arrangement's surface provenance. </p>
+<p>The exact alternative to tag_from_winding_number. m_F_tags_surface says which inputs each surface face belongs to, so tags propagate combinatorially: start from a cell of the padded box, which is outside everything, and walk the tet adjacency graph toggling membership of input i whenever a face belonging to input i is crossed. Every input surface is closed, so the parity along any two paths to the same cell agrees; if it does not, the input was not closed and this throws rather than returning a tagging that depends on the traversal order. </p>
 
 </div>
 </div>

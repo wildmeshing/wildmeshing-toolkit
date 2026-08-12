@@ -90,13 +90,14 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="keyword">namespace </span>wmtk::utils {</div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="keywordtype">size_t</span> simplify_segments(</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    MatrixXd&amp; V,</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    MatrixXi&amp; E,</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keyword">const</span> SampleEnvelope&amp; envelope,</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keywordtype">bool</span> use_link_condition = <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>} <span class="comment">// namespace wmtk::utils</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="keywordtype">size_t</span> simplify_segments(</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    MatrixXd&amp; V,</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    MatrixXi&amp; E,</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keyword">const</span> SampleEnvelope&amp; envelope,</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keywordtype">bool</span> use_link_condition = <span class="keyword">true</span>,</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    std::vector&lt;int&gt;* surviving_edges = <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>} <span class="comment">// namespace wmtk::utils</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

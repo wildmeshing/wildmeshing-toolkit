@@ -95,9 +95,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8b7ca704d5defeaa3d326dbdd98bc342" id="r_a8b7ca704d5defeaa3d326dbdd98bc342"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a8b7ca704d5defeaa3d326dbdd98bc342">simplify_curves</a> (const double eps, const bool use_exact_envelope, const int num_threads=0)</td></tr>
 <tr class="memdesc:a8b7ca704d5defeaa3d326dbdd98bc342"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input curves while staying within the eps envelope.  <br /></td></tr>
 <tr class="separator:a8b7ca704d5defeaa3d326dbdd98bc342"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2202b118dae0b9cc74e82391785587a0" id="r_a2202b118dae0b9cc74e82391785587a0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a2202b118dae0b9cc74e82391785587a0">embed_curves</a> ()</td></tr>
-<tr class="memdesc:a2202b118dae0b9cc74e82391785587a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the exact arrangement of the (simplified) curve union.  <br /></td></tr>
-<tr class="separator:a2202b118dae0b9cc74e82391785587a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4304513bc5d43655bb307d73814a9ff3" id="r_a4304513bc5d43655bb307d73814a9ff3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a4304513bc5d43655bb307d73814a9ff3">embed_curves</a> (const bool <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#ab5db2ce97a066d5eeb9d7e39f4f9b7d1">tag_from_winding_number</a>=true)</td></tr>
+<tr class="memdesc:a4304513bc5d43655bb307d73814a9ff3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the exact arrangement of the (simplified) curve union.  <br /></td></tr>
+<tr class="separator:a4304513bc5d43655bb307d73814a9ff3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30bf58d34f6400e482dc496bf325fa0a" id="r_a30bf58d34f6400e482dc496bf325fa0a"><td class="memItemLeft" align="right" valign="top"><a id="a30bf58d34f6400e482dc496bf325fa0a" name="a30bf58d34f6400e482dc496bf325fa0a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>consolidate</b> ()</td></tr>
 <tr class="memdesc:a30bf58d34f6400e482dc496bf325fa0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove vertices not referenced by any output face. <br /></td></tr>
@@ -143,6 +143,9 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:ab5db2ce97a066d5eeb9d7e39f4f9b7d1" id="r_ab5db2ce97a066d5eeb9d7e39f4f9b7d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#ab5db2ce97a066d5eeb9d7e39f4f9b7d1">tag_from_winding_number</a> ()</td></tr>
 <tr class="memdesc:ab5db2ce97a066d5eeb9d7e39f4f9b7d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">One binary tag column per input, set where that input's winding number at a face barycenter exceeds 0.5.  <br /></td></tr>
 <tr class="separator:ab5db2ce97a066d5eeb9d7e39f4f9b7d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbe8a09f6cadbc1a09c494bc82458f18" id="r_acbe8a09f6cadbc1a09c494bc82458f18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#acbe8a09f6cadbc1a09c494bc82458f18">tag_from_provenance</a> ()</td></tr>
+<tr class="memdesc:acbe8a09f6cadbc1a09c494bc82458f18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decide the face tags from the arrangement's segment provenance.  <br /></td></tr>
+<tr class="separator:acbe8a09f6cadbc1a09c494bc82458f18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -160,6 +163,12 @@ MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>m_V_curves</b></t
 <tr class="memitem:a5138df523036377b5e5554a310a05c20" id="r_a5138df523036377b5e5554a310a05c20"><td class="memItemLeft" align="right" valign="top"><a id="a5138df523036377b5e5554a310a05c20" name="a5138df523036377b5e5554a310a05c20"></a>
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_E_curves</b></td></tr>
 <tr class="separator:a5138df523036377b5e5554a310a05c20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a504486fda6a8ebb19a27c0672b97fc9d" id="r_a504486fda6a8ebb19a27c0672b97fc9d"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_curves.html#a504486fda6a8ebb19a27c0672b97fc9d">m_E_input</a></td></tr>
+<tr class="separator:a504486fda6a8ebb19a27c0672b97fc9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe2c9b114ddabbfad7cce35d9a569131" id="r_abe2c9b114ddabbfad7cce35d9a569131"><td class="memItemLeft" align="right" valign="top"><a id="abe2c9b114ddabbfad7cce35d9a569131" name="abe2c9b114ddabbfad7cce35d9a569131"></a>
+std::vector&lt; std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_E_constrained_inputs</b></td></tr>
+<tr class="memdesc:abe2c9b114ddabbfad7cce35d9a569131"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per row of m_E_constrained: which inputs tile it. Only filled for tag_from_provenance. <br /></td></tr>
+<tr class="separator:abe2c9b114ddabbfad7cce35d9a569131"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6050aede2ea1affaff40820a300a68f" id="r_ad6050aede2ea1affaff40820a300a68f"><td class="memItemLeft" align="right" valign="top"><a id="ad6050aede2ea1affaff40820a300a68f" name="ad6050aede2ea1affaff40820a300a68f"></a>
 MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>m_V_emb</b></td></tr>
 <tr class="separator:ad6050aede2ea1affaff40820a300a68f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -233,8 +242,8 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a2202b118dae0b9cc74e82391785587a0" name="a2202b118dae0b9cc74e82391785587a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2202b118dae0b9cc74e82391785587a0">&#9670;&#160;</a></span>embed_curves()</h2>
+<a id="a4304513bc5d43655bb307d73814a9ff3" name="a4304513bc5d43655bb307d73814a9ff3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4304513bc5d43655bb307d73814a9ff3">&#9670;&#160;</a></span>embed_curves()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -242,13 +251,20 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
         <tr>
           <td class="memname">bool wmtk::components::simwild::EmbedCurves::embed_curves </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>tag_from_winding_number</em> = <code>true</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Compute the exact arrangement of the (simplified) curve union. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tag_from_winding_number</td><td>Decide each face's tags by evaluating the winding number of every input at its barycenter (the default), rather than by propagating them across the arrangement's own segment provenance. See tag_from_provenance. </td></tr>
+  </table>
+  </dd>
+</dl>
 <dl class="section return"><dt>Returns</dt><dd>true when every arrangement vertex has an exact double representation. </dd></dl>
 
 </div>
@@ -290,6 +306,35 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
 
 </div>
 </div>
+<a id="acbe8a09f6cadbc1a09c494bc82458f18" name="acbe8a09f6cadbc1a09c494bc82458f18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acbe8a09f6cadbc1a09c494bc82458f18">&#9670;&#160;</a></span>tag_from_provenance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::EmbedCurves::tag_from_provenance </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Decide the face tags from the arrangement's segment provenance. </p>
+<p>The exact alternative to tag_from_winding_number, and the 2D twin of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a6b585d6f7e94de8fbaaa4b3aa5c7f8db" title="Decide the cell tags from the arrangement&#39;s surface provenance.">EmbedSurface::tag_from_provenance</a>. Each constrained output edge knows which input segments it tiles, hence which input curves; tags then propagate combinatorially, starting from a face on the outside of the bounding box and flipping membership of an input whenever an edge belonging to it is crossed. Every input curve must be closed &ndash; an open polyline encloses nothing &ndash; and a traversal that disagrees with itself says so rather than returning a tagging that depends on the order it walked in.</p>
+<p>It also removes the mismatch the winding-number route documents: those tags are evaluated against the ORIGINAL per-input curves while the arrangement is of the SIMPLIFIED union, so the two can disagree near a curve the simplification moved. </p>
+
+</div>
+</div>
 <a id="ab5db2ce97a066d5eeb9d7e39f4f9b7d1" name="ab5db2ce97a066d5eeb9d7e39f4f9b7d1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab5db2ce97a066d5eeb9d7e39f4f9b7d1">&#9670;&#160;</a></span>tag_from_winding_number()</h2>
 
@@ -315,6 +360,30 @@ MatrixSi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_tags</b></td>
 
 <p>One binary tag column per input, set where that input's winding number at a face barycenter exceeds 0.5. </p>
 <p>Auto-corrects an inverted input orientation and warns when an input claims nothing, as triwild's compute_winding_numbers does and the 3D tag_from_winding_number does not. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a504486fda6a8ebb19a27c0672b97fc9d" name="a504486fda6a8ebb19a27c0672b97fc9d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a504486fda6a8ebb19a27c0672b97fc9d">&#9670;&#160;</a></span>m_E_input</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;size_t&gt; wmtk::components::simwild::EmbedCurves::m_E_input</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Per row of m_E_curves: which input it came from. Kept alongside m_E_curves across the simplification, so the arrangement's provenance can be read back in input terms. </p>
 
 </div>
 </div>

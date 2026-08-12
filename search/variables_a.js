@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['partition_5fid_0',['partition_id',['../structwmtk_1_1_tet_optimizer_mesh_1_1_vertex_attributes.html#a4e66e18fb3fbd912c63eac96b8f469f9',1,'wmtk::TetOptimizerMesh::VertexAttributes']]],
-  ['posf_1',['posf',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a63871cc4ff2d7215ca80b08e4e458ee8',1,'wmtk::components::tetwild::orig::TetVertex']]],
-  ['preserve_5ffeature_5fpoints_2',['preserve_feature_points',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#aa0ddf933c7388d9e2d9123b738ec1988',1,'wmtk::components::triwild::Parameters']]],
-  ['priority_3',['priority',['../structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc',1,'wmtk::ExecutePass']]]
+  ['on_5ffail_0',['on_fail',['../structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937',1,'wmtk::ExecutePass']]],
+  ['on_5ffixed_5fvertex_1',['on_fixed_vertex',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a1cffaee94b7cbdb831c469eafb9b3f03',1,'wmtk::components::tetwild::orig::TetVertex']]],
+  ['order2_5fenvelope_5fratio_2',['order2_envelope_ratio',['../structwmtk_1_1components_1_1simwild_1_1_parameters.html#a974a89306c43ec0d98fb654467863911',1,'wmtk::components::simwild::Parameters::order2_envelope_ratio'],['../structwmtk_1_1components_1_1tetwild_1_1_parameters.html#af7ed2109c7f32cc4fa9a0a548fda50e1',1,'wmtk::components::tetwild::Parameters::order2_envelope_ratio']]]
 ];

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::utils::EmbedTrianglesOptions Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::utils::EmbedTrianglesProvenance Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,63 +69,61 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>utils</b></li><li class="navelem"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_options.html">EmbedTrianglesOptions</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>utils</b></li><li class="navelem"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html">EmbedTrianglesProvenance</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1utils_1_1_embed_triangles_options-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::utils::EmbedTrianglesOptions Struct Reference</div></div>
+<a href="structwmtk_1_1utils_1_1_embed_triangles_provenance-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::utils::EmbedTrianglesProvenance Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>Options for embed_triangles_in_tets. All checks are off by default.  
- <a href="structwmtk_1_1utils_1_1_embed_triangles_options.html#details">More...</a></p>
+<p>Which input triangles each output surface face came from.  
+ <a href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_embed_triangles_8hpp_source.html">EmbedTriangles.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a9b4807ee3e2226337f5eecde6e26e7c0" id="r_a9b4807ee3e2226337f5eecde6e26e7c0"><td class="memItemLeft" align="right" valign="top"><a id="a9b4807ee3e2226337f5eecde6e26e7c0" name="a9b4807ee3e2226337f5eecde6e26e7c0"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_collinear_input</b> = false</td></tr>
-<tr class="memdesc:a9b4807ee3e2226337f5eecde6e26e7c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report input triangles that are collinear, before handing them to the remesher. <br /></td></tr>
-<tr class="separator:a9b4807ee3e2226337f5eecde6e26e7c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acdb6a348418856ac8c4552ee9f042db9" id="r_acdb6a348418856ac8c4552ee9f042db9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_options.html#acdb6a348418856ac8c4552ee9f042db9">check_orientation</a> = false</td></tr>
-<tr class="separator:acdb6a348418856ac8c4552ee9f042db9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65bc96b51fcd1f36851767be1fd3ff98" id="r_a65bc96b51fcd1f36851767be1fd3ff98"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_options.html#a65bc96b51fcd1f36851767be1fd3ff98">check_surface_provenance</a> = false</td></tr>
-<tr class="separator:a65bc96b51fcd1f36851767be1fd3ff98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78cb370e8ad161290e47923140de4435" id="r_a78cb370e8ad161290e47923140de4435"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; uint32_t, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#a78cb370e8ad161290e47923140de4435">face_groups</a></td></tr>
+<tr class="separator:a78cb370e8ad161290e47923140de4435"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac4b3b16d2f3921e1a95a208a1e22c64" id="r_aac4b3b16d2f3921e1a95a208a1e22c64"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint32_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1utils_1_1_embed_triangles_provenance.html#aac4b3b16d2f3921e1a95a208a1e22c64">triangle_group</a></td></tr>
+<tr class="separator:aac4b3b16d2f3921e1a95a208a1e22c64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Options for embed_triangles_in_tets. All checks are off by default. </p>
+<div class="textblock"><p>Which input triangles each output surface face came from. </p>
+<p>The arrangement answers this per <em>coplanar group</em> rather than per input triangle: the remesher first partitions the input into maximal sets of triangles that are transitively edge-adjacent and exactly coplanar, then tracks which output faces tile each set. A flat region tiled by many input triangles is therefore one group, and &ndash; the case to design around &ndash; a group can span triangles from several input surfaces where they meet coplanarly along a shared edge.</p>
+<p>Optional: pass nullptr (the default) if the boolean <code>polygon_faces_on_input</code> is enough, as it is for tetwild, and neither vector is built. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="acdb6a348418856ac8c4552ee9f042db9" name="acdb6a348418856ac8c4552ee9f042db9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acdb6a348418856ac8c4552ee9f042db9">&#9670;&#160;</a></span>check_orientation</h2>
+<a id="a78cb370e8ad161290e47923140de4435" name="a78cb370e8ad161290e47923140de4435"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78cb370e8ad161290e47923140de4435">&#9670;&#160;</a></span>face_groups</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::utils::EmbedTrianglesOptions::check_orientation = false</td>
+          <td class="memname">std::vector&lt;std::array&lt;uint32_t, 2&gt; &gt; wmtk::utils::EmbedTrianglesProvenance::face_groups</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Check every output tet's orientation in exact arithmetic, after embedding and again after the vertex compaction. </p>
+<p>(facet, coplanar group) pairs, sorted, indexing <code>polygon_faces</code>. Only facets on the input surface appear, and a facet where two exactly-coplanar groups meet appears once per group. </p>
 
 </div>
 </div>
-<a id="a65bc96b51fcd1f36851767be1fd3ff98" name="a65bc96b51fcd1f36851767be1fd3ff98"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65bc96b51fcd1f36851767be1fd3ff98">&#9670;&#160;</a></span>check_surface_provenance</h2>
+<a id="aac4b3b16d2f3921e1a95a208a1e22c64" name="aac4b3b16d2f3921e1a95a208a1e22c64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac4b3b16d2f3921e1a95a208a1e22c64">&#9670;&#160;</a></span>triangle_group</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::utils::EmbedTrianglesOptions::check_surface_provenance = false</td>
+          <td class="memname">std::vector&lt;uint32_t&gt; wmtk::utils::EmbedTrianglesProvenance::triangle_group</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Report how the provenance-derived "face is on the input surface" answer differs from the remesher's older colour-derived <code>facets_on_input</code>. Diagnostic only &ndash; the surface always comes from provenance; this just counts the disagreement. </p>
+<p>Per input triangle (same indexing as <code>triangle_indices</code>): its coplanar group, or UINT32_MAX if it was degenerate and dropped before the arrangement. </p>
 
 </div>
 </div>
