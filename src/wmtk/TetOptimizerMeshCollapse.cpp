@@ -364,6 +364,16 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         //}
     }
 
+    // Must run HERE, before the attribute updates below -- not at the end of the function.
+    // tetwild's override asks is_vertex_on_boundary(v2), which reads BOTH
+    // m_vertex_attribute[..].m_is_on_surface and m_face_attribute[..].m_is_surface_fs
+    // (TetWildMesh.cpp), and the two blocks below overwrite exactly those: the vertex flag is
+    // OR-ed from v1 just after round(), and the cached face attributes are written onto the
+    // post-collapse faces. Asking afterwards is asking a different question, and it changes
+    // which vertices keep their open-boundary flag -- and therefore which later collapses are
+    // allowed.
+    collapse_after_vertex(v1_id, v2_id);
+
     //// update attrs
     // tet attr
     for (int i = 0; i < cache.changed_tids.size(); i++) {
@@ -386,8 +396,6 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         }
         m_face_attribute[global_fid] = f_attr;
     }
-
-    collapse_after_vertex(v1_id, v2_id);
 
     return true;
 }
