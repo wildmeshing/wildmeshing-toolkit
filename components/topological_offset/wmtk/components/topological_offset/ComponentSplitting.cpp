@@ -208,6 +208,15 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     }
     cache.new_v = VertexAttributes(p_new);
     cache.new_v.label = m_edge_attribute[e_id].label;
+    const auto& a1 = m_vertex_attribute[cache.v1_id];
+    const auto& a2 = m_vertex_attribute[cache.v2_id];
+    if (a1.source_vid >= 0 && a1.source_vid == a2.source_vid) {
+        cache.new_v.source_vid = a1.source_vid;
+    } else if (a1.label != 0 && a2.label == 0) {
+        cache.new_v.source_vid = a1.source_vid;
+    } else if (a2.label != 0 && a1.label == 0) {
+        cache.new_v.source_vid = a2.source_vid;
+    }
 
     // split edge
     cache.split_e = m_edge_attribute[e_id];
@@ -429,6 +438,16 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
         3;
     m_vertex_attribute[v_id].label = cache.splitf_label;
+    if (cache.splitf_label == 1) {
+        m_vertex_attribute[v_id].source_vid = static_cast<int64_t>(v_id);
+        m_vertex_attribute[v_id].original_input = true;
+    } else {
+        const int64_t source = m_vertex_attribute[v1_id].source_vid;
+        if (source >= 0 && source == m_vertex_attribute[v2_id].source_vid &&
+            source == m_vertex_attribute[v3_id].source_vid) {
+            m_vertex_attribute[v_id].source_vid = source;
+        }
+    }
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
@@ -543,6 +562,19 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
         4;
     m_vertex_attribute[v_id].label = tet_label;
+    if (tet_label == 1) {
+        m_vertex_attribute[v_id].source_vid = static_cast<int64_t>(v_id);
+        m_vertex_attribute[v_id].original_input = true;
+    } else {
+        const int64_t source = m_vertex_attribute[cache.v_ids[0]].source_vid;
+        bool same_source = source >= 0;
+        for (int i = 1; i < 4; ++i) {
+            same_source = same_source && source == m_vertex_attribute[cache.v_ids[i]].source_vid;
+        }
+        if (same_source) {
+            m_vertex_attribute[v_id].source_vid = source;
+        }
+    }
 
     // iterate over new tets (retained faces, new tets, new edge (opposite tet) )
     for (int i = 0; i < 4; i++) {

@@ -1,0 +1,41 @@
+{
+  "status": "differential_mismatch",
+  "runs_per_implementation": 3,
+  "timeout_seconds": 10,
+  "old_commit": "f2875ca3b",
+  "new_base_commit": "42cd3ce1857c7c5881e6a70b8832bce00d6364df",
+  "new_worktree_dirty": true,
+  "build_type": "unspecified",
+  "platform": "macOS-26.5.2-arm64",
+  "compiler": "Apple clang 21.0.0",
+  "new_summary": {
+    "executed_cases": 16,
+    "deterministic_cases": 16,
+    "valid_cases": 16,
+    "conforming_cases": 16
+  },
+  "equivalence_summary": {
+    "exact_matches": 0,
+    "semantic_matches": 0,
+    "uncomparable_old_failures": 3,
+    "note": "The result is intentionally not promoted to an accepted parity baseline. Stable old outputs differ geometrically or in tags, and several paper-authoritative stress cases crash, time out, are nondeterministic, or contain an invalid old cell."
+  },
+  "cases": {
+    "single_planar_triangle": {"old_hash": "d357c1aff587774c", "new_hash": "4351fbd580c39ae3", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "two_triangle_planar_quad": {"old_hash": "2c42df5742c6a15b", "new_hash": "01ccfeb0fc1931e4", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "regular_planar_fan": {"old_hash": "203aaeae78d03347", "old_errors": 1, "old_failure": "TetCollapse assertion", "old_unstable_runs": [1], "new_hash": "be44726619395a4a", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "open_triangulated_strip": {"old_hash": "1c0c3f61fce1a1a6", "new_hash": "257632884aba0f6f", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "mild_two_triangle_hinge": {"old_hash": "ec7508aa1564de41", "new_hash": "21e1ef6a5ed930f1", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "closed_tetrahedral_surface": {"old_hash": "3a444f6b96d688fa", "new_hash": "b2372fd7fe9cd291", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "closed_triangulated_cube": {"old_hash": "f541b41ec757c7d5", "old_unstable_runs": [1], "new_hash": "ea9c44810aa3ced2", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "two_disconnected_panels": {"old_hash": "2c2ad53ef2dd719d", "new_hash": "96089de153b85828", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "regular_cylindrical_patch": {"old_hash": "6235d3bdea221d7c", "old_unstable_runs": [2], "new_hash": "4c553ce4384b01c6", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "simple_convex_folded_panel": {"old_hash": "729647a821eaebbc", "old_unstable_runs": [1, 2], "new_hash": "51d129e5704e1353", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "cube_with_one_face_removed": {"old_hash": "674984755c1e1862", "old_unstable_runs": [2], "new_hash": "ed53329ad86f94de", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "obtuse_open_boundary_panel": {"old_hash": "2c9305474f4b2df2", "new_hash": "73ca03e22129554d", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "concave_folded_strip": {"old_hash": "bd50dc4d49cf8949", "new_hash": "6111e2eda193b1cb", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "nonmanifold_t_junction": {"old_errors": 3, "old_failure": "TetCollapse assertion", "new_hash": "85960a2bdd0b754b", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "nearby_shell_sheets": {"old_errors": 3, "old_failure": "timeout", "new_hash": "982c4fe5bdc25e25", "new_valid": true, "new_conforming": true, "equivalent": false},
+    "shell_attached_to_solid": {"old_hash": "af93e1cfbdc41e59", "new_hash": "77395d8d863993e2", "new_valid": true, "new_conforming": true, "new_solid_tets": 24, "equivalent": false}
+  }
+}
