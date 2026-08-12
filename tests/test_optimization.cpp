@@ -437,6 +437,24 @@ TEST_CASE("exact_distance_energy_2d", "[energies]")
         CHECK(std::abs((Vector2d(0, 1).transpose() * H * Vector2d(0, 1)).value() - 2 * w) <= 1e-9);
     }
 
+    SECTION("max_step_size clamps at the feature boundary")
+    {
+        // A step staying over one segment interior is not clamped.
+        CHECK(energy.max_step_size(Vector2d(1.0, 0.4), Vector2d(2.0, 0.4)) == 1.0);
+
+        // A step from over the horizontal segment toward the vertical one crosses the
+        // inner bisector at x = 3.6, where both segments are 0.4 away and the closest
+        // feature switches (the C0 kink of the distance on the concave side). The clamp
+        // must land just past that boundary, not sail to the far end.
+        const Vector2d a(3.0, 0.4);
+        const Vector2d b(6.0, 0.4);
+        const double alpha = energy.max_step_size(a, b);
+        CHECK(alpha < 1.0);
+        const double x_land = a[0] + alpha * (b[0] - a[0]);
+        CHECK(x_land >= 3.6);
+        CHECK(x_land <= 3.6 + 1e-4 * (b[0] - a[0]));
+    }
+
     SECTION("corner region: full FD consistency and isotropic hessian")
     {
         const Vector2d p(4.5, -0.5); // beyond the corner at (4,0), outside both segments

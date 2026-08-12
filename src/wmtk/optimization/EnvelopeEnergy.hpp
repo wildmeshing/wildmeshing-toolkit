@@ -125,6 +125,15 @@ public:
 
     void solution_changed(const TVector& new_x) override {}
 
+    /**
+     * Clamp a proposed step at the closest-feature region boundary, so Newton lands on the
+     * kink of d^2 instead of overshooting across it and rediscovering it by backtracking.
+     * Returns 1 when the classification is unchanged over the step. Helps when the
+     * iteration budget can absorb the extra, shorter steps; see the commit message for the
+     * measured trade.
+     */
+    double max_step_size(const TVector& x0, const TVector& x1) override;
+
 private:
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_weight;

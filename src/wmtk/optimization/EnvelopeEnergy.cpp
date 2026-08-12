@@ -151,6 +151,31 @@ void ExactDistanceEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
     }
 }
 
+double ExactDistanceEnergy2D::max_step_size(const TVector& x0, const TVector& x1)
+{
+    const Vector2d p0(x0), p1(x1);
+    Vector2d n, u;
+    bool c = false;
+    int id0 = -1, id1 = -1;
+    m_envelope->nearest_point_feature(p0, n, c, u, id0);
+    const bool corner0 = c;
+    m_envelope->nearest_point_feature(p1, n, c, u, id1);
+    if (corner0 == c && id0 == id1) {
+        return 1.0;
+    }
+    // The step crosses a feature boundary -- the kink of d^2. Bisect for the crossing on
+    // the classification (each probe is one BVH point query) and land just past it, so the
+    // next iterate is classified into, and modeled by, the other region.
+    double lo = 0.0, hi = 1.0;
+    for (int it = 0; it < 40 && hi - lo > 1e-6; ++it) {
+        const double mid = 0.5 * (lo + hi);
+        int idm = -1;
+        m_envelope->nearest_point_feature(p0 + mid * (p1 - p0), n, c, u, idm);
+        ((c == corner0 && idm == id0) ? lo : hi) = mid;
+    }
+    return hi;
+}
+
 EnvelopeEnergy3D::EnvelopeEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
     const double weight)
