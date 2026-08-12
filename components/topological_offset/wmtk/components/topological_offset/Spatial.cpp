@@ -266,10 +266,10 @@ bool TopoOffsetTriMesh::tri_is_in_offset_conservative(const size_t f_id, const d
         }
 
         const double d = m_input_complex_bvh.dist(circ.center());
-        if ((d - circ.radius()) > m_params.target_distance) {
+        if ((d - circ.radius()) > m_offset_params.target_distance) {
             return false; // circle is outside --> tri outside offset
         }
-        if ((d + circ.radius()) < m_params.target_distance) {
+        if ((d + circ.radius()) < m_offset_params.target_distance) {
             continue; // circle is inside --> check next circle
         }
 
@@ -282,7 +282,7 @@ bool TopoOffsetTriMesh::tri_is_in_offset_conservative(const size_t f_id, const d
 
 bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
 {
-    if (m_face_attribute[f_id].label != 0) {
+    if (m_face_extra[f_id].label != 0) {
         log_and_throw_error("non label-0 tri id={} given to consistent topology check", f_id);
     }
 
@@ -291,12 +291,12 @@ bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
     auto vs = oriented_tri_vids(f_id);
     std::vector<size_t> vs_in;
     for (const size_t& v : vs) {
-        if (m_vertex_attribute[v].label == 1) {
+        if (m_vertex_extra[v].label == 1) {
             log_and_throw_error(
                 "Input adjacent tri (id {}) given to offset_tri_consistent_topology",
                 f_id);
         }
-        if (m_vertex_attribute[v].label == 2) {
+        if (m_vertex_extra[v].label == 2) {
             vs_in.push_back(v);
         }
     }
@@ -304,13 +304,13 @@ bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
     if (vs_in.size() == 3) { // must have exactly two edges in
         int num_es_in = 0;
         for (int i = 0; i < 3; i++) {
-            num_es_in += (m_edge_attribute[tuple_from_edge(f_id, i).eid(*this)].label == 2);
+            num_es_in += (m_edge_extra[tuple_from_edge(f_id, i).eid(*this)].label == 2);
         }
         // logger().info("\t{}", num_es_in == 2);
         offset_consistent = (num_es_in == 2);
     } else if (vs_in.size() == 2) { // must have exactly one edge in (between two 'in' verts)
         simplex::Edge e(vs_in[0], vs_in[1]);
-        offset_consistent = (m_edge_attribute[edge_id_from_simplex(e)].label == 2);
+        offset_consistent = (m_edge_extra[edge_id_from_simplex(e)].label == 2);
     } else { // 0 or 1 vertex in, topology would be changed
         offset_consistent = false;
     }
@@ -320,8 +320,8 @@ bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
     }
 
     // check if any topologies changed by adding this tri to offset
-    if (m_params.respect_all_topologies) {
-        for (const int64_t& id : m_face_attribute[f_id].tag) {
+    if (m_offset_params.respect_all_topologies) {
+        for (const int64_t& id : m_face_attribute[f_id].tags) {
             if (!tag_tri_consistent_topology(f_id, id)) {
                 return false;
             }
@@ -339,10 +339,10 @@ bool TopoOffsetTriMesh::tag_tri_consistent_topology(size_t f_id, int64_t tag) co
     // consider it as only having the tag TMP_TRI_OFFSET_TAG (ie, as if it were to overwrite all
     // tags)
     auto get_tags = [this](size_t _f_id) {
-        if (m_face_attribute[_f_id].label != 0) {
+        if (m_face_extra[_f_id].label != 0) {
             return TEMP_OFFSET_TRI_TAG_SET;
         } else {
-            return m_face_attribute[_f_id].tag;
+            return m_face_attribute[_f_id].tags;
         }
     };
 

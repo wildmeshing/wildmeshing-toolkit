@@ -1,5 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.h>
+#include <wmtk/TriOptimizerMesh.h>
 #include <algorithm>
 #include <set>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
@@ -15,33 +16,53 @@ namespace wmtk::components::topological_offset {
 const int64_t TEMP_OFFSET_TRI_TAG = -1;
 const CellTag TEMP_OFFSET_TRI_TAG_SET{TEMP_OFFSET_TRI_TAG};
 
-class VertexAttributes2d
-{
-public:
-    Vector2d m_posf;
-    int label = 0;
-
-    VertexAttributes2d() {};
-    VertexAttributes2d(const Vector2d& p);
-};
-
-
-class EdgeAttributes2d
+/**
+ * @brief Per-vertex data the shared 2D optimizer knows nothing about.
+ *
+ * Position, rounding, bbox membership, sizing and partition all live on
+ * wmtk::TriOptimizerMesh::VertexAttributes. m_is_on_input / m_is_on_offset say WHICH of the two
+ * tracked surfaces a vertex belongs to; the base's m_is_on_surface is their union.
+ */
+class VertexExtra2d
 {
 public:
     int label = 0;
+    bool m_is_on_input = false; // on the input complex
+    bool m_is_on_offset = false; // on the offset boundary
 };
 
 
-class FaceAttributes2d
+/// Per-edge construction label; the surface tags themselves are the base's
+/// wmtk::SurfaceTagAttributes. Registered with m_edge_attr_group.
+class EdgeExtra2d
 {
 public:
     int label = 0;
-    CellTag tag;
 };
 
 
-class TopoOffsetTriMesh : public wmtk::TriMesh
+/// Per-face construction label. The region tag lives in the base's FaceAttributes::tags.
+/// Registered with m_face_attr_group.
+class FaceExtra2d
+{
+public:
+    int label = 0;
+};
+
+
+/**
+ * @brief The offset's 2D mesh, on the shared 2D optimizer.
+ *
+ * Mirrors TopoOffsetTetMesh: the construction phase is entirely its own, and the optimization
+ * phase that follows is wmtk::TriOptimizerMesh's.
+ *
+ * Two surfaces are tracked. The input complex is class 0 and must stay inside m_envelope; the
+ * offset boundary is OFFSET_SURFACE_CLASS and is free to move. In 2D the offset boundary is
+ * exactly the set of edges across which the incident FACE LABELS differ -- there is no stored
+ * definition of it, it falls out of the labelling, which is why label_offset_boundary()
+ * recomputes it once at the top of the optimization.
+ */
+class TopoOffsetTriMesh : public wmtk::TriOptimizerMesh
 {
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
@@ -75,25 +96,125 @@ public:
     MatrixXd m_V_envelope;
     MatrixXi m_F_envelope;
 
-    Parameters& m_params;
+    /// SurfaceTagAttributes::m_surface_class for the offset boundary; the input complex keeps
+    /// the primary class 0 and is the only one checked against the envelope.
+    static constexpr int OFFSET_SURFACE_CLASS = 1;
 
-    using VertAttCol = wmtk::AttributeCollection<VertexAttributes2d>;
-    using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes2d>;
-    using FaceAttCol = wmtk::AttributeCollection<FaceAttributes2d>;
-    VertAttCol m_vertex_attribute;
-    EdgeAttCol m_edge_attribute;
-    FaceAttCol m_face_attribute;
+    /// The base holds only wmtk::OptimizerParameters; this is the same object, typed.
+    Parameters& m_offset_params;
 
-    TopoOffsetTriMesh(Parameters& _m_params, int _num_threads = 0)
-        : m_params(_m_params)
+    using VertexExtraCol = wmtk::AttributeCollection<VertexExtra2d>;
+    using EdgeExtraCol = wmtk::AttributeCollection<EdgeExtra2d>;
+    using FaceExtraCol = wmtk::AttributeCollection<FaceExtra2d>;
+    // m_vertex_attribute, m_edge_attribute and m_face_attribute are the base's; these three
+    // are registered alongside them in its attribute groups.
+    VertexExtraCol m_vertex_extra;
+    EdgeExtraCol m_edge_extra;
+    FaceExtraCol m_face_extra;
+
+    TopoOffsetTriMesh(Parameters& _m_offset_params, int _num_threads = 0)
+        : wmtk::TriOptimizerMesh(_m_offset_params)
+        , m_offset_params(_m_offset_params)
     {
         NUM_THREADS = _num_threads;
-        p_vertex_attrs = &m_vertex_attribute;
-        p_edge_attrs = &m_edge_attribute;
-        p_face_attrs = &m_face_attribute;
+        m_vertex_attr_group.add(&m_vertex_extra);
+        m_edge_attr_group.add(&m_edge_extra);
+        m_face_attr_group.add(&m_face_extra);
     }
 
-    ~TopoOffsetTriMesh() {}
+    ~TopoOffsetTriMesh() override = default;
+
+    /**
+     * @brief Place a vertex, keeping its exact and rounded coordinates in step.
+     *
+     * As in 3D: the offset works in doubles (its construction is driven by a BVH distance
+     * field), so every vertex it places is rounded, but m_pos must still be filled because the
+     * shared split's exact-midpoint fallback reads it.
+     */
+    void set_vertex_position(const size_t vid, const Vector2d& p)
+    {
+        m_vertex_attribute[vid].m_posf = p;
+        m_vertex_attribute[vid].m_pos = to_rational(p);
+        m_vertex_attribute[vid].m_is_rounded = true;
+    }
+
+    /// Whether edge `eid` is on the offset boundary / carries input geometry.
+    bool edge_is_offset(const size_t eid) const
+    {
+        return m_edge_attribute[eid].m_is_surface_fs &&
+               m_edge_attribute[eid].m_surface_class == OFFSET_SURFACE_CLASS;
+    }
+    /**
+     * @brief An edge's / face's shared attributes together with the offset's own label.
+     *
+     * The marching-triangles splits snapshot a simplex and write it back onto the pieces it
+     * became, and both halves have to travel together.
+     */
+    struct EdgeSnapshot2d
+    {
+        EdgeAttributes tags;
+        EdgeExtra2d extra;
+    };
+    struct FaceSnapshot2d
+    {
+        FaceAttributes attrs;
+        FaceExtra2d extra;
+    };
+    EdgeSnapshot2d edge_snapshot(const size_t eid) const
+    {
+        return EdgeSnapshot2d{m_edge_attribute[eid], m_edge_extra[eid]};
+    }
+    void restore_edge(const size_t eid, const EdgeSnapshot2d& s)
+    {
+        m_edge_attribute[eid] = s.tags;
+        m_edge_extra[eid] = s.extra;
+    }
+    FaceSnapshot2d face_snapshot(const size_t fid) const
+    {
+        return FaceSnapshot2d{m_face_attribute[fid], m_face_extra[fid]};
+    }
+    void restore_face(const size_t fid, const FaceSnapshot2d& s)
+    {
+        m_face_attribute[fid] = s.attrs;
+        m_face_extra[fid] = s.extra;
+    }
+
+    bool edge_is_input(const size_t eid) const
+    {
+        return m_edge_attribute[eid].m_is_surface_fs &&
+               m_edge_attribute[eid].m_surface_class != OFFSET_SURFACE_CLASS;
+    }
+
+    ////// wmtk::TriOptimizerMesh hooks
+
+    /// Only the input complex is envelope-constrained; the offset boundary is defined by the
+    /// face labels, not by input geometry, so there is nothing for it to stay inside.
+    std::shared_ptr<SampleEnvelope> surface_envelope_for_edge(
+        const std::array<size_t, 2>& vids) const override
+    {
+        for (const size_t v : vids) {
+            if (!m_vertex_extra[v].m_is_on_input) return nullptr;
+        }
+        return m_envelope;
+    }
+
+    /// An offset-boundary vertex is placed by project_offset_vertex(); the base's smoother is
+    /// only allowed to move genuinely interior ones, and the input complex never moves.
+    bool smoothing_position_is_allowed(size_t vid, const Vector2d&) const override
+    {
+        return !m_vertex_extra[vid].m_is_on_input;
+    }
+
+    /// No sizing refinement yet in 2D: the 3D field is driven by the mean ratio of the offset
+    /// TRIANGULATION, and the 2D offset boundary is a polyline, for which that metric is not
+    /// defined. Left for the commit that adds the 2D optimization phase.
+    size_t refine_sizing_around_worst(double) override { return 0; }
+    void write_smoothing_debug_output(const std::string& path) const override
+    {
+        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(path);
+    }
+
+
 
     /**
      * @brief initialize TriMesh from vertex, face, tag data
@@ -134,7 +255,7 @@ public:
 
     /**
      * @deprecated
-     * @brief split edge at point by minimizing m_params.target_distance - d() (where d() is
+     * @brief split edge at point by minimizing m_offset_params.target_distance - d() (where d() is
      * distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes
      * distance field is monotonic along edge. May give weird results if not monotonic
      */
@@ -172,7 +293,7 @@ public:
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
      * are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field
-     * and the offset target distance (m_params.target_distance). If m_edge_split_mode=Midpoint,
+     * and the offset target distance (m_offset_params.target_distance). If m_edge_split_mode=Midpoint,
      * edges are split at the midpoint
      */
     void marching_tris();
@@ -225,7 +346,7 @@ public:
 
     /**
      * @brief update 'tags' data for triangles in the offset region (tris labelled 2) based on
-     * the given offset tag values in m_params.offset_tag_value
+     * the given offset tag values in m_offset_params.offset_tag_value
      */
     void set_offset_tri_tags();
 
@@ -252,14 +373,15 @@ private:
     {
         size_t v1_id;
         size_t v2_id;
-        VertexAttributes2d new_v;
+        Vector2d new_v_pos;
+        VertexExtra2d new_v_extra;
 
         // cache edge attributes
-        EdgeAttributes2d split_eattr;
-        std::map<simplex::Edge, EdgeAttributes2d> existing_eattr;
+        EdgeSnapshot2d split_eattr;
+        std::map<simplex::Edge, EdgeSnapshot2d> existing_eattr;
 
         // cache face attributes
-        std::map<size_t, FaceAttributes2d> opp_v_fattr;
+        std::map<size_t, FaceSnapshot2d> opp_v_fattr;
     };
     wmtk::threading::enumerable_thread_specific<EdgeSplitCache> edge_split_cache;
 
@@ -268,10 +390,11 @@ private:
         size_t v1_id;
         size_t v2_id;
         size_t v3_id;
-        VertexAttributes2d new_v;
+        Vector2d new_v_pos;
+        VertexExtra2d new_v_extra;
 
-        std::map<simplex::Edge, EdgeAttributes2d> existing_eattr; // 3 orig edges
-        FaceAttributes2d split_fattr; // split face attributes
+        std::map<simplex::Edge, EdgeSnapshot2d> existing_eattr; // 3 orig edges
+        FaceSnapshot2d split_fattr; // split face attributes
     };
     wmtk::threading::enumerable_thread_specific<FaceSplitCache> face_split_cache;
 
