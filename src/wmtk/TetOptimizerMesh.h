@@ -91,6 +91,21 @@ public:
     AttributeContainerGroup m_vertex_attr_group;
 
     /**
+     * @brief What p_face_attrs points at, so a derived class can register more.
+     *
+     * The counterpart of m_vertex_attr_group for faces. An application whose faces carry data
+     * the shared operations know nothing about -- topological_offset labels each face by which
+     * part of the construction produced it -- registers a second collection here, and it is
+     * resized, protected and rolled back with the shared one.
+     *
+     * Note what this does NOT do: the shared operations propagate face data by copying
+     * SurfaceTagAttributes values around (the split and collapse caches, the swap tracker), and
+     * they only ever see their own collection. Anything registered here survives the mesh
+     * changing shape, but its values are the registering application's to maintain.
+     */
+    AttributeContainerGroup m_face_attr_group;
+
+    /**
      * @brief The sentinel get_quality returns for an element AMIPS cannot score.
      *
      * Not an energy: a positively oriented tet whose volume is too small for AMIPS, or one that
@@ -149,7 +164,8 @@ public:
     {
         m_vertex_attr_group.add(&m_vertex_attribute);
         p_vertex_attrs = &m_vertex_attr_group;
-        p_face_attrs = &m_face_attribute;
+        m_face_attr_group.add(&m_face_attribute);
+        p_face_attrs = &m_face_attr_group;
     }
     ~TetOptimizerMesh() override = default;
 
@@ -233,6 +249,35 @@ public:
      * per-vertex flag -- it counts the incident tets' face attributes directly.
      */
     int edge_incident_surface_face_count(const Tuple& e);
+
+    /**
+     * @brief Envelope the tracked-surface triangle `vids` must stay inside.
+     *
+     * Null means this triangle carries no containment requirement, and every containment check
+     * on it is skipped. Both applications that track a single surface keep one envelope for it,
+     * so the default answers with that; an application tracking more than one surface (see
+     * SurfaceTagAttributes::m_surface_class) overrides this to answer per class -- the offset
+     * boundary, for instance, is free to move and is checked against nothing.
+     *
+     * Keyed on the vertex ids rather than the fid because every caller is a topological
+     * operation asking about the triangles it is ABOUT to create or has just created, where
+     * only the vids are known for certain.
+     */
+    virtual std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
+        const std::array<size_t, 3>& vids) const
+    {
+        return m_envelope;
+    }
+
+    /// Whether the tracked-surface triangle (a,b,c) is outside its containment envelope. False
+    /// when it has none. Every surface containment check in the operations goes through here.
+    bool surface_triangle_is_outside(const size_t a, const size_t b, const size_t c) const
+    {
+        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_face({{a, b, c}});
+        if (!env) return false;
+        const auto& VA = m_vertex_attribute;
+        return env->is_outside({{VA[a].m_posf, VA[b].m_posf, VA[c].m_posf}});
+    }
 
     bool vertex_is_on_surface(const size_t vid) const override;
     bool face_is_on_surface(const size_t fid) const override;
@@ -346,7 +391,9 @@ protected:
     virtual void optimization_sanity_checks_extra() {}
     virtual bool optimization_stop_at_float() const { return false; }
 
-    virtual bool collapse_before_vertex(size_t, size_t, double) const { return true; }
+    /// Non-const: an override may cache what it measured before the collapse so its `after`
+    /// counterpart can tell a regression from a defect that was already there.
+    virtual bool collapse_before_vertex(size_t, size_t, double) { return true; }
     virtual bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const
     {
         return !m_vertex_attribute.at(v1).m_is_rounded || quality <= ring_max;

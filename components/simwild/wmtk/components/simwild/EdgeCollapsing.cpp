@@ -5,7 +5,7 @@
 
 namespace wmtk::components::simwild {
 
-bool SimWildMesh::collapse_before_vertex(size_t v1, size_t v2, double edge_length) const
+bool SimWildMesh::collapse_before_vertex(size_t v1, size_t v2, double edge_length)
 {
     if (edge_length <= 0 || m_vertex_attribute[v1].m_order != 2) return true;
     return m_vertex_attribute[v2].m_order >= 2;

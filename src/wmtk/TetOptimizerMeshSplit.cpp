@@ -304,7 +304,6 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     // The face split is (v1,v2,other) -> (v1,v_id,other) + (v2,v_id,other), which is the same
     // pair of new triangles the attribute update below writes.
     if (cache.is_edge_on_surface) {
-        const auto& VA = m_vertex_attribute;
         for (const auto& info : cache.changed_faces) {
             if (!info.first.m_is_surface_fs) continue;
             const auto& old_vids = info.second;
@@ -318,10 +317,10 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
                 }
             }
             if (n_shared != 2) continue; // face does not contain the split edge
-            if (m_envelope->is_outside({{VA[v1_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+            if (surface_triangle_is_outside(v1_id, v_id, other)) {
                 return false;
             }
-            if (m_envelope->is_outside({{VA[v2_id].m_posf, VA[v_id].m_posf, VA[other].m_posf}})) {
+            if (surface_triangle_is_outside(v2_id, v_id, other)) {
                 return false;
             }
         }
