@@ -61,8 +61,9 @@ struct SmoothRejectCounters
  * The weights follow simwild's convention: `w_envelope = 1 - w_amips`, with w_amips small
  * (1e-4), so the envelope term dominates and the AMIPS term acts as a light quality
  * preference. The scale factors put the two on a comparable footing --- AMIPS is
- * dimensionless while the envelope energy is a squared distance, so s_envelope is normally
- * 1 / (diag * eps^2).
+ * dimensionless while the envelope energy is a squared distance, so s_envelope is
+ * 1 / eps^2 and the term reads (d/eps)^2: distance in envelope widths, dimensionless
+ * like AMIPS in both 2D and 3D.
  */
 struct SmoothVertexOptions
 {
