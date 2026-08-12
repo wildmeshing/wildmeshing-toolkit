@@ -64,20 +64,20 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = V0_LABEL;
-    mesh.m_vertex_attribute[1].label = V1_LABEL;
-    mesh.m_vertex_attribute[2].label = V2_LABEL;
-    mesh.m_vertex_attribute[3].label = V3_LABEL;
+    mesh.m_vertex_extra[0].label = V0_LABEL;
+    mesh.m_vertex_extra[1].label = V1_LABEL;
+    mesh.m_vertex_extra[2].label = V2_LABEL;
+    mesh.m_vertex_extra[3].label = V3_LABEL;
     mesh.m_edge_attribute[0].label = E0_LABEL;
     mesh.m_edge_attribute[1].label = E1_LABEL;
     mesh.m_edge_attribute[2].label = E2_LABEL;
     mesh.m_edge_attribute[3].label = E3_LABEL;
     mesh.m_edge_attribute[4].label = E4_LABEL;
     mesh.m_edge_attribute[5].label = E5_LABEL;
-    mesh.m_face_attribute[0].label = F0_LABEL;
-    mesh.m_face_attribute[1].label = F1_LABEL;
-    mesh.m_face_attribute[2].label = F2_LABEL;
-    mesh.m_face_attribute[3].label = F3_LABEL;
+    mesh.m_face_extra[0].label = F0_LABEL;
+    mesh.m_face_extra[1].label = F1_LABEL;
+    mesh.m_face_extra[2].label = F2_LABEL;
+    mesh.m_face_extra[3].label = F3_LABEL;
     mesh.m_tet_attribute[0].label = T0_LABEL;
 
     // split edge
@@ -87,11 +87,11 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 
     // // ensure proper propagation of attributes
     // vertex
-    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[4].label == E1_LABEL);
+    REQUIRE(mesh.m_vertex_extra[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_extra[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_extra[4].label == E1_LABEL);
 
     // edges
     std::array<std::array<size_t, 3>, 9> edges = {
@@ -128,7 +128,7 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
         size_t v2 = faces[i][2];
         int correct_label = faces[i][3];
         int actual_label =
-            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
+            mesh.m_face_extra[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
         REQUIRE(correct_label == actual_label);
     }
 
@@ -174,20 +174,20 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
     mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = V0_LABEL;
-    mesh.m_vertex_attribute[1].label = V1_LABEL;
-    mesh.m_vertex_attribute[2].label = V2_LABEL;
-    mesh.m_vertex_attribute[3].label = V3_LABEL;
+    mesh.m_vertex_extra[0].label = V0_LABEL;
+    mesh.m_vertex_extra[1].label = V1_LABEL;
+    mesh.m_vertex_extra[2].label = V2_LABEL;
+    mesh.m_vertex_extra[3].label = V3_LABEL;
     mesh.m_edge_attribute[0].label = E0_LABEL;
     mesh.m_edge_attribute[1].label = E1_LABEL;
     mesh.m_edge_attribute[2].label = E2_LABEL;
     mesh.m_edge_attribute[3].label = E3_LABEL;
     mesh.m_edge_attribute[4].label = E4_LABEL;
     mesh.m_edge_attribute[5].label = E5_LABEL;
-    mesh.m_face_attribute[0].label = F0_LABEL;
-    mesh.m_face_attribute[1].label = F1_LABEL;
-    mesh.m_face_attribute[2].label = F2_LABEL;
-    mesh.m_face_attribute[3].label = F3_LABEL;
+    mesh.m_face_extra[0].label = F0_LABEL;
+    mesh.m_face_extra[1].label = F1_LABEL;
+    mesh.m_face_extra[2].label = F2_LABEL;
+    mesh.m_face_extra[3].label = F3_LABEL;
     mesh.m_tet_attribute[0].label = T0_LABEL;
 
     // split face
@@ -197,11 +197,11 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
 
     // // ensure proper propagation of attributes
     // vertex
-    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[4].label == F3_LABEL);
+    REQUIRE(mesh.m_vertex_extra[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_extra[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_extra[4].label == F3_LABEL);
 
     // edges
     std::array<std::array<size_t, 3>, 10> edges = {
@@ -242,7 +242,7 @@ TEST_CASE("face_split_3d", "[split_op][3d]")
         size_t v2 = faces[i][2];
         int correct_label = faces[i][3];
         int actual_label =
-            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
+            mesh.m_face_extra[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
         REQUIRE(correct_label == actual_label);
     }
 
@@ -288,20 +288,20 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = V0_LABEL;
-    mesh.m_vertex_attribute[1].label = V1_LABEL;
-    mesh.m_vertex_attribute[2].label = V2_LABEL;
-    mesh.m_vertex_attribute[3].label = V3_LABEL;
+    mesh.m_vertex_extra[0].label = V0_LABEL;
+    mesh.m_vertex_extra[1].label = V1_LABEL;
+    mesh.m_vertex_extra[2].label = V2_LABEL;
+    mesh.m_vertex_extra[3].label = V3_LABEL;
     mesh.m_edge_attribute[0].label = E0_LABEL;
     mesh.m_edge_attribute[1].label = E1_LABEL;
     mesh.m_edge_attribute[2].label = E2_LABEL;
     mesh.m_edge_attribute[3].label = E3_LABEL;
     mesh.m_edge_attribute[4].label = E4_LABEL;
     mesh.m_edge_attribute[5].label = E5_LABEL;
-    mesh.m_face_attribute[0].label = F0_LABEL;
-    mesh.m_face_attribute[1].label = F1_LABEL;
-    mesh.m_face_attribute[2].label = F2_LABEL;
-    mesh.m_face_attribute[3].label = F3_LABEL;
+    mesh.m_face_extra[0].label = F0_LABEL;
+    mesh.m_face_extra[1].label = F1_LABEL;
+    mesh.m_face_extra[2].label = F2_LABEL;
+    mesh.m_face_extra[3].label = F3_LABEL;
     mesh.m_tet_attribute[0].label = T0_LABEL;
 
     // split face
@@ -311,11 +311,11 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
 
     // // ensure proper propagation of attributes
     // vertex
-    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[4].label == T0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_extra[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_extra[4].label == T0_LABEL);
 
     // edges
     std::array<std::array<size_t, 3>, 10> edges = {
@@ -357,7 +357,7 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
         size_t v2 = faces[i][2];
         int correct_label = faces[i][3];
         int actual_label =
-            mesh.m_face_attribute[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
+            mesh.m_face_extra[std::get<1>(mesh.tuple_from_face({{v0, v1, v2}}))].label;
         REQUIRE(correct_label == actual_label);
     }
 
@@ -836,7 +836,7 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // label one vert as input
-    mesh.m_vertex_attribute[0].label = 1;
+    mesh.m_vertex_extra[0].label = 1;
     mesh.init_input_complex_bvh();
     Vector3d q(1.0, 1.0, 1.0);
     double dist = mesh.m_input_complex_bvh.dist(q);
@@ -848,13 +848,13 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
 
     // label faces, edges, and vertices as input
     for (int i = 0; i < 4; i++) {
-        mesh.m_face_attribute[i].label = 1;
+        mesh.m_face_extra[i].label = 1;
     }
     for (int i = 0; i < 6; i++) {
         mesh.m_edge_attribute[i].label = 1;
     }
     for (int i = 0; i < 4; i++) {
-        mesh.m_vertex_attribute[i].label = 1;
+        mesh.m_vertex_extra[i].label = 1;
     }
     mesh.init_input_complex_bvh();
 

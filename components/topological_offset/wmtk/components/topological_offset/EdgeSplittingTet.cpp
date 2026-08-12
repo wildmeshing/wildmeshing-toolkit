@@ -23,13 +23,13 @@ void TopoOffsetTetMesh::edge_split_binary_search(
     const Vector3d& v2_pos,
     Vector3d& p_new) const
 {
-    const double eps = m_params.edge_search_term_len;
+    const double eps = m_offset_params.edge_search_term_len;
     Vector3d p1 = v1_pos;
     Vector3d p2 = v2_pos;
     while ((p2 - p1).norm() > eps) {
         Vector3d p = (p1 + p2) / 2.0;
         double dist = m_input_complex_bvh.dist(p);
-        if (dist < m_params.target_distance) {
+        if (dist < m_offset_params.target_distance) {
             p1 = p;
         } else {
             p2 = p;
@@ -42,7 +42,7 @@ void TopoOffsetTetMesh::edge_split_binary_search(
 void TopoOffsetTetMesh::edge_split_log_root_find(const size_t v1, const size_t v2, Vector3d& p_new)
     const
 {
-    const double eps = m_params.edge_search_term_len;
+    const double eps = m_offset_params.edge_search_term_len;
     const Vector3d v1_pos = m_vertex_attribute[v1].m_posf;
     const Vector3d v2_pos = m_vertex_attribute[v2].m_posf;
     const Vector3d v_hat = (v2_pos - v1_pos).normalized();
@@ -57,12 +57,12 @@ void TopoOffsetTetMesh::edge_split_log_root_find(const size_t v1, const size_t v
     Vector3d p1 = v1_pos;
     Vector3d p2 = v1_pos + (l_curr * v_hat);
     double f2 = m_input_complex_bvh.dist(p2);
-    while (f2 < m_params.target_distance) {
+    while (f2 < m_offset_params.target_distance) {
         l_curr *= 2.0;
         p2 = v1_pos + (l_curr * v_hat);
         f2 = m_input_complex_bvh.dist(p2);
         if (l_curr > l_max) {
-            if (f2 < m_params.target_distance) { // entire edge is (likely) within offset.
+            if (f2 < m_offset_params.target_distance) { // entire edge is (likely) within offset.
                 logger().warn(
                     "edge (likely) entirely in offset for root finding edge split. Splitting edge "
                     "at 99\% of length");
@@ -84,12 +84,12 @@ void TopoOffsetTetMesh::edge_split_log_root_find(const size_t v1, const size_t v
 void TopoOffsetTetMesh::edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector3d& p_new)
     const
 {
-    const double eps = m_params.edge_search_term_len;
+    const double eps = m_offset_params.edge_search_term_len;
     const Vector3d v1_pos = m_vertex_attribute[v1].m_posf;
     const Vector3d v2_pos = m_vertex_attribute[v2].m_posf;
     const double L = (v2_pos - v1_pos).norm();
     const Vector3d u_hat = (v2_pos - v1_pos) / L;
-    const double D = m_params.target_distance;
+    const double D = m_offset_params.target_distance;
 
     // if near degenerate, fall to midpoint split
     if (L < eps) {
@@ -150,9 +150,10 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         m_edge_split_mode == EdgeSplitMode::Optimization) {
         p_new = (p1 + p2) / 2.0;
     } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
-        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label != 0)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
             edge_split_binary_search(cache.v2_id, cache.v1_id, p_new);
-        } else if ((VA[cache.v1_id].label != 0) && (VA[cache.v2_id].label == 0)) {
+        } else if (
+            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
             edge_split_binary_search(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -164,14 +165,16 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         // determine split distance
         double edge_len = (p1 - p2).norm();
         double split_dist = (edge_len / 2.0);
-        if (m_params.target_distance < (edge_len / 2.0)) {
-            split_dist = (m_params.target_distance / 2.0); // hacky. will be split again later
+        if (m_offset_params.target_distance < (edge_len / 2.0)) {
+            split_dist =
+                (m_offset_params.target_distance / 2.0); // hacky. will be split again later
         }
 
         // set split point
-        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label == 1)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label == 1)) {
             p_new = ((p1 - p2) * (split_dist / edge_len)) + p2;
-        } else if ((VA[cache.v1_id].label == 1) && (VA[cache.v2_id].label == 0)) {
+        } else if (
+            (m_vertex_extra[cache.v1_id].label == 1) && (m_vertex_extra[cache.v2_id].label == 0)) {
             p_new = ((p2 - p1) * (split_dist / edge_len)) + p1;
         } else {
             log_and_throw_error(
@@ -180,9 +183,10 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
                 e_id);
         }
     } else if (m_edge_split_mode == EdgeSplitMode::LogRootFind) {
-        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label != 0)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
             edge_split_log_root_find(cache.v2_id, cache.v1_id, p_new);
-        } else if ((VA[cache.v1_id].label != 0) && (VA[cache.v2_id].label == 0)) {
+        } else if (
+            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
             edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -191,9 +195,10 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
                 e_id);
         }
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTracing) {
-        if ((VA[cache.v1_id].label == 0) && (VA[cache.v2_id].label != 0)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
             edge_split_sphere_tracing(cache.v2_id, cache.v1_id, p_new);
-        } else if ((VA[cache.v1_id].label != 0) && (VA[cache.v2_id].label == 0)) {
+        } else if (
+            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
             edge_split_sphere_tracing(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -204,8 +209,9 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     } else {
         log_and_throw_error("Invalid edge split mode.");
     }
-    cache.new_v = VertexAttributes(p_new);
-    cache.new_v.label = m_edge_attribute[e_id].label;
+    cache.new_v_pos = p_new;
+    cache.new_v_extra = VertexExtra();
+    cache.new_v_extra.label = m_edge_attribute[e_id].label;
 
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         // Precise (sizing-scaled) length gate: split_all_edges()'s collection lambda and
@@ -215,7 +221,8 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         {
             const double sizing_ratio =
                 (VA[cache.v1_id].m_sizing_scalar + VA[cache.v2_id].m_sizing_scalar) / 2.;
-            if ((p1 - p2).squaredNorm() <= m_params.splitting_l2 * sizing_ratio * sizing_ratio) {
+            if ((p1 - p2).squaredNorm() <=
+                m_offset_params.splitting_l2 * sizing_ratio * sizing_ratio) {
                 return false;
             }
         }
@@ -274,16 +281,16 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
             cache.link_e[opp] = m_edge_attribute[e1.eid(*this)];
 
             // face attributes
-            FaceAttributes new_fattr;
-            new_fattr.label = m_tet_attribute[t_inc.tid(*this)].label;
-            cache.internal_f[opp] = new_fattr;
+            FaceSnapshot new_f;
+            new_f.extra.label = m_tet_attribute[t_inc.tid(*this)].label;
+            cache.internal_f[opp] = new_f;
 
             auto [_1, global_fid1] =
                 tuple_from_face({{opp.vertices()[0], opp.vertices()[1], cache.v1_id}});
             auto [_2, global_fid2] =
                 tuple_from_face({{opp.vertices()[0], opp.vertices()[1], cache.v2_id}});
-            cache.external_f[std::make_pair(opp, cache.v1_id)] = m_face_attribute[global_fid1];
-            cache.external_f[std::make_pair(opp, cache.v2_id)] = m_face_attribute[global_fid2];
+            cache.external_f[std::make_pair(opp, cache.v1_id)] = face_snapshot(global_fid1);
+            cache.external_f[std::make_pair(opp, cache.v2_id)] = face_snapshot(global_fid2);
 
             // tet attribute
             cache.tets[opp] = m_tet_attribute[t_inc.tid(*this)];
@@ -294,7 +301,7 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
             // edge maps
             auto [_1, global_fid1] = tuple_from_face({{opp_vid, cache.v1_id, cache.v2_id}});
             EdgeAttributes new_eattr;
-            new_eattr.label = m_face_attribute[global_fid1].label;
+            new_eattr.label = m_face_extra[global_fid1].label;
             cache.internal_e[opp_vid] = new_eattr;
 
             size_t glob_eid1 = tuple_from_edge({{cache.v1_id, opp_vid}}).eid(*this);
@@ -305,10 +312,10 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
             cache.external_e[e2] = m_edge_attribute[glob_eid2];
 
             // face maps
-            cache.split_f[opp_vid] = m_face_attribute[global_fid1];
+            cache.split_f[opp_vid] = face_snapshot(global_fid1);
             // if any incident face is on the surface, the new vertex is on the surface as well
-            if (m_face_attribute[global_fid1].m_is_surface_fs) {
-                cache.new_v.m_is_on_surface = true;
+            if (face_is_input(global_fid1)) {
+                cache.new_v_extra.m_is_on_input = true;
             }
         }
     }
@@ -331,8 +338,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
     const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(t);
 
     /// check inversion & rounding
-    auto& p = m_vertex_attribute[v_id].m_posf;
-    p = (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2;
+    set_vertex_position(
+        v_id,
+        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2);
 
     for (const Tuple& tt : locs) {
         if (is_inverted(tt)) {
@@ -375,8 +383,8 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 
 
         // surface
-        m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
-        m_vertex_attribute[v_id].m_is_on_offset = cache.is_edge_on_offset;
+        m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_surface;
+        m_vertex_extra[v_id].m_is_on_offset = cache.is_edge_on_offset;
         if (cache.is_edge_on_surface || cache.is_edge_on_offset) {
             m_vertex_attribute[v_id].m_order = 1;
         } else {
@@ -418,8 +426,9 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
                                                    2;
     } else {
         // vertex attribute
-        m_vertex_attribute[v_id] = cache.new_v;
-        m_vertex_attribute[v_id].m_is_on_surface = cache.is_edge_on_surface;
+        m_vertex_extra[v_id] = cache.new_v_extra;
+        set_vertex_position(v_id, cache.new_v_pos);
+        m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_surface;
         m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
             m_vertex_attribute[v1_id].on_bbox_faces,
             m_vertex_attribute[v2_id].on_bbox_faces);
@@ -445,14 +454,14 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
             // face attributes
             auto [_1, glob_fid1] =
                 tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v_id}});
-            m_face_attribute[glob_fid1] = cache.internal_f[link_edge];
+            restore_face(glob_fid1, cache.internal_f[link_edge]);
 
             auto [_2, glob_fid2] =
                 tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v1_id}});
             auto [_3, glob_fid3] =
                 tuple_from_face({{link_edge.vertices()[0], link_edge.vertices()[1], v2_id}});
-            m_face_attribute[glob_fid2] = cache.external_f[std::make_pair(link_edge, v1_id)];
-            m_face_attribute[glob_fid3] = cache.external_f[std::make_pair(link_edge, v2_id)];
+            restore_face(glob_fid2, cache.external_f[std::make_pair(link_edge, v1_id)]);
+            restore_face(glob_fid3, cache.external_f[std::make_pair(link_edge, v2_id)]);
 
             // edge attributes
             size_t link_e_glob_id = tuple_from_edge(link_edge.vertices()).eid(*this);
@@ -466,8 +475,8 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
             // face attributes
             auto [_1, glob_fid1] = tuple_from_face({{opp_vid, v1_id, v_id}});
             auto [_2, glob_fid2] = tuple_from_face({{opp_vid, v2_id, v_id}});
-            m_face_attribute[glob_fid1] = cache.split_f[opp_vid];
-            m_face_attribute[glob_fid2] = cache.split_f[opp_vid];
+            restore_face(glob_fid1, cache.split_f[opp_vid]);
+            restore_face(glob_fid2, cache.split_f[opp_vid]);
 
             // edge attributes
             size_t glob_eid = tuple_from_edge({{v_id, opp_vid}}).eid(*this);
@@ -493,7 +502,7 @@ bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
 
     // get split face tags (used a bunch later)
     size_t split_f_id = t.fid(*this);
-    cache.splitf_label = m_face_attribute[split_f_id].label;
+    cache.splitf_label = m_face_extra[split_f_id].label;
 
     // new vertex
     cache.v1_id = t.vid(*this);
@@ -544,13 +553,13 @@ bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
         // faces
         auto [_1, glob_fid1] = tuple_from_face({{cache.v1_id, cache.v2_id, oppo_vid}});
         cache.existing_f[simplex::Face(cache.v1_id, cache.v2_id, oppo_vid)] =
-            m_face_attribute[glob_fid1];
+            face_snapshot(glob_fid1);
         auto [_2, glob_fid2] = tuple_from_face({{cache.v2_id, cache.v3_id, oppo_vid}});
         cache.existing_f[simplex::Face(cache.v2_id, cache.v3_id, oppo_vid)] =
-            m_face_attribute[glob_fid2];
+            face_snapshot(glob_fid2);
         auto [_3, glob_fid3] = tuple_from_face({{cache.v1_id, cache.v3_id, oppo_vid}});
         cache.existing_f[simplex::Face(cache.v1_id, cache.v3_id, oppo_vid)] =
-            m_face_attribute[glob_fid3];
+            face_snapshot(glob_fid3);
     }
 
     return true;
@@ -572,17 +581,18 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
     std::array<size_t, 3> splitf_vids = {{v1_id, v2_id, v3_id}};
 
     // new_vertex
-    m_vertex_attribute[v_id].m_posf =
+    set_vertex_position(
+        v_id,
         (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf +
          m_vertex_attribute[v3_id].m_posf) /
-        3;
-    m_vertex_attribute[v_id].label = cache.splitf_label;
+            3);
+    m_vertex_extra[v_id].label = cache.splitf_label;
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
     splitf_eattr.label = cache.splitf_label;
-    FaceAttributes splitf_fattr;
-    splitf_fattr.label = cache.splitf_label;
+    FaceSnapshot splitf_fattr;
+    splitf_fattr.extra.label = cache.splitf_label;
     for (int i = 0; i < 3; i++) {
         size_t curr_v1_id = splitf_vids[i];
         size_t curr_v2_id = splitf_vids[(i + 1) % 3];
@@ -591,7 +601,7 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
         m_edge_attribute[glob_eid] = splitf_eattr;
 
         auto [_, glob_fid] = tuple_from_face({{curr_v1_id, curr_v2_id, v_id}}); // new face
-        m_face_attribute[glob_fid] = splitf_fattr;
+        restore_face(glob_fid, splitf_fattr);
     }
 
     // existing edges on split face
@@ -621,12 +631,13 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
 
             // new face
             auto [_, glob_fid] = tuple_from_face({{v_id, curr_v1_id, opp_vid}});
-            m_face_attribute[glob_fid].label = pair.second.label;
+            m_face_extra[glob_fid].label = pair.second.label;
 
             // existing face
             auto [_2, glob_fid2] = tuple_from_face({{opp_vid, curr_v1_id, curr_v2_id}});
-            m_face_attribute[glob_fid2] =
-                cache.existing_f[simplex::Face(opp_vid, curr_v1_id, curr_v2_id)];
+            restore_face(
+                glob_fid2,
+                cache.existing_f[simplex::Face(opp_vid, curr_v1_id, curr_v2_id)]);
 
             // existing edge
             size_t glob_eid = tuple_from_edge({{curr_v1_id, opp_vid}}).eid(*this);
@@ -665,7 +676,7 @@ bool TopoOffsetTetMesh::split_tet_before(const Tuple& t)
         size_t v2 = cache.v_ids[(i + 1) % 4];
         size_t v3 = cache.v_ids[(i + 2) % 4];
         auto [_, glob_fid] = tuple_from_face({{v1, v2, v3}});
-        cache.existing_f[simplex::Face(v1, v2, v3)] = m_face_attribute[glob_fid];
+        cache.existing_f[simplex::Face(v1, v2, v3)] = face_snapshot(glob_fid);
     }
 
     // tet attribute
@@ -686,11 +697,12 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
     size_t v_id = vertex_size() - 1;
 
     // new vertex
-    m_vertex_attribute[v_id].m_posf =
+    set_vertex_position(
+        v_id,
         (m_vertex_attribute[cache.v_ids[0]].m_posf + m_vertex_attribute[cache.v_ids[1]].m_posf +
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
-        4;
-    m_vertex_attribute[v_id].label = tet_label;
+            4);
+    m_vertex_extra[v_id].label = tet_label;
 
     // iterate over new tets (retained faces, new tets, new edge (opposite tet) )
     for (int i = 0; i < 4; i++) {
@@ -704,7 +716,7 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 
         // retained face
         auto [_, glob_fid] = tuple_from_face({{v1, v2, v3}});
-        m_face_attribute[glob_fid] = cache.existing_f[simplex::Face(v1, v2, v3)];
+        restore_face(glob_fid, cache.existing_f[simplex::Face(v1, v2, v3)]);
 
         // new tet
         size_t t_id = tuple_from_vids(v1, v2, v3, v_id).tid(*this);
@@ -723,7 +735,7 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 
             // new face
             auto [_, glob_fid] = tuple_from_face({{v1, v2, v_id}});
-            m_face_attribute[glob_fid].label = tet_label;
+            m_face_extra[glob_fid].label = tet_label;
         }
     }
 
@@ -747,8 +759,8 @@ void TopoOffsetTetMesh::split_all_edges()
             // conservative pre-filter: min_sizing_scalar is the smallest possible sizing
             // scalar, so this is the lowest the sizing-scaled threshold could ever be for any
             // edge. split_edge_before() applies the precise, per-edge sizing-scaled check.
-            if (len2 > m.m_params.splitting_l2 * m.m_params.min_sizing_scalar *
-                           m.m_params.min_sizing_scalar) {
+            if (len2 > m.m_offset_params.splitting_l2 * m.m_offset_params.min_sizing_scalar *
+                           m.m_offset_params.min_sizing_scalar) {
                 out.emplace_back("edge_split", e);
             }
         });
@@ -771,8 +783,8 @@ void TopoOffsetTetMesh::split_all_edges()
                 .squaredNorm();
         };
         executor.should_renew = [this](double priority_val) {
-            return priority_val >
-                   m_params.splitting_l2 * m_params.min_sizing_scalar * m_params.min_sizing_scalar;
+            return priority_val > m_offset_params.splitting_l2 * m_offset_params.min_sizing_scalar *
+                                      m_offset_params.min_sizing_scalar;
         };
         wmtk::run_localized_to_convergence(*this, executor, all_ops);
     };

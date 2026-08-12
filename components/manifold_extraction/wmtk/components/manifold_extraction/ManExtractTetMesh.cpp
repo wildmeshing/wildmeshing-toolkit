@@ -97,8 +97,8 @@ std::pair<size_t, size_t> ManExtractTetMesh::label_non_manifold()
         if (is_surface_edge(e) &&
             !edge_is_manifold(e)) { // edge is part of input mesh and not manifold
             m_edge_attribute[e.eid(*this)].label = 1;
-            m_vertex_attribute[e.vid(*this)].label = 1;
-            m_vertex_attribute[e.switch_vertex(*this).vid(*this)].label = 1;
+            m_vertex_extra[e.vid(*this)].label = 1;
+            m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
             nm_edge_count++;
         }
     }
@@ -108,7 +108,7 @@ std::pair<size_t, size_t> ManExtractTetMesh::label_non_manifold()
     for (const Tuple& v : vertices) {
         if (is_surface_vertex(v) &&
             !vertex_is_manifold(v)) { // vert is part of input and not manifold
-            m_vertex_attribute[v.vid(*this)].label = 1;
+            m_vertex_extra[v.vid(*this)].label = 1;
         }
     }
 
@@ -116,7 +116,7 @@ std::pair<size_t, size_t> ManExtractTetMesh::label_non_manifold()
     size_t nm_vertex_count = 0;
     auto verts = get_vertices();
     for (const Tuple& v : verts) {
-        if (m_vertex_attribute[v.vid(*this)].label == 1) {
+        if (m_vertex_extra[v.vid(*this)].label == 1) {
             nm_vertex_count++;
         }
     }

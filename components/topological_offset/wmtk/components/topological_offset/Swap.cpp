@@ -17,7 +17,7 @@ void face_attribute_tracker(
     const TetMesh& m,
     const std::vector<size_t>& incident_tets,
     const TopoOffsetTetMesh::FaceAttCol& m_face_attribute,
-    std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces)
+    std::map<std::array<size_t, 3>, TopoOffsetTetMesh::FaceAttributes>& changed_faces)
 {
     changed_faces.clear();
     for (const auto& t : incident_tets) {
@@ -33,7 +33,7 @@ void face_attribute_tracker(
 void tracker_assign_after(
     const wmtk::TetMesh& m,
     const std::vector<size_t>& incident_tids,
-    const std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces,
+    const std::map<std::array<size_t, 3>, TopoOffsetTetMesh::FaceAttributes>& changed_faces,
     TopoOffsetTetMesh::FaceAttCol& m_face_attribute)
 {
     auto middle_face = std::vector<size_t>();
@@ -64,7 +64,7 @@ void tracker_assign_after(
 void tracker_assign_after(
     const wmtk::TetMesh& m,
     const std::vector<wmtk::TetMesh::Tuple>& incident_tets,
-    const std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces,
+    const std::map<std::array<size_t, 3>, TopoOffsetTetMesh::FaceAttributes>& changed_faces,
     TopoOffsetTetMesh::FaceAttCol& m_face_attribute)
 {
     std::vector<size_t> incident_tids;
@@ -380,8 +380,7 @@ bool TopoOffsetTetMesh::swap_face_before(const Tuple& t)
     cache.is_offset_flip = false;
 
     const size_t fid = t.fid(*this);
-    if (m_face_attribute[fid].m_is_surface_fs || m_face_attribute[fid].m_is_offset_fs ||
-        m_face_attribute[fid].m_is_bbox_fs >= 0) {
+    if (m_face_attribute[fid].m_is_surface_fs || m_face_attribute[fid].m_is_bbox_fs >= 0) {
         return false;
     }
     const auto oppo_tet = t.switch_tetrahedron(*this);
@@ -495,7 +494,8 @@ bool TopoOffsetTetMesh::offset_swap_normal_deviation_ok(
     }
 
     // only reject a regression: an already-poor alignment doesn't block the flip
-    if (nd_old < m_params.max_normal_deviation_deg && nd_new >= m_params.max_normal_deviation_deg) {
+    if (nd_old < m_offset_params.max_normal_deviation_deg &&
+        nd_new >= m_offset_params.max_normal_deviation_deg) {
         return false;
     }
     return true;
@@ -551,7 +551,7 @@ bool TopoOffsetTetMesh::prepare_surface_flip_32(
     Tuple offset_face_c, offset_face_d; // captured only for the offset case, see below
     for (int k = 0; k < 3; ++k) {
         const auto [face_tuple, fid] = tuple_from_face(std::array<size_t, 3>{{a, b, ring[k]}});
-        if (m_face_attribute[fid].m_is_surface_fs) {
+        if (face_is_input(fid)) {
             if (n_surf == 0) {
                 c = ring[k];
                 cache.sf_face_attr = m_face_attribute[fid];
@@ -561,7 +561,7 @@ bool TopoOffsetTetMesh::prepare_surface_flip_32(
                 return false; // > 2 surface faces: non-manifold edge
             }
             ++n_surf;
-        } else if (m_face_attribute[fid].m_is_offset_fs) {
+        } else if (face_is_offset(fid)) {
             if (n_offset == 0) {
                 c = ring[k];
                 cache.sf_face_attr = m_face_attribute[fid];
@@ -593,7 +593,7 @@ bool TopoOffsetTetMesh::prepare_surface_flip_32(
     // The flip adds two surface faces (a,c,d),(b,c,d) on edge (c,d). If any
     // surface face is already incident to edge (c,d), the result is a
     // non-manifold surface edge (> 2 surface faces) -> reject. This counts the
-    // incident surface faces directly and does NOT rely on the m_is_on_surface
+    // incident surface faces directly and does NOT rely on the m_is_on_input
     // vertex flags (which can be stale), unlike is_edge_on_surface().
     {
         std::array<size_t, 2> cd{{c, d}};

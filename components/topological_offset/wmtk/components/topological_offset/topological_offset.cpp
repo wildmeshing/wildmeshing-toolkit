@@ -207,7 +207,7 @@ void topological_offset(nlohmann::json json_params)
             input_data.tag_names);
 
         // label input complex
-        mesh.m_params.offset_selection =
+        mesh.m_offset_params.offset_selection =
             expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
@@ -301,7 +301,7 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        if (mesh.m_params.optimize) {
+        if (mesh.m_offset_params.optimize) {
             mesh.optimize_offset(output_filename);
         }
 
@@ -347,7 +347,7 @@ void topological_offset(nlohmann::json json_params)
 
         // mesh.write_msh(output_filename.string()); // write .msh
         mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
-        if (mesh.m_params.save_vtu) { // write .vtu
+        if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
 

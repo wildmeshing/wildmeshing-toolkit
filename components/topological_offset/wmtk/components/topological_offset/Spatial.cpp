@@ -35,10 +35,10 @@ bool TopoOffsetTetMesh::tet_is_in_offset_conservative(const size_t t_id, const d
         }
 
         const double d = m_input_complex_bvh.dist(sph.center());
-        if ((d - sph.radius()) > m_params.target_distance) {
+        if ((d - sph.radius()) > m_offset_params.target_distance) {
             return false; // sphere outside --> tet outside offset
         }
-        if ((d + sph.radius()) < m_params.target_distance) {
+        if ((d + sph.radius()) < m_offset_params.target_distance) {
             continue; // sphere inside --> check next circle
         }
 
@@ -53,7 +53,7 @@ bool TopoOffsetTetMesh::tet_is_in_offset_aggressive(const size_t t_id) const
     const auto vs = oriented_tet_vids(t_id);
     for (const size_t& v_id : vs) {
         const double d = m_input_complex_bvh.dist(m_vertex_attribute[v_id].m_posf);
-        if (d > m_params.target_distance) {
+        if (d > m_offset_params.target_distance) {
             return false;
         }
     }
@@ -71,10 +71,10 @@ bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
     auto vs = oriented_tet_vids(t_id);
     std::vector<size_t> vs_in;
     for (int i = 0; i < 4; i++) {
-        if (m_vertex_attribute[vs[i]].label == 1) { // bad
+        if (m_vertex_extra[vs[i]].label == 1) { // bad
             log_and_throw_error("Input adjacent tet given to offset_tet_consistent_topology");
         }
-        if (m_vertex_attribute[vs[i]].label == 2) { // otherwise if label is 2 (offset)
+        if (m_vertex_extra[vs[i]].label == 2) { // otherwise if label is 2 (offset)
             vs_in.push_back(vs[i]);
         }
     }
@@ -83,15 +83,14 @@ bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
     if (vs_in.size() == 3) { // must have exactly one face in input
         int num_faces_in_input = 0;
         for (int i = 0; i < 4; i++) {
-            num_faces_in_input +=
-                (m_face_attribute[tuple_from_face(t_id, i).fid(*this)].label == 2);
+            num_faces_in_input += (m_face_extra[tuple_from_face(t_id, i).fid(*this)].label == 2);
         }
         offset_consistent = (num_faces_in_input == 1);
     } else if (vs_in.size() == 4) { // must have two or three faces, no isolated edges in input
         std::vector<Tuple> faces_in_input;
         for (int i = 0; i < 4; i++) {
             Tuple f = tuple_from_face(t_id, i);
-            if (m_face_attribute[f.fid(*this)].label == 2) {
+            if (m_face_extra[f.fid(*this)].label == 2) {
                 faces_in_input.push_back(f);
             }
         }
@@ -128,7 +127,7 @@ bool TopoOffsetTetMesh::offset_tet_consistent_topology(const size_t t_id) const
     }
 
     // check if any topologies would be changed
-    if (m_params.respect_all_topologies) {
+    if (m_offset_params.respect_all_topologies) {
         for (const int64_t& tag : m_tet_attribute[t_id].tag) {
             if (!tag_tet_consistent_topology(t_id, tag)) {
                 return false;
