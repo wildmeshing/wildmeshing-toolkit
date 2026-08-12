@@ -179,6 +179,29 @@ public:
         m_face_extra[fid] = s.extra;
     }
 
+    /**
+     * @brief Tag the two tracked surfaces for the optimization phase.
+     *
+     * The offset boundary in 2D has no stored definition -- it is exactly the set of edges
+     * across which the incident FACE LABELS differ, so it falls out of the labelling and is
+     * recomputed here once. An edge with only one incident face is on the domain boundary and
+     * is tagged bbox instead, which is what stops the box from collapsing.
+     */
+    void label_offset_boundary();
+
+    /// Move an offset-boundary vertex back onto the target distance from the input complex,
+    /// blended with the Laplacian of its offset-boundary neighbours.
+    bool project_offset_vertex(const Tuple& t);
+
+    /// The 2D optimization phase: split / collapse / swap / smooth on the shared driver.
+    void optimize_offset(const std::filesystem::path& output_file);
+
+    bool collapse_before_vertex(size_t v1, size_t v2) override;
+    void collapse_after_vertex(size_t v1, size_t v2) override;
+    void split_after_vertex(size_t v_new) override;
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
+
     bool edge_is_input(const size_t eid) const
     {
         return m_edge_attribute[eid].m_is_surface_fs &&
@@ -205,15 +228,21 @@ public:
         return !m_vertex_extra[vid].m_is_on_input;
     }
 
-    /// No sizing refinement yet in 2D: the 3D field is driven by the mean ratio of the offset
-    /// TRIANGULATION, and the 2D offset boundary is a polyline, for which that metric is not
-    /// defined. Left for the commit that adds the 2D optimization phase.
-    size_t refine_sizing_around_worst(double) override { return 0; }
+    /**
+     * @brief Sizing refinement over the offset polyline.
+     *
+     * The 3D field is driven by the mean ratio of the offset TRIANGULATION; a polyline has no
+     * such metric, so this uses the quantity that actually matters in 2D -- how far each
+     * offset-boundary vertex sits from the target distance. A vertex whose error exceeds
+     * sizing_mrm_threshold of the target gets a shorter target edge length, so the next split
+     * pass resolves that stretch more finely.
+     */
+    size_t refine_sizing_around_worst(double) override { return update_sizing_field(); }
+    size_t update_sizing_field();
     void write_smoothing_debug_output(const std::string& path) const override
     {
         const_cast<TopoOffsetTriMesh*>(this)->write_vtu(path);
     }
-
 
 
     /**
@@ -293,8 +322,8 @@ public:
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
      * are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field
-     * and the offset target distance (m_offset_params.target_distance). If m_edge_split_mode=Midpoint,
-     * edges are split at the midpoint
+     * and the offset target distance (m_offset_params.target_distance). If
+     * m_edge_split_mode=Midpoint, edges are split at the midpoint
      */
     void marching_tris();
 

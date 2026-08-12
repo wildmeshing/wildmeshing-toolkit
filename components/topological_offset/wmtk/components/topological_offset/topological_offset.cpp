@@ -169,6 +169,20 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
+        if (mesh.m_offset_params.optimize) {
+            mesh.optimize_offset(output_filename);
+
+            // As in 3D: the check above ran on the offset as constructed, and optimization
+            // re-triangulates it, so the property has to be re-established afterwards.
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed after optimization.");
+                } else {
+                    logger().error("Offset region is NOT manifold after optimization!");
+                }
+            }
+        }
+
         // report
         const std::string report_file = json_params["report"];
         if (!report_file.empty()) {
