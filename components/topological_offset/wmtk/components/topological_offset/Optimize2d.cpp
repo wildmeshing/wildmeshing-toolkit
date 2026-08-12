@@ -47,9 +47,15 @@ void TopoOffsetTriMesh::label_offset_boundary()
 
         // The offset boundary IS the face-label change across an edge. There is nothing else
         // that defines it -- it is not stored anywhere, it falls out of the labelling.
-        const int l0 = m_face_extra[e.fid(*this)].label;
-        const int l1 = m_face_extra[opp->fid(*this)].label;
-        if (l0 != l1) {
+        //
+        // A region-TAG change is tracked with it, and has to be. The shared 2D swap copies one
+        // incident face's tags onto both faces it creates, so an unguarded flip across a tag
+        // boundary silently relabels a face and moves the region -- which is what the output is
+        // built from. Tagging the edge as tracked surface is what makes the swap refuse it.
+        const size_t f0 = e.fid(*this), f1 = opp->fid(*this);
+        const bool label_change = m_face_extra[f0].label != m_face_extra[f1].label;
+        const bool tag_change = m_face_attribute[f0].tags != m_face_attribute[f1].tags;
+        if (label_change || tag_change) {
             m_edge_attribute[eid].m_is_surface_fs = true;
             m_edge_attribute[eid].m_surface_class = OFFSET_SURFACE_CLASS;
         }
@@ -246,6 +252,11 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     logger().info("\tLabelling tracked surfaces...");
     label_offset_boundary();
 
+    // From here on every edge split is an optimization split, run by the shared engine. The
+    // marching-triangles placement modes require one endpoint inside the offset and one
+    // outside, which does not hold for an arbitrary long edge.
+    m_edge_split_mode = EdgeSplitMode::Optimization;
+
     if (m_offset_params.debug_output) {
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
@@ -266,9 +277,10 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         update_sizing_field();
     }
 
-    // The labelling is derived from the face labels, which the operations preserve; recompute
-    // it anyway so the reported counts describe the mesh that is actually written out.
-    label_offset_boundary();
+    // Deliberately NOT re-derived here. From the moment the tracked surfaces are tagged, it is
+    // the shared operations that maintain those tags -- the face LABELS they were derived from
+    // are construction data the optimization does not propagate, so re-deriving now would read
+    // stale labels and mislabel the result.
 }
 
 } // namespace wmtk::components::topological_offset

@@ -72,7 +72,9 @@ public: // mode for splitting in marching tets
         // only one of these is used, hard coded in execute_offset()
         BinarySearch = 2, // bisection root finding algo
         LogRootFind = 3, // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
-        SphereTracing = 4 // use sphere tracing to compute the zero of the distance field
+        SphereTracing = 4, // use sphere tracing to compute the zero of the distance field
+
+        Optimization = 5 // the optimization phase; the shared engine places the vertex
     };
 
 public:
@@ -195,6 +197,11 @@ public:
 
     /// The 2D optimization phase: split / collapse / swap / smooth on the shared driver.
     void optimize_offset(const std::filesystem::path& output_file);
+
+    /// Dispatch: the optimization phase runs the shared split, everything else the
+    /// marching-triangles one.
+    bool marching_split_edge_before(const Tuple& t);
+    bool marching_split_edge_after(const Tuple& t);
 
     bool collapse_before_vertex(size_t v1, size_t v2) override;
     void collapse_after_vertex(size_t v1, size_t v2) override;

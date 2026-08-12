@@ -117,6 +117,17 @@ void TopoOffsetTriMesh::edge_split_sphere_tracing(const size_t v1, const size_t 
 
 bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
+    // The optimization phase runs wmtk::TriOptimizerMesh's split; everything below is the
+    // marching-triangles machinery, which places the new vertex on the offset's distance field
+    // and carries per-simplex labels the shared engine knows nothing about.
+    if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        return TriOptimizerMesh::split_edge_before(t);
+    }
+    return marching_split_edge_before(t);
+}
+
+bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
+{
     // load and clear cache
     auto& cache = edge_split_cache.local();
     cache.existing_eattr.clear();
@@ -133,12 +144,10 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
     } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
-        if ((m_vertex_extra[cache.v1_id].label == 0) &&
-            (m_vertex_extra[cache.v2_id].label != 0)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
             edge_split_binary_search(cache.v2_id, cache.v1_id, p_new);
         } else if (
-            (m_vertex_extra[cache.v1_id].label != 0) &&
-            (m_vertex_extra[cache.v2_id].label == 0)) {
+            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
             edge_split_binary_search(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -151,16 +160,15 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         double edge_len = (p1 - p2).norm();
         double split_dist = (edge_len / 2.0);
         if (m_offset_params.target_distance < (edge_len / 2.0)) {
-            split_dist = (m_offset_params.target_distance / 2.0); // hacky. will be split again later
+            split_dist =
+                (m_offset_params.target_distance / 2.0); // hacky. will be split again later
         }
 
         // set split point
-        if ((m_vertex_extra[cache.v1_id].label == 0) &&
-            (m_vertex_extra[cache.v2_id].label == 1)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label == 1)) {
             p_new = ((p1 - p2) * (split_dist / edge_len)) + p2;
         } else if (
-            (m_vertex_extra[cache.v1_id].label == 1) &&
-            (m_vertex_extra[cache.v2_id].label == 0)) {
+            (m_vertex_extra[cache.v1_id].label == 1) && (m_vertex_extra[cache.v2_id].label == 0)) {
             p_new = ((p2 - p1) * (split_dist / edge_len)) + p1;
         } else {
             log_and_throw_error(
@@ -169,12 +177,10 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
                 e_id);
         }
     } else if (m_edge_split_mode == EdgeSplitMode::LogRootFind) {
-        if ((m_vertex_extra[cache.v1_id].label == 0) &&
-            (m_vertex_extra[cache.v2_id].label != 0)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
             edge_split_log_root_find(cache.v2_id, cache.v1_id, p_new);
         } else if (
-            (m_vertex_extra[cache.v1_id].label != 0) &&
-            (m_vertex_extra[cache.v2_id].label == 0)) {
+            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
             edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -183,12 +189,10 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
                 e_id);
         }
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTracing) {
-        if ((m_vertex_extra[cache.v1_id].label == 0) &&
-            (m_vertex_extra[cache.v2_id].label != 0)) {
+        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
             edge_split_sphere_tracing(cache.v2_id, cache.v1_id, p_new);
         } else if (
-            (m_vertex_extra[cache.v1_id].label != 0) &&
-            (m_vertex_extra[cache.v2_id].label == 0)) {
+            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
             edge_split_sphere_tracing(cache.v1_id, cache.v2_id, p_new);
         } else {
             log_and_throw_error(
@@ -232,6 +236,14 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 
 
 bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
+{
+    if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        return TriOptimizerMesh::split_edge_after(t);
+    }
+    return marching_split_edge_after(t);
+}
+
+bool TopoOffsetTriMesh::marching_split_edge_after(const Tuple& t)
 {
     if (!TriMesh::split_edge_after(t)) {
         return false;
