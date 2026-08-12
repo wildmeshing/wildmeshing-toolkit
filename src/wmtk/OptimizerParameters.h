@@ -129,6 +129,16 @@ struct OptimizerParameters
      * light quality preference.
      */
     double w_amips = 1e-4;
+    /**
+     * Pull surface vertices with a fixed-target spring instead of the squared distance to the
+     * input. See SpringEnergy2D: the difference is whether a vertex may slide along the input
+     * for free.
+     *
+     * Defaults ON. The sliding form leaves a floor on the surface deviation that no weight
+     * removes -- a vertex slides tangentially at no cost until the geometry rather than the
+     * force balance stops it -- while the spring is a clean 1/w over six decades.
+     */
+    bool spring_pull = true;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.

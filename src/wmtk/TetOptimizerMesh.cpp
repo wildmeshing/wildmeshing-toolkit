@@ -291,6 +291,7 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = true;
+    opts.spring_pull = m_params.spring_pull;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }

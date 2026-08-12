@@ -87,6 +87,7 @@ struct Parameters : public wmtk::OptimizerParameters
         eps_simplify = json_params["eps_simplify"];
 
         w_amips = json_params["w_amips"];
+        spring_pull = json_params["spring_pull"];
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];

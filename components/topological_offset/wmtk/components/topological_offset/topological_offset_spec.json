@@ -44,6 +44,7 @@
             "split_high_valence_threshold",
             "skip_good_regions",
             "w_amips",
+            "spring_pull",
             "perform_sanity_checks"
         ]
     },
@@ -281,6 +282,12 @@
         "type": "bool",
         "default": false,
         "doc": "Only smooth vertices incident to a tet whose energy is still far from stop_energy. Smoothing a vertex surrounded by good tets does nothing, so skipping it is free (only used if optimize is true)."
+    },
+    {
+        "pointer": "/spring_pull",
+        "type": "bool",
+        "default": true,
+        "doc": "Pull a surface vertex toward a fixed target point (the nearest point on the input, captured once before each solve) instead of toward the input as a set. The default squared-distance term lets a vertex slide along the input at no cost, which leaves a floor on the surface deviation that no weight removes; the spring forbids sliding and its pull does not weaken as the vertex approaches, because the target does not move to meet it."
     },
     {
         "pointer": "/w_amips",

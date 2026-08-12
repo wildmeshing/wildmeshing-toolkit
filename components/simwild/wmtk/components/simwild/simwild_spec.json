@@ -31,6 +31,7 @@
       "stop_at_float",
       "preserve_topology",
       "w_amips",
+      "spring_pull",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -307,6 +308,12 @@
     "type": "bool",
     "default": true,
     "doc": "Preserve topology of input."
+  },
+  {
+    "pointer": "/spring_pull",
+    "type": "bool",
+    "default": true,
+    "doc": "Pull a surface vertex toward a fixed target point (the nearest point on the input, captured once before each solve) instead of toward the input as a set. The default squared-distance term lets a vertex slide along the input at no cost, which leaves a floor on the surface deviation that no weight removes; the spring forbids sliding and its pull does not weaken as the vertex approaches, because the target does not move to meet it."
   },
   {
     "pointer": "/w_amips",

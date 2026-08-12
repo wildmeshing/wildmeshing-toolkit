@@ -132,6 +132,7 @@ struct Parameters : public wmtk::OptimizerParameters
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
         skip_good_regions = json_params["skip_good_regions"];
         w_amips = json_params["w_amips"];
+        spring_pull = json_params["spring_pull"];
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }

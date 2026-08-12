@@ -23,6 +23,7 @@
       "stop_energy",
       "split_high_valence_threshold",
       "w_amips",
+      "spring_pull",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -208,6 +209,12 @@
     "type": "int",
     "default": 200,
     "doc": "Incident-triangle count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped triangle mesh has vertex valence around 6; a split cascade can drive one vertex much higher, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex opposite the edge, so the gate applies to those. Expect this to fire far less often than in 3D, where the edge's link is a whole ring rather than one or two vertices."
+  },
+  {
+    "pointer": "/spring_pull",
+    "type": "bool",
+    "default": false,
+    "doc": "Pull a surface vertex toward a fixed target point (the nearest point on the input, captured once before each solve) instead of toward the input as a set. The default squared-distance term lets a vertex slide along the input at no cost, which is what frees it to relax along a curve it sits on; the spring forbids sliding but its pull does not weaken as the vertex approaches, because the target does not move to meet it. 2D only."
   },
   {
     "pointer": "/w_amips",

@@ -103,6 +103,16 @@ struct SmoothVertexOptions
      * veto).
      */
     bool quality_veto_on_surface = true;
+
+    /**
+     * Pull a surface vertex with a fixed-target spring (SpringEnergy2D/3D) instead of the
+     * squared distance to the input (EnvelopeEnergy2D/3D).
+     *
+     * The two differ in whether the vertex may slide along the input for free; see
+     * SpringEnergy2D. The target is the nearest point on the input to where the vertex stands
+     * when the solve begins, captured once.
+     */
+    bool spring_pull = true;
 };
 
 /**
@@ -186,8 +196,15 @@ bool smooth_vertex_3d(
         VA[vid].m_is_on_surface ? m.smoothing_energy_envelope(vid) : nullptr;
 
     if (pull_env) {
-        auto envelope_energy =
-            std::make_shared<EnvelopeEnergy3D>(pull_env, opts.s_envelope * opts.w_envelope);
+        const double pull_w = opts.s_envelope * opts.w_envelope;
+        std::shared_ptr<polysolve::nonlinear::Problem> envelope_energy;
+        if (opts.spring_pull) {
+            Vector3d target;
+            pull_env->nearest_point(Vector3d(VA[vid].m_posf), target);
+            envelope_energy = std::make_shared<SpringEnergy3D>(target, pull_w, pull_env);
+        } else {
+            envelope_energy = std::make_shared<EnvelopeEnergy3D>(pull_env, pull_w);
+        }
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();
@@ -357,8 +374,15 @@ bool smooth_vertex_2d(
         VA[vid].m_is_on_surface ? m.m_envelope : nullptr;
 
     if (envelope) {
-        auto envelope_energy =
-            std::make_shared<EnvelopeEnergy2D>(envelope, opts.s_envelope * opts.w_envelope);
+        const double pull_w = opts.s_envelope * opts.w_envelope;
+        std::shared_ptr<polysolve::nonlinear::Problem> envelope_energy;
+        if (opts.spring_pull) {
+            Vector2d target;
+            envelope->nearest_point(m.smoothing_position(vid), target);
+            envelope_energy = std::make_shared<SpringEnergy2D>(target, pull_w, envelope);
+        } else {
+            envelope_energy = std::make_shared<EnvelopeEnergy2D>(envelope, pull_w);
+        }
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();

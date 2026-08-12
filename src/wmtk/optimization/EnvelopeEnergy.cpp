@@ -91,6 +91,45 @@ bool EnvelopeEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
 }
 
 
+SpringEnergy2D::SpringEnergy2D(
+    const Vector2d& target,
+    const double weight,
+    const std::shared_ptr<SampleEnvelope>& envelope,
+    bool check_step_validity)
+    : m_target(target)
+    , m_weight(weight)
+    , m_envelope(envelope)
+    , m_check_step_validity(check_step_validity)
+{}
+
+double SpringEnergy2D::value(const TVector& x)
+{
+    assert(x.size() == 2);
+    return m_weight * (Vector2d(x) - m_target).squaredNorm();
+}
+
+void SpringEnergy2D::gradient(const TVector& x, TVector& gradv)
+{
+    assert(x.size() == 2);
+    gradv = 2 * m_weight * (Vector2d(x) - m_target);
+}
+
+void SpringEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    // Exact, not Gauss-Newton: with the target fixed the energy is a plain quadratic. The
+    // isotropy is the whole difference from EnvelopeEnergy2D -- it is what forbids sliding.
+    hessian = 2 * m_weight * Matrix2d::Identity();
+}
+
+bool SpringEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
+{
+    if (!m_check_step_validity || !m_envelope) {
+        return true;
+    }
+    return !m_envelope->is_outside(Vector2d(x1));
+}
+
+
 EnvelopeEnergy3D::EnvelopeEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
     const double weight,
@@ -143,6 +182,43 @@ bool EnvelopeEnergy3D::is_step_valid(const TVector& x0, const TVector& x1)
     }
 
     return true;
+}
+
+SpringEnergy3D::SpringEnergy3D(
+    const Vector3d& target,
+    const double weight,
+    const std::shared_ptr<SampleEnvelope>& envelope,
+    bool check_step_validity)
+    : m_target(target)
+    , m_weight(weight)
+    , m_envelope(envelope)
+    , m_check_step_validity(check_step_validity)
+{}
+
+double SpringEnergy3D::value(const TVector& x)
+{
+    assert(x.size() == 3);
+    return m_weight * (Vector3d(x) - m_target).squaredNorm();
+}
+
+void SpringEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    assert(x.size() == 3);
+    gradv = 2 * m_weight * (Vector3d(x) - m_target);
+}
+
+void SpringEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    // Exact, not Gauss-Newton: with the target fixed the energy is a plain quadratic.
+    hessian = 2 * m_weight * Matrix3d::Identity();
+}
+
+bool SpringEnergy3D::is_step_valid(const TVector& x0, const TVector& x1)
+{
+    if (!m_check_step_validity || !m_envelope) {
+        return true;
+    }
+    return !m_envelope->is_outside(Vector3d(x1));
 }
 
 } // namespace wmtk::optimization
