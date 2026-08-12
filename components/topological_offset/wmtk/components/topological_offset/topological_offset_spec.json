@@ -44,7 +44,7 @@
             "split_high_valence_threshold",
             "skip_good_regions",
             "w_amips",
-            "spring_pull",
+            "pull_mode",
             "smooth_quality_gate",
       "two_stage",
             "perform_sanity_checks"
@@ -298,11 +298,12 @@
     "doc": "Run the balanced warm-up solve (AMIPS and the pull at equal footing) before the weighted smoothing solve for surface vertices. The balanced objective contains no small weight, so the warm-up accepts tangential slides at any configured w_amips; measured on triwild20k_202090 this produces a weight-independent surface deviation floor (~4e-5) that disappears with the warm-up off, at unchanged max energy."
 },
     {
-        "pointer": "/spring_pull",
-        "type": "bool",
-        "default": true,
-        "doc": "Pull a surface vertex toward a fixed target point (the nearest point on the input, captured once before each solve) instead of toward the input as a set. The default squared-distance term lets a vertex slide along the input at no cost, which leaves a floor on the surface deviation that no weight removes; the spring forbids sliding and its pull does not weaken as the vertex approaches, because the target does not move to meet it."
-    },
+    "pointer": "/pull_mode",
+    "type": "string",
+    "default": "spring",
+    "options": ["envelope", "spring", "spring_refresh"],
+    "doc": "How smoothing pulls a surface vertex toward the input. 'envelope': squared distance to the input as a set; the nearest point is re-queried per evaluation, so the vertex slides along the input for free. 'spring': fixed-target spring to the nearest point captured once per solve; no sliding, surface deviation scales as w_amips with no floor. 'spring_refresh': the spring with its target re-captured at every accepted iterate; restores slow sliding while keeping each iterate an exact quadratic. On the 53 registered configs, envelope and spring_refresh terminate 53/53; the frozen spring stalls one config and costs ~20% more iterations."
+},
     {
         "pointer": "/w_amips",
         "type": "float",

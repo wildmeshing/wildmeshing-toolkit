@@ -291,7 +291,13 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = m_params.two_stage;
-    opts.spring_pull = m_params.spring_pull;
+    if (m_params.pull_mode == "envelope") {
+        opts.pull_mode = optimization::SmoothVertexOptions::PullMode::Envelope;
+    } else if (m_params.pull_mode == "spring_refresh") {
+        opts.pull_mode = optimization::SmoothVertexOptions::PullMode::SpringRefresh;
+    } else {
+        opts.pull_mode = optimization::SmoothVertexOptions::PullMode::Spring;
+    }
     opts.smooth_quality_gate = m_params.smooth_quality_gate;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);

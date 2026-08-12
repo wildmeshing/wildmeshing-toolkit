@@ -118,14 +118,18 @@ struct SmoothVertexOptions
     bool smooth_quality_gate = true;
 
     /**
-     * Pull a surface vertex with a fixed-target spring (SpringEnergy2D/3D) instead of the
-     * squared distance to the input (EnvelopeEnergy2D/3D).
+     * How a surface vertex is pulled toward the input.
      *
-     * The two differ in whether the vertex may slide along the input for free; see
-     * SpringEnergy2D. The target is the nearest point on the input to where the vertex stands
-     * when the solve begins, captured once.
+     * Envelope: squared distance to the input as a set (EnvelopeEnergy2D/3D); the nearest
+     * point is re-queried at every evaluation, so the vertex may slide along the input for
+     * free. Spring: a fixed-target spring (SpringEnergy2D/3D) to the nearest point captured
+     * once when the solve begins; tangential motion is resisted like normal motion.
+     * SpringRefresh: the same spring, but the target is re-captured at every accepted
+     * iterate, which restores slow tangential motion (one force-balance displacement per
+     * iterate) while keeping each iterate's model an exact quadratic.
      */
-    bool spring_pull = true;
+    enum class PullMode { Envelope, Spring, SpringRefresh };
+    PullMode pull_mode = PullMode::Spring;
 };
 
 /**
@@ -214,12 +218,14 @@ bool smooth_vertex_3d(
     if (pull_env) {
         const double pull_w = opts.s_envelope * opts.w_envelope;
         std::shared_ptr<polysolve::nonlinear::Problem> envelope_energy;
-        if (opts.spring_pull) {
+        if (opts.pull_mode == SmoothVertexOptions::PullMode::Envelope) {
+            envelope_energy = std::make_shared<EnvelopeEnergy3D>(pull_env, pull_w);
+        } else {
             Vector3d target;
             pull_env->nearest_point(Vector3d(VA[vid].m_posf), target);
-            envelope_energy = std::make_shared<SpringEnergy3D>(target, pull_w);
-        } else {
-            envelope_energy = std::make_shared<EnvelopeEnergy3D>(pull_env, pull_w);
+            const bool refresh = opts.pull_mode == SmoothVertexOptions::PullMode::SpringRefresh;
+            envelope_energy =
+                std::make_shared<SpringEnergy3D>(target, pull_w, refresh ? pull_env : nullptr);
         }
 
         if (opts.two_stage) {
@@ -392,12 +398,14 @@ bool smooth_vertex_2d(
     if (envelope) {
         const double pull_w = opts.s_envelope * opts.w_envelope;
         std::shared_ptr<polysolve::nonlinear::Problem> envelope_energy;
-        if (opts.spring_pull) {
+        if (opts.pull_mode == SmoothVertexOptions::PullMode::Envelope) {
+            envelope_energy = std::make_shared<EnvelopeEnergy2D>(envelope, pull_w);
+        } else {
             Vector2d target;
             envelope->nearest_point(m.smoothing_position(vid), target);
-            envelope_energy = std::make_shared<SpringEnergy2D>(target, pull_w);
-        } else {
-            envelope_energy = std::make_shared<EnvelopeEnergy2D>(envelope, pull_w);
+            const bool refresh = opts.pull_mode == SmoothVertexOptions::PullMode::SpringRefresh;
+            envelope_energy =
+                std::make_shared<SpringEnergy2D>(target, pull_w, refresh ? envelope : nullptr);
         }
 
         if (opts.two_stage) {

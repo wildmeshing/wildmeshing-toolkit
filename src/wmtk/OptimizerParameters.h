@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 namespace wmtk {
 
@@ -138,7 +139,8 @@ struct OptimizerParameters
      * removes -- a vertex slides tangentially at no cost until the geometry rather than the
      * force balance stops it -- while the spring is a clean 1/w over six decades.
      */
-    bool spring_pull = true;
+    /// See SmoothVertexOptions::PullMode; parsed from the string parameter pull_mode.
+    std::string pull_mode = "spring";
     /// Apply the quality gate after a smoothing move. See SmoothVertexOptions.
     bool smooth_quality_gate = true;
 

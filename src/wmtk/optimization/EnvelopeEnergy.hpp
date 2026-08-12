@@ -62,7 +62,15 @@ public:
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
 
-    SpringEnergy2D(const Vector2d& target, const double weight = 1);
+    /**
+     * @param refresh_envelope when non-null, the target is re-captured as this envelope's
+     * nearest point at every accepted iterate (via solution_changed); when null the target
+     * stays fixed for the whole solve.
+     */
+    SpringEnergy2D(
+        const Vector2d& target,
+        const double weight = 1,
+        const std::shared_ptr<SampleEnvelope>& refresh_envelope = nullptr);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -72,11 +80,16 @@ public:
     }
     void hessian(const TVector& x, MatrixXd& hessian) override;
 
-    void solution_changed(const TVector& new_x) override {}
+    void solution_changed(const TVector& new_x) override;
+    bool after_line_search_custom_operation(const TVector& x0, const TVector& x1) override
+    {
+        return m_refresh_envelope != nullptr;
+    }
 
 private:
     Vector2d m_target;
     double m_weight;
+    std::shared_ptr<SampleEnvelope> m_refresh_envelope;
 };
 
 class EnvelopeEnergy3D : public polysolve::nonlinear::Problem
@@ -115,7 +128,15 @@ public:
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
 
-    SpringEnergy3D(const Vector3d& target, const double weight = 1);
+    /**
+     * @param refresh_envelope when non-null, the target is re-captured as this envelope's
+     * nearest point at every accepted iterate (via solution_changed); when null the target
+     * stays fixed for the whole solve.
+     */
+    SpringEnergy3D(
+        const Vector3d& target,
+        const double weight = 1,
+        const std::shared_ptr<SampleEnvelope>& refresh_envelope = nullptr);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -125,11 +146,16 @@ public:
     }
     void hessian(const TVector& x, MatrixXd& hessian) override;
 
-    void solution_changed(const TVector& new_x) override {}
+    void solution_changed(const TVector& new_x) override;
+    bool after_line_search_custom_operation(const TVector& x0, const TVector& x1) override
+    {
+        return m_refresh_envelope != nullptr;
+    }
 
 private:
     Vector3d m_target;
     double m_weight;
+    std::shared_ptr<SampleEnvelope> m_refresh_envelope;
 };
 
 } // namespace wmtk::optimization

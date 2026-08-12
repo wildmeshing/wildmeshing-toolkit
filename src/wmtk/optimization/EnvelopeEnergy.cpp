@@ -75,9 +75,13 @@ void EnvelopeEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
 
 
-SpringEnergy2D::SpringEnergy2D(const Vector2d& target, const double weight)
+SpringEnergy2D::SpringEnergy2D(
+    const Vector2d& target,
+    const double weight,
+    const std::shared_ptr<SampleEnvelope>& refresh_envelope)
     : m_target(target)
     , m_weight(weight)
+    , m_refresh_envelope(refresh_envelope)
 {}
 
 double SpringEnergy2D::value(const TVector& x)
@@ -97,6 +101,13 @@ void SpringEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
     // Exact, not Gauss-Newton: with the target fixed the energy is a plain quadratic. The
     // isotropy is the whole difference from EnvelopeEnergy2D -- it is what forbids sliding.
     hessian = 2 * m_weight * Matrix2d::Identity();
+}
+
+void SpringEnergy2D::solution_changed(const TVector& new_x)
+{
+    if (m_refresh_envelope) {
+        m_refresh_envelope->nearest_point(Vector2d(new_x), m_target);
+    }
 }
 
 
@@ -138,9 +149,13 @@ void EnvelopeEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 
 void EnvelopeEnergy3D::solution_changed(const TVector& new_x) {}
 
-SpringEnergy3D::SpringEnergy3D(const Vector3d& target, const double weight)
+SpringEnergy3D::SpringEnergy3D(
+    const Vector3d& target,
+    const double weight,
+    const std::shared_ptr<SampleEnvelope>& refresh_envelope)
     : m_target(target)
     , m_weight(weight)
+    , m_refresh_envelope(refresh_envelope)
 {}
 
 double SpringEnergy3D::value(const TVector& x)
@@ -159,6 +174,13 @@ void SpringEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
     // Exact, not Gauss-Newton: with the target fixed the energy is a plain quadratic.
     hessian = 2 * m_weight * Matrix3d::Identity();
+}
+
+void SpringEnergy3D::solution_changed(const TVector& new_x)
+{
+    if (m_refresh_envelope) {
+        m_refresh_envelope->nearest_point(Vector3d(new_x), m_target);
+    }
 }
 
 } // namespace wmtk::optimization
