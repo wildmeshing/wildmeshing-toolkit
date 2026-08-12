@@ -1,262 +1,297 @@
 [
-  {
-    "doc": "",
-    "pointer": "/",
-    "type": "object",
-    "required": ["application", "input"],
-    "optional": [
-      "output",
-      "input_dir",
-      "offset_selection",
-      "offset_output_tags",
-      "protected_tags",
-      "respect_all_topologies",
-      "offset_in",
-      "offset_out",
-      "target_distance",
-      "target_distance_rel",
-      "relative_ball_threshold",
-      "edge_search_termination_len",
-      "sorted_marching",
-      "check_manifoldness",
-      "optimize",
-      "save_vtu",
-      "DEBUG_output",
-      "log_file",
-      "report",
-      "num_threads",
-      "smoothing_iterations",
-      "optimization_iterations",
-      "length_rel",
-      "length",
-      "stop_energy",
-      "max_normal_deviation_deg",
-      "smooth_quadrics_weight",
-      "smooth_laplacian_weight",
-      "quadrics_svd_threshold",
-      "min_sizing_scalar",
-      "max_sizing_scalar",
-      "sizing_mrm_threshold",
-      "sizing_gradation"
-    ]
-  },
-  {
-    "pointer": "/application",
-    "type": "string",
-    "options": ["topological_offset"],
-    "doc": "Application name must be topological_offset."
-  },
-  {
-    "pointer": "/input",
-    "type": "string",
-    "doc": "Tetrahedral input mesh."
-  },
-  {
-    "pointer": "/output",
-    "type": "string",
-    "default": "out",
-    "doc": "Output file name (without extension)."
-  },
-  {
-    "pointer": "/input_dir",
-    "type": "string",
-    "default": "",
-    "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
-  },
-  {
-    "pointer": "/offset_selection",
-    "type": "string",
-    "default": "!_",
-    "doc": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used."
-  },
-  {
-    "pointer": "/offset_output_tags",
-    "type": "list",
-    "default": ["newtag"],
-    "doc": "Tags to add to elements in the resulting offset region."
-  },
-  {
-    "pointer": "/offset_output_tags/*",
-    "type": "string",
-    "doc": "A tag."
-  },
-  {
-    "pointer": "/protected_tags",
-    "type": "list",
-    "default": [],
-    "doc": "Set of tags that will not be overwritten by the offset."
-  },
-  {
-    "pointer": "/protected_tags/*",
-    "type": "string",
-    "doc": "A tag."
-  },
-  {
-    "pointer": "/offset_in",
-    "type": "bool",
-    "default": false,
-    "doc": "Only relevant for single body mode. Whether to create offset inside body"
-  },
-  {
-    "pointer": "/offset_out",
-    "type": "bool",
-    "default": true,
-    "doc": "Only relevant for single body mode. Whether to create offset outside body"
-  },
-  {
-    "pointer": "/respect_all_topologies",
-    "type": "bool",
-    "default": false,
-    "doc": "If true, the topology (after offset initialization) of every tag is respected as if the offset was to replace all tags. If false, only the topology of the offset is respected."
-  },
-  {
-    "pointer": "/target_distance_rel",
-    "type": "float",
-    "default": 1e-2,
-    "doc": "Target offset distance relative to bounding box of mesh."
-  },
-  {
-    "pointer": "/target_distance",
-    "type": "float",
-    "default": -1.0,
-    "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
-  },
-  {
-    "pointer": "/relative_ball_threshold",
-    "type": "float",
-    "default": 0.1,
-    "doc": "Float between 0 and 1, radius relative to target_distance to stop circle/sphere splitting in conservative distance approximation. Smaller means more accurate offset growth but longer run time."
-  },
-  {
-    "pointer": "/edge_search_termination_len",
-    "type": "float",
-    "default": 1e-3,
-    "doc": "Length below which binary search will be terminated for function-guided edge splitting"
-  },
-  {
-    "pointer": "/sorted_marching",
-    "type": "bool",
-    "default": false,
-    "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
-  },
-  {
-    "pointer": "/check_manifoldness",
-    "type": "bool",
-    "default": true,
-    "doc": "After performing offset, check if offset region is manifold"
-  },
-  {
-    "pointer": "/optimize",
-    "type": "bool",
-    "default": false,
-    "doc": "Run optimization on the offset."
-  },
-  {
-    "pointer": "/save_vtu",
-    "type": "bool",
-    "default": false,
-    "doc": "Save .vtu of output mesh"
-  },
-  {
-    "pointer": "/DEBUG_output",
-    "type": "bool",
-    "default": false,
-    "doc": "Write the tet mesh as out_{}.vtu after every operation."
-  },
-  {
-    "pointer": "/log_file",
-    "type": "string",
-    "default": "",
-    "doc": "Logs are not just printed on the terminal but also saved in this file."
-  },
-  {
-    "pointer": "/report",
-    "type": "string",
-    "default": "",
-    "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
-  },
-  {
-    "pointer": "/num_threads",
-    "type": "int",
-    "default": 0,
-    "doc": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded."
-  },
-  {
-    "pointer": "/smoothing_iterations",
-    "type": "int",
-    "default": 3,
-    "doc": "Number of smoothing passes run during offset optimization (only used if optimize is true)."
-  },
-  {
-    "pointer": "/length_rel",
-    "type": "float",
-    "default": 5e-2,
-    "doc": "Target edge length relative to the bounding box diagonal. Used to bound which edges edge collapse is allowed to touch (only edges shorter than 4/5 of this length are collapsed). Ignored if length >= 0."
-  },
-  {
-    "pointer": "/length",
-    "type": "float",
-    "default": -1.0,
-    "doc": "Target edge length (absolute). If < 0, computed from length_rel."
-  },
-  {
-    "pointer": "/stop_energy",
-    "type": "float",
-    "default": 10.0,
-    "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
-  },
-  {
-    "pointer": "/optimization_iterations",
-    "type": "int",
-    "default": 3,
-    "doc": "Number of split/collapse/swap/smooth passes run during offset optimization (only used if optimize is true)."
-  },
-  {
-    "pointer": "/max_normal_deviation_deg",
-    "type": "float",
-    "default": 15.0,
-    "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
-  },
-  {
-    "pointer": "/smooth_quadrics_weight",
-    "type": "float",
-    "default": 0.5,
-    "doc": "Blend weight (0-1) toward the quadrics-optimal target vertex during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
-  },
-  {
-    "pointer": "/smooth_laplacian_weight",
-    "type": "float",
-    "default": 0.01,
-    "doc": "Blend weight (0-1) toward the Laplacian of neighboring offset-surface vertices during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
-  },
-  {
-    "pointer": "/quadrics_svd_threshold",
-    "type": "float",
-    "default": 1e-2,
-    "doc": "SVD threshold used when solving for the quadrics-optimal target vertex during offset-surface smoothing. Controls sensitivity to feature edges: lower means more sensitive."
-  },
-  {
-    "pointer": "/min_sizing_scalar",
-    "type": "float",
-    "default": 0.01,
-    "doc": "Lower bound for the per-vertex sizing field (see max_sizing_scalar). Refinement stops once a vertex's sizing scalar reaches this fraction of the base target length."
-  },
-  {
-    "pointer": "/max_sizing_scalar",
-    "type": "float",
-    "default": 1.0,
-    "doc": "Upper bound for the per-vertex sizing field, a multiplier on the target edge length (splitting_l2/collapsing_l2) refined/coarsened once per optimize_offset() iteration based on the mean ratio metric of the offset triangulation (see sizing_mrm_threshold). 1.0 means never coarser than the base target length."
-  },
-  {
-    "pointer": "/sizing_mrm_threshold",
-    "type": "float",
-    "default": 0.5,
-    "doc": "Mean ratio metric threshold used to update the sizing field once per optimize_offset() iteration: for each offset-surface vertex, the sizing scalar is halved (refine) if the worst incident offset triangle's mean ratio metric is below this, or multiplied by 1.5 (coarsen) if above."
-  },
-  {
-    "pointer": "/sizing_gradation",
-    "type": "float",
-    "default": 2.0,
-    "doc": "Gradation cap for the sizing field: neighboring vertices' sizing scalars may differ by at most this factor. After each mean-ratio-metric refinement pass, the refined vertices' lower sizing scalar is propagated outward (monotone, only ever lowers a neighbor's scalar) so the mesh doesn't jump straight from fine to coarse. <= 1 disables gradation."
-  }
+    {
+        "doc": "",
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "application",
+            "input"
+        ],
+        "optional": [
+            "output",
+            "input_dir",
+            "offset_selection",
+            "offset_output_tags",
+            "protected_tags",
+            "respect_all_topologies",
+            "offset_in",
+            "offset_out",
+            "target_distance",
+            "target_distance_rel",
+            "relative_ball_threshold",
+            "edge_search_termination_len",
+            "sorted_marching",
+            "check_manifoldness",
+            "optimize",
+            "save_vtu",
+            "DEBUG_output",
+            "log_file",
+            "report",
+            "num_threads",
+            "smoothing_iterations",
+            "optimization_iterations",
+            "length_rel",
+            "length",
+            "stop_energy",
+            "max_normal_deviation_deg",
+            "smooth_quadrics_weight",
+            "smooth_laplacian_weight",
+            "quadrics_svd_threshold",
+            "min_sizing_scalar",
+            "max_sizing_scalar",
+            "sizing_mrm_threshold",
+            "sizing_gradation",
+            "split_high_valence_threshold",
+            "skip_good_regions",
+            "w_amips",
+            "perform_sanity_checks"
+        ]
+    },
+    {
+        "pointer": "/application",
+        "type": "string",
+        "options": [
+            "topological_offset"
+        ],
+        "doc": "Application name must be topological_offset."
+    },
+    {
+        "pointer": "/input",
+        "type": "string",
+        "doc": "Tetrahedral input mesh."
+    },
+    {
+        "pointer": "/output",
+        "type": "string",
+        "default": "out",
+        "doc": "Output file name (without extension)."
+    },
+    {
+        "pointer": "/input_dir",
+        "type": "string",
+        "default": "",
+        "doc": "Directory where the input files are located. This is injected by the application and should not be set by the user."
+    },
+    {
+        "pointer": "/offset_selection",
+        "type": "string",
+        "default": "!_",
+        "doc": "Boolean expression for input simplicial complex to offset. If a single tag (ie 'tag_0') is given, single body mode is used."
+    },
+    {
+        "pointer": "/offset_output_tags",
+        "type": "list",
+        "default": [
+            "newtag"
+        ],
+        "doc": "Tags to add to elements in the resulting offset region."
+    },
+    {
+        "pointer": "/offset_output_tags/*",
+        "type": "string",
+        "doc": "A tag."
+    },
+    {
+        "pointer": "/protected_tags",
+        "type": "list",
+        "default": [],
+        "doc": "Set of tags that will not be overwritten by the offset."
+    },
+    {
+        "pointer": "/protected_tags/*",
+        "type": "string",
+        "doc": "A tag."
+    },
+    {
+        "pointer": "/offset_in",
+        "type": "bool",
+        "default": false,
+        "doc": "Only relevant for single body mode. Whether to create offset inside body"
+    },
+    {
+        "pointer": "/offset_out",
+        "type": "bool",
+        "default": true,
+        "doc": "Only relevant for single body mode. Whether to create offset outside body"
+    },
+    {
+        "pointer": "/respect_all_topologies",
+        "type": "bool",
+        "default": false,
+        "doc": "If true, the topology (after offset initialization) of every tag is respected as if the offset was to replace all tags. If false, only the topology of the offset is respected."
+    },
+    {
+        "pointer": "/target_distance_rel",
+        "type": "float",
+        "default": 0.01,
+        "doc": "Target offset distance relative to bounding box of mesh."
+    },
+    {
+        "pointer": "/target_distance",
+        "type": "float",
+        "default": -1.0,
+        "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
+    },
+    {
+        "pointer": "/relative_ball_threshold",
+        "type": "float",
+        "default": 0.1,
+        "doc": "Float between 0 and 1, radius relative to target_distance to stop circle/sphere splitting in conservative distance approximation. Smaller means more accurate offset growth but longer run time."
+    },
+    {
+        "pointer": "/edge_search_termination_len",
+        "type": "float",
+        "default": 0.001,
+        "doc": "Length below which binary search will be terminated for function-guided edge splitting"
+    },
+    {
+        "pointer": "/sorted_marching",
+        "type": "bool",
+        "default": false,
+        "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
+    },
+    {
+        "pointer": "/check_manifoldness",
+        "type": "bool",
+        "default": true,
+        "doc": "After performing offset, check if offset region is manifold"
+    },
+    {
+        "pointer": "/optimize",
+        "type": "bool",
+        "default": false,
+        "doc": "Run optimization on the offset."
+    },
+    {
+        "pointer": "/save_vtu",
+        "type": "bool",
+        "default": false,
+        "doc": "Save .vtu of output mesh"
+    },
+    {
+        "pointer": "/DEBUG_output",
+        "type": "bool",
+        "default": false,
+        "doc": "Write the tet mesh as out_{}.vtu after every operation."
+    },
+    {
+        "pointer": "/log_file",
+        "type": "string",
+        "default": "",
+        "doc": "Logs are not just printed on the terminal but also saved in this file."
+    },
+    {
+        "pointer": "/report",
+        "type": "string",
+        "default": "",
+        "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+    },
+    {
+        "pointer": "/num_threads",
+        "type": "int",
+        "default": 0,
+        "doc": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded."
+    },
+    {
+        "pointer": "/smoothing_iterations",
+        "type": "int",
+        "default": 3,
+        "doc": "Number of smoothing passes run during offset optimization (only used if optimize is true)."
+    },
+    {
+        "pointer": "/length_rel",
+        "type": "float",
+        "default": 0.05,
+        "doc": "Target edge length relative to the bounding box diagonal. Used to bound which edges edge collapse is allowed to touch (only edges shorter than 4/5 of this length are collapsed). Ignored if length >= 0."
+    },
+    {
+        "pointer": "/length",
+        "type": "float",
+        "default": -1.0,
+        "doc": "Target edge length (absolute). If < 0, computed from length_rel."
+    },
+    {
+        "pointer": "/stop_energy",
+        "type": "float",
+        "default": 10.0,
+        "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
+    },
+    {
+        "pointer": "/optimization_iterations",
+        "type": "int",
+        "default": 3,
+        "doc": "Number of split/collapse/swap/smooth passes run during offset optimization (only used if optimize is true)."
+    },
+    {
+        "pointer": "/max_normal_deviation_deg",
+        "type": "float",
+        "default": 15.0,
+        "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
+    },
+    {
+        "pointer": "/smooth_quadrics_weight",
+        "type": "float",
+        "default": 0.5,
+        "doc": "Blend weight (0-1) toward the quadrics-optimal target vertex during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
+    },
+    {
+        "pointer": "/smooth_laplacian_weight",
+        "type": "float",
+        "default": 0.01,
+        "doc": "Blend weight (0-1) toward the Laplacian of neighboring offset-surface vertices during offset-surface smoothing. The remaining weight (1 - smooth_quadrics_weight - smooth_laplacian_weight) stays with the vertex's previous position."
+    },
+    {
+        "pointer": "/quadrics_svd_threshold",
+        "type": "float",
+        "default": 0.01,
+        "doc": "SVD threshold used when solving for the quadrics-optimal target vertex during offset-surface smoothing. Controls sensitivity to feature edges: lower means more sensitive."
+    },
+    {
+        "pointer": "/min_sizing_scalar",
+        "type": "float",
+        "default": 0.01,
+        "doc": "Lower bound for the per-vertex sizing field (see max_sizing_scalar). Refinement stops once a vertex's sizing scalar reaches this fraction of the base target length."
+    },
+    {
+        "pointer": "/max_sizing_scalar",
+        "type": "float",
+        "default": 1.0,
+        "doc": "Upper bound for the per-vertex sizing field, a multiplier on the target edge length (splitting_l2/collapsing_l2) refined/coarsened once per optimize_offset() iteration based on the mean ratio metric of the offset triangulation (see sizing_mrm_threshold). 1.0 means never coarser than the base target length."
+    },
+    {
+        "pointer": "/sizing_mrm_threshold",
+        "type": "float",
+        "default": 0.5,
+        "doc": "Mean ratio metric threshold used to update the sizing field once per optimize_offset() iteration: for each offset-surface vertex, the sizing scalar is halved (refine) if the worst incident offset triangle's mean ratio metric is below this, or multiplied by 1.5 (coarsen) if above."
+    },
+    {
+        "pointer": "/sizing_gradation",
+        "type": "float",
+        "default": 2.0,
+        "doc": "Gradation cap for the sizing field: neighboring vertices' sizing scalars may differ by at most this factor. After each mean-ratio-metric refinement pass, the refined vertices' lower sizing scalar is propagated outward (monotone, only ever lowers a neighbor's scalar) so the mesh doesn't jump straight from fine to coarse. <= 1 disables gradation."
+    },
+    {
+        "pointer": "/split_high_valence_threshold",
+        "type": "int",
+        "default": 200,
+        "doc": "Incident-tet count above which a vertex in a split edge's link accepts only one valence-increasing split per pass, or 0 to disable. Spreads refinement instead of letting it pile onto one vertex (only used if optimize is true)."
+    },
+    {
+        "pointer": "/skip_good_regions",
+        "type": "bool",
+        "default": false,
+        "doc": "Only smooth vertices incident to a tet whose energy is still far from stop_energy. Smoothing a vertex surrounded by good tets does nothing, so skipping it is free (only used if optimize is true)."
+    },
+    {
+        "pointer": "/w_amips",
+        "type": "float",
+        "default": 0.0001,
+        "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of non-offset-surface vertices. The envelope weight is derived as 1 - w_amips (only used if optimize is true)."
+    },
+    {
+        "pointer": "/perform_sanity_checks",
+        "type": "bool",
+        "default": false,
+        "doc": "Check after every operation pass that no tet is inverted and no tracked-surface triangle left its envelope. Slow; for debugging (only used if optimize is true)."
+    }
 ]
