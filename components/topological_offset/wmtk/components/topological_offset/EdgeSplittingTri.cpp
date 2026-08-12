@@ -252,17 +252,13 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
         if (!TriOptimizerMesh::split_edge_after(t)) {
             return false;
         }
-        // Both children of a parent still contain that parent's apex, so it names them.
-        const auto& c = m_opt_split_cache.local();
+        // Derive the label of every face the split created from its tags, which the shared
+        // split propagated. Exact, where matching children back to a parent by apex vertex was
+        // a heuristic -- and a wrong label here puts a hole in the region that
+        // offset_is_manifold() is built from, which is what made split the first operation to
+        // break it once collapse was guarded.
         for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
-            const size_t fid = f.fid(*this);
-            for (const size_t v : oriented_tri_vids(fid)) {
-                const auto it = c.face_label.find(v);
-                if (it != c.face_label.end()) {
-                    m_face_extra[fid].label = it->second;
-                    break;
-                }
-            }
+            relabel_face_from_tags(f.fid(*this));
         }
         return true;
     }

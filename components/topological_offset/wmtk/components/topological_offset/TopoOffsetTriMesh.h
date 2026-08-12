@@ -201,6 +201,7 @@ public:
      * from, so the two cannot drift apart no matter which operation ran.
      */
     void relabel_faces_from_tags();
+    void relabel_face_from_tags(const size_t fid);
 
     /**
      * @brief The substructure the link condition is evaluated against, DERIVED not cached.
@@ -258,6 +259,22 @@ public:
      * tracked-surface edges but has no reason to check this.
      */
     bool swap_edge_before(const Tuple& t) override;
+    /**
+     * @brief Reject a collapse that pinches the offset region at the surviving vertex.
+     *
+     * The substructure link condition preserves the topology of the tracked SURFACES. It does
+     * not preserve the topology of the REGION those surfaces bound, and the two are not the
+     * same thing: collapsing an interior vertex onto an offset-boundary one leaves every
+     * surface polyline intact while re-attaching the interior vertex's faces to the boundary
+     * vertex. If those faces sit on the far side of a thin offset band, the survivor ends up
+     * with two separate fans of region faces meeting at a point -- a vertex-non-manifold
+     * region, with a perfectly manifold boundary.
+     *
+     * That is precisely the case igl::is_vertex_manifold rejects, evaluated locally at the one
+     * vertex a collapse can break.
+     */
+    bool collapse_edge_after(const Tuple& t) override;
+    bool region_fan_is_single(const size_t vid) const;
     bool collapse_before_vertex(size_t v1, size_t v2) override;
     void collapse_after_vertex(size_t v1, size_t v2) override;
     void split_after_vertex(size_t v_new) override;
