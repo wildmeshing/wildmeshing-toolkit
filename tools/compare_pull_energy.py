@@ -6,11 +6,14 @@ so lowering w_amips raises the pull's weight relative to the quality term. This 
 model at a range of w_amips under both pulls and reports how far the output surface ends up
 from the input.
 
-    envelope (spring_pull=false)  penalises the distance to the input as a SET, recomputing
-                                  the nearest point every evaluation. Its gradient is always
-                                  normal to the input, so a vertex slides along it for free.
-    spring   (spring_pull=true)   captures the nearest point once per solve and springs the
-                                  vertex to that fixed point. No sliding.
+    envelope        penalises the distance to the input as a SET, recomputing the nearest
+                    point every evaluation; a vertex slides along the input for free.
+    spring          captures the nearest point once per solve and springs the vertex to that
+                    fixed point. No sliding.
+    spring_refresh  the spring with its target re-captured at every accepted iterate.
+    exact           (triwild only) the true distance with its true region-wise Hessian.
+
+Select with --modes; each run sets the pull_mode config parameter.
 
 The point of the sweep is the SHAPE of each curve, not any single number. A well-behaved
 quadratic penalty gives one decade of deviation per decade of weight; a curve that flattens
@@ -54,18 +57,18 @@ import sys
 import tempfile
 
 DEFAULT_WEIGHTS = ["1e-1", "1e-2", "1e-3", "1e-4", "1e-5", "1e-6", "1e-7"]
-MODES = [("envelope", False), ("spring", True)]
+DEFAULT_MODES = ["envelope", "spring", "spring_refresh"]
 
 
-def run_one(app_bin, outdir, app, model, w_amips, spring, extra):
-    d = outdir / f"{'spring' if spring else 'envelope'}_{w_amips}"
+def run_one(app_bin, outdir, app, model, w_amips, mode, extra):
+    d = outdir / f"{mode}_{w_amips}"
     d.mkdir(parents=True, exist_ok=True)
     cfg = {
         "application": app,
         "input": [str(pathlib.Path(model).resolve())],
         "num_threads": 0,
         "w_amips": float(w_amips),
-        "spring_pull": spring,
+        "pull_mode": mode,
         "DEBUG_hausdorff": True,
         "output": str(d / "out"),
         "report": str(d / "report.json"),
@@ -78,14 +81,14 @@ def run_one(app_bin, outdir, app, model, w_amips, spring, extra):
         [str(app_bin), "-j", str(d / "config.json")], capture_output=True, text=True
     )
     if proc.returncode != 0:
-        print(f"  FAILED ({'spring' if spring else 'envelope'}, w_amips={w_amips});"
+        print(f"  FAILED ({mode}, w_amips={w_amips});"
               f" see {d / 'log.txt'}", file=sys.stderr)
         return None
     return json.loads((d / "report.json").read_text())
 
 
-def table(results, weights, has_vertex):
-    for mode, _ in MODES:
+def table(results, weights, modes, has_vertex):
+    for mode in modes:
         print(f"\n===== {mode.upper()} =====")
         if has_vertex:
             head = (f"{'w_amips':>8} | {'vtx max':>11} {'vtx mean':>11} "
@@ -108,7 +111,7 @@ def table(results, weights, has_vertex):
     key = "hausdorff_vertex_mean" if has_vertex else "hausdorff"
     print(f"\n===== shape of each curve ({key}) =====")
     print("A quadratic penalty gives ~10x per decade of weight; ~1x means a floor.")
-    for mode, _ in MODES:
+    for mode in modes:
         vals = [results[(mode, w)] for w in weights]
         if any(v is None for v in vals):
             continue
@@ -117,10 +120,10 @@ def table(results, weights, has_vertex):
         print(f"  {mode:>9}: {pretty}   (total {vals[0][key] / vals[-1][key]:.3g}x)")
 
 
-def write_svg(path, results, weights, key, ylabel):
+def write_svg(path, results, weights, modes, key, ylabel):
     W, H, L, R, T, B = 860, 520, 92, 220, 56, 64
     PW, PH = W - L - R, H - T - B
-    pts_all = [results[(m, w)][key] for m, _ in MODES for w in weights
+    pts_all = [results[(m, w)][key] for m in modes for w in weights
                if results[(m, w)] is not None]
     if not pts_all:
         return
@@ -153,7 +156,8 @@ def write_svg(path, results, weights, key, ylabel):
     o.append(f'<text transform="translate(24,{T+PH/2:.0f}) rotate(-90)" font-size="12.5" '
              f'fill="#3a3f4a" text-anchor="middle">{ylabel}</text>')
 
-    for (mode, _), color in zip(MODES, ["#1f6fb4", "#c4452f"]):
+    palette = ["#1f6fb4", "#c4452f", "#3a8f5d", "#8455a5"]
+    for mode, color in zip(modes, palette):
         xs, ys = [], []
         for w in weights:
             r = results[(mode, w)]
@@ -183,6 +187,11 @@ def main():
     ap.add_argument("--app", choices=["triwild", "tetwild"], default="triwild")
     ap.add_argument("--input", required=True)
     ap.add_argument("--weights", nargs="+", default=DEFAULT_WEIGHTS)
+    ap.add_argument(
+        "--modes",
+        nargs="+",
+        default=DEFAULT_MODES,
+        help="pull_mode values to sweep; 'exact' is triwild-only")
     ap.add_argument("--outdir", default=None)
     ap.add_argument("--wmtk-app", default="build/app/wmtk_app")
     ap.add_argument("--extra", default="{}")
@@ -198,19 +207,19 @@ def main():
     print(f"{a.app}  {a.input}\noutput -> {outdir}\n")
 
     results = {}
-    for mode, spring in MODES:
+    for mode in a.modes:
         for w in a.weights:
             print(f"  running {mode:>9}  w_amips={w} ...", flush=True)
-            results[(mode, w)] = run_one(app_bin, outdir, a.app, a.input, w, spring, extra)
+            results[(mode, w)] = run_one(app_bin, outdir, a.app, a.input, w, mode, extra)
 
     ok = [r for r in results.values() if r is not None]
     if not ok:
         sys.exit("every run failed")
     has_vertex = "hausdorff_vertex" in ok[0]
-    table(results, a.weights, has_vertex)
+    table(results, a.weights, a.modes, has_vertex)
     if a.svg:
         key = "hausdorff_vertex_mean" if has_vertex else "hausdorff"
-        write_svg(a.svg, results, a.weights, key,
+        write_svg(a.svg, results, a.weights, a.modes, key,
                   "mean vertex distance to input" if has_vertex else "hausdorff")
 
 
