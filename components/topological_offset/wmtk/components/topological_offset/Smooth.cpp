@@ -19,61 +19,26 @@
 
 namespace wmtk::components::topological_offset {
 
-double TopoOffsetTetMesh::get_quality(const std::array<size_t, 4>& vids) const
-{
-    std::array<double, 12> T;
-    for (int k = 0; k < 4; ++k) {
-        for (int j = 0; j < 3; ++j) {
-            T[k * 3 + j] = m_vertex_attribute[vids[k]].m_posf[j];
-        }
-    }
-    return wmtk::AMIPS_energy(T);
-}
-
-double TopoOffsetTetMesh::get_quality(const Tuple& t) const
-{
-    return get_quality(oriented_tet_vids(t));
-}
-
-bool TopoOffsetTetMesh::is_inverted(const std::array<size_t, 4>& vids) const
-{
-    // Return a positive value if the point pd lies below the plane passing through pa, pb,
-    // and pc; "below" is defined so that pa, pb, and pc appear in counterclockwise order when
-    // viewed from above the plane.
-    igl::predicates::exactinit();
-    const auto res = igl::predicates::orient3d(
-        m_vertex_attribute[vids[0]].m_posf,
-        m_vertex_attribute[vids[1]].m_posf,
-        m_vertex_attribute[vids[2]].m_posf,
-        m_vertex_attribute[vids[3]].m_posf);
-
-    if (res == igl::predicates::Orientation::NEGATIVE) { // neg result == pos tet
-        return false;
-    }
-    return true;
-}
-
-bool TopoOffsetTetMesh::is_inverted(const Tuple& t) const
-{
-    return is_inverted(oriented_tet_vids(t));
-}
-
 bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
-    const size_t vid = t.vid(*this);
-
-    if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return false;
-
-    // the input surfaces must stay fixed
-    return !m_vertex_extra[vid].m_is_on_input;
+    // rounds the vertex and refuses the bounding box
+    if (!TetOptimizerMesh::smooth_before(t)) {
+        return false;
+    }
+    // the input complex must stay exactly where it is: it is the geometry the offset is
+    // measured against, not something to be improved
+    return !m_vertex_extra[t.vid(*this)].m_is_on_input;
 }
 
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
 {
+    // An offset-surface vertex is placed by the quadrics of the input complex's implicit
+    // offset field, which is what keeps the offset faithful. Every other vertex is an ordinary
+    // interior one and gets the shared two-stage AMIPS smoother.
     if (!get_offset_surface_faces_for_vertex(t).empty()) {
         return smooth_after_offset_surface(t);
     }
-    return smooth_after_interior(t);
+    return TetOptimizerMesh::smooth_after(t);
 }
 
 bool TopoOffsetTetMesh::is_offset_face(const Tuple& f) const
@@ -152,61 +117,6 @@ std::array<OffsetSurfaceSample, 4> TopoOffsetTetMesh::offset_surface_samples(con
         s.normal = (dist < 1e-12) ? Vector3d::Zero() : Vector3d(diff / dist);
     }
     return samples;
-}
-
-bool TopoOffsetTetMesh::smooth_after_interior(const Tuple& t)
-{
-    const size_t vid = t.vid(*this);
-
-    const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(t);
-    assert(!locs.empty());
-
-    double max_quality = 0.;
-    for (const Tuple& tet : locs) {
-        max_quality = std::max(max_quality, m_tet_attribute[tet.tid(*this)].m_quality);
-    }
-
-    // AMIPS wants each tet as 12 doubles with the moving vertex first.
-    std::vector<std::array<double, 12>> assembles(locs.size());
-    for (size_t i = 0; i < locs.size(); ++i) {
-        std::array<size_t, 4> local_verts =
-            wmtk::orient_preserve_tet_reorder(oriented_tet_vids(locs[i]), vid);
-        for (int k = 0; k < 4; ++k) {
-            for (int j = 0; j < 3; ++j) {
-                assembles[i][k * 3 + j] = m_vertex_attribute[local_verts[k]].m_posf[j];
-            }
-        }
-    }
-
-    auto& solver = m_smooth_solver.local();
-    if (!solver) {
-        solver = optimization::create_basic_solver();
-    }
-
-    optimization::AMIPSEnergy3D amips_energy(assembles);
-    VectorXd x = m_vertex_attribute[vid].m_posf;
-    try {
-        solver->minimize(amips_energy, x);
-    } catch (const std::exception&) {
-        // polysolve reports a failed line search by throwing; the position it reached is
-        // still the best it found, and the checks below decide whether to keep it.
-    }
-    set_vertex_position(vid, x);
-
-    // Inversion is caught by invariants(), called right after this by TetMesh::smooth_vertex.
-    // Only the quality veto needs to be checked here.
-    double max_after_quality = 0.;
-    for (const Tuple& tet : locs) {
-        if (is_inverted(tet)) {
-            return false;
-        }
-        const size_t tid = tet.tid(*this);
-        const double q = get_quality(tet);
-        m_tet_attribute[tid].m_quality = q;
-        max_after_quality = std::max(max_after_quality, q);
-    }
-
-    return max_after_quality <= max_quality;
 }
 
 bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
@@ -299,30 +209,6 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     // Any remaining inversion (from the binary search's finite precision) is caught by
     // invariants(), called right after this by TetMesh::smooth_vertex.
     return true;
-}
-
-void TopoOffsetTetMesh::smooth_all_vertices(size_t n_iters)
-{
-    // mirrors SimWild::smooth_all_vertices (Smooth.cpp)
-    for (size_t i = 0; i < n_iters; ++i) {
-        std::vector<std::pair<std::string, Tuple>> ops;
-        for (const Tuple& v : get_vertices()) {
-            ops.emplace_back("vertex_smooth", v);
-        }
-
-        if (NUM_THREADS > 0) {
-            compute_vertex_partition();
-            auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kPartition);
-            executor.lock_vertices = [](auto& m, const auto& e, int task_id) -> bool {
-                return m.try_set_vertex_mutex_one_ring(e, task_id);
-            };
-            executor.num_threads = NUM_THREADS;
-            executor(*this, ops);
-        } else {
-            auto executor = wmtk::ExecutePass<TopoOffsetTetMesh>(wmtk::ExecutionPolicy::kSeq);
-            executor(*this, ops);
-        }
-    }
 }
 
 } // namespace wmtk::components::topological_offset

@@ -946,52 +946,16 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             "Optimization iteration {} / {}",
             i + 1,
             m_offset_params.optimization_iterations);
-        // split
-        logger().info("\tSplitting long edges...");
-        split_all_edges();
-        if (m_offset_params.debug_output) { // intermediate output
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-        }
 
-        // collapse
-        logger().info("\tCollapsing short edges...");
-        collapse_all_edges();
-        if (m_offset_params.debug_output) { // intermediate output
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-        }
+        // One split pass, one collapse pass, one swap pass (2-3/3-2, 4-4 and 5-6 edge swaps
+        // together, then the 2-3 face swap) and num_smoothing_passes smoothing passes, with
+        // the sanity checks, debug output and per-pass energy reporting the shared driver
+        // does. Deliberately not mesh_improvement(): its stop condition and stall-driven
+        // refinement both need a stop metric the offset has not defined, and its sizing field
+        // is driven by the shape of the offset triangulation rather than by the optimizer
+        // getting stuck, so it is refreshed every iteration below rather than on a stall.
+        local_operations({{1, 1, 1, m_offset_params.num_smoothing_passes}});
 
-        // swap: 2-3/3-2 + 4-4 + 5-6 edge swaps, then the 2-3 face swap, matching how
-        // SimWildMesh's own operation loop calls swap_all_edges_all() and swap_all_faces()
-        // together.
-        logger().info("\tSwapping edges...");
-        swap_all_edges_all();
-        if (m_offset_params.debug_output) { // intermediate output
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-        }
-        logger().info("\tSwapping faces...");
-        swap_all_faces();
-        if (m_offset_params.debug_output) { // intermediate output
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-        }
-        logger().info(
-            "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
-            cnt_surface_swap.load(),
-            cnt_surface_swap_32.load(),
-            cnt_surface_swap_44.load(),
-            cnt_surface_swap_56.load());
-
-        // smoothing
-        logger().info("\tSmoothing all vertices...");
-        for (int j = 0; j < m_offset_params.num_smoothing_passes; j++) {
-            smooth_all_vertices();
-            if (m_offset_params.debug_output) { // intermediate output
-                write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-            }
-        }
-
-        // sizing field: refine/coarsen based on the offset triangulation's mean ratio metric,
-        // so the next iteration's split/collapse pass targets shorter edges around badly
-        // shaped offset triangles and allows longer ones where it is already well shaped.
         logger().info("\tUpdating sizing field...");
         update_sizing_field();
     }
