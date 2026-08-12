@@ -22,16 +22,16 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
 # init_from_bin parses.
 #
-# Pinned at main. The previous pin (dcf40546) was two commits behind it; the only
-# functional change between them is PR #17, which reuses a cell's local data structure
-# across non-splitting constraints in BSP.cpp -- a performance change in the
-# arrangement core, so it is the kind of bump that wants the full test suite run
-# against it rather than a smoke test.
+# Pinned at main. The previous pin (ba8a7329) is this one's first parent; the only change
+# between them is VolumeRemesher PR #24, which adds an output to embed_tri_in_poly_mesh --
+# out_triangle_group, mapping each input triangle to its coplanar group, i.e. to its index
+# into out_triangle_provenance. Nothing existing changes behaviour, but the signature grows,
+# so every caller of that function must be updated in the same commit.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG ba8a7329cf1225356dcc8e7bcee0883e0cc51e85
+    GIT_TAG 64c52aa54d39a5ed821c6cd3b120a55fad2790f7
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )

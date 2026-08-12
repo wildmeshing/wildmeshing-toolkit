@@ -23,11 +23,18 @@ Key key_of(int a, int b)
 
 } // namespace
 
-size_t
-simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope, bool use_link_condition)
+size_t simplify_segments(
+    MatrixXd& V,
+    MatrixXi& E,
+    const SampleEnvelope& envelope,
+    bool use_link_condition,
+    std::vector<int>* surviving_edges)
 {
     const int nv = static_cast<int>(V.rows());
     const int ne = static_cast<int>(E.rows());
+    if (surviving_edges != nullptr) {
+        surviving_edges->clear();
+    }
     if (ne == 0 || nv == 0) {
         return 0;
     }
@@ -262,6 +269,9 @@ simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope, bool
         ne_new += edge_alive[e] ? 1 : 0;
     }
     MatrixXi E_new(ne_new, 2);
+    if (surviving_edges != nullptr) {
+        surviving_edges->reserve(ne_new);
+    }
     int idx = 0;
     for (int e = 0; e < ne; ++e) {
         if (!edge_alive[e]) {
@@ -271,6 +281,9 @@ simplify_segments(MatrixXd& V, MatrixXi& E, const SampleEnvelope& envelope, bool
         assert(seg[e][0] != seg[e][1]);
         E_new(idx, 0) = remap[seg[e][0]];
         E_new(idx, 1) = remap[seg[e][1]];
+        if (surviving_edges != nullptr) {
+            surviving_edges->push_back(e);
+        }
         ++idx;
     }
 

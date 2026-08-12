@@ -50,12 +50,18 @@ namespace wmtk::utils {
  *                   simplification cannot change the topology of the curve network. When
  *                   false the network simplifies much further on dirty inputs, at the cost
  *                   of merging junctions and separate curves that pass within the envelope.
+ * @param[out] surviving_edges  optional: for each row of the compacted E, its row index in
+ *                   the E that was passed in. A collapse rewires segments but never creates
+ *                   one, so this is exactly the surviving rows in ascending order -- which
+ *                   is what lets a caller carry per-segment labels (which input curve a
+ *                   segment came from) across the simplification.
  * @return the number of vertices removed
  */
 size_t simplify_segments(
     MatrixXd& V,
     MatrixXi& E,
     const SampleEnvelope& envelope,
-    bool use_link_condition = true);
+    bool use_link_condition = true,
+    std::vector<int>* surviving_edges = nullptr);
 
 } // namespace wmtk::utils

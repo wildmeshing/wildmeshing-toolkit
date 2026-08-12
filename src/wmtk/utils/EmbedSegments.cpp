@@ -11,6 +11,7 @@
 #include <array>
 #include <bitset>
 #include <cstdint>
+#include <map>
 #include <set>
 
 namespace wmtk::utils {
@@ -113,7 +114,8 @@ void embed_segments(
     MatrixXd& V_out,
     std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
-    MatrixXi& E_out)
+    MatrixXi& E_out,
+    std::vector<std::vector<int>>* E_out_sources)
 {
     assert(V.cols() == 2);
     assert(E.cols() == 2);
@@ -190,26 +192,37 @@ void embed_segments(
 
     // The constrained edges of the output are the union of the per-segment edge
     // lists. Overlapping input segments share output edges, so deduplicate; a
-    // std::set keyed on the sorted vertex pair also fixes the row order, which
-    // keeps the result reproducible.
-    std::set<std::pair<int, int>> constrained_edges;
-    for (const auto& seg : segment_provenance) {
-        for (const auto& e : seg) {
+    // std::map keyed on the sorted vertex pair also fixes the row order, which
+    // keeps the result reproducible. The value is which input segments produced
+    // the edge -- the provenance the caller would otherwise have to guess back
+    // geometrically, and cannot where two inputs overlap.
+    std::map<std::pair<int, int>, std::vector<int>> constrained_edges;
+    for (size_t s = 0; s < segment_provenance.size(); ++s) {
+        for (const auto& e : segment_provenance[s]) {
             int a = int(e[1]);
             int b = int(e[2]);
             if (a > b) {
                 std::swap(a, b);
             }
-            constrained_edges.insert({a, b});
+            auto& src = constrained_edges[{a, b}];
+            if (src.empty() || src.back() != int(s)) {
+                src.push_back(int(s)); // s ascends, so this keeps it sorted and unique
+            }
         }
     }
 
     E_out.resize(constrained_edges.size(), 2);
+    if (E_out_sources != nullptr) {
+        E_out_sources->assign(constrained_edges.size(), {});
+    }
     {
         int idx = 0;
-        for (const auto& edge : constrained_edges) {
+        for (const auto& [edge, src] : constrained_edges) {
             E_out(idx, 0) = edge.first;
             E_out(idx, 1) = edge.second;
+            if (E_out_sources != nullptr) {
+                (*E_out_sources)[idx] = src;
+            }
             ++idx;
         }
     }
