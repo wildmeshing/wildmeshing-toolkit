@@ -13,11 +13,6 @@ set(SRC_FILES
 
 	Parameters.h
 
-	EdgeSplitting.cpp
-	EdgeCollapsing.cpp
-	EdgeSwapping.cpp
-	Smooth.cpp
-
 	triwild.hpp
 	triwild.cpp
 )
@@ -38,4 +33,3 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 if(${WMTK_COMPONENT_TESTS})
     add_subdirectory(tests)
 endif()
-

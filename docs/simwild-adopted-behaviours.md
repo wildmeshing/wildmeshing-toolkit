@@ -108,10 +108,10 @@ simwild's model — its whole stop condition is per-cell relative quality — an
 expresses it that way through the same shared helper. The hand-rolled 2D filter
 (`if (q < target_quality(tid)) continue;`) is exactly equivalent to it.
 
-**Still missing in simwild-2D, not addressed here** (feature ports, not de-duplication):
+**Still missing in simwild-2D, not addressed here** (a feature port, not de-duplication):
 force-split of the worst cells' longest edges (`m_force_split_edges`), which tetwild, triwild and
-simwild-3D all have; and `skip_good_regions` / `active_vertices`, which the other three use to
-restrict smoothing.
+simwild-3D all have. `skip_good_regions` / `active_vertices` were adopted with the shared 2D
+smoothing pass in Stage 5 below.
 
 ---
 
@@ -270,10 +270,9 @@ while measuring them are recorded here so they are not lost:
 * simwild reads the success count from `executor.get_cnt_success()` after the lambda has returned;
   tetwild accumulates it into a captured local.
 
-`smoothing_energy_envelope` also stays per-application: simwild pulls order-2 vertices toward
-`m_order_2_edge_envelope` and everything else toward `m_envelope_orig`, while tetwild has a single
-surface envelope. `smoothing_containment_envelope` did move -- both applications' versions return
-`m_envelope`, only their comments differed.
+At this stage `smoothing_energy_envelope` stayed per-application. Stage 6 below subsequently
+removed SimWild's redundant surface-envelope alias and adopted TetWild's order-`>= 2` selection;
+only the application-specific order-2 envelope object remains virtual.
 
 `smooth_after` stays in **both** applications even though their bodies are byte-identical: the body
 is the shared `optimization::smooth_vertex_3d` template, which reaches `m_tet_attribute` and
@@ -528,3 +527,119 @@ The tag propagation is correct there for a simpler reason than in 3D: the 2D swa
 (`SimWildMeshTri::init_surfaces_and_boundaries`), so a 2D swap only ever runs on an edge whose two
 faces already agree. `cache.face_tags = FA[incident_faces[0]].tags` is then exact. There is no 2D
 counterpart to the 4-4 / 5-6 question because a 2-2 flip is the only edge swap a triangle mesh has.
+
+---
+
+## Stage 4 — one swap engine, with serial Wild/Sim conformance tests
+
+The identical implementations described above are no longer merely kept in sync:
+
+- TriWild's complete 2D swap pass now lives on `TriOptimizerMesh`. Both `TriWildMesh` and
+  `SimWildMeshTri` inherit the same collector, priority calculation, retry/termination logic,
+  before/after callbacks, quality gate, attribute tracker and face-tag propagation.
+- TetWild's complete 3D swap family now lives on `TetOptimizerMesh`: 3→2, 4→4, 5→6, 2→3 face
+  swaps, the combined pass, surface-diagonal handling and topology diagnostics. SimWild's old
+  858-line copy is a small adapter implementing only three tag hooks: cache one homogeneous
+  interior tag, cache the two surface-ring arcs, and propagate those tags to new cells.
+- TetWild's 3D smoothing pass and acceptance callback also live on `TetOptimizerMesh`. The only
+  application policy left virtual is which envelope supplies the surface energy/containment
+  check. Quality reads and writes go through the common cell-quality accessors, so TetWild's
+  pass ordering and rejection rules are used unchanged with SimWild's tagged cell attributes.
+
+`test_wild_conformance.cpp` enforces the intended oracle relationship directly. It constructs two
+identical meshes, runs the Wild implementation first and tag-homogeneous SimWild second with
+`NUM_THREADS == 0`, then compares operation counts, canonical connectivity, per-cell quality and
+vertex positions; the SimWild side must additionally preserve its homogeneous tag. There is one
+fixture for TriWild/SimWild 2D and one for TetWild/SimWild 3→2. These are deliberately serial: a
+parallel A/B test can turn shared global state or nondeterministic scheduling into noise and does
+not establish that SimWild followed the Wild path. A third fixture runs the shared TetWild/SimWild
+3D smoothing pass serially and compares the same geometry, exact positions and qualities while
+checking that SimWild's cell tags are untouched.
+
+Two audit fixes were made alongside the extraction:
+
+- `stop_at_float` now applies to SimWild 2D as well as 3D.
+- the public 3D `replace_tags` rejects mismatched input/output vector lengths, matching its 2D
+  counterpart instead of indexing past `found_tags`.
+
+---
+
+## Stage 5 — one 2D smoothing pass
+
+TriWild's complete smoothing pass now lives on `TriOptimizerMesh`, matching the already-shared 3D
+pass on `TetOptimizerMesh`. Both `TriWildMesh` and `SimWildMeshTri` inherit the same vertex
+collection/order, rounding and bbox gate, two-stage solve, inversion/envelope/quality rejection,
+quality updates, rejection counters, and `skip_good_regions` selection. The shared base also owns
+the identical floating/exact position reads and writes.
+
+Both applications use the base's single `m_envelope` for the pull energy and containment. Its
+geometry is application-specific -- TriWild builds it around its input curves, while SimWild can
+build it around the interface between different cell tags -- but there is only one envelope per
+2D mesh. The only smoothing acceptance policy left virtual is the positional constraint: TriWild
+uses it to preserve feature points and SimWild, which has no separate 0-dimensional features,
+always accepts it.
+
+Two SimWild behaviors deliberately move to TriWild's ground truth:
+
+- SimWild no longer sets `quality_veto_on_surface = false`; a surface move that worsens the worst
+  incident triangle is rejected in both applications.
+- SimWild now honors `skip_good_regions`; a vertex incident only to triangles below
+  `skip_good_regions_margin * stop_energy` is not scheduled for smoothing.
+- SimWild's unused 2D `m_envelope_orig` alias is deleted. Energy and containment both use
+  `m_envelope`, exactly as in TriWild. This does not change the standard remeshing path because
+  the two pointers aliased the same object there.
+
+The serial conformance fixture runs TriWild first and tag-homogeneous SimWild second from identical
+2D meshes, then compares connectivity, floating and exact positions, per-face qualities, and tags.
+It separately enables `skip_good_regions`, makes every face good, and verifies both applications
+schedule zero vertices. Full TriWild and SimWild test suites pass.
+
+---
+
+## Stage 6 — envelope and refinement parity
+
+SimWild 3D now has the same envelope model as TetWild: one surface `m_envelope`, plus the separate
+order-2 feature envelope. The old `m_envelope_orig` pointer was always assigned from `m_envelope`
+and is deleted. Feature pulling now uses TetWild's exact condition, order `>= 2`, including
+order-3 junction vertices, and falls back to the surface envelope when no initialized feature
+envelope exists.
+
+The remaining refinement gaps are also closed:
+
+- SimWild 2D records the longest edge of each selected worst triangle in `m_force_split_edges`,
+  matching TriWild.
+- SimWild 3D applies TetWild's oversized-only force-split guard, including the JSON option.
+- `active_vertices()` is virtual at the optimizer bases. Wild keeps its absolute global threshold;
+  SimWild overrides it by normalizing every cell against its tag-dependent `target_quality()`.
+
+The serial conformance suite now also covers 3D 4→4, 5→6, 2→3, and combined swaps; order-3
+feature-envelope selection; 2D/3D force-split refinement; per-tag active-region filtering; and
+heterogeneous-tag split/collapse invariants in both dimensions.
+
+---
+
+## Stage 7 — shared outer optimization drivers
+
+The outer schedules now live on the dimensional optimizer bases:
+
+- `TetOptimizerMesh` owns the complete TetWild/SimWild 3D driver and its `local_operations` pass.
+- `TriOptimizerMesh` owns the complete TriWild/SimWild-2D driver and its `local_operations` pass.
+- the smoothing placement parameters (`num_smoothing_passes`, `interleaved_smoothing`, and
+  `interleaved_smoothing_passes`) live in `OptimizerParameters`, so all three components configure
+  the same schedule.
+
+TetWild and TriWild remain the behavioral sources of truth: pre- and post-collapse, interleaved or
+batched split/collapse/swap/smooth ordering, per-phase convergence checks, rounding, consolidation,
+stuck refinement, swap termination, debug output, and sanity checks are executed by their shared
+base. The application classes no longer contain copies of either driver.
+
+Only explicit policy hooks differ. Wild uses absolute AMIPS and `stop_energy`; SimWild reports
+quality normalized by each cell's tag-dependent target and stops at relative quality 1. SimWild
+also supplies its existing optional `stop_at_float` policy and tag-aware refinement, while TetWild
+retains its extra open-boundary sanity diagnostic.
+
+The conformance suite now runs one complete iteration under both the batched and interleaved
+schedules, serially from identical meshes in each dimension: TriWild then homogeneous SimWild-2D,
+and TetWild then homogeneous SimWild-3D. It compares iteration counts, canonical connectivity,
+per-cell qualities, floating and exact positions, and checks that SimWild kept its homogeneous tags
+and derived interface invariant.

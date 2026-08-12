@@ -86,13 +86,40 @@ public:
     {
         m_tet_attribute[tid].m_quality = q;
     }
-
-    /// Iterations mesh_improvement actually used. Reported so a run that needs the whole
-    /// budget is visible as such, and asserted against in the integration tests.
-    int m_iterations_used = 0;
+    bool allow_surface_swap() const override { return m_tet_params.allow_surface_swap; }
+    bool check_surface_topology() const override { return m_tet_params.check_surface_topology; }
+    void split_after_vertex(const size_t vid, const bool is_open_boundary) override
+    {
+        m_vertex_extra[vid].m_is_on_open_boundary = is_open_boundary;
+    }
+    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) const override
+    {
+        if (edge_length <= 0 || !m_vertex_extra[v1].m_is_on_open_boundary) return true;
+        return m_vertex_extra[v2].m_is_on_open_boundary ||
+               !m_order2_envelope->is_outside(m_vertex_attribute[v2].m_posf);
+    }
+    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
+    {
+        return is_open_boundary_edge(e);
+    }
+    bool collapse_after_connectivity(
+        size_t v1,
+        size_t v2,
+        const std::vector<std::array<size_t, 2>>&) override
+    {
+        m_vertex_extra[v2].m_is_on_open_boundary =
+            m_vertex_extra[v1].m_is_on_open_boundary || m_vertex_extra[v2].m_is_on_open_boundary;
+        return true;
+    }
+    void collapse_after_vertex(size_t, size_t v2) override
+    {
+        if (m_vertex_extra[v2].m_is_on_open_boundary && !is_vertex_on_boundary(v2)) {
+            m_vertex_extra[v2].m_is_on_open_boundary = false;
+        }
+    }
 
     /// Envelope a vertex is pulled toward while smoothing.
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override;
     TetWildMesh(
         Parameters& _m_params,
         std::shared_ptr<SampleEnvelope> _m_envelope,
@@ -154,76 +181,6 @@ public:
     void init_from_delaunay_box_mesh(const std::vector<Eigen::Vector3d>& vertices);
 
 public:
-    void split_all_edges();
-    bool split_edge_before(const Tuple& t) override;
-    bool split_edge_after(const Tuple& loc) override;
-
-    bool smooth_after(const Tuple& t) override;
-
-    void smooth_all_vertices();
-    void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
-
-    size_t swap_all_edges_44();
-    bool swap_edge_44_before(const Tuple& t) override;
-    bool swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge) override;
-    bool swap_edge_44_after(const Tuple& t) override;
-
-    size_t swap_all_edges_56();
-    bool swap_edge_56_before(const Tuple& t) override;
-    bool swap_edge_56_accept_case(const std::array<size_t, 3>& new_face) override;
-    bool swap_edge_56_after(const Tuple& t) override;
-
-    size_t swap_all_edges_32();
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
-
-    /**
-     * @brief Prepare a surface edge swap (a surface diagonal flip), any ring size.
-     *
-     * Called from swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped
-     * edge (a,b) is on the surface. Regardless of how many tets share (a,b), the surface change is
-     * always the 2D diagonal flip of the two incident surface faces (a,b,c),(a,b,d) into
-     * (a,c,d),(b,c,d). This verifies the ring-size-independent guards that guarantee the flip
-     * preserves surface manifoldness / topology and fills the surface-flip fields of swap_cache.
-     * The specific retetrahedralization that realizes (c,d) is selected later by
-     * swap_edge_44_accept_case / swap_edge_56_accept_case (the 3->2 path always realizes it).
-     * Returns false (rejecting the swap) if any guard fails: open-boundary edge, non-manifold edge
-     * (!= 2 surface faces incident to (a,b)), the target edge (c,d) already carries a surface face,
-     * or one of the two would-be new surface faces (a,c,d),(b,c,d) is already tagged surface. The
-     * tets sharing (a,b) are passed in to avoid recomputation.
-     */
-    bool prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets);
-
-    /// A topological fingerprint of the tracked surface (m_is_surface_fs). See
-    /// wmtk/utils/SurfaceTopology.hpp.
-    using SurfaceTopoSignature = wmtk::utils::SurfaceTopoSignature;
-
-    SurfaceTopoSignature surface_topology_signature() const
-    {
-        return wmtk::utils::surface_topology_signature(*this, [this](size_t fid) {
-            return m_face_attribute[fid].m_is_surface_fs;
-        });
-    }
-
-    /**
-     * @brief Compare a surface signature against the current one and log an
-     * error if it changed. Used (when m_tet_params.check_surface_topology is set) to
-     * guard swap passes that can flip surface edges.
-     */
-    void warn_if_surface_topology_changed(const SurfaceTopoSignature& before, const char* where)
-        const
-    {
-        wmtk::utils::warn_if_surface_topology_changed(before, surface_topology_signature(), where);
-    }
-
-    size_t swap_all_faces();
-    bool swap_face_before(const Tuple& t) override;
-    bool swap_face_after(const Tuple& t) override;
-
-    size_t swap_all_edges_all();
-
     //
     /**
      * brief Check if the vertex has an incident boundary edge.
@@ -231,14 +188,10 @@ public:
      */
     bool is_vertex_on_boundary(const size_t vid);
     //
-    void mesh_improvement(int max_its = 80);
     /**
      * @brief Call the original TetWild code.
      */
     void mesh_improvement_legacy(int max_its = 80);
-    std::tuple<double, double> local_operations(
-        const std::array<int, 4>& ops,
-        bool collapse_limit_length = true);
 
     /**
      * @brief Compute the winding number.
@@ -273,12 +226,7 @@ public:
 
 
     // debug use
-    std::atomic<int> cnt_split = 0, cnt_collapse = 0, cnt_swap = 0;
-    // Successful surface diagonal flips (subset of cnt_swap). Diagnostic.
-    // cnt_surface_swap is the grand total; the per-type counters break it down by the swap that
-    // realized the flip (3->2, 4-4, 5-6).
-    std::atomic<int> cnt_surface_swap = 0;
-    std::atomic<int> cnt_surface_swap_32 = 0, cnt_surface_swap_44 = 0, cnt_surface_swap_56 = 0;
+    std::atomic<int> cnt_split = 0, cnt_collapse = 0;
 
 private:
     // tags: correspondence map from new tet-face node indices to in-triangle ids.
@@ -293,61 +241,6 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<TriangleInsertionLocalInfoCache>
         triangle_insertion_local_cache;
-
-    ////// Operations
-
-    struct SplitInfoCache
-    {
-        //        VertexAttributes vertex_info;
-        size_t v1_id;
-        size_t v2_id;
-        bool is_edge_on_surface = false;
-        bool is_edge_open_boundary = false;
-        size_t edge_order = 0;
-        /// Worst quality among the tets incident to the edge BEFORE the split, so
-        /// split_edge_after can tell "this split created a degenerate tet" from "this split
-        /// subdivided a region that was already degenerate".
-        double max_quality_before = 0.;
-
-        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-    };
-    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    struct CollapseInfoCache
-    {
-        size_t v1_id;
-        size_t v2_id;
-        double max_energy;
-        double edge_length;
-
-        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 3>> surface_faces;
-        // all edges incident to the deleted vertex(v1) that are on the open boundary
-        std::vector<std::array<size_t, 2>> boundary_edges;
-        std::vector<size_t> changed_tids;
-        std::vector<double> changed_energies;
-    };
-    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
-
-
-    struct SwapInfoCache
-    {
-        double max_energy;
-        std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
-
-        // Surface diagonal-flip bookkeeping (filled by prepare_surface_flip from
-        // swap_edge_before / swap_edge_44_before / swap_edge_56_before when the swapped edge (a,b)
-        // lies on the surface). a,b are the removed-edge endpoints, c,d are the new surface-edge
-        // endpoints (the apexes of the two incident surface faces). sf_face_attr is copied onto the
-        // two new surface faces (a,c,d),(b,c,d). is_surface_flip gates the accept-case case-forcing
-        // and the extra retag/envelope handling in the swap *_after callbacks.
-        bool is_surface_flip = false;
-        size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
-        FaceAttributes sf_face_attr;
-    };
-    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
-
 
     // for incremental tetwild
 public:
@@ -388,23 +281,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst(double max_energy);
-
-    /// Per-pass claim for the high-valence split gate: one slot per vertex, reset at the
-    /// start of every split pass. A high-valence vertex accepts the first
-    /// valence-increasing split of the pass and refuses the rest, so refinement spreads
-    /// instead of piling onto the same vertex. Atomic because splits run in parallel; a
-    /// plain array of unique_ptr rather than a vector because std::atomic is not movable.
-    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
-    size_t m_high_valence_claim_size = 0;
-    /// Splits refused by that gate in the current pass, reported once per pass.
-    std::atomic<size_t> m_high_valence_rejects = 0;
-
-    /// True iff edge (v1,v2) is a worst tet's longest edge queued for force-split.
-    bool is_force_split_edge(size_t v1, size_t v2) const
-    {
-        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
-    }
+    size_t refine_sizing_around_worst(double max_energy) override;
 
     // for open boundary
     void find_open_boundary();
@@ -426,6 +303,11 @@ public:
     int flood_fill();
 
     void save_paraview(const std::string& path, const bool use_hdf5);
+    void write_optimization_debug_output(const std::string& path) override
+    {
+        save_paraview(path, false);
+    }
+    void optimization_sanity_checks_extra() override;
 
     // initialize sizing field (for topology preservation)
     void init_sizing_field();

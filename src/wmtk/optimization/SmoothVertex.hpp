@@ -117,7 +117,7 @@ struct SmoothVertexOptions
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
- *   - m_tet_attribute[tid].m_quality
+ *   - cell_quality(tid) / set_cell_quality(tid, quality)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
  *   - std::shared_ptr<SampleEnvelope> smoothing_envelope(size_t vid) const
  *     (null is allowed and means "no envelope term for this vertex")
@@ -136,14 +136,12 @@ bool smooth_vertex_3d(
 
     const size_t vid = t.vid(m);
     auto& VA = m.m_vertex_attribute;
-    auto& TA = m.m_tet_attribute;
-
     const auto locs = m.get_one_ring_tets_for_vertex(t);
     assert(!locs.empty());
 
     double max_quality = 0.;
     for (const Tuple& tet : locs) {
-        max_quality = std::max(max_quality, TA[tet.tid(m)].m_quality);
+        max_quality = std::max(max_quality, m.cell_quality(tet.tid(m)));
         if (m.is_inverted_f(tet)) {
             // A neighbour that is not rounded can leave a tet inverted in floats even
             // though it is fine in exact arithmetic; there is nothing to optimize from.
@@ -236,8 +234,9 @@ bool smooth_vertex_3d(
             return false;
         }
         const size_t tid = loc.tid(m);
-        TA[tid].m_quality = m.get_quality(loc);
-        max_after_quality = std::max(max_after_quality, TA[tid].m_quality);
+        const double quality = m.get_quality(loc);
+        m.set_cell_quality(tid, quality);
+        max_after_quality = std::max(max_after_quality, quality);
     }
 
     if (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {
@@ -266,10 +265,8 @@ bool smooth_vertex_3d(
  *   - is_inverted_f(size_t fid), is_inverted(size_t fid), get_quality(size_t fid)
  *   - Vector2d smoothing_position(size_t vid) const
  *   - void set_smoothing_position(size_t vid, const Vector2d& p)
- *       writes the working position and any exact/rational copy the mesh keeps; the meshes
- *       differ here (triwild carries m_posf plus a rational m_pos, simwild 2D carries only
- *       m_pos), which is why this is a hook rather than a field the driver writes directly
- *   - smoothing_energy_envelope(vid) / smoothing_containment_envelope(vid), as in 3D
+ *       writes the working position and its exact/rational copy together
+ *   - m_envelope, used for both the surface pull energy and containment
  */
 template <class Mesh>
 bool smooth_vertex_2d(
@@ -356,12 +353,12 @@ bool smooth_vertex_2d(
         assert(!surf_neighbors.empty());
     }
 
-    const std::shared_ptr<SampleEnvelope> pull_env =
-        VA[vid].m_is_on_surface ? m.smoothing_energy_envelope(vid) : nullptr;
+    const std::shared_ptr<SampleEnvelope> envelope =
+        VA[vid].m_is_on_surface ? m.m_envelope : nullptr;
 
-    if (pull_env) {
+    if (envelope) {
         auto envelope_energy =
-            std::make_shared<EnvelopeEnergy2D>(pull_env, opts.s_envelope * opts.w_envelope);
+            std::make_shared<EnvelopeEnergy2D>(envelope, opts.s_envelope * opts.w_envelope);
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();
@@ -390,13 +387,11 @@ bool smooth_vertex_2d(
     }
 
     // Containment, edge by edge rather than face by face as in 3D.
-    const std::shared_ptr<SampleEnvelope> check_env =
-        VA[vid].m_is_on_surface ? m.smoothing_containment_envelope(vid) : nullptr;
-    if (check_env) {
+    if (envelope) {
         const Vector2d p = m.smoothing_position(vid);
         for (const Vector2d& q : surf_neighbors) {
             const std::array<Eigen::Vector2d, 2> edge = {{p, q}};
-            if (check_env->is_outside(edge)) {
+            if (envelope->is_outside(edge)) {
                 if (counters) ++counters->envelope;
                 return false;
             }

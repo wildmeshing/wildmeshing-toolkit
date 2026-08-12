@@ -1,5 +1,5 @@
 #include <wmtk/threading/enumerable_thread_specific.hpp>
-#include "TetWildMesh.h"
+#include "TetOptimizerMesh.h"
 #include "wmtk/TetMesh.h"
 
 #include <igl/Timer.h>
@@ -14,9 +14,9 @@
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
 
-namespace wmtk::components::tetwild {
+namespace wmtk {
 
-void TetWildMesh::collapse_all_edges(bool is_limit_length)
+void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
 {
     m_collapse_limit_length = is_limit_length;
     igl::Timer timer;
@@ -28,7 +28,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
-        [](TetWildMesh& m, const Tuple& e, auto& out) {
+        [](TetOptimizerMesh& m, const Tuple& e, auto& out) {
             out.emplace_back("edge_collapse", e);
             out.emplace_back("edge_collapse", e.switch_vertex(m));
         });
@@ -64,7 +64,7 @@ void TetWildMesh::collapse_all_edges(bool is_limit_length)
         });
 }
 
-bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
+bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edge
 {
     const auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
@@ -105,12 +105,8 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
         }
     }
 
-    // open boundary
-    if (cache.edge_length > 0 && m_vertex_extra[v1_id].m_is_on_open_boundary) {
-        if (!m_vertex_extra[v2_id].m_is_on_open_boundary &&
-            m_order2_envelope->is_outside(VA[v2_id].m_posf)) {
-            return false;
-        }
+    if (!collapse_before_vertex(v1_id, v2_id, cache.edge_length)) {
+        return false;
     }
 
 
@@ -119,7 +115,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     cache.changed_tids.reserve(n1_locs.size());
     cache.max_energy = 0;
     for (const size_t& tid : n1_locs) {
-        const double q = m_tet_attribute.at(tid).m_quality;
+        const double q = cell_quality(tid);
         cache.max_energy = std::max(cache.max_energy, q);
         const auto vs = oriented_tet_vids(tid);
         if (vs[0] != v2_id && vs[1] != v2_id && vs[2] != v2_id && vs[3] != v2_id) {
@@ -142,8 +138,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
             return false;
         }
         double q = get_quality(vs);
-        // quality check only when v1 is rounded
-        if (VA[v1_id].m_is_rounded && q > cache.max_energy) {
+        if (!collapse_quality_allowed(v1_id, q, cache.max_energy)) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -275,7 +270,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                     }
                     if (va != v2_id) { // ignore collapsing edge (v1,v2)
                         std::array<size_t, 2> ba = {{v1_id, va}};
-                        if (is_open_boundary_edge(ba)) {
+                        if (collapse_is_order_2_edge(ba)) {
                             ba[0] = v2_id; // replace v1 with v2 for check in `after` function
                             std::sort(ba.begin(), ba.end());
                             bs.push_back(ba);
@@ -283,7 +278,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
                     }
                     if (vb != v2_id) { // ignore collapsing edge (v1,v2)
                         std::array<size_t, 2> bb = {{v1_id, vb}};
-                        if (is_open_boundary_edge(bb)) {
+                        if (collapse_is_order_2_edge(bb)) {
                             bb[0] = v2_id; // replace v1 with v2 for check in `after` function
                             std::sort(bb.begin(), bb.end());
                             bs.push_back(bb);
@@ -305,7 +300,7 @@ bool TetWildMesh::collapse_edge_before(const Tuple& loc) // input is an edge
     return true;
 }
 
-bool TetWildMesh::collapse_edge_after(const Tuple& loc)
+bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
 {
     auto& VA = m_vertex_attribute;
     auto& cache = collapse_cache.local();
@@ -319,6 +314,10 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
 
         return false;
     }
+
+    if (!collapse_after_connectivity(v1_id, v2_id, cache.boundary_edges)) {
+        return false;
+    }
     // auto& VA = m_vertex_attribute;
     // auto& cache = collapse_cache.local();
     // size_t v1_id = cache.v1_id;
@@ -326,10 +325,6 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     // size_t v3_id = loc.switch_vertex(*this).vid(*this);
     // if (m_vertex_attribute[v2_id].is_freezed && m_vertex_attribute[v3_id].is_freezed) return
     // false;
-
-    // open boundary - must be set before checking for open boundary
-    m_vertex_extra[v2_id].m_is_on_open_boundary = m_vertex_extra.at(v1_id).m_is_on_open_boundary ||
-                                                  m_vertex_extra.at(v2_id).m_is_on_open_boundary;
 
     // surface
     // and open boundary
@@ -369,18 +364,20 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
         //}
     }
 
-    if (m_vertex_extra.at(v2_id).m_is_on_open_boundary) {
-        // check if boundary edges are topologically still boundaries
-        if (!is_vertex_on_boundary(v2_id)) {
-            m_vertex_extra[v2_id].m_is_on_open_boundary = false;
-        }
-    }
-
+    // Must run HERE, before the attribute updates below -- not at the end of the function.
+    // tetwild's override asks is_vertex_on_boundary(v2), which reads BOTH
+    // m_vertex_attribute[..].m_is_on_surface and m_face_attribute[..].m_is_surface_fs
+    // (TetWildMesh.cpp), and the two blocks below overwrite exactly those: the vertex flag is
+    // OR-ed from v1 just after round(), and the cached face attributes are written onto the
+    // post-collapse faces. Asking afterwards is asking a different question, and it changes
+    // which vertices keep their open-boundary flag -- and therefore which later collapses are
+    // allowed.
+    collapse_after_vertex(v1_id, v2_id);
 
     //// update attrs
     // tet attr
     for (int i = 0; i < cache.changed_tids.size(); i++) {
-        m_tet_attribute[cache.changed_tids[i]].m_quality = cache.changed_energies[i];
+        set_cell_quality(cache.changed_tids[i], cache.changed_energies[i]);
     }
     // vertex attr
     round(loc);
@@ -403,4 +400,4 @@ bool TetWildMesh::collapse_edge_after(const Tuple& loc)
     return true;
 }
 
-} // namespace wmtk::components::tetwild
+} // namespace wmtk

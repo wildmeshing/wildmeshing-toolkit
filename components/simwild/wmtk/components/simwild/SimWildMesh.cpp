@@ -33,228 +33,6 @@
 namespace wmtk::components::simwild {
 
 
-void SimWildMesh::mesh_improvement(int max_its)
-{
-    if (all_rounded() && m_sim_params.stop_at_float) {
-        logger().info("===== All vertices are rounded. Stop. =====");
-        return;
-    }
-
-    ////preprocessing
-    // TODO: refactor to eliminate repeated partition.
-    //
-
-    compute_vertex_partition_morton();
-
-    if (m_params.debug_output) {
-        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-    }
-
-    logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}});
-
-    ////operation loops
-    double pre_quality_rel = 0.;
-    check_mesh_quality(pre_quality_rel, true);
-
-    int refine_cooldown =
-        m_params.stuck_refine_cooldown; // iterations left before stuck-refine may fire again
-    for (int it = 0; it < max_its; it++) {
-        ///ops
-        logger().info("\n========it {}========", it);
-        double quality_rel = local_operations({{1, 1, 1, 1}});
-
-        ///energy check
-        logger().info("max rel quality {}", quality_rel);
-        if (check_mesh_quality(quality_rel, true)) {
-            // Energy alone is not a sufficient termination condition -- see
-            // round_and_check_all_rounded. Keep iterating while anything is un-rounded, and
-            // let max_its bound the run as before.
-            if (round_and_check_all_rounded()) {
-                break;
-            }
-            logger().info("quality target reached, but some vertices are un-rounded; continuing");
-        }
-        consolidate_mesh();
-
-        // output_faces(
-        //     m_sim_params.output_path + "after_iter" + std::to_string(it) + ".obj",
-        //     [](auto& f) { return f.m_is_surface_fs; });
-
-        // output_mesh(m_sim_params.output_path + "after_iter" + std::to_string(it) + ".msh");
-
-        logger().info("V = {}, T = {}", vert_capacity(), tet_capacity());
-
-        if (all_rounded() && m_sim_params.stop_at_float) {
-            logger().info("All vertices are rounded. Stop.");
-            break;
-        }
-
-        /// sizing field: when the max energy stalls, refine around the worst
-        /// elements to escape stuck configurations (replaces the old global
-        /// adjust_sizing_field mechanism). After a refinement, wait
-        /// stuck_refine_cooldown iterations so the operations get full passes on
-        /// the new sizing field before more refinement is added.
-        logger().info(
-            "pre_quality_rel = {:.6}, quality_rel = {:.6}, ratio = {:.4}",
-            pre_quality_rel,
-            quality_rel,
-            (pre_quality_rel - quality_rel) / pre_quality_rel);
-        if (refine_cooldown > 0) {
-            --refine_cooldown;
-        } else if (
-            it > 0 && quality_rel > 1.0 &&
-            (pre_quality_rel - quality_rel) <=
-                m_params.stuck_refine_stall_eps * (quality_rel - 1.0)) {
-            logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", quality_rel);
-            refine_sizing_around_worst();
-            logger().info(">>>>stuck-refine finished...");
-            refine_cooldown = m_params.stuck_refine_cooldown;
-        }
-        pre_quality_rel = std::min(pre_quality_rel, quality_rel);
-    }
-
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
-
-    // The post pass is collapse-only, so it cannot un-round anything; this is the last
-    // chance to reclaim a vertex that the loop left rational because it ran out of
-    // iterations.
-    round_all_vertices();
-}
-
-double SimWildMesh::local_operations(const std::array<int, 4>& ops, bool collapse_limit_length)
-{
-    igl::Timer timer;
-
-    double quality_rel = 0;
-
-    auto sanity_checks = [this]() {
-        if (!m_params.perform_sanity_checks) {
-            return;
-        }
-        logger().info("Perform sanity checks...");
-        const auto faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
-        for (const auto& verts : faces) {
-            const auto p0 = m_vertex_attribute[verts[0]].m_posf;
-            const auto p1 = m_vertex_attribute[verts[1]].m_posf;
-            const auto p2 = m_vertex_attribute[verts[2]].m_posf;
-            if (m_envelope->is_outside({{p0, p1, p2}})) {
-                logger().error("Face {} is outside!", verts);
-            }
-        }
-
-        // check for inverted tets
-        for (const Tuple& t : get_tets()) {
-            if (!is_inverted(t)) {
-                continue;
-            }
-            const auto vs = oriented_tet_vids(t);
-            logger().error("Tet {} is inverted! Vertices = {}", t.tid(*this), vs);
-            // for (const size_t v : vs) {
-            //     logger().error(
-            //         "v{}, rounded = {}, on surface = {}, on open boundary = {}",
-            //         v,
-            //         m_vertex_attribute[v].m_is_rounded,
-            //         m_vertex_attribute[v].m_is_on_surface,
-            //         m_vertex_attribute[v].m_is_on_open_boundary);
-            // }
-        }
-        logger().info("Sanity checks done.");
-    };
-
-    sanity_checks();
-
-    for (int i = 0; i < ops.size(); i++) {
-        timer.start();
-        if (i == 0) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==splitting {}==", n);
-                split_all_edges();
-                logger().info(
-                    "#vertices {}, #tets {} after split",
-                    get_vertices().size(),
-                    get_tets().size());
-                if (m_params.debug_output) {
-                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-                }
-                check_mesh_quality(quality_rel, true);
-                sanity_checks();
-                // Quality is met, but an un-rounded vertex means the mesh is not finished --
-                // see round_and_check_all_rounded. Returning here regardless would skip the
-                // smoothing pass, which is what frees a stuck vertex, so the run would spin
-                // to max_its without ever reclaiming it.
-                if (quality_rel < 1.0 && round_and_check_all_rounded()) {
-                    return quality_rel;
-                }
-            }
-        } else if (i == 1) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==collapsing {}==", n);
-                collapse_all_edges(collapse_limit_length);
-                logger().info(
-                    "#vertices {}, #tets {} after collapse",
-                    get_vertices().size(),
-                    get_tets().size());
-                if (m_params.debug_output) {
-                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-                }
-                check_mesh_quality(quality_rel, true);
-                sanity_checks();
-                if (quality_rel < 1.0 && round_and_check_all_rounded()) {
-                    return quality_rel;
-                }
-            }
-        } else if (i == 2) {
-            for (int n = 0; n < ops[i]; n++) {
-                logger().info("==swapping {}==", n);
-                int cnt_success = 0;
-                cnt_success += swap_all_edges_all();
-                cnt_success += swap_all_faces();
-                if (m_params.debug_output) {
-                    write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
-                }
-                logger().info(
-                    "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
-                    cnt_surface_swap.load(),
-                    cnt_surface_swap_32.load(),
-                    cnt_surface_swap_44.load(),
-                    cnt_surface_swap_56.load());
-                check_mesh_quality(quality_rel, true);
-                sanity_checks();
-                if (quality_rel < 1.0 && round_and_check_all_rounded()) {
-                    return quality_rel;
-                }
-            }
-        } else if (i == 3) {
-            logger().info("==smoothing ==");
-            smooth_all_vertices(ops[i]);
-            // Reclaim whatever smoothing just made roundable, before the quality check that
-            // may return. Smoothing is what frees a stuck vertex, and a vertex left rational
-            // makes every incident tet take the exact-arithmetic path in get_quality, so
-            // rounding here also keeps the following passes on doubles.
-            //
-            // Guarded on ops[i] so it really is once per iteration: this branch is also
-            // entered by the collapse-only pre and post passes, which pass ops[3] == 0 and
-            // have no smoothing for the sweep to follow.
-            if (ops[i] > 0) {
-                round_all_vertices();
-            }
-            check_mesh_quality(quality_rel, true);
-            sanity_checks();
-            if (ops[i] > 0 && quality_rel < 1.0 && round_and_check_all_rounded()) {
-                return quality_rel;
-            }
-        }
-        // output_faces(fmt::format("out-op{}.obj", i), [](auto& f) { return f.m_is_surface_fs; });
-    }
-    check_mesh_quality(quality_rel, true);
-    logger().info("time = {}", timer.getElapsedTime());
-
-
-    return quality_rel;
-}
-
 CellTag wmtk::components::simwild::SimWildMesh::string_set_to_cell_tag(
     const std::set<std::string>& str_set)
 {
@@ -387,6 +165,37 @@ double SimWildMesh::quality_rel(const Tuple& t) const
     return quality_rel(t.tid(*this));
 }
 
+std::tuple<double, double> SimWildMesh::optimization_quality_stats()
+{
+    double max_quality = -1.;
+    double avg_quality = 0.;
+    size_t count = 0;
+    for (size_t tid = 0; tid < tet_capacity(); ++tid) {
+        if (!tuple_from_tet(tid).is_valid(*this)) continue;
+        const double quality = quality_rel(tid);
+        max_quality = std::max(max_quality, quality);
+        avg_quality += quality;
+        ++count;
+    }
+    if (count > 0) avg_quality /= count;
+    return {max_quality, avg_quality};
+}
+
+std::vector<size_t> SimWildMesh::active_vertices() const
+{
+    // SimWild's quality target is per tag. Normalize each cell by its own target before
+    // applying the shared margin; using TetOptimizerMesh's single global threshold silently
+    // skips cells whose tag requests a stricter target.
+    return utils::active_vertices(
+        vert_capacity(),
+        tet_capacity(),
+        [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
+        [this](size_t tid) { return quality_rel(tid); },
+        [this](size_t tid) { return oriented_tet_vids(tid); },
+        m_params.skip_good_regions_margin,
+        [this](size_t vid) { return m_vertex_attribute[vid].m_is_on_surface; });
+}
+
 bool SimWildMesh::check_mesh_quality(double& max_rel_quality, const bool verbose) const
 {
     bool all_good = true;
@@ -417,7 +226,7 @@ bool SimWildMesh::check_mesh_quality(double& max_rel_quality, const bool verbose
 }
 
 
-size_t SimWildMesh::refine_sizing_around_worst()
+size_t SimWildMesh::refine_sizing_around_worst(double)
 {
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
 
@@ -440,13 +249,36 @@ size_t SimWildMesh::refine_sizing_around_worst()
     // force-splits exactly those edges (bypasses the length gate), so a stuck sliver's
     // long edge is split immediately -- WITHOUT changing the sizing field.
     m_force_split_edges.clear();
+    size_t already_at_size = 0;
     if (m_params.stuck_refine_force_split) {
-        for (const auto& [q, tid] : worst) {
-            m_force_split_edges.insert(
-                utils::longest_edge(oriented_tet_vids(tid), [this](size_t vid) -> const Vector3d& {
-                    return m_vertex_attribute[vid].m_posf;
-                }));
+        for (const auto& [_, tid] : worst) {
+            const auto e = utils::longest_edge(
+                oriented_tet_vids(tid),
+                [this](size_t vid) -> const Vector3d& { return m_vertex_attribute[vid].m_posf; });
+            if (m_params.stuck_refine_force_split_oversized_only) {
+                // Match TetWild's ratchet guard: AMIPS is scale invariant, so splitting an
+                // already-small bad tet cannot improve its shape and only drives its edge
+                // length toward zero on repeated stalls.
+                const auto& ev = e.vertices();
+                const double sizing = (m_vertex_attribute[ev[0]].m_sizing_scalar +
+                                       m_vertex_attribute[ev[1]].m_sizing_scalar) /
+                                      2;
+                const double len2 =
+                    (m_vertex_attribute[ev[0]].m_posf - m_vertex_attribute[ev[1]].m_posf)
+                        .squaredNorm();
+                if (len2 <= m_params.splitting_l2 * sizing * sizing) {
+                    ++already_at_size;
+                    continue;
+                }
+            }
+            m_force_split_edges.insert(e);
         }
+    }
+    if (already_at_size > 0) {
+        logger().info(
+            "[force-split] {} worst tets are already at target size; refinement cannot "
+            "improve their shape",
+            already_at_size);
     }
 
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.
@@ -487,11 +319,10 @@ size_t SimWildMesh::refine_sizing_around_worst()
         }
     }
 
-    // m_quality stores AMIPS^3; report its cube root to match the "max energy".
     logger().info(
-        "[stuck-refine] worst {} tets (maxE {:.4}), refined {} of {} region vertices",
+        "[stuck-refine] worst {} tets (relE {:.4}), refined {} of {} region vertices",
         worst.size(),
-        std::cbrt(worst.back().first),
+        worst.back().first,
         refined.size(),
         region.size());
     return refined.size();
@@ -524,7 +355,6 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F, const bool
     m_envelope = std::make_shared<SampleEnvelope>();
     m_envelope->use_exact = use_exact;
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-    m_envelope_orig = m_envelope;
 }
 
 

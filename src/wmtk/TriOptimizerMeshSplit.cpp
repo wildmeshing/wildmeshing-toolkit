@@ -1,4 +1,4 @@
-#include "TriWildMesh.h"
+#include <wmtk/TriOptimizerMesh.h>
 
 #include <igl/Timer.h>
 #include <atomic>
@@ -8,9 +8,9 @@
 #include <wmtk/utils/ParallelCollect.hpp>
 #include <wmtk/utils/RunPass.hpp>
 
-namespace wmtk::components::triwild {
+namespace wmtk {
 
-void TriWildMesh::split_all_edges()
+void TriOptimizerMesh::split_all_edges()
 {
     igl::Timer timer;
     double time;
@@ -22,7 +22,7 @@ void TriWildMesh::split_all_edges()
     // split_edge_before, and be exempted from the gate entirely -- and those are exactly the
     // ones that run away. The attribute collections are resized to the reservation, so their
     // size is the capacity to use. make_unique value-initialises, so every slot starts at 0.
-    if (m_tri_params.split_high_valence_threshold > 0) {
+    if (m_params.split_high_valence_threshold > 0) {
         m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }
@@ -32,7 +32,7 @@ void TriWildMesh::split_all_edges()
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
-        [](TriWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
+        [](TriOptimizerMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_split", e); });
     time = timer.getElapsedTime();
     logger().info("edge split prepare time: {:.4}s", time);
     wmtk::run_pass(
@@ -92,13 +92,13 @@ void TriWildMesh::split_all_edges()
             "[high-valence] {} splits refused to avoid growing a vertex past {} incident "
             "triangles",
             n,
-            m_tri_params.split_high_valence_threshold);
+            m_params.split_high_valence_threshold);
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();
 }
 
-bool TriWildMesh::split_edge_before(const Tuple& loc0)
+bool TriOptimizerMesh::split_edge_before(const Tuple& loc0)
 {
     auto& cache = split_cache.local();
 
@@ -128,8 +128,8 @@ bool TriWildMesh::split_edge_before(const Tuple& loc0)
     // A vertex past the threshold accepts one such split per pass and refuses the rest, which
     // spreads the refinement instead of letting it pile onto the same vertex. Done here,
     // before the edge caching below, so a refusal is cheap.
-    if (m_tri_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
-        const size_t threshold = static_cast<size_t>(m_tri_params.split_high_valence_threshold);
+    if (m_params.split_high_valence_threshold > 0 && m_high_valence_claim) {
+        const size_t threshold = static_cast<size_t>(m_params.split_high_valence_threshold);
         std::vector<size_t> to_claim;
         for (const size_t fid : faces) {
             const size_t vid = simplex_from_face(fid).opposite_vertex(edge).id();
@@ -174,7 +174,7 @@ bool TriWildMesh::split_edge_before(const Tuple& loc0)
     return true;
 }
 
-bool TriWildMesh::split_edge_after(const Tuple& loc)
+bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
 {
     if (!TriMesh::split_edge_after(
             loc)) // note: call from super class, cannot be done with pure virtual classes
@@ -244,6 +244,8 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
         // Set after the rollback checks above, which leave the mesh unchanged.
         m_all_rounded.store(false, std::memory_order_relaxed);
     }
+
+    if (!split_adjust_position(v_id, locs)) return false;
 
     // update face attributes
     {
@@ -340,7 +342,7 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
     // A split midpoint stands for no input feature: the endpoints keep theirs, and the new
     // vertex is interior to the curve by construction. Set explicitly because attribute slots
     // are recycled and could carry a stale id.
-    m_vertex_extra[v_id].m_feature_id = NO_FEATURE;
+    split_after_vertex(v_id);
 
     m_vertex_attribute[v_id].partition_id = m_vertex_attribute[v1_id].partition_id;
     m_vertex_attribute[v_id].m_sizing_scalar =
@@ -349,4 +351,4 @@ bool TriWildMesh::split_edge_after(const Tuple& loc)
     return true;
 }
 
-} // namespace wmtk::components::triwild
+} // namespace wmtk

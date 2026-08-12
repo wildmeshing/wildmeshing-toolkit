@@ -87,6 +87,9 @@ struct Parameters : public wmtk::OptimizerParameters
         eps_simplify = json_params["eps_simplify"];
 
         w_amips = json_params["w_amips"];
+        num_smoothing_passes = json_params["num_smoothing_passes"];
+        interleaved_smoothing = json_params["interleaved_smoothing"];
+        interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
@@ -102,6 +105,8 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_rings = json_params["stuck_refine_rings"];
         stuck_refine_factor = json_params["stuck_refine_factor"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
+        stuck_refine_force_split_oversized_only =
+            json_params["stuck_refine_force_split_oversized_only"];
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
 

@@ -70,39 +70,6 @@ struct Parameters : public wmtk::OptimizerParameters
      */
     bool use_sample_envelope = false;
 
-    /**
-     * Incident-triangle count above which a vertex is treated as pathological, or 0 to
-     * disable the gate.
-     *
-     * The 2D counterpart of tetwild's gate. Splitting edge (a,b) leaves a's and b's own
-     * counts unchanged and adds one to every vertex in the edge's link, so the gate is
-     * applied to the link, not the endpoints -- but in 2D that link is one or two vertices,
-     * not a whole ring, so the runaway this guards against is far less likely here.
-     */
-    int split_high_valence_threshold = 200;
-
-    /**
-     * How many smoothing passes each optimization iteration runs.
-     *
-     * This is ops[3] in local_operations({{split, collapse, swap, smooth}}), which was
-     * hard-coded to 1. Smoothing is the only phase that improves element quality without
-     * changing connectivity, so on meshes where split/collapse/swap have run out of useful
-     * moves it is the only thing left that can lower the energy.
-     */
-    int num_smoothing_passes = 2;
-
-    // Interleave smoothing between the topology passes instead of running it all at the end
-    // of the iteration. With this on, one iteration is
-    //     split    + interleaved_smoothing_passes smoothing passes
-    //     collapse + ...
-    //     swaps    + ...
-    // rather than split, collapse, swaps, then num_smoothing_passes passes. Smoothing is the
-    // only phase that improves quality without changing connectivity, so giving each topology
-    // pass a chance to be relaxed before the next one runs may keep the optimizer off the
-    // plateaus where split, collapse and swap simply undo each other.
-    bool interleaved_smoothing = true;
-    int interleaved_smoothing_passes = 1;
-
     Parameters() = default;
 
     /**

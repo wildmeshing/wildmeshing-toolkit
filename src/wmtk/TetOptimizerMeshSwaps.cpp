@@ -1,7 +1,7 @@
-#include "TetWildMesh.h"
+#include <wmtk/TetMesh.h>
+#include <wmtk/TetOptimizerMesh.h>
 
 #include <igl/Timer.h>
-#include <wmtk/TetMesh.h>
 #include <wmtk/utils/ExecutorUtils.hpp>
 #include <wmtk/utils/LocalizedRetry.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -13,12 +13,14 @@
 #include <cassert>
 #include <limits>
 
-namespace wmtk::components::tetwild {
+namespace wmtk {
+
+using FaceAttributes = TetOptimizerMesh::FaceAttributes;
 
 void face_attribute_tracker(
     const TetMesh& m,
     const std::vector<size_t>& incident_tets,
-    const TetWildMesh::FaceAttCol& m_face_attribute,
+    const TetOptimizerMesh::FaceAttCol& m_face_attribute,
     std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces)
 {
     changed_faces.clear();
@@ -36,7 +38,7 @@ void tracker_assign_after(
     const wmtk::TetMesh& m,
     const std::vector<size_t>& incident_tids,
     const std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces,
-    TetWildMesh::FaceAttCol& m_face_attribute)
+    TetOptimizerMesh::FaceAttCol& m_face_attribute)
 {
     auto middle_face = std::vector<size_t>();
     auto new_faces = std::set<std::array<size_t, 3>>();
@@ -67,7 +69,7 @@ void tracker_assign_after(
     const wmtk::TetMesh& m,
     const std::vector<wmtk::TetMesh::Tuple>& incident_tets,
     const std::map<std::array<size_t, 3>, FaceAttributes>& changed_faces,
-    TetWildMesh::FaceAttCol& m_face_attribute)
+    TetOptimizerMesh::FaceAttCol& m_face_attribute)
 {
     std::vector<size_t> incident_tids;
     incident_tids.reserve(incident_tets.size());
@@ -79,7 +81,7 @@ void tracker_assign_after(
 }
 
 
-size_t TetWildMesh::swap_all_edges_32()
+size_t TetOptimizerMesh::swap_all_edges_32()
 {
     igl::Timer timer;
     double time;
@@ -87,12 +89,12 @@ size_t TetWildMesh::swap_all_edges_32()
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
         *this,
         NUM_THREADS,
-        [](TetWildMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_swap", e); });
+        [](TetOptimizerMesh&, const Tuple& e, auto& out) { out.emplace_back("edge_swap", e); });
     time = timer.getElapsedTime();
     logger().info("edge swap prepare time: {:.4}s", time);
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
-    if (m_tet_params.check_surface_topology) {
+    if (check_surface_topology()) {
         sig_before = surface_topology_signature();
     }
     wmtk::run_pass(
@@ -104,13 +106,13 @@ size_t TetWildMesh::swap_all_edges_32()
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
             total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
-    if (m_tet_params.check_surface_topology) {
+    if (check_surface_topology()) {
         warn_if_surface_topology_changed(sig_before, "swap_all_edges_32");
     }
     return total_success;
 }
 
-bool TetWildMesh::swap_edge_before(const Tuple& t)
+bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_before(t)) {
         return false;
@@ -134,13 +136,15 @@ bool TetWildMesh::swap_edge_before(const Tuple& t)
     // mistaken for interior because of stale m_is_on_surface flags (which would tear the surface).
     const int n_surf_faces = edge_incident_surface_face_count(t);
     if (n_surf_faces > 0) {
-        if (!m_tet_params.allow_surface_swap) return false;
+        if (!allow_surface_swap()) return false;
         if (!prepare_surface_flip(t, incident_tets)) return false;
+    } else if (!swap_before_interior(incident_tets)) {
+        return false;
     }
 
     double max_energy = -1.0;
     for (const size_t l : incident_tets) {
-        max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
+        max_energy = std::max(cell_quality(l), max_energy);
     }
     cache.max_energy = max_energy;
 
@@ -149,7 +153,9 @@ bool TetWildMesh::swap_edge_before(const Tuple& t)
     return true;
 }
 
-bool TetWildMesh::prepare_surface_flip(const Tuple& t, const std::vector<size_t>& incident_tets)
+bool TetOptimizerMesh::prepare_surface_flip(
+    const Tuple& t,
+    const std::vector<size_t>& incident_tets)
 {
     auto& cache = swap_cache.local();
     cache.is_surface_flip = false;
@@ -240,6 +246,10 @@ bool TetWildMesh::prepare_surface_flip(const Tuple& t, const std::vector<size_t>
         if (face_is_surface(b, c, d)) return false;
     }
 
+    if (!swap_before_surface(incident_tets, a, b, c, d)) {
+        return false;
+    }
+
     cache.is_surface_flip = true;
     cache.sf_a = a;
     cache.sf_b = b;
@@ -248,7 +258,7 @@ bool TetWildMesh::prepare_surface_flip(const Tuple& t, const std::vector<size_t>
     return true;
 }
 
-bool TetWildMesh::swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge)
+bool TetOptimizerMesh::swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge)
 {
     const auto& cache = swap_cache.local();
     if (!cache.is_surface_flip) return true; // interior edge: keep pure min-energy behavior
@@ -257,7 +267,7 @@ bool TetWildMesh::swap_edge_44_accept_case(const std::array<size_t, 2>& new_edge
            (new_edge[0] == cache.sf_d && new_edge[1] == cache.sf_c);
 }
 
-bool TetWildMesh::swap_edge_56_accept_case(const std::array<size_t, 3>& new_face)
+bool TetOptimizerMesh::swap_edge_56_accept_case(const std::array<size_t, 3>& new_face)
 {
     const auto& cache = swap_cache.local();
     if (!cache.is_surface_flip) return true; // interior edge: keep pure min-energy behavior
@@ -276,7 +286,7 @@ bool TetWildMesh::swap_edge_56_accept_case(const std::array<size_t, 3>& new_face
     return new_face[1] == other || new_face[2] == other;
 }
 
-bool TetWildMesh::swap_edge_after(const Tuple& t)
+bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_after(t)) {
         return false;
@@ -295,10 +305,17 @@ bool TetWildMesh::swap_edge_after(const Tuple& t)
             return false;
         }
         const double q = get_quality(l);
-        m_tet_attribute[l.tid(*this)].m_quality = q;
+        set_cell_quality(l.tid(*this), q);
         max_energy = std::max(q, max_energy);
     }
     if (max_energy >= cache.max_energy) {
+        return false;
+    }
+
+    std::vector<size_t> new_tids;
+    new_tids.reserve(twotets.size());
+    for (const Tuple& tet : twotets) new_tids.push_back(tet.tid(*this));
+    if (!swap_after_cells(new_tids, cache.is_surface_flip)) {
         return false;
     }
 
@@ -345,7 +362,7 @@ bool TetWildMesh::swap_edge_after(const Tuple& t)
 }
 
 
-size_t TetWildMesh::swap_all_faces()
+size_t TetOptimizerMesh::swap_all_faces()
 {
     igl::Timer timer;
     double time;
@@ -369,7 +386,7 @@ size_t TetWildMesh::swap_all_faces()
     return total_success;
 }
 
-bool TetWildMesh::swap_face_before(const Tuple& t)
+bool TetOptimizerMesh::swap_face_before(const Tuple& t)
 {
     if (!TetMesh::swap_face_before(t)) {
         return false;
@@ -377,6 +394,7 @@ bool TetWildMesh::swap_face_before(const Tuple& t)
     // if (m_params.preserve_global_topology) return false;
 
     auto& cache = swap_cache.local();
+    cache.is_surface_flip = false;
 
     const SmartTuple tt(*this, t);
 
@@ -390,8 +408,7 @@ bool TetWildMesh::swap_face_before(const Tuple& t)
     const size_t t0 = tt.tid();
     const size_t t1 = oppo_tet.value().tid();
 
-    const double max_energy =
-        std::max(m_tet_attribute[t0].m_quality, m_tet_attribute[t1].m_quality);
+    const double max_energy = std::max(cell_quality(t0), cell_quality(t1));
 
     // pre-compute energy
     {
@@ -419,11 +436,15 @@ bool TetWildMesh::swap_face_before(const Tuple& t)
 
     std::vector<size_t> twotets{t0, t1};
 
+    if (!swap_before_interior(twotets)) {
+        return false;
+    }
+
     face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces);
     return true;
 }
 
-bool TetWildMesh::swap_face_after(const Tuple& t)
+bool TetOptimizerMesh::swap_face_after(const Tuple& t)
 {
     if (!TetMesh::swap_face_after(t)) return false;
 
@@ -431,8 +452,13 @@ bool TetWildMesh::swap_face_after(const Tuple& t)
 
     for (auto& l : incident_tets) {
         auto q = get_quality(l);
-        m_tet_attribute[l.tid(*this)].m_quality = q;
+        set_cell_quality(l.tid(*this), q);
     }
+
+    std::vector<size_t> new_tids;
+    new_tids.reserve(incident_tets.size());
+    for (const Tuple& tet : incident_tets) new_tids.push_back(tet.tid(*this));
+    if (!swap_after_cells(new_tids, false)) return false;
 
     tracker_assign_after(*this, incident_tets, swap_cache.local().changed_faces, m_face_attribute);
 
@@ -440,7 +466,7 @@ bool TetWildMesh::swap_face_after(const Tuple& t)
     return true;
 }
 
-size_t TetWildMesh::swap_all_edges_all()
+size_t TetOptimizerMesh::swap_all_edges_all()
 {
     igl::Timer timer;
     double time;
@@ -455,7 +481,7 @@ size_t TetWildMesh::swap_all_edges_all()
     logger().info("edge swap prepare time: {:.4}s", time);
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
-    if (m_tet_params.check_surface_topology) {
+    if (check_surface_topology()) {
         sig_before = surface_topology_signature();
     }
     wmtk::run_pass(
@@ -485,14 +511,14 @@ size_t TetWildMesh::swap_all_edges_all()
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
             total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
-    if (m_tet_params.check_surface_topology) {
+    if (check_surface_topology()) {
         warn_if_surface_topology_changed(sig_before, "swap_all_edges_all");
     }
     return total_success;
 }
 
 
-size_t TetWildMesh::swap_all_edges_44()
+size_t TetOptimizerMesh::swap_all_edges_44()
 {
     igl::Timer timer;
     double time;
@@ -505,7 +531,7 @@ size_t TetWildMesh::swap_all_edges_44()
     logger().info("edge swap 44 prepare time: {:.4}s", time);
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
-    if (m_tet_params.check_surface_topology) sig_before = surface_topology_signature();
+    if (check_surface_topology()) sig_before = surface_topology_signature();
     wmtk::run_pass(
         *this,
         wmtk::PassLock::EdgeTwoRing,
@@ -515,12 +541,11 @@ size_t TetWildMesh::swap_all_edges_44()
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
             total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
-    if (m_tet_params.check_surface_topology)
-        warn_if_surface_topology_changed(sig_before, "swap_all_edges_44");
+    if (check_surface_topology()) warn_if_surface_topology_changed(sig_before, "swap_all_edges_44");
     return total_success;
 }
 
-bool TetWildMesh::swap_edge_44_before(const Tuple& t)
+bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_44_before(t)) {
         return false;
@@ -544,13 +569,15 @@ bool TetWildMesh::swap_edge_44_before(const Tuple& t)
     // direct incident-surface-face count so a genuine surface edge is never mistaken for interior.
     const int n_surf_faces = edge_incident_surface_face_count(t);
     if (n_surf_faces > 0) {
-        if (!m_tet_params.allow_surface_swap) return false;
+        if (!allow_surface_swap()) return false;
         if (!prepare_surface_flip(t, incident_tets)) return false;
+    } else if (!swap_before_interior(incident_tets)) {
+        return false;
     }
 
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
-        max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
+        max_energy = std::max(cell_quality(l), max_energy);
     }
     cache.max_energy = max_energy;
 
@@ -559,7 +586,7 @@ bool TetWildMesh::swap_edge_44_before(const Tuple& t)
     return true;
 }
 
-bool TetWildMesh::swap_edge_44_after(const Tuple& t)
+bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_44_after(t)) return false;
 
@@ -570,13 +597,18 @@ bool TetWildMesh::swap_edge_44_after(const Tuple& t)
     for (auto& l : incident_tets) {
         if (is_inverted(l)) return false;
         auto q = get_quality(l);
-        m_tet_attribute[l.tid(*this)].m_quality = q;
+        set_cell_quality(l.tid(*this), q);
         max_energy = std::max(q, max_energy);
     }
 
     if (max_energy >= cache.max_energy) {
         return false;
     }
+
+    std::vector<size_t> new_tids;
+    new_tids.reserve(incident_tets.size());
+    for (const Tuple& tet : incident_tets) new_tids.push_back(tet.tid(*this));
+    if (!swap_after_cells(new_tids, cache.is_surface_flip)) return false;
 
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope,
@@ -613,7 +645,7 @@ bool TetWildMesh::swap_edge_44_after(const Tuple& t)
     return true;
 }
 
-size_t TetWildMesh::swap_all_edges_56()
+size_t TetOptimizerMesh::swap_all_edges_56()
 {
     igl::Timer timer;
     double time;
@@ -626,7 +658,7 @@ size_t TetWildMesh::swap_all_edges_56()
     logger().info("edge swap 56 prepare time: {:.4}s", time);
     size_t total_success = 0;
     SurfaceTopoSignature sig_before;
-    if (m_tet_params.check_surface_topology) sig_before = surface_topology_signature();
+    if (check_surface_topology()) sig_before = surface_topology_signature();
     wmtk::run_pass(
         *this,
         wmtk::PassLock::EdgeTwoRing,
@@ -636,12 +668,11 @@ size_t TetWildMesh::swap_all_edges_56()
             executor.priority = [&](auto& m, auto op, auto& t) { return m.get_length2(t); };
             total_success = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
-    if (m_tet_params.check_surface_topology)
-        warn_if_surface_topology_changed(sig_before, "swap_all_edges_56");
+    if (check_surface_topology()) warn_if_surface_topology_changed(sig_before, "swap_all_edges_56");
     return total_success;
 }
 
-bool TetWildMesh::swap_edge_56_before(const Tuple& t)
+bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
 {
     if (!TetMesh::swap_edge_56_before(t)) {
         return false;
@@ -664,13 +695,15 @@ bool TetWildMesh::swap_edge_56_before(const Tuple& t)
     // incident-surface-face count so a genuine surface edge is never mistaken for interior.
     const int n_surf_faces = edge_incident_surface_face_count(t);
     if (n_surf_faces > 0) {
-        if (!m_tet_params.allow_surface_swap) return false;
+        if (!allow_surface_swap()) return false;
         if (!prepare_surface_flip(t, incident_tets)) return false;
+    } else if (!swap_before_interior(incident_tets)) {
+        return false;
     }
 
     double max_energy = -1.0;
     for (const size_t l : incident_tets) {
-        max_energy = std::max(m_tet_attribute[l].m_quality, max_energy);
+        max_energy = std::max(cell_quality(l), max_energy);
     }
     cache.max_energy = max_energy;
 
@@ -679,7 +712,7 @@ bool TetWildMesh::swap_edge_56_before(const Tuple& t)
     return true;
 }
 
-bool TetWildMesh::swap_edge_56_after(const Tuple& t)
+bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
 {
     if (!TetMesh::swap_edge_56_after(t)) {
         return false;
@@ -699,9 +732,11 @@ bool TetWildMesh::swap_edge_56_after(const Tuple& t)
     for (const size_t tid : tids) {
         const Tuple tet = tuple_from_tet(tid);
         auto q = get_quality(tet);
-        m_tet_attribute[tid].m_quality = q;
+        set_cell_quality(tid, q);
         max_energy = std::max(q, max_energy);
     }
+
+    if (!swap_after_cells(tids, cache.is_surface_flip)) return false;
 
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope.
@@ -737,4 +772,4 @@ bool TetWildMesh::swap_edge_56_after(const Tuple& t)
     return true;
 }
 
-} // namespace wmtk::components::tetwild
+} // namespace wmtk

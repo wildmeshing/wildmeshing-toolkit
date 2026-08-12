@@ -176,6 +176,65 @@ public:
 
     std::tuple<double, double> get_max_avg_energy();
 
+    /// Shared TriWild/SimWild outer optimization schedule.
+    int m_iterations_used = 0;
+    void mesh_improvement(int max_its = 80);
+    std::tuple<double, double> local_operations(
+        const std::array<int, 4>& ops,
+        bool collapse_limit_length = true);
+
+    std::set<simplex::Edge> m_force_split_edges;
+    size_t m_force_split_count = 0;
+    std::unique_ptr<std::atomic<int>[]> m_high_valence_claim;
+    size_t m_high_valence_claim_size = 0;
+    std::atomic<size_t> m_high_valence_rejects = 0;
+
+    bool is_force_split_edge(const size_t v1, const size_t v2) const
+    {
+        return m_force_split_edges.find(simplex::Edge(v1, v2)) != m_force_split_edges.end();
+    }
+
+    void split_all_edges();
+    bool split_edge_before(const Tuple& t) override;
+    bool split_edge_after(const Tuple& loc) override;
+
+    void collapse_all_edges(bool is_limit_length = true);
+    bool collapse_edge_before(const Tuple& t) override;
+    bool collapse_edge_after(const Tuple& t) override;
+
+    /**
+     * @brief Run TriWild's quality-improving interior edge-flip pass.
+     *
+     * This operation is shared verbatim by TriWild and SimWild. Face tags are copied from
+     * the old pair to the new pair, so a tag-homogeneous SimWild mesh follows exactly the
+     * same path as TriWild.
+     */
+    size_t swap_all_edges();
+    double swap_weight(const Tuple& t) const;
+    bool swap_edge_before(const Tuple& t) override;
+    bool swap_edge_after(const Tuple& t) override;
+
+    /**
+     * @brief Run TriWild's vertex-smoothing pass.
+     *
+     * TriWild is the behavioral source of truth. SimWild shares the pass verbatim, including
+     * the single m_envelope used for both smoothing energy and containment, the surface
+     * quality veto, and skip_good_regions selection.
+     */
+    void smooth_all_vertices(size_t n_iters = 1);
+    bool smooth_before(const Tuple& t) override;
+    bool smooth_after(const Tuple& t) override;
+
+    Vector2d smoothing_position(size_t vid) const;
+    void set_smoothing_position(size_t vid, const Vector2d& p);
+    virtual bool smoothing_position_is_allowed(size_t vid, const Vector2d& p) const = 0;
+
+    double active_quality_threshold() const
+    {
+        return m_params.skip_good_regions_margin * m_params.stop_energy;
+    }
+    virtual std::vector<size_t> active_vertices() const;
+
     /**
      * @brief Round a vertex position to floating point, if that inverts no incident face.
      * @return True if successful or already rounded, false otherwise.
@@ -183,6 +242,28 @@ public:
     bool round(const Tuple& v);
 
 protected:
+    /// Quality metric used by the driver. TriWild uses absolute AMIPS; SimWild overrides
+    /// this with quality normalized by each face's tag-dependent target.
+    virtual std::tuple<double, double> optimization_quality_stats();
+    virtual double optimization_stop_metric() const { return m_params.stop_energy; }
+    virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+    virtual bool optimization_stop_at_float() const { return false; }
+
+    virtual void collapse_pass_begin() {}
+    virtual void collapse_pass_end(size_t) {}
+    virtual bool collapse_before_vertex(size_t, size_t) { return true; }
+    virtual bool collapse_quality_allowed(size_t v1, size_t, double q, double ring_max) const
+    {
+        return !m_vertex_attribute.at(v1).m_is_rounded || q <= m_params.stop_energy ||
+               q <= ring_max;
+    }
+    virtual void collapse_after_vertex(size_t, size_t) {}
+
+    virtual bool split_adjust_position(size_t, const std::vector<Tuple>&) { return true; }
+    virtual void split_after_vertex(size_t) {}
+
+    virtual void write_smoothing_debug_output(const std::string& path) const = 0;
+
     // RationalPositions supplies round_all_vertices() and round_and_check_all_rounded() on
     // top of these three.
     std::vector<size_t> all_vertex_ids() const override;
@@ -230,6 +311,40 @@ public:
      * avoiding sharp resolution jumps.
      */
     void gradation_smooth_sizing(double grade, const std::vector<size_t>& seeds);
+
+protected:
+    struct SplitInfoCache
+    {
+        size_t v1_id = 0;
+        size_t v2_id = 0;
+        double max_quality_before = 0.;
+        EdgeAttributes old_e_attrs;
+        std::map<simplex::Edge, EdgeAttributes> changed_edges;
+        std::map<size_t, FaceAttributes> faces;
+    };
+    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
+
+    struct CollapseInfoCache
+    {
+        size_t v1_id = 0;
+        size_t v2_id = 0;
+        double max_energy = 0.;
+        double edge_length = 0.;
+        std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
+        std::vector<std::array<size_t, 2>> surface_edges;
+        std::vector<size_t> changed_fids;
+        std::vector<double> changed_energies;
+    };
+    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+
+private:
+    struct SwapInfoCache
+    {
+        double max_energy;
+        std::map<simplex::Edge, EdgeAttributes> changed_edges;
+        std::set<int64_t> face_tags;
+    };
+    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
 };
 
 } // namespace wmtk

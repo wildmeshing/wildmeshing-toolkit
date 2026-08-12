@@ -49,7 +49,6 @@ public:
 
     std::vector<Vector2d> m_V_envelope;
     std::vector<Vector2i> m_E_envelope;
-    std::shared_ptr<SampleEnvelope> m_envelope_orig;
 
     std::vector<std::tuple<ExprPtr, double>> m_sizing_field;
     std::vector<std::tuple<ExprPtr, double>> m_quality_field;
@@ -58,15 +57,12 @@ public:
     bool m_collapse_check_topology = false; // sanity check
     bool m_collapse_check_manifold = false; // manifoldness check after collapse
 
-    /// Hooks for the shared 2D smoothing driver.
-    Vector2d smoothing_position(const size_t vid) const;
-    void set_smoothing_position(const size_t vid, const Vector2d& p);
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const;
-    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
-
     /// No 0-dimensional features here, so smoothing is never positionally constrained beyond
     /// the envelope. See TriWildMesh::smoothing_position_is_allowed for the case that is.
-    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const { return true; }
+    bool smoothing_position_is_allowed(const size_t, const Vector2d&) const override
+    {
+        return true;
+    }
 
     SimWildMeshTri(Parameters& _m_params, double envelope_eps, int _num_threads = 0)
         : wmtk::TriOptimizerMesh(_m_params)
@@ -129,6 +125,7 @@ public:
     double quality_rel(const size_t tid) const;
     double quality_rel(const Tuple& t) const;
     bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+    std::vector<size_t> active_vertices() const override;
 
     /**
      * @brief Escape a stuck max energy by refining the sizing field around the
@@ -142,7 +139,7 @@ public:
      * into the surrounding resolution. Replaces the old global
      * adjust_sizing_field mechanism. Returns the number of vertices refined.
      */
-    size_t refine_sizing_around_worst();
+    size_t refine_sizing_around_worst(double max_metric = 0.) override;
 
     void write_msh(std::string file, const bool write_envelope = true);
 
@@ -150,28 +147,6 @@ public:
     void write_vtu_with_energies(const std::string& path) const;
 
 public:
-    void split_all_edges();
-    bool split_edge_before(const Tuple& t) override;
-    bool split_edge_after(const Tuple& loc) override;
-
-    void collapse_all_edges(bool is_limit_length = true);
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
-
-    size_t swap_all_edges();
-    /**
-     * @brief The quality improvement of a swap.
-     *
-     * Used to determine the priority and weight of a swap operation.
-     */
-    double swap_weight(const Tuple& t) const;
-    bool swap_edge_before(const Tuple& t) override;
-    bool swap_edge_after(const Tuple& t) override;
-
-    void smooth_all_vertices(const size_t n_iters = 1);
-    bool smooth_before(const Tuple& t) override;
-    bool smooth_after(const Tuple& t) override;
-
     /**
      * @brief A vector containing the vertex position and all positions of the surface neighbors.
      *
@@ -189,19 +164,7 @@ public:
     void log_total_surface_energy();
 
 
-    /**
-     * @brief Splits in the last pass that fell back to the exact rational midpoint.
-     *
-     * A split is the only operation that can un-round a vertex, so this is exactly how often
-     * the mesh acquired exact coordinates during optimization -- the counterpart of the
-     * "rounding sweep" line, which says how many were given back.
-     */
-    size_t m_exact_split_count = 0;
-
     double triangle_area(const size_t fid) const;
-
-    void mesh_improvement(int max_its = 80);
-    double local_operations(const std::array<int, 4>& ops, bool collapse_limit_length = true);
 
     /**
      * @brief Find all connected components that contain the `tag_in` tags.
@@ -267,60 +230,23 @@ public:
     void tag_priority(const std::vector<int64_t>& tags_order);
 
 private:
-    ////// Operations
-
-    struct SplitInfoCache
-    {
-        //        VertexAttributes vertex_info;
-        size_t v_new;
-        size_t v1_id;
-        size_t v2_id;
-        /// Worst quality among the elements incident to the edge BEFORE the split, so
-        /// split_edge_after can tell "this split created a degenerate element" from "this
-        /// split subdivided a region that was already degenerate".
-        double max_quality_before = 0.;
-
-        EdgeAttributes old_e_attrs;
-
-        // std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
-        std::map<simplex::Edge, EdgeAttributes> changed_edges;
-
-        /**
-         * All faces incident to the splitted edge, identified by the link vertex (the vertex
-         * opposite to the splitted edge).
-         */
-        std::map<size_t, FaceAttributes> faces;
-    };
-    wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
-
-    struct CollapseInfoCache
-    {
-        size_t v1_id;
-        size_t v2_id;
-        double max_energy;
-        double edge_length;
-
-        std::vector<std::pair<EdgeAttributes, std::array<size_t, 2>>> changed_edges;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 2>> surface_edges;
-        std::vector<size_t> changed_fids;
-        std::vector<double> changed_energies;
-    };
-    wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
-
-
-    struct SwapInfoCache
-    {
-        double max_energy;
-        std::map<simplex::Edge, EdgeAttributes> changed_edges;
-        CellTag face_tags;
-    };
-    wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
-
     // When set, split_edge_after binary-searches vmid onto the zero-crossing of this function.
     // Negative = stays on v1 side, positive = stays on v2 side.
     // Set before split_edge(), cleared immediately after.
     std::function<double(const Vector2d&)> m_voronoi_split_fn = nullptr;
+    size_t m_last_split_vertex = 0;
+
+protected:
+    std::tuple<double, double> optimization_quality_stats() override;
+    double optimization_stop_metric() const override { return 1.; }
+    bool optimization_stop_at_float() const override { return m_sim_params.stop_at_float; }
+
+    void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }
+
+    bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
+    void collapse_after_vertex(size_t v1, size_t v2) override;
+    bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
+    void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }
 };
 
 } // namespace wmtk::components::simwild::tri
