@@ -54,3 +54,43 @@ with `offset_selection: "tag_0"`.
 Note the mesh has to resolve the offset: at `rings=300` over `R_domain=0.28` the spacing is
 ~9.3e-4, so an offset of 2e-3 is about two cells wide. Ask for less and the result is
 dominated by discretization.
+
+## Worked example: offsetting a disk
+
+End to end, from nothing to a picture. Run it from this directory.
+
+```sh
+# 1. the input: a disk domain of radius 0.28 with a concentric disk of radius 0.20 tagged tag_0
+python3 make_disk2d.py 300 0.20 0.28 disk.msh
+
+# 2. the offset, at 10% of the input radius (target_distance 0.02)
+<build>/app/wmtk_app -j disk_offset_example.json
+
+# 3. look at it
+mkdir -p runs/d10 && mv disk_offset.vtu runs/d10/out.vtu
+.venv/bin/python view_offset.py runs
+```
+
+`disk_offset_example.json` is the config; edit `target_distance` for other widths. To compare
+several, give each its own `runs/<name>/out.vtu` and pass `runs` once -- every run becomes its
+own toggleable layer.
+
+### Checking the answer
+
+The exact result is an annulus, so the closed region (input disk plus offset band) has area
+`pi*(R+d)^2`. For `R=0.20, d=0.02` that is `0.152053`. Measuring the tagged faces in the output
+gives an effective outer radius of 0.21956 against the exact 0.22 -- 0.4% low, which is
+discretization and nothing else.
+
+### Two things that will bite you
+
+**`relative_ball_threshold` defaults to 0.1, which is far too large.** The conservative growth
+then rejects nearly every candidate and the offset stops after a single cell layer, returning
+the same result no matter how large a `target_distance` you ask for -- measured, `d=0.14` and
+`d=0.21` produced byte-identical output, both ~60-73% short. `0.01` is correct to under 1%
+across a sweep from 1% to 25% of the radius. The warning the run prints does say to decrease
+it, but it also fires on runs that are perfectly fine, so it is not a reliable signal.
+
+**The mesh has to resolve the offset.** At `rings=300` over `R_domain=0.28` the spacing is
+~9.3e-4, so `target_distance` below ~2e-3 is only a couple of cells wide and the result is
+dominated by discretization. Raise `rings` for thinner offsets; cost grows quadratically.
