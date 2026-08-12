@@ -214,6 +214,10 @@ public:
      */
     bool face_in_region(const size_t fid) const;
 
+    /// Whether face `fid` is part of the INPUT complex (as opposed to the offset band), read
+    /// from its tags via the user's selection expression -- the same test that defined it.
+    bool face_is_input_complex(const size_t fid) const;
+
     void relabel_faces_from_tags();
     void relabel_face_from_tags(const size_t fid);
 

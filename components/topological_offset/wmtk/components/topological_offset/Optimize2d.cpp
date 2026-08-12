@@ -53,6 +53,12 @@ bool TopoOffsetTriMesh::face_in_region(const size_t fid) const
     return expr && expr->eval(tags); // in the input complex it wraps
 }
 
+bool TopoOffsetTriMesh::face_is_input_complex(const size_t fid) const
+{
+    const ExpressionPtr& expr = m_offset_params.offset_selection;
+    return expr && expr->eval(m_face_attribute[fid].tags);
+}
+
 void TopoOffsetTriMesh::relabel_face_from_tags(const size_t fid)
 {
     {
@@ -107,10 +113,14 @@ void TopoOffsetTriMesh::label_offset_boundary()
             continue;
         }
 
-        // An edge of the input complex carries input geometry and is the class the envelope
-        // (when there is one) applies to. It takes precedence: an input edge that also happens
-        // to separate two labels is still input geometry.
-        if (m_edge_extra[eid].label == 1) {
+        // The input complex's BOUNDARY is what carries input geometry, not its interior. The
+        // edge label marks every edge inside the input region, and tracking all of them froze
+        // the whole interior -- on a solid input that is most of the mesh, and no operation
+        // could be accepted anywhere. An interior edge of the region carries no geometry, so
+        // only the edges where input meets non-input are tracked, and they take precedence
+        // over the offset class.
+        const size_t fa = e.fid(*this), fb = opp->fid(*this);
+        if (face_is_input_complex(fa) != face_is_input_complex(fb)) {
             m_edge_attribute[eid].m_is_surface_fs = true;
             m_edge_attribute[eid].m_surface_class = 0;
             continue;
@@ -123,9 +133,8 @@ void TopoOffsetTriMesh::label_offset_boundary()
         // incident face's tags onto both faces it creates, so an unguarded flip across a tag
         // boundary silently relabels a face and moves the region -- which is what the output is
         // built from. Tagging the edge as tracked surface is what makes the swap refuse it.
-        const size_t f0 = e.fid(*this), f1 = opp->fid(*this);
-        const bool label_change = m_face_extra[f0].label != m_face_extra[f1].label;
-        const bool tag_change = m_face_attribute[f0].tags != m_face_attribute[f1].tags;
+        const bool label_change = m_face_extra[fa].label != m_face_extra[fb].label;
+        const bool tag_change = m_face_attribute[fa].tags != m_face_attribute[fb].tags;
         if (label_change || tag_change) {
             m_edge_attribute[eid].m_is_surface_fs = true;
             m_edge_attribute[eid].m_surface_class = OFFSET_SURFACE_CLASS;
