@@ -894,6 +894,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
 {
     logger().info("Optimizing offset...");
 
+    // From here on every edge split is an optimization split, run by the shared engine.
+    // Marching tets and simplicial embedding are done, and their placement modes -- which
+    // require one endpoint inside the offset and one outside -- do not apply to an arbitrary
+    // long edge. split_edge_before/after dispatch on this.
+    m_edge_split_mode = EdgeSplitMode::Optimization;
+
     for (const Tuple& t : get_tets()) {
         m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
     }
