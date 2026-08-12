@@ -15,6 +15,34 @@ namespace wmtk::components::topological_offset {
  * offset boundary is allowed to move.
  */
 
+bool TopoOffsetTriMesh::edge_is_on_surface(const std::array<size_t, 2>& vids) const
+{
+    const auto [t, eid] = tuple_from_edge(vids);
+    if (eid == static_cast<size_t>(-1) || !t.is_valid(*this)) {
+        return false;
+    }
+    const std::optional<Tuple> opp = t.switch_face(*this);
+    if (!opp) {
+        return true; // domain boundary
+    }
+    // Compare TAGS, not labels. The shared split propagates FaceAttributes, so a face it
+    // creates carries correct tags immediately; its label is only refreshed at the top of the
+    // next iteration, so reading that here would evaluate the link condition of the collapse
+    // pass against faces whose labels are still whatever occupied the slot before.
+    const size_t f0 = t.fid(*this), f1 = opp->fid(*this);
+    return m_face_attribute[f0].tags != m_face_attribute[f1].tags;
+}
+
+bool TopoOffsetTriMesh::vertex_is_on_surface(const size_t vid) const
+{
+    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+        const size_t a = e.vid(*this);
+        const size_t b = e.switch_vertex(*this).vid(*this);
+        if (edge_is_on_surface({{a, b}})) return true;
+    }
+    return false;
+}
+
 void TopoOffsetTriMesh::relabel_faces_from_tags()
 {
     const ExpressionPtr& expr = m_offset_params.offset_selection;

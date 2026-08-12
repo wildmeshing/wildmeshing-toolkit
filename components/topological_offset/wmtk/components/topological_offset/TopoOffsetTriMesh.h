@@ -202,6 +202,21 @@ public:
      */
     void relabel_faces_from_tags();
 
+    /**
+     * @brief The substructure the link condition is evaluated against, DERIVED not cached.
+     *
+     * substructure_link_condition() asks these, and it is only as good as the answers. The
+     * cached edge tags are refreshed once per iteration, which is too coarse: the split pass
+     * runs first and creates edges the tagging never classified, so the collapse pass that
+     * follows evaluates the condition against a substructure that no longer describes the
+     * mesh -- which is exactly why split and collapse tear the region together while each is
+     * safe alone.
+     *
+     * Computing them from the face labels on demand costs a face lookup and cannot go stale.
+     */
+    bool vertex_is_on_surface(const size_t vid) const override;
+    bool edge_is_on_surface(const std::array<size_t, 2>& vids) const override;
+
     /// Move an offset-boundary vertex back onto the target distance from the input complex,
     /// blended with the Laplacian of its offset-boundary neighbours.
     bool project_offset_vertex(const Tuple& t);
