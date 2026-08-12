@@ -6,7 +6,11 @@
 #include <wmtk/utils/SimplifySegments.hpp>
 #include <wmtk/utils/WindingNumber.hpp>
 
+#include <algorithm>
 #include <fstream>
+#include <map>
+#include <queue>
+#include <set>
 
 namespace wmtk::components::simwild {
 
@@ -60,6 +64,18 @@ EmbedCurves::EmbedCurves(
         }
     }
 
+    // Which input each row of the concatenated network came from. read_input_curves
+    // concatenates in order, and the transform rebuild above preserves that, so the blocks
+    // are contiguous. Carried across simplify_curves so the arrangement's provenance can be
+    // read back in input terms.
+    m_E_input.clear();
+    for (size_t i = 0; i < m_Es.size(); ++i) {
+        m_E_input.resize(m_E_input.size() + size_t(m_Es[i].rows()), i);
+    }
+    if (m_E_input.size() != size_t(m_E_curves.rows())) {
+        m_E_input.clear(); // the concatenation is not the plain per-input one; do not guess
+    }
+
     if (m_V_curves.rows() == 0 || m_E_curves.rows() == 0) {
         log_and_throw_error(
             "No curves read. A 2D input must be an OBJ with 'l' polyline records; a file with "
@@ -91,8 +107,20 @@ void EmbedCurves::simplify_curves(
     // Link condition on: simplification here may not change the topology of the curve
     // network, because the winding-number tags are evaluated against the untouched per-input
     // copies and merging two curves would make them disagree.
-    const size_t removed =
-        utils::simplify_segments(m_V_curves, m_E_curves, envelope, /*use_link_condition=*/true);
+    std::vector<int> surviving_edges;
+    const size_t removed = utils::simplify_segments(
+        m_V_curves,
+        m_E_curves,
+        envelope,
+        /*use_link_condition=*/true,
+        m_E_input.empty() ? nullptr : &surviving_edges);
+    if (!m_E_input.empty()) {
+        std::vector<size_t> E_input(surviving_edges.size());
+        for (size_t k = 0; k < surviving_edges.size(); ++k) {
+            E_input[k] = m_E_input[size_t(surviving_edges[k])];
+        }
+        m_E_input = std::move(E_input);
+    }
     logger().info(
         "input simplification: #V {} -> {}, #E {} -> {} ({} vertices removed), envelope {} "
         "(eps {:.4})",
@@ -105,10 +133,38 @@ void EmbedCurves::simplify_curves(
         eps);
 }
 
-bool EmbedCurves::embed_curves()
+bool EmbedCurves::embed_curves(const bool tag_from_winding_number)
 {
     std::vector<Vector2r> V_rational;
-    utils::embed_segments(m_V_curves, m_E_curves, m_V_emb, V_rational, m_F_emb, m_E_constrained);
+    std::vector<std::vector<int>> E_sources;
+    utils::embed_segments(
+        m_V_curves,
+        m_E_curves,
+        m_V_emb,
+        V_rational,
+        m_F_emb,
+        m_E_constrained,
+        tag_from_winding_number ? nullptr : &E_sources);
+
+    if (!tag_from_winding_number) {
+        if (m_E_input.empty()) {
+            log_and_throw_error(
+                "Provenance tagging asked for, but the input segments could not be traced "
+                "back to their curve networks.");
+        }
+        // Input segment -> input curve, for every constrained output edge.
+        m_E_constrained_inputs.assign(E_sources.size(), {});
+        for (size_t e = 0; e < E_sources.size(); ++e) {
+            auto& inputs = m_E_constrained_inputs[e];
+            for (const int s : E_sources[e]) {
+                const size_t in = m_E_input[size_t(s)];
+                if (std::find(inputs.begin(), inputs.end(), in) == inputs.end()) {
+                    inputs.push_back(in);
+                }
+            }
+            std::sort(inputs.begin(), inputs.end());
+        }
+    }
 
     m_V_emb_r.resize(V_rational.size(), 2);
     for (size_t i = 0; i < V_rational.size(); ++i) {
@@ -128,7 +184,11 @@ bool EmbedCurves::embed_curves()
         }
     }
 
-    tag_from_winding_number();
+    if (tag_from_winding_number) {
+        this->tag_from_winding_number();
+    } else {
+        tag_from_provenance();
+    }
 
     logger().info(
         "2D embedding: #V = {}, #F = {}, all rounded = {}",
@@ -137,6 +197,141 @@ bool EmbedCurves::embed_curves()
         all_rounded);
 
     return all_rounded;
+}
+
+void EmbedCurves::tag_from_provenance()
+{
+    if (m_E_constrained_inputs.size() != size_t(m_E_constrained.rows())) {
+        log_and_throw_error(
+            "tag_from_provenance: segment provenance was not collected ({} entries for {} "
+            "constrained edges)",
+            m_E_constrained_inputs.size(),
+            m_E_constrained.rows());
+    }
+
+    // The constrained edges, keyed by vertex pair, with the inputs they belong to.
+    std::map<std::pair<int, int>, const std::vector<size_t>*> constrained;
+    for (size_t i = 0; i < m_E_constrained_inputs.size(); ++i) {
+        int a = m_E_constrained(i, 0), b = m_E_constrained(i, 1);
+        if (a > b) {
+            std::swap(a, b);
+        }
+        constrained[{a, b}] = &m_E_constrained_inputs[i];
+    }
+
+    // Triangle adjacency across the arrangement: for each face, the neighbour opposite each
+    // of its three vertices, i.e. across edge (j+1, j+2).
+    std::map<std::pair<int, int>, std::array<int, 2>> edge_faces;
+    for (int f = 0; f < m_F_emb.rows(); ++f) {
+        for (int j = 0; j < 3; ++j) {
+            int a = m_F_emb(f, (j + 1) % 3), b = m_F_emb(f, (j + 2) % 3);
+            if (a > b) {
+                std::swap(a, b);
+            }
+            auto [it, inserted] =
+                edge_faces.try_emplace(std::pair{a, b}, std::array<int, 2>{-1, -1});
+            if (inserted) {
+                it->second[0] = f;
+            } else if (it->second[1] < 0) {
+                it->second[1] = f;
+            } else {
+                log_and_throw_error(
+                    "tag_from_provenance: edge ({}, {}) is shared by more than two faces",
+                    a,
+                    b);
+            }
+        }
+    }
+
+    // Seed: a face touching the lexicographically smallest vertex. The arrangement
+    // triangulates the bounding box of the input plus a padding grid, so that corner is
+    // outside every input curve and its face carries no tags.
+    int seed = 0;
+    {
+        int seed_v = 0;
+        for (int i = 1; i < m_V_emb.rows(); ++i) {
+            if (std::make_pair(m_V_emb(i, 0), m_V_emb(i, 1)) <
+                std::make_pair(m_V_emb(seed_v, 0), m_V_emb(seed_v, 1))) {
+                seed_v = i;
+            }
+        }
+        for (int f = 0; f < m_F_emb.rows(); ++f) {
+            if (m_F_emb(f, 0) == seed_v || m_F_emb(f, 1) == seed_v || m_F_emb(f, 2) == seed_v) {
+                seed = f;
+                break;
+            }
+        }
+    }
+
+    std::vector<std::set<size_t>> tags(m_F_emb.rows());
+    std::vector<bool> visited(m_F_emb.rows(), false);
+    std::queue<int> q;
+    q.push(seed);
+    visited[seed] = true;
+
+    size_t n_inconsistent = 0;
+    while (!q.empty()) {
+        const int f = q.front();
+        q.pop();
+        for (int j = 0; j < 3; ++j) {
+            int a = m_F_emb(f, (j + 1) % 3), b = m_F_emb(f, (j + 2) % 3);
+            if (a > b) {
+                std::swap(a, b);
+            }
+            const auto& pair = edge_faces.at({a, b});
+            const int nb = pair[0] == f ? pair[1] : pair[0];
+            if (nb < 0) {
+                continue; // the outer boundary of the arrangement
+            }
+
+            std::set<size_t> t = tags[f];
+            const auto it = constrained.find({a, b});
+            if (it != constrained.end()) {
+                for (const size_t in : *it->second) {
+                    if (!t.insert(in).second) {
+                        t.erase(in);
+                    }
+                }
+            }
+
+            if (!visited[nb]) {
+                visited[nb] = true;
+                tags[nb] = std::move(t);
+                q.push(nb);
+            } else if (tags[nb] != t) {
+                ++n_inconsistent;
+            }
+        }
+    }
+
+    if (n_inconsistent > 0) {
+        log_and_throw_error(
+            "tag_from_provenance: {} edge crossings disagree with the tags already assigned. "
+            "That means an input curve is not closed, so inside/outside is not decided by the "
+            "curve alone -- use the winding-number tagging for this input.",
+            n_inconsistent);
+    }
+    for (size_t i = 0; i < visited.size(); ++i) {
+        if (!visited[i]) {
+            log_and_throw_error("tag_from_provenance: face {} was not reached", i);
+        }
+    }
+
+    m_F_tags.resize(m_F_emb.rows(), m_Vs.size());
+    size_t n_tagged = 0;
+    for (size_t i = 0; i < tags.size(); ++i) {
+        for (const size_t t : tags[i]) {
+            m_F_tags.coeffRef(int(i), int(t)) = 1;
+        }
+        if (!tags[i].empty()) {
+            ++n_tagged;
+        }
+    }
+    m_F_tags.makeCompressed();
+    logger().info(
+        "Tagged {} of {} faces from the arrangement's segment provenance.",
+        n_tagged,
+        tags.size());
 }
 
 void EmbedCurves::tag_from_winding_number()

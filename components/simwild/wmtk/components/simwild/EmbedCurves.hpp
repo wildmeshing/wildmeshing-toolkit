@@ -57,9 +57,12 @@ public:
     /**
      * @brief Compute the exact arrangement of the (simplified) curve union.
      *
+     * @param tag_from_winding_number Decide each face's tags by evaluating the winding
+     * number of every input at its barycenter (the default), rather than by propagating them
+     * across the arrangement's own segment provenance. See tag_from_provenance.
      * @return true when every arrangement vertex has an exact double representation.
      */
-    bool embed_curves();
+    bool embed_curves(const bool tag_from_winding_number = true);
 
     /**
      * @brief Remove vertices not referenced by any output face.
@@ -92,6 +95,23 @@ private:
      */
     void tag_from_winding_number();
 
+    /**
+     * @brief Decide the face tags from the arrangement's segment provenance.
+     *
+     * The exact alternative to tag_from_winding_number, and the 2D twin of
+     * EmbedSurface::tag_from_provenance. Each constrained output edge knows which input
+     * segments it tiles, hence which input curves; tags then propagate combinatorially,
+     * starting from a face on the outside of the bounding box and flipping membership of an
+     * input whenever an edge belonging to it is crossed. Every input curve must be closed --
+     * an open polyline encloses nothing -- and a traversal that disagrees with itself says
+     * so rather than returning a tagging that depends on the order it walked in.
+     *
+     * It also removes the mismatch the winding-number route documents: those tags are
+     * evaluated against the ORIGINAL per-input curves while the arrangement is of the
+     * SIMPLIFIED union, so the two can disagree near a curve the simplification moved.
+     */
+    void tag_from_provenance();
+
 private:
     /// Per input, as read: kept separate because the winding number is per input.
     std::vector<MatrixXd> m_Vs;
@@ -100,6 +120,11 @@ private:
     /// The union, which is what gets simplified and arranged.
     MatrixXd m_V_curves;
     MatrixXi m_E_curves;
+    /// Per row of m_E_curves: which input it came from. Kept alongside m_E_curves across the
+    /// simplification, so the arrangement's provenance can be read back in input terms.
+    std::vector<size_t> m_E_input;
+    /// Per row of m_E_constrained: which inputs tile it. Only filled for tag_from_provenance.
+    std::vector<std::vector<size_t>> m_E_constrained_inputs;
 
     MatrixXd m_V_emb;
     MatrixXr m_V_emb_r;

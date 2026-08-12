@@ -28,6 +28,9 @@ namespace wmtk::utils {
  * @param V_rational output vertices, exact (size K)
  * @param F_out output faces (Lx3)
  * @param E_out output edges (Px2) - the output edges tiling the input edges
+ * @param[out] E_out_sources optional: for each row of E_out, the input edges (rows of E) it
+ *             tiles, ascending. Usually one; more where input edges overlap, which is
+ *             exactly the case a geometric look-up on E_out alone cannot tell apart.
  */
 void embed_segments(
     const MatrixXd& V,
@@ -35,7 +38,8 @@ void embed_segments(
     MatrixXd& V_out,
     std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
-    MatrixXi& E_out);
+    MatrixXi& E_out,
+    std::vector<std::vector<int>>* E_out_sources = nullptr);
 
 /**
  * @brief Read every input edge mesh and concatenate them into one segment network.

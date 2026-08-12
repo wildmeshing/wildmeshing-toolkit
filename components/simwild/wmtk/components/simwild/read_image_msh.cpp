@@ -423,6 +423,7 @@ InputData read_mesh(
     const bool perform_sanity_checks = json_params["DEBUG_sanity_checks"];
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
+    const bool tag_from_winding_number = json_params["tag_from_winding_number"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
     const std::vector<std::string> input_names = json_params["input_names"];
@@ -466,7 +467,7 @@ InputData read_mesh(
     input_data.V_envelope = image_mesh.V_surface();
     input_data.F_envelope = image_mesh.F_surface();
 
-    const bool all_rounded = image_mesh.embed_surface(preserve_topology);
+    const bool all_rounded = image_mesh.embed_surface(preserve_topology, tag_from_winding_number);
     image_mesh.consolidate();
 
     if (debug_output) {
@@ -549,7 +550,7 @@ InputData read_curves(
     input_data.V_envelope = curves.V_curves();
     input_data.F_envelope = curves.E_curves();
 
-    const bool all_rounded = curves.embed_curves();
+    const bool all_rounded = curves.embed_curves(json_params["tag_from_winding_number"]);
     curves.consolidate();
 
     input_data.V_input = curves.V_emb();

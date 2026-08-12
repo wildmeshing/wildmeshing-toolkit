@@ -15,7 +15,10 @@
 #include <wmtk/utils/VectorUtils.h>
 #include <bitset>
 #include <filesystem>
+#include <limits>
+#include <map>
 #include <paraviewo/VTUWriter.hpp>
+#include <queue>
 #include <wmtk/io/read_triangle_mesh.hpp>
 #include <wmtk/utils/InsertTriangleUtils.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -67,7 +70,9 @@ void embed_surface(
     MatrixXr& V_emb,
     MatrixXi& T_emb,
     MatrixXi& F_on_surface,
-    const bool perform_sanity_checks)
+    const bool perform_sanity_checks,
+    const std::vector<size_t>& F_input,
+    std::vector<std::vector<size_t>>* F_on_surface_inputs)
 {
     // old output
     std::vector<std::array<size_t, 3>> facets_after;
@@ -118,6 +123,8 @@ void embed_surface(
     std::vector<bool> polygon_faces_on_input;
     wmtk::utils::EmbedTrianglesOptions opts;
     opts.check_orientation = perform_sanity_checks;
+    opts.check_surface_provenance = perform_sanity_checks;
+    wmtk::utils::EmbedTrianglesProvenance prov;
     wmtk::utils::embed_triangles_in_tets(
         tri_vrt_coord,
         triangle_indices,
@@ -129,7 +136,8 @@ void embed_surface(
         is_v_on_input,
         tets_after,
         tet_face_on_input_surface,
-        opts);
+        opts,
+        F_on_surface_inputs == nullptr ? nullptr : &prov);
 
     T_emb.resize(tets_after.size(), 4);
     for (int i = 0; i < tets_after.size(); ++i) {
@@ -156,6 +164,68 @@ void embed_surface(
         }
         const auto& f = polygon_faces[i];
         F_on_surface.row(n_face_on_input++) = Vector3i(f[0], f[1], f[2]);
+    }
+
+    if (F_on_surface_inputs == nullptr) {
+        return;
+    }
+
+    // Which input surface each output surface face came from.
+    //
+    // The arrangement answers per coplanar group, so first collapse the per-triangle
+    // labels into per-group ones. A group normally holds triangles of a single input;
+    // it holds several only where two inputs are exactly coplanar and edge-adjacent,
+    // and then the face genuinely belongs to both -- which is the case the geometric
+    // look-up this replaces could not distinguish.
+    std::vector<std::vector<size_t>> group_inputs(
+        prov.face_groups.empty() ? 0
+                                 : 1 + std::max_element(
+                                           prov.face_groups.begin(),
+                                           prov.face_groups.end(),
+                                           [](const auto& a, const auto& b) { return a[1] < b[1]; })
+                                           ->at(1));
+    for (size_t t = 0; t < prov.triangle_group.size(); ++t) {
+        const uint32_t g = prov.triangle_group[t];
+        if (g == std::numeric_limits<uint32_t>::max() || g >= group_inputs.size()) {
+            continue; // degenerate triangle, or a group no output face lies on
+        }
+        const size_t in = t < F_input.size() ? F_input[t] : std::numeric_limits<size_t>::max();
+        if (in == std::numeric_limits<size_t>::max()) {
+            continue;
+        }
+        auto& v = group_inputs[g];
+        if (std::find(v.begin(), v.end(), in) == v.end()) {
+            v.push_back(in);
+        }
+    }
+    for (auto& v : group_inputs) {
+        std::sort(v.begin(), v.end());
+    }
+
+    // prov.face_groups is sorted by facet, and F_on_surface keeps the facets in that same
+    // order, so one walk fills both.
+    F_on_surface_inputs->assign(n_face_on_input, {});
+    {
+        size_t row = 0;
+        size_t p = 0;
+        for (size_t i = 0; i < polygon_faces.size(); ++i) {
+            if (!polygon_faces_on_input[i]) {
+                continue;
+            }
+            auto& inputs = (*F_on_surface_inputs)[row++];
+            while (p < prov.face_groups.size() && prov.face_groups[p][0] < i) {
+                ++p;
+            }
+            for (; p < prov.face_groups.size() && prov.face_groups[p][0] == i; ++p) {
+                for (const size_t in : group_inputs[prov.face_groups[p][1]]) {
+                    if (std::find(inputs.begin(), inputs.end(), in) == inputs.end()) {
+                        inputs.push_back(in);
+                    }
+                }
+            }
+            std::sort(inputs.begin(), inputs.end());
+        }
+        assert(row == n_face_on_input);
     }
 }
 
@@ -201,6 +271,12 @@ EmbedSurface::EmbedSurface(
         F_single.array() += nV_old;
         m_F_surface.conservativeResize(m_F_surface.rows() + F_single.rows(), 3);
         m_F_surface.block(nF_old, 0, Fs[i].rows(), 3) = F_single;
+
+        // Which input each row of the concatenated soup came from. Kept alongside
+        // m_F_surface from here on -- remove_unreferenced only touches vertices, and
+        // simplify_surface permutes both together -- so it still answers the question
+        // after the surface has been coarsened, which is where the arrangement sees it.
+        m_F_input.resize(m_F_surface.rows(), i);
     }
 
 
@@ -239,6 +315,19 @@ void EmbedSurface::simplify_surface(const double eps, const int num_threads)
     assert(surf_mesh.check_mesh_connectivity_validity());
 
     surf_mesh.collapse_shortest(0);
+
+    // Which original row of m_F_surface each surviving triangle is. A collapse removes
+    // triangles and rewires the rest, so a survivor keeps its fid, and consolidate_mesh
+    // then compacts the fids in ascending order (TriMesh.cpp, map_t_ids) -- so the k-th
+    // surviving fid, sorted, becomes triangle k. This is what carries the input labels
+    // across the simplification without the arrangement having to guess them back.
+    std::vector<size_t> surviving_fids;
+    surviving_fids.reserve(surf_mesh.tri_capacity());
+    for (const auto& t : surf_mesh.get_faces()) {
+        surviving_fids.push_back(t.fid(surf_mesh));
+    }
+    std::sort(surviving_fids.begin(), surviving_fids.end());
+
     surf_mesh.consolidate_mesh();
     // surf_mesh.write_triangle_mesh("triangle_soup_coarse.off");
 
@@ -262,6 +351,15 @@ void EmbedSurface::simplify_surface(const double eps, const int num_threads)
 
     V_surf_from_vector(v_simplified);
     F_surf_from_vector(f_simplified);
+
+    if (!m_F_input.empty()) {
+        std::vector<size_t> F_input(f_simplified.size(), std::numeric_limits<size_t>::max());
+        const size_t n = std::min(F_input.size(), surviving_fids.size());
+        for (size_t k = 0; k < n; ++k) {
+            F_input[k] = m_F_input[surviving_fids[k]];
+        }
+        m_F_input = std::move(F_input);
+    }
 }
 
 void EmbedSurface::remove_duplicates(const double eps)
@@ -269,13 +367,18 @@ void EmbedSurface::remove_duplicates(const double eps)
     auto v = V_surf_to_vector();
     auto f = F_surf_to_vector();
 
+    // No caller today. If one appears, m_F_input has to be permuted the same way
+    // wmtk::remove_duplicates permutes the triangles, or the input labels stop lining up
+    // with m_F_surface -- see simplify_surface.
+    m_F_input.clear();
+
     wmtk::remove_duplicates(v, f, eps);
 
     V_surf_from_vector(v);
     F_surf_from_vector(f);
 }
 
-bool EmbedSurface::embed_surface(const bool flood_fill)
+bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_winding_number)
 {
     logger().info("Embed with VolumeInsertion");
 
@@ -328,7 +431,9 @@ bool EmbedSurface::embed_surface(const bool flood_fill)
         m_V_emb_r,
         m_T_emb,
         m_F_on_surface,
-        m_perform_sanity_checks);
+        m_perform_sanity_checks,
+        m_F_input,
+        tag_from_winding_number ? nullptr : &m_F_tags_surface);
 
     if (m_perform_sanity_checks) {
         // check that all tets contain valid vertex indices and no duplicates
@@ -497,7 +602,14 @@ bool EmbedSurface::embed_surface(const bool flood_fill)
     if (Fs.empty()) {
         log_and_throw_error("No input surface to embed");
     }
-    tag_from_winding_number();
+    if (tag_from_winding_number) {
+        this->tag_from_winding_number();
+    } else {
+        tag_from_provenance();
+    }
+    if (m_perform_sanity_checks) {
+        check_tag_surface_invariant(tag_from_winding_number ? "winding number" : "provenance");
+    }
 
     /**
      * Cluster tags by flood-filling regions that are bounded by the surface. All tags within one
@@ -745,6 +857,185 @@ void EmbedSurface::F_surf_from_vector(const std::vector<std::array<size_t, 3>>& 
         m_F_surface(i, 1) = tris[i][1];
         m_F_surface(i, 2) = tris[i][2];
     }
+}
+
+void EmbedSurface::check_tag_surface_invariant(const std::string& how) const
+{
+    // Everything downstream of here reads the surface off the tags: SimWildMesh marks a face
+    // m_is_surface_fs exactly when its two tets disagree (init_surfaces_and_boundaries), and
+    // the whole swap family rests on that. So the tagging is only right if it reproduces the
+    // surface the arrangement actually computed.
+    std::set<std::array<int, 3>> surface;
+    for (size_t i = 0; i < m_F_on_surface.rows(); ++i) {
+        std::array<int, 3> f{{m_F_on_surface(i, 0), m_F_on_surface(i, 1), m_F_on_surface(i, 2)}};
+        std::sort(f.begin(), f.end());
+        surface.insert(f);
+    }
+
+    MatrixXi TT;
+    igl::tet_tet_adjacency(m_T_emb, TT);
+
+    size_t differ_not_surface = 0, surface_not_differ = 0, n_internal = 0;
+    for (size_t i = 0; i < m_T_emb.rows(); ++i) {
+        const auto& tet = m_T_emb.row(i);
+        const std::array<std::array<int, 3>, 4> fv{
+            {{{tet[0], tet[1], tet[2]}},
+             {{tet[0], tet[1], tet[3]}},
+             {{tet[1], tet[2], tet[3]}},
+             {{tet[2], tet[0], tet[3]}}}};
+        for (int j = 0; j < 4; ++j) {
+            const int nb = TT(i, j);
+            if (nb < 0 || size_t(nb) < i) {
+                continue; // outside, or already seen from the other side
+            }
+            ++n_internal;
+            std::array<int, 3> key = fv[j];
+            std::sort(key.begin(), key.end());
+            const bool on_surface = surface.count(key) > 0;
+            const bool tags_differ = m_tags[i] != m_tags[size_t(nb)];
+            if (tags_differ && !on_surface) {
+                ++differ_not_surface;
+            } else if (on_surface && !tags_differ) {
+                ++surface_not_differ;
+            }
+        }
+    }
+
+    logger().info(
+        "tag/surface invariant ({}): {} internal faces, {} have differing tags but are not on "
+        "the surface, {} are on the surface but have equal tags",
+        how,
+        n_internal,
+        differ_not_surface,
+        surface_not_differ);
+}
+
+void EmbedSurface::tag_from_provenance()
+{
+    if (m_F_tags_surface.size() != size_t(m_F_on_surface.rows())) {
+        log_and_throw_error(
+            "tag_from_provenance: surface provenance was not collected ({} entries for {} "
+            "surface faces)",
+            m_F_tags_surface.size(),
+            m_F_on_surface.rows());
+    }
+
+    // The surface, keyed by vertex triple, with the inputs it belongs to. A face separates
+    // two cells whose tags differ exactly in those inputs.
+    std::map<std::array<int, 3>, const std::vector<size_t>*> surface;
+    for (size_t i = 0; i < m_F_tags_surface.size(); ++i) {
+        std::array<int, 3> f{{m_F_on_surface(i, 0), m_F_on_surface(i, 1), m_F_on_surface(i, 2)}};
+        std::sort(f.begin(), f.end());
+        surface[f] = &m_F_tags_surface[i];
+    }
+
+    MatrixXi TT;
+    igl::tet_tet_adjacency(m_T_emb, TT);
+
+    // Seed: the tet holding the lexicographically smallest vertex. That vertex is a corner
+    // of the padded Delaunay box (delaunay_box_mesh pads past the input bounding box), so
+    // it lies outside every input and its cell carries no tags.
+    size_t seed = 0;
+    {
+        int seed_v = -1;
+        for (size_t i = 0; i < m_V_emb.rows(); ++i) {
+            const Vector3d p = m_V_emb.row(i);
+            if (seed_v < 0 ||
+                std::make_tuple(p[0], p[1], p[2]) <
+                    std::make_tuple(m_V_emb(seed_v, 0), m_V_emb(seed_v, 1), m_V_emb(seed_v, 2))) {
+                seed_v = int(i);
+            }
+        }
+        for (size_t i = 0; i < m_T_emb.rows(); ++i) {
+            if (m_T_emb(i, 0) == seed_v || m_T_emb(i, 1) == seed_v || m_T_emb(i, 2) == seed_v ||
+                m_T_emb(i, 3) == seed_v) {
+                seed = i;
+                break;
+            }
+        }
+    }
+
+    m_tags.assign(m_T_emb.rows(), {});
+    std::vector<bool> visited(m_T_emb.rows(), false);
+    std::queue<size_t> q;
+    q.push(seed);
+    visited[seed] = true;
+
+    size_t n_inconsistent = 0;
+    while (!q.empty()) {
+        const size_t tid = q.front();
+        q.pop();
+        const auto& tet = m_T_emb.row(tid);
+        // Face-vertex ids in igl::tet_tet_adjacency's order: face j is opposite vertex j.
+        const std::array<std::array<int, 3>, 4> fv{
+            {{{tet[0], tet[1], tet[2]}},
+             {{tet[0], tet[1], tet[3]}},
+             {{tet[1], tet[2], tet[3]}},
+             {{tet[2], tet[0], tet[3]}}}};
+
+        for (int j = 0; j < 4; ++j) {
+            const int nb = TT(tid, j);
+            if (nb < 0) {
+                continue; // outside the domain
+            }
+            std::array<int, 3> key = fv[j];
+            std::sort(key.begin(), key.end());
+
+            std::set<int64_t> tags = m_tags[tid];
+            const auto it = surface.find(key);
+            if (it != surface.end()) {
+                for (const size_t in : *it->second) {
+                    // Crossing input in's surface flips whether we are inside it.
+                    if (!tags.insert(int64_t(in)).second) {
+                        tags.erase(int64_t(in));
+                    }
+                }
+            }
+
+            if (!visited[nb]) {
+                visited[nb] = true;
+                m_tags[nb] = std::move(tags);
+                q.push(size_t(nb));
+            } else if (m_tags[nb] != tags) {
+                ++n_inconsistent;
+            }
+        }
+    }
+
+    if (n_inconsistent > 0) {
+        log_and_throw_error(
+            "tag_from_provenance: {} face crossings disagree with the tags already assigned. "
+            "That means an input surface is not closed, so inside/outside is not decided by "
+            "the surface alone -- use the winding-number tagging for this input.",
+            n_inconsistent);
+    }
+    // Every cell must be reached: the domain is connected across non-surface faces and the
+    // surface never disconnects it, since crossing a surface face is still a step.
+    for (size_t i = 0; i < visited.size(); ++i) {
+        if (!visited[i]) {
+            log_and_throw_error("tag_from_provenance: tet {} was not reached", i);
+        }
+    }
+
+    m_T_tags.resize(m_T_emb.rows(), Fs.size());
+    m_T_tags.setZero();
+    for (size_t i = 0; i < m_tags.size(); ++i) {
+        for (const int64_t t : m_tags[i]) {
+            m_T_tags.coeffRef(i, t) = 1;
+        }
+    }
+    m_T_tags.makeCompressed();
+
+    size_t n_tagged = 0;
+    for (const auto& t : m_tags) {
+        if (!t.empty()) {
+            ++n_tagged;
+        }
+    }
+    logger().info(
+        "Tagged {} of {} cells from the arrangement's surface provenance.",
+        n_tagged,
+        m_tags.size());
 }
 
 void EmbedSurface::tag_from_winding_number()
