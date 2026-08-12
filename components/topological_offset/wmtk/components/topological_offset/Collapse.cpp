@@ -73,6 +73,18 @@ double TopoOffsetTetMesh::collapse_normal_deviation(
     return max_angle - min_angle;
 }
 
+bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
+{
+    if (!TetOptimizerMesh::collapse_edge_before(t)) {
+        return false;
+    }
+    // Unconditionally, where the base asks only when BOTH endpoints already sit on a tracked
+    // simplex. That rule is right for tetwild and simwild; here the offset region is a thin
+    // shell, and a collapse with one endpoint in the interior can still pinch its two sides
+    // together while every tracked surface survives intact.
+    return substructure_link_condition(t);
+}
+
 bool TopoOffsetTetMesh::collapse_before_vertex(
     const size_t v1_id,
     const size_t v2_id,

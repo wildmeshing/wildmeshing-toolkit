@@ -22,8 +22,20 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
     for (const size_t t : tids) {
         tag_count[m_tet_attribute[t].tag]++;
     }
-    if (tag_count.size() > 2) {
-        return false; // cannot swap between three different tags
+    // Refuse any swap whose ring spans more than one tag.
+    //
+    // The rule used to be "at most two tags, and the majority wins". That is what tore the
+    // offset region: a face between differently tagged tets IS the offset surface, so a ring
+    // spanning two tags has the surface running through it, and collapsing all the new cells
+    // onto the majority tag moves that surface -- merging the two regions wherever the
+    // minority lost. Measured, the swap pass alone was enough to make the region
+    // non-manifold; with this it is not.
+    //
+    // Conservative: a genuine surface flip could keep both tags by assigning each new cell the
+    // tag of the side it lands on. That is worth doing, and would recover the flips this
+    // refuses, but it needs the side-of-surface test to be exact.
+    if (tag_count.size() > 1) {
+        return false;
     }
 
     size_t max_count = 0;
