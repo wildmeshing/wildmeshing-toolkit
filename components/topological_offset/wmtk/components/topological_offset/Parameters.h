@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/OptimizerParameters.h>
 #include <nlohmann/json.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Expression.hpp>
@@ -6,7 +7,21 @@
 using ExpressionPtr = wmtk::components::simwild::expression_parser::ExpressionPtr;
 
 namespace wmtk::components::topological_offset {
-struct Parameters
+
+/**
+ * @brief What the offset needs on top of the parameters every wmtk optimizer shares.
+ *
+ * The optimization phase reuses wmtk::TetOptimizerMesh, so the quantities that phase reads --
+ * the target edge length and the split/collapse thresholds derived from it, the smoothing
+ * weights and pass count, the sizing-refinement knobs, the debug switch -- come from
+ * wmtk::OptimizerParameters rather than being spelled out again here. The json keys are
+ * unchanged: `length`/`length_rel` feed the base's `l`/`lr`, `smoothing_iterations` feeds
+ * `num_smoothing_passes`, `DEBUG_output` feeds `debug_output`.
+ *
+ * The bounding box stays here, as it does in every application: the base deliberately does not
+ * own it, because its type and meaning differ per application.
+ */
+struct Parameters : public wmtk::OptimizerParameters
 {
     ExpressionPtr offset_selection;
     std::set<std::string> offset_output_tag;
@@ -22,18 +37,9 @@ struct Parameters
     std::string output_path; // no extension
     bool optimize; // whether to run optimization on the offset
     bool save_vtu;
-    bool debug_output;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    int smoothing_iterations; // number of smoothing passes run during optimize_offset()
     int optimization_iterations; // number of split/collapse/swap/smooth passes in optimize_offset()
-
-    // ---- collapse, similar to SimWild ----
-    double length_rel; // target edge length (relative to bbox diagonal)
-    double length; // target edge length (absolute). If < 0, computed from length_rel in init()
-    double stop_energy; // target AMIPS quality (see TopoOffsetTetMesh::get_quality()); a
-                        // collapse that would push an already-on-target region's quality back
-                        // above this is rejected
 
     // max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the
     // input-complex normal it is supposed to approximate, before collapse/swap reject a move
@@ -59,17 +65,11 @@ struct Parameters
     double sizing_mrm_threshold;
     // gradation cap: neighboring vertices' sizing scalars may differ by at most this factor,
     // enforced by propagating the refinement outward (monotone, only ever lowers a
-    // neighbor's scalar), matching SimWildMesh::Parameters::stuck_refine_gradation. <= 1
-    // disables gradation entirely.
+    // neighbor's scalar). <= 1 disables gradation entirely.
     double sizing_gradation;
 
     VectorXd box_min;
     VectorXd box_max;
-
-    // derived in init()
-    double collapsing_l2; // upper bound (squared) on edge length for edge collapse eligibility
-    double splitting_l2; // lower bound (squared) on edge length for edge split eligibility
-    double diag_l; // bounding box diagonal length
 
     Parameters() = default;
 
@@ -108,15 +108,9 @@ struct Parameters
         output_path = json_params["output"];
         optimize = json_params["optimize"];
         save_vtu = json_params["save_vtu"];
-        debug_output = json_params["DEBUG_output"];
 
         num_threads = json_params["num_threads"];
-        smoothing_iterations = json_params["smoothing_iterations"];
         optimization_iterations = json_params["optimization_iterations"];
-
-        length_rel = json_params["length_rel"];
-        length = json_params["length"];
-        stop_energy = json_params["stop_energy"];
 
         max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
 
@@ -128,6 +122,18 @@ struct Parameters
         max_sizing_scalar = json_params["max_sizing_scalar"];
         sizing_mrm_threshold = json_params["sizing_mrm_threshold"];
         sizing_gradation = json_params["sizing_gradation"];
+
+        // ---- inherited from wmtk::OptimizerParameters ----
+        debug_output = json_params["DEBUG_output"];
+        lr = json_params["length_rel"];
+        l = json_params["length"];
+        stop_energy = json_params["stop_energy"];
+        num_smoothing_passes = json_params["smoothing_iterations"];
+        split_high_valence_threshold = json_params["split_high_valence_threshold"];
+        skip_good_regions = json_params["skip_good_regions"];
+        w_amips = json_params["w_amips"];
+        w_envelope = 1. - w_amips;
+        perform_sanity_checks = json_params["perform_sanity_checks"];
     }
 
     void init(const VectorXd& min_, const VectorXd& max_)
@@ -135,22 +141,16 @@ struct Parameters
         box_min = min_;
         box_max = max_;
 
-        diag_l = (max_ - min_).norm();
+        // Fills diag_l, l/lr and splitting_l2 / collapsing_l2 -- the same 16/9 and 16/25
+        // factors this used to spell out itself. It also derives eps from epsr, which the
+        // offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.
+        init_lengths_from_diagonal((max_ - min_).norm());
+
         if (target_distance > 0) {
             target_distance_rel = target_distance / diag_l;
         } else {
             target_distance = target_distance_rel * diag_l;
         }
-
-        if (length > 0) {
-            length_rel = length / diag_l;
-        } else {
-            length = length_rel * diag_l;
-        }
-        // only collapse edges shorter than 4/5 of the target length, matching SimWild
-        collapsing_l2 = length * length * (16. / 25.);
-        // only split edges longer than 4/3 of the target length, matching SimWild
-        splitting_l2 = length * length * (16. / 9.);
     }
 };
 } // namespace wmtk::components::topological_offset
