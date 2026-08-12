@@ -388,6 +388,59 @@ TEST_CASE("biharmonic_energy_bunny_3d", "[energies][.]")
         // igl::writeOFF(fmt::format("debug_{}.off", i), V, F);
     }
 }
+TEST_CASE("spring_energy_2d_fd_consistency", "[energies]")
+{
+    // The spring is an exact quadratic to a fixed target, so unlike the envelope energy --
+    // whose hessian is deliberately the Gauss-Newton model, not the derivative of the
+    // gradient -- ALL THREE callbacks must pass a finite-difference check against each
+    // other, to rounding.
+    const Vector2d target(1.5, -0.5);
+    const double w = 3.0;
+    optimization::SpringEnergy2D energy(target, w);
+
+    const std::vector<Vector2d> probes = {
+        Vector2d(1.0, 0.30),
+        Vector2d(2.0, -0.45),
+        Vector2d(-0.7, 1.10),
+    };
+    const double h = 1e-6;
+
+    SECTION("gradient is the derivative of the value")
+    {
+        for (const Vector2d& p : probes) {
+            VectorXd g;
+            energy.gradient(p, g);
+            for (int i = 0; i < 2; ++i) {
+                Vector2d a = p, b = p;
+                a[i] -= h;
+                b[i] += h;
+                const double fd = (energy.value(b) - energy.value(a)) / (2 * h);
+                CHECK(std::abs(g[i] - fd) <= 1e-5 * std::max(1.0, std::abs(fd)));
+            }
+        }
+    }
+
+    SECTION("hessian is the derivative of the gradient")
+    {
+        for (const Vector2d& p : probes) {
+            MatrixXd H;
+            energy.hessian(p, H);
+            for (int i = 0; i < 2; ++i) {
+                Vector2d a = p, b = p;
+                a[i] -= h;
+                b[i] += h;
+                VectorXd ga, gb;
+                energy.gradient(a, ga);
+                energy.gradient(b, gb);
+                for (int j = 0; j < 2; ++j) {
+                    const double fd = (gb[j] - ga[j]) / (2 * h);
+                    CHECK(std::abs(H(j, i) - fd) <= 1e-5 * std::max(1.0, std::abs(fd)));
+                }
+            }
+        }
+    }
+}
+
 TEST_CASE("envelope_energy_2d_derivatives", "[energies]")
 {
     // value(), gradient() and hessian() have to describe the SAME function. Nothing checked
