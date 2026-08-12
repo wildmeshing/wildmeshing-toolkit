@@ -168,13 +168,6 @@ public:
     /// offset-only fields.
     Parameters& m_offset_params;
 
-    // smoothing
-    // thread-specific: a polysolve solver is not safe to call concurrently from multiple
-    // threads (smooth_all_vertices() runs with num_threads > 0 via ExecutePass), so each
-    // thread needs its own instance -- matching SimWildMesh::m_solver.
-    wmtk::threading::enumerable_thread_specific<std::unique_ptr<polysolve::nonlinear::Solver>>
-        m_smooth_solver;
-
     using VertexExtraCol = wmtk::AttributeCollection<VertexExtra>;
     using EdgeAttCol = wmtk::AttributeCollection<EdgeAttributes>;
     using FaceExtraCol = wmtk::AttributeCollection<FaceExtra>;
@@ -485,6 +478,8 @@ public:
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
     bool invariants(const std::vector<Tuple>& tets) override;
+    /// The base rounds and refuses bbox vertices; this additionally freezes the input
+    /// complex, and routes offset-surface vertices to the quadrics step below.
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     //// overriden splits/invariants
@@ -500,31 +495,6 @@ public:
     void optimize_offset(const std::filesystem::path& output_file);
 
     //// smoothing
-    /**
-     * @brief AMIPS quality of a tet, given its (unordered) vertex ids
-     * @note skeleton: plain double AMIPS, no rational fallback for near-degenerate tets
-     */
-    double get_quality(const std::array<size_t, 4>& vids) const;
-    double get_quality(const Tuple& t) const;
-
-    /**
-     * @brief true if the tet given by vids (or by tuple, via oriented_tet_vids()) is inverted,
-     * following SimWildMesh::is_inverted().
-     * @note skeleton: SimWild falls back to a rational orient3d when a vertex isn't rounded yet
-     * (m_is_rounded); this class has no rational position tracking, so it always uses the
-     * plain double predicate, same as invariants().
-     */
-    bool is_inverted(const std::array<size_t, 4>& vids) const;
-    bool is_inverted(const Tuple& t) const;
-
-    /**
-     * @brief run vertex smoothing over the whole mesh for n_iters passes
-     * @note skeleton: single-threaded. Input-complex vertices (label==1) never move. Offset
-     * surface vertices are optimized with quadrics toward target_distance from the input
-     * complex, see smooth_after_offset_surface(). All other vertices get plain AMIPS
-     * smoothing, see smooth_after_interior().
-     */
-    void smooth_all_vertices(size_t n_iters = 1);
 
     /**
      * @brief true if face f has exactly one incident tet labelled 2 (offset), i.e. it lies on
@@ -549,11 +519,6 @@ public:
      * same as landing exactly on the input complex.
      */
     std::array<OffsetSurfaceSample, 4> offset_surface_samples(const Tuple& f) const;
-
-    /**
-     * @brief AMIPS-only smoothing step, for vertices not on the offset surface
-     */
-    bool smooth_after_interior(const Tuple& t);
 
     /**
      * @brief quadrics-based smoothing step for offset surface vertices: blends a Laplacian
