@@ -15,6 +15,33 @@ namespace wmtk::components::topological_offset {
  * offset boundary is allowed to move.
  */
 
+void TopoOffsetTriMesh::relabel_faces_from_tags()
+{
+    const ExpressionPtr& expr = m_offset_params.offset_selection;
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        const CellTag& tags = m_face_attribute[fid].tags;
+
+        // 2 = offset region, 1 = input complex, 0 = neither. The offset region is named by the
+        // output tag; the input complex is whatever the user's selection expression picks out,
+        // which is exactly how label_input_complex() decided it in the first place.
+        bool in_offset = false;
+        for (const int64_t t : m_offset_output_tag_ids) {
+            if (tags.count(t) != 0) {
+                in_offset = true;
+                break;
+            }
+        }
+        if (in_offset) {
+            m_face_extra[fid].label = 2;
+        } else if (expr && expr->eval(tags)) {
+            m_face_extra[fid].label = 1;
+        } else {
+            m_face_extra[fid].label = 0;
+        }
+    }
+}
+
 void TopoOffsetTriMesh::label_offset_boundary()
 {
     // Face quality, which the shared operations read and keep up to date from here on.
@@ -303,6 +330,15 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         // the sanity checks, debug output and per-pass energy reporting the shared driver does.
         // Not mesh_improvement(), for the same reason as in 3D: its stop condition needs a stop
         // metric the offset has not defined.
+        // Tags first, then the surfaces derived from them. See relabel_faces_from_tags().
+        relabel_faces_from_tags();
+        // Re-derive the tracked surfaces from the labels each iteration. The shared
+        // operations maintain the edge tags they are given, but a split creates edges the
+        // labelling never classified, and the collapse's substructure link condition is only
+        // as good as the substructure it is shown. Now that the label survives a split, this
+        // is cheap and keeps the two in step.
+        label_offset_boundary();
+
         local_operations({{1, 1, 1, m_offset_params.num_smoothing_passes}});
 
         logger().info("\tUpdating sizing field...");

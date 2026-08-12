@@ -191,6 +191,17 @@ public:
      */
     void label_offset_boundary();
 
+    /**
+     * @brief Re-derive each face's construction label from its region tags.
+     *
+     * Tags are the source of truth, as in simwild: every shared operation propagates
+     * FaceAttributes -- and therefore the tags -- but none of them knows about the label, which
+     * offset_is_manifold() and the output are built from. Rather than teach every operation to
+     * carry a second quantity, the label is recomputed from the tags it was originally derived
+     * from, so the two cannot drift apart no matter which operation ran.
+     */
+    void relabel_faces_from_tags();
+
     /// Move an offset-boundary vertex back onto the target distance from the input complex,
     /// blended with the Laplacian of its offset-boundary neighbours.
     bool project_offset_vertex(const Tuple& t);
