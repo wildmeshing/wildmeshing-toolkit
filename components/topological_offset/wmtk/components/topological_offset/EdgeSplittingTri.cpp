@@ -121,6 +121,17 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
     // marching-triangles machinery, which places the new vertex on the offset's distance field
     // and carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        // The shared split propagates FaceAttributes -- quality and region tags -- but knows
+        // nothing about the construction label, and offset_is_manifold() is built from that
+        // label. Without this the faces a split creates default to label 0, the offset region
+        // develops holes, and it stops being manifold.
+        auto& c = m_opt_split_cache.local();
+        c.face_label.clear();
+        for (const Tuple& f : {t, t.switch_face(*this).value_or(t)}) {
+            const size_t fid = f.fid(*this);
+            const size_t apex = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+            c.face_label[apex] = m_face_extra[fid].label;
+        }
         return TriOptimizerMesh::split_edge_before(t);
     }
     return marching_split_edge_before(t);
@@ -238,7 +249,22 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
 bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        return TriOptimizerMesh::split_edge_after(t);
+        if (!TriOptimizerMesh::split_edge_after(t)) {
+            return false;
+        }
+        // Both children of a parent still contain that parent's apex, so it names them.
+        const auto& c = m_opt_split_cache.local();
+        for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
+            const size_t fid = f.fid(*this);
+            for (const size_t v : oriented_tri_vids(fid)) {
+                const auto it = c.face_label.find(v);
+                if (it != c.face_label.end()) {
+                    m_face_extra[fid].label = it->second;
+                    break;
+                }
+            }
+        }
+        return true;
     }
     return marching_split_edge_after(t);
 }

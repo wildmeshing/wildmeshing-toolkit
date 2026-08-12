@@ -200,9 +200,38 @@ public:
 
     /// Dispatch: the optimization phase runs the shared split, everything else the
     /// marching-triangles one.
+    /// Parent face labels for an optimization split, keyed by the apex vertex opposite the
+    /// split edge -- that vertex is shared by both children of the same parent, so it names
+    /// them afterwards.
+    struct OptSplitCache2d
+    {
+        std::map<size_t, int> face_label;
+    };
+    wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
+
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);
 
+    /**
+     * @brief Reject any collapse that violates the substructure link condition.
+     *
+     * The base applies it only when BOTH endpoints already sit on a tracked surface or the
+     * bbox, which is the right rule for tetwild and simwild. It is not enough here: the offset
+     * region is a thin band, and a collapse with only one endpoint on the boundary can still
+     * pinch the two sides of that band together, which is precisely what makes the region stop
+     * being manifold. The offset asks unconditionally.
+     */
+    bool collapse_edge_before(const Tuple& t) override;
+
+    /**
+     * @brief Reject a flip whose new edge already exists.
+     *
+     * Flipping (a,b) to (c,d) when c and d are already joined creates a second edge between the
+     * same pair of vertices. Across a thin offset band that is exactly how the two sides of the
+     * band get stitched together, and the region stops being manifold. The base refuses
+     * tracked-surface edges but has no reason to check this.
+     */
+    bool swap_edge_before(const Tuple& t) override;
     bool collapse_before_vertex(size_t v1, size_t v2) override;
     void collapse_after_vertex(size_t v1, size_t v2) override;
     void split_after_vertex(size_t v_new) override;

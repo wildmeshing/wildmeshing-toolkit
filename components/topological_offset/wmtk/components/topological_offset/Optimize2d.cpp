@@ -97,6 +97,38 @@ void TopoOffsetTriMesh::label_offset_boundary()
         .info("\ttracked edges: {} offset boundary, {} input complex, {} bbox", n_off, n_in, n_box);
 }
 
+bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
+{
+    if (!TriOptimizerMesh::swap_edge_before(t)) {
+        return false;
+    }
+
+    // The flip replaces (a,b) with (c,d), the two apexes of the incident triangles.
+    const std::optional<Tuple> opp = t.switch_face(*this);
+    if (!opp) return false;
+    const size_t c = t.switch_edge(*this).switch_vertex(*this).vid(*this);
+    const size_t d = opp->switch_edge(*this).switch_vertex(*this).vid(*this);
+    if (c == d) return false;
+
+    // Already joined? Then the flip would duplicate that edge.
+    for (const Tuple& e : get_one_ring_edges_for_vertex(tuple_from_vertex(c))) {
+        const size_t nb = (e.vid(*this) == c) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
+        if (nb == d) return false;
+    }
+    return true;
+}
+
+bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
+{
+    if (!TriOptimizerMesh::collapse_edge_before(t)) {
+        return false;
+    }
+    // Unconditionally, not just when both endpoints are already on a tracked simplex -- see
+    // the declaration. substructure_link_condition() evaluates the condition for the mesh and
+    // for every substructure, which is what a topological offset needs preserved.
+    return substructure_link_condition(t);
+}
+
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
 {
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not
