@@ -132,11 +132,14 @@ struct SmoothVertexOptions
  * @brief One Newton smoothing step for a single vertex, shared by the 3D applications.
  *
  * The envelope enters the objective as a squared-distance penalty rather than as a
- * projection applied afterwards, so a vertex is drawn back toward the surface gradually and
- * the line search refuses any step that leaves the envelope
- * (EnvelopeEnergy3D::is_step_valid). That is the difference from a hard `nearest_point`
- * snap, which moves the vertex the whole way in one jump and is therefore rejected exactly
- * when the vertex most needs moving.
+ * projection applied afterwards, so a vertex is drawn back toward the surface gradually.
+ * That is the difference from a hard `nearest_point` snap, which moves the vertex the whole
+ * way in one jump and is therefore rejected exactly when the vertex most needs moving.
+ *
+ * The line search never consults the envelope: the pull energies answer is_step_valid with
+ * the base-class "true", AMIPS keeps its pole guard against stepping over an inversion, and
+ * eps-containment is owned by the accept checks after the solve, which test whole incident
+ * faces rather than the vertex point anyway.
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
@@ -214,7 +217,7 @@ bool smooth_vertex_3d(
         if (opts.spring_pull) {
             Vector3d target;
             pull_env->nearest_point(Vector3d(VA[vid].m_posf), target);
-            envelope_energy = std::make_shared<SpringEnergy3D>(target, pull_w, pull_env);
+            envelope_energy = std::make_shared<SpringEnergy3D>(target, pull_w);
         } else {
             envelope_energy = std::make_shared<EnvelopeEnergy3D>(pull_env, pull_w);
         }
@@ -269,8 +272,7 @@ bool smooth_vertex_3d(
         max_after_quality = std::max(max_after_quality, quality);
     }
 
-    if (opts.smooth_quality_gate &&
-        (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
+    if (opts.smooth_quality_gate && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
         if (max_after_quality > max_quality) {
             if (counters) ++counters->quality;
             return false;
@@ -393,7 +395,7 @@ bool smooth_vertex_2d(
         if (opts.spring_pull) {
             Vector2d target;
             envelope->nearest_point(m.smoothing_position(vid), target);
-            envelope_energy = std::make_shared<SpringEnergy2D>(target, pull_w, envelope);
+            envelope_energy = std::make_shared<SpringEnergy2D>(target, pull_w);
         } else {
             envelope_energy = std::make_shared<EnvelopeEnergy2D>(envelope, pull_w);
         }
@@ -447,8 +449,7 @@ bool smooth_vertex_2d(
         max_after_quality = std::max(max_after_quality, q);
     }
 
-    if (opts.smooth_quality_gate &&
-        (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
+    if (opts.smooth_quality_gate && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
         if (max_after_quality > max_quality) {
             if (counters) ++counters->quality;
             return false;

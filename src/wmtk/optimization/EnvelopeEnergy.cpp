@@ -38,11 +38,9 @@ Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
 
 EnvelopeEnergy2D::EnvelopeEnergy2D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight,
-    bool check_step_validity)
+    const double weight)
     : m_envelope(envelope)
     , m_weight(weight)
-    , m_check_step_validity(check_step_validity)
 {
     assert(m_envelope);
 }
@@ -76,30 +74,10 @@ void EnvelopeEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 
 void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
 
-bool EnvelopeEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity) {
-        return true;
-    }
 
-    Vector2d r(x1);
-    if (m_envelope->is_outside(r)) {
-        return false;
-    }
-
-    return true;
-}
-
-
-SpringEnergy2D::SpringEnergy2D(
-    const Vector2d& target,
-    const double weight,
-    const std::shared_ptr<SampleEnvelope>& envelope,
-    bool check_step_validity)
+SpringEnergy2D::SpringEnergy2D(const Vector2d& target, const double weight)
     : m_target(target)
     , m_weight(weight)
-    , m_envelope(envelope)
-    , m_check_step_validity(check_step_validity)
 {}
 
 double SpringEnergy2D::value(const TVector& x)
@@ -121,22 +99,12 @@ void SpringEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
     hessian = 2 * m_weight * Matrix2d::Identity();
 }
 
-bool SpringEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity || !m_envelope) {
-        return true;
-    }
-    return !m_envelope->is_outside(Vector2d(x1));
-}
-
 
 EnvelopeEnergy3D::EnvelopeEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight,
-    bool check_step_validity)
+    const double weight)
     : m_envelope(envelope)
     , m_weight(weight)
-    , m_check_step_validity(check_step_validity)
 {
     assert(m_envelope);
 }
@@ -170,29 +138,9 @@ void EnvelopeEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 
 void EnvelopeEnergy3D::solution_changed(const TVector& new_x) {}
 
-bool EnvelopeEnergy3D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity) {
-        return true;
-    }
-
-    Vector3d r(x1);
-    if (m_envelope->is_outside(r)) {
-        return false;
-    }
-
-    return true;
-}
-
-SpringEnergy3D::SpringEnergy3D(
-    const Vector3d& target,
-    const double weight,
-    const std::shared_ptr<SampleEnvelope>& envelope,
-    bool check_step_validity)
+SpringEnergy3D::SpringEnergy3D(const Vector3d& target, const double weight)
     : m_target(target)
     , m_weight(weight)
-    , m_envelope(envelope)
-    , m_check_step_validity(check_step_validity)
 {}
 
 double SpringEnergy3D::value(const TVector& x)
@@ -211,14 +159,6 @@ void SpringEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
     // Exact, not Gauss-Newton: with the target fixed the energy is a plain quadratic.
     hessian = 2 * m_weight * Matrix3d::Identity();
-}
-
-bool SpringEnergy3D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity || !m_envelope) {
-        return true;
-    }
-    return !m_envelope->is_outside(Vector3d(x1));
 }
 
 } // namespace wmtk::optimization

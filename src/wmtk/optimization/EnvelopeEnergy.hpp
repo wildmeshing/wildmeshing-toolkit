@@ -17,10 +17,7 @@ public:
      * @brief The energy is the squared distance to an envelope.
      *
      */
-    EnvelopeEnergy2D(
-        const std::shared_ptr<SampleEnvelope>& envelope,
-        const double weight = 1,
-        bool check_step_validity = true);
+    EnvelopeEnergy2D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -32,12 +29,9 @@ public:
 
     void solution_changed(const TVector& new_x) override;
 
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
 private:
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_weight;
-    bool m_check_step_validity;
 };
 
 /**
@@ -60,9 +54,6 @@ private:
  * vertex to that single point. The energy is then an exact quadratic, the hessian is the full
  * 2w*I, and tangential motion is resisted exactly as strongly as normal motion. No sliding,
  * but also no floor -- the same sweep gives a clean 1/w over six decades.
- *
- * `envelope` is optional and used only by is_step_valid, so that a run with the spring
- * refuses the same steps as a run with the envelope energy and the two are comparable.
  */
 class SpringEnergy2D : public polysolve::nonlinear::Problem
 {
@@ -71,11 +62,7 @@ public:
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
 
-    SpringEnergy2D(
-        const Vector2d& target,
-        const double weight = 1,
-        const std::shared_ptr<SampleEnvelope>& envelope = nullptr,
-        bool check_step_validity = true);
+    SpringEnergy2D(const Vector2d& target, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -87,13 +74,9 @@ public:
 
     void solution_changed(const TVector& new_x) override {}
 
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
 private:
     Vector2d m_target;
     double m_weight;
-    std::shared_ptr<SampleEnvelope> m_envelope;
-    bool m_check_step_validity;
 };
 
 class EnvelopeEnergy3D : public polysolve::nonlinear::Problem
@@ -107,10 +90,7 @@ public:
      * @brief The energy is the squared distance to an envelope.
      *
      */
-    EnvelopeEnergy3D(
-        const std::shared_ptr<SampleEnvelope>& envelope,
-        const double weight = 1,
-        bool check_step_validity = true);
+    EnvelopeEnergy3D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -122,12 +102,9 @@ public:
 
     void solution_changed(const TVector& new_x) override;
 
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
 private:
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_weight;
-    bool m_check_step_validity;
 };
 
 /// 3D counterpart of SpringEnergy2D; see there for what the fixed target buys and costs.
@@ -138,11 +115,7 @@ public:
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
 
-    SpringEnergy3D(
-        const Vector3d& target,
-        const double weight = 1,
-        const std::shared_ptr<SampleEnvelope>& envelope = nullptr,
-        bool check_step_validity = true);
+    SpringEnergy3D(const Vector3d& target, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -154,13 +127,9 @@ public:
 
     void solution_changed(const TVector& new_x) override {}
 
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
 private:
     Vector3d m_target;
     double m_weight;
-    std::shared_ptr<SampleEnvelope> m_envelope;
-    bool m_check_step_validity;
 };
 
 } // namespace wmtk::optimization
