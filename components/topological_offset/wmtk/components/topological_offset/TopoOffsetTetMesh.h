@@ -337,6 +337,32 @@ public:
         size_t d) override;
     bool swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip) override;
 
+    /**
+     * @brief Collapse policy that is the offset's own.
+     *
+     * collapse_before_vertex refuses to move a vertex off the surface it belongs to (the base
+     * only knows the union of the two), to lower the order of a boundary vertex, or to collapse
+     * across what looks like a feature of the input complex; it also records how badly aligned
+     * the offset surface already was, so its `after` counterpart can tell a regression from a
+     * defect that was there before.
+     */
+    bool collapse_before_vertex(size_t v1, size_t v2, double edge_length) override;
+    bool collapse_after_connectivity(
+        size_t v1,
+        size_t v2,
+        const std::vector<std::array<size_t, 2>>& boundary_edges) override;
+    bool collapse_is_order_2_edge(const std::array<size_t, 2>& e) override
+    {
+        return is_order_2_edge(e);
+    }
+    void collapse_after_vertex(size_t v1, size_t v2) override;
+
+private:
+    /// The worse of the two endpoints' offset-surface deviation before the collapse.
+    wmtk::threading::enumerable_thread_specific<double> m_collapse_nd_before;
+
+public:
+
 private:
     bool swap_capture_tag(const std::vector<size_t>& tids);
     /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
@@ -430,8 +456,6 @@ public:
     bool invariants(const std::vector<Tuple>& tets) override;
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
-    bool collapse_edge_before(const Tuple& t) override;
-    bool collapse_edge_after(const Tuple& t) override;
     //// overriden splits/invariants
 
     /**
@@ -511,13 +535,6 @@ public:
     //// smoothing
 
     //// collapse
-    /**
-     * @brief collapse edges shorter than min_edge_len_ratio * target_distance once, over the
-     * whole mesh
-     * @note skeleton: single-threaded, single pass (no repeated sweeps until convergence, no
-     * priority queue -- just one pass over get_edges() in whatever order it returns)
-     */
-    void collapse_all_edges();
 
     // max angle (degrees, 0-90, orientation independent) allowed between an offset-surface
     // face's own normal and the input-complex normal it is supposed to approximate, checked by
@@ -555,7 +572,7 @@ public:
      * should be rejected. See
      * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/OffsetCollapseBeforeInvariant.cpp
      */
-    double collapse_normal_deviation(const Tuple& edge, size_t remove_vid) const;
+    double collapse_normal_deviation(size_t v_from, size_t v_to, size_t remove_vid) const;
     //// collapse
 
     //// split (optimization-phase; separate from the marching-tets split machinery below)
@@ -781,36 +798,6 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
-    /**
-     * @brief snapshot of edge/face labels around the collapsed vertex, keyed by vertex ids
-     * rather than eid()/fid() -- those are derived from the lowest-id incident tet, which can
-     * change once the tets touching the collapsed edge are removed, so a label read back
-     * through eid()/fid() after the collapse is not reliably the one that was there before
-     */
-    struct EdgeCollapseCache
-    {
-        size_t v1_id; // removed by the collapse
-        size_t v2_id;
-        double max_energy;
-        double edge_length;
-        bool is_limit_length;
-
-        std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 3>> surface_faces;
-        // all faces incident to the delete vertex (v1) that are on the tracked surface
-        std::vector<std::array<size_t, 3>> offset_faces;
-        // all edges incident to the deleted vertex(v1) that are on the open boundary
-        std::vector<std::array<size_t, 2>> boundary_edges;
-        std::vector<size_t> changed_tids;
-        std::vector<double> changed_energies;
-
-        // NormalDeviationAfterInvariant analogue: the worse of the two endpoints' offset
-        // surface deviation before the collapse, so collapse_edge_after() can tell whether a
-        // deviation over the threshold afterward is a regression or was already there
-        double nd_before = 0.;
-    };
-    wmtk::threading::enumerable_thread_specific<EdgeCollapseCache> edge_collapse_cache;
 
 
 public:
