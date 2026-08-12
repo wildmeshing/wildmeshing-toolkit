@@ -173,6 +173,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>restore_face</b> (con
 <tr class="memitem:a8ac3036038466018afdac3aef864a50d" id="r_a8ac3036038466018afdac3aef864a50d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a8ac3036038466018afdac3aef864a50d">set_vertex_position</a> (const size_t vid, const Vector3d &amp;p)</td></tr>
 <tr class="memdesc:a8ac3036038466018afdac3aef864a50d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Place a vertex, keeping its exact and rounded coordinates in step.  <br /></td></tr>
 <tr class="separator:a8ac3036038466018afdac3aef864a50d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47a919bfc3023bd53cb9005dd11ca84c" id="r_a47a919bfc3023bd53cb9005dd11ca84c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47a919bfc3023bd53cb9005dd11ca84c">cell_in_region</a> (const size_t tid) const</td></tr>
+<tr class="memdesc:a47a919bfc3023bd53cb9005dd11ca84c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether tet <code>tid</code> belongs to the closed offset region, read from its TAGS.  <br /></td></tr>
+<tr class="separator:a47a919bfc3023bd53cb9005dd11ca84c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63157accd78467ebb0b3bb36373c6810" id="r_a63157accd78467ebb0b3bb36373c6810"><td class="memItemLeft" align="right" valign="top"><a id="a63157accd78467ebb0b3bb36373c6810" name="a63157accd78467ebb0b3bb36373c6810"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>face_is_offset</b> (const size_t fid) const</td></tr>
 <tr class="memdesc:a63157accd78467ebb0b3bb36373c6810"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether face <code>fid</code> is on the offset boundary (as opposed to the input complex). <br /></td></tr>
@@ -211,8 +214,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>face_is_input</b> (co
 <tr class="memitem:ae6356112261645497a046a09f3f5d151" id="r_ae6356112261645497a046a09f3f5d151"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151">swap_after_cells</a> (const std::vector&lt; size_t &gt; &amp;tids, bool is_surface_flip) override</td></tr>
 <tr class="memdesc:ae6356112261645497a046a09f3f5d151"><td class="mdescLeft">&#160;</td><td class="mdescRight">Propagate application data to the cells made by a successful topological swap.  <br /></td></tr>
 <tr class="separator:ae6356112261645497a046a09f3f5d151"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48395070b59acd96aceca50e4c7bb0d5" id="r_a48395070b59acd96aceca50e4c7bb0d5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a48395070b59acd96aceca50e4c7bb0d5">collapse_edge_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
+<tr class="memdesc:a48395070b59acd96aceca50e4c7bb0d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collapse policy that is the offset's own.  <br /></td></tr>
+<tr class="separator:a48395070b59acd96aceca50e4c7bb0d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90b1522f1d7a2516ddd1eeb90d92ecf8" id="r_a90b1522f1d7a2516ddd1eeb90d92ecf8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a90b1522f1d7a2516ddd1eeb90d92ecf8">collapse_before_vertex</a> (size_t v1, size_t v2, double edge_length) override</td></tr>
-<tr class="memdesc:a90b1522f1d7a2516ddd1eeb90d92ecf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Collapse policy that is the offset's own.  <br /></td></tr>
 <tr class="separator:a90b1522f1d7a2516ddd1eeb90d92ecf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa09e98dd93a496cb75c932a9b0a59e83" id="r_aa09e98dd93a496cb75c932a9b0a59e83"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa09e98dd93a496cb75c932a9b0a59e83">collapse_after_connectivity</a> (size_t v1, size_t v2, const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;boundary_edges) override</td></tr>
 <tr class="separator:aa09e98dd93a496cb75c932a9b0a59e83"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -523,9 +528,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>split_all_edges</b> (
 <tr class="memitem:a147e067ad965d9ad4df056190d1e4a40 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a147e067ad965d9ad4df056190d1e4a40"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_all_edges</b> (bool is_limit_length=true)</td></tr>
 <tr class="separator:a147e067ad965d9ad4df056190d1e4a40 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7194dcfd836776b479f3fc9076073d96 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a7194dcfd836776b479f3fc9076073d96"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a7194dcfd836776b479f3fc9076073d96">collapse_edge_before</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
-<tr class="memdesc:a7194dcfd836776b479f3fc9076073d96 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified preparations and desideratas for an edge collapse before changing the connectivity.  <br /></td></tr>
-<tr class="separator:a7194dcfd836776b479f3fc9076073d96 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cc29220497521cb96acffbc4acc0b71 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a1cc29220497521cb96acffbc4acc0b71"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1cc29220497521cb96acffbc4acc0b71">collapse_edge_after</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:a1cc29220497521cb96acffbc4acc0b71 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified modifications and desideratas for after an edge collapse.  <br /></td></tr>
 <tr class="separator:a1cc29220497521cb96acffbc4acc0b71 inherit pub_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1261,6 +1263,35 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
 
 </div>
 </div>
+<a id="a47a919bfc3023bd53cb9005dd11ca84c" name="a47a919bfc3023bd53cb9005dd11ca84c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47a919bfc3023bd53cb9005dd11ca84c">&#9670;&#160;</a></span>cell_in_region()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::cell_in_region </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>tid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Whether tet <code>tid</code> belongs to the closed offset region, read from its TAGS. </p>
+<p>The 3D counterpart of TopoOffsetTriMesh::face_in_region, and it fixes the same defect. The region is the offset band plus the input complex it wraps, both named by tags &ndash; and tags are what the shared operations propagate. The construction label says the same thing but is derived state maintained alongside them, so it goes stale the moment a split or swap creates a cell the label was never written for, putting holes in the region that <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6d9859872eee73b99d0f762cc4acdd5d" title="verify that the closed offset region (simplices labelled 1 or 2) form a manifold region....">offset_is_manifold()</a> then reports as non-manifold. </p>
+
+</div>
+</div>
 <a id="af91813232c2e7ecdf843bdc224c25cc5" name="af91813232c2e7ecdf843bdc224c25cc5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af91813232c2e7ecdf843bdc224c25cc5">&#9670;&#160;</a></span>cell_quality()</h2>
 
@@ -1414,19 +1445,19 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
           <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::collapse_before_vertex </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v1</em>, </td>
+          <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v2</em>, </td>
+          <td class="paramname">, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>edge_length</em>&#160;</td>
+          <td class="paramname">&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1440,11 +1471,40 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</
   </tr>
 </table>
 </div><div class="memdoc">
+<p>Non-const: an override may cache what it measured before the collapse so its <code>after</code> counterpart can tell a regression from a defect that was already there. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5bf5382c6788f0bbf646927c0f279152">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a48395070b59acd96aceca50e4c7bb0d5" name="a48395070b59acd96aceca50e4c7bb0d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48395070b59acd96aceca50e4c7bb0d5">&#9670;&#160;</a></span>collapse_edge_before()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTetMesh::collapse_edge_before </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 <p>Collapse policy that is the offset's own. </p>
 <p>collapse_before_vertex refuses to move a vertex off the surface it belongs to (the base only knows the union of the two), to lower the order of a boundary vertex, or to collapse across what looks like a feature of the input complex; it also records how badly aligned the offset surface already was, so its <code>after</code> counterpart can tell a regression from a defect that was there before. </p>
 
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a5bf5382c6788f0bbf646927c0f279152">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a7194dcfd836776b479f3fc9076073d96">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
