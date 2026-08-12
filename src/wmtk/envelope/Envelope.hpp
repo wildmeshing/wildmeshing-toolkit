@@ -142,6 +142,24 @@ public:
     bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
+
+    /**
+     * 2D only: nearest point plus which feature of the input carries it. Returns the SQUARED
+     * distance. on_corner reports whether the foot point is a polyline vertex; seg_normal is
+     * the unit normal of the closest segment, valid only when !on_corner (sign arbitrary);
+     * feature_id is the polyline vertex index when on_corner, else the segment index --
+     * canonical, so two queries can be compared for "did the closest feature change".
+     *
+     * The distance to a piecewise-linear input is exactly quadratic within each closest-
+     * feature region and kinks where the feature changes; anything that wants the true
+     * second-order behavior (ExactDistanceEnergy2D) needs this classification.
+     */
+    double nearest_point_feature(
+        const Eigen::Vector2d& p,
+        Eigen::Vector2d& result,
+        bool& on_corner,
+        Eigen::Vector2d& seg_normal,
+        int& feature_id) const;
     bool initialized() { return m_bvh != nullptr; };
 
     Kind kind() const { return m_kind; }
@@ -160,6 +178,9 @@ private:
 
     std::vector<int> geo_vertex_ind;
     std::vector<int> geo_face_ind;
+    /// 2D input copy backing nearest_point_feature (filled by the 2D init only).
+    std::vector<Eigen::Vector2d> m_v2;
+    std::vector<Eigen::Vector2i> m_e2;
     std::shared_ptr<SimpleBVH::BVH> m_bvh;
 
 private:

@@ -111,6 +111,46 @@ void SpringEnergy2D::solution_changed(const TVector& new_x)
 }
 
 
+ExactDistanceEnergy2D::ExactDistanceEnergy2D(
+    const std::shared_ptr<SampleEnvelope>& envelope,
+    const double weight)
+    : m_envelope(envelope)
+    , m_weight(weight)
+{
+    assert(m_envelope);
+}
+
+double ExactDistanceEnergy2D::value(const TVector& x)
+{
+    assert(x.size() == 2);
+    return m_weight * m_envelope->squared_distance(Vector2d(x));
+}
+
+void ExactDistanceEnergy2D::gradient(const TVector& x, TVector& gradv)
+{
+    assert(x.size() == 2);
+    Vector2d r(x);
+    Vector2d n;
+    m_envelope->nearest_point(r, n);
+    gradv = 2 * m_weight * (r - n);
+}
+
+void ExactDistanceEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    Vector2d n, seg_normal;
+    bool on_corner = false;
+    int feature_id = -1;
+    m_envelope->nearest_point_feature(Vector2d(x), n, on_corner, seg_normal, feature_id);
+    if (on_corner) {
+        // Distance to a point: the true Hessian of d^2 is isotropic.
+        hessian = 2.0 * m_weight * Matrix2d::Identity();
+    } else {
+        // Distance to a segment interior: rank-one along the segment normal. Well-defined
+        // even at d == 0, where the residual direction is unavailable.
+        hessian = 2.0 * m_weight * (seg_normal * seg_normal.transpose());
+    }
+}
+
 EnvelopeEnergy3D::EnvelopeEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
     const double weight)

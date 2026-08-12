@@ -228,8 +228,8 @@
     "pointer": "/pull_mode",
     "type": "string",
     "default": "spring",
-    "options": ["envelope", "spring", "spring_refresh"],
-    "doc": "How smoothing pulls a surface vertex toward the input. 'envelope': squared distance to the input as a set; the nearest point is re-queried per evaluation, so the vertex slides along the input for free. 'spring': fixed-target spring to the nearest point captured once per solve; no sliding, surface deviation scales as w_amips with no floor. 'spring_refresh': the spring with its target re-captured at every accepted iterate; restores slow sliding while keeping each iterate an exact quadratic. On the 53 registered configs, envelope and spring_refresh terminate 53/53; the frozen spring stalls one config and costs ~20% more iterations."
+    "options": ["envelope", "spring", "spring_refresh", "exact"],
+    "doc": "How smoothing pulls a surface vertex toward the input. 'envelope': squared distance to the input as a set; the nearest point is re-queried per evaluation, so the vertex slides along the input for free. 'spring': fixed-target spring to the nearest point captured once per solve; no sliding, surface deviation scales as w_amips with no floor. 'spring_refresh': the spring with its target re-captured at every accepted iterate; restores slow sliding while keeping each iterate an exact quadratic. 'exact' (2D only): the true distance with its true region-wise Hessian; free sliding on segment interiors, isotropic hold at corners. On the 53 registered configs, envelope and spring_refresh terminate 53/53; the frozen spring stalls one config and costs ~20% more iterations."
 },
   {
     "pointer": "/w_amips",

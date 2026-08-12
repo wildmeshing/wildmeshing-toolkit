@@ -388,6 +388,65 @@ TEST_CASE("biharmonic_energy_bunny_3d", "[energies][.]")
         // igl::writeOFF(fmt::format("debug_{}.off", i), V, F);
     }
 }
+TEST_CASE("exact_distance_energy_2d", "[energies]")
+{
+    // An L-shaped polyline: one horizontal and one vertical segment meeting at a convex
+    // corner. Within each closest-feature region the distance is exactly quadratic, so the
+    // energy must pass full FD checks there, with the rank of the hessian reporting the
+    // feature: rank one (segment normal) over an interior, isotropic at the corner.
+    auto env = std::make_shared<SampleEnvelope>(false);
+    const std::vector<Eigen::Vector2d> V = {
+        Eigen::Vector2d(0, 0),
+        Eigen::Vector2d(4, 0),
+        Eigen::Vector2d(4, 4)};
+    const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1), Eigen::Vector2i(1, 2)};
+    env->init(V, E, 0.1);
+
+    const double w = 3.0;
+    optimization::ExactDistanceEnergy2D energy(env, w);
+
+    const double h = 1e-6;
+    auto fd_check = [&](const Vector2d& p) {
+        VectorXd g;
+        energy.gradient(p, g);
+        MatrixXd H;
+        energy.hessian(p, H);
+        for (int i = 0; i < 2; ++i) {
+            Vector2d a = p, b = p;
+            a[i] -= h;
+            b[i] += h;
+            const double fd = (energy.value(b) - energy.value(a)) / (2 * h);
+            CHECK(std::abs(g[i] - fd) <= 1e-5 * std::max(1.0, std::abs(fd)));
+            VectorXd ga, gb;
+            energy.gradient(a, ga);
+            energy.gradient(b, gb);
+            for (int j = 0; j < 2; ++j) {
+                const double fdh = (gb[j] - ga[j]) / (2 * h);
+                CHECK(std::abs(H(j, i) - fdh) <= 1e-4 * std::max(1.0, std::abs(fdh)));
+            }
+        }
+    };
+
+    SECTION("interior region: full FD consistency and rank-one hessian")
+    {
+        const Vector2d p(2.0, 0.4); // above the horizontal segment, foot in its interior
+        fd_check(p);
+        MatrixXd H;
+        energy.hessian(p, H);
+        CHECK((H * Vector2d(1, 0)).norm() <= 1e-9); // free along the segment
+        CHECK(std::abs((Vector2d(0, 1).transpose() * H * Vector2d(0, 1)).value() - 2 * w) <= 1e-9);
+    }
+
+    SECTION("corner region: full FD consistency and isotropic hessian")
+    {
+        const Vector2d p(4.5, -0.5); // beyond the corner at (4,0), outside both segments
+        fd_check(p);
+        MatrixXd H;
+        energy.hessian(p, H);
+        CHECK((H - 2 * w * MatrixXd::Identity(2, 2)).norm() <= 1e-9);
+    }
+}
+
 TEST_CASE("spring_energy_2d_fd_consistency", "[energies]")
 {
     // The spring is an exact quadratic to a fixed target, so unlike the envelope energy --

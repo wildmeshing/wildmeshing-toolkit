@@ -92,6 +92,44 @@ private:
     std::shared_ptr<SampleEnvelope> m_refresh_envelope;
 };
 
+
+/**
+ * @brief The true w * d^2 to the exact piecewise-linear input with its TRUE Hessian.
+ *
+ * For a PL input the distance is exactly quadratic within each closest-feature region: the
+ * Hessian of w*d^2 is 2w * n n^T (n the segment normal) when the foot point lies in a
+ * segment interior, and 2w * I when it is a polyline corner -- distance to a point is
+ * isotropic. Both are the actual second derivative, so unlike EnvelopeEnergy2D (whose
+ * hessian is the Gauss-Newton model) all three callbacks agree under finite differences,
+ * everywhere except exactly on a region boundary.
+ *
+ * Behaviorally: free sliding along segment interiors, isotropic hold at corners -- the
+ * geometry decides where tangential motion is free, not a policy.
+ */
+class ExactDistanceEnergy2D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    ExactDistanceEnergy2D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    std::shared_ptr<SampleEnvelope> m_envelope;
+    double m_weight;
+};
+
 class EnvelopeEnergy3D : public polysolve::nonlinear::Problem
 {
 public:

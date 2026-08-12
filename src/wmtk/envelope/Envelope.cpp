@@ -227,6 +227,9 @@ void SampleEnvelope::init(
     // ends, so its corners sit at exactly eps.
     init_exact_edges(V, F, _eps);
 
+    m_v2 = V;
+    m_e2 = F;
+
     sampling_dist = _eps;
     // eps2 keeps the lattice constant for point queries; eps2_edge carries the one derived
     // for a sampled segment. See the header.
@@ -444,6 +447,41 @@ double SampleEnvelope::nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d
     double dist;
     m_bvh->nearest_facet(pts, result, dist);
     return dist;
+}
+
+double SampleEnvelope::nearest_point_feature(
+    const Eigen::Vector2d& p,
+    Eigen::Vector2d& result,
+    bool& on_corner,
+    Eigen::Vector2d& seg_normal,
+    int& feature_id) const
+{
+    assert(!m_v2.empty() && !m_e2.empty());
+    Eigen::Vector2d nearest;
+    double sq_dist;
+    const int fid = m_bvh->nearest_facet(p, nearest, sq_dist);
+    const Eigen::Vector2d a = m_v2[m_e2[fid][0]];
+    const Eigen::Vector2d b = m_v2[m_e2[fid][1]];
+    const Eigen::Vector2d ab = b - a;
+    const double len2 = ab.squaredNorm();
+    // Recompute the foot on the reported segment so the classification and the returned
+    // point come from the same arithmetic (the BVH's own foot can differ in the last ulp).
+    const double t = len2 > 0 ? (p - a).dot(ab) / len2 : 0.0;
+    if (len2 <= 0 || t <= 0) {
+        result = a;
+        on_corner = true;
+        feature_id = m_e2[fid][0]; // polyline vertex index: canonical across both segments
+    } else if (t >= 1) {
+        result = b;
+        on_corner = true;
+        feature_id = m_e2[fid][1];
+    } else {
+        result = a + t * ab;
+        on_corner = false;
+        seg_normal = Eigen::Vector2d(-ab[1], ab[0]) / std::sqrt(len2);
+        feature_id = fid;
+    }
+    return (p - result).squaredNorm();
 }
 
 double SampleEnvelope::squared_distance(const Eigen::Vector3d& p) const

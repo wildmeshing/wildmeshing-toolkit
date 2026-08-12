@@ -291,7 +291,9 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = m_params.two_stage;
-    if (m_params.pull_mode == "envelope") {
+    if (m_params.pull_mode == "exact") {
+        opts.pull_mode = optimization::SmoothVertexOptions::PullMode::Exact;
+    } else if (m_params.pull_mode == "envelope") {
         opts.pull_mode = optimization::SmoothVertexOptions::PullMode::Envelope;
     } else if (m_params.pull_mode == "spring_refresh") {
         opts.pull_mode = optimization::SmoothVertexOptions::PullMode::SpringRefresh;

@@ -126,9 +126,11 @@ struct SmoothVertexOptions
      * once when the solve begins; tangential motion is resisted like normal motion.
      * SpringRefresh: the same spring, but the target is re-captured at every accepted
      * iterate, which restores slow tangential motion (one force-balance displacement per
-     * iterate) while keeping each iterate's model an exact quadratic.
+     * iterate) while keeping each iterate's model an exact quadratic. Exact (2D only): the
+     * true distance with its true region-wise Hessian -- free sliding on segment interiors,
+     * isotropic hold at corners; see ExactDistanceEnergy2D.
      */
-    enum class PullMode { Envelope, Spring, SpringRefresh };
+    enum class PullMode { Envelope, Spring, SpringRefresh, Exact };
     PullMode pull_mode = PullMode::Spring;
 };
 
@@ -218,7 +220,9 @@ bool smooth_vertex_3d(
     if (pull_env) {
         const double pull_w = opts.s_envelope * opts.w_envelope;
         std::shared_ptr<polysolve::nonlinear::Problem> envelope_energy;
-        if (opts.pull_mode == SmoothVertexOptions::PullMode::Envelope) {
+        if (opts.pull_mode == SmoothVertexOptions::PullMode::Exact) {
+            log_and_throw_error("pull_mode 'exact' is only implemented in 2D");
+        } else if (opts.pull_mode == SmoothVertexOptions::PullMode::Envelope) {
             envelope_energy = std::make_shared<EnvelopeEnergy3D>(pull_env, pull_w);
         } else {
             Vector3d target;
@@ -398,7 +402,9 @@ bool smooth_vertex_2d(
     if (envelope) {
         const double pull_w = opts.s_envelope * opts.w_envelope;
         std::shared_ptr<polysolve::nonlinear::Problem> envelope_energy;
-        if (opts.pull_mode == SmoothVertexOptions::PullMode::Envelope) {
+        if (opts.pull_mode == SmoothVertexOptions::PullMode::Exact) {
+            envelope_energy = std::make_shared<ExactDistanceEnergy2D>(envelope, pull_w);
+        } else if (opts.pull_mode == SmoothVertexOptions::PullMode::Envelope) {
             envelope_energy = std::make_shared<EnvelopeEnergy2D>(envelope, pull_w);
         } else {
             Vector2d target;
