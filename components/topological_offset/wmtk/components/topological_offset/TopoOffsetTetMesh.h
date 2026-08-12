@@ -357,12 +357,39 @@ public:
     }
     void collapse_after_vertex(size_t v1, size_t v2) override;
 
+    /**
+     * @brief Split policy that is the offset's own.
+     *
+     * The shared split places the vertex, keeps the quality and the shared attributes and
+     * checks containment; what it cannot know is which region tag the two child tets inherit,
+     * and which of the two tracked surfaces the new vertex joined.
+     */
+    bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
+    bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
+        override;
+    void split_after_vertex(size_t v_new, bool is_edge_open_boundary) override;
+
+    /// The offset's surface can end on a non-manifold or boundary edge of the input complex,
+    /// which the base must not flip or split across.
+    bool is_open_boundary_edge(const Tuple& e) override { return is_order_2_edge(e); }
+
+private:
+    /// What the shared split has to carry across for the offset: the region tag of each parent
+    /// tet, keyed by the edge opposite the split one, and which surfaces the edge was on.
+    struct OptSplitCache
+    {
+        bool is_edge_on_input = false;
+        bool is_edge_on_offset = false;
+        std::map<simplex::Edge, TetAttributes> tets;
+    };
+    wmtk::threading::enumerable_thread_specific<OptSplitCache> m_opt_split_cache;
+
+public:
 private:
     /// The worse of the two endpoints' offset-surface deviation before the collapse.
     wmtk::threading::enumerable_thread_specific<double> m_collapse_nd_before;
 
 public:
-
 private:
     bool swap_capture_tag(const std::vector<size_t>& tids);
     /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
@@ -447,8 +474,12 @@ public:
         std::function<bool(const FaceAttributes&)> cond) const;
 
     //// overriden splits/invariants
+    /// Dispatch: the optimization phase runs the shared split, everything else the
+    /// marching-tets one below.
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
+    bool marching_split_edge_before(const Tuple& t);
+    bool marching_split_edge_after(const Tuple& t);
     bool split_face_before(const Tuple& t) override;
     bool split_face_after(const Tuple& t) override;
     bool split_tet_before(const Tuple& t) override;
@@ -575,18 +606,6 @@ public:
     double collapse_normal_deviation(size_t v_from, size_t v_to, size_t remove_vid) const;
     //// collapse
 
-    //// split (optimization-phase; separate from the marching-tets split machinery below)
-    /**
-     * @brief split edges longer than splitting_l2 (set in Parameters::init() from
-     * length/length_rel) once, over the whole mesh, longest first. Reuses the existing
-     * split_edge_before/after (EdgeSplitMode::Midpoint) already used by simplicial_embedding(),
-     * so label/tag inheritance for the new vertex and split simplices is unchanged from that
-     * path -- this just decides *which* edges to split and drives them through ExecutePass,
-     * mirroring collapse_all_edges()/smooth_all_vertices().
-     * @note skeleton: no quality- or feature-based gating beyond the length threshold.
-     */
-    void split_all_edges();
-    //// split
 
     //// sizing field
     // Bounds and thresholds for the sizing field are user-configurable; see
@@ -797,7 +816,6 @@ private:
         TetAttributes tet;
     };
     wmtk::threading::enumerable_thread_specific<TetSplitCache> tet_split_cache;
-
 
 
 public:
