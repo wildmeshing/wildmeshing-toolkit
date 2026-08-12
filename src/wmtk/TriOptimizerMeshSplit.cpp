@@ -284,13 +284,10 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // "inside the envelope (as expected)" --- that check samples by AREA and cannot see
         // violations that live on vanishingly small elements.
         if (cache.old_e_attrs.m_is_surface_fs) {
-            const Vector2d& pm = m_vertex_attribute[v_id].m_posf;
-            const Vector2d& p1 = m_vertex_attribute[v1_id].m_posf;
-            const Vector2d& p2 = m_vertex_attribute[v2_id].m_posf;
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{{p1, pm}})) {
+            if (surface_segment_is_outside(v1_id, v_id)) {
                 return false;
             }
-            if (m_envelope->is_outside(std::array<Vector2d, 2>{{pm, p2}})) {
+            if (surface_segment_is_outside(v_id, v2_id)) {
                 return false;
             }
         }

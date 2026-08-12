@@ -95,6 +95,32 @@ public:
     AttributeContainerGroup m_vertex_attr_group;
 
     /**
+     * @brief What p_edge_attrs points at, so a derived class can register more.
+     *
+     * The 2D counterpart of wmtk::TetOptimizerMesh::m_face_attr_group. An application whose
+     * edges carry data the shared operations know nothing about -- topological_offset labels
+     * each edge by which part of the construction produced it -- registers a second collection
+     * here, and it is resized, protected and rolled back with the shared one.
+     *
+     * Note what this does NOT do: the shared operations propagate edge data by copying
+     * SurfaceTagAttributes values around (the split and collapse caches, the swap cache), and
+     * they only ever see their own collection. Anything registered here survives the mesh
+     * changing shape, but its values are the registering application's to maintain.
+     */
+    AttributeContainerGroup m_edge_attr_group;
+
+    /**
+     * @brief What p_face_attrs points at, so a derived class can register more.
+     *
+     * Unlike the 3D mesh, whose cell attributes are per-application, the 2D base owns a
+     * concrete FaceAttributes -- so a derived class that needs an extra per-face field cannot
+     * add it there and registers a second collection here instead. Same caveat as the edge
+     * group: the shared operations propagate face data by copying FaceAttributes values
+     * around and never see this, so its values are the registering application's to maintain.
+     */
+    AttributeContainerGroup m_face_attr_group;
+
+    /**
      * @brief The sentinel get_quality returns for a face AMIPS2D cannot score.
      *
      * Not an energy: a positively oriented triangle whose area is too small for AMIPS, or one
@@ -134,8 +160,10 @@ public:
     {
         m_vertex_attr_group.add(&m_vertex_attribute);
         p_vertex_attrs = &m_vertex_attr_group;
-        p_edge_attrs = &m_edge_attribute;
-        p_face_attrs = &m_face_attribute;
+        m_edge_attr_group.add(&m_edge_attribute);
+        p_edge_attrs = &m_edge_attr_group;
+        m_face_attr_group.add(&m_face_attribute);
+        p_face_attrs = &m_face_attr_group;
 
         m_s_amips = 1.;
         /**
@@ -297,6 +325,34 @@ public:
         bool on_surface = m_edge_attribute.at(eid).m_is_surface_fs;
         bool on_bbox = m_edge_attribute.at(eid).m_is_bbox_fs >= 0;
         return on_surface || on_bbox;
+    }
+
+    /**
+     * @brief Envelope the tracked-surface segment `vids` must stay inside.
+     *
+     * The 2D counterpart of wmtk::TetOptimizerMesh::surface_envelope_for_face. Null means this
+     * segment carries no containment requirement, and every containment check on it is skipped.
+     * Both applications that track a single surface keep one envelope for it, so the default
+     * answers with that; an application tracking more than one (see
+     * SurfaceTagAttributes::m_surface_class) overrides this to answer per class.
+     *
+     * Keyed on the vertex ids rather than the eid because every caller is a topological
+     * operation asking about segments it is ABOUT to create or has just created.
+     */
+    virtual std::shared_ptr<SampleEnvelope> surface_envelope_for_edge(
+        const std::array<size_t, 2>& vids) const
+    {
+        return m_envelope;
+    }
+
+    /// Whether the tracked-surface segment (a,b) is outside its containment envelope. False
+    /// when it has none. Every surface containment check in the operations goes through here.
+    bool surface_segment_is_outside(const size_t a, const size_t b) const
+    {
+        const std::shared_ptr<SampleEnvelope> env = surface_envelope_for_edge({{a, b}});
+        if (!env) return false;
+        const auto& VA = m_vertex_attribute;
+        return env->is_outside(std::array<Vector2d, 2>{{VA[a].m_posf, VA[b].m_posf}});
     }
 
     std::vector<std::array<size_t, 2>> get_edges_by_condition(
