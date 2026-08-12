@@ -105,6 +105,18 @@ struct SmoothVertexOptions
     bool quality_veto_on_surface = true;
 
     /**
+     * Apply the "do not make the worst incident element worse" gate at all. False drops it
+     * for every vertex, surface or not, and quality_veto_on_surface stops meaning anything.
+     *
+     * On by default, and the note above records what it is worth: without it smoothing raised
+     * the max energy in 38% of passes and a mesh would oscillate for tens of iterations until
+     * a reading happened to fall below target. Exposed because that measurement was taken with
+     * the sliding pull, and a pull that holds a vertex in place may not need the same
+     * protection.
+     */
+    bool smooth_quality_gate = true;
+
+    /**
      * Pull a surface vertex with a fixed-target spring (SpringEnergy2D/3D) instead of the
      * squared distance to the input (EnvelopeEnergy2D/3D).
      *
@@ -256,7 +268,8 @@ bool smooth_vertex_3d(
         max_after_quality = std::max(max_after_quality, quality);
     }
 
-    if (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {
+    if (opts.smooth_quality_gate &&
+        (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
         if (max_after_quality > max_quality) {
             if (counters) ++counters->quality;
             return false;
@@ -433,7 +446,8 @@ bool smooth_vertex_2d(
         max_after_quality = std::max(max_after_quality, q);
     }
 
-    if (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {
+    if (opts.smooth_quality_gate &&
+        (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
         if (max_after_quality > max_quality) {
             if (counters) ++counters->quality;
             return false;

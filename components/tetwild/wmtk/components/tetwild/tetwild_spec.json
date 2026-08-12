@@ -27,6 +27,7 @@
       "split_high_valence_threshold",
       "w_amips",
       "spring_pull",
+      "smooth_quality_gate",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -201,6 +202,12 @@
     "doc": "Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link."
   },
   {
+    "pointer": "/smooth_quality_gate",
+    "type": "bool",
+    "default": true,
+    "doc": "Apply the quality gate after a smoothing move -- the check that refuses a move making the worst incident element worse. Turning it off lets every non-inverting smoothing move through."
+},
+{
     "pointer": "/spring_pull",
     "type": "bool",
     "default": true,

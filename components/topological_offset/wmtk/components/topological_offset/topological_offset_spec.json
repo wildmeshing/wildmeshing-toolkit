@@ -45,6 +45,7 @@
             "skip_good_regions",
             "w_amips",
             "spring_pull",
+            "smooth_quality_gate",
             "perform_sanity_checks"
         ]
     },
@@ -282,6 +283,12 @@
         "type": "bool",
         "default": false,
         "doc": "Only smooth vertices incident to a tet whose energy is still far from stop_energy. Smoothing a vertex surrounded by good tets does nothing, so skipping it is free (only used if optimize is true)."
+    },
+    {
+        "pointer": "/smooth_quality_gate",
+        "type": "bool",
+        "default": true,
+        "doc": "Apply the quality gate after a smoothing move -- the check that refuses a move making the worst incident element worse. Turning it off lets every non-inverting smoothing move through."
     },
     {
         "pointer": "/spring_pull",

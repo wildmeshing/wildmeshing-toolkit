@@ -139,6 +139,8 @@ struct OptimizerParameters
      * force balance stops it -- while the spring is a clean 1/w over six decades.
      */
     bool spring_pull = true;
+    /// Apply the quality gate after a smoothing move. See SmoothVertexOptions.
+    bool smooth_quality_gate = true;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.

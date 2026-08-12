@@ -292,6 +292,7 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     opts.s_envelope = m_s_envelope;
     opts.two_stage = true;
     opts.spring_pull = m_params.spring_pull;
+    opts.smooth_quality_gate = m_params.smooth_quality_gate;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }

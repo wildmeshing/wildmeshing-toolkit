@@ -31,6 +31,7 @@ bool TriOptimizerMesh::smooth_after(const Tuple& t)
     opts.s_envelope = m_s_envelope;
     opts.two_stage = true;
     opts.spring_pull = m_params.spring_pull;
+    opts.smooth_quality_gate = m_params.smooth_quality_gate;
 
     // Deliberately retain TriWild's default quality_veto_on_surface=true. A homogeneous
     // SimWild mesh must accept and reject the same candidate positions as TriWild.

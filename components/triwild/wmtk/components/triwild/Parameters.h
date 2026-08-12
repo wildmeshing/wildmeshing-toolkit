@@ -94,6 +94,7 @@ struct Parameters : public wmtk::OptimizerParameters
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
         w_amips = json_params["w_amips"];
         spring_pull = json_params["spring_pull"];
+        smooth_quality_gate = json_params["smooth_quality_gate"];
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];

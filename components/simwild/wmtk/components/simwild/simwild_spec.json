@@ -32,6 +32,7 @@
       "preserve_topology",
       "w_amips",
       "spring_pull",
+      "smooth_quality_gate",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -310,6 +311,12 @@
     "doc": "Preserve topology of input."
   },
   {
+    "pointer": "/smooth_quality_gate",
+    "type": "bool",
+    "default": true,
+    "doc": "Apply the quality gate after a smoothing move -- the check that refuses a move making the worst incident element worse. Turning it off lets every non-inverting smoothing move through."
+},
+{
     "pointer": "/spring_pull",
     "type": "bool",
     "default": true,
