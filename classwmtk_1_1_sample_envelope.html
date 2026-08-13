@@ -137,6 +137,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_point</b> (
 <tr class="memitem:abe3c4fbbcbf974a0e4d8fc4945275776" id="r_abe3c4fbbcbf974a0e4d8fc4945275776"><td class="memItemLeft" align="right" valign="top"><a id="abe3c4fbbcbf974a0e4d8fc4945275776" name="abe3c4fbbcbf974a0e4d8fc4945275776"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_point</b> (const Eigen::Vector2d &amp;pts, Eigen::Vector2d &amp;result) const</td></tr>
 <tr class="separator:abe3c4fbbcbf974a0e4d8fc4945275776"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9d39f16a034fc45f83cd5b73573a335" id="r_af9d39f16a034fc45f83cd5b73573a335"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#af9d39f16a034fc45f83cd5b73573a335">nearest_point_feature</a> (const Eigen::Vector2d &amp;p, Eigen::Vector2d &amp;result, bool &amp;on_corner, Eigen::Vector2d &amp;seg_normal, int &amp;feature_id) const</td></tr>
+<tr class="separator:af9d39f16a034fc45f83cd5b73573a335"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdce86c023c373ded71499bf51f603ea" id="r_afdce86c023c373ded71499bf51f603ea"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#afdce86c023c373ded71499bf51f603ea">nearest_point_feature</a> (const Eigen::Vector3d &amp;p, Eigen::Vector3d &amp;result, int &amp;feature_dim, Eigen::Vector3d &amp;dir, long long &amp;feature_id) const</td></tr>
+<tr class="separator:afdce86c023c373ded71499bf51f603ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c993c06e246599a8e635223f5dfdb19" id="r_a5c993c06e246599a8e635223f5dfdb19"><td class="memItemLeft" align="right" valign="top"><a id="a5c993c06e246599a8e635223f5dfdb19" name="a5c993c06e246599a8e635223f5dfdb19"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>initialized</b> ()</td></tr>
 <tr class="separator:a5c993c06e246599a8e635223f5dfdb19"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -186,6 +190,22 @@ std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>g
 <tr class="memitem:a56a9097fbea3642d0cf76e32172a352c" id="r_a56a9097fbea3642d0cf76e32172a352c"><td class="memItemLeft" align="right" valign="top"><a id="a56a9097fbea3642d0cf76e32172a352c" name="a56a9097fbea3642d0cf76e32172a352c"></a>
 std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>geo_face_ind</b></td></tr>
 <tr class="separator:a56a9097fbea3642d0cf76e32172a352c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e4859e761b8417b586fbbaed1af147c" id="r_a0e4859e761b8417b586fbbaed1af147c"><td class="memItemLeft" align="right" valign="top"><a id="a0e4859e761b8417b586fbbaed1af147c" name="a0e4859e761b8417b586fbbaed1af147c"></a>
+std::vector&lt; Eigen::Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_v2</b></td></tr>
+<tr class="memdesc:a0e4859e761b8417b586fbbaed1af147c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input copies backing nearest_point_feature (filled by the matching init only). <br /></td></tr>
+<tr class="separator:a0e4859e761b8417b586fbbaed1af147c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3237fa189cd9fe4ba30dd99aad2de56c" id="r_a3237fa189cd9fe4ba30dd99aad2de56c"><td class="memItemLeft" align="right" valign="top"><a id="a3237fa189cd9fe4ba30dd99aad2de56c" name="a3237fa189cd9fe4ba30dd99aad2de56c"></a>
+std::vector&lt; Eigen::Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_e2</b></td></tr>
+<tr class="separator:a3237fa189cd9fe4ba30dd99aad2de56c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a714cce164a09a3928fe9cda69ed64301" id="r_a714cce164a09a3928fe9cda69ed64301"><td class="memItemLeft" align="right" valign="top"><a id="a714cce164a09a3928fe9cda69ed64301" name="a714cce164a09a3928fe9cda69ed64301"></a>
+std::vector&lt; Eigen::Vector3d &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_v3</b></td></tr>
+<tr class="separator:a714cce164a09a3928fe9cda69ed64301"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2374c90938fe56498ef521909b3b314b" id="r_a2374c90938fe56498ef521909b3b314b"><td class="memItemLeft" align="right" valign="top"><a id="a2374c90938fe56498ef521909b3b314b" name="a2374c90938fe56498ef521909b3b314b"></a>
+std::vector&lt; Eigen::Vector3i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_f3</b></td></tr>
+<tr class="separator:a2374c90938fe56498ef521909b3b314b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8cb8de4432641e2ebc6e8edf5bd821f9" id="r_a8cb8de4432641e2ebc6e8edf5bd821f9"><td class="memItemLeft" align="right" valign="top"><a id="a8cb8de4432641e2ebc6e8edf5bd821f9" name="a8cb8de4432641e2ebc6e8edf5bd821f9"></a>
+std::vector&lt; Eigen::Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_e3</b></td></tr>
+<tr class="separator:a8cb8de4432641e2ebc6e8edf5bd821f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1793c5557ec08004503d6308d762d026" id="r_a1793c5557ec08004503d6308d762d026"><td class="memItemLeft" align="right" valign="top"><a id="a1793c5557ec08004503d6308d762d026" name="a1793c5557ec08004503d6308d762d026"></a>
 std::shared_ptr&lt; SimpleBVH::BVH &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_bvh</b></td></tr>
 <tr class="separator:a1793c5557ec08004503d6308d762d026"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -411,6 +431,102 @@ template&lt;typename VertexList &gt; </div>
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a>.</p>
+
+</div>
+</div>
+<a id="af9d39f16a034fc45f83cd5b73573a335" name="af9d39f16a034fc45f83cd5b73573a335"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9d39f16a034fc45f83cd5b73573a335">&#9670;&#160;</a></span>nearest_point_feature() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SampleEnvelope::nearest_point_feature </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &amp;&#160;</td>
+          <td class="paramname"><em>on_corner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>seg_normal</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &amp;&#160;</td>
+          <td class="paramname"><em>feature_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Nearest point plus which feature of the input carries it, for the TRUE Hessian of the squared distance: within each closest-feature region the distance to a piecewise- linear input is exactly quadratic, and the region's kind decides the Hessian's rank.</p>
+<p>2D polylines: on_corner reports a polyline-vertex foot; seg_normal is the segment's unit normal (valid when !on_corner, sign arbitrary); feature_id is the polyline vertex index or the segment index &ndash; canonical, so two queries compare as "did the closest
+feature change". </p>
+
+</div>
+</div>
+<a id="afdce86c023c373ded71499bf51f603ea" name="afdce86c023c373ded71499bf51f603ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdce86c023c373ded71499bf51f603ea">&#9670;&#160;</a></span>nearest_point_feature() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::SampleEnvelope::nearest_point_feature </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &amp;&#160;</td>
+          <td class="paramname"><em>feature_dim</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>dir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long long &amp;&#160;</td>
+          <td class="paramname"><em>feature_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>3D counterpart, for triangle envelopes AND edge (curve) envelopes. feature_dim: 2 = face interior, 1 = edge/segment interior, 0 = vertex. dir is the face normal (dim 2) or the edge direction (dim 1), unit length, sign arbitrary. feature_id is canonical across adjacent primitives (face index / sorted vertex pair packed as min * n_vertices + max / vertex index). </p>
 
 </div>
 </div>

@@ -112,17 +112,21 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keywordtype">void</span> solution_changed(<span class="keyword">const</span> TVector&amp; new_x) <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keywordtype">bool</span> is_step_valid(<span class="keyword">const</span> TVector&amp; x0, <span class="keyword">const</span> TVector&amp; x1) <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keywordtype">bool</span> after_line_search_custom_operation(<span class="keyword">const</span> TVector&amp; x0, <span class="keyword">const</span> TVector&amp; x1) <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    std::vector&lt;std::shared_ptr&lt;Problem&gt;&gt; m_energies;</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    std::vector&lt;double&gt; m_weights;</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>};</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordtype">double</span> max_step_size(<span class="keyword">const</span> TVector&amp; x0, <span class="keyword">const</span> TVector&amp; x1) <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keywordtype">bool</span> is_step_valid(<span class="keyword">const</span> TVector&amp; x0, <span class="keyword">const</span> TVector&amp; x1) <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span> </div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    std::vector&lt;std::shared_ptr&lt;Problem&gt;&gt; m_energies;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    std::vector&lt;double&gt; m_weights;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>};</div>
 </div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>} <span class="comment">// namespace wmtk::optimization</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>} <span class="comment">// namespace wmtk::optimization</span></div>
 <div class="ttc" id="aclasswmtk_1_1optimization_1_1_energy_sum_html"><div class="ttname"><a href="classwmtk_1_1optimization_1_1_energy_sum.html">wmtk::optimization::EnergySum</a></div><div class="ttdef"><b>Definition</b> EnergySum.hpp:9</div></div>
-<div class="ttc" id="aclasswmtk_1_1optimization_1_1_energy_sum_html_a01440f38f3998f390b9e1adc6c0f5212"><div class="ttname"><a href="classwmtk_1_1optimization_1_1_energy_sum.html#a01440f38f3998f390b9e1adc6c0f5212">wmtk::optimization::EnergySum::add_energy</a></div><div class="ttdeci">void add_energy(const std::shared_ptr&lt; Problem &gt; &amp;energy, const double weight=1)</div><div class="ttdoc">Add an energy term to the sum of energies.</div><div class="ttdef"><b>Definition</b> EnergySum.cpp:7</div></div>
+<div class="ttc" id="aclasswmtk_1_1optimization_1_1_energy_sum_html_a01440f38f3998f390b9e1adc6c0f5212"><div class="ttname"><a href="classwmtk_1_1optimization_1_1_energy_sum.html#a01440f38f3998f390b9e1adc6c0f5212">wmtk::optimization::EnergySum::add_energy</a></div><div class="ttdeci">void add_energy(const std::shared_ptr&lt; Problem &gt; &amp;energy, const double weight=1)</div><div class="ttdoc">Add an energy term to the sum of energies.</div><div class="ttdef"><b>Definition</b> EnergySum.cpp:9</div></div>
 <div class="ttc" id="aclasswmtk_1_1optimization_1_1_energy_sum_html_a540c1c64b915780064af3ad91b01b867"><div class="ttname"><a href="classwmtk_1_1optimization_1_1_energy_sum.html#a540c1c64b915780064af3ad91b01b867">wmtk::optimization::EnergySum::EnergySum</a></div><div class="ttdeci">EnergySum()=default</div><div class="ttdoc">A weighted sum of multiple energies.</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

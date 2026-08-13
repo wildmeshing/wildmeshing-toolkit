@@ -74,6 +74,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structwmtk_1_1optimization_1_1_smooth_vertex_options-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">wmtk::optimization::SmoothVertexOptions Struct Reference</div></div>
@@ -85,6 +86,13 @@ $(function() {
 
 <p><code>#include &lt;<a class="el" href="_smooth_vertex_8hpp_source.html">SmoothVertex.hpp</a>&gt;</code></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:afdcc39b878c914a0f47eb33a0ade9930" id="r_afdcc39b878c914a0f47eb33a0ade9930"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#afdcc39b878c914a0f47eb33a0ade9930">SmoothingMode</a> { <b>Projected</b>
+, <b>Exact</b>
+ }</td></tr>
+<tr class="separator:afdcc39b878c914a0f47eb33a0ade9930"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a238c0902b99ff22211e1d3ac93dbe672" id="r_a238c0902b99ff22211e1d3ac93dbe672"><td class="memItemLeft" align="right" valign="top"><a id="a238c0902b99ff22211e1d3ac93dbe672" name="a238c0902b99ff22211e1d3ac93dbe672"></a>
@@ -103,11 +111,76 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>s_envelope</b> = 1.
 <tr class="separator:adc4ff773ab354c4a2496e67fb7341cde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a406d6b9e8f9ec0cf33de7bdd1f1db4dc" id="r_a406d6b9e8f9ec0cf33de7bdd1f1db4dc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#a406d6b9e8f9ec0cf33de7bdd1f1db4dc">quality_veto_on_surface</a> = true</td></tr>
 <tr class="separator:a406d6b9e8f9ec0cf33de7bdd1f1db4dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e30cf6125b0298d7e109a68092acf1c" id="r_a8e30cf6125b0298d7e109a68092acf1c"><td class="memItemLeft" align="right" valign="top"><a id="a8e30cf6125b0298d7e109a68092acf1c" name="a8e30cf6125b0298d7e109a68092acf1c"></a>
+<a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#afdcc39b878c914a0f47eb33a0ade9930">SmoothingMode</a>&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_mode</b> = SmoothingMode::Projected</td></tr>
+<tr class="separator:a8e30cf6125b0298d7e109a68092acf1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b30ae2dd123234edaf8f238f5bfb61b" id="r_a7b30ae2dd123234edaf8f238f5bfb61b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#a7b30ae2dd123234edaf8f238f5bfb61b">project_line_search_steps</a> = 12</td></tr>
+<tr class="separator:a7b30ae2dd123234edaf8f238f5bfb61b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf21f58b42013d8a121db52ef78723d2" id="r_abf21f58b42013d8a121db52ef78723d2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#abf21f58b42013d8a121db52ef78723d2">project_line_search_nested_steps</a> = 0</td></tr>
+<tr class="separator:abf21f58b42013d8a121db52ef78723d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Weights and policy for smooth_vertex_3d. </p>
-<p>The weights follow simwild's convention: <code>w_envelope = 1 - w_amips</code>, with w_amips small (1e-4), so the envelope term dominates and the AMIPS term acts as a light quality preference. The scale factors put the two on a comparable footing &mdash; AMIPS is dimensionless while the envelope energy is a squared distance, so s_envelope is normally 1 / (diag * eps^2). </p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
+<p>The weights follow simwild's convention: <code>w_envelope = 1 - w_amips</code>, with w_amips small (1e-4), so the envelope term dominates and the AMIPS term acts as a light quality preference. The scale factors put the two on a comparable footing &mdash; AMIPS is dimensionless while the envelope energy is a squared distance, so s_envelope is 1 / eps^2 and the term reads (d/eps)^2: distance in envelope widths, dimensionless like AMIPS in both 2D and 3D. </p>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="afdcc39b878c914a0f47eb33a0ade9930" name="afdcc39b878c914a0f47eb33a0ade9930"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdcc39b878c914a0f47eb33a0ade9930">&#9670;&#160;</a></span>SmoothingMode</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#afdcc39b878c914a0f47eb33a0ade9930">wmtk::optimization::SmoothVertexOptions::SmoothingMode</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>How a surface vertex is placed.</p>
+<p>Projected: smooth as if interior (AMIPS alone), then walk back toward the start along t = 1, 1/2, 1/4, ..., projecting each candidate onto the input; take the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. The vertex lands exactly on the input; no weights exist.</p>
+<p>Exact: minimize w_amips * AMIPS + w_envelope * (d/eps)^2 with the TRUE Hessian of the distance to the piecewise-linear input (ExactDistanceEnergy2D/3D): sliding is free exactly where the input is flat, blocked isotropically at corners and vertices, constrained to the direction of a 3D edge or curve segment. The vertex rests a w_amips-proportional distance off the input; the accept checks below apply either way. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="abf21f58b42013d8a121db52ef78723d2" name="abf21f58b42013d8a121db52ef78723d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf21f58b42013d8a121db52ef78723d2">&#9670;&#160;</a></span>project_line_search_nested_steps</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::optimization::SmoothVertexOptions::project_line_search_nested_steps = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Second pass, run only when the first found nothing: partial projections.</p>
+<p>The first pass only ever tests points ON the input, so a vertex whose one-ring cannot tolerate being pulled all the way there is refused at every step and does not move at all &ndash; and is refused again next pass, from the same place. This pass revisits each candidate and bisects between the interpolated point and its projection, taking the longest step toward the input that still does not invert and still lowers the worst element. The vertex ends up off the input, but closer to it than it was, so the next pass starts from somewhere better and it converges onto the surface over several passes instead of being stuck forever.</p>
+<p>0 disables the pass. Costs nothing when the first pass succeeds, which is the common case. </p>
+
+</div>
+</div>
+<a id="a7b30ae2dd123234edaf8f238f5bfb61b" name="a7b30ae2dd123234edaf8f238f5bfb61b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b30ae2dd123234edaf8f238f5bfb61b">&#9670;&#160;</a></span>project_line_search_steps</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::optimization::SmoothVertexOptions::project_line_search_steps = 12</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Backtracking steps tried before the move is abandoned: t = 1, 1/2, ..., 2^-(n-1). Exhausting these without an acceptable candidate is what "the search failed" means. </p>
+
+</div>
+</div>
 <a id="a406d6b9e8f9ec0cf33de7bdd1f1db4dc" name="a406d6b9e8f9ec0cf33de7bdd1f1db4dc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a406d6b9e8f9ec0cf33de7bdd1f1db4dc">&#9670;&#160;</a></span>quality_veto_on_surface</h2>
 
