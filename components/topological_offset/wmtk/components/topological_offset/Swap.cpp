@@ -19,9 +19,21 @@ namespace wmtk::components::topological_offset {
 bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
 {
     std::map<CellTag, size_t> tag_count;
+    std::set<int> labels;
     for (const size_t t : tids) {
         tag_count[m_tet_attribute[t].tag]++;
+        labels.insert(m_tet_attribute[t].label);
     }
+    // The construction LABEL is what region membership is read from (cell_in_region(),
+    // cell_is_offset_band(), cell_is_input_complex()), and a swap reuses recycled tet slots
+    // whose labels belong to whatever was there before. So it has to be carried across
+    // explicitly, exactly as the tag is -- and for the same reason the tag rule below refuses a
+    // mixed ring, a ring spanning two labels has a region boundary running through it and
+    // cannot be given one label without moving that boundary.
+    if (labels.size() > 1) {
+        return false;
+    }
+    m_swap_label.local() = *labels.begin();
     // Refuse any swap whose ring spans more than one tag.
     //
     // The rule used to be "at most two tags, and the majority wins". That is what tore the
@@ -80,8 +92,12 @@ bool TopoOffsetTetMesh::swap_before_surface(
     }
 
     if (m_face_attribute[fid_abc].m_surface_class != OFFSET_SURFACE_CLASS) {
-        // Input-complex flip. Containment in the envelope is checked by the shared operation.
-        return true;
+        // Input-complex flip. Refused: re-triangulating a non-planar quad of the input complex
+        // MOVES that surface, and the input complex is frozen categorically. This used to
+        // return true and leave it to the shared operation's envelope check, but the envelope
+        // is a tolerance -- it permits drift up to eps -- and the input complex is the geometry
+        // the offset distance is measured against, so it may not drift at all.
+        return false;
     }
     return offset_swap_normal_deviation_ok(f_abc, f_abd, a, b, c, d);
 }
@@ -89,9 +105,12 @@ bool TopoOffsetTetMesh::swap_before_surface(
 bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool)
 {
     const CellTag& tag = m_swap_tag.local();
+    const int label = m_swap_label.local();
     for (const size_t t : tids) {
         m_tet_attribute[t].tag = tag;
+        m_tet_attribute[t].label = label;
     }
+    ++iter_cnt_swap;
     return true;
 }
 

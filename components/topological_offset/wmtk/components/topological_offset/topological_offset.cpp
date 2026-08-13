@@ -76,7 +76,6 @@ void topological_offset(nlohmann::json json_params)
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
         logger().info("relative_ball_threshold: {}", params.relative_ball_threshold);
-        logger().info("edge_search_term_len: {}", params.edge_search_term_len);
         logger().info("===============================");
     }
 
@@ -339,6 +338,12 @@ void topological_offset(nlohmann::json json_params)
                 log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
             }
 
+            // Did conservative growth run out of room? Reported here, not inside the
+            // optimization, because it is a property of the offset as constructed -- the
+            // optimization cannot move vertices off the frozen bounding box, so a band clipped
+            // here stays clipped.
+            mesh.warn_if_offset_reaches_domain_boundary();
+
             // offset region manifoldness check
             if (check_manifoldness) {
                 if (mesh.offset_is_manifold()) {
@@ -364,19 +369,23 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        if (mesh.m_offset_params.optimize) {
-            mesh.optimize_offset(output_filename);
+        // Unconditional -- 3D no longer has an un-optimized output, matching 2D. `optimize` is
+        // not read here: now that the distance-field marching pass is gone, conservative growth
+        // leaves the band boundary on background-cell boundaries, so skipping the optimization
+        // does not yield a coarser offset, it yields one whose defining property is simply unmet
+        // at an error set by the input mesh's resolution rather than by anything the user asked
+        // for. See the corresponding note in .claude/CLAUDE.md.
+        mesh.optimize_offset(output_filename);
 
-            // The manifoldness check above ran on the offset as constructed. Optimization
-            // then re-triangulates it -- splits, collapses and four kinds of swap all touch
-            // the offset boundary -- so the property has to be re-established afterwards, not
-            // assumed to survive.
-            if (check_manifoldness) {
-                if (mesh.offset_is_manifold()) {
-                    logger().info("Offset region manifold check passed after optimization.");
-                } else {
-                    logger().error("Offset region is NOT manifold after optimization!");
-                }
+        // The manifoldness check above ran on the offset as constructed. Optimization
+        // then re-triangulates it -- splits, collapses and four kinds of swap all touch
+        // the offset boundary -- so the property has to be re-established afterwards, not
+        // assumed to survive.
+        if (check_manifoldness) {
+            if (mesh.offset_is_manifold()) {
+                logger().info("Offset region manifold check passed after optimization.");
+            } else {
+                logger().error("Offset region is NOT manifold after optimization!");
             }
         }
 
@@ -416,6 +425,36 @@ void topological_offset(nlohmann::json json_params)
             report["after #t"] = mesh.tet_size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
+            if (!mesh.optimization_metrics.empty()) {
+                std::vector<double> max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev;
+                for (const auto& m : mesh.optimization_metrics) {
+                    max_dist_err.push_back(m[0]);
+                    avg_dist_err.push_back(m[1]);
+                    max_norm_dev.push_back(m[2]);
+                    avg_norm_dev.push_back(m[3]);
+                }
+                report["optimization_metrics"]["max_dist_err"] = max_dist_err;
+                report["optimization_metrics"]["avg_dist_err"] = avg_dist_err;
+                report["optimization_metrics"]["max_norm_dev"] = max_norm_dev;
+                report["optimization_metrics"]["avg_norm_dev"] = avg_norm_dev;
+
+                std::vector<int> splits, collapses, swaps;
+                for (const auto& c : mesh.op_counts) {
+                    splits.push_back(c[0]);
+                    collapses.push_back(c[1]);
+                    swaps.push_back(c[2]);
+                }
+                report["op_counts"]["splits"] = splits;
+                report["op_counts"]["collapses"] = collapses;
+                report["op_counts"]["swaps"] = swaps;
+                // Read from the run rather than recomputed from the arrays as the 2D block does:
+                // optimize_offset() breaks out of the loop the moment it converges, so its own
+                // verdict is the authority and cannot drift from the criterion it applied.
+                report["converged"] = mesh.m_converged;
+                report["convergence_target"] = mesh.m_offset_params.convergence_target;
+                report["convergence_normal_deviation"] =
+                    mesh.m_offset_params.convergence_normal_deviation;
+            }
             f_out << std::setw(4) << report;
             f_out.close();
         }

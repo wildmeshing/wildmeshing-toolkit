@@ -127,15 +127,25 @@ public:
      */
     static constexpr int OFFSET_SURFACE_CLASS = 1;
 
+    /**
+     * @brief AVERAGE distance error, as a fraction of target_distance, above which a
+     * non-converged run with respect_all_topologies is reported as topologically blocked.
+     *
+     * The discriminator is the AVERAGE, not the max and not max/avg. Topological blocking is
+     * WIDESPREAD -- whole stretches of offset cannot advance, so the average climbs toward the
+     * max. Every other failure mode is the opposite shape: a few over-constrained vertices pin
+     * the max while the rest lands correctly, leaving the average tiny. In 2D avg/delta separated
+     * the blocked runs from every other run by more than 150x.
+     *
+     * Class-scope rather than namespace-scope only because TopoOffsetTriMesh.h already defines a
+     * namespace-scope constant of this name and the two headers share a namespace.
+     */
+    static constexpr double TOPOLOGY_BLOCK_AVG_FRAC = 0.05;
+
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0, // used for simplicial embedding steps
         Initial = 1, // this is used to initialize the complex. Its a little hacky
-
-        // only one of these is used, hard coded in execute_offset()
-        BinarySearch = 2, // bisection root finding algo
-        LogRootFind = 3, // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
-        SphereTracing = 4, // use sphere tracing to compute the zero of the distance field
 
         Optimization = 5 // this is used in the optimization phase of the algorithm
     };
@@ -233,12 +243,8 @@ public:
      */
     bool cell_in_region(const size_t tid) const
     {
-        const CellTag& tags = m_tet_attribute[tid].tag;
-        for (const int64_t t : m_offset_output_tag_ids) {
-            if (tags.count(t) != 0) return true; // in the offset band
-        }
-        const ExpressionPtr& expr = m_offset_params.offset_selection;
-        return expr && expr->eval(tags); // in the input complex it wraps
+        const int l = m_tet_attribute[tid].label;
+        return l == 1 || l == 2; // input complex, or the offset band
     }
 
     /// Whether face `fid` is on the offset boundary (as opposed to the input complex).
@@ -381,6 +387,9 @@ public:
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)
         override;
+    /// Writes the new vertex's tracked-surface membership before the shared split's containment
+    /// check reads it; returns the base's positioning verdict unchanged. See the definition.
+    bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     void split_after_vertex(size_t v_new, bool is_edge_open_boundary) override;
 
     /// The offset's surface can end on a non-manifold or boundary edge of the input complex,
@@ -408,6 +417,10 @@ private:
     bool swap_capture_tag(const std::vector<size_t>& tids);
     /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
     wmtk::threading::enumerable_thread_specific<CellTag> m_swap_tag;
+    /// The construction LABEL shared by every cell of the swap's ring, captured alongside the
+    /// tag. Without this a swap leaves its new cells holding whatever label occupied the
+    /// recycled tet slot, and the label is what region membership is read from.
+    wmtk::threading::enumerable_thread_specific<int> m_swap_label;
 
 public:
     /**
@@ -434,6 +447,27 @@ public:
     bool is_edge_on_offset(const Tuple& loc);
 
     /**
+     * @brief The two simplex sets the optimization may not touch at all.
+     *
+     * The input simplicial complex is the geometry the offset is measured against, and the
+     * domain boundary is the box the background mesh lives in. Neither is something to be
+     * improved: an operation that splits, collapses, flips or moves any of their simplices
+     * changes the reference the whole result is defined against. This is categorical, not a
+     * tolerance -- the shared engine holds the input surface inside m_envelope, which lets it
+     * drift by eps, and eps is not zero.
+     *
+     * Same rule and same wording as TopoOffsetTriMesh::vertex_is_frozen()/edge_is_frozen(). The
+     * one difference the dimension forces: 2D reads an edge's bbox membership off the edge
+     * itself, while 3D tracks the box on FACES, so the edge test goes through the base's
+     * is_edge_on_bbox(), which walks the edge's incident faces. Both are therefore non-const.
+     */
+    bool vertex_is_frozen(const size_t vid) const
+    {
+        return m_vertex_extra[vid].m_is_on_input || !m_vertex_attribute[vid].on_bbox_faces.empty();
+    }
+    bool edge_is_frozen(const Tuple& loc) { return is_edge_on_input(loc) || is_edge_on_bbox(loc); }
+
+    /**
      * @brief check that the ambient tag does not overlap with any other tags
      */
     bool ambient_assert();
@@ -455,29 +489,6 @@ public:
      */
     void init_input_complex_bvh();
 
-    /**
-     * @deprecated
-     * @brief split edge at point by minimizing m_offset_params.target_distance - d() (where d() is
-     * distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes
-     * distance field is monotonic along edge. May give weird results if not monotonic
-     */
-    void edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new) const;
-    void edge_split_binary_search(const Vector3d& v1_pos, const Vector3d& v2_pos, Vector3d& p_new)
-        const;
-
-    /**
-     * @deprecated
-     * @brief uses custom root finding routine, attempting to find first root (nearest to v1)
-     * to split edge at
-     */
-    void edge_split_log_root_find(const size_t v1, const size_t v2, Vector3d& p_new) const;
-
-    /**
-     * @brief split edge at first root of d(l) - d*, where d(l) is distance to input complex,
-     * using sphere tracing method. This is the best method and should be used instead of
-     * binary or log root finding methods
-     */
-    void edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector3d& p_new) const;
 
     /**
      * @brief label connected simplicial complex components (simplices labelled 1 or 2)
@@ -549,6 +560,90 @@ public:
      * @note skeleton: no bisection fallback toward p0 on rejection.
      */
     bool smooth_after_offset_surface(const Tuple& t);
+
+    /**
+     * @brief Why smoothing refused a vertex, one counter per site where it can say no.
+     *
+     * The base's SmoothRejectCounters only sees the vertices that reach
+     * TetOptimizerMesh::smooth_after(), which for the offset is the INTERIOR ones -- an
+     * offset-surface vertex is placed by smooth_after_offset_surface() and never touches them.
+     * So the whole offset surface, the part that actually carries the distance error, is
+     * invisible in the base's "accepted N | rejected: ..." line. These counters cover every
+     * site on both paths.
+     *
+     * Field-for-field the same as TopoOffsetTriMesh::SmoothTrace, including the three counters
+     * 3D has no mechanism to raise yet -- they stay in so the two log lines diff cleanly, and
+     * so they light up on their own when the mechanism lands. Each is commented below.
+     */
+    struct SmoothTrace
+    {
+        std::atomic<int> attempted{0}; ///< smooth_before() entered
+        std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
+        std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
+        std::atomic<int> before_on_input{0}; ///< input complex, frozen
+        std::atomic<int> offset_attempted{0}; ///< dispatched to smooth_after_offset_surface()
+        std::atomic<int> offset_no_neighbours{0}; ///< no offset-surface neighbour to average
+        std::atomic<int> offset_on_complex{0}; ///< every sample degenerate: no offset direction
+        /// The search ran out and p0 ITSELF still inverts a tet, so no fraction of the move is
+        /// legal. Unlike 2D this is not a rejection: move_to() clamps rather than refusing, and
+        /// the base's invariants() -- run by TetMesh::smooth_vertex right after -- is what rolls
+        /// the move back. Counted here because a vertex in this state is frozen for the run.
+        std::atomic<int> offset_inverted{0};
+        /// Always 0 in 3D: the region-boundary envelope is 2D-only, so nothing on this path can
+        /// be rejected by containment. Kept for lock-step with 2D.
+        std::atomic<int> offset_envelope{0};
+        std::atomic<int> offset_accepted{0};
+        /// Accepted, but the binary search had to stop short of the blended target. These are
+        /// invisible in offset_accepted, which is the point: a clamped move reports success
+        /// while delivering a fraction of the requested correction.
+        std::atomic<int> offset_clamped{0}; ///< accepted with the search fraction < 0.99
+        /// Always 0 in 3D, for the same reason as offset_envelope.
+        std::atomic<int> offset_clamp_env{0};
+        std::atomic<int> offset_clamp_inv{0}; ///< ... and an inverted tet is what stopped it
+        /// Always 0 until the tangent-PLANE slide lands (the 3D counterpart of 2D's
+        /// minimize_distance_along_tangent(); see .claude/CLAUDE.md 3D note 7).
+        std::atomic<int> offset_slid{0};
+        /// Distance error over the offset vertices this pass actually touched, before and after
+        /// the move, in units of 1e-9 so an atomic<int> can accumulate a max/sum.
+        std::atomic<long long> offset_err_before_nano{0};
+        std::atomic<long long> offset_err_after_nano{0};
+        std::atomic<int> offset_err_max_before_nano{0};
+        std::atomic<int> offset_err_max_after_nano{0};
+        std::atomic<int> interior_attempted{0}; ///< dispatched to the shared AMIPS smoother
+        /// Always 0 in 3D: there is no REGION surface class here, only INPUT and OFFSET.
+        std::atomic<int> region_attempted{0};
+
+        void reset()
+        {
+            offset_err_before_nano.store(0);
+            offset_err_after_nano.store(0);
+            for (std::atomic<int>* c :
+                 {&attempted,
+                  &before_bbox,
+                  &before_unrounded,
+                  &before_on_input,
+                  &offset_attempted,
+                  &offset_no_neighbours,
+                  &offset_on_complex,
+                  &offset_inverted,
+                  &offset_envelope,
+                  &offset_accepted,
+                  &offset_clamped,
+                  &offset_clamp_env,
+                  &offset_clamp_inv,
+                  &offset_slid,
+                  &offset_err_max_before_nano,
+                  &offset_err_max_after_nano,
+                  &interior_attempted,
+                  &region_attempted}) {
+                c->store(0);
+            }
+        }
+    };
+    SmoothTrace m_smooth_trace;
+    void log_smooth_trace() const;
+
+
     //// smoothing
 
     //// collapse
@@ -563,15 +658,111 @@ public:
     double m_max_normal_deviation_swap_max_deg = 75.0;
 
     /**
-     * @brief max angle (degrees, 0-90, orientation independent) between offset-surface face
-     * f's own normal and any of its offset_surface_samples() normals. Taking the max over all
-     * 4 samples (rather than a single centroid sample) is what makes this sensitive to
-     * features: a face straddling a sharp fold of the input complex will have samples on
-     * either side of the fold, so at least one of them disagrees strongly with the face's own
-     * (necessarily flat) normal, even though the face may look locally fine from any single
-     * sample alone.
+     * @brief Paper Definition 5: max angle (degrees) between the offset FIELD normal at face f's
+     * centroid and the field normal at each of its three near-corner samples.
+     *
+     * Both terms are field normals -- f's own geometric normal does not appear. n() is continuous
+     * away from the input complex's features, so shrinking a face drives sigma to zero, which is
+     * what makes this something update_sizing_field() can actually satisfy. The earlier version
+     * compared f's own normal against the samples, i.e. misorientation, which refinement does not
+     * fix and the sizing field could therefore never drive down.
+     *
+     * Mirrors TopoOffsetTriMesh::edge_normal_deviation(); the only difference is 3 samples
+     * instead of 2, because a triangle has three vertices and a segment has two.
      */
     double face_normal_deviation(const Tuple& f) const;
+
+    /**
+     * @brief The offset field's normal at an arbitrary point: the unit vector from the nearest
+     * point on the input complex out to p. False if p sits on the complex, where it has none.
+     *
+     * "The offset normal can be computed for any point in space by finding the projection point
+     * on the offset and normalizing the vector from the point in space to its projection."
+     * (paper, Appendix A.)
+     */
+    /**
+     * @brief Seed the sizing field from the offset surface's CURRENT edge lengths, once, before
+     * the first pass. Paper Sec. 5.3.3 Step 1: "initialized with the current length of each edge."
+     *
+     * Without it the field starts at the base target (a fraction of the bounding box), which is
+     * far coarser than the offset surface, so every offset edge is a collapse candidate on pass
+     * one and the surface is decimated before any metric is computed.
+     */
+    void init_offset_sizing_field();
+
+    bool offset_field_normal(const Vector3d& p, Vector3d& n) const;
+
+    /**
+     * @brief How far the offset surface is from where it should be: {max, avg} over its vertices.
+     *
+     * The absolute error |dist(v, input complex) - target_distance|, over the band's OUTER
+     * surface only -- a band cell meeting a plain-background cell, not the input complex it
+     * wraps, whose interface sits at distance 0 by construction. The MAX is what the optimization
+     * converges against: the offset is only as good as its worst-placed vertex.
+     *
+     * A face with no opposite tet is ON THE DOMAIN BOUNDARY and is counted, not skipped. The 2D
+     * version skipped those and under-reported a bbox-clipped offset by 11x -- true error on the
+     * clipped stretch reached 52% of the target distance while the report showed 0.5%. Those
+     * vertices are frozen on the box and can never be fixed, which is exactly why they must be
+     * visible rather than silently dropped.
+     */
+    std::pair<double, double> compute_distance_deviation() const;
+
+    /**
+     * @brief How far the offset surface FACES from where it should be: {max, avg} in DEGREES.
+     *
+     * face_normal_deviation() over the same band-outer faces compute_distance_deviation() measures
+     * vertices over, reported alongside it. Distance alone does not pin the offset down: a surface
+     * can have every vertex at exactly target_distance while zig-zagging between them.
+     */
+    std::pair<double, double> compute_normal_deviation() const;
+
+    /**
+     * @brief The band's outer surface, recomputed live rather than read from the cached class.
+     *
+     * A band cell meeting a cell that is neither band nor input complex. Live because the
+     * operations that ask this run between one labelling pass and the next, so a face a split
+     * just created carries whatever cached class its recycled slot happened to hold.
+     *
+     * Returns true for a band face on the domain boundary (no opposite tet) -- see
+     * compute_distance_deviation() for why that case must not be dropped.
+     */
+    bool face_is_offset_surface_live(const Tuple& f) const;
+
+    /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex it wraps).
+    bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
+
+    /// Whether tet `tid` is part of the INPUT complex the band wraps.
+    bool cell_is_input_complex(const size_t tid) const { return m_tet_attribute[tid].label == 1; }
+
+    /**
+     * @brief Warn if conservative growth ran into the bounding box.
+     *
+     * A band face on the domain boundary means target_distance exceeded the clearance between the
+     * input complex and the box, so the offset is clipped there. Those vertices are frozen and no
+     * operation can move them, which makes the target distance unreachable by construction --
+     * worth saying out loud rather than leaving as a mysterious plateau in max_dist_err.
+     */
+    void warn_if_offset_reaches_domain_boundary() const;
+
+    /// The vertex compute_distance_deviation() last found the max at, and a dump of everything
+    /// that could be stopping it from moving. Diagnostic only.
+    mutable size_t m_worst_dist_vid = static_cast<size_t>(-1);
+    void log_worst_dist_vertex() const;
+
+    /// {max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev} per optimization iteration.
+    std::vector<std::array<double, 4>> optimization_metrics;
+    /// {splits, collapses, swaps} per optimization iteration, mirroring optimization_metrics.
+    std::vector<std::array<int, 3>> op_counts;
+    /// Whether the optimization met both convergence criteria before the iteration cap.
+    bool m_converged = false;
+
+    /// Per-iteration operation counters, reset before each iteration's operation passes.
+    std::atomic<int> iter_cnt_split{0};
+    std::atomic<int> iter_cnt_collapse{0};
+    std::atomic<int> iter_cnt_swap{0};
+    std::atomic<int> iter_cnt_collapse_nd_reject{0};
+    std::atomic<int> iter_cnt_swap_nd_reject{0};
 
     /**
      * @brief max face_normal_deviation() over the offset-surface faces incident to vertex vid
@@ -647,10 +838,17 @@ public:
     //// swap
 
     /**
-     * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
-     * are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field
-     * and the offset target distance (m_offset_params.target_distance). If
-     * m_edge_split_mode=Midpoint, edges are split at the midpoint
+     * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other
+     * 1/2 are split, at the MIDPOINT (Midpoint) or at a fraction of the way toward the input
+     * complex (Initial).
+     *
+     * The distance-field modes that used to exist here -- BinarySearch, LogRootFind and
+     * SphereTracing, which root-found each band-boundary edge onto d(x) = delta at insertion time
+     * -- are gone, as they are in 2D. They contradict the paper, which places inserted vertices at
+     * the midpoint (Sec. 5.2: "we do not perform an interpolation ... we just place the inserted
+     * vertices at the midpoint of the split edges") and leaves the distance entirely to the
+     * Step-3 optimization; and they did the optimizer's job with a worse tool, having no error
+     * feedback and running none of the inversion guards smooth_after_offset_surface() does.
      */
     void marching_tets();
 
