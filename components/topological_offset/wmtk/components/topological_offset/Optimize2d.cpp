@@ -765,10 +765,8 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
         if (n == 0) continue; // not on the offset surface: the background keeps the base target
         raw_sum += sum_len / n;
         ++n_seeded;
-        m_vertex_attribute[vid].m_sizing_scalar = std::clamp(
-            (sum_len / n) / l,
-            s_floor,
-            m_offset_params.max_sizing_scalar);
+        m_vertex_attribute[vid].m_sizing_scalar =
+            std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
     }
     logger().info(
         "\tOffset sizing seed: {} vertices, mean incident length {:.6} -> target {:.6} "

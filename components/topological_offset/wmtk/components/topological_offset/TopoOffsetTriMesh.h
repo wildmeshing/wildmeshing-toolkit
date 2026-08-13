@@ -484,8 +484,7 @@ public:
      */
     bool vertex_is_frozen(const size_t vid) const
     {
-        return m_vertex_extra[vid].m_is_on_input ||
-               !m_vertex_attribute[vid].on_bbox_faces.empty();
+        return m_vertex_extra[vid].m_is_on_input || !m_vertex_attribute[vid].on_bbox_faces.empty();
     }
     bool edge_is_frozen(const size_t eid) const
     {
@@ -596,10 +595,22 @@ public:
             offset_err_before_nano.store(0);
             offset_err_after_nano.store(0);
             for (std::atomic<int>* c :
-                 {&attempted, &before_bbox, &before_unrounded, &before_on_input, &offset_attempted,
-                  &offset_no_neighbours, &offset_on_complex, &offset_inverted, &offset_envelope,
-                  &offset_accepted, &offset_clamped, &offset_clamp_env, &offset_clamp_inv,
-                  &offset_err_max_before_nano, &offset_err_max_after_nano, &interior_attempted,
+                 {&attempted,
+                  &before_bbox,
+                  &before_unrounded,
+                  &before_on_input,
+                  &offset_attempted,
+                  &offset_no_neighbours,
+                  &offset_on_complex,
+                  &offset_inverted,
+                  &offset_envelope,
+                  &offset_accepted,
+                  &offset_clamped,
+                  &offset_clamp_env,
+                  &offset_clamp_inv,
+                  &offset_err_max_before_nano,
+                  &offset_err_max_after_nano,
+                  &interior_attempted,
                   &region_attempted}) {
                 c->store(0);
             }
