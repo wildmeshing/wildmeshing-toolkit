@@ -18,6 +18,13 @@
             "offset_out",
             "target_distance",
             "target_distance_rel",
+            "convergence_target",
+            "convergence_target_rel",
+            "convergence_normal_deviation",
+            "throw_on_nonconvergence",
+            "envelope_size",
+            "envelope_size_rel",
+            "region_envelope_from_input",
             "relative_ball_threshold",
             "edge_search_termination_len",
             "sorted_marching",
@@ -34,6 +41,8 @@
             "length",
             "stop_energy",
             "max_normal_deviation_deg",
+            "min_normal_deviation_deg",
+            "min_edge_length",
             "smooth_quadrics_weight",
             "smooth_laplacian_weight",
             "quadrics_svd_threshold",
@@ -44,6 +53,9 @@
             "split_high_valence_threshold",
             "skip_good_regions",
             "w_amips",
+            "smoothing_mode",
+            "project_line_search_steps",
+            "project_line_search_nested_steps",
             "perform_sanity_checks"
         ]
     },
@@ -131,6 +143,48 @@
         "type": "float",
         "default": -1.0,
         "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
+    },
+    {
+        "pointer": "/convergence_target_rel",
+        "type": "float",
+        "default": 0.1,
+        "doc": "Optimization terminates early once max_dist_err drops to or below this fraction of target_distance. Ignored if convergence_target >= 0."
+    },
+    {
+        "pointer": "/convergence_target",
+        "type": "float",
+        "default": -1.0,
+        "doc": "Absolute max_dist_err threshold for early termination of optimization. If < 0, computed from convergence_target_rel (relative to target_distance, not the bounding box)."
+    },
+    {
+        "pointer": "/convergence_normal_deviation",
+        "type": "float",
+        "default": -1.0,
+        "doc": "AVERAGE normal deviation threshold, IN DEGREES, for early termination of optimization. Tested against avg_norm_dev, not max_norm_dev -- the paper's Termination criterion is the same way round ('the average sigma_max ... both the maximum and mean distance error'), because max normal deviation has a floor set by the input's sharpest reentrant corner, where the distance field's normal is discontinuous at every scale, and no refinement or smaller target_distance can lower it. max_norm_dev is still reported, as a diagnostic. The offset must reach both this and convergence_target before the run may stop early. An angle has no natural relative form, so unlike convergence_target there is no _rel counterpart. If <= 0 the criterion is disabled and max_dist_err alone decides convergence, which is the 3D behaviour."
+    },
+    {
+        "pointer": "/throw_on_nonconvergence",
+        "type": "bool",
+        "default": false,
+        "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Set true in integration tests so a convergence regression fails the run rather than passing with a warning nobody reads. 2D only -- the 3D path does not read it."
+    },
+    {
+        "pointer": "/region_envelope_from_input",
+        "type": "bool",
+        "default": true,
+        "doc": "Build the region-boundary envelope from the INPUT mesh, before the offset is constructed, rather than from the mesh the offset construction leaves behind. The band's tags REPLACE a face's own rather than joining them, so a region the band grows through loses its tag there and its boundary curve is truncated at whatever contour conservative growth stopped on; an envelope built afterwards caps the triple junction where a region boundary meets the offset at a position that is an artefact of relative_ball_threshold. Building it from the input follows the region's original, untruncated curve, which relaxes the constraint only along the stretch the band later swallows. Set false for the older behaviour. 2D only."
+    },
+    {
+        "pointer": "/envelope_size_rel",
+        "type": "float",
+        "default": 0.001,
+        "doc": "Half-width, relative to the bounding box diagonal, of the envelope containing every tag-region boundary during optimization. Any operation that would push a region boundary outside it is rejected. Ignored if envelope_size >= 0."
+    },
+    {
+        "pointer": "/envelope_size",
+        "type": "float",
+        "default": -1.0,
+        "doc": "Absolute half-width of the tag-region boundary envelope. If < 0, computed from envelope_size_rel."
     },
     {
         "pointer": "/relative_ball_threshold",
@@ -226,7 +280,19 @@
         "pointer": "/max_normal_deviation_deg",
         "type": "float",
         "default": 15.0,
-        "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
+        "doc": "sigma_max. Max normal deviation (degrees, 0-90) allowed across one offset-surface element. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this, and the sizing field refines wherever it is exceeded. Also sets the derived min_edge_length."
+    },
+    {
+        "pointer": "/min_normal_deviation_deg",
+        "type": "float",
+        "default": 2.0,
+        "doc": "sigma_min. Normal deviation (degrees) below which a stretch of offset surface counts as planar, so the sizing field may coarsen it. Paper value is 2 degrees. 2D only."
+    },
+    {
+        "pointer": "/min_edge_length",
+        "type": "float",
+        "default": -1.0,
+        "doc": "l_min: the shortest edge the sizing field may ask for, in absolute units. If < 0, derived as 2 * target_distance * sin(max_normal_deviation_deg), the paper's formula -- tied to the offset distance rather than the bounding box, because the offset is what has to be resolved. This is a floor on REFINEMENT, so raising it makes the offset coarser (paper Fig. 18). 2D only."
     },
     {
         "pointer": "/smooth_quadrics_weight",
@@ -282,6 +348,25 @@
         "default": false,
         "doc": "Only smooth vertices incident to a tet whose energy is still far from stop_energy. Smoothing a vertex surrounded by good tets does nothing, so skipping it is free (only used if optimize is true)."
     },
+    {
+        "pointer": "/project_line_search_steps",
+        "type": "int",
+        "default": 12,
+        "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
+    },
+    {
+        "pointer": "/project_line_search_nested_steps",
+        "type": "int",
+        "default": 0,
+        "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
+    },
+    {
+    "pointer": "/smoothing_mode",
+    "type": "string",
+    "default": "projected",
+    "options": ["projected", "exact"],
+    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
+},
     {
         "pointer": "/w_amips",
         "type": "float",

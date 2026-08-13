@@ -83,6 +83,7 @@ struct Parameters : public wmtk::OptimizerParameters
         lr = json_params["length_rel"];
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
+        optimize_envelope_around_simplified = json_params["optimize_envelope_around_simplified"];
         preserve_feature_points = json_params["preserve_feature_points"];
         allow_junction_cleanup = json_params["allow_junction_cleanup"];
 
@@ -93,6 +94,9 @@ struct Parameters : public wmtk::OptimizerParameters
 
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
         w_amips = json_params["w_amips"];
+        smoothing_mode = json_params["smoothing_mode"];
+        project_line_search_steps = json_params["project_line_search_steps"];
+        project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];

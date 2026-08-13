@@ -99,18 +99,31 @@ std::vector<int> compute_euler_characteristics(const MatrixXi& E)
  * its own from 10k to 100k after finding a 21x under-estimate). This is opt-in diagnostic
  * code; a stable answer is worth the samples.
  */
-double
-max_deviation(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target, int n_samples)
+struct Deviation
+{
+    double max = -1;
+    /// Mean over the same samples. Because the budget is already spread by length, this is
+    /// the mean along the curve rather than the mean over segments, so a dense patch of short
+    /// segments does not outvote a long one. The max alone hides what a change did to the
+    /// bulk of the curve: it is a single worst sample, and one stubborn corner pins it while
+    /// everything else moves.
+    double mean = -1;
+};
+
+Deviation
+deviation_stats(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target, int n_samples)
 {
     double total_length = 0;
     for (int i = 0; i < E.rows(); ++i) {
         total_length += (V.row(E(i, 1)) - V.row(E(i, 0))).norm();
     }
     if (E.rows() == 0 || total_length <= 0) {
-        return -1;
+        return {};
     }
 
     double sq_max = -1;
+    double sum = 0;
+    long long count = 0;
     Vector2d projection;
     for (int i = 0; i < E.rows(); ++i) {
         const Vector2d a = V.row(E(i, 0));
@@ -119,10 +132,56 @@ max_deviation(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target
         const int n = std::max(1, int(n_samples * len / total_length));
         for (int s = 0; s <= n; ++s) {
             const Vector2d p = a + (b - a) * (double(s) / double(n));
-            sq_max = std::max(sq_max, target.nearest_point(p, projection));
+            // nearest_point returns the SQUARED distance.
+            const double sq = target.nearest_point(p, projection);
+            sq_max = std::max(sq_max, sq);
+            sum += std::sqrt(sq);
+            ++count;
         }
     }
-    return sq_max < 0 ? -1 : std::sqrt(sq_max);
+    if (sq_max < 0 || count == 0) {
+        return {};
+    }
+    return {std::sqrt(sq_max), sum / double(count)};
+}
+
+/**
+ * @brief Deviation of the tracked VERTICES alone, ignoring the chords between them.
+ *
+ * Separates the two things the edge-sampled figure mixes together. Smoothing places
+ * vertices, so a vertex's distance to the input is what the envelope penalty actually
+ * controls. The interior of a tracked edge is a chord across whatever the input does between
+ * its endpoints, so it carries the discretization error that collapse left behind -- no
+ * weight on the penalty can pull a chord onto a curve whose intermediate vertex was removed.
+ *
+ * Reported alongside the edge figure so a saturating edge deviation can be attributed to one
+ * or the other rather than guessed at.
+ */
+Deviation vertex_deviation(const MatrixXd& V, const MatrixXi& E, const SampleEnvelope& target)
+{
+    std::vector<bool> used(V.rows(), false);
+    for (int i = 0; i < E.rows(); ++i) {
+        used[E(i, 0)] = true;
+        used[E(i, 1)] = true;
+    }
+
+    double sq_max = -1;
+    double sum = 0;
+    long long count = 0;
+    Vector2d projection;
+    for (int i = 0; i < V.rows(); ++i) {
+        if (!used[i]) {
+            continue;
+        }
+        const double sq = target.nearest_point(Vector2d(V.row(i)), projection);
+        sq_max = std::max(sq_max, sq);
+        sum += std::sqrt(sq);
+        ++count;
+    }
+    if (count == 0 || sq_max < 0) {
+        return {};
+    }
+    return {std::sqrt(sq_max), sum / double(count)};
 }
 
 /**
@@ -189,13 +248,13 @@ void triwild(nlohmann::json json_params)
     MatrixXi E_in;
     std::vector<MatrixXd> Vs;
     std::vector<MatrixXi> Es;
-    wmtk::utils::read_input_curves(
-        input_paths,
-        json_params["remove_duplicate_eps"],
-        V_in,
-        E_in,
-        Vs,
-        Es);
+    // Merging vertices that are merely *close* is a topology change: it welds curves
+    // that pass near each other and so removes loops and junctions. Under
+    // preserve_topology only exactly coincident vertices may be merged, which is a pure
+    // de-duplication of the file and leaves the topology alone. Same rule as tetwild.
+    const double remove_duplicate_eps =
+        params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
+    wmtk::utils::read_input_curves(input_paths, remove_duplicate_eps, V_in, E_in, Vs, Es);
 
     // Informational input-topology report; gated behind DEBUG_euler because it is only
     // meaningful next to the matching computations later in the run.
@@ -339,9 +398,33 @@ void triwild(nlohmann::json json_params)
 
     const std::vector<std::string> tag_names = json_params["input_names"];
 
-    TriWildMesh mesh(params, envelope_eps, NUM_THREADS);
+    // Which curves is the optimizer's envelope built around, and at what radius?
+    //
+    // Default: the ORIGINAL input curves at the full eps.
+    //
+    // With optimize_envelope_around_simplified: the SIMPLIFIED curves at the REMAINING
+    // tolerance, envelope_eps - simplify_eps. The deviation budget is unchanged by the
+    // triangle inequality -- the simplification is already within simplify_eps of the input,
+    // so anything within (envelope_eps - simplify_eps) of it is within envelope_eps of the
+    // input -- but the geometry now starts at the CENTRE of the envelope it is judged against
+    // rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a
+    // mesh handed over close to the boundary has most of its moves refused. See the tetwild
+    // driver for the measurements.
+    const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
+    const double opt_eps = env_around_simplified ? (envelope_eps - simplify_eps) : envelope_eps;
+    const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
+    const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
+    if (env_around_simplified) {
+        logger().info(
+            "optimization envelope: eps {:.6} around the SIMPLIFIED curves (#V {}, #E {})",
+            opt_eps,
+            V_env.rows(),
+            E_env.rows());
+    }
+
+    TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, V_rational, F, E, tag_names, V_in, E_in);
+    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
@@ -425,8 +508,9 @@ void triwild(nlohmann::json json_params)
     // "larger than the envelope" -- exactly the mistake #967 fixed in 3D, where a legitimate
     // result read 50x eps on containment that was actually 0.34x. On the 2D sweep it made ~60%
     // of successful models look like envelope violations.
-    double containment_distance = -1;
-    double coverage_distance = -1;
+    Deviation containment;
+    Deviation coverage;
+    Deviation containment_v;
     if (json_params["DEBUG_hausdorff"]) {
         const int n_samples = 100000;
         MatrixXd V_track;
@@ -437,14 +521,23 @@ void triwild(nlohmann::json json_params)
         } else {
             const auto env_in = envelope_over(V_in, E_in);
             const auto env_out = envelope_over(V_track, E_track);
-            containment_distance = max_deviation(V_track, E_track, *env_in, n_samples);
-            coverage_distance = max_deviation(V_in, E_in, *env_out, n_samples);
+            containment = deviation_stats(V_track, E_track, *env_in, n_samples);
+            coverage = deviation_stats(V_in, E_in, *env_out, n_samples);
+            containment_v = vertex_deviation(V_track, E_track, *env_in);
 
             logger().info(
-                "curve deviation: containment d(output->input) = {:.4} | envelope = {:.4}",
-                containment_distance,
+                "curve deviation: containment over tracked VERTICES only max = {:.4}, mean = "
+                "{:.4}",
+                containment_v.max,
+                containment_v.mean);
+
+            logger().info(
+                "curve deviation: containment d(output->input) max = {:.4}, mean = {:.4} | "
+                "envelope = {:.4}",
+                containment.max,
+                containment.mean,
                 params.eps);
-            if (containment_distance > params.eps) {
+            if (containment.max > params.eps) {
                 logger().warn(
                     "Output is outside the envelope; the containment invariant was "
                     "violated.");
@@ -453,9 +546,10 @@ void triwild(nlohmann::json json_params)
             }
             // No comparison against eps: the pipeline does not promise this direction.
             logger().info(
-                "curve deviation: coverage d(input->output) = {:.4} (diagnostic; large means "
-                "the output no longer covers part of the input)",
-                coverage_distance);
+                "curve deviation: coverage d(input->output) max = {:.4}, mean = {:.4} "
+                "(diagnostic; large means the output no longer covers part of the input)",
+                coverage.max,
+                coverage.mean);
         }
     }
 
@@ -533,8 +627,12 @@ void triwild(nlohmann::json json_params)
         // report["time"] = time;
         // "hausdorff" keeps its name and now holds containment, the invariant; "coverage" is
         // the other direction. Same convention as the tetwild report.
-        report["hausdorff"] = containment_distance;
-        report["coverage"] = coverage_distance;
+        report["hausdorff"] = containment.max;
+        report["hausdorff_mean"] = containment.mean;
+        report["hausdorff_vertex"] = containment_v.max;
+        report["hausdorff_vertex_mean"] = containment_v.mean;
+        report["coverage"] = coverage.max;
+        report["coverage_mean"] = coverage.mean;
         if (json_params["DEBUG_feature_retention"]) {
             report["features_retained"] = feat_kept;
             report["features_total"] = feat_total;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 namespace wmtk {
 
@@ -33,6 +34,33 @@ struct OptimizerParameters
     double diag_l = -1.;
 
     bool preserve_topology = false;
+
+    /**
+     * Build the optimizer's envelope around the SIMPLIFIED geometry at the REMAINING
+     * tolerance (eps - simplify_eps), instead of around the original input at the full eps.
+     *
+     * The deviation budget is identical by the triangle inequality: the simplification is
+     * already within simplify_eps of the input, so anything within (eps - simplify_eps) of the
+     * simplification is within eps of the input. What changes is where the geometry STARTS.
+     * The envelope is a hard veto, not a penalty, so a surface handed to the optimizer close
+     * to the boundary has most of its moves refused; built this way it starts at the centre,
+     * with the whole radius available in every direction.
+     *
+     * That headroom is load-bearing: deliberately starving it on tetwild (simplify_envelope_
+     * ratio 0.95, which leaves the simplification free to use nearly the whole tolerance) was
+     * enough to turn a converging run into a diverging one on Thingi10K 1368052.
+     *
+     * The cost is elements. Holding the surface within eps/2 of the simplified geometry is
+     * stricter than eps of the input wherever the simplification smoothed detail away, so
+     * fewer coarsening collapses are allowed: measured on 106838 the output went from 200k to
+     * 560k tets and on 116060 from 133k to 267k, at unchanged final quality. Off by default
+     * for that reason.
+     *
+     * SimWild's 3D mesh already rebuilds its envelope around the simplified surface; there
+     * this flag only narrows the radius to the remaining budget, which is the part it was
+     * missing. SimWild's 2D mesh has no simplification stage, so the flag does not apply.
+     */
+    bool optimize_envelope_around_simplified = false;
 
     /**
      * Incident-cell count above which a link vertex accepts only one valence-increasing split
@@ -84,24 +112,19 @@ struct OptimizerParameters
     // too short to be split-eligible, WITHOUT touching the sizing field (which the
     // *factor ratchet above still drives). Adds at most one split per worst cell per
     // stall, so it does not bloat the element count.
+    //
+    // This deliberately applies to EVERY worst cell, including one already at its target
+    // size. There used to be a stuck_refine_force_split_oversized_only gate that skipped
+    // those, on the argument that AMIPS is scale invariant so subdividing a badly shaped
+    // cell yields two badly shaped cells. The argument is sound about the cell itself and
+    // wrong about the outcome: force-splitting it also refines its NEIGHBOURHOOD, and that
+    // is what breaks a deadlocked configuration open. On Thingi10K 46024 -- the one model of
+    // 10,000 in the sweep that finished above stop_energy -- the gate refused ~2000 tets on
+    // every stall, the max energy froze at iteration 3 and stayed identical to 15 significant
+    // figures for the remaining 77 iterations (4.6 h). Without the gate the same model
+    // converges to 9.98 in 14 iterations and 11 minutes.
     bool stuck_refine_force_split = true;
 
-    /**
-     * Force-split only a cell that is too LARGE for its sizing field.
-     *
-     * Force-split exists to unstick a sliver, but it cannot: AMIPS is scale invariant, so
-     * subdividing a badly SHAPED cell yields two badly shaped cells of the same energy. The
-     * cell stays the worst one, is force-split again on the next stall, and its longest edge
-     * halves every time -- a ratchet with no exit. On Thingi10K 243014 that drove a legitimate
-     * 0.155 surface edge, the finest the simplified input has, down to 1.0e-4 in about eleven
-     * firings, ~1500x below anything in the input.
-     *
-     * Refinement only helps a cell that is too big for its target length, so require that.
-     * Measured serially on 243014 over 25 iterations: off gives final max energy 41.46 with a
-     * 1.02e-04 minimum edge and 0.373% of edges below 1e-3; on gives 20.87, 8.15e-04 and
-     * 0.019%. Without it the mesh reaches 20.87 then degrades to 41.46; with it 20.87 holds.
-     */
-    bool stuck_refine_force_split_oversized_only = true;
 
     // ---- Skip good regions ----------------------------------------------
     // Only smooth vertices incident to a cell whose energy is >=
@@ -129,6 +152,12 @@ struct OptimizerParameters
      * light quality preference.
      */
     double w_amips = 1e-4;
+    /// "projected" or "exact"; see SmoothVertexOptions::SmoothingMode.
+    std::string smoothing_mode = "projected";
+    /// Bisections tried before the projected search gives up. See SmoothVertexOptions.
+    int project_line_search_steps = 12;
+    /// Partial-projection bisections tried after it gives up; 0 disables that pass.
+    int project_line_search_nested_steps = 0;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.

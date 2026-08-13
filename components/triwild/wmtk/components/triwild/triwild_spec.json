@@ -14,6 +14,7 @@
       "skip_simplify",
       "simplify_use_link_condition",
       "simplify_envelope_ratio",
+      "optimize_envelope_around_simplified",
       "simplify_use_sample_envelope",
       "use_sample_envelope",
       "filter",
@@ -23,6 +24,9 @@
       "stop_energy",
       "split_high_valence_threshold",
       "w_amips",
+      "smoothing_mode",
+      "project_line_search_steps",
+      "project_line_search_nested_steps",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -125,6 +129,12 @@
     "doc": "Envelope thickness used for the input simplification, as a fraction of the one used for the triangulation. Simplifying inside a tighter envelope reserves the remainder as headroom: if the simplification is allowed to place vertices at the full limit, the optimizer starts with a mesh where almost every move already lies outside and most operations are vetoed. 1.0 restores the old behaviour of sharing a single envelope."
   },
   {
+    "pointer": "/optimize_envelope_around_simplified",
+    "type": "bool",
+    "default": false,
+    "doc": "Build the optimizer's envelope around the SIMPLIFIED geometry at the remaining tolerance (eps - simplify_eps) instead of around the original input at the full eps. The deviation budget is identical by the triangle inequality, but the geometry starts at the CENTRE of the envelope it is judged against rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a mesh handed over close to the boundary has most of its moves refused. Costs elements: holding the surface within eps/2 of the simplified geometry is stricter than eps of the input wherever simplification smoothed detail away, measured at 2-3x the output tets on tetwild at unchanged final quality. Off by default."
+  },
+  {
     "pointer": "/simplify_use_sample_envelope",
     "type": "bool",
     "default": true,
@@ -159,7 +169,7 @@
     "pointer": "/remove_duplicate_eps",
     "type": "float",
     "default": 0,
-    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the segment connectivity; negative skips the pass entirely."
+    "doc": "Merge vertices in the input meshes that are closer than this fraction of the bounding box diagonal, dropping the edges that become degenerate or duplicated. This is applied to each input mesh separately. 0 merges only exactly coincident vertices, which is still needed to build the segment connectivity; negative skips the pass entirely. Ignored when preserve_topology is set: merging vertices that are merely close welds curves together and so removes loops and junctions, therefore only exactly coincident vertices are merged in that case."
   },
   {
     "pointer": "/DEBUG_hausdorff",
@@ -210,6 +220,25 @@
     "doc": "Incident-triangle count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped triangle mesh has vertex valence around 6; a split cascade can drive one vertex much higher, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex opposite the edge, so the gate applies to those. Expect this to fire far less often than in 3D, where the edge's link is a whole ring rather than one or two vertices."
   },
   {
+    "pointer": "/project_line_search_steps",
+    "type": "int",
+    "default": 12,
+    "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
+},
+{
+    "pointer": "/project_line_search_nested_steps",
+    "type": "int",
+    "default": 0,
+    "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
+},
+{
+    "pointer": "/smoothing_mode",
+    "type": "string",
+    "default": "projected",
+    "options": ["projected", "exact"],
+    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
+},
+{
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,
@@ -249,7 +278,7 @@
     "pointer": "/preserve_topology",
     "type": "bool",
     "default": false,
-    "doc": "Preserve the topology of the input surface."
+    "doc": "Preserve the topology of the input curve network. This forces remove_duplicate_eps to merge only exactly coincident vertices, stops the input simplification from merging two junctions or endpoints, and enables the substructure link condition during optimization. When unset, all three are relaxed and the topology may change."
   },
   {
     "pointer": "/throw_on_fail",

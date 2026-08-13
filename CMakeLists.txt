@@ -142,7 +142,6 @@ target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
-    igl::predicates
     gmp::gmp
     VolumeRemesher::VolumeRemesher
     mshio::mshio

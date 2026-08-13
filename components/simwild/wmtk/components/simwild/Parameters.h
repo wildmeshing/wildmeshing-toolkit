@@ -81,12 +81,16 @@ struct Parameters : public wmtk::OptimizerParameters
         stop_energy = json_params["stop_energy"];
         stop_at_float = json_params["stop_at_float"];
         preserve_topology = json_params["preserve_topology"];
+        optimize_envelope_around_simplified = json_params["optimize_envelope_around_simplified"];
 
         epsr_simplify = json_params["eps_simplify_rel"];
         order2_envelope_ratio = json_params["order2_envelope_ratio"];
         eps_simplify = json_params["eps_simplify"];
 
         w_amips = json_params["w_amips"];
+        smoothing_mode = json_params["smoothing_mode"];
+        project_line_search_steps = json_params["project_line_search_steps"];
+        project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
         num_smoothing_passes = json_params["num_smoothing_passes"];
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
@@ -105,8 +109,6 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_rings = json_params["stuck_refine_rings"];
         stuck_refine_factor = json_params["stuck_refine_factor"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        stuck_refine_force_split_oversized_only =
-            json_params["stuck_refine_force_split_oversized_only"];
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
 
