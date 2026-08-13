@@ -152,6 +152,52 @@ bool TopoOffsetTetMesh::tag_tet_consistent_topology(size_t t_id, int64_t tag) co
         }
     };
 
+    // The DOMAIN BOUNDARY bounds the tag region too, and the boundary-FACE test further down
+    // already says so: its no-opposite-tet branch calls such a face a boundary face of the tag
+    // whenever the single incident tet carries it. The vertex and edge tests below compared only
+    // tag membership around the one-ring and never looked at the domain boundary, so the halves
+    // of the disk condition disagreed -- a vertex or edge sitting ON the box with a uniform
+    // one-ring counted as INTERIOR while the box face beside it counted as boundary -- and a tet
+    // wedged between the offset front and the box could satisfy the condition and be absorbed.
+    //
+    // In 2D that let conservative growth eat the ambient region right up to the bounding box, one
+    // locally-legal step at a time, until the offset touched the box and the ambient band
+    // separating them was gone: 29 of 164 box-touching candidates admitted, 101 offset vertices
+    // left pinned on the box. Only bites when the offset actually reaches the box, i.e. when
+    // target_distance exceeds the clearance to the domain boundary.
+    //
+    // True if any tagged tet in `tids` has a domain-boundary face containing every vertex in
+    // `must_contain`. Guarded by on_bbox_faces so the walk only runs for simplices that could
+    // possibly be on the box.
+    auto on_tagged_domain_boundary = [&](const std::vector<size_t>& tids,
+                                         const std::vector<size_t>& must_contain) {
+        for (const size_t need : must_contain) {
+            if (m_vertex_attribute[need].on_bbox_faces.empty()) return false;
+        }
+        for (const size_t tid : tids) {
+            if (get_tags(tid).count(tag) == 0) continue;
+            const auto tv = oriented_tet_vids(tid);
+            for (int skip = 0; skip < 4; ++skip) {
+                std::array<size_t, 3> fv;
+                int k = 0;
+                for (int j = 0; j < 4; ++j) {
+                    if (j != skip) fv[k++] = tv[j];
+                }
+                bool contains_all = true;
+                for (const size_t need : must_contain) {
+                    if (fv[0] != need && fv[1] != need && fv[2] != need) {
+                        contains_all = false;
+                        break;
+                    }
+                }
+                if (!contains_all) continue;
+                const auto [ftup, unused_fid] = tuple_from_face(fv);
+                if (!ftup.switch_tetrahedron(*this)) return true;
+            }
+        }
+        return false;
+    };
+
     // collect boundary vertices
     auto vs = oriented_tet_vids(t_id);
     std::vector<size_t> boundary_vs;
@@ -165,6 +211,9 @@ bool TopoOffsetTetMesh::tag_tet_consistent_topology(size_t t_id, int64_t tag) co
                 v_in = true;
                 break;
             }
+        }
+        if (!v_in) {
+            v_in = on_tagged_domain_boundary(one_ring_tids, {v});
         }
         if (v_in) {
             boundary_vs.push_back(v);
@@ -186,6 +235,9 @@ bool TopoOffsetTetMesh::tag_tet_consistent_topology(size_t t_id, int64_t tag) co
                     e_in = true;
                     break;
                 }
+            }
+            if (!e_in) {
+                e_in = on_tagged_domain_boundary(incident_tids, {vs[i], vs[j]});
             }
             boundary_edges[e] = e_in;
         }

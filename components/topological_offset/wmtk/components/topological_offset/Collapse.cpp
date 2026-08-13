@@ -11,28 +11,36 @@ namespace wmtk::components::topological_offset {
 
 double TopoOffsetTetMesh::face_normal_deviation(const Tuple& f) const
 {
-    const std::array<Tuple, 3> fv = get_face_vertices(f);
-    const Vector3d p_a = m_vertex_attribute[fv[0].vid(*this)].m_posf;
-    const Vector3d p_b = m_vertex_attribute[fv[1].vid(*this)].m_posf;
-    const Vector3d p_c = m_vertex_attribute[fv[2].vid(*this)].m_posf;
+    // Paper Definition 5: the maximum angle between the OFFSET normal at the element's center
+    // and the OFFSET normal at other points within the element.
+    //
+    //     sigma(t) = max over p_i in t of angle( n(p_c), n(p_i) ),  p_i = (1-u)*p_v + u*p_c
+    //
+    // Both terms are FIELD normals; the face's own geometric normal does not appear. That is the
+    // whole point and it is what makes the quantity converge: n() is continuous away from the
+    // input complex's features, so shrinking a face brings its samples closer together and drives
+    // sigma to zero, which is something the sizing field can actually satisfy.
+    //
+    // This used to compare the face's own normal against the sample normals, i.e. misorientation.
+    // Refinement does not fix misorientation -- a smaller triangle in the same plane is just as
+    // misoriented -- so the sizing field could never drive it down, and update_sizing_field()
+    // would refine around such a face forever. The 2D side hit exactly that and was corrected to
+    // Definition 5; see the normal-deviation section of .claude/CLAUDE.md.
+    //
+    // offset_surface_samples() already produces the paper's sample set: index 0 is the centroid
+    // p_c, indices 1-3 are (1-u)*p_v + u*p_c with u = 0.1, and each carries the field normal.
+    const std::array<OffsetSurfaceSample, 4> samples = offset_surface_samples(f);
+    const Vector3d& n_c = samples[0].normal;
+    if (n_c.squaredNorm() < 1e-20) return 0.; // centroid sits on the complex: no direction
 
-    const Vector3d ab = p_b - p_a;
-    const Vector3d ac = p_c - p_a;
-    const Vector3d cross = ab.cross(ac);
-    const double cross_norm = cross.norm();
-    if (cross_norm < 1e-12) return 0.; // degenerate triangle, nothing to measure
-    const Vector3d face_normal = cross / cross_norm;
-
-    // max over all 4 samples, not just the centroid: a face straddling a feature has samples
-    // on both sides of it, and only the max catches the one that disagrees with the face's own
-    // (necessarily flat) normal -- averaging or using a single sample would miss it.
     double max_dev = 0.;
-    for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
-        if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
-        // orientation independent: a triangle whose plane is parallel to the sample's implied
-        // plane counts as aligned regardless of which way get_face_vertices() winds it
-        const double c = std::clamp(face_normal.cross(s.normal).norm(), -1., 1.);
-        max_dev = std::max(max_dev, (180. / M_PI) * std::asin(c));
+    for (int i = 1; i < 4; ++i) {
+        const Vector3d& n_i = samples[i].normal;
+        if (n_i.squaredNorm() < 1e-20) continue; // degenerate sample: no normal direction
+        // A genuine angle between two field normals, both pointing outward from the complex, so
+        // there is no orientation ambiguity to fold away here.
+        const double c = std::clamp(n_c.dot(n_i), -1., 1.);
+        max_dev = std::max(max_dev, (180. / M_PI) * std::acos(c));
     }
     return max_dev;
 }
@@ -92,6 +100,16 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
 {
     const auto& VE = m_vertex_extra;
 
+    // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position). If
+    // v1 belongs to the input complex or the domain boundary, removing it deletes a simplex of
+    // a set that must not change at all, so the collapse is refused outright -- including the
+    // input-onto-input case the surface rule below would otherwise allow. That case is not
+    // hypothetical: it is what lets the shared engine decimate the input surface down to
+    // whatever m_envelope tolerates.
+    if (vertex_is_frozen(v1_id)) {
+        return false;
+    }
+
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not
     // leave the particular surface it belongs to: an input-complex vertex carries input
     // geometry, and an offset-boundary vertex carries the offset.
@@ -132,15 +150,23 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     const size_t v2_id,
     const std::vector<std::array<size_t, 2>>&)
 {
-    // NormalDeviationAfterInvariant analogue: only reject a move that degrades an
-    // already-good offset surface patch -- if it was already over the threshold before, don't
-    // block a collapse from fixing (or merely not fixing) it.
-    if (m_collapse_nd_before.local() < m_offset_params.max_normal_deviation_deg) {
-        const double nd_after = max_offset_surface_normal_deviation_at_vertex(v2_id);
-        if (nd_after >= m_offset_params.max_normal_deviation_deg) {
-            return false;
-        }
+    // Paper Sec. 5.3.3, Step 2: "a collapse is only performed if the user-defined maximum normal
+    // deviation is not exceeded." Taken literally that would freeze any patch already over
+    // sigma_max -- usually a genuine feature, where no refinement will ever align the field
+    // normals -- so the bar is the WORSE of the paper's threshold and where the patch already was.
+    //
+    // The previous rule here was "only block a collapse that makes a GOOD patch bad", i.e. the
+    // guard switched off entirely once nd_before crossed sigma_max. That is a ratchet: the instant
+    // a patch crosses the threshold it is unprotected, and the next collapses take it to 90. In 2D
+    // it decimated the offset from 429 to 80 elements with only 8 collapses refused; using the
+    // worse-of bar took that run from not-converging to converging, with 58 then 54 refused.
+    const double bar =
+        std::max(m_offset_params.max_normal_deviation_deg, m_collapse_nd_before.local());
+    if (max_offset_surface_normal_deviation_at_vertex(v2_id) > bar) {
+        ++iter_cnt_collapse_nd_reject;
+        return false;
     }
+    ++iter_cnt_collapse;
     return true;
 }
 

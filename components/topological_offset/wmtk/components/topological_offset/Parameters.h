@@ -52,16 +52,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // 2D only; the 3D path never builds this envelope.
     bool region_envelope_from_input;
     double relative_ball_threshold;
-    // Termination length for the distance-field root finds in EdgeSplittingTet.cpp
-    // (edge_split_binary_search, edge_split_log_root_find, edge_split_sphere_tracing).
-    // 3D ONLY. The 2D path has no consumer: its sphere-tracing split was removed along with the
-    // distance-field marching pass that selected it, because placing the offset boundary is the
-    // optimization phase's job, not the insertion's. Delete this field and its spec entry when
-    // 3D drops those modes too -- see the note in .claude/CLAUDE.md.
-    double edge_search_term_len;
     bool sorted_marching;
     std::string output_path; // no extension
-    bool optimize; // whether to run optimization on the offset
     bool save_vtu;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
@@ -145,10 +137,8 @@ struct Parameters : public wmtk::OptimizerParameters
                 relative_ball_threshold);
         }
 
-        edge_search_term_len = json_params["edge_search_termination_len"];
         sorted_marching = json_params["sorted_marching"];
         output_path = json_params["output"];
-        optimize = json_params["optimize"];
         save_vtu = json_params["save_vtu"];
 
         num_threads = json_params["num_threads"];
