@@ -1,0 +1,10 @@
+{
+    "application": "topological_offset",
+    "input": "disk.msh",
+    "offset_selection": "tag_0",
+    "offset_output_tags": ["tag_1"],
+    "target_distance": 0.02,
+    "relative_ball_threshold": 0.01,
+    "save_vtu": true,
+    "output": "disk_offset"
+}

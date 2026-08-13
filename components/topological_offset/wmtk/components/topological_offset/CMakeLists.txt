@@ -10,6 +10,7 @@ endif()
 set(SRC_FILES
 	TopoOffsetTetMesh.h
 	TopoOffsetTetMesh.cpp
+	Optimize2d.cpp
 	Smooth.cpp
 	Collapse.cpp
 	Swap.cpp
