@@ -133,6 +133,8 @@ struct Parameters : public wmtk::OptimizerParameters
         skip_good_regions = json_params["skip_good_regions"];
         w_amips = json_params["w_amips"];
         project_line_search = json_params["project_line_search"];
+        project_line_search_steps = json_params["project_line_search_steps"];
+        project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }

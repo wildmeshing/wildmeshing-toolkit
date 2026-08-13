@@ -292,6 +292,8 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     opts.s_envelope = m_s_envelope;
     opts.two_stage = true;
     opts.project_line_search = m_params.project_line_search;
+    opts.project_line_search_steps = m_params.project_line_search_steps;
+    opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }

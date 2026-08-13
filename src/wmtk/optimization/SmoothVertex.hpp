@@ -13,6 +13,7 @@
 
 #include <array>
 #include <atomic>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -130,7 +131,25 @@ struct SmoothVertexOptions
     bool project_line_search = true;
 
     /// Backtracking steps tried before the move is abandoned: t = 1, 1/2, ..., 2^-(n-1).
+    /// Exhausting these without an acceptable candidate is what "the search failed" means.
     int project_line_search_steps = 12;
+
+    /**
+     * Second pass, run only when the first found nothing: partial projections.
+     *
+     * The first pass only ever tests points ON the input, so a vertex whose one-ring cannot
+     * tolerate being pulled all the way there is refused at every step and does not move at
+     * all -- and is refused again next pass, from the same place. This pass revisits each
+     * candidate and bisects between the interpolated point and its projection, taking the
+     * longest step toward the input that still does not invert and still lowers the worst
+     * element. The vertex ends up off the input, but closer to it than it was, so the next
+     * pass starts from somewhere better and it converges onto the surface over several
+     * passes instead of being stuck forever.
+     *
+     * 0 disables the pass. Costs nothing when the first pass succeeds, which is the common
+     * case.
+     */
+    int project_line_search_nested_steps = 0;
 };
 
 /**
@@ -220,27 +239,66 @@ bool smooth_vertex_3d(
         solve();
         const Vector3d x_new = VA[vid].m_posf;
 
-        bool accepted = false;
-        for (int k = 0; k < opts.project_line_search_steps; ++k) {
-            const double t = std::pow(0.5, k);
-            Vector3d cand;
-            pull_env->nearest_point(Vector3d(x_orig + t * (x_new - x_orig)), cand);
-            VA[vid].m_posf = cand;
-            // is_inverted is exact, so the rational position has to track every candidate.
-            VA[vid].m_pos = to_rational(cand);
-
+        // Place a candidate and report the worst incident quality, or infinity if it
+        // inverts. is_inverted is exact, so the rational position tracks every candidate.
+        const auto worst_at = [&](const Vector3d& p) {
+            VA[vid].m_posf = p;
+            VA[vid].m_pos = to_rational(p);
             double mq = 0.;
-            bool inverted = false;
             for (const Tuple& loc : locs) {
                 if (m.is_inverted(loc)) {
-                    inverted = true;
-                    break;
+                    return std::numeric_limits<double>::infinity();
                 }
                 mq = std::max(mq, m.get_quality(loc));
             }
-            if (!inverted && mq < max_quality) {
+            return mq;
+        };
+
+        bool accepted = false;
+        std::vector<Vector3d> interp, proj; // kept for the nested pass below
+        interp.reserve(opts.project_line_search_steps);
+        proj.reserve(opts.project_line_search_steps);
+        for (int k = 0; k < opts.project_line_search_steps; ++k) {
+            const Vector3d p = x_orig + std::pow(0.5, k) * (x_new - x_orig);
+            Vector3d q;
+            pull_env->nearest_point(p, q);
+            interp.push_back(p);
+            proj.push_back(q);
+            if (worst_at(q) < max_quality) {
                 accepted = true;
                 break;
+            }
+        }
+
+        // Nothing ON the input was acceptable anywhere, so settle for getting as close to
+        // it as the one-ring allows. For each candidate, bisect the segment from the
+        // interpolated point (s = 0) to its projection (s = 1) for the LARGEST acceptable s.
+        // s = 1 is already known to fail -- that is what the first pass just established --
+        // so this brackets the boundary and converges up to it from below. Halving s down
+        // from 1 instead would cap the result at the midpoint and leave the vertex needlessly
+        // far from the input.
+        if (!accepted && opts.project_line_search_nested_steps > 0) {
+            for (size_t k = 0; k < proj.size() && !accepted; ++k) {
+                double lo = 0.0, hi = 1.0; // lo: best acceptable so far, hi: known bad
+                Vector3d best;
+                bool found = false;
+                for (int j = 0; j < opts.project_line_search_nested_steps; ++j) {
+                    const double mid = 0.5 * (lo + hi);
+                    const Vector3d cand = interp[k] + mid * (proj[k] - interp[k]);
+                    if (worst_at(cand) < max_quality) {
+                        lo = mid;
+                        best = cand;
+                        found = true;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                if (found) {
+                    // worst_at left the vertex at the last candidate tried, which is not
+                    // necessarily the best one.
+                    worst_at(best);
+                    accepted = true;
+                }
             }
         }
         if (!accepted) {
@@ -426,27 +484,65 @@ bool smooth_vertex_2d(
         solve();
         const Vector2d x_new = m.smoothing_position(vid);
 
-        bool accepted = false;
-        for (int k = 0; k < opts.project_line_search_steps; ++k) {
-            const double t = std::pow(0.5, k);
-            Vector2d cand;
-            envelope->nearest_point(Vector2d(x_orig + t * (x_new - x_orig)), cand);
-            // set_smoothing_position keeps the rational position in step, which the exact
-            // is_inverted below depends on.
-            m.set_smoothing_position(vid, cand);
-
+        // set_smoothing_position keeps the rational position in step, which the exact
+        // is_inverted below depends on.
+        const auto worst_at = [&](const Vector2d& p) {
+            m.set_smoothing_position(vid, p);
             double mq = 0.;
-            bool inverted = false;
             for (const size_t fid : locs) {
                 if (m.is_inverted(fid)) {
-                    inverted = true;
-                    break;
+                    return std::numeric_limits<double>::infinity();
                 }
                 mq = std::max(mq, m.get_quality(fid));
             }
-            if (!inverted && mq < max_quality) {
+            return mq;
+        };
+
+        bool accepted = false;
+        std::vector<Vector2d> interp, proj; // kept for the nested pass below
+        interp.reserve(opts.project_line_search_steps);
+        proj.reserve(opts.project_line_search_steps);
+        for (int k = 0; k < opts.project_line_search_steps; ++k) {
+            const Vector2d p = x_orig + std::pow(0.5, k) * (x_new - x_orig);
+            Vector2d q;
+            envelope->nearest_point(p, q);
+            interp.push_back(p);
+            proj.push_back(q);
+            if (worst_at(q) < max_quality) {
                 accepted = true;
                 break;
+            }
+        }
+
+        // Nothing ON the input was acceptable anywhere, so settle for getting as close to
+        // it as the one-ring allows. For each candidate, bisect the segment from the
+        // interpolated point (s = 0) to its projection (s = 1) for the LARGEST acceptable s.
+        // s = 1 is already known to fail -- that is what the first pass just established --
+        // so this brackets the boundary and converges up to it from below. Halving s down
+        // from 1 instead would cap the result at the midpoint and leave the vertex needlessly
+        // far from the input.
+        if (!accepted && opts.project_line_search_nested_steps > 0) {
+            for (size_t k = 0; k < proj.size() && !accepted; ++k) {
+                double lo = 0.0, hi = 1.0; // lo: best acceptable so far, hi: known bad
+                Vector2d best;
+                bool found = false;
+                for (int j = 0; j < opts.project_line_search_nested_steps; ++j) {
+                    const double mid = 0.5 * (lo + hi);
+                    const Vector2d cand = interp[k] + mid * (proj[k] - interp[k]);
+                    if (worst_at(cand) < max_quality) {
+                        lo = mid;
+                        best = cand;
+                        found = true;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                if (found) {
+                    // worst_at left the vertex at the last candidate tried, which is not
+                    // necessarily the best one.
+                    worst_at(best);
+                    accepted = true;
+                }
             }
         }
         if (!accepted) {

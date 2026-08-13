@@ -27,6 +27,8 @@
       "split_high_valence_threshold",
       "w_amips",
       "project_line_search",
+      "project_line_search_steps",
+      "project_line_search_nested_steps",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -201,6 +203,18 @@
     "doc": "Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link."
   },
   {
+    "pointer": "/project_line_search_steps",
+    "type": "int",
+    "default": 12,
+    "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
+},
+{
+    "pointer": "/project_line_search_nested_steps",
+    "type": "int",
+    "default": 0,
+    "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
+},
+{
     "pointer": "/project_line_search",
     "type": "bool",
     "default": true,
