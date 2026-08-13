@@ -19,7 +19,7 @@ ExternalProject_Add(
     # Adds the challenging-low-stop-energy models: the 30 meshes that exhausted
     # max_iterations = 80 at stop_energy 10 before this branch. Hidden test group, never
     # runs in CI -- see the challenging-low-stop-energy-models case in integration_tests.cpp.
-    GIT_TAG c446756ef2aaee8501ff193fcc52ae98db0b294a
+    GIT_TAG a1e2cdc018a24f210ebc66215fe7def3dbe09154
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
