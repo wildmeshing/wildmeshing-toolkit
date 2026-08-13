@@ -75,6 +75,88 @@ void EnvelopeEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
 
 
+ExactDistanceEnergy2D::ExactDistanceEnergy2D(
+    const std::shared_ptr<SampleEnvelope>& envelope,
+    const double weight)
+    : m_envelope(envelope)
+    , m_weight(weight)
+{
+    assert(m_envelope);
+}
+
+double ExactDistanceEnergy2D::value(const TVector& x)
+{
+    assert(x.size() == 2);
+    return m_weight * m_envelope->squared_distance(Vector2d(x));
+}
+
+void ExactDistanceEnergy2D::gradient(const TVector& x, TVector& gradv)
+{
+    assert(x.size() == 2);
+    Vector2d r(x);
+    Vector2d n;
+    m_envelope->nearest_point(r, n);
+    gradv = 2 * m_weight * (r - n);
+}
+
+void ExactDistanceEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    Vector2d n, seg_normal;
+    bool on_corner = false;
+    int feature_id = -1;
+    m_envelope->nearest_point_feature(Vector2d(x), n, on_corner, seg_normal, feature_id);
+    if (on_corner) {
+        // Distance to a point: the true Hessian of d^2 is isotropic.
+        hessian = 2.0 * m_weight * Matrix2d::Identity();
+    } else {
+        // Distance to a segment interior: rank one along the segment normal. Well-defined
+        // even at d == 0, where the residual direction is unavailable.
+        hessian = 2.0 * m_weight * (seg_normal * seg_normal.transpose());
+    }
+}
+
+ExactDistanceEnergy3D::ExactDistanceEnergy3D(
+    const std::shared_ptr<SampleEnvelope>& envelope,
+    const double weight)
+    : m_envelope(envelope)
+    , m_weight(weight)
+{
+    assert(m_envelope);
+}
+
+double ExactDistanceEnergy3D::value(const TVector& x)
+{
+    assert(x.size() == 3);
+    return m_weight * m_envelope->squared_distance(Vector3d(x));
+}
+
+void ExactDistanceEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    assert(x.size() == 3);
+    Vector3d r(x);
+    Vector3d n;
+    m_envelope->nearest_point(r, n);
+    gradv = 2 * m_weight * (r - n);
+}
+
+void ExactDistanceEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    Vector3d n, dir;
+    int dim = -1;
+    long long feature_id = -1;
+    m_envelope->nearest_point_feature(Vector3d(x), n, dim, dir, feature_id);
+    if (dim == 2) {
+        // Face interior: stiff along the face normal only.
+        hessian = 2.0 * m_weight * (dir * dir.transpose());
+    } else if (dim == 1) {
+        // Edge or curve-segment interior: free along the direction, stiff across.
+        hessian = 2.0 * m_weight * (Matrix3d::Identity() - dir * dir.transpose());
+    } else {
+        // Mesh or curve vertex: distance to a point, isotropic.
+        hessian = 2.0 * m_weight * Matrix3d::Identity();
+    }
+}
+
 EnvelopeEnergy3D::EnvelopeEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
     const double weight)

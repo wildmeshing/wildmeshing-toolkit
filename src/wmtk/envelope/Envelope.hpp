@@ -142,6 +142,37 @@ public:
     bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
+
+    /**
+     * Nearest point plus which feature of the input carries it, for the TRUE Hessian of the
+     * squared distance: within each closest-feature region the distance to a piecewise-
+     * linear input is exactly quadratic, and the region's kind decides the Hessian's rank.
+     *
+     * 2D polylines: on_corner reports a polyline-vertex foot; seg_normal is the segment's
+     * unit normal (valid when !on_corner, sign arbitrary); feature_id is the polyline vertex
+     * index or the segment index -- canonical, so two queries compare as "did the closest
+     * feature change".
+     */
+    double nearest_point_feature(
+        const Eigen::Vector2d& p,
+        Eigen::Vector2d& result,
+        bool& on_corner,
+        Eigen::Vector2d& seg_normal,
+        int& feature_id) const;
+
+    /**
+     * 3D counterpart, for triangle envelopes AND edge (curve) envelopes. feature_dim: 2 =
+     * face interior, 1 = edge/segment interior, 0 = vertex. dir is the face normal (dim 2)
+     * or the edge direction (dim 1), unit length, sign arbitrary. feature_id is canonical
+     * across adjacent primitives (face index / sorted vertex pair packed as
+     * min * n_vertices + max / vertex index).
+     */
+    double nearest_point_feature(
+        const Eigen::Vector3d& p,
+        Eigen::Vector3d& result,
+        int& feature_dim,
+        Eigen::Vector3d& dir,
+        long long& feature_id) const;
     bool initialized() { return m_bvh != nullptr; };
 
     Kind kind() const { return m_kind; }
@@ -160,6 +191,12 @@ private:
 
     std::vector<int> geo_vertex_ind;
     std::vector<int> geo_face_ind;
+    /// Input copies backing nearest_point_feature (filled by the matching init only).
+    std::vector<Eigen::Vector2d> m_v2;
+    std::vector<Eigen::Vector2i> m_e2;
+    std::vector<Eigen::Vector3d> m_v3;
+    std::vector<Eigen::Vector3i> m_f3;
+    std::vector<Eigen::Vector2i> m_e3;
     std::shared_ptr<SimpleBVH::BVH> m_bvh;
 
 private:
