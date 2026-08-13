@@ -127,6 +127,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>diag_l</b> = -1.</t
 <tr class="memitem:a9b14bb91a58a22cb381c02bdf7e8ca85" id="r_a9b14bb91a58a22cb381c02bdf7e8ca85"><td class="memItemLeft" align="right" valign="top"><a id="a9b14bb91a58a22cb381c02bdf7e8ca85" name="a9b14bb91a58a22cb381c02bdf7e8ca85"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>preserve_topology</b> = false</td></tr>
 <tr class="separator:a9b14bb91a58a22cb381c02bdf7e8ca85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34a7ae8497a0194dbd52399cbba57a59" id="r_a34a7ae8497a0194dbd52399cbba57a59"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a34a7ae8497a0194dbd52399cbba57a59">optimize_envelope_around_simplified</a> = false</td></tr>
+<tr class="separator:a34a7ae8497a0194dbd52399cbba57a59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99fbd3031d9726ffa1af82b6977acfae" id="r_a99fbd3031d9726ffa1af82b6977acfae"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a99fbd3031d9726ffa1af82b6977acfae">split_high_valence_threshold</a> = 200</td></tr>
 <tr class="separator:a99fbd3031d9726ffa1af82b6977acfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a268234aa3af6a0da6942a4b8ce0e86" id="r_a9a268234aa3af6a0da6942a4b8ce0e86"><td class="memItemLeft" align="right" valign="top"><a id="a9a268234aa3af6a0da6942a4b8ce0e86" name="a9a268234aa3af6a0da6942a4b8ce0e86"></a>
@@ -255,6 +257,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        std::numeric_limits&lt;double&gt;::max()</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="a34a7ae8497a0194dbd52399cbba57a59" name="a34a7ae8497a0194dbd52399cbba57a59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34a7ae8497a0194dbd52399cbba57a59">&#9670;&#160;</a></span>optimize_envelope_around_simplified</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::OptimizerParameters::optimize_envelope_around_simplified = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Build the optimizer's envelope around the SIMPLIFIED geometry at the REMAINING tolerance (eps - simplify_eps), instead of around the original input at the full eps.</p>
+<p>The deviation budget is identical by the triangle inequality: the simplification is already within simplify_eps of the input, so anything within (eps - simplify_eps) of the simplification is within eps of the input. What changes is where the geometry STARTS. The envelope is a hard veto, not a penalty, so a surface handed to the optimizer close to the boundary has most of its moves refused; built this way it starts at the centre, with the whole radius available in every direction.</p>
+<p>That headroom is load-bearing: deliberately starving it on tetwild (simplify_envelope_ ratio 0.95, which leaves the simplification free to use nearly the whole tolerance) was enough to turn a converging run into a diverging one on Thingi10K 1368052.</p>
+<p>The cost is elements. Holding the surface within eps/2 of the simplified geometry is stricter than eps of the input wherever the simplification smoothed detail away, so fewer coarsening collapses are allowed: measured on 106838 the output went from 200k to 560k tets and on 116060 from 133k to 267k, at unchanged final quality. Off by default for that reason.</p>
+<p>SimWild's 3D mesh already rebuilds its envelope around the simplified surface; there this flag only narrows the radius to the remaining budget, which is the part it was missing. SimWild's 2D mesh has no simplification stage, so the flag does not apply. </p>
+
 </div>
 </div>
 <a id="a99fbd3031d9726ffa1af82b6977acfae" name="a99fbd3031d9726ffa1af82b6977acfae"></a>
