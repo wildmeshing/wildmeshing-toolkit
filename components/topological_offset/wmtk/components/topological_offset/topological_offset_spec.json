@@ -44,6 +44,7 @@
             "split_high_valence_threshold",
             "skip_good_regions",
             "w_amips",
+            "project_line_search",
             "perform_sanity_checks"
         ]
     },
@@ -281,6 +282,12 @@
         "type": "bool",
         "default": false,
         "doc": "Only smooth vertices incident to a tet whose energy is still far from stop_energy. Smoothing a vertex surrounded by good tets does nothing, so skipping it is free (only used if optimize is true)."
+    },
+    {
+        "pointer": "/project_line_search",
+        "type": "bool",
+        "default": true,
+        "doc": "Place surface vertices with a projected line search instead of the envelope pull term. The vertex is smoothed as if it were interior (AMIPS alone), then the result is walked back toward its original position along t = 1, 1/2, 1/4, ..., projecting each candidate onto the input; the first that does not invert and strictly lowers the worst incident element is taken. The vertex then lies exactly on the input rather than at a weighted compromise between input and quality, and no smoothing move can make the worst element worse. Set false to restore the envelope pull."
     },
     {
         "pointer": "/w_amips",

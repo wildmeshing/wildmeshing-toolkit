@@ -26,6 +26,7 @@
       "stop_energy",
       "split_high_valence_threshold",
       "w_amips",
+      "project_line_search",
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
@@ -200,6 +201,12 @@
     "doc": "Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link."
   },
   {
+    "pointer": "/project_line_search",
+    "type": "bool",
+    "default": true,
+    "doc": "Place surface vertices with a projected line search instead of the envelope pull term. The vertex is smoothed as if it were interior (AMIPS alone), then the result is walked back toward its original position along t = 1, 1/2, 1/4, ..., projecting each candidate onto the input; the first that does not invert and strictly lowers the worst incident element is taken. The vertex then lies exactly on the input rather than at a weighted compromise between input and quality, and no smoothing move can make the worst element worse. Set false to restore the envelope pull."
+},
+{
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,

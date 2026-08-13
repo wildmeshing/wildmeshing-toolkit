@@ -30,6 +30,7 @@ bool TriOptimizerMesh::smooth_after(const Tuple& t)
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
     opts.two_stage = true;
+    opts.project_line_search = m_params.project_line_search;
 
     // Deliberately retain TriWild's default quality_veto_on_surface=true. A homogeneous
     // SimWild mesh must accept and reject the same candidate positions as TriWild.

@@ -129,6 +129,11 @@ struct OptimizerParameters
      * light quality preference.
      */
     double w_amips = 1e-4;
+    /**
+     * Place surface vertices by an unconstrained solve plus a projected line search instead
+     * of by the envelope pull term. See SmoothVertexOptions::project_line_search.
+     */
+    bool project_line_search = true;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.
