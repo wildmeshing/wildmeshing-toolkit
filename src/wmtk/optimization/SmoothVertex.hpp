@@ -126,9 +126,10 @@ struct SmoothVertexOptions
      * once when the solve begins; tangential motion is resisted like normal motion.
      * SpringRefresh: the same spring, but the target is re-captured at every accepted
      * iterate, which restores slow tangential motion (one force-balance displacement per
-     * iterate) while keeping each iterate's model an exact quadratic. Exact (2D only): the
-     * true distance with its true region-wise Hessian -- free sliding on segment interiors,
-     * isotropic hold at corners; see ExactDistanceEnergy2D.
+     * iterate) while keeping each iterate's model an exact quadratic. Exact: the true distance
+     * with its true region-wise Hessian -- sliding is free exactly where the input is flat
+     * (segment/face interiors), partially constrained on 3D edges, held at corners and
+     * vertices; see ExactDistanceEnergy2D/3D.
      */
     enum class PullMode { Envelope, Spring, SpringRefresh, Exact };
     PullMode pull_mode = PullMode::Spring;
@@ -220,9 +221,15 @@ bool smooth_vertex_3d(
     if (pull_env) {
         const double pull_w = opts.s_envelope * opts.w_envelope;
         std::shared_ptr<polysolve::nonlinear::Problem> envelope_energy;
-        if (opts.pull_mode == SmoothVertexOptions::PullMode::Exact) {
-            log_and_throw_error("pull_mode 'exact' is only implemented in 2D");
-        } else if (opts.pull_mode == SmoothVertexOptions::PullMode::Envelope) {
+        if (opts.pull_mode == SmoothVertexOptions::PullMode::Exact &&
+            pull_env->kind() == SampleEnvelope::Kind::Triangles3d) {
+            envelope_energy = std::make_shared<ExactDistanceEnergy3D>(pull_env, pull_w);
+        } else if (
+            opts.pull_mode == SmoothVertexOptions::PullMode::Envelope ||
+            opts.pull_mode == SmoothVertexOptions::PullMode::Exact) {
+            // Exact classification is implemented for triangle envelopes; a vertex pulled
+            // toward an order-2 CURVE envelope falls back to the Gauss-Newton pull, whose
+            // rank-one model is the correct segment-interior behavior there anyway.
             envelope_energy = std::make_shared<EnvelopeEnergy3D>(pull_env, pull_w);
         } else {
             Vector3d target;

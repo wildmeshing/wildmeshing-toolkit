@@ -176,6 +176,71 @@ double ExactDistanceEnergy2D::max_step_size(const TVector& x0, const TVector& x1
     return hi;
 }
 
+
+ExactDistanceEnergy3D::ExactDistanceEnergy3D(
+    const std::shared_ptr<SampleEnvelope>& envelope,
+    const double weight)
+    : m_envelope(envelope)
+    , m_weight(weight)
+{
+    assert(m_envelope);
+}
+
+double ExactDistanceEnergy3D::value(const TVector& x)
+{
+    assert(x.size() == 3);
+    return m_weight * m_envelope->squared_distance(Vector3d(x));
+}
+
+void ExactDistanceEnergy3D::gradient(const TVector& x, TVector& gradv)
+{
+    assert(x.size() == 3);
+    Vector3d r(x);
+    Vector3d n;
+    m_envelope->nearest_point(r, n);
+    gradv = 2 * m_weight * (r - n);
+}
+
+void ExactDistanceEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    Vector3d n, dir;
+    int dim = -1;
+    long long feature_id = -1;
+    m_envelope->nearest_point_feature(Vector3d(x), n, dim, dir, feature_id);
+    if (dim == 2) {
+        // Face interior: stiff along the face normal only.
+        hessian = 2.0 * m_weight * (dir * dir.transpose());
+    } else if (dim == 1) {
+        // Edge interior: free along the edge, stiff in both perpendicular directions.
+        hessian = 2.0 * m_weight * (Matrix3d::Identity() - dir * dir.transpose());
+    } else {
+        // Mesh vertex: distance to a point, isotropic.
+        hessian = 2.0 * m_weight * Matrix3d::Identity();
+    }
+}
+
+double ExactDistanceEnergy3D::max_step_size(const TVector& x0, const TVector& x1)
+{
+    const Vector3d p0(x0), p1(x1);
+    Vector3d n, dir;
+    int dim0 = -1, dim1 = -1;
+    long long id0 = -1, id1 = -1;
+    m_envelope->nearest_point_feature(p0, n, dim0, dir, id0);
+    m_envelope->nearest_point_feature(p1, n, dim1, dir, id1);
+    if (dim0 == dim1 && id0 == id1) {
+        return 1.0;
+    }
+    double lo = 0.0, hi = 1.0;
+    for (int it = 0; it < 40 && hi - lo > 1e-6; ++it) {
+        const double mid = 0.5 * (lo + hi);
+        int dm = -1;
+        long long idm = -1;
+        m_envelope->nearest_point_feature(p0 + mid * (p1 - p0), n, dm, dir, idm);
+        ((dm == dim0 && idm == id0) ? lo : hi) = mid;
+    }
+    return hi;
+}
+
 EnvelopeEnergy3D::EnvelopeEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
     const double weight)

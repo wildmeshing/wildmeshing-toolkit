@@ -139,6 +139,38 @@ private:
     double m_weight;
 };
 
+
+/// 3D counterpart of ExactDistanceEnergy2D. The true Hessian of w*d^2 to a triangle mesh is
+/// 2w * n n^T over a face interior (n the face normal), 2w * (I - t t^T) over an edge
+/// interior (t the edge direction), and 2w * I at a mesh vertex -- each region exactly
+/// quadratic, all PSD, all the actual second derivative.
+class ExactDistanceEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    ExactDistanceEnergy3D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+
+    void solution_changed(const TVector& new_x) override {}
+
+    /// See ExactDistanceEnergy2D::max_step_size; identical contract, 3D features.
+    double max_step_size(const TVector& x0, const TVector& x1) override;
+
+private:
+    std::shared_ptr<SampleEnvelope> m_envelope;
+    double m_weight;
+};
+
 class EnvelopeEnergy3D : public polysolve::nonlinear::Problem
 {
 public:

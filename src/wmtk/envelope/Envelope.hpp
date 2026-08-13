@@ -160,6 +160,20 @@ public:
         bool& on_corner,
         Eigen::Vector2d& seg_normal,
         int& feature_id) const;
+
+    /**
+     * 3D triangle-mesh counterpart. feature_dim reports where the foot point lies: 2 = face
+     * interior, 1 = edge interior, 0 = mesh vertex. dir is the face normal (dim 2) or the
+     * edge direction (dim 1), unit length, sign arbitrary; unused for dim 0. feature_id is
+     * canonical across adjacent triangles: the face index (dim 2), the sorted vertex pair
+     * packed as min * n_vertices + max (dim 1), or the vertex index (dim 0).
+     */
+    double nearest_point_feature(
+        const Eigen::Vector3d& p,
+        Eigen::Vector3d& result,
+        int& feature_dim,
+        Eigen::Vector3d& dir,
+        long long& feature_id) const;
     bool initialized() { return m_bvh != nullptr; };
 
     Kind kind() const { return m_kind; }
@@ -181,6 +195,9 @@ private:
     /// 2D input copy backing nearest_point_feature (filled by the 2D init only).
     std::vector<Eigen::Vector2d> m_v2;
     std::vector<Eigen::Vector2i> m_e2;
+    /// 3D input copy backing nearest_point_feature (filled by the triangle init only).
+    std::vector<Eigen::Vector3d> m_v3;
+    std::vector<Eigen::Vector3i> m_f3;
     std::shared_ptr<SimpleBVH::BVH> m_bvh;
 
 private:

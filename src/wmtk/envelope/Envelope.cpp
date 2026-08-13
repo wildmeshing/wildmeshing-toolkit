@@ -1,5 +1,7 @@
 #include "Envelope.hpp"
 
+#include <limits>
+
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -139,6 +141,8 @@ void SampleEnvelope::init(
         logger().info("Using sample envelope.");
     }
     m_kind = Kind::Triangles3d;
+    m_v3 = V;
+    m_f3 = F;
     exact_envelope.init(V, F, _eps);
 
     // sampleTriangle lays samples on a triangular lattice of spacing `sampling_dist`, whose
@@ -457,31 +461,171 @@ double SampleEnvelope::nearest_point_feature(
     int& feature_id) const
 {
     assert(!m_v2.empty() && !m_e2.empty());
+    // nearest_facet returns SimpleBVH's INTERNAL primitive index (only intersect_box maps
+    // back to input ids), so the facet id cannot be used to look up the segment. Take the
+    // foot point, box-query it (intersect_box does map ids), and classify against the
+    // candidate segments, keeping the closest.
     Eigen::Vector2d nearest;
     double sq_dist;
-    const int fid = m_bvh->nearest_facet(p, nearest, sq_dist);
-    const Eigen::Vector2d a = m_v2[m_e2[fid][0]];
-    const Eigen::Vector2d b = m_v2[m_e2[fid][1]];
-    const Eigen::Vector2d ab = b - a;
-    const double len2 = ab.squaredNorm();
-    // Recompute the foot on the reported segment so the classification and the returned
-    // point come from the same arithmetic (the BVH's own foot can differ in the last ulp).
-    const double t = len2 > 0 ? (p - a).dot(ab) / len2 : 0.0;
-    if (len2 <= 0 || t <= 0) {
-        result = a;
-        on_corner = true;
-        feature_id = m_e2[fid][0]; // polyline vertex index: canonical across both segments
-    } else if (t >= 1) {
-        result = b;
-        on_corner = true;
-        feature_id = m_e2[fid][1];
-    } else {
-        result = a + t * ab;
-        on_corner = false;
-        seg_normal = Eigen::Vector2d(-ab[1], ab[0]) / std::sqrt(len2);
-        feature_id = fid;
+    m_bvh->nearest_facet(p, nearest, sq_dist);
+
+    std::vector<unsigned int> candidates;
+    const double pad = 1e-9 + 1e-9 * std::sqrt(sq_dist);
+    // The BVH stores 2D data lifted to z = 0; query with a 3D box spanning it.
+    const Eigen::Vector3d lo(nearest[0] - pad, nearest[1] - pad, -pad);
+    const Eigen::Vector3d hi(nearest[0] + pad, nearest[1] + pad, pad);
+    m_bvh->intersect_box(lo, hi, candidates);
+    assert(!candidates.empty());
+
+    double best = std::numeric_limits<double>::max();
+    for (const unsigned int fid : candidates) {
+        const Eigen::Vector2d a = m_v2[m_e2[fid][0]];
+        const Eigen::Vector2d b = m_v2[m_e2[fid][1]];
+        const Eigen::Vector2d ab = b - a;
+        const double len2 = ab.squaredNorm();
+        const double t = len2 > 0 ? (p - a).dot(ab) / len2 : 0.0;
+        Eigen::Vector2d foot;
+        bool corner;
+        int id;
+        if (len2 <= 0 || t <= 0) {
+            foot = a;
+            corner = true;
+            id = m_e2[fid][0];
+        } else if (t >= 1) {
+            foot = b;
+            corner = true;
+            id = m_e2[fid][1];
+        } else {
+            foot = a + t * ab;
+            corner = false;
+            id = int(fid);
+        }
+        const double d2 = (p - foot).squaredNorm();
+        if (d2 < best) {
+            best = d2;
+            result = foot;
+            on_corner = corner;
+            feature_id = id;
+            if (!corner) {
+                seg_normal = Eigen::Vector2d(-ab[1], ab[0]) / std::sqrt(len2);
+            }
+        }
     }
-    return (p - result).squaredNorm();
+    return best;
+}
+
+double SampleEnvelope::nearest_point_feature(
+    const Eigen::Vector3d& p,
+    Eigen::Vector3d& result,
+    int& feature_dim,
+    Eigen::Vector3d& dir,
+    long long& feature_id) const
+{
+    assert(!m_v3.empty() && !m_f3.empty());
+    // See the 2D overload: nearest_facet's id is internal, so recover candidates by
+    // box-querying the foot point and classify against each.
+    Eigen::Vector3d nearest;
+    double sq_dist;
+    m_bvh->nearest_facet(p, nearest, sq_dist);
+
+    std::vector<unsigned int> candidates;
+    const double pad = 1e-9 + 1e-9 * std::sqrt(sq_dist);
+    const Eigen::Vector3d lo = nearest.array() - pad;
+    const Eigen::Vector3d hi = nearest.array() + pad;
+    m_bvh->intersect_box(lo, hi, candidates);
+    assert(!candidates.empty());
+
+    const long long nv = (long long)m_v3.size();
+    double best = std::numeric_limits<double>::max();
+    for (const unsigned int fid : candidates) {
+        if (fid >= m_f3.size()) {
+            log_and_throw_error(
+                "nearest_point_feature: candidate id {} out of range ({} faces)",
+                fid,
+                m_f3.size());
+        }
+        const Eigen::Vector3i& tri = m_f3[fid];
+        if (tri[0] >= (int)m_v3.size() || tri[1] >= (int)m_v3.size() ||
+            tri[2] >= (int)m_v3.size()) {
+            log_and_throw_error(
+                "nearest_point_feature: face {} references vertices ({},{},{}) beyond {}",
+                fid,
+                tri[0],
+                tri[1],
+                tri[2],
+                m_v3.size());
+        }
+        const Eigen::Vector3d a = m_v3[tri[0]];
+        const Eigen::Vector3d b = m_v3[tri[1]];
+        const Eigen::Vector3d c = m_v3[tri[2]];
+
+        Eigen::Vector3d foot, fdir(0, 0, 0);
+        int fdim = 0;
+        long long id = tri[0];
+
+        // Ericson, "Real-Time Collision Detection": closest point on triangle, by region.
+        const Eigen::Vector3d ab = b - a, ac = c - a, ap = p - a;
+        const double d1 = ab.dot(ap), d2 = ac.dot(ap);
+        const Eigen::Vector3d bp = p - b;
+        const double d3 = ab.dot(bp), d4 = ac.dot(bp);
+        const Eigen::Vector3d cp = p - c;
+        const double d5 = ab.dot(cp), d6 = ac.dot(cp);
+        const double vc = d1 * d4 - d3 * d2;
+        const double vb = d5 * d2 - d1 * d6;
+        const double va = d3 * d6 - d5 * d4;
+
+        auto vertex_case = [&](int local) {
+            foot = m_v3[tri[local]];
+            fdim = 0;
+            id = tri[local];
+        };
+        auto edge_case = [&](int l0, int l1, double t) {
+            const Eigen::Vector3d e0 = m_v3[tri[l0]];
+            const Eigen::Vector3d e1 = m_v3[tri[l1]];
+            foot = e0 + t * (e1 - e0);
+            fdim = 1;
+            fdir = (e1 - e0).normalized();
+            const long long l = std::min(tri[l0], tri[l1]);
+            const long long h = std::max(tri[l0], tri[l1]);
+            id = l * nv + h;
+        };
+
+        if (d1 <= 0 && d2 <= 0) {
+            vertex_case(0);
+        } else if (d3 >= 0 && d4 <= d3) {
+            vertex_case(1);
+        } else if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+            edge_case(0, 1, d1 / (d1 - d3));
+        } else if (d6 >= 0 && d5 <= d6) {
+            vertex_case(2);
+        } else if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+            edge_case(0, 2, d2 / (d2 - d6));
+        } else if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+            edge_case(1, 2, (d4 - d3) / ((d4 - d3) + (d5 - d6)));
+        } else {
+            const double denom = 1.0 / (va + vb + vc);
+            const Eigen::Vector3d n = ab.cross(ac);
+            const double nn = n.norm();
+            if (nn <= 0) {
+                vertex_case(0); // degenerate triangle: no face region exists
+            } else {
+                foot = a + ab * (vb * denom) + ac * (vc * denom);
+                fdim = 2;
+                fdir = n / nn;
+                id = fid;
+            }
+        }
+
+        const double d2foot = (p - foot).squaredNorm();
+        if (d2foot < best) {
+            best = d2foot;
+            result = foot;
+            feature_dim = fdim;
+            dir = fdir;
+            feature_id = fdim == 2 ? (long long)fid : id;
+        }
+    }
+    return best;
 }
 
 double SampleEnvelope::squared_distance(const Eigen::Vector3d& p) const
