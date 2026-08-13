@@ -47,7 +47,7 @@ bool ManExtractTriMesh::is_interior_face(const Tuple& f) const
 }
 bool ManExtractTriMesh::is_interior_face(size_t f_id) const
 {
-    return m_man_params.tag_selection->eval(m_face_attribute[f_id].tag);
+    return m_man_params.tag_selection->eval(m_face_attribute[f_id].tags);
 }
 
 
@@ -59,7 +59,7 @@ size_t ManExtractTriMesh::label_non_manifold()
     for (const Tuple& v : vertices) {
         if (is_curve_vertex(v) &&
             !vertex_is_manifold(v)) { // vert is part of input and not manifold
-            m_vertex_attribute[v.vid(*this)].label = 1;
+            m_vertex_extra[v.vid(*this)].label = 1;
             ret_num++;
         }
     }

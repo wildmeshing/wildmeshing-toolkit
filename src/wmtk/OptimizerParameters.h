@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 namespace wmtk {
 
@@ -129,11 +130,8 @@ struct OptimizerParameters
      * light quality preference.
      */
     double w_amips = 1e-4;
-    /**
-     * Place surface vertices by an unconstrained solve plus a projected line search instead
-     * of by the envelope pull term. See SmoothVertexOptions::project_line_search.
-     */
-    bool project_line_search = true;
+    /// "projected" or "exact"; see SmoothVertexOptions::SmoothingMode.
+    std::string smoothing_mode = "projected";
     /// Bisections tried before the projected search gives up. See SmoothVertexOptions.
     int project_line_search_steps = 12;
     /// Partial-projection bisections tried after it gives up; 0 disables that pass.

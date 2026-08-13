@@ -62,8 +62,9 @@ struct SmoothRejectCounters
  * The weights follow simwild's convention: `w_envelope = 1 - w_amips`, with w_amips small
  * (1e-4), so the envelope term dominates and the AMIPS term acts as a light quality
  * preference. The scale factors put the two on a comparable footing --- AMIPS is
- * dimensionless while the envelope energy is a squared distance, so s_envelope is normally
- * 1 / (diag * eps^2).
+ * dimensionless while the envelope energy is a squared distance, so s_envelope is
+ * 1 / eps^2 and the term reads (d/eps)^2: distance in envelope widths, dimensionless
+ * like AMIPS in both 2D and 3D.
  */
 struct SmoothVertexOptions
 {
@@ -106,29 +107,21 @@ struct SmoothVertexOptions
     bool quality_veto_on_surface = true;
 
     /**
-     * Place a surface vertex by an unconstrained solve plus a projected line search, rather
-     * than by a pull term inside the objective.
+     * How a surface vertex is placed.
      *
-     * The envelope term trades the surface against quality inside one objective, so the
-     * result is a compromise governed by a weight: the vertex ends up neither exactly on the
-     * input nor where quality wanted it. Worse, the trade has a floor. The term penalises the
-     * distance to the input as a SET, recomputing the nearest point every evaluation, so its
-     * gradient is always normal to the input and a vertex slides along it for free -- pushed
-     * tangentially by AMIPS with no restoring force, it slides until geometry rather than the
-     * force balance stops it, and the leftover distance stops responding to the weight.
+     * Projected: smooth as if interior (AMIPS alone), then walk back toward the start along
+     * t = 1, 1/2, 1/4, ..., projecting each candidate onto the input; take the first
+     * projected candidate that does not invert and strictly lowers the worst incident
+     * element, else do not move. The vertex lands exactly on the input; no weights exist.
      *
-     * This separates the two concerns instead. The vertex is smoothed as if it were interior
-     * -- AMIPS alone, no pull -- and the result is then walked back toward where it started
-     * along t = 1, 1/2, 1/4, ..., PROJECTING each candidate onto the input before testing it.
-     * The first projected candidate that does not invert and strictly lowers the worst
-     * incident element is taken; if none does, the vertex does not move.
-     *
-     * So the vertex lands exactly on the input (projection, not a penalty) and quality never
-     * gets worse (strict acceptance, stronger than the veto above, which is why that veto
-     * cannot fire in this mode). What is given up is that the accepted point is only a point
-     * of the projected segment, not the best position on the surface.
+     * Exact: minimize w_amips * AMIPS + w_envelope * (d/eps)^2 with the TRUE Hessian of the
+     * distance to the piecewise-linear input (ExactDistanceEnergy2D/3D): sliding is free
+     * exactly where the input is flat, blocked isotropically at corners and vertices,
+     * constrained to the direction of a 3D edge or curve segment. The vertex rests a
+     * w_amips-proportional distance off the input; the accept checks below apply either way.
      */
-    bool project_line_search = true;
+    enum class SmoothingMode { Projected, Exact };
+    SmoothingMode smoothing_mode = SmoothingMode::Projected;
 
     /// Backtracking steps tried before the move is abandoned: t = 1, 1/2, ..., 2^-(n-1).
     /// Exhausting these without an acceptable candidate is what "the search failed" means.
@@ -157,10 +150,13 @@ struct SmoothVertexOptions
  *
  * The envelope enters the objective as a squared-distance penalty rather than as a
  * projection applied afterwards, so a vertex is drawn back toward the surface gradually and
- * the line search refuses any step that leaves the envelope
- * (EnvelopeEnergy3D::is_step_valid). That is the difference from a hard `nearest_point`
- * snap, which moves the vertex the whole way in one jump and is therefore rejected exactly
- * when the vertex most needs moving.
+ * a vertex is drawn back toward the surface gradually. That is the difference from a hard
+ * `nearest_point` snap, which moves the vertex the whole way in one jump and is therefore
+ * rejected exactly when the vertex most needs moving.
+ *
+ * The line search never consults the envelope: AMIPS keeps its pole guard against stepping
+ * over an inversion, and eps-containment is owned by the accept checks after the solve,
+ * which test whole incident faces rather than the vertex point anyway.
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
@@ -232,7 +228,7 @@ bool smooth_vertex_3d(
     const std::shared_ptr<SampleEnvelope> pull_env =
         VA[vid].m_is_on_surface ? m.smoothing_energy_envelope(vid) : nullptr;
 
-    if (pull_env && opts.project_line_search) {
+    if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         // Smooth as if the vertex were interior, then walk back onto the input.
         const Vector3d x_orig = VA[vid].m_posf;
         total_energy = amips_energy;
@@ -309,7 +305,7 @@ bool smooth_vertex_3d(
         }
     } else if (pull_env) {
         auto envelope_energy =
-            std::make_shared<EnvelopeEnergy3D>(pull_env, opts.s_envelope * opts.w_envelope);
+            std::make_shared<ExactDistanceEnergy3D>(pull_env, opts.s_envelope * opts.w_envelope);
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();
@@ -478,7 +474,7 @@ bool smooth_vertex_2d(
     const std::shared_ptr<SampleEnvelope> envelope =
         VA[vid].m_is_on_surface ? m.m_envelope : nullptr;
 
-    if (envelope && opts.project_line_search) {
+    if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         const Vector2d x_orig = m.smoothing_position(vid);
         total_energy = amips_energy;
         solve();
@@ -552,7 +548,7 @@ bool smooth_vertex_2d(
         }
     } else if (envelope) {
         auto envelope_energy =
-            std::make_shared<EnvelopeEnergy2D>(envelope, opts.s_envelope * opts.w_envelope);
+            std::make_shared<ExactDistanceEnergy2D>(envelope, opts.s_envelope * opts.w_envelope);
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();

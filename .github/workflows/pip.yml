@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: wildmeshing/data2
-          ref: f21aa84d50a3ac6ffb3b04daf8a3e132b24803b0
+          ref: 0be5e37e34f6e9ac01c9d0404295cda1982d187a
           path: data
           fetch-depth: 1
 

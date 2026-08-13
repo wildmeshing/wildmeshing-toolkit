@@ -95,7 +95,7 @@ void topological_offset(nlohmann::json json_params)
             input_data.tag_names);
 
         // label input complex
-        mesh.m_params.offset_selection =
+        mesh.m_offset_params.offset_selection =
             expression_parser::parse(offset_selection_str, mesh.m_tag_name_to_id);
         mesh.label_input_complex();
 
@@ -131,9 +131,17 @@ void topological_offset(nlohmann::json json_params)
         mesh.m_init_counts[2] = mesh.get_faces().size();
 
         // output input complex and entire mesh as vtu
-        if (mesh.m_params.debug_output) {
+        if (mesh.m_offset_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             mesh.write_input_complex(output_filename.string() + "_input_complex");
+        }
+
+        // Capture the region-boundary envelope while the region tags are still the input's own.
+        // execute_offset() replaces the tags of every face the band grows through, which cuts
+        // each region's boundary curve short at the band; an envelope built afterwards is a tube
+        // around the truncated curve and pins the junction where region meets offset.
+        if (mesh.m_offset_params.region_envelope_from_input) {
+            mesh.init_region_boundary_envelope_from_input();
         }
 
         // execute offset
@@ -159,6 +167,11 @@ void topological_offset(nlohmann::json json_params)
             log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
         }
 
+        // Did conservative growth run out of room? Reported here, not inside the optimization,
+        // because it is a property of the offset as constructed -- the optimization cannot move
+        // vertices off the frozen bounding box, so a band clipped here stays clipped.
+        mesh.warn_if_offset_reaches_domain_boundary();
+
         // offset region manifoldness check
         if (check_manifoldness) {
             if (mesh.offset_is_manifold()) {
@@ -166,6 +179,24 @@ void topological_offset(nlohmann::json json_params)
             } else {
                 // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
                 log_and_throw_error("OFFSET REGION IS NOT MANIFOLD");
+            }
+        }
+
+        // Unconditional -- 2D has no un-optimized output. `optimize` is not read here: after
+        // conservative growth the band's boundary sits on background-mesh cell boundaries, so
+        // its distance to the input complex is only accurate to the local cell size, and moving
+        // it onto target_distance is entirely this call's job. Skipping it does not produce a
+        // coarser offset, it produces one whose defining property is unmet. The parameter is
+        // still honoured by the 3D branch below, which has its own distance-field insertion.
+        mesh.optimize_offset(output_filename);
+
+        // As in 3D: the check above ran on the offset as constructed, and optimization
+        // re-triangulates it, so the property has to be re-established afterwards.
+        if (check_manifoldness) {
+            if (mesh.offset_is_manifold()) {
+                logger().info("Offset region manifold check passed after optimization.");
+            } else {
+                logger().error("Offset region is NOT manifold after optimization!");
             }
         }
 
@@ -182,12 +213,44 @@ void topological_offset(nlohmann::json json_params)
             report["after #f"] = mesh.get_faces().size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
+            if (!mesh.optimization_metrics.empty()) {
+                std::vector<double> max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev;
+                for (const auto& m : mesh.optimization_metrics) {
+                    max_dist_err.push_back(m[0]);
+                    avg_dist_err.push_back(m[1]);
+                    max_norm_dev.push_back(m[2]);
+                    avg_norm_dev.push_back(m[3]);
+                }
+                report["optimization_metrics"]["max_dist_err"] = max_dist_err;
+                report["optimization_metrics"]["avg_dist_err"] = avg_dist_err;
+                report["optimization_metrics"]["max_norm_dev"] = max_norm_dev;
+                report["optimization_metrics"]["avg_norm_dev"] = avg_norm_dev;
+
+                std::vector<int> splits, collapses, swaps;
+                for (const auto& c : mesh.op_counts) {
+                    splits.push_back(c[0]);
+                    collapses.push_back(c[1]);
+                    swaps.push_back(c[2]);
+                }
+                report["op_counts"]["splits"] = splits;
+                report["op_counts"]["collapses"] = collapses;
+                report["op_counts"]["swaps"] = swaps;
+                // Both criteria, matching optimize_offset()'s own test: MAX for distance, AVERAGE
+                // for normal deviation (see the reasoning there). convergence_normal_deviation
+                // <= 0 disables the angular half.
+                const double nd_target = mesh.m_offset_params.convergence_normal_deviation;
+                report["converged"] =
+                    max_dist_err.back() <= mesh.m_offset_params.convergence_target &&
+                    (nd_target <= 0. || avg_norm_dev.back() <= nd_target);
+                report["convergence_target"] = mesh.m_offset_params.convergence_target;
+                report["convergence_normal_deviation"] = nd_target;
+            }
             f_out << std::setw(4) << report;
             f_out.close();
         }
 
         mesh.write_msh_groups(output_filename.string()); // write .msh with physical groups
-        if (mesh.m_params.save_vtu) { // write .vtu
+        if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
 
@@ -248,7 +311,7 @@ void topological_offset(nlohmann::json json_params)
         mesh.m_init_counts[3] = mesh.tet_size();
 
         // output input complex and entire mesh as vtu
-        if (mesh.m_params.debug_output) {
+        if (mesh.m_offset_params.debug_output) {
             mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
