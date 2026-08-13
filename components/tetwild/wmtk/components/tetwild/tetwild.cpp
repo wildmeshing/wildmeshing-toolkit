@@ -115,6 +115,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.interleaved_smoothing = json_params["interleaved_smoothing"];
     params.interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
     params.w_amips = json_params["w_amips"];
+    params.smoothing_mode = json_params["smoothing_mode"];
+    params.project_line_search_steps = json_params["project_line_search_steps"];
+    params.project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
 
     params.preserve_topology = json_params["preserve_topology"];
 

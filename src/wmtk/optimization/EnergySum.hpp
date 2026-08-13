@@ -34,6 +34,10 @@ public:
 
     void solution_changed(const TVector& new_x) override;
 
+    bool after_line_search_custom_operation(const TVector& x0, const TVector& x1) override;
+
+    double max_step_size(const TVector& x0, const TVector& x1) override;
+
     bool is_step_valid(const TVector& x0, const TVector& x1) override;
 
 private:
