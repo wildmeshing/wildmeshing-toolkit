@@ -35,6 +35,33 @@ struct OptimizerParameters
     bool preserve_topology = false;
 
     /**
+     * Build the optimizer's envelope around the SIMPLIFIED geometry at the REMAINING
+     * tolerance (eps - simplify_eps), instead of around the original input at the full eps.
+     *
+     * The deviation budget is identical by the triangle inequality: the simplification is
+     * already within simplify_eps of the input, so anything within (eps - simplify_eps) of the
+     * simplification is within eps of the input. What changes is where the geometry STARTS.
+     * The envelope is a hard veto, not a penalty, so a surface handed to the optimizer close
+     * to the boundary has most of its moves refused; built this way it starts at the centre,
+     * with the whole radius available in every direction.
+     *
+     * That headroom is load-bearing: deliberately starving it on tetwild (simplify_envelope_
+     * ratio 0.95, which leaves the simplification free to use nearly the whole tolerance) was
+     * enough to turn a converging run into a diverging one on Thingi10K 1368052.
+     *
+     * The cost is elements. Holding the surface within eps/2 of the simplified geometry is
+     * stricter than eps of the input wherever the simplification smoothed detail away, so
+     * fewer coarsening collapses are allowed: measured on 106838 the output went from 200k to
+     * 560k tets and on 116060 from 133k to 267k, at unchanged final quality. Off by default
+     * for that reason.
+     *
+     * SimWild's 3D mesh already rebuilds its envelope around the simplified surface; there
+     * this flag only narrows the radius to the remaining budget, which is the part it was
+     * missing. SimWild's 2D mesh has no simplification stage, so the flag does not apply.
+     */
+    bool optimize_envelope_around_simplified = false;
+
+    /**
      * Incident-cell count above which a link vertex accepts only one valence-increasing split
      * per pass, or 0 to disable the gate. Shared by the 2D and 3D Wild optimizers; SimWild uses
      * the same protection so tag-homogeneous runs follow the Wild path.

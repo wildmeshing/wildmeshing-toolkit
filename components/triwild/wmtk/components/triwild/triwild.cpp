@@ -339,9 +339,33 @@ void triwild(nlohmann::json json_params)
 
     const std::vector<std::string> tag_names = json_params["input_names"];
 
-    TriWildMesh mesh(params, envelope_eps, NUM_THREADS);
+    // Which curves is the optimizer's envelope built around, and at what radius?
+    //
+    // Default: the ORIGINAL input curves at the full eps.
+    //
+    // With optimize_envelope_around_simplified: the SIMPLIFIED curves at the REMAINING
+    // tolerance, envelope_eps - simplify_eps. The deviation budget is unchanged by the
+    // triangle inequality -- the simplification is already within simplify_eps of the input,
+    // so anything within (envelope_eps - simplify_eps) of it is within envelope_eps of the
+    // input -- but the geometry now starts at the CENTRE of the envelope it is judged against
+    // rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a
+    // mesh handed over close to the boundary has most of its moves refused. See the tetwild
+    // driver for the measurements.
+    const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
+    const double opt_eps = env_around_simplified ? (envelope_eps - simplify_eps) : envelope_eps;
+    const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
+    const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
+    if (env_around_simplified) {
+        logger().info(
+            "optimization envelope: eps {:.6} around the SIMPLIFIED curves (#V {}, #E {})",
+            opt_eps,
+            V_env.rows(),
+            E_env.rows());
+    }
+
+    TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, V_rational, F, E, tag_names, V_in, E_in);
+    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.

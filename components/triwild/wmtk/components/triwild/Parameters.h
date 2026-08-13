@@ -83,6 +83,7 @@ struct Parameters : public wmtk::OptimizerParameters
         lr = json_params["length_rel"];
         stop_energy = json_params["stop_energy"];
         preserve_topology = json_params["preserve_topology"];
+        optimize_envelope_around_simplified = json_params["optimize_envelope_around_simplified"];
         preserve_feature_points = json_params["preserve_feature_points"];
         allow_junction_cleanup = json_params["allow_junction_cleanup"];
 

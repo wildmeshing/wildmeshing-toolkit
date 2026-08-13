@@ -152,6 +152,53 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
     }
 }
 
+namespace {
+
+/**
+ * @brief The eps the optimizer's envelope should use.
+ *
+ * SimWild already builds its envelope around the SIMPLIFIED geometry -- read_mesh in 3D and
+ * the curve pipeline in 2D both hand over the simplified input, and SimWildMesh::simplify()
+ * later rebuilds it around the simplified surface. So the part tetwild and triwild gain from
+ * optimize_envelope_around_simplified, SimWild has always had.
+ *
+ * What it does NOT do is charge the simplification against the budget: the envelope uses the
+ * full eps around geometry that has already moved up to eps_simplify from the input, so a
+ * vertex may end up eps_simplify + eps away from it rather than eps. With the flag on, spend
+ * only the remainder, which makes the total deviation eps as advertised.
+ *
+ * Narrowing here rather than at each init_envelope call is deliberate: every later rebuild
+ * reads m_envelope_eps, so doing it once at construction covers them all and cannot
+ * double-subtract.
+ */
+double optimization_envelope_eps(const Parameters& params)
+{
+    if (!params.optimize_envelope_around_simplified) return params.eps;
+    if (params.preserve_topology || params.skip_simplify) {
+        // No simplification ran -- the envelope geometry IS the input, so the full eps is
+        // already centred on it and there is nothing to charge.
+        return params.eps;
+    }
+    const double remaining = params.eps - params.eps_simplify;
+    if (remaining <= 0) {
+        logger().warn(
+            "optimize_envelope_around_simplified: eps_simplify {:.6} leaves nothing of eps "
+            "{:.6}; keeping the full eps",
+            params.eps_simplify,
+            params.eps);
+        return params.eps;
+    }
+    logger().info(
+        "optimization envelope: eps {:.6} (eps {:.6} - eps_simplify {:.6}) around the "
+        "simplified input",
+        remaining,
+        params.eps,
+        params.eps_simplify);
+    return remaining;
+}
+
+} // namespace
+
 void run_3D(const nlohmann::json& json_params, const InputData& input_data)
 {
     Parameters params(json_params);
@@ -160,7 +207,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     igl::Timer timer;
     timer.start();
 
-    simwild::SimWildMesh mesh(params, params.eps, params.NUM_THREADS);
+    simwild::SimWildMesh mesh(params, optimization_envelope_eps(params), params.NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
@@ -250,7 +297,10 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     igl::Timer timer;
     timer.start();
 
-    simwild::tri::SimWildMeshTri mesh(params, params.eps, params.NUM_THREADS);
+    simwild::tri::SimWildMeshTri mesh(
+        params,
+        optimization_envelope_eps(params),
+        params.NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {

@@ -304,23 +304,59 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // check_mesh_connectivity_validity() -- so there are no coincident vertices or
     // duplicated faces for it to find.
 
-    // Built around the ORIGINAL input, like the simplification one, but at the full tet eps.
-    // A separate object because surf_mesh's is deliberately tighter now.
+    // Which surface is the optimizer's envelope built around, and at what radius?
+    //
+    // Default: the ORIGINAL input at the full tet eps, like the simplification one but wider.
+    //
+    // With optimize_envelope_around_simplified: the SIMPLIFIED surface at the REMAINING
+    // tolerance, tet_eps - simplify_eps. The triangle-inequality budget is unchanged -- the
+    // simplification is already within simplify_eps of the input, so anything within
+    // (tet_eps - simplify_eps) of the simplification is within tet_eps of the input -- but the
+    // geometry now starts at the CENTRE of the envelope it is judged against rather than
+    // somewhere inside it. That matters because the envelope is a hard veto, not a penalty: a
+    // surface handed over already close to the boundary has most of its moves refused, and
+    // deliberately starving that headroom (simplify_envelope_ratio 0.95) was enough to turn a
+    // converging run into a diverging one on 1368052.
+    const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
+    const double opt_eps = env_around_simplified ? (tet_eps - simplify_eps) : tet_eps;
+
     auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
     {
-        std::vector<Eigen::Vector3d> env_V(verts.size());
-        std::vector<Eigen::Vector3i> env_F(tris.size());
-        for (size_t i = 0; i < verts.size(); ++i) env_V[i] = verts[i];
-        for (size_t i = 0; i < tris.size(); ++i) {
-            env_F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
+        std::vector<Eigen::Vector3d> env_V;
+        std::vector<Eigen::Vector3i> env_F;
+        if (env_around_simplified) {
+            env_V.resize(vsimp.size());
+            env_F.resize(fsimp.size());
+            for (size_t i = 0; i < vsimp.size(); ++i) env_V[i] = vsimp[i];
+            for (size_t i = 0; i < fsimp.size(); ++i) {
+                env_F[i] << (int)fsimp[i][0], (int)fsimp[i][1], (int)fsimp[i][2];
+            }
+        } else {
+            env_V.resize(verts.size());
+            env_F.resize(tris.size());
+            for (size_t i = 0; i < verts.size(); ++i) env_V[i] = verts[i];
+            for (size_t i = 0; i < tris.size(); ++i) {
+                env_F[i] << (int)tris[i][0], (int)tris[i][1], (int)tris[i][2];
+            }
         }
-        tet_envelope->init(env_V, env_F, tet_eps);
+        tet_envelope->init(env_V, env_F, opt_eps);
     }
 
+    // params.eps is deliberately NOT narrowed to match.
+    //
+    // It looks like it should be -- the veto now uses opt_eps -- but params.eps also sets
+    // l_min, the minimum edge length, and the smoothing energy scale. Halving it halves l_min,
+    // which is a RESOLUTION change, not an envelope one: measured on 106838 it took the output
+    // from 200k to 580k tets (2.9x) and on 116060 from 133k to 285k (2.1x), at unchanged final
+    // quality and ~40% more wall time. That swamps the effect under test. Leaving params.eps
+    // alone keeps this experiment to the single variable it is about: which surface the
+    // envelope is built around, and how much room the geometry starts with inside it.
+
     logger().info(
-        "tetrahedralisation envelope: {} (eps {:.6})",
+        "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
         tet_envelope->use_exact ? "EXACT" : "sampled",
-        std::sqrt(tet_envelope->eps2));
+        std::sqrt(tet_envelope->eps2),
+        env_around_simplified ? "SIMPLIFIED surface" : "input");
 
     if (json_params["DEBUG_disable_envelope"]) {
         logger().warn(
