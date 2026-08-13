@@ -877,7 +877,7 @@ TEST_CASE(
         CHECK(sim.m_force_split_edges == tri.m_force_split_edges);
     }
 
-    SECTION("3D rejects force-splitting an already-small bad tet")
+    SECTION("3D force-splits a bad tet even when it is already at target size")
     {
         wmtk::components::tetwild::Parameters tet_params;
         tet_params.init(Vector3d(-2, -2, -2001), Vector3d(2, 2, 2001));
@@ -888,8 +888,6 @@ TEST_CASE(
         tet_params.stuck_refine_num_worst = sim_params.stuck_refine_num_worst = 1;
         tet_params.stuck_refine_rings = sim_params.stuck_refine_rings = 0;
         tet_params.stuck_refine_force_split = sim_params.stuck_refine_force_split = true;
-        tet_params.stuck_refine_force_split_oversized_only =
-            sim_params.stuck_refine_force_split_oversized_only = true;
         tet_params.splitting_l2 = sim_params.splitting_l2 = 1e20;
 
         wmtk::components::tetwild::TetWildMesh tet(tet_params, nullptr, 0);
@@ -907,7 +905,12 @@ TEST_CASE(
 
         REQUIRE(tet.refine_sizing_around_worst(200.) > 0);
         REQUIRE(sim.refine_sizing_around_worst() > 0);
-        CHECK(tet.m_force_split_edges.empty());
+        // splitting_l2 is set absurdly high above, so the worst tet counts as "already at
+        // target size". It is force-split regardless: the split also refines the cell's
+        // NEIGHBOURHOOD, which is what breaks a deadlocked configuration open. Skipping these
+        // used to be the stuck_refine_force_split_oversized_only gate, and it froze Thingi10K
+        // 46024 for 77 iterations -- see OptimizerParameters::stuck_refine_force_split.
+        REQUIRE_FALSE(tet.m_force_split_edges.empty());
         CHECK(sim.m_force_split_edges == tet.m_force_split_edges);
     }
 }

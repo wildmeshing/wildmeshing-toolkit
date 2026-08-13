@@ -51,7 +51,6 @@
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
       "stuck_refine_force_split",
-      "stuck_refine_force_split_oversized_only",
       "skip_good_regions",
       "skip_good_regions_margin",
       "fill_holes_tags",
@@ -439,12 +438,6 @@
     "type": "bool",
     "default": true,
     "doc": "When the max energy stalls, split each worst tet's longest edge once, bypassing the split length gate, to unstick a sliver without changing the sizing field. Adds at most one split per worst tet per stall."
-  },
-  {
-    "pointer": "/stuck_refine_force_split_oversized_only",
-    "type": "bool",
-    "default": true,
-    "doc": "Force-split only a cell whose longest edge exceeds its target length. AMIPS is scale invariant, so repeatedly splitting an already-small bad cell cannot improve its shape and instead creates an edge-length ratchet. Matches TetWild's guard."
   },
   {
     "pointer": "/skip_good_regions",
