@@ -119,6 +119,5 @@ var searchData=
   ['expression_116',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]],
   ['expression_20parser_20for_20tags_117',['Expression Parser for Tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2wmtk_2coe458f49cabfb51348f9d7982efe81432.html',1,'']]],
   ['extract_5fcurve_5fmesh_118',['extract_curve_mesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.html#a677ffc3e0f6c1b7a009e90933c4c4101',1,'wmtk::components::manifold_extraction::ManExtractTriMesh']]],
-  ['extract_5flocal_5fmass_5fand_5fstiffness_119',['extract_local_mass_and_stiffness',['../classwmtk_1_1optimization_1_1_biharmonic_energy3_d.html#a654742df49121602c0af86edbd0ef12e',1,'wmtk::optimization::BiharmonicEnergy3D']]],
-  ['extract_5fsurface_5fmesh_120',['extract_surface_mesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html#a35d161b8df489c60086efe44e9885b8b',1,'wmtk::components::manifold_extraction::ManExtractTetMesh']]]
+  ['extract_5fsurface_5fmesh_119',['extract_surface_mesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html#a35d161b8df489c60086efe44e9885b8b',1,'wmtk::components::manifold_extraction::ManExtractTetMesh']]]
 ];
