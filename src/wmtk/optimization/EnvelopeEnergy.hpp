@@ -17,10 +17,7 @@ public:
      * @brief The energy is the squared distance to an envelope.
      *
      */
-    EnvelopeEnergy2D(
-        const std::shared_ptr<SampleEnvelope>& envelope,
-        const double weight = 1,
-        bool check_step_validity = true);
+    EnvelopeEnergy2D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -32,12 +29,9 @@ public:
 
     void solution_changed(const TVector& new_x) override;
 
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
 private:
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_weight;
-    bool m_check_step_validity;
 };
 
 class EnvelopeEnergy3D : public polysolve::nonlinear::Problem
@@ -51,10 +45,7 @@ public:
      * @brief The energy is the squared distance to an envelope.
      *
      */
-    EnvelopeEnergy3D(
-        const std::shared_ptr<SampleEnvelope>& envelope,
-        const double weight = 1,
-        bool check_step_validity = true);
+    EnvelopeEnergy3D(const std::shared_ptr<SampleEnvelope>& envelope, const double weight = 1);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -66,12 +57,9 @@ public:
 
     void solution_changed(const TVector& new_x) override;
 
-    bool is_step_valid(const TVector& x0, const TVector& x1) override;
-
 private:
     std::shared_ptr<SampleEnvelope> m_envelope;
     double m_weight;
-    bool m_check_step_validity;
 };
 
 } // namespace wmtk::optimization

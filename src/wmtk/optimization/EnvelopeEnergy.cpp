@@ -19,8 +19,8 @@ namespace {
  * On the input itself the direction is unavailable (r == nearest) and the envelope also
  * contributes no gradient there, so the block is dropped and the step is governed by the
  * quality term alone -- exactly the free tangential motion that is wanted. The normal
- * stiffness reappears as soon as the vertex has moved off, and the line search's
- * is_step_valid still refuses any step that leaves the envelope.
+ * stiffness reappears as soon as the vertex has moved off; eps-containment is owned by the
+ * accept checks after the solve.
  */
 template <class Vec, class Mat>
 Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
@@ -38,11 +38,9 @@ Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
 
 EnvelopeEnergy2D::EnvelopeEnergy2D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight,
-    bool check_step_validity)
+    const double weight)
     : m_envelope(envelope)
     , m_weight(weight)
-    , m_check_step_validity(check_step_validity)
 {
     assert(m_envelope);
 }
@@ -76,28 +74,12 @@ void EnvelopeEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 
 void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
 
-bool EnvelopeEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity) {
-        return true;
-    }
-
-    Vector2d r(x1);
-    if (m_envelope->is_outside(r)) {
-        return false;
-    }
-
-    return true;
-}
-
 
 EnvelopeEnergy3D::EnvelopeEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight,
-    bool check_step_validity)
+    const double weight)
     : m_envelope(envelope)
     , m_weight(weight)
-    , m_check_step_validity(check_step_validity)
 {
     assert(m_envelope);
 }
@@ -130,19 +112,5 @@ void EnvelopeEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 }
 
 void EnvelopeEnergy3D::solution_changed(const TVector& new_x) {}
-
-bool EnvelopeEnergy3D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity) {
-        return true;
-    }
-
-    Vector3d r(x1);
-    if (m_envelope->is_outside(r)) {
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace wmtk::optimization

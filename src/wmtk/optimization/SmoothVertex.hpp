@@ -158,10 +158,13 @@ struct SmoothVertexOptions
  *
  * The envelope enters the objective as a squared-distance penalty rather than as a
  * projection applied afterwards, so a vertex is drawn back toward the surface gradually and
- * the line search refuses any step that leaves the envelope
- * (EnvelopeEnergy3D::is_step_valid). That is the difference from a hard `nearest_point`
- * snap, which moves the vertex the whole way in one jump and is therefore rejected exactly
- * when the vertex most needs moving.
+ * a vertex is drawn back toward the surface gradually. That is the difference from a hard
+ * `nearest_point` snap, which moves the vertex the whole way in one jump and is therefore
+ * rejected exactly when the vertex most needs moving.
+ *
+ * The line search never consults the envelope: AMIPS keeps its pole guard against stepping
+ * over an inversion, and eps-containment is owned by the accept checks after the solve,
+ * which test whole incident faces rather than the vertex point anyway.
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
