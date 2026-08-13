@@ -264,8 +264,39 @@ public:
      */
     bool operator()(AppMesh& m, const std::vector<std::pair<Op, Tuple>>& operation_tuples)
     {
-        using Elem = std::tuple<double, Op, Tuple, size_t>; // priority, operation, tuple, #retries
+        // The queue holds an operation's INDEX rather than its name. edit_operation_maps is a
+        // std::map, so iterating it yields the names in lexicographic order and an index is
+        // exactly a name's rank among them -- comparing indices is therefore identical to
+        // comparing the strings, which is what keeps the queue order, and so the output,
+        // bit-for-bit unchanged. What it buys is that a queue element is now trivially
+        // copyable: a heap sift moves 8 bytes instead of a std::string, and a tie on the
+        // priority is an integer compare instead of a string compare. It also turns the
+        // per-operation dispatch from a string-keyed std::map lookup into an index.
+        using OpId = uint32_t;
+        using Elem = std::tuple<double, OpId, Tuple, size_t>; // priority, op index, tuple, #retries
         using Queue = wmtk::threading::concurrent_priority_queue<Elem>;
+
+        std::vector<const Op*> op_name;
+        std::vector<std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>*>
+            op_fn;
+        std::map<Op, OpId> op_id;
+        op_name.reserve(edit_operation_maps.size());
+        op_fn.reserve(edit_operation_maps.size());
+        for (auto& kv : edit_operation_maps) {
+            op_id.emplace(kv.first, OpId(op_name.size()));
+            op_name.push_back(&kv.first);
+            op_fn.push_back(&kv.second);
+        }
+        // An operation with no entry here was previously default-constructed into the map by
+        // operator[] and then called, which throws bad_function_call -- so it cannot occur in
+        // any working configuration. Say so plainly rather than ordering it arbitrarily.
+        const auto id_of = [&op_id](const Op& name) {
+            const auto it = op_id.find(name);
+            if (it == op_id.end()) {
+                log_and_throw_error("No operation registered under the name '{}'.", name);
+            }
+            return it->second;
+        };
 
         std::atomic<bool> stop(false);
         cnt_success = 0;
@@ -300,26 +331,27 @@ public:
                         continue;
                     }
                     if (tup.is_valid(m)) {
+                        const Op& op_str = *op_name[op];
                         if (!is_weight_up_to_date(
                                 m,
-                                std::tuple<double, Op, Tuple>(weight, op, tup))) {
+                                std::tuple<double, Op, Tuple>(weight, op_str, tup))) {
                             operation_cleanup(m);
                             continue;
                         } // this can encode, in qslim, recompute(energy) == weight.
-                        auto newtup = edit_operation_maps[op](m, tup);
+                        auto newtup = (*op_fn[op])(m, tup);
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
-                            renewed_tuples = renew_neighbor_tuples(m, op, newtup.value());
+                            renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
                             cnt_success++;
                             cnt_update++;
                         } else {
-                            on_fail(m, op, tup);
+                            on_fail(m, op_str, tup);
                             cnt_fail++;
                         }
                         for (const auto& [o, e] : renewed_tuples) {
                             auto val = priority(m, o, e);
                             if (should_renew(val)) {
-                                renewed_elements.emplace_back(val, o, e, 0);
+                                renewed_elements.emplace_back(val, id_of(o), e, 0);
                             }
                         }
                     }
@@ -347,7 +379,7 @@ public:
                 if (!e.is_valid(m)) {
                     continue;
                 }
-                final_queue.emplace(priority(m, op, e), op, e, 0);
+                final_queue.emplace(priority(m, op, e), id_of(op), e, 0);
             }
             run_single_queue(final_queue, 0);
         } else {
@@ -355,7 +387,7 @@ public:
                 if (!e.is_valid(m)) {
                     continue;
                 }
-                queues[get_partition_id(m, e)].emplace(priority(m, op, e), op, e, 0);
+                queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0);
             }
             // Comment out parallel: work on serial first.
             wmtk::threading::task_group tg;
