@@ -1,6 +1,5 @@
 #include "read_image_msh.hpp"
 
-#include <igl/predicates/predicates.h>
 #include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/EmbedCurves.hpp>
@@ -8,6 +7,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 namespace wmtk::components::simwild {
 
@@ -72,12 +72,12 @@ void positive_orientation_3D(const MatrixXd& V, MatrixXi& T)
     const Vector3d p2 = V.row(T(0, 2));
     const Vector3d p3 = V.row(T(0, 3));
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(p0, p1, p2, p3);
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(p0, p1, p2, p3);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else {
         log_and_throw_error(
@@ -101,12 +101,12 @@ void positive_orientation_2D(const MatrixXd& V, MatrixXi& F)
     const Vector2d p1 = V.row(F(0, 1));
     const Vector2d p2 = V.row(F(0, 2));
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient2d(p0, p1, p2);
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient2d(p0, p1, p2);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else {
         log_and_throw_error("First face is degenerate! Vertices: \n{},\n{},\n{}", p0, p1, p2);

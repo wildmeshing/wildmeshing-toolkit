@@ -1,10 +1,10 @@
 #include "TopoOffsetTriMesh.h"
 #include <igl/is_edge_manifold.h>
 #include <igl/is_vertex_manifold.h>
-#include <igl/predicates/predicates.h>
 #include <paraviewo/VTUWriter.hpp>
 #include <queue>
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 
 namespace wmtk::components::topological_offset {
@@ -764,15 +764,15 @@ bool TopoOffsetTriMesh::offset_is_manifold()
 
 bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
 {
-    igl::predicates::exactinit();
+    wmtk::utils::predicates::exactinit();
     for (const Tuple& t : tris) {
         auto vs = oriented_tri_vids(t);
 
-        auto res = igl::predicates::orient2d(
+        auto res = wmtk::utils::predicates::orient2d(
             m_vertex_attribute[vs[0]].m_posf,
             m_vertex_attribute[vs[1]].m_posf,
             m_vertex_attribute[vs[2]].m_posf);
-        if (res != igl::predicates::Orientation::POSITIVE) {
+        if (res != wmtk::utils::predicates::Orientation::POSITIVE) {
             return false;
         }
     }

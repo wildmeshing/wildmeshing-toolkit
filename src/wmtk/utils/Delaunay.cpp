@@ -5,8 +5,8 @@
 #include <VolumeRemesher/2d/delaunay2d.h>
 // clang-format on
 
-#include <igl/predicates/predicates.h>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -27,12 +27,12 @@ bool is_inverted(
     const Eigen::Vector3d v2(p2[0], p2[1], p2[2]);
     const Eigen::Vector3d v3(p3[0], p3[1], p3[2]);
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(v0, v1, v2, v3);
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(v0, v1, v2, v3);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;
@@ -51,12 +51,12 @@ bool is_inverted(
     const Eigen::Vector2d v1(p1[0], p1[1]);
     const Eigen::Vector2d v2(p2[0], p2[1]);
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient2d(v0, v1, v2);
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient2d(v0, v1, v2);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;
@@ -121,13 +121,13 @@ bool spans_a_volume(const std::vector<double>& coords, size_t n)
         return Eigen::Vector3d(coords[3 * i], coords[3 * i + 1], coords[3 * i + 2]);
     };
 
-    igl::predicates::exactinit();
+    wmtk::utils::predicates::exactinit();
     const Eigen::Vector3d p0 = pt(0);
     const Eigen::Vector3d p1 = pt(1);
     for (size_t k = 2; k + 1 < n; ++k) {
         for (size_t l = k + 1; l < n; ++l) {
-            if (igl::predicates::orient3d(p0, p1, pt(k), pt(l)) !=
-                igl::predicates::Orientation::COPLANAR) {
+            if (wmtk::utils::predicates::orient3d(p0, p1, pt(k), pt(l)) !=
+                wmtk::utils::predicates::Orientation::COPLANAR) {
                 return true;
             }
         }

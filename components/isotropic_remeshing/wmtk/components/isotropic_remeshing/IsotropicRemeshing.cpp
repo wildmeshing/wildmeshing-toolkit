@@ -5,7 +5,6 @@
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
-#include <igl/predicates/predicates.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/VectorUtils.h>
 #include <Eigen/Core>
@@ -14,6 +13,7 @@
 #include <wmtk/ExecutionScheduler.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/partition_utils.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 namespace wmtk::components::isotropic_remeshing {
 

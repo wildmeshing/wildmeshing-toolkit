@@ -48,7 +48,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::toolkit
 	wmtk::data
 	wmtk::shortest_edge_collapse
-	igl::predicates
 	jse::jse
 )
 

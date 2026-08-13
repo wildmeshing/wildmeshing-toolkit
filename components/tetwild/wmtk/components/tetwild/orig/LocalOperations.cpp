@@ -77,16 +77,16 @@ bool LocalOperations::isTetFlip(const std::array<int, 4>& t)
             break;
         }
     if (is_rounded) {
-        igl::predicates::exactinit();
-        auto res = igl::predicates::orient3d(
+        wmtk::utils::predicates::exactinit();
+        auto res = wmtk::utils::predicates::orient3d(
             tet_vertices[t[0]].posf,
             tet_vertices[t[1]].posf,
             tet_vertices[t[2]].posf,
             tet_vertices[t[3]].posf);
         int result;
-        if (res == igl::predicates::Orientation::POSITIVE)
+        if (res == wmtk::utils::predicates::Orientation::POSITIVE)
             result = 1;
-        else if (res == igl::predicates::Orientation::NEGATIVE)
+        else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
             result = -1;
         else
             result = 0;
@@ -187,16 +187,16 @@ double LocalOperations::calEdgeLength(int v1_id, int v2_id)
 
 void LocalOperations::calTetQuality_AMIPS(const std::array<int, 4>& tet, TetQuality& t_quality)
 {
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(
         tet_vertices[tet[0]].posf,
         tet_vertices[tet[1]].posf,
         tet_vertices[tet[2]].posf,
         tet_vertices[tet[3]].posf);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;

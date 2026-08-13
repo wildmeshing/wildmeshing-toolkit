@@ -15,6 +15,7 @@ set(TEST_SOURCES
     test_link_condition.cpp
     test_nonmanifold.cpp
     test_operations.cpp
+    test_predicates.cpp
     test_raw_simplex_collection.cpp
     test_read_triangle_mesh.cpp
     test_resolve_path.cpp

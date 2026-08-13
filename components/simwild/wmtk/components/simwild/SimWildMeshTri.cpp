@@ -6,7 +6,6 @@
 
 #include <igl/Timer.h>
 #include <igl/is_edge_manifold.h>
-#include <igl/predicates/predicates.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/VectorUtils.h>
@@ -30,6 +29,7 @@
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 #include <wmtk/utils/partition_utils.hpp>
 #include "expression_parser/Parser.hpp"
