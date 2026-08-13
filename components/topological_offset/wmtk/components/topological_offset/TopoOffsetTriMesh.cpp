@@ -433,10 +433,14 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    // marching tris
-    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::SphereTracing;
-    logger().info("Using sphere tracing for distance field edge splitting.");
-    marching_tris();
+    // No edge splitting after conservative growth -- the offset boundary is left where growth put
+    // it, and reaching target_distance is entirely the optimization phase's job.
+    //
+    // This is what the paper does. Sec. 5.2 inserts the offset with midpoint placement ("we do
+    // not perform an interpolation ... we just place the inserted vertices at the midpoint of the
+    // split edges") and leaves the distance to Step 3. The pass that used to run here instead
+    // root-found every band-boundary edge onto d(x) = delta, i.e. it did the optimizer's work
+    // with a mechanism that has no error feedback and no envelope or inversion guards.
     set_offset_tri_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) {

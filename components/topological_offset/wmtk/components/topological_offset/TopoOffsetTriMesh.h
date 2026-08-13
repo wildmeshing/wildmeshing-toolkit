@@ -3,6 +3,7 @@
 #include <wmtk/TriOptimizerMesh.h>
 #include <algorithm>
 #include <atomic>
+#include <functional>
 #include <set>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "Parameters.h"
@@ -85,13 +86,7 @@ public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0, // used for simplicial embedding steps
         Initial = 1, // this is used to initialize the complex. Its a little hacky
-
-        // only one of these is used, hard coded in execute_offset()
-        BinarySearch = 2, // bisection root finding algo
-        LogRootFind = 3, // 'custom' root finding, using the fact that d(x) - d* < 0 at first vertex
-        SphereTracing = 4, // use sphere tracing to compute the zero of the distance field
-
-        Optimization = 5 // the optimization phase; the shared engine places the vertex
+        Optimization = 2 // the optimization phase; the shared engine places the vertex
     };
 
 public:
@@ -265,6 +260,56 @@ public:
     /// Move an offset-boundary vertex back onto the target distance from the input complex,
     /// blended with the Laplacian of its offset-boundary neighbours.
     bool project_offset_vertex(const Tuple& t);
+
+    /**
+     * @brief The direction the REGION curve runs through this vertex, if it has one.
+     *
+     * Only region-class edges count -- the offset boundary is exempt from the envelope, so its
+     * direction is not a wall to slide along. Two incident region edges give the chord between
+     * the two neighbours (the discrete tangent of a curve passing through); one gives that
+     * edge's own direction (a curve terminating here, e.g. where a region outline meets the
+     * offset). Zero or three or more is not a curve -- returns false, and the caller keeps
+     * whatever the scaled search gave it.
+     *
+     * @param[out] tang unit tangent, written only on success. Sign is arbitrary; callers
+     *                  project onto it, which is sign-independent.
+     */
+    bool region_boundary_tangent(const Tuple& t, Vector2d& tang) const;
+
+    /**
+     * @brief Put a vertex at the distance-error minimum along its region tangent.
+     *
+     * A vertex on a region boundary is effectively constrained to that curve -- the envelope
+     * admits motion along it and almost none across it -- so the right thing to solve is the 1D
+     * problem ON the curve: minimise |dist(p, input complex) - target_distance| over
+     * p = p0 + s*tang. What this replaces is a single step of length (target - p0).tang, i.e.
+     * the desired move PROJECTED onto the tangent, which fixes a direction and then takes an
+     * arbitrary length in it.
+     *
+     * The measurement that motivated this, over the 122 slide events of the dragon rectangle at
+     * target_distance_rel 5e-3: the projected step was never the best point on its own line.
+     * 108 of 122 undershot and 14 overshot, and the best feasible point on the line had a median
+     * of 52x lower error (worst case 36295x). The envelope was not what stopped them -- zero of
+     * the 122 were blocked before the projected step, and 113 were still feasible at 20x it. The
+     * vertices were under-stepped, not locked, which is also why splitting their incident region
+     * edges would not have helped: a split adds samples to the curve, it does not enlarge the set
+     * of positions the envelope admits.
+     *
+     * Bracket first, then minimise. `rejected` is the caller's feasibility predicate (envelope
+     * plus inversion, evaluated at whatever position the vertex currently holds); the feasible
+     * extent is found by geometric expansion out to `cap` and bisection of the first refusal,
+     * separately in each direction, then golden-section search runs on the bracket with
+     * infeasible probes scored as infinite. `cap` bounds how far along the curve a single pass
+     * may travel.
+     *
+     * Leaves the vertex at the minimiser and returns its signed offset s along `tang`.
+     */
+    double minimize_distance_along_tangent(
+        const size_t vid,
+        const Vector2d& p0,
+        const Vector2d& tang,
+        const double cap,
+        const std::function<bool()>& rejected);
 
     /// The 2D optimization phase: split / collapse / swap / smooth on the shared driver.
     void optimize_offset(const std::filesystem::path& output_file);
@@ -581,6 +626,11 @@ public:
         std::atomic<int> offset_clamped{0}; ///< accepted with the search fraction < 0.99
         std::atomic<int> offset_clamp_env{0}; ///< ... and the envelope is what stopped it
         std::atomic<int> offset_clamp_inv{0}; ///< ... and an inverted face is what stopped it
+        /// ... and sliding along the region curve recovered ground the scaled search could not.
+        /// A vertex flush against the envelope wall has a scaled search that can only return 0:
+        /// every positive multiple of a vector pointing even slightly out of the tube is out of
+        /// the tube. The tangential component of that same vector is legal and is most of it.
+        std::atomic<int> offset_slid{0};
         /// Distance error over the offset vertices this pass actually touched, before and after
         /// the move, in units of 1e-9 so an atomic<int> can accumulate a max/sum.
         std::atomic<long long> offset_err_before_nano{0};
@@ -608,6 +658,7 @@ public:
                   &offset_clamped,
                   &offset_clamp_env,
                   &offset_clamp_inv,
+                  &offset_slid,
                   &offset_err_max_before_nano,
                   &offset_err_max_after_nano,
                   &interior_attempted,
@@ -711,30 +762,6 @@ public:
      */
     void init_input_complex_bvh();
 
-    /**
-     * @deprecated
-     * @brief split edge at point by minimizing m_offset_params.target_distance - d() (where d() is
-     * distance to input complex via BVH) along the edge. Uses binary search, so implicitly assumes
-     * distance field is monotonic along edge. May give weird results if not monotonic
-     */
-    void edge_split_binary_search(const size_t v1, const size_t v2, Vector2d& p_new) const;
-    void edge_split_binary_search(const Vector2d& v1_pos, const Vector2d& v2_pos, Vector2d& p_new)
-        const;
-
-    /**
-     * @deprecated
-     * @brief split edge at root of d() - target_distance, using fact that this is negative at
-     * v1.
-     */
-    void edge_split_log_root_find(const size_t v1, const size_t v2, Vector2d& p_new) const;
-
-    /**
-     * @brief split edge at first root of d(l) - d*, where d(l) is distance to input complex,
-     * using sphere tracing method. This is the best method and should be used instead of
-     * binary or log root finding methods
-     */
-    void edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector2d& p_new) const;
-
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;
@@ -749,10 +776,14 @@ public:
     void execute_offset(const std::filesystem::path& output_file);
 
     /**
-     * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other 1/2
-     * are split. If m_edge_split_mode=BinarySearch, edges are split according to BVH distance field
-     * and the offset target distance (m_offset_params.target_distance). If
-     * m_edge_split_mode=Midpoint, edges are split at the midpoint
+     * @brief execute simplistic marching tris. All edges with one vertex labelled 0 and the other
+     * 1/2 are split, at the midpoint (m_edge_split_mode=Midpoint) or at the hacky initialization
+     * offset (m_edge_split_mode=Initial).
+     *
+     * There is no longer a distance-field mode here. Splitting the marched edge at the root of
+     * d(l) - target_distance is not what the paper does and it is not what places the offset:
+     * conservative growth decides where the boundary goes, and the optimization phase moves it
+     * from there. See the note on the removal in .claude/CLAUDE.md.
      */
     void marching_tris();
 

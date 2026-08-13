@@ -38,6 +38,11 @@ struct Parameters : public wmtk::OptimizerParameters
     // form the way a distance does -- so there is no _rel counterpart. Convergence requires both
     // this and convergence_target; <= 0 disables the criterion, leaving distance alone deciding.
     double convergence_normal_deviation;
+    // Turn a non-converged run into a hard error instead of a warning. Off by default -- a run
+    // that misses the target is still a usable offset, and the warnings already name the criterion
+    // that failed. Integration tests set it true so a regression in convergence fails the test
+    // rather than passing with a warning nobody reads.
+    bool throw_on_nonconvergence;
     // Half-width of the envelope that contains every tag-region boundary during optimization.
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
@@ -47,6 +52,12 @@ struct Parameters : public wmtk::OptimizerParameters
     // 2D only; the 3D path never builds this envelope.
     bool region_envelope_from_input;
     double relative_ball_threshold;
+    // Termination length for the distance-field root finds in EdgeSplittingTet.cpp
+    // (edge_split_binary_search, edge_split_log_root_find, edge_split_sphere_tracing).
+    // 3D ONLY. The 2D path has no consumer: its sphere-tracing split was removed along with the
+    // distance-field marching pass that selected it, because placing the offset boundary is the
+    // optimization phase's job, not the insertion's. Delete this field and its spec entry when
+    // 3D drops those modes too -- see the note in .claude/CLAUDE.md.
     double edge_search_term_len;
     bool sorted_marching;
     std::string output_path; // no extension
@@ -123,6 +134,7 @@ struct Parameters : public wmtk::OptimizerParameters
         convergence_target = json_params["convergence_target"];
         convergence_target_rel = json_params["convergence_target_rel"];
         convergence_normal_deviation = json_params["convergence_normal_deviation"];
+        throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         region_envelope_from_input = json_params["region_envelope_from_input"];

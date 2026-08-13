@@ -139,9 +139,8 @@ void topological_offset(nlohmann::json json_params)
         // Capture the region-boundary envelope while the region tags are still the input's own.
         // execute_offset() replaces the tags of every face the band grows through, which cuts
         // each region's boundary curve short at the band; an envelope built afterwards is a tube
-        // around the truncated curve and pins the junction where region meets offset. Only
-        // relevant when the optimization will actually use it.
-        if (mesh.m_offset_params.optimize && mesh.m_offset_params.region_envelope_from_input) {
+        // around the truncated curve and pins the junction where region meets offset.
+        if (mesh.m_offset_params.region_envelope_from_input) {
             mesh.init_region_boundary_envelope_from_input();
         }
 
@@ -169,8 +168,8 @@ void topological_offset(nlohmann::json json_params)
         }
 
         // Did conservative growth run out of room? Reported here, not inside the optimization,
-        // because it is a property of the constructed offset and holds whether or not the
-        // optimization runs.
+        // because it is a property of the offset as constructed -- the optimization cannot move
+        // vertices off the frozen bounding box, so a band clipped here stays clipped.
         mesh.warn_if_offset_reaches_domain_boundary();
 
         // offset region manifoldness check
@@ -183,17 +182,21 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        if (mesh.m_offset_params.optimize) {
-            mesh.optimize_offset(output_filename);
+        // Unconditional -- 2D has no un-optimized output. `optimize` is not read here: after
+        // conservative growth the band's boundary sits on background-mesh cell boundaries, so
+        // its distance to the input complex is only accurate to the local cell size, and moving
+        // it onto target_distance is entirely this call's job. Skipping it does not produce a
+        // coarser offset, it produces one whose defining property is unmet. The parameter is
+        // still honoured by the 3D branch below, which has its own distance-field insertion.
+        mesh.optimize_offset(output_filename);
 
-            // As in 3D: the check above ran on the offset as constructed, and optimization
-            // re-triangulates it, so the property has to be re-established afterwards.
-            if (check_manifoldness) {
-                if (mesh.offset_is_manifold()) {
-                    logger().info("Offset region manifold check passed after optimization.");
-                } else {
-                    logger().error("Offset region is NOT manifold after optimization!");
-                }
+        // As in 3D: the check above ran on the offset as constructed, and optimization
+        // re-triangulates it, so the property has to be re-established afterwards.
+        if (check_manifoldness) {
+            if (mesh.offset_is_manifold()) {
+                logger().info("Offset region manifold check passed after optimization.");
+            } else {
+                logger().error("Offset region is NOT manifold after optimization!");
             }
         }
 

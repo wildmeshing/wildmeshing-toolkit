@@ -589,12 +589,13 @@ void TopoOffsetTriMesh::log_smooth_trace() const
         m_smooth_rejects.to_string());
     const int acc = std::max(1, s.offset_accepted.load());
     logger().info(
-        "\tsmooth moves: accepted {} of which clamped {} (envelope {}, inverted {}) | "
+        "\tsmooth moves: accepted {} of which clamped {} (envelope {}, inverted {}, slid {}) | "
         "err over moved verts: avg {:.6} -> {:.6}, max {:.6} -> {:.6}",
         s.offset_accepted.load(),
         s.offset_clamped.load(),
         s.offset_clamp_env.load(),
         s.offset_clamp_inv.load(),
+        s.offset_slid.load(),
         double(s.offset_err_before_nano.load()) / acc * 1e-9,
         double(s.offset_err_after_nano.load()) / acc * 1e-9,
         s.offset_err_max_before_nano.load() * 1e-9,
@@ -652,15 +653,39 @@ bool TopoOffsetTriMesh::project_offset_vertex(const Tuple& t)
         return region_boundary_is_outside_envelope(vid);
     };
 
+    // Distance error at an arbitrary position -- what the whole projection exists to minimise,
+    // and therefore the only fair way to compare two candidate placements.
+    const auto dist_err = [&](const Vector2d& p) {
+        const Vector3d n3 = m_input_complex_bvh.nearest_point(VectorXd(p));
+        return std::abs((p - Vector2d(n3[0], n3[1])).norm() - m_offset_params.target_distance);
+    };
+
+    // The largest fraction of `step` that is accepted, leaving the vertex at that position.
+    // Returns -1 if even the zero step is refused, i.e. p0 itself is illegal.
+    const auto search = [&](const Vector2d& step) -> double {
+        set_vertex_position(vid, p0 + step);
+        if (!rejected()) return 1.;
+        double lo = 0., hi = 1.;
+        for (int it = 0; it < 10; ++it) {
+            const double mid = 0.5 * (lo + hi);
+            set_vertex_position(vid, p0 + mid * step);
+            if (rejected()) {
+                hi = mid;
+            } else {
+                lo = mid;
+            }
+        }
+        set_vertex_position(vid, p0 + lo * step);
+        return rejected() ? -1. : lo;
+    };
+
     // How far this vertex is off the target distance before and after the move. A move that is
     // "accepted" may still have been clamped to a small fraction of what was asked for, so the
     // acceptance count alone says nothing about whether the error actually came down.
     const auto record = [&](double frac) {
         const Vector2d p = m_vertex_attribute[vid].m_posf;
-        const Vector3d n3 = m_input_complex_bvh.nearest_point(VectorXd(p));
-        const double d_after = (p - Vector2d(n3[0], n3[1])).norm();
         const double e_before = std::abs(dist - m_offset_params.target_distance);
-        const double e_after = std::abs(d_after - m_offset_params.target_distance);
+        const double e_after = dist_err(p);
         const auto nano = [](double x) { return static_cast<int>(x * 1e9); };
         m_smooth_trace.offset_err_before_nano += nano(e_before);
         m_smooth_trace.offset_err_after_nano += nano(e_after);
@@ -688,26 +713,53 @@ bool TopoOffsetTriMesh::project_offset_vertex(const Tuple& t)
         }
     };
 
-    set_vertex_position(vid, target);
-    if (!rejected()) {
-        record(1.0);
-        return true;
-    }
+    // Scale the blended move back toward the known-valid p0 until it is accepted.
+    const Vector2d move = target - p0;
+    const double frac = search(move);
+    if (frac >= 0.) {
+        // TANGENTIAL SLIDE. The search above can only SCALE `move`, and that is not enough for a
+        // vertex sitting flush against the envelope wall: if p0 is on the wall and target is even
+        // slightly outside it, every positive multiple of `move` is outside too, so the search
+        // returns 0 and the vertex is frozen for the rest of the run -- even when most of the
+        // motion it wants is ALONG the wall and perfectly legal.
+        //
+        // Measured on the dragon rectangle at target_distance_rel 5e-3: one triple point where a
+        // region curve terminates on the offset held max_dist_err at 22% of target for every
+        // iteration, refusing a step whose direction was only 41 degrees off its region edge --
+        // 76% tangential -- while a probe along that tangent accepted twice the distance needed.
+        //
+        // So when the scaled search comes up short, solve the 1D problem on the region curve
+        // instead -- see minimize_distance_along_tangent(), which also records why the projected
+        // step this used to take was the wrong quantity. Guarded two ways: it runs only where a
+        // region tangent is actually defined (see region_boundary_tangent()), and it is kept only
+        // if it lowers the distance error below what the scaled search achieved, so it can never
+        // make a vertex worse than before.
+        Vector2d tang;
+        if (frac < 0.99 && region_boundary_tangent(t, tang)) {
+            const Vector2d p_scaled = m_vertex_attribute[vid].m_posf;
+            const double e_scaled = dist_err(p_scaled);
 
-    // Binary search back toward the known-valid p0 for the furthest point that is accepted.
-    double lo = 0., hi = 1.;
-    for (int it = 0; it < 10; ++it) {
-        const double mid = 0.5 * (lo + hi);
-        set_vertex_position(vid, p0 + mid * (target - p0));
-        if (rejected()) {
-            hi = mid;
-        } else {
-            lo = mid;
+            // How far along the curve one pass may travel: the shortest incident region edge,
+            // but never less than the projected step, so the search can only ever see more of
+            // the line than the old behaviour did. Sliding past a neighbour would fold the curve
+            // and invert a triangle, which `rejected` catches anyway -- this just keeps the
+            // bracket in the range where the tangent still describes the curve.
+            double cap = std::abs(move.dot(tang));
+            for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
+                if (!edge_is_region_boundary_live(e)) continue;
+                const size_t nb =
+                    (e.vid(*this) == vid) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
+                cap = std::max(cap, (m_vertex_attribute[nb].m_posf - p0).norm());
+            }
+
+            minimize_distance_along_tangent(vid, p0, tang, cap, rejected);
+            if (dist_err(m_vertex_attribute[vid].m_posf) >= e_scaled) {
+                set_vertex_position(vid, p_scaled); // no better; keep the scaled result
+            } else {
+                ++m_smooth_trace.offset_slid;
+            }
         }
-    }
-    set_vertex_position(vid, p0 + lo * (target - p0));
-    if (!rejected()) {
-        record(lo);
+        record(frac);
         return true;
     }
     // Attribute the failure: the search ran out and the vertex is still somewhere it may not
@@ -727,6 +779,117 @@ bool TopoOffsetTriMesh::project_offset_vertex(const Tuple& t)
         ++m_smooth_trace.offset_envelope;
     }
     return false;
+}
+
+bool TopoOffsetTriMesh::region_boundary_tangent(const Tuple& t, Vector2d& tang) const
+{
+    const size_t vid = t.vid(*this);
+    const Vector2d p0 = m_vertex_attribute[vid].m_posf;
+
+    // LIVE, not the cached m_surface_class: this is called from inside the smoothing pass, after
+    // split and collapse have created edges the once-per-iteration relabelling never saw. Same
+    // reasoning as surface_envelope_for_edge(); querying the stale cache would report "not
+    // region" on a fresh edge and silently disable the slide exactly where a collapse just
+    // rearranged the curve.
+    std::vector<Vector2d> nb;
+    for (const Tuple& e : get_one_ring_edges_for_vertex(t)) {
+        if (!edge_is_region_boundary_live(e)) continue;
+        const size_t other =
+            (e.vid(*this) == vid) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
+        if (other == vid) continue;
+        nb.push_back(m_vertex_attribute[other].m_posf);
+        if (nb.size() > 2) return false; // a branch point: no single direction to slide along
+    }
+
+    Vector2d d;
+    if (nb.size() == 2) {
+        d = nb[1] - nb[0]; // curve passing through: the chord is its discrete tangent
+    } else if (nb.size() == 1) {
+        d = nb[0] - p0; // curve terminating here: its own last segment is the only direction
+    } else {
+        return false;
+    }
+    const double n = d.norm();
+    if (n < 1e-14) return false; // degenerate segment; normalising would give garbage
+    tang = d / n;
+    return true;
+}
+
+double TopoOffsetTriMesh::minimize_distance_along_tangent(
+    const size_t vid,
+    const Vector2d& p0,
+    const Vector2d& tang,
+    const double cap,
+    const std::function<bool()>& rejected)
+{
+    const auto err_at = [&](const double s) {
+        const Vector2d p = p0 + s * tang;
+        set_vertex_position(vid, p);
+        if (rejected()) return std::numeric_limits<double>::infinity();
+        const Vector3d n3 = m_input_complex_bvh.nearest_point(VectorXd(p));
+        return std::abs((p - Vector2d(n3[0], n3[1])).norm() - m_offset_params.target_distance);
+    };
+
+    // How far the vertex may travel in one direction. Expanding geometrically rather than
+    // bisecting down from `cap` matters: bisection from a rejected endpoint can only ever return
+    // something smaller than what it started with, which is the very bias -- always shortening,
+    // never lengthening -- that the projected step suffered from.
+    const auto extent = [&](const double sign) {
+        double good = 0., bad = cap;
+        bool found_bad = false;
+        for (double s = cap / 64.; s <= cap * 1.0000001; s *= 2.) {
+            set_vertex_position(vid, p0 + (sign * s) * tang);
+            if (rejected()) {
+                bad = s;
+                found_bad = true;
+                break;
+            }
+            good = s;
+        }
+        if (!found_bad) return good; // the whole capped range is feasible
+        for (int i = 0; i < 12; ++i) {
+            const double mid = 0.5 * (good + bad);
+            set_vertex_position(vid, p0 + (sign * mid) * tang);
+            if (rejected()) {
+                bad = mid;
+            } else {
+                good = mid;
+            }
+        }
+        return good;
+    };
+
+    double a = -extent(-1.), b = extent(1.);
+    if (b - a < 1e-15) {
+        set_vertex_position(vid, p0);
+        return 0.;
+    }
+
+    // Golden-section on |dist - target|. dist() is a smooth distance field away from the input
+    // complex's features, so over a segment this short the objective is a V with one minimum.
+    // An infeasible probe scores infinite, which walks the bracket back off it rather than
+    // trusting a position the caller would refuse.
+    constexpr double PHI = 0.6180339887498949;
+    double c = b - PHI * (b - a), d = a + PHI * (b - a);
+    double fc = err_at(c), fd = err_at(d);
+    for (int i = 0; i < 24 && (b - a) > 1e-15; ++i) {
+        if (fc <= fd) {
+            b = d;
+            d = c;
+            fd = fc;
+            c = b - PHI * (b - a);
+            fc = err_at(c);
+        } else {
+            a = c;
+            c = d;
+            fc = fd;
+            d = a + PHI * (b - a);
+            fd = err_at(d);
+        }
+    }
+    const double s_best = (fc <= fd) ? c : d;
+    set_vertex_position(vid, p0 + s_best * tang);
+    return s_best;
 }
 
 void TopoOffsetTriMesh::init_offset_sizing_field()
@@ -873,7 +1036,28 @@ std::pair<double, double> TopoOffsetTriMesh::compute_distance_deviation() const
     std::vector<bool> on_band(vert_capacity(), false);
     for (const Tuple& e : get_edges()) {
         const std::optional<Tuple> opp = e.switch_face(*this);
-        if (!opp) continue; // domain boundary; there is no other side to compare against
+        if (!opp) {
+            // A band edge on the DOMAIN BOUNDARY is still the band's outer surface, and its
+            // vertices are still offset-boundary vertices that are supposed to sit at
+            // target_distance. The rule below is a comparison between two incident faces and
+            // there is only one here, but the missing side is outside the domain, which is
+            // trivially neither band nor input complex -- so the test resolves, it just cannot
+            // be written as a comparison.
+            //
+            // Skipping these is what let a clipped offset report a healthy error while half the
+            // target distance was missing: where target_distance exceeds the clearance to the
+            // bounding box the band is clipped, and exactly the clipped vertices -- the ones
+            // that are frozen and cannot be fixed -- were the ones dropped from the measurement.
+            // On the dragon rectangle at target_distance 0.1 the true error there reached 52% of
+            // target while the report said 4.8%, and at target_distance_rel 1 the entire band
+            // boundary lay on the box, leaving NO measured edges at all: max_dist_err 0.0 and
+            // "converged" on the first iteration, having measured nothing.
+            if (face_is_offset_band(e.fid(*this))) {
+                on_band[e.vid(*this)] = true;
+                on_band[e.switch_vertex(*this).vid(*this)] = true;
+            }
+            continue;
+        }
         const size_t fa = e.fid(*this), fb = opp->fid(*this);
         const bool a = face_is_offset_band(fa), b = face_is_offset_band(fb);
         if (a == b) continue; // both inside the band or both outside it
@@ -934,9 +1118,15 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
         d,
         m_offset_params.target_distance,
         std::abs(d - m_offset_params.target_distance));
+    // NOT "envelope-blocked": this evaluates containment at the vertex's CURRENT position, which
+    // for any vertex the optimization left in place is inside the tube by construction, so it
+    // reads false even for a vertex every proposed move is refused for. Blocking is a property of
+    // the position being PROPOSED, and there is none to test here. What is worth reporting is
+    // whether the tangential slide is available if the scaled search does come up short.
+    Vector2d tang;
     logger().info(
         "\t  flags: on_offset {} on_input {} on_region {} on_bbox {} rounded {} | incident edges: "
-        "{} offset, {} region, {} input, {} bbox | envelope-blocked {}",
+        "{} offset, {} region, {} input, {} bbox | outside-envelope-now {} | region-tangent {}",
         ve.m_is_on_offset,
         ve.m_is_on_input,
         ve.m_is_on_region,
@@ -946,7 +1136,8 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
         n_region_e,
         n_input_e,
         n_bbox_e,
-        region_boundary_is_outside_envelope(vid));
+        region_boundary_is_outside_envelope(vid),
+        region_boundary_tangent(tuple_from_vertex(vid), tang));
     // Which smoothing path it would take, and whether it is refused before reaching one.
     const char* fate = "project_offset_vertex (distance-driven)";
     if (!m_vertex_attribute[vid].on_bbox_faces.empty()) {
@@ -1292,6 +1483,23 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
                 100.0 * max_dist / m_offset_params.target_distance,
                 avg_dist > 0. ? max_dist / avg_dist : 0.);
         }
+    }
+
+    // Escalate to a hard failure if the caller asked for it. Deliberately AFTER the warnings
+    // above, so the log still names which criterion missed and by how much before the throw --
+    // the exception message alone cannot say whether it was distance or normal deviation, and on
+    // a failing integration test that is the first thing anyone needs.
+    //
+    // Guarded on !converged alone rather than on the block above, which additionally requires
+    // optimization_metrics to be non-empty: a run that produced no metrics at all has certainly
+    // not converged, and silently returning success there is exactly the regression this exists
+    // to catch.
+    if (!converged && m_offset_params.throw_on_nonconvergence) {
+        log_and_throw_error(
+            "Optimization did not converge and throw_on_nonconvergence is set. Ran {} of {} "
+            "iterations; see the warnings above for the criterion that failed.",
+            optimization_metrics.size(),
+            m_offset_params.optimization_iterations);
     }
 
     // Deliberately NOT re-derived here. From the moment the tracked surfaces are tagged, it is
