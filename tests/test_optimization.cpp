@@ -388,73 +388,141 @@ TEST_CASE("biharmonic_energy_bunny_3d", "[energies][.]")
         // igl::writeOFF(fmt::format("debug_{}.off", i), V, F);
     }
 }
-TEST_CASE("envelope_energy_2d_derivatives", "[energies]")
+
+TEST_CASE("exact_distance_energy_2d", "[energies]")
 {
-    // value(), gradient() and hessian() have to describe the SAME function. Nothing checked
-    // that, and they had drifted apart: the gradient was half the derivative of the value,
-    // and the hessian was isotropic.
-    //
-    // The isotropy is the one with teeth. The energy is w * (distance to the input)^2, so
-    // moving ALONG the input costs nothing and the true curvature in that direction is zero;
-    // the Gauss-Newton hessian 2w * n n^T is rank one. An isotropic 2w * I instead applies
-    // the full normal stiffness tangentially, and since a surface vertex's quality term is
-    // weighted 1e-4 against it, the tangential Newton step is divided by a number that does
-    // not belong there and the vertex cannot slide along the curve it sits on.
+    // An L-shaped polyline: one horizontal and one vertical segment meeting at a convex
+    // corner. Within each closest-feature region the distance is exactly quadratic, so the
+    // energy must pass full FD checks there, with the rank of the hessian reporting the
+    // feature: rank one (segment normal) over an interior, isotropic at the corner.
     auto env = std::make_shared<SampleEnvelope>(false);
-    const std::vector<Eigen::Vector2d> V = {Eigen::Vector2d(0, 0), Eigen::Vector2d(4, 0)};
-    const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1)};
+    const std::vector<Eigen::Vector2d> V = {
+        Eigen::Vector2d(0, 0),
+        Eigen::Vector2d(4, 0),
+        Eigen::Vector2d(4, 4)};
+    const std::vector<Eigen::Vector2i> E = {Eigen::Vector2i(0, 1), Eigen::Vector2i(1, 2)};
     env->init(V, E, 0.1);
 
     const double w = 3.0;
-    optimization::EnvelopeEnergy2D energy(env, w);
+    optimization::ExactDistanceEnergy2D energy(env, w);
 
-    // Probes off the segment but away from its endpoints, where the distance field is smooth.
-    const std::vector<Vector2d> probes = {
-        Vector2d(1.0, 0.30),
-        Vector2d(2.0, -0.45),
-        Vector2d(3.0, 0.20),
-    };
-
-    SECTION("the gradient is the derivative of the value")
-    {
-        const double h = 1e-6;
-        for (const Vector2d& p : probes) {
-            VectorXd g;
-            energy.gradient(p, g);
-            for (int i = 0; i < 2; ++i) {
-                Vector2d a = p, b = p;
-                a[i] -= h;
-                b[i] += h;
-                const double fd = (energy.value(b) - energy.value(a)) / (2 * h);
-                CHECK(std::abs(g[i] - fd) <= 1e-5 * std::max(1.0, std::abs(fd)));
+    const double h = 1e-6;
+    auto fd_check = [&](const Vector2d& p) {
+        VectorXd g;
+        energy.gradient(p, g);
+        MatrixXd H;
+        energy.hessian(p, H);
+        for (int i = 0; i < 2; ++i) {
+            Vector2d a = p, b = p;
+            a[i] -= h;
+            b[i] += h;
+            const double fd = (energy.value(b) - energy.value(a)) / (2 * h);
+            CHECK(std::abs(g[i] - fd) <= 1e-5 * std::max(1.0, std::abs(fd)));
+            VectorXd ga, gb;
+            energy.gradient(a, ga);
+            energy.gradient(b, gb);
+            for (int j = 0; j < 2; ++j) {
+                const double fdh = (gb[j] - ga[j]) / (2 * h);
+                CHECK(std::abs(H(j, i) - fdh) <= 1e-4 * std::max(1.0, std::abs(fdh)));
             }
         }
+    };
+
+    SECTION("interior region: full FD consistency and rank-one hessian")
+    {
+        const Vector2d p(2.0, 0.4); // above the horizontal segment, foot in its interior
+        fd_check(p);
+        MatrixXd H;
+        energy.hessian(p, H);
+        CHECK((H * Vector2d(1, 0)).norm() <= 1e-9); // free along the segment
+        CHECK(std::abs((Vector2d(0, 1).transpose() * H * Vector2d(0, 1)).value() - 2 * w) <= 1e-9);
     }
 
-    SECTION("the hessian does not resist motion along the input")
+    SECTION("corner region: full FD consistency and isotropic hessian")
     {
-        // The segment runs along x, so sliding in x leaves the distance unchanged and the
-        // hessian must have no component there. An isotropic hessian fails this with the
-        // full 2w.
-        const Vector2d tangent(1, 0);
-        for (const Vector2d& p : probes) {
-            MatrixXd h;
-            energy.hessian(p, h);
-            CHECK((h * tangent).norm() <= 1e-9);
+        const Vector2d p(4.5, -0.5); // beyond the corner at (4,0), outside both segments
+        fd_check(p);
+        MatrixXd H;
+        energy.hessian(p, H);
+        CHECK((H - 2 * w * MatrixXd::Identity(2, 2)).norm() <= 1e-9);
+    }
+}
 
-            // ... while the normal direction carries the full 2w curvature.
-            const Vector2d normal(0, 1);
-            CHECK(std::abs((normal.transpose() * h * normal).value() - 2 * w) <= 1e-9);
+TEST_CASE("exact_distance_energy_3d", "[energies]")
+{
+    // A 90-degree roof: two triangles sharing the ridge (0,0,0)-(4,0,0), one lying in the
+    // z=0 plane (y<0), one in the y=0 plane (z<0). Probes in the (+y,+z) quadrant see the
+    // ridge as a convex crease. The three closest-feature kinds get one probe each; within
+    // each region the energy is exactly quadratic, so full FD checks must pass, and the
+    // hessian's rank reports the feature.
+    auto env = std::make_shared<SampleEnvelope>(false);
+    const std::vector<Eigen::Vector3d> V = {
+        Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(4, 0, 0),
+        Eigen::Vector3d(2, -3, 0),
+        Eigen::Vector3d(2, 0, -3)};
+    const std::vector<Eigen::Vector3i> F = {Eigen::Vector3i(0, 1, 2), Eigen::Vector3i(0, 1, 3)};
+    env->init(V, F, 0.1);
+
+    const double w = 3.0;
+    optimization::ExactDistanceEnergy3D energy(env, w);
+
+    const double h = 1e-6;
+    auto fd_check = [&](const Vector3d& p) {
+        VectorXd g;
+        energy.gradient(p, g);
+        MatrixXd H;
+        energy.hessian(p, H);
+        for (int i = 0; i < 3; ++i) {
+            Vector3d a = p, b = p;
+            a[i] -= h;
+            b[i] += h;
+            const double fd = (energy.value(b) - energy.value(a)) / (2 * h);
+            CHECK(std::abs(g[i] - fd) <= 1e-5 * std::max(1.0, std::abs(fd)));
+            VectorXd ga, gb;
+            energy.gradient(a, ga);
+            energy.gradient(b, gb);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gb[j] - ga[j]) / (2 * h);
+                CHECK(std::abs(H(j, i) - fdh) <= 1e-4 * std::max(1.0, std::abs(fdh)));
+            }
         }
+    };
+
+    SECTION("face interior: rank one along the face normal")
+    {
+        const Vector3d p(2.0, -1.0, 0.5); // above the z=0 triangle
+        fd_check(p);
+        MatrixXd H;
+        energy.hessian(p, H);
+        CHECK((H * Vector3d(1, 0, 0)).norm() <= 1e-9);
+        CHECK((H * Vector3d(0, 1, 0)).norm() <= 1e-9);
+        CHECK(
+            std::abs((Vector3d(0, 0, 1).transpose() * H * Vector3d(0, 0, 1)).value() - 2 * w) <=
+            1e-9);
     }
 
-    SECTION("the hessian is positive semi-definite")
+    SECTION("edge interior: free along the ridge, stiff across")
     {
-        for (const Vector2d& p : probes) {
-            MatrixXd h;
-            energy.hessian(p, h);
-            Eigen::SelfAdjointEigenSolver<MatrixXd> es(h);
-            CHECK(es.eigenvalues().minCoeff() >= -1e-12);
-        }
+        const Vector3d p(2.0, 1.0, 1.0); // over the ridge, outside both faces
+        fd_check(p);
+        MatrixXd H;
+        energy.hessian(p, H);
+        CHECK((H * Vector3d(1, 0, 0)).norm() <= 1e-9);
+        CHECK(
+            std::abs((Vector3d(0, 1, 0).transpose() * H * Vector3d(0, 1, 0)).value() - 2 * w) <=
+            1e-9);
+        CHECK(
+            std::abs((Vector3d(0, 0, 1).transpose() * H * Vector3d(0, 0, 1)).value() - 2 * w) <=
+            1e-9);
+    }
+
+    SECTION("mesh vertex: isotropic")
+    {
+        const Vector3d p(5.0, 1.0, 1.0); // beyond the ridge end at (4,0,0)
+        fd_check(p);
+        MatrixXd H;
+        energy.hessian(p, H);
+        CHECK((H - 2 * w * MatrixXd::Identity(3, 3)).norm() <= 1e-9);
     }
 }

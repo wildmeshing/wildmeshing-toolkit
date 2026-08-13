@@ -186,8 +186,8 @@ std::function<bool(std::array<double, 6>&)> is_inverted = [](auto& tri) {
     a << tri[0], tri[1];
     b << tri[2], tri[3];
     c << tri[4], tri[5];
-    auto res = igl::predicates::orient2d(a, b, c);
-    return (res != igl::predicates::Orientation::POSITIVE);
+    auto res = wmtk::utils::predicates::orient2d(a, b, c);
+    return (res != wmtk::utils::predicates::Orientation::POSITIVE);
 };
 std::function<bool(std::array<double, 6>&)> is_dgenerate = [](auto& tri) {
     Eigen::Vector3d a, b;

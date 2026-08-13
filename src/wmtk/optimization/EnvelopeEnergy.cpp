@@ -19,8 +19,8 @@ namespace {
  * On the input itself the direction is unavailable (r == nearest) and the envelope also
  * contributes no gradient there, so the block is dropped and the step is governed by the
  * quality term alone -- exactly the free tangential motion that is wanted. The normal
- * stiffness reappears as soon as the vertex has moved off, and the line search's
- * is_step_valid still refuses any step that leaves the envelope.
+ * stiffness reappears as soon as the vertex has moved off; eps-containment is owned by the
+ * accept checks after the solve.
  */
 template <class Vec, class Mat>
 Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
@@ -36,113 +36,87 @@ Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
 
 } // namespace
 
-EnvelopeEnergy2D::EnvelopeEnergy2D(
+
+ExactDistanceEnergy2D::ExactDistanceEnergy2D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight,
-    bool check_step_validity)
+    const double weight)
     : m_envelope(envelope)
     , m_weight(weight)
-    , m_check_step_validity(check_step_validity)
 {
     assert(m_envelope);
 }
 
-double EnvelopeEnergy2D::value(const TVector& x)
+double ExactDistanceEnergy2D::value(const TVector& x)
 {
     assert(x.size() == 2);
-    Vector2d r(x);
-    return m_weight * m_envelope->squared_distance(r);
+    return m_weight * m_envelope->squared_distance(Vector2d(x));
 }
 
-void EnvelopeEnergy2D::gradient(const TVector& x, TVector& gradv)
+void ExactDistanceEnergy2D::gradient(const TVector& x, TVector& gradv)
 {
     assert(x.size() == 2);
     Vector2d r(x);
     Vector2d n;
     m_envelope->nearest_point(r, n);
-    // The derivative of value(), which is m_weight * |r - n|^2. The factor of 2 was missing,
-    // so value, gradient and hessian each described a differently scaled energy and the line
-    // search tested Armijo against half the true directional derivative.
     gradv = 2 * m_weight * (r - n);
 }
 
-void EnvelopeEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+void ExactDistanceEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 {
-    Vector2d r(x);
-    Vector2d n;
-    m_envelope->nearest_point(r, n);
-    hessian = gauss_newton_hessian<Vector2d, Matrix2d>(r, n, m_weight);
+    Vector2d n, seg_normal;
+    bool on_corner = false;
+    int feature_id = -1;
+    m_envelope->nearest_point_feature(Vector2d(x), n, on_corner, seg_normal, feature_id);
+    if (on_corner) {
+        // Distance to a point: the true Hessian of d^2 is isotropic.
+        hessian = 2.0 * m_weight * Matrix2d::Identity();
+    } else {
+        // Distance to a segment interior: rank one along the segment normal. Well-defined
+        // even at d == 0, where the residual direction is unavailable.
+        hessian = 2.0 * m_weight * (seg_normal * seg_normal.transpose());
+    }
 }
 
-void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
-
-bool EnvelopeEnergy2D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity) {
-        return true;
-    }
-
-    Vector2d r(x1);
-    if (m_envelope->is_outside(r)) {
-        return false;
-    }
-
-    return true;
-}
-
-
-EnvelopeEnergy3D::EnvelopeEnergy3D(
+ExactDistanceEnergy3D::ExactDistanceEnergy3D(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight,
-    bool check_step_validity)
+    const double weight)
     : m_envelope(envelope)
     , m_weight(weight)
-    , m_check_step_validity(check_step_validity)
 {
     assert(m_envelope);
 }
 
-double EnvelopeEnergy3D::value(const TVector& x)
+double ExactDistanceEnergy3D::value(const TVector& x)
 {
     assert(x.size() == 3);
-    Vector3d r(x);
-    return m_weight * m_envelope->squared_distance(r);
+    return m_weight * m_envelope->squared_distance(Vector3d(x));
 }
 
-void EnvelopeEnergy3D::gradient(const TVector& x, TVector& gradv)
+void ExactDistanceEnergy3D::gradient(const TVector& x, TVector& gradv)
 {
     assert(x.size() == 3);
     Vector3d r(x);
     Vector3d n;
     m_envelope->nearest_point(r, n);
-    // The derivative of value(), which is m_weight * |r - n|^2. The factor of 2 was missing,
-    // so value, gradient and hessian each described a differently scaled energy and the line
-    // search tested Armijo against half the true directional derivative.
     gradv = 2 * m_weight * (r - n);
 }
 
-void EnvelopeEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
+void ExactDistanceEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
 {
-    Vector3d r(x);
-    Vector3d n;
-    m_envelope->nearest_point(r, n);
-    hessian = gauss_newton_hessian<Vector3d, Matrix3d>(r, n, m_weight);
-}
-
-void EnvelopeEnergy3D::solution_changed(const TVector& new_x) {}
-
-bool EnvelopeEnergy3D::is_step_valid(const TVector& x0, const TVector& x1)
-{
-    if (!m_check_step_validity) {
-        return true;
+    Vector3d n, dir;
+    int dim = -1;
+    long long feature_id = -1;
+    m_envelope->nearest_point_feature(Vector3d(x), n, dim, dir, feature_id);
+    if (dim == 2) {
+        // Face interior: stiff along the face normal only.
+        hessian = 2.0 * m_weight * (dir * dir.transpose());
+    } else if (dim == 1) {
+        // Edge or curve-segment interior: free along the direction, stiff across.
+        hessian = 2.0 * m_weight * (Matrix3d::Identity() - dir * dir.transpose());
+    } else {
+        // Mesh or curve vertex: distance to a point, isotropic.
+        hessian = 2.0 * m_weight * Matrix3d::Identity();
     }
-
-    Vector3d r(x1);
-    if (m_envelope->is_outside(r)) {
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace wmtk::optimization

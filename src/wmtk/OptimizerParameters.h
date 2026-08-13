@@ -1,6 +1,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 namespace wmtk {
 
@@ -151,6 +152,12 @@ struct OptimizerParameters
      * light quality preference.
      */
     double w_amips = 1e-4;
+    /// "projected" or "exact"; see SmoothVertexOptions::SmoothingMode.
+    std::string smoothing_mode = "projected";
+    /// Bisections tried before the projected search gives up. See SmoothVertexOptions.
+    int project_line_search_steps = 12;
+    /// Partial-projection bisections tried after it gives up; 0 disables that pass.
+    int project_line_search_nested_steps = 0;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.

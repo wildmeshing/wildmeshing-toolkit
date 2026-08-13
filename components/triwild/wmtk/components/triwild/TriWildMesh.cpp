@@ -20,7 +20,7 @@
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
-#include <igl/predicates/predicates.h>
+#include <wmtk/utils/predicates.hpp>
 #include <igl/winding_number.h>
 #include <igl/write_triangle_mesh.h>
 #include <igl/read_triangle_mesh.h>

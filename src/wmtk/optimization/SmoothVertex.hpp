@@ -13,6 +13,7 @@
 
 #include <array>
 #include <atomic>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -61,8 +62,9 @@ struct SmoothRejectCounters
  * The weights follow simwild's convention: `w_envelope = 1 - w_amips`, with w_amips small
  * (1e-4), so the envelope term dominates and the AMIPS term acts as a light quality
  * preference. The scale factors put the two on a comparable footing --- AMIPS is
- * dimensionless while the envelope energy is a squared distance, so s_envelope is normally
- * 1 / (diag * eps^2).
+ * dimensionless while the envelope energy is a squared distance, so s_envelope is
+ * 1 / eps^2 and the term reads (d/eps)^2: distance in envelope widths, dimensionless
+ * like AMIPS in both 2D and 3D.
  */
 struct SmoothVertexOptions
 {
@@ -103,6 +105,44 @@ struct SmoothVertexOptions
      * veto).
      */
     bool quality_veto_on_surface = true;
+
+    /**
+     * How a surface vertex is placed.
+     *
+     * Projected: smooth as if interior (AMIPS alone), then walk back toward the start along
+     * t = 1, 1/2, 1/4, ..., projecting each candidate onto the input; take the first
+     * projected candidate that does not invert and strictly lowers the worst incident
+     * element, else do not move. The vertex lands exactly on the input; no weights exist.
+     *
+     * Exact: minimize w_amips * AMIPS + w_envelope * (d/eps)^2 with the TRUE Hessian of the
+     * distance to the piecewise-linear input (ExactDistanceEnergy2D/3D): sliding is free
+     * exactly where the input is flat, blocked isotropically at corners and vertices,
+     * constrained to the direction of a 3D edge or curve segment. The vertex rests a
+     * w_amips-proportional distance off the input; the accept checks below apply either way.
+     */
+    enum class SmoothingMode { Projected, Exact };
+    SmoothingMode smoothing_mode = SmoothingMode::Projected;
+
+    /// Backtracking steps tried before the move is abandoned: t = 1, 1/2, ..., 2^-(n-1).
+    /// Exhausting these without an acceptable candidate is what "the search failed" means.
+    int project_line_search_steps = 12;
+
+    /**
+     * Second pass, run only when the first found nothing: partial projections.
+     *
+     * The first pass only ever tests points ON the input, so a vertex whose one-ring cannot
+     * tolerate being pulled all the way there is refused at every step and does not move at
+     * all -- and is refused again next pass, from the same place. This pass revisits each
+     * candidate and bisects between the interpolated point and its projection, taking the
+     * longest step toward the input that still does not invert and still lowers the worst
+     * element. The vertex ends up off the input, but closer to it than it was, so the next
+     * pass starts from somewhere better and it converges onto the surface over several
+     * passes instead of being stuck forever.
+     *
+     * 0 disables the pass. Costs nothing when the first pass succeeds, which is the common
+     * case.
+     */
+    int project_line_search_nested_steps = 0;
 };
 
 /**
@@ -110,10 +150,13 @@ struct SmoothVertexOptions
  *
  * The envelope enters the objective as a squared-distance penalty rather than as a
  * projection applied afterwards, so a vertex is drawn back toward the surface gradually and
- * the line search refuses any step that leaves the envelope
- * (EnvelopeEnergy3D::is_step_valid). That is the difference from a hard `nearest_point`
- * snap, which moves the vertex the whole way in one jump and is therefore rejected exactly
- * when the vertex most needs moving.
+ * a vertex is drawn back toward the surface gradually. That is the difference from a hard
+ * `nearest_point` snap, which moves the vertex the whole way in one jump and is therefore
+ * rejected exactly when the vertex most needs moving.
+ *
+ * The line search never consults the envelope: AMIPS keeps its pole guard against stepping
+ * over an inversion, and eps-containment is owned by the accept checks after the solve,
+ * which test whole incident faces rather than the vertex point anyway.
  *
  * `Mesh` must provide, on top of what wmtk::TetMesh already gives:
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
@@ -185,9 +228,84 @@ bool smooth_vertex_3d(
     const std::shared_ptr<SampleEnvelope> pull_env =
         VA[vid].m_is_on_surface ? m.smoothing_energy_envelope(vid) : nullptr;
 
-    if (pull_env) {
+    if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
+        // Smooth as if the vertex were interior, then walk back onto the input.
+        const Vector3d x_orig = VA[vid].m_posf;
+        total_energy = amips_energy;
+        solve();
+        const Vector3d x_new = VA[vid].m_posf;
+
+        // Place a candidate and report the worst incident quality, or infinity if it
+        // inverts. is_inverted is exact, so the rational position tracks every candidate.
+        const auto worst_at = [&](const Vector3d& p) {
+            VA[vid].m_posf = p;
+            VA[vid].m_pos = to_rational(p);
+            double mq = 0.;
+            for (const Tuple& loc : locs) {
+                if (m.is_inverted(loc)) {
+                    return std::numeric_limits<double>::infinity();
+                }
+                mq = std::max(mq, m.get_quality(loc));
+            }
+            return mq;
+        };
+
+        bool accepted = false;
+        std::vector<Vector3d> interp, proj; // kept for the nested pass below
+        interp.reserve(opts.project_line_search_steps);
+        proj.reserve(opts.project_line_search_steps);
+        for (int k = 0; k < opts.project_line_search_steps; ++k) {
+            const Vector3d p = x_orig + std::pow(0.5, k) * (x_new - x_orig);
+            Vector3d q;
+            pull_env->nearest_point(p, q);
+            interp.push_back(p);
+            proj.push_back(q);
+            if (worst_at(q) < max_quality) {
+                accepted = true;
+                break;
+            }
+        }
+
+        // Nothing ON the input was acceptable anywhere, so settle for getting as close to
+        // it as the one-ring allows. For each candidate, bisect the segment from the
+        // interpolated point (s = 0) to its projection (s = 1) for the LARGEST acceptable s.
+        // s = 1 is already known to fail -- that is what the first pass just established --
+        // so this brackets the boundary and converges up to it from below. Halving s down
+        // from 1 instead would cap the result at the midpoint and leave the vertex needlessly
+        // far from the input.
+        if (!accepted && opts.project_line_search_nested_steps > 0) {
+            for (size_t k = 0; k < proj.size() && !accepted; ++k) {
+                double lo = 0.0, hi = 1.0; // lo: best acceptable so far, hi: known bad
+                Vector3d best;
+                bool found = false;
+                for (int j = 0; j < opts.project_line_search_nested_steps; ++j) {
+                    const double mid = 0.5 * (lo + hi);
+                    const Vector3d cand = interp[k] + mid * (proj[k] - interp[k]);
+                    if (worst_at(cand) < max_quality) {
+                        lo = mid;
+                        best = cand;
+                        found = true;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                if (found) {
+                    // worst_at left the vertex at the last candidate tried, which is not
+                    // necessarily the best one.
+                    worst_at(best);
+                    accepted = true;
+                }
+            }
+        }
+        if (!accepted) {
+            VA[vid].m_posf = x_orig;
+            VA[vid].m_pos = to_rational(x_orig);
+            if (counters) ++counters->quality;
+            return false;
+        }
+    } else if (pull_env) {
         auto envelope_energy =
-            std::make_shared<EnvelopeEnergy3D>(pull_env, opts.s_envelope * opts.w_envelope);
+            std::make_shared<ExactDistanceEnergy3D>(pull_env, opts.s_envelope * opts.w_envelope);
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();
@@ -356,9 +474,81 @@ bool smooth_vertex_2d(
     const std::shared_ptr<SampleEnvelope> envelope =
         VA[vid].m_is_on_surface ? m.m_envelope : nullptr;
 
-    if (envelope) {
+    if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
+        const Vector2d x_orig = m.smoothing_position(vid);
+        total_energy = amips_energy;
+        solve();
+        const Vector2d x_new = m.smoothing_position(vid);
+
+        // set_smoothing_position keeps the rational position in step, which the exact
+        // is_inverted below depends on.
+        const auto worst_at = [&](const Vector2d& p) {
+            m.set_smoothing_position(vid, p);
+            double mq = 0.;
+            for (const size_t fid : locs) {
+                if (m.is_inverted(fid)) {
+                    return std::numeric_limits<double>::infinity();
+                }
+                mq = std::max(mq, m.get_quality(fid));
+            }
+            return mq;
+        };
+
+        bool accepted = false;
+        std::vector<Vector2d> interp, proj; // kept for the nested pass below
+        interp.reserve(opts.project_line_search_steps);
+        proj.reserve(opts.project_line_search_steps);
+        for (int k = 0; k < opts.project_line_search_steps; ++k) {
+            const Vector2d p = x_orig + std::pow(0.5, k) * (x_new - x_orig);
+            Vector2d q;
+            envelope->nearest_point(p, q);
+            interp.push_back(p);
+            proj.push_back(q);
+            if (worst_at(q) < max_quality) {
+                accepted = true;
+                break;
+            }
+        }
+
+        // Nothing ON the input was acceptable anywhere, so settle for getting as close to
+        // it as the one-ring allows. For each candidate, bisect the segment from the
+        // interpolated point (s = 0) to its projection (s = 1) for the LARGEST acceptable s.
+        // s = 1 is already known to fail -- that is what the first pass just established --
+        // so this brackets the boundary and converges up to it from below. Halving s down
+        // from 1 instead would cap the result at the midpoint and leave the vertex needlessly
+        // far from the input.
+        if (!accepted && opts.project_line_search_nested_steps > 0) {
+            for (size_t k = 0; k < proj.size() && !accepted; ++k) {
+                double lo = 0.0, hi = 1.0; // lo: best acceptable so far, hi: known bad
+                Vector2d best;
+                bool found = false;
+                for (int j = 0; j < opts.project_line_search_nested_steps; ++j) {
+                    const double mid = 0.5 * (lo + hi);
+                    const Vector2d cand = interp[k] + mid * (proj[k] - interp[k]);
+                    if (worst_at(cand) < max_quality) {
+                        lo = mid;
+                        best = cand;
+                        found = true;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                if (found) {
+                    // worst_at left the vertex at the last candidate tried, which is not
+                    // necessarily the best one.
+                    worst_at(best);
+                    accepted = true;
+                }
+            }
+        }
+        if (!accepted) {
+            m.set_smoothing_position(vid, x_orig);
+            if (counters) ++counters->quality;
+            return false;
+        }
+    } else if (envelope) {
         auto envelope_energy =
-            std::make_shared<EnvelopeEnergy2D>(envelope, opts.s_envelope * opts.w_envelope);
+            std::make_shared<ExactDistanceEnergy2D>(envelope, opts.s_envelope * opts.w_envelope);
 
         if (opts.two_stage) {
             auto warmup = std::make_shared<EnergySum>();

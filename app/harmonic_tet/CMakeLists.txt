@@ -13,7 +13,6 @@ add_library(wmtk::harmonic_tet ALIAS wmtk_app_harmonic_tet)
 target_link_libraries(wmtk_app_harmonic_tet PUBLIC
 	wmtk::toolkit
 	wmtk::data
-	igl::predicates
 )
 target_include_directories(wmtk_app_harmonic_tet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

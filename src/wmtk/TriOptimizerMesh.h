@@ -186,10 +186,10 @@ public:
     /**
      * @brief Orientation check, exact for the coordinates the vertices actually carry.
      *
-     * Takes the floating path when all three vertices are rounded -- igl::predicates::orient2d
-     * is exact for the doubles it is handed -- and the Rational cross product otherwise. The
-     * rational branch exists because for an un-rounded vertex the double is the wrong number,
-     * not because orient2d is imprecise.
+     * Takes the floating path when all three vertices are rounded --
+     * wmtk::utils::predicates::orient2d is exact for the doubles it is handed -- and the Rational
+     * cross product otherwise. The rational branch exists because for an un-rounded vertex the
+     * double is the wrong number, not because orient2d is imprecise.
      */
     bool is_inverted(const std::array<size_t, 3>& vs) const;
     bool is_inverted(const Tuple& loc) const;

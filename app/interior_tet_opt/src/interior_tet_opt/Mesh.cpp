@@ -1,6 +1,5 @@
 #include "Mesh.hpp"
 #include <Eigen/src/Core/functors/UnaryFunctors.h>
-#include <igl/predicates/predicates.h>
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/Morton.h>
 #include <cassert>
@@ -11,6 +10,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 namespace app::interior_tet_opt {
 
@@ -573,16 +573,16 @@ bool InteriorTetOpt::is_inverted(const Tuple& loc) const
 
     auto vs = oriented_tet_vertices(loc);
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(
         m_vertex_attribute[vs[0].vid(*this)].pos,
         m_vertex_attribute[vs[1].vid(*this)].pos,
         m_vertex_attribute[vs[2].vid(*this)].pos,
         m_vertex_attribute[vs[3].vid(*this)].pos);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;

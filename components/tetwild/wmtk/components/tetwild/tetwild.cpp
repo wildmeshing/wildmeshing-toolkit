@@ -24,12 +24,12 @@
 #include <igl/boundary_facets.h>
 #include <igl/euler_characteristic.h>
 #include <igl/facet_components.h>
-#include <igl/predicates/predicates.h>
 #include <igl/random_points_on_mesh.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
+#include <wmtk/utils/predicates.hpp>
 
 #include <tetwild_spec.hpp>
 
@@ -115,6 +115,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.interleaved_smoothing = json_params["interleaved_smoothing"];
     params.interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
     params.w_amips = json_params["w_amips"];
+    params.smoothing_mode = json_params["smoothing_mode"];
+    params.project_line_search_steps = json_params["project_line_search_steps"];
+    params.project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
 
     params.preserve_topology = json_params["preserve_topology"];
 
@@ -147,7 +150,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     double t_load = 0, t_simplify = 0, t_optimize = 0, t_finalize = 0, t_output = 0;
     phase_timer.start();
     {
-        double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+        // Merging vertices that are merely *close* is a topology change: it welds sheets
+        // of the surface that pass near each other and so removes handles and tunnels.
+        // Under preserve_topology only exactly coincident vertices may be merged, which is
+        // a pure de-duplication of the file and leaves the topology alone. simwild makes
+        // the same distinction (see read_image_msh.cpp).
+        const double remove_duplicate_eps =
+            params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
         MatrixXd V;
         MatrixXi F;
         io::read_triangle_mesh(input_paths, V, F, remove_duplicate_eps);
@@ -160,8 +169,12 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Informational input-topology report; gated behind DEBUG_euler because the
     // Euler-characteristic computation is expensive on meshes with many components.
+    // It is also needed by the preserve_topology check at the end, which compares it
+    // against the output -- without this the comparison is between two empty vectors and
+    // silently passes whatever happened to the topology.
+    const bool compute_euler = json_params["DEBUG_euler"] || params.preserve_topology;
     std::vector<int> ecs_input;
-    if (json_params["DEBUG_euler"]) {
+    if (compute_euler) {
         Eigen::MatrixXi F(tris.size(), 3);
         for (int i = 0; i < tris.size(); ++i) {
             F.row(i) = Eigen::Vector3i((int)tris[i][0], (int)tris[i][1], (int)tris[i][2]);
@@ -245,6 +258,11 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             surf_mesh.m_envelope.use_exact = false;
         }
 
+        if (!params.preserve_topology) {
+            logger().warn(
+                "TODO the simplification still preserves topology as the toolkit does not "
+                "support non-manifold meshes, to fix");
+        }
         surf_mesh.collapse_shortest(0);
 
         surf_mesh.m_envelope.use_exact = saved_use_exact;
@@ -563,12 +581,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             auto vs = mesh_new.oriented_tet_vertices(f);
             for (int j = 0; j < 4; j++) {
                 if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_new)) == vids.end()) {
-                    auto res = igl::predicates::orient3d(
+                    auto res = wmtk::utils::predicates::orient3d(
                         mesh_new.m_vertex_attribute[vids[0]].m_posf,
                         mesh_new.m_vertex_attribute[vids[1]].m_posf,
                         mesh_new.m_vertex_attribute[vids[2]].m_posf,
                         mesh_new.m_vertex_attribute[vs[j].vid(mesh_new)].m_posf);
-                    if (res == igl::predicates::Orientation::NEGATIVE) std::swap(vids[1], vids[2]);
+                    if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
+                        std::swap(vids[1], vids[2]);
                     break;
                 }
             }
@@ -694,7 +713,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         // meshes with many components (tens of seconds), so it is off by default and only
         // computed when explicitly requested (DEBUG_euler) or when it is actually needed
         // for the preserve_topology throw check below.
-        if (json_params["DEBUG_euler"]) {
+        if (compute_euler) {
             logger().info("Input euler characteristic: {}", ecs_input);
             ecs_output = compute_euler_characteristics(matF);
             logger().info("Output euler characteristic: {}", ecs_output);
