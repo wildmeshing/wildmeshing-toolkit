@@ -331,7 +331,6 @@ bool TopoOffsetTriMesh::offset_tri_consistent_topology(const size_t f_id) const
     return true;
 }
 
-
 // NOTE: this is only called if in 'respect_all_topologies' mode
 bool TopoOffsetTriMesh::tag_tri_consistent_topology(size_t f_id, int64_t tag) const
 {
@@ -358,6 +357,25 @@ bool TopoOffsetTriMesh::tag_tri_consistent_topology(size_t f_id, int64_t tag) co
             if (f_in != first_in) {
                 v_in = true;
                 break;
+            }
+        }
+        // The DOMAIN BOUNDARY bounds the tag region too, and this test has to say so because
+        // the edge test below already does: its no-opposite-face branch calls such an edge a
+        // boundary edge of the tag whenever the single incident face carries it. Without the
+        // same rule here the two halves of the disk condition disagreed -- a vertex sitting ON
+        // the box with an all-ambient one-ring counted as INTERIOR while the box edge beside it
+        // counted as boundary -- so a face wedged between the offset front and the box could
+        // satisfy the condition and be absorbed. Ambient was then eaten right up to the box, one
+        // locally-legal step at a time, until the offset touched the domain boundary and the
+        // ambient band separating them was gone. Measured at target_distance 0.1: 29 of 164
+        // box-touching candidates were admitted, leaving 101 offset vertices pinned on the box;
+        // with this, zero, and ambient owns the whole boundary again.
+        if (!v_in) {
+            for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
+                if (!e.switch_face(*this) && get_tags(e.fid(*this)).count(tag) != 0) {
+                    v_in = true;
+                    break;
+                }
             }
         }
         if (v_in) {

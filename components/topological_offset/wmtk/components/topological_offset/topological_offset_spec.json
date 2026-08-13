@@ -18,6 +18,12 @@
             "offset_out",
             "target_distance",
             "target_distance_rel",
+            "convergence_target",
+            "convergence_target_rel",
+            "convergence_normal_deviation",
+            "envelope_size",
+            "envelope_size_rel",
+            "region_envelope_from_input",
             "relative_ball_threshold",
             "edge_search_termination_len",
             "sorted_marching",
@@ -34,6 +40,8 @@
             "length",
             "stop_energy",
             "max_normal_deviation_deg",
+            "min_normal_deviation_deg",
+            "min_edge_length",
             "smooth_quadrics_weight",
             "smooth_laplacian_weight",
             "quadrics_svd_threshold",
@@ -133,6 +141,42 @@
         "doc": "Target distance for offset. If < 0, the relative target distance is used to compute this one."
     },
     {
+        "pointer": "/convergence_target_rel",
+        "type": "float",
+        "default": 0.1,
+        "doc": "Optimization terminates early once max_dist_err drops to or below this fraction of target_distance. Ignored if convergence_target >= 0."
+    },
+    {
+        "pointer": "/convergence_target",
+        "type": "float",
+        "default": -1.0,
+        "doc": "Absolute max_dist_err threshold for early termination of optimization. If < 0, computed from convergence_target_rel (relative to target_distance, not the bounding box)."
+    },
+    {
+        "pointer": "/convergence_normal_deviation",
+        "type": "float",
+        "default": -1.0,
+        "doc": "AVERAGE normal deviation threshold, IN DEGREES, for early termination of optimization. Tested against avg_norm_dev, not max_norm_dev -- the paper's Termination criterion is the same way round ('the average sigma_max ... both the maximum and mean distance error'), because max normal deviation has a floor set by the input's sharpest reentrant corner, where the distance field's normal is discontinuous at every scale, and no refinement or smaller target_distance can lower it. max_norm_dev is still reported, as a diagnostic. The offset must reach both this and convergence_target before the run may stop early. An angle has no natural relative form, so unlike convergence_target there is no _rel counterpart. If <= 0 the criterion is disabled and max_dist_err alone decides convergence, which is the 3D behaviour."
+    },
+    {
+        "pointer": "/region_envelope_from_input",
+        "type": "bool",
+        "default": true,
+        "doc": "Build the region-boundary envelope from the INPUT mesh, before the offset is constructed, rather than from the mesh the offset construction leaves behind. The band's tags REPLACE a face's own rather than joining them, so a region the band grows through loses its tag there and its boundary curve is truncated at whatever contour conservative growth stopped on; an envelope built afterwards caps the triple junction where a region boundary meets the offset at a position that is an artefact of relative_ball_threshold. Building it from the input follows the region's original, untruncated curve, which relaxes the constraint only along the stretch the band later swallows. Set false for the older behaviour. 2D only."
+    },
+    {
+        "pointer": "/envelope_size_rel",
+        "type": "float",
+        "default": 0.001,
+        "doc": "Half-width, relative to the bounding box diagonal, of the envelope containing every tag-region boundary during optimization. Any operation that would push a region boundary outside it is rejected. Ignored if envelope_size >= 0."
+    },
+    {
+        "pointer": "/envelope_size",
+        "type": "float",
+        "default": -1.0,
+        "doc": "Absolute half-width of the tag-region boundary envelope. If < 0, computed from envelope_size_rel."
+    },
+    {
         "pointer": "/relative_ball_threshold",
         "type": "float",
         "default": 0.1,
@@ -226,7 +270,19 @@
         "pointer": "/max_normal_deviation_deg",
         "type": "float",
         "default": 15.0,
-        "doc": "Max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the input-complex normal it is supposed to approximate. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this."
+        "doc": "sigma_max. Max normal deviation (degrees, 0-90) allowed across one offset-surface element. Collapse and swap reject moves that would push an already-aligned patch of the offset surface further out of alignment than this, and the sizing field refines wherever it is exceeded. Also sets the derived min_edge_length."
+    },
+    {
+        "pointer": "/min_normal_deviation_deg",
+        "type": "float",
+        "default": 2.0,
+        "doc": "sigma_min. Normal deviation (degrees) below which a stretch of offset surface counts as planar, so the sizing field may coarsen it. Paper value is 2 degrees. 2D only."
+    },
+    {
+        "pointer": "/min_edge_length",
+        "type": "float",
+        "default": -1.0,
+        "doc": "l_min: the shortest edge the sizing field may ask for, in absolute units. If < 0, derived as 2 * target_distance * sin(max_normal_deviation_deg), the paper's formula -- tied to the offset distance rather than the bounding box, because the offset is what has to be resolved. This is a floor on REFINEMENT, so raising it makes the offset coarser (paper Fig. 18). 2D only."
     },
     {
         "pointer": "/smooth_quadrics_weight",

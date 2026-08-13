@@ -31,6 +31,21 @@ struct Parameters : public wmtk::OptimizerParameters
     bool offset_out;
     double target_distance;
     double target_distance_rel;
+    double convergence_target; // absolute; if < 0, computed from convergence_target_rel in init()
+    double convergence_target_rel; // relative to target_distance, not the bbox diagonal
+    // Max normal deviation, in DEGREES, that the offset boundary must reach before the
+    // optimization may terminate early. Absolute by nature -- an angle has no natural relative
+    // form the way a distance does -- so there is no _rel counterpart. Convergence requires both
+    // this and convergence_target; <= 0 disables the criterion, leaving distance alone deciding.
+    double convergence_normal_deviation;
+    // Half-width of the envelope that contains every tag-region boundary during optimization.
+    // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
+    double envelope_size;
+    double envelope_size_rel;
+    // Capture that envelope from the input mesh, before the offset truncates the region
+    // boundaries it grows through. See TopoOffsetTriMesh::init_region_boundary_envelope_from_input.
+    // 2D only; the 3D path never builds this envelope.
+    bool region_envelope_from_input;
     double relative_ball_threshold;
     double edge_search_term_len;
     bool sorted_marching;
@@ -45,6 +60,15 @@ struct Parameters : public wmtk::OptimizerParameters
     // input-complex normal it is supposed to approximate, before collapse/swap reject a move
     // that would push it further out of alignment.
     double max_normal_deviation_deg;
+    // sigma_min from the paper (Sec. 5.3, "controls when the offset curvature is considered
+    // planar"): a stretch of offset whose normal deviation is below this is flat enough that
+    // the sizing field may coarsen it. Only the 2D sizing field reads it.
+    double min_normal_deviation_deg;
+    // l_min from the paper, = 2 * delta * sin(sigma_max): the shortest edge the sizing field
+    // may ask for, in absolute units. Tied to the offset distance rather than the bounding box
+    // because that is the scale the offset actually has. Derived in init() when < 0. This is a
+    // floor on refinement, so raising it makes the result COARSER (paper Fig. 18).
+    double min_edge_length;
 
     // ---- offset-surface smoothing blend, see TopoOffsetTetMesh::smooth_after_offset_surface()
     // ---- each offset-surface vertex moves to a weighted blend of its previous position,
@@ -96,6 +120,12 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_out = json_params["offset_out"];
         target_distance = json_params["target_distance"];
         target_distance_rel = json_params["target_distance_rel"];
+        convergence_target = json_params["convergence_target"];
+        convergence_target_rel = json_params["convergence_target_rel"];
+        convergence_normal_deviation = json_params["convergence_normal_deviation"];
+        envelope_size = json_params["envelope_size"];
+        envelope_size_rel = json_params["envelope_size_rel"];
+        region_envelope_from_input = json_params["region_envelope_from_input"];
         relative_ball_threshold = json_params["relative_ball_threshold"];
         if (relative_ball_threshold < 0.0 || relative_ball_threshold > 1.0) {
             log_and_throw_error(
@@ -113,6 +143,8 @@ struct Parameters : public wmtk::OptimizerParameters
         optimization_iterations = json_params["optimization_iterations"];
 
         max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
+        min_normal_deviation_deg = json_params["min_normal_deviation_deg"];
+        min_edge_length = json_params["min_edge_length"];
 
         smooth_quadrics_weight = json_params["smooth_quadrics_weight"];
         smooth_laplacian_weight = json_params["smooth_laplacian_weight"];
@@ -159,6 +191,34 @@ struct Parameters : public wmtk::OptimizerParameters
             target_distance_rel = target_distance / diag_l;
         } else {
             target_distance = target_distance_rel * diag_l;
+        }
+
+        // The convergence threshold is an error in the SAME quantity target_distance measures --
+        // how far an offset vertex sits from where it should be -- so it is relative to
+        // target_distance, not to the bounding box diagonal like every other relative length.
+        if (convergence_target > 0) {
+            convergence_target_rel = convergence_target / target_distance;
+        } else {
+            convergence_target = convergence_target_rel * target_distance;
+        }
+
+        // An ordinary relative length, unlike convergence_target: it bounds how far a region
+        // boundary may drift in space, so the bounding box is the right reference.
+        if (envelope_size > 0) {
+            envelope_size_rel = envelope_size / diag_l;
+        } else {
+            envelope_size = envelope_size_rel * diag_l;
+        }
+
+        // l_min = 2 * delta * sin(sigma_max), from the paper's parameter list (Sec. 5.3). The
+        // reasoning is geometric: sigma_max is how far the offset surface is allowed to turn
+        // across one element, and an element subtending that angle on a circle of radius delta
+        // -- which is the shape the offset takes around a convex feature -- has chord length
+        // 2*delta*sin(sigma_max). Scaling to the offset distance rather than the bounding box
+        // is the point: it is the offset that has to be resolved, and its scale is delta.
+        if (min_edge_length < 0) {
+            const double sigma = max_normal_deviation_deg * M_PI / 180.;
+            min_edge_length = 2. * target_distance * std::sin(std::min(sigma, M_PI / 2.));
         }
     }
 };

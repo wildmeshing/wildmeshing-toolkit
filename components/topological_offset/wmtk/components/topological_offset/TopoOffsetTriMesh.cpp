@@ -85,11 +85,17 @@ void TopoOffsetTriMesh::init_from_image(
     // check for no ambient overlap
     assert(ambient_assert());
 
-    // set position of verts
+    // Set position of verts. Through set_vertex_position(), NOT by assigning m_posf alone: the
+    // exact position m_pos and the m_is_rounded flag have to be filled too. is_inverted() falls
+    // back to the RATIONAL path as soon as any vertex of a face is not rounded, and reads
+    // m_pos -- so leaving m_pos at its default (0,0) makes every face incident to an input
+    // vertex report itself inverted. That makes round() fail, which makes smooth_before()
+    // refuse the vertex, which silently excluded every original input vertex from smoothing:
+    // on the dragon, 9557 of 10684 vertices per pass.
     auto verts = get_vertices();
     for (const Tuple& v : verts) {
         size_t v_id = v.vid(*this);
-        m_vertex_attribute[v_id].m_posf = V.row(v_id);
+        set_vertex_position(v_id, Vector2d(V.row(v_id)));
     }
 }
 

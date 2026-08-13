@@ -136,6 +136,15 @@ void topological_offset(nlohmann::json json_params)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
+        // Capture the region-boundary envelope while the region tags are still the input's own.
+        // execute_offset() replaces the tags of every face the band grows through, which cuts
+        // each region's boundary curve short at the band; an envelope built afterwards is a tube
+        // around the truncated curve and pins the junction where region meets offset. Only
+        // relevant when the optimization will actually use it.
+        if (mesh.m_offset_params.optimize && mesh.m_offset_params.region_envelope_from_input) {
+            mesh.init_region_boundary_envelope_from_input();
+        }
+
         // execute offset
         igl::Timer timer;
         timer.start();
@@ -158,6 +167,11 @@ void topological_offset(nlohmann::json json_params)
             // mesh.write_msh_groups(output_filename.string()); // DEBUG: write .msh anyway
             log_and_throw_error("INVERSION DURING OFFSET! bad tri ids: {}", bad_tris_str);
         }
+
+        // Did conservative growth run out of room? Reported here, not inside the optimization,
+        // because it is a property of the constructed offset and holds whether or not the
+        // optimization runs.
+        mesh.warn_if_offset_reaches_domain_boundary();
 
         // offset region manifoldness check
         if (check_manifoldness) {
@@ -196,6 +210,38 @@ void topological_offset(nlohmann::json json_params)
             report["after #f"] = mesh.get_faces().size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
+            if (!mesh.optimization_metrics.empty()) {
+                std::vector<double> max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev;
+                for (const auto& m : mesh.optimization_metrics) {
+                    max_dist_err.push_back(m[0]);
+                    avg_dist_err.push_back(m[1]);
+                    max_norm_dev.push_back(m[2]);
+                    avg_norm_dev.push_back(m[3]);
+                }
+                report["optimization_metrics"]["max_dist_err"] = max_dist_err;
+                report["optimization_metrics"]["avg_dist_err"] = avg_dist_err;
+                report["optimization_metrics"]["max_norm_dev"] = max_norm_dev;
+                report["optimization_metrics"]["avg_norm_dev"] = avg_norm_dev;
+
+                std::vector<int> splits, collapses, swaps;
+                for (const auto& c : mesh.op_counts) {
+                    splits.push_back(c[0]);
+                    collapses.push_back(c[1]);
+                    swaps.push_back(c[2]);
+                }
+                report["op_counts"]["splits"] = splits;
+                report["op_counts"]["collapses"] = collapses;
+                report["op_counts"]["swaps"] = swaps;
+                // Both criteria, matching optimize_offset()'s own test: MAX for distance, AVERAGE
+                // for normal deviation (see the reasoning there). convergence_normal_deviation
+                // <= 0 disables the angular half.
+                const double nd_target = mesh.m_offset_params.convergence_normal_deviation;
+                report["converged"] =
+                    max_dist_err.back() <= mesh.m_offset_params.convergence_target &&
+                    (nd_target <= 0. || avg_norm_dev.back() <= nd_target);
+                report["convergence_target"] = mesh.m_offset_params.convergence_target;
+                report["convergence_normal_deviation"] = nd_target;
+            }
             f_out << std::setw(4) << report;
             f_out.close();
         }

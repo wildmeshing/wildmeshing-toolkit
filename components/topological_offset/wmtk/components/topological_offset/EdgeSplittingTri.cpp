@@ -117,19 +117,38 @@ void TopoOffsetTriMesh::edge_split_sphere_tracing(const size_t v1, const size_t 
 
 bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
+    // Cleared for BOTH modes, not just the optimization one: split_after_vertex() reads
+    // emptiness to tell which mode produced the split, and the marching path sets its own
+    // labels. Leaving a previous optimization split's entries here would have it stamp those
+    // stale labels onto marching-created faces.
+    m_opt_split_cache.local().face_label.clear();
+
     // The optimization phase runs wmtk::TriOptimizerMesh's split; everything below is the
     // marching-triangles machinery, which places the new vertex on the offset's distance field
     // and carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        // Splitting an edge of the input complex or of the domain boundary replaces that edge
+        // with two, which changes those simplex sets -- and on a curved input the midpoint
+        // leaves the curve entirely. Both are frozen, so the split is refused before the shared
+        // engine ever sees it.
+        if (edge_is_frozen(t.eid(*this))) {
+            return false;
+        }
+
         // The shared split propagates FaceAttributes -- quality and region tags -- but knows
         // nothing about the construction label, and offset_is_manifold() is built from that
         // label. Without this the faces a split creates default to label 0, the offset region
         // develops holes, and it stops being manifold.
+        //
+        // Keyed by APEX, the vertex opposite the split edge: both children of a given parent
+        // inherit it and no other parent has it, so it names the parent unambiguously from a
+        // child. split_after_vertex() consumes this.
         auto& c = m_opt_split_cache.local();
-        c.face_label.clear();
-        for (const Tuple& f : {t, t.switch_face(*this).value_or(t)}) {
-            const size_t fid = f.fid(*this);
-            const size_t apex = f.switch_edge(*this).switch_vertex(*this).vid(*this);
+        c.v1_id = t.vid(*this);
+        c.v2_id = t.switch_vertex(*this).vid(*this);
+        const simplex::Edge edge(c.v1_id, c.v2_id);
+        for (const size_t fid : get_incident_fids_for_edge(t)) {
+            const size_t apex = simplex_from_face(fid).opposite_vertex(edge).id();
             c.face_label[apex] = m_face_extra[fid].label;
         }
         return TriOptimizerMesh::split_edge_before(t);
@@ -252,15 +271,12 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
         if (!TriOptimizerMesh::split_edge_after(t)) {
             return false;
         }
-        // Derive the label of every face the split created from its tags, which the shared
-        // split propagated. Exact, where matching children back to a parent by apex vertex was
-        // a heuristic -- and a wrong label here puts a hole in the region that
-        // offset_is_manifold() is built from, which is what made split the first operation to
-        // break it once collapse was guarded.
-        for (const Tuple& f : get_one_ring_tris_for_vertex(t)) {
-            relabel_face_from_tags(f.fid(*this));
-        }
-
+        // The labels of the faces this split created were carried from their parents by
+        // split_after_vertex(), which the base calls above. Re-deriving them from the tags here
+        // instead would reintroduce the dependency the label exists to avoid: an offset band
+        // filled with a tag the mesh already uses elsewhere would relabel that other region as
+        // offset. See face_is_offset_band().
+        ++iter_cnt_split;
         return true;
     }
     return marching_split_edge_after(t);
