@@ -29,7 +29,14 @@ bool TriOptimizerMesh::smooth_after(const Tuple& t)
     opts.w_envelope = m_params.w_envelope;
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
-    opts.two_stage = true;
+    // Off: the balanced warm-up's line search accepts tangential slides at any configured
+    // w_amips (its objective contains no small weight), producing a weight-independent
+    // surface-deviation floor (~4e-5 on triwild20k_202090, flat from w=1e-3 to 1e-12) that
+    // vanishes with the warm-up off, at max energy unchanged to four digits and +1.8%
+    // iterations on the 53 registered configs. Tangential mobility never needed the warm-up:
+    // both the tangential gradient and Hessian scale with w_amips, so Newton cancels the
+    // weight and vertices slide identically at any fitting strength.
+    opts.two_stage = false;
     opts.project_line_search = m_params.project_line_search;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
