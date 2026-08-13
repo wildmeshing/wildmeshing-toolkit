@@ -139,16 +139,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2022
-            name: Windows 2022
-            config: Debug
-            vs_path: &vs_path_2022 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat'
-            integration_tests_flag: *integration_tests_off
-          - os: windows-2022
-            name: Windows 2022
-            config: Release
-            vs_path: *vs_path_2022
-            integration_tests_flag: *integration_tests_on
           - os: windows-2025-vs2026
             name: Windows 2025 (VS 2026)
             config: Debug
@@ -166,36 +156,10 @@ jobs:
         with:
           fetch-depth: 10
 
-      # - name: Install Ninja
-      #   uses: seanmiddleditch/gha-setup-ninja@master
-
-      # - name: VCPKG
-      #   run: |
-      #     vcpkg install gmp:x64-windows
-
-      - name: Dependencies (install sccache)
-        shell: pwsh
+      - name: Dependencies
         run: |
-          $version = "v0.8.2"
-          $zip = "sccache-$version-x86_64-pc-windows-msvc.zip"
-          $url = "https://github.com/mozilla/sccache/releases/download/$version/$zip"
-
-          $dest = "$env:RUNNER_TEMP\sccache"
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-
-          Invoke-WebRequest -Uri $url -OutFile "$dest\sccache.zip"
-          Expand-Archive -Path "$dest\sccache.zip" -DestinationPath $dest -Force
-
-          # Find where sccache.exe actually ended up
-          $exe = Get-ChildItem -Path $dest -Recurse -Filter "sccache.exe" | Select-Object -First 1
-          if (-not $exe) { throw "sccache.exe not found after extracting $zip into $dest" }
-
-          Add-Content $env:GITHUB_PATH $exe.DirectoryName
-
-          "SCCACHE_DIR=$env:LOCALAPPDATA\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-          # Sanity check
-          & $exe.FullName -V
+          choco install -y sccache
+          "SCCACHE_DIR=${env:LOCALAPPDATA}\Mozilla\sccache" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Cache build
         id: cache-build
@@ -213,9 +177,6 @@ jobs:
       - name: Configure
         shell: cmd
         run: |
-          echo Runner OS: ${{ matrix.os }}
-          echo Build Config: ${{ matrix.config }}
-          echo VS Dev Cmd: ${{ matrix.vs_path }}
           call "${{ matrix.vs_path }}" -arch=x64
           cmake -G Ninja ^
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ^
@@ -229,9 +190,6 @@ jobs:
       - name: Build
         shell: cmd
         run: |
-          echo Runner OS: ${{ matrix.os }}
-          echo Build Config: ${{ matrix.config }}
-          echo VS Dev Cmd: ${{ matrix.vs_path }}
           call "${{ matrix.vs_path }}" -arch=x64
           cmake --build build -j2 && sccache --show-stats
 
