@@ -24,12 +24,12 @@
 #include <igl/boundary_facets.h>
 #include <igl/euler_characteristic.h>
 #include <igl/facet_components.h>
-#include <igl/predicates/predicates.h>
 #include <igl/random_points_on_mesh.h>
 #include <igl/read_triangle_mesh.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
+#include <wmtk/utils/predicates.hpp>
 
 #include <tetwild_spec.hpp>
 
@@ -532,12 +532,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             auto vs = mesh_new.oriented_tet_vertices(f);
             for (int j = 0; j < 4; j++) {
                 if (std::find(vids.begin(), vids.end(), vs[j].vid(mesh_new)) == vids.end()) {
-                    auto res = igl::predicates::orient3d(
+                    auto res = wmtk::utils::predicates::orient3d(
                         mesh_new.m_vertex_attribute[vids[0]].m_posf,
                         mesh_new.m_vertex_attribute[vids[1]].m_posf,
                         mesh_new.m_vertex_attribute[vids[2]].m_posf,
                         mesh_new.m_vertex_attribute[vs[j].vid(mesh_new)].m_posf);
-                    if (res == igl::predicates::Orientation::NEGATIVE) std::swap(vids[1], vids[2]);
+                    if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
+                        std::swap(vids[1], vids[2]);
                     break;
                 }
             }

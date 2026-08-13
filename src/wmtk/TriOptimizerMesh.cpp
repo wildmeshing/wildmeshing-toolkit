@@ -16,7 +16,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <igl/predicates/predicates.h>
+#include <wmtk/utils/predicates.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -400,12 +400,12 @@ bool TriOptimizerMesh::is_inverted_f(const size_t fid) const
 {
     auto vs = oriented_tri_vids(fid);
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient2d(
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient2d(
         m_vertex_attribute[vs[0]].m_posf,
         m_vertex_attribute[vs[1]].m_posf,
         m_vertex_attribute[vs[2]].m_posf);
-    if (res == igl::predicates::Orientation::POSITIVE) {
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE) {
         return false;
     }
     return true;
@@ -415,12 +415,12 @@ bool TriOptimizerMesh::is_inverted(const std::array<size_t, 3>& vs) const
 {
     if (m_vertex_attribute[vs[0]].m_is_rounded && m_vertex_attribute[vs[1]].m_is_rounded &&
         m_vertex_attribute[vs[2]].m_is_rounded) {
-        igl::predicates::exactinit();
-        auto res = igl::predicates::orient2d(
+        wmtk::utils::predicates::exactinit();
+        auto res = wmtk::utils::predicates::orient2d(
             m_vertex_attribute[vs[0]].m_posf,
             m_vertex_attribute[vs[1]].m_posf,
             m_vertex_attribute[vs[2]].m_posf);
-        if (res == igl::predicates::Orientation::POSITIVE) {
+        if (res == wmtk::utils::predicates::Orientation::POSITIVE) {
             return false;
         }
         return true;

@@ -9,7 +9,7 @@
 #include <wmtk/utils/TupleUtils.hpp>
 #include <wmtk/utils/io.hpp>
 
-#include <igl/predicates/predicates.h>
+#include <wmtk/utils/predicates.hpp>
 
 #include <limits>
 #include <queue>
@@ -44,9 +44,9 @@ bool HarmonicTet::is_inverted(const Tuple& loc)
         ps[j] = vertex_attrs[tups[j]].pos;
     }
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(ps[0], ps[1], ps[2], ps[3]);
-    if (res == igl::predicates::Orientation::NEGATIVE) return false; // extremely annoying.
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(ps[0], ps[1], ps[2], ps[3]);
+    if (res == wmtk::utils::predicates::Orientation::NEGATIVE) return false; // extremely annoying.
     return true;
 }
 

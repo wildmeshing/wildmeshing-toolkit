@@ -9,7 +9,7 @@
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/fmt/bundled/format.h>
-#include <igl/predicates/predicates.h>
+#include <wmtk/utils/predicates.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
@@ -1379,16 +1379,16 @@ bool TopoOffsetTetMesh::invariants(const std::vector<Tuple>& tets)
     /**
      * TODO: Check this individually in each operation
      */
-    igl::predicates::exactinit();
+    wmtk::utils::predicates::exactinit();
     for (const Tuple& t : tets) {
         auto vs = oriented_tet_vids(t);
-        auto res = igl::predicates::orient3d(
+        auto res = wmtk::utils::predicates::orient3d(
             m_vertex_attribute[vs[0]].m_posf,
             m_vertex_attribute[vs[1]].m_posf,
             m_vertex_attribute[vs[2]].m_posf,
             m_vertex_attribute[vs[3]].m_posf);
 
-        if (res != igl::predicates::Orientation::NEGATIVE) {
+        if (res != wmtk::utils::predicates::Orientation::NEGATIVE) {
             return false;
         }
     }

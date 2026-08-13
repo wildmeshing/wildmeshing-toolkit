@@ -1,4 +1,3 @@
-#include <igl/predicates/ear_clipping.h>
 #include <bitset>
 #include <fstream>
 #include <set>

@@ -10,7 +10,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <igl/predicates/predicates.h>
+#include <wmtk/utils/predicates.hpp>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 

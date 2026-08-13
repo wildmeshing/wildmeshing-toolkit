@@ -70,13 +70,13 @@ bool VertexSmoother::smoothSingleVertex(int v_id, bool is_cal_energy)
     bool is_valid = true;
     for (auto it = tet_vertices[v_id].conn_tets.begin(); it != tet_vertices[v_id].conn_tets.end();
          it++) {
-        auto res = igl::predicates::orient3d(
+        auto res = wmtk::utils::predicates::orient3d(
             tet_vertices[tets[*it][0]].posf,
             tet_vertices[tets[*it][1]].posf,
             tet_vertices[tets[*it][2]].posf,
             tet_vertices[tets[*it][3]].posf);
 
-        if (res != igl::predicates::Orientation::NEGATIVE) {
+        if (res != wmtk::utils::predicates::Orientation::NEGATIVE) {
             is_valid = false;
             break;
         }
@@ -157,13 +157,13 @@ void VertexSmoother::smoothSingle()
         for (auto it = tet_vertices[v_id].conn_tets.begin();
              it != tet_vertices[v_id].conn_tets.end();
              it++) {
-            auto res = igl::predicates::orient3d(
+            auto res = wmtk::utils::predicates::orient3d(
                 tet_vertices[tets[*it][0]].posf,
                 tet_vertices[tets[*it][1]].posf,
                 tet_vertices[tets[*it][2]].posf,
                 tet_vertices[tets[*it][3]].posf);
 
-            if (res != igl::predicates::Orientation::NEGATIVE) {
+            if (res != wmtk::utils::predicates::Orientation::NEGATIVE) {
                 is_valid = false;
                 break;
             }
@@ -279,13 +279,13 @@ void VertexSmoother::smoothSurface()
         for (auto it = tet_vertices[v_id].conn_tets.begin();
              it != tet_vertices[v_id].conn_tets.end();
              it++) {
-            auto res = igl::predicates::orient3d(
+            auto res = wmtk::utils::predicates::orient3d(
                 tet_vertices[tets[*it][0]].posf,
                 tet_vertices[tets[*it][1]].posf,
                 tet_vertices[tets[*it][2]].posf,
                 tet_vertices[tets[*it][3]].posf);
 
-            if (res != igl::predicates::Orientation::NEGATIVE) {
+            if (res != wmtk::utils::predicates::Orientation::NEGATIVE) {
                 is_valid = false;
                 break;
             }
