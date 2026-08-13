@@ -153,8 +153,6 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>stuck_refine_gradat
 <tr class="memitem:a6c48eeb141383e25338758806f4af880" id="r_a6c48eeb141383e25338758806f4af880"><td class="memItemLeft" align="right" valign="top"><a id="a6c48eeb141383e25338758806f4af880" name="a6c48eeb141383e25338758806f4af880"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>stuck_refine_force_split</b> = true</td></tr>
 <tr class="separator:a6c48eeb141383e25338758806f4af880"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e6c67ca56cc3353330788e62b0b88cb" id="r_a1e6c67ca56cc3353330788e62b0b88cb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#a1e6c67ca56cc3353330788e62b0b88cb">stuck_refine_force_split_oversized_only</a> = true</td></tr>
-<tr class="separator:a1e6c67ca56cc3353330788e62b0b88cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af82f506b5be7059e550342deac503c40" id="r_af82f506b5be7059e550342deac503c40"><td class="memItemLeft" align="right" valign="top"><a id="af82f506b5be7059e550342deac503c40" name="af82f506b5be7059e550342deac503c40"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>skip_good_regions</b> = false</td></tr>
 <tr class="separator:af82f506b5be7059e550342deac503c40"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -271,23 +269,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>Incident-cell count above which a link vertex accepts only one valence-increasing split per pass, or 0 to disable the gate. Shared by the 2D and 3D Wild optimizers; SimWild uses the same protection so tag-homogeneous runs follow the Wild path. </p>
-
-</div>
-</div>
-<a id="a1e6c67ca56cc3353330788e62b0b88cb" name="a1e6c67ca56cc3353330788e62b0b88cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e6c67ca56cc3353330788e62b0b88cb">&#9670;&#160;</a></span>stuck_refine_force_split_oversized_only</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::OptimizerParameters::stuck_refine_force_split_oversized_only = true</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Force-split only a cell that is too LARGE for its sizing field.</p>
-<p>Force-split exists to unstick a sliver, but it cannot: AMIPS is scale invariant, so subdividing a badly SHAPED cell yields two badly shaped cells of the same energy. The cell stays the worst one, is force-split again on the next stall, and its longest edge halves every time &ndash; a ratchet with no exit. On Thingi10K 243014 that drove a legitimate 0.155 surface edge, the finest the simplified input has, down to 1.0e-4 in about eleven firings, ~1500x below anything in the input.</p>
-<p>Refinement only helps a cell that is too big for its target length, so require that. Measured serially on 243014 over 25 iterations: off gives final max energy 41.46 with a 1.02e-04 minimum edge and 0.373% of edges below 1e-3; on gives 20.87, 8.15e-04 and 0.019%. Without it the mesh reaches 20.87 then degrades to 41.46; with it 20.87 holds. </p>
 
 </div>
 </div>
