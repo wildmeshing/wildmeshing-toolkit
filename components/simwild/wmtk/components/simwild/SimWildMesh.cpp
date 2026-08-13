@@ -249,36 +249,13 @@ size_t SimWildMesh::refine_sizing_around_worst(double)
     // force-splits exactly those edges (bypasses the length gate), so a stuck sliver's
     // long edge is split immediately -- WITHOUT changing the sizing field.
     m_force_split_edges.clear();
-    size_t already_at_size = 0;
     if (m_params.stuck_refine_force_split) {
         for (const auto& [_, tid] : worst) {
             const auto e = utils::longest_edge(
                 oriented_tet_vids(tid),
                 [this](size_t vid) -> const Vector3d& { return m_vertex_attribute[vid].m_posf; });
-            if (m_params.stuck_refine_force_split_oversized_only) {
-                // Match TetWild's ratchet guard: AMIPS is scale invariant, so splitting an
-                // already-small bad tet cannot improve its shape and only drives its edge
-                // length toward zero on repeated stalls.
-                const auto& ev = e.vertices();
-                const double sizing = (m_vertex_attribute[ev[0]].m_sizing_scalar +
-                                       m_vertex_attribute[ev[1]].m_sizing_scalar) /
-                                      2;
-                const double len2 =
-                    (m_vertex_attribute[ev[0]].m_posf - m_vertex_attribute[ev[1]].m_posf)
-                        .squaredNorm();
-                if (len2 <= m_params.splitting_l2 * sizing * sizing) {
-                    ++already_at_size;
-                    continue;
-                }
-            }
             m_force_split_edges.insert(e);
         }
-    }
-    if (already_at_size > 0) {
-        logger().info(
-            "[force-split] {} worst tets are already at target size; refinement cannot "
-            "improve their shape",
-            already_at_size);
     }
 
     // Seed the region with the worst tets' vertices, then BFS n_rings hops.

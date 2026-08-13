@@ -108,8 +108,6 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_rings = json_params["stuck_refine_rings"];
         stuck_refine_factor = json_params["stuck_refine_factor"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        stuck_refine_force_split_oversized_only =
-            json_params["stuck_refine_force_split_oversized_only"];
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
 
