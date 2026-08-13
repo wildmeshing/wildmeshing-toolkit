@@ -1,10 +1,10 @@
 #pragma once
 
-#include <igl/predicates/predicates.h>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/predicates.hpp>
 
 namespace wmtk {
 
@@ -124,12 +124,12 @@ inline void VF_to_vectors(
 inline bool
 tet_is_inverted(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const Vector3d& v3)
 {
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(v0, v1, v2, v3);
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(v0, v1, v2, v3);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;
@@ -141,12 +141,12 @@ tet_is_inverted(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, cons
 
 inline bool tri_is_inverted(const Vector2d& v0, const Vector2d& v1, const Vector2d& v2)
 {
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient2d(v0, v1, v2);
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient2d(v0, v1, v2);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;

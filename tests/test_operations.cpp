@@ -29,12 +29,12 @@ public:
 
     bool is_inverted_f(const std::array<Vector3d, 4>& ps) const
     {
-        igl::predicates::exactinit();
-        auto res = igl::predicates::orient3d(ps[0], ps[1], ps[2], ps[3]);
+        wmtk::utils::predicates::exactinit();
+        auto res = wmtk::utils::predicates::orient3d(ps[0], ps[1], ps[2], ps[3]);
         int result;
-        if (res == igl::predicates::Orientation::POSITIVE)
+        if (res == wmtk::utils::predicates::Orientation::POSITIVE)
             result = 1;
-        else if (res == igl::predicates::Orientation::NEGATIVE)
+        else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
             result = -1;
         else
             result = 0;

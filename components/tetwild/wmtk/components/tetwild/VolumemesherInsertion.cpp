@@ -1,4 +1,3 @@
-#include <igl/predicates/ear_clipping.h>
 #include <fstream>
 #include <set>
 #include <wmtk/Types.hpp>

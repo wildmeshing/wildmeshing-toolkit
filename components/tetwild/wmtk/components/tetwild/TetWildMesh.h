@@ -134,7 +134,7 @@ public:
         m_collapse_check_manifold = false;
 
         optimization::deactivate_opt_logger();
-        m_s_envelope = 1. / (m_params.diag_l * m_params.eps * m_params.eps);
+        m_s_envelope = 1. / (m_params.eps * m_params.eps);
         m_params.w_envelope = 1. - m_params.w_amips;
     }
 

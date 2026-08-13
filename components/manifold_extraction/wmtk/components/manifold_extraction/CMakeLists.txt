@@ -26,7 +26,6 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::simwild
 	wmtk::topological_offset
 	wmtk_topological_offset_spec
-	igl::predicates
 	jse::jse
 )
 
