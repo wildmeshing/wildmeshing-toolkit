@@ -72,7 +72,7 @@ $(function() {
   <div class="headertitle"><div class="title">triwild sweep scripts</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md37"></a> Batch-run triwild over a large 2D dataset, collect per-model results, and report — plus a viewer for looking at one result once the numbers point at it. Written for the 20k 2D curve dataset on <code>kirby.cs.nyu.edu</code>, but nothing here is kirby-specific beyond the default paths.</p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md44"></a> Batch-run triwild over a large 2D dataset, collect per-model results, and report — plus a viewer for looking at one result once the numbers point at it. Written for the 20k 2D curve dataset on <code>kirby.cs.nyu.edu</code>, but nothing here is kirby-specific beyond the default paths.</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">file   </th><th class="markdownTableHeadNone">what it is    </th></tr>
@@ -85,14 +85,14 @@ $(function() {
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>visualize_triwild.py</code>   </td><td class="markdownTableBodyNone">polyscope viewer for a single result: input curves, envelope curves, output mesh   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md38"></a>
+<h1><a class="anchor" id="autotoc_md45"></a>
 Layout</h1>
 <p>Everything hangs off one root, <code>TRIWILD_ROOT</code> (default <code>/u/3/daniele/triwild-sweep</code>):</p>
 <div class="fragment"><div class="line">&lt;root&gt;/build/app/wmtk_app     the binary under test</div>
 <div class="line">&lt;root&gt;/data/*.obj             the dataset</div>
 <div class="line">&lt;root&gt;/runs/&lt;name&gt;/           output: success/  failure/  .work/  report/</div>
 </div><!-- fragment --><p>A model that exits 0 lands in <code>success/&lt;id&gt;/</code>, anything else in <code>failure/&lt;id&gt;/</code> with a <code>status.txt</code> recording the reason. Both keep the config, the log and the report.json.</p>
-<h1><a class="anchor" id="autotoc_md39"></a>
+<h1><a class="anchor" id="autotoc_md46"></a>
 Running</h1>
 <div class="fragment"><div class="line">export TRIWILD_ROOT=/path/to/sweep</div>
 <div class="line">./sweep2d.sh full          # every model, filename order</div>
@@ -105,7 +105,7 @@ Running</h1>
 <p>Or drive the runner directly:</p>
 <div class="fragment"><div class="line">TRIWILD_ROOT=... TRIWILD_OUT=.../runs/full TRIWILD_PARALLEL=13 TRIWILD_THREADS=8 \</div>
 <div class="line">TRIWILD_JOB_TIMEOUT=21600 python3 run_triwild_sweep.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md40"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md47"></a>
 Environment</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -133,7 +133,7 @@ Environment</h2>
 </table>
 <p><code>TRIWILD_MEM_GB</code> is a cap <b>per model</b>, not a budget for the sweep — 16 × 128 G is far more than any machine has. It is a runaway-killer, and it binds harder in 2D than in 3D because the dataset's files span 2.7 KB to 1.6 GB and the large ones are read whole before anything else happens.</p>
 <p><code>TRIWILD_PARALLEL × TRIWILD_THREADS</code> should be near the core count. The trade is not neutral: triwild's preprocessing (input simplification, then the 2D arrangement) is serial, so extra threads only help the optimization loop, while extra concurrent models contend for memory bandwidth and slow the serial phases for everyone. Measured on 228906, preprocessing took 32m16s at 32×4 and 23m19s at 13×8.</p>
-<h1><a class="anchor" id="autotoc_md41"></a>
+<h1><a class="anchor" id="autotoc_md48"></a>
 What the sweep fixes about the defaults</h1>
 <p>Only the knobs the harness itself needs are pinned; everything else comes from the spec defaults of whatever branch <code>build/</code> was built from, which is the point — the sweep tests the defaults rather than a private configuration. Pinned:</p>
 <ul>
@@ -141,7 +141,7 @@ What the sweep fixes about the defaults</h1>
 <li><code>write_vtu: false</code>. The <code>.msh</code> is the real output; the <code>.vtu</code> would be written only to be pruned.</li>
 <li><code>DEBUG_hausdorff: true</code>, because the two deviation directions are the point of the run.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md42"></a>
+<h1><a class="anchor" id="autotoc_md49"></a>
 Reports</h1>
 <p><code>report/</code> gets three files:</p>
 <ul>
@@ -149,7 +149,7 @@ Reports</h1>
 <li><code>results.csv</code> — one row per model: time, iterations, energies, element counts, both Hausdorff directions, input size, simplification ratio, failure reason</li>
 <li><code>index.html</code> — self-contained HTML: headline stats, the containment invariant, distributions, run time vs input size, slowest models, failures. No CDN, no build step.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md43"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 Reading the two Hausdorff numbers</h2>
 <p>They are not interchangeable, and conflating them once made ~60% of models look like violations:</p>
 <ul>
@@ -157,7 +157,7 @@ Reading the two Hausdorff numbers</h2>
 <li><b>coverage</b>, d(input → output) — <em>diagnostic, bounded by nothing</em>. The simplification is allowed to remove detail and the arrangement may drop segments, so a large value means the output no longer covers part of the input. Use <code>DEBUG_euler</code> to see which curves were lost.</li>
 </ul>
 <p>Runs made before the direction was corrected stored coverage under the name <code>hausdorff</code> and have no <code>coverage</code> key. The report detects them by that absence, labels them <code>metric=legacy-coverage</code>, and keeps them out of the containment statistics rather than pooling two different quantities.</p>
-<h1><a class="anchor" id="autotoc_md44"></a>
+<h1><a class="anchor" id="autotoc_md51"></a>
 Looking at one result — &lt;tt&gt;visualize_triwild.py&lt;/tt&gt;</h1>
 <p>The sweep says <em>which</em> model is interesting; this says <em>why</em>. It opens a <a href="https://polyscope.run">polyscope</a> window with three independently toggleable layers.</p>
 <div class="fragment"><div class="line">python3 -m venv .venv &amp;&amp; ./.venv/bin/pip install polyscope meshio numpy</div>
@@ -178,7 +178,7 @@ Looking at one result — &lt;tt&gt;visualize_triwild.py&lt;/tt&gt;</h1>
 <p>Orange and blue rather than the usual red and green, so the two curve networks stay separable under the common colour vision deficiencies.</p>
 <p>Given a directory it finds the mesh (<code>output.msh</code>, <code>out.msh</code>, or the only <code>*.msh</code>), then the input: an <code>input.obj</code> beside it, else the path recorded in that run's <code>config.json</code> — which is what lets it run on a sweep <code>success/&lt;id&gt;/</code> directory unchanged, where the input still lives back in the dataset. Without an input you get the other two layers.</p>
 <p>The mesh also carries a per-face <b>AMIPS2D energy</b> quantity and an <code>inverted</code> flag, since that is usually the reason for opening it at all. The energy is transcribed from <code>wmtk::AMIPS2D_energy</code>; a startup assertion pins an equilateral triangle at the floor of 2, and on every model tried the maximum reproduces that run's <code>report.json</code> <code>max_energy</code> exactly. Note that <code>report.json</code> and <code>out.log</code> show <code>1e+50</code> for an inverted or degenerate triangle — <code>MAX_ENERGY</code>, substituted by <code>get_quality</code> — whereas the viewer shows the raw expression and flags the orientation separately, so a broken triangle stays a number you can look at.</p>
-<h2><a class="anchor" id="autotoc_md45"></a>
+<h2><a class="anchor" id="autotoc_md52"></a>
 Two things about the data worth knowing</h2>
 <ul>
 <li><b>The <code>.msh</code> node array is not the mesh.</b> Gmsh entities own their nodes, so a triwild output holds two disjoint blocks: the dim-2 entity's nodes are the mesh vertices, and the dim-1 <code>EnvelopeSurface</code> entity's nodes are the simplified input curve — whose points sit exactly on input <code>.obj</code> vertices. Passing the whole array to a surface-mesh constructor draws the mesh plus several hundred unreferenced stray vertices.</li>
@@ -186,7 +186,7 @@ Two things about the data worth knowing</h2>
 </ul>
 <p>The view opens looking straight down, orthographic, with drag to pan and scroll to zoom; an <b>allow rotation</b> checkbox unlocks turntable navigation and <b>top view</b> snaps back. (The data is flat in <em>z</em> = 0, so a <em>z</em>-up camera would sit in that plane and show the mesh edge-on as a line.)</p>
 <p>What it deliberately does <b>not</b> show is which output <em>edges</em> are constrained — tracked to the curves. The <code>.msh</code> does not tag them, and inferring them by proximity would be a guess presented as data.</p>
-<h1><a class="anchor" id="autotoc_md46"></a>
+<h1><a class="anchor" id="autotoc_md53"></a>
 Caveat on comparing runs</h1>
 <p>The report pools whatever is in <code>success/</code>, so a directory filled across several builds or several <code>stop_energy</code> targets yields statistics that mix them. The 19,686-model run of August 2026 is exactly that case: most of it ran at <code>stop_energy</code> 20 and the tail at 100, which is why its median max energy is 19.8. For a quotable dataset, run the whole corpus once on one build. </p>
 </div></div><!-- contents -->

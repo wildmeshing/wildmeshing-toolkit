@@ -14,5 +14,6 @@ var searchData=
   ['parseunary_11',['parseUnary',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#a9c1626b174ac406bdee40f06f35f872c',1,'wmtk::components::simwild::expression_parser::Parser']]],
   ['polyfem_5fbin_12',['polyfem_bin',['../namespacesimwild_1_1polyfem__ops_1_1polyfem__utils.html#a98b415d322fdc2a59fde207a0722458c',1,'simwild::polyfem_ops::polyfem_utils']]],
   ['print_5finfo_13',['print_info',['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a6b102f37bc5870ed46df2630f412394b',1,'wmtk::TetMesh::Tuple::print_info(const TetMesh &amp;m) const'],['../classwmtk_1_1_tet_mesh_1_1_tuple.html#a49fd88de6c7178861506864665c4eaa3',1,'wmtk::TetMesh::Tuple::print_info() const']]],
-  ['push_5fback_14',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]]
+  ['project_5foffset_5fvertex_14',['project_offset_vertex',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ef1069ce8bef8f082ba107712960d8d',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
+  ['push_5fback_15',['push_back',['../classwmtk_1_1threading_1_1collector.html#ad97029619feeb1a4acee0b954a17f4d8',1,'wmtk::threading::collector']]]
 ];

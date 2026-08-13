@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::topological_offset::FaceAttributes2d Class Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,27 +69,34 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_attributes2d.html">FaceAttributes2d</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">TopoOffsetTriMesh</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html">OptSplitCache2d</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="classwmtk_1_1components_1_1topological__offset_1_1_face_attributes2d-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::topological_offset::FaceAttributes2d Class Reference</div></div>
+<a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:aab6503420873d32ecdb98bf328ef4ba9" id="r_aab6503420873d32ecdb98bf328ef4ba9"><td class="memItemLeft" align="right" valign="top"><a id="aab6503420873d32ecdb98bf328ef4ba9" name="aab6503420873d32ecdb98bf328ef4ba9"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr>
-<tr class="separator:aab6503420873d32ecdb98bf328ef4ba9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59fbc843518efdeb2fc3c69094f0cf35" id="r_a59fbc843518efdeb2fc3c69094f0cf35"><td class="memItemLeft" align="right" valign="top"><a id="a59fbc843518efdeb2fc3c69094f0cf35" name="a59fbc843518efdeb2fc3c69094f0cf35"></a>
-CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>tag</b></td></tr>
-<tr class="separator:a59fbc843518efdeb2fc3c69094f0cf35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8defb0a854ac1e866438787b73dfe58" id="r_ac8defb0a854ac1e866438787b73dfe58"><td class="memItemLeft" align="right" valign="top"><a id="ac8defb0a854ac1e866438787b73dfe58" name="ac8defb0a854ac1e866438787b73dfe58"></a>
+std::map&lt; size_t, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_label</b></td></tr>
+<tr class="separator:ac8defb0a854ac1e866438787b73dfe58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe90e0b62c3428bb0166fa76cf54ab61" id="r_afe90e0b62c3428bb0166fa76cf54ab61"><td class="memItemLeft" align="right" valign="top"><a id="afe90e0b62c3428bb0166fa76cf54ab61" name="afe90e0b62c3428bb0166fa76cf54ab61"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>v1_id</b> = 0</td></tr>
+<tr class="separator:afe90e0b62c3428bb0166fa76cf54ab61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa6575032dc297253e9627fa9403ac9c" id="r_aaa6575032dc297253e9627fa9403ac9c"><td class="memItemLeft" align="right" valign="top"><a id="aaa6575032dc297253e9627fa9403ac9c" name="aaa6575032dc297253e9627fa9403ac9c"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>v2_id</b> = 0</td></tr>
+<tr class="separator:aaa6575032dc297253e9627fa9403ac9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this class was generated from the following file:<ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Dispatch: the optimization phase runs the shared split, everything else the marching-triangles one. Parent face labels for an optimization split, keyed by the apex vertex opposite the split edge &ndash; that vertex is shared by both children of the same parent, so it names them afterwards. Keyed and consumed EXACTLY as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac71a215935dfb32d9121f177512de655" title="User specified modifications and desideratas after an edge split.">TriOptimizerMesh::split_edge_after</a> keys and consumes its own FaceAttributes cache, so the label lands wherever the tags do. The endpoints are recorded because the consumer needs the two new edges to resolve each child's apex, and split_after_vertex() is handed only the new vertex. </p>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a></li>
 </ul>
 </div><!-- contents -->

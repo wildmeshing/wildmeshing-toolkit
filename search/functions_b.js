@@ -7,8 +7,10 @@ var searchData=
   ['marching_5ftets_4',['marching_tets',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
   ['marching_5ftris_5',['marching_tris',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
   ['match_6',['match',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#af75746acc3509aa1e0cfc605be51417a',1,'wmtk::components::simwild::expression_parser::Parser']]],
-  ['max_5foffset_5fsurface_5fnormal_5fdeviation_5fat_5fvertex_7',['max_offset_surface_normal_deviation_at_vertex',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abd3f0f17c1750864fdb3d73d79951137',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['mean_5fratio_5fmetric_8',['mean_ratio_metric',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7ce6c64a09ac18f8f533ad9b8931198c',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['mesh_5fimprovement_5flegacy_9',['mesh_improvement_legacy',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aec391ff83dc66d14ec5abeec0776dc08',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['min_5fseparation_5f3d_10',['min_separation_3d',['../namespacegeo.html#a419330efaaf1d52afba8c6353a4cb922',1,'geo']]]
+  ['max_5foffset_5fnormal_5fdeviation_5fat_5fvertex_7',['max_offset_normal_deviation_at_vertex',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a339dfc804d9c13eb1e2f844fc40c1442',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
+  ['max_5foffset_5fsurface_5fnormal_5fdeviation_5fat_5fvertex_8',['max_offset_surface_normal_deviation_at_vertex',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abd3f0f17c1750864fdb3d73d79951137',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['mean_5fratio_5fmetric_9',['mean_ratio_metric',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7ce6c64a09ac18f8f533ad9b8931198c',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['mesh_5fimprovement_5flegacy_10',['mesh_improvement_legacy',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aec391ff83dc66d14ec5abeec0776dc08',1,'wmtk::components::tetwild::TetWildMesh']]],
+  ['min_5fseparation_5f3d_11',['min_separation_3d',['../namespacegeo.html#a419330efaaf1d52afba8c6353a4cb922',1,'geo']]],
+  ['minimize_5fdistance_5falong_5ftangent_12',['minimize_distance_along_tangent',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a37a652c86c914eeb7dd935b28aa25826',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]]
 ];

@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['check_5fcollinear_5finput_0',['check_collinear_input',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a9b4807ee3e2226337f5eecde6e26e7c0',1,'wmtk::utils::EmbedTrianglesOptions']]],
-  ['check_5fenvelope_5fat_5finit_1',['check_envelope_at_init',['../structwmtk_1_1components_1_1simwild_1_1_parameters.html#aaccb1bb1446e2c4db5b6459717e1650c',1,'wmtk::components::simwild::Parameters::check_envelope_at_init'],['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#ab78031b3b87e66abd0b6c2653c1c8758',1,'wmtk::components::triwild::Parameters::check_envelope_at_init']]],
-  ['check_5forientation_2',['check_orientation',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#acdb6a348418856ac8c4552ee9f042db9',1,'wmtk::utils::EmbedTrianglesOptions']]],
-  ['check_5fsurface_5fprovenance_3',['check_surface_provenance',['../structwmtk_1_1utils_1_1_embed_triangles_options.html#a65bc96b51fcd1f36851767be1fd3ff98',1,'wmtk::utils::EmbedTrianglesOptions']]],
-  ['conn_5ftets_4',['conn_tets',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a85ddb029fc1d0546eaeafc412ffa68bd',1,'wmtk::components::tetwild::orig::TetVertex']]]
+  ['before_5fbbox_0',['before_bbox',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#aee4c0c6fbd733551402044d44a759d3c',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
+  ['before_5fon_5finput_1',['before_on_input',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#aadb06bcd56e0eb751b3f2ecec4a42f7d',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
+  ['before_5funrounded_2',['before_unrounded',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#aecb18f160bbd250230c26d210d7b2e2d',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]]
 ];

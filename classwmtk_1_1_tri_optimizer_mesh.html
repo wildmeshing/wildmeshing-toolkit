@@ -97,10 +97,12 @@ Inheritance diagram for wmtk::TriOptimizerMesh:</div>
  <div class="center">
   <img src="classwmtk_1_1_tri_optimizer_mesh.png" usemap="#wmtk::TriOptimizerMesh_map" alt=""/>
   <map id="wmtk::TriOptimizerMesh_map" name="wmtk::TriOptimizerMesh_map">
-<area href="classwmtk_1_1_tri_mesh.html" alt="wmtk::TriMesh" shape="rect" coords="0,0,271,24"/>
-<area href="classwmtk_1_1_rational_positions.html" title="The rounded/exact bookkeeping shared by every mesh that keeps both coordinates." alt="wmtk::RationalPositions" shape="rect" coords="281,0,552,24"/>
-<area href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html" alt="wmtk::components::simwild::tri::SimWildMeshTri" shape="rect" coords="0,112,271,136"/>
-<area href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html" alt="wmtk::components::triwild::TriWildMesh" shape="rect" coords="281,112,552,136"/>
+<area href="classwmtk_1_1_tri_mesh.html" alt="wmtk::TriMesh" shape="rect" coords="176,0,519,24"/>
+<area href="classwmtk_1_1_rational_positions.html" title="The rounded/exact bookkeeping shared by every mesh that keeps both coordinates." alt="wmtk::RationalPositions" shape="rect" coords="529,0,872,24"/>
+<area href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html" alt="wmtk::components::simwild::tri::SimWildMeshTri" shape="rect" coords="0,112,343,136"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html" title="The offset&#39;s 2D mesh, on the shared 2D optimizer." alt="wmtk::components::topological_offset::TopoOffsetTriMesh" shape="rect" coords="353,112,696,136"/>
+<area href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html" alt="wmtk::components::triwild::TriWildMesh" shape="rect" coords="706,112,1049,136"/>
+<area href="classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.html" alt="wmtk::components::manifold_extraction::ManExtractTriMesh" shape="rect" coords="353,168,696,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -672,8 +674,7 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_qual
 <tr class="memitem:aabe8f5736003e3653b009347cf47abd7" id="r_aabe8f5736003e3653b009347cf47abd7"><td class="memItemLeft" align="right" valign="top"><a id="aabe8f5736003e3653b009347cf47abd7" name="aabe8f5736003e3653b009347cf47abd7"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_after_vertex</b> (size_t, size_t)</td></tr>
 <tr class="separator:aabe8f5736003e3653b009347cf47abd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef471b311594b1f0aacc6790b5691936" id="r_aef471b311594b1f0aacc6790b5691936"><td class="memItemLeft" align="right" valign="top"><a id="aef471b311594b1f0aacc6790b5691936" name="aef471b311594b1f0aacc6790b5691936"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>split_adjust_position</b> (size_t, const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
+<tr class="memitem:aef471b311594b1f0aacc6790b5691936" id="r_aef471b311594b1f0aacc6790b5691936"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aef471b311594b1f0aacc6790b5691936">split_adjust_position</a> (size_t, const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="separator:aef471b311594b1f0aacc6790b5691936"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab659a3501dc528bc36a8968c92ada7fb" id="r_ab659a3501dc528bc36a8968c92ada7fb"><td class="memItemLeft" align="right" valign="top"><a id="ab659a3501dc528bc36a8968c92ada7fb" name="ab659a3501dc528bc36a8968c92ada7fb"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>split_after_vertex</b> (size_t)</td></tr>
@@ -993,7 +994,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae3aad9e86a2d496f8328fe8ba391769c">wmtk::components::triwild::TriWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0e52d6aa49a6f5b0f34666df90ac4c93">wmtk::components::simwild::tri::SimWildMeshTri</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae3aad9e86a2d496f8328fe8ba391769c">wmtk::components::triwild::TriWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0e52d6aa49a6f5b0f34666df90ac4c93">wmtk::components::simwild::tri::SimWildMeshTri</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#afead8e5d7fa9d393342da6ba25ceed97">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1177,45 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae0949660ee2a725a770a5ff0a93186b4">wmtk::components::triwild::TriWildMesh</a>, and <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a92e0bd44c11243d4c380d1705410b0d8">wmtk::components::simwild::tri::SimWildMeshTri</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh.html#ae0949660ee2a725a770a5ff0a93186b4">wmtk::components::triwild::TriWildMesh</a>, <a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a92e0bd44c11243d4c380d1705410b0d8">wmtk::components::simwild::tri::SimWildMeshTri</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa10996c3de7715d8b0fc9618eaea16c3">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
+
+</div>
+</div>
+<a id="aef471b311594b1f0aacc6790b5691936" name="aef471b311594b1f0aacc6790b5691936"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef471b311594b1f0aacc6790b5691936">&#9670;&#160;</a></span>split_adjust_position()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TriOptimizerMesh::split_adjust_position </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad6e9a8ba9e6ef0486818cb404bcd88ee">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
@@ -1285,6 +1324,8 @@ Private Attributes</h2></td></tr>
 <p><a class="el" href="classwmtk_1_1_envelope.html">Envelope</a> the tracked-surface segment <code>vids</code> must stay inside. </p>
 <p>The 2D counterpart of <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1449fb08e36da2e02d5e1316674b1d23" title="Envelope the tracked-surface triangle vids must stay inside.">wmtk::TetOptimizerMesh::surface_envelope_for_face</a>. Null means this segment carries no containment requirement, and every containment check on it is skipped. Both applications that track a single surface keep one envelope for it, so the default answers with that; an application tracking more than one (see <a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a7125d8d5b7ee4e67ee067e2297d62464" title="Which tracked surface this simplex belongs to, for applications that track more than one.">SurfaceTagAttributes::m_surface_class</a>) overrides this to answer per class.</p>
 <p>Keyed on the vertex ids rather than the eid because every caller is a topological operation asking about segments it is ABOUT to create or has just created. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a8649b76f6e0afee7a3803ea9671e6545">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>
