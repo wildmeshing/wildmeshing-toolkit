@@ -12,7 +12,7 @@
 #include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/fmt/bundled/format.h>
-#include <igl/predicates/predicates.h>
+#include <wmtk/utils/predicates.hpp>
 #include <igl/write_triangle_mesh.h>
 #include <igl/Timer.h>
 #include <igl/orientable_patches.h>
@@ -50,16 +50,16 @@ void MMTetMesh::init_from_eigen(const MatrixXd& V, const MatrixXi& T)
 bool MMTetMesh::is_inverted(const Tuple& t) const
 {
     auto vs = oriented_tet_vertices(t);
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(
         v_attrs[vs[0].vid(*this)].pos,
         v_attrs[vs[1].vid(*this)].pos,
         v_attrs[vs[2].vid(*this)].pos,
         v_attrs[vs[3].vid(*this)].pos);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;
@@ -159,15 +159,15 @@ void MMUVMesh::init_from_eigen(const MatrixXd& V, const MatrixXi& F)
 bool MMUVMesh::is_inverted(const Tuple& t) const
 {
     auto vs = oriented_tri_vertices(t);
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient2d(
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient2d(
         v_attrs[vs[0].vid(*this)].pos,
         v_attrs[vs[1].vid(*this)].pos,
         v_attrs[vs[2].vid(*this)].pos);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;

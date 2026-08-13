@@ -1,5 +1,7 @@
 #include "EnergySum.hpp"
 
+#include <algorithm>
+
 #include <wmtk/utils/orient.hpp>
 
 namespace wmtk::optimization {
@@ -43,7 +45,32 @@ void EnergySum::hessian(const TVector& x, MatrixXd& hessian)
     }
 }
 
-void EnergySum::solution_changed(const TVector& new_x) {}
+void EnergySum::solution_changed(const TVector& new_x)
+{
+    for (const auto& e : m_energies) {
+        e->solution_changed(new_x);
+    }
+}
+
+bool EnergySum::after_line_search_custom_operation(const TVector& x0, const TVector& x1)
+{
+    // polysolve calls solution_changed on an accepted iterate only when this returns true,
+    // so forward and report whether any child wants it.
+    bool any = false;
+    for (const auto& e : m_energies) {
+        any = e->after_line_search_custom_operation(x0, x1) || any;
+    }
+    return any;
+}
+
+double EnergySum::max_step_size(const TVector& x0, const TVector& x1)
+{
+    double a = 1.0;
+    for (const auto& e : m_energies) {
+        a = std::min(a, e->max_step_size(x0, x1));
+    }
+    return a;
+}
 
 bool EnergySum::is_step_valid(const TVector& x0, const TVector& x1)
 {

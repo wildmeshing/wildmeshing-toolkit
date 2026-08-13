@@ -15,7 +15,7 @@
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
-#include <igl/predicates/predicates.h>
+#include <wmtk/utils/predicates.hpp>
 #include <igl/write_triangle_mesh.h>
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
@@ -290,7 +290,19 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
     opts.w_envelope = m_params.w_envelope;
     opts.s_amips = m_s_amips;
     opts.s_envelope = m_s_envelope;
-    opts.two_stage = true;
+    // Off: the balanced warm-up's line search accepts tangential slides at any configured
+    // w_amips (its objective contains no small weight), producing a weight-independent
+    // surface-deviation floor (~4e-5 on triwild20k_202090, flat from w=1e-3 to 1e-12) that
+    // vanishes with the warm-up off, at max energy unchanged to four digits and +1.8%
+    // iterations on the 53 registered configs. Tangential mobility never needed the warm-up:
+    // both the tangential gradient and Hessian scale with w_amips, so Newton cancels the
+    // weight and vertices slide identically at any fitting strength.
+    opts.two_stage = false;
+    opts.smoothing_mode = m_params.smoothing_mode == "exact"
+                              ? optimization::SmoothVertexOptions::SmoothingMode::Exact
+                              : optimization::SmoothVertexOptions::SmoothingMode::Projected;
+    opts.project_line_search_steps = m_params.project_line_search_steps;
+    opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }
@@ -427,16 +439,16 @@ bool TetOptimizerMesh::is_inverted_f(const Tuple& loc) const
 {
     auto vs = oriented_tet_vertices(loc);
 
-    igl::predicates::exactinit();
-    auto res = igl::predicates::orient3d(
+    wmtk::utils::predicates::exactinit();
+    auto res = wmtk::utils::predicates::orient3d(
         m_vertex_attribute[vs[0].vid(*this)].m_posf,
         m_vertex_attribute[vs[1].vid(*this)].m_posf,
         m_vertex_attribute[vs[2].vid(*this)].m_posf,
         m_vertex_attribute[vs[3].vid(*this)].m_posf);
     int result;
-    if (res == igl::predicates::Orientation::POSITIVE)
+    if (res == wmtk::utils::predicates::Orientation::POSITIVE)
         result = 1;
-    else if (res == igl::predicates::Orientation::NEGATIVE)
+    else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
         result = -1;
     else
         result = 0;
@@ -455,16 +467,16 @@ bool TetOptimizerMesh::is_inverted(const std::array<size_t, 4>& vs) const
 
     if (m_vertex_attribute[vs[0]].m_is_rounded && m_vertex_attribute[vs[1]].m_is_rounded &&
         m_vertex_attribute[vs[2]].m_is_rounded && m_vertex_attribute[vs[3]].m_is_rounded) {
-        igl::predicates::exactinit();
-        auto res = igl::predicates::orient3d(
+        wmtk::utils::predicates::exactinit();
+        auto res = wmtk::utils::predicates::orient3d(
             m_vertex_attribute[vs[0]].m_posf,
             m_vertex_attribute[vs[1]].m_posf,
             m_vertex_attribute[vs[2]].m_posf,
             m_vertex_attribute[vs[3]].m_posf);
         int result;
-        if (res == igl::predicates::Orientation::POSITIVE)
+        if (res == wmtk::utils::predicates::Orientation::POSITIVE)
             result = 1;
-        else if (res == igl::predicates::Orientation::NEGATIVE)
+        else if (res == wmtk::utils::predicates::Orientation::NEGATIVE)
             result = -1;
         else
             result = 0;

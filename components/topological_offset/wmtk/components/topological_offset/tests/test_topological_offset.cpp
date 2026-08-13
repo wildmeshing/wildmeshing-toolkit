@@ -6,6 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <queue>
 #include <wmtk/Types.hpp>
+#include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
 #include <wmtk/components/topological_offset/Sphere.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -434,13 +435,13 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = V0_LABEL;
-    mesh.m_vertex_attribute[1].label = V1_LABEL;
-    mesh.m_vertex_attribute[2].label = V2_LABEL;
-    mesh.m_edge_attribute[0].label = E0_LABEL;
-    mesh.m_edge_attribute[1].label = E1_LABEL;
-    mesh.m_edge_attribute[2].label = E2_LABEL;
-    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_vertex_extra[0].label = V0_LABEL;
+    mesh.m_vertex_extra[1].label = V1_LABEL;
+    mesh.m_vertex_extra[2].label = V2_LABEL;
+    mesh.m_edge_extra[0].label = E0_LABEL;
+    mesh.m_edge_extra[1].label = E1_LABEL;
+    mesh.m_edge_extra[2].label = E2_LABEL;
+    mesh.m_face_extra[0].label = F0_LABEL;
 
     // split edge
     TriMesh::Tuple e = mesh.tuple_from_edge(1, 2, 0);
@@ -449,10 +450,10 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
 
     // // ensure proper propagation of attributes
     // vertex
-    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[3].label == E0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_extra[3].label == E0_LABEL);
 
     // edges
     std::array<std::array<size_t, 4>, 5> edges = {
@@ -469,17 +470,17 @@ TEST_CASE("edge_split_2d_1face", "[split_op][2d]")
         int correct_label = edges[i][3];
         TriMesh::Tuple ftup = mesh.tuple_from_simplex(simplex::Face(v0, v1, v_other));
         int actual_label =
-            mesh.m_edge_attribute[mesh.tuple_from_edge(v0, v1, ftup.fid(mesh)).eid(mesh)].label;
+            mesh.m_edge_extra[mesh.tuple_from_edge(v0, v1, ftup.fid(mesh)).eid(mesh)].label;
         REQUIRE(actual_label == correct_label);
     }
 
     // faces
     for (int i = 0; i < 2; i++) {
-        REQUIRE(mesh.m_face_attribute[i].label == F0_LABEL);
+        REQUIRE(mesh.m_face_extra[i].label == F0_LABEL);
 
         // convert tags to string for check
         std::set<std::string> tags;
-        for (const size_t tag_int : mesh.m_face_attribute[i].tag) {
+        for (const size_t tag_int : mesh.m_face_attribute[i].tags) {
             tags.insert(mesh.m_tag_id_to_name[tag_int]);
         }
         REQUIRE(tags == F0_TAGS);
@@ -510,17 +511,17 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = V0_LABEL;
-    mesh.m_vertex_attribute[1].label = V1_LABEL;
-    mesh.m_vertex_attribute[2].label = V2_LABEL;
-    mesh.m_vertex_attribute[3].label = V3_LABEL;
-    mesh.m_edge_attribute[0].label = E0_LABEL;
-    mesh.m_edge_attribute[1].label = E1_LABEL;
-    mesh.m_edge_attribute[2].label = E2_LABEL;
-    mesh.m_edge_attribute[3].label = E3_LABEL;
-    mesh.m_edge_attribute[5].label = E5_LABEL;
-    mesh.m_face_attribute[0].label = F0_LABEL;
-    mesh.m_face_attribute[1].label = F1_LABEL;
+    mesh.m_vertex_extra[0].label = V0_LABEL;
+    mesh.m_vertex_extra[1].label = V1_LABEL;
+    mesh.m_vertex_extra[2].label = V2_LABEL;
+    mesh.m_vertex_extra[3].label = V3_LABEL;
+    mesh.m_edge_extra[0].label = E0_LABEL;
+    mesh.m_edge_extra[1].label = E1_LABEL;
+    mesh.m_edge_extra[2].label = E2_LABEL;
+    mesh.m_edge_extra[3].label = E3_LABEL;
+    mesh.m_edge_extra[5].label = E5_LABEL;
+    mesh.m_face_extra[0].label = F0_LABEL;
+    mesh.m_face_extra[1].label = F1_LABEL;
 
     // split edge
     TriMesh::Tuple e = mesh.tuple_from_edge(1, 2, 0);
@@ -529,11 +530,11 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
 
     // // ensure proper propagation of attributes
     // vertex
-    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[3].label == V3_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[4].label == E0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_extra[3].label == V3_LABEL);
+    REQUIRE(mesh.m_vertex_extra[4].label == E0_LABEL);
 
     // edges
     std::array<std::array<size_t, 4>, 8> edges = {
@@ -551,7 +552,7 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
         size_t v1 = edges[i][1];
         int correct_label = edges[i][2];
         size_t e_id = mesh.edge_id_from_simplex(simplex::Edge(v0, v1));
-        int actual_label = mesh.m_edge_attribute[e_id].label;
+        int actual_label = mesh.m_edge_extra[e_id].label;
         REQUIRE(actual_label == correct_label);
     }
 
@@ -563,20 +564,20 @@ TEST_CASE("edge_split_2d_2faces", "[split_op][2d]")
             mesh.tuple_from_simplex(simplex::Face(faces[i][0], faces[i][1], faces[i][2]));
         size_t f_id = ftup.fid(mesh);
         if (i < 2) {
-            REQUIRE(mesh.m_face_attribute[f_id].label == F0_LABEL);
+            REQUIRE(mesh.m_face_extra[f_id].label == F0_LABEL);
 
             // convert tags to string for check
             std::set<std::string> tags;
-            for (const size_t tag_int : mesh.m_face_attribute[f_id].tag) {
+            for (const size_t tag_int : mesh.m_face_attribute[f_id].tags) {
                 tags.insert(mesh.m_tag_id_to_name[tag_int]);
             }
             REQUIRE(tags == F0_TAGS);
         } else {
-            REQUIRE(mesh.m_face_attribute[f_id].label == F1_LABEL);
+            REQUIRE(mesh.m_face_extra[f_id].label == F1_LABEL);
 
             // convert tags to string for check
             std::set<std::string> tags;
-            for (const size_t tag_int : mesh.m_face_attribute[f_id].tag) {
+            for (const size_t tag_int : mesh.m_face_attribute[f_id].tags) {
                 tags.insert(mesh.m_tag_id_to_name[tag_int]);
             }
             REQUIRE(tags == F1_TAGS);
@@ -605,13 +606,13 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // give every component unique tag combo
-    mesh.m_vertex_attribute[0].label = V0_LABEL;
-    mesh.m_vertex_attribute[1].label = V1_LABEL;
-    mesh.m_vertex_attribute[2].label = V2_LABEL;
-    mesh.m_edge_attribute[0].label = E0_LABEL;
-    mesh.m_edge_attribute[1].label = E1_LABEL;
-    mesh.m_edge_attribute[2].label = E2_LABEL;
-    mesh.m_face_attribute[0].label = F0_LABEL;
+    mesh.m_vertex_extra[0].label = V0_LABEL;
+    mesh.m_vertex_extra[1].label = V1_LABEL;
+    mesh.m_vertex_extra[2].label = V2_LABEL;
+    mesh.m_edge_extra[0].label = E0_LABEL;
+    mesh.m_edge_extra[1].label = E1_LABEL;
+    mesh.m_edge_extra[2].label = E2_LABEL;
+    mesh.m_face_extra[0].label = F0_LABEL;
 
     // split face
     TriMesh::Tuple f = mesh.tuple_from_simplex(simplex::Face(0, 1, 2));
@@ -620,10 +621,10 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
 
     // // ensure proper propagation of attributes
     // vertex
-    REQUIRE(mesh.m_vertex_attribute[0].label == V0_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[1].label == V1_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[2].label == V2_LABEL);
-    REQUIRE(mesh.m_vertex_attribute[3].label == F0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[0].label == V0_LABEL);
+    REQUIRE(mesh.m_vertex_extra[1].label == V1_LABEL);
+    REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
+    REQUIRE(mesh.m_vertex_extra[3].label == F0_LABEL);
 
     // edges
     std::array<std::array<size_t, 4>, 6> edges = {
@@ -639,7 +640,7 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
         size_t v1 = edges[i][1];
         int correct_label = edges[i][2];
         size_t e_id = mesh.edge_id_from_simplex(simplex::Edge(v0, v1));
-        int actual_label = mesh.m_edge_attribute[e_id].label;
+        int actual_label = mesh.m_edge_extra[e_id].label;
         REQUIRE(actual_label == correct_label);
     }
 
@@ -649,11 +650,11 @@ TEST_CASE("face_split_2d", "[split_op][2d]")
         TriMesh::Tuple ftup =
             mesh.tuple_from_simplex(simplex::Face(faces[i][0], faces[i][1], faces[i][2]));
         size_t f_id = ftup.fid(mesh);
-        REQUIRE(mesh.m_face_attribute[f_id].label == F0_LABEL);
+        REQUIRE(mesh.m_face_extra[f_id].label == F0_LABEL);
 
         // convert tags to string for check
         std::set<std::string> tags;
-        for (const size_t tag_int : mesh.m_face_attribute[i].tag) {
+        for (const size_t tag_int : mesh.m_face_attribute[i].tags) {
             tags.insert(mesh.m_tag_id_to_name[tag_int]);
         }
         REQUIRE(tags == F0_TAGS);
@@ -787,7 +788,7 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     mesh.init_from_image(V, F, Tags, V_env_dummy, F_env_dummy, tag_names);
 
     // label one vert as input
-    mesh.m_vertex_attribute[0].label = 1;
+    mesh.m_vertex_extra[0].label = 1;
     mesh.init_input_complex_bvh();
     Vector2d q(1.0, 1.0);
     double dist = mesh.m_input_complex_bvh.dist(q);
@@ -799,8 +800,8 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
 
     // label edges and vertices as input
     for (int i = 0; i < 3; i++) {
-        mesh.m_edge_attribute[i].label = 1;
-        mesh.m_vertex_attribute[i].label = 1;
+        mesh.m_edge_extra[i].label = 1;
+        mesh.m_vertex_extra[i].label = 1;
     }
     mesh.init_input_complex_bvh();
 

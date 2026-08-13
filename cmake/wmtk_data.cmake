@@ -16,10 +16,13 @@ ExternalProject_Add(
     SOURCE_DIR ${WMTK_DATA_ROOT}
 
     GIT_REPOSITORY https://github.com/wildmeshing/data2.git
-    # Adds the challenging-low-stop-energy models: the 30 meshes that exhausted
-    # max_iterations = 80 at stop_energy 10 before this branch. Hidden test group, never
-    # runs in CI -- see the challenging-low-stop-energy-models case in integration_tests.cpp.
-    GIT_TAG a1e2cdc018a24f210ebc66215fe7def3dbe09154
+    # Adds the 2D dragon-rectangle topological offset case (mesh, config, manifest entry): the
+    # one target distance of a 1e-5..1 sweep that converges on both criteria. It sets
+    # throw_on_nonconvergence, so a convergence regression fails the run rather than warning.
+    #
+    # Keep this in sync with the `ref:` of the data2 checkout in .github/workflows/pip.yml --
+    # the Python integration suite reads the same manifest and must see the same files.
+    GIT_TAG 0be5e37e34f6e9ac01c9d0404295cda1982d187a
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
