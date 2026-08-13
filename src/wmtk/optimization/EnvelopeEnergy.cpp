@@ -36,44 +36,6 @@ Mat gauss_newton_hessian(const Vec& r, const Vec& nearest, const double weight)
 
 } // namespace
 
-EnvelopeEnergy2D::EnvelopeEnergy2D(
-    const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight)
-    : m_envelope(envelope)
-    , m_weight(weight)
-{
-    assert(m_envelope);
-}
-
-double EnvelopeEnergy2D::value(const TVector& x)
-{
-    assert(x.size() == 2);
-    Vector2d r(x);
-    return m_weight * m_envelope->squared_distance(r);
-}
-
-void EnvelopeEnergy2D::gradient(const TVector& x, TVector& gradv)
-{
-    assert(x.size() == 2);
-    Vector2d r(x);
-    Vector2d n;
-    m_envelope->nearest_point(r, n);
-    // The derivative of value(), which is m_weight * |r - n|^2. The factor of 2 was missing,
-    // so value, gradient and hessian each described a differently scaled energy and the line
-    // search tested Armijo against half the true directional derivative.
-    gradv = 2 * m_weight * (r - n);
-}
-
-void EnvelopeEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
-{
-    Vector2d r(x);
-    Vector2d n;
-    m_envelope->nearest_point(r, n);
-    hessian = gauss_newton_hessian<Vector2d, Matrix2d>(r, n, m_weight);
-}
-
-void EnvelopeEnergy2D::solution_changed(const TVector& new_x) {}
-
 
 ExactDistanceEnergy2D::ExactDistanceEnergy2D(
     const std::shared_ptr<SampleEnvelope>& envelope,
@@ -156,43 +118,5 @@ void ExactDistanceEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
         hessian = 2.0 * m_weight * Matrix3d::Identity();
     }
 }
-
-EnvelopeEnergy3D::EnvelopeEnergy3D(
-    const std::shared_ptr<SampleEnvelope>& envelope,
-    const double weight)
-    : m_envelope(envelope)
-    , m_weight(weight)
-{
-    assert(m_envelope);
-}
-
-double EnvelopeEnergy3D::value(const TVector& x)
-{
-    assert(x.size() == 3);
-    Vector3d r(x);
-    return m_weight * m_envelope->squared_distance(r);
-}
-
-void EnvelopeEnergy3D::gradient(const TVector& x, TVector& gradv)
-{
-    assert(x.size() == 3);
-    Vector3d r(x);
-    Vector3d n;
-    m_envelope->nearest_point(r, n);
-    // The derivative of value(), which is m_weight * |r - n|^2. The factor of 2 was missing,
-    // so value, gradient and hessian each described a differently scaled energy and the line
-    // search tested Armijo against half the true directional derivative.
-    gradv = 2 * m_weight * (r - n);
-}
-
-void EnvelopeEnergy3D::hessian(const TVector& x, MatrixXd& hessian)
-{
-    Vector3d r(x);
-    Vector3d n;
-    m_envelope->nearest_point(r, n);
-    hessian = gauss_newton_hessian<Vector3d, Matrix3d>(r, n, m_weight);
-}
-
-void EnvelopeEnergy3D::solution_changed(const TVector& new_x) {}
 
 } // namespace wmtk::optimization

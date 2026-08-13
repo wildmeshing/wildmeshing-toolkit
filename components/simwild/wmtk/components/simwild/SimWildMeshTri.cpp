@@ -966,7 +966,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_envelope_ener
 {
     const double w = m_s_envelope * m_params.w_envelope;
 
-    auto envelope_energy = std::make_shared<optimization::EnvelopeEnergy2D>(m_envelope, w);
+    auto envelope_energy = std::make_shared<optimization::ExactDistanceEnergy2D>(m_envelope, w);
     return envelope_energy;
 }
 
