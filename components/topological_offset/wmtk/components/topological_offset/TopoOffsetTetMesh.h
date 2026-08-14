@@ -584,10 +584,11 @@ public:
         std::atomic<int> offset_attempted{0}; ///< dispatched to smooth_after_offset_surface()
         std::atomic<int> offset_no_neighbours{0}; ///< no offset-surface neighbour to average
         std::atomic<int> offset_on_complex{0}; ///< every sample degenerate: no offset direction
-        /// The search ran out and p0 ITSELF still inverts a tet, so no fraction of the move is
-        /// legal. Unlike 2D this is not a rejection: move_to() clamps rather than refusing, and
-        /// the base's invariants() -- run by TetMesh::smooth_vertex right after -- is what rolls
-        /// the move back. Counted here because a vertex in this state is frozen for the run.
+        /// The binary search found no legal step at all: every fraction of the move inverts an
+        /// incident tet, possibly including the zero step (p0 itself already inverted). This IS
+        /// a rejection -- smooth_after_offset_surface() restores p0 and returns false, following
+        /// the reference implementation, which refuses rather than accepting a zero-length move.
+        /// A vertex in this state received none of its correction this pass.
         std::atomic<int> offset_inverted{0};
         /// Always 0 in 3D: the region-boundary envelope is 2D-only, so nothing on this path can
         /// be rejected by containment. Kept for lock-step with 2D.
