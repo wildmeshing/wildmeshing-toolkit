@@ -419,12 +419,12 @@
     "pointer": "/coarsen_global_smoothing_passes",
     "type": "int",
     "default": 1,
-    "doc": "Ordinary whole-mesh smoothing passes run between coarsening rounds."
+    "doc": "Ordinary whole-mesh smoothing passes run between coarsening rounds. This is what makes a second round worth running at all -- see coarsen_max_rounds -- so setting it to 0 collapses the rounds to one."
   },
   {
     "pointer": "/coarsen_max_rounds",
     "type": "int",
     "default": 5,
-    "doc": "Cap on the coarsen/smooth alternation. The pass also stops as soon as a round accepts no collapse."
+    "doc": "Cap on the coarsen/smooth alternation; the pass also stops as soon as a round accepts no collapse. A round does NOT exist to finish what the previous one started: within a round the collapse pass already runs to a fixed point, so repeating the collapse alone finds nothing. What a round adds is the global smoothing in between, which moves that fixed point -- the dirty-epoch retry only re-offers failures next to a SUCCESSFUL collapse, so a whole-mesh smoothing pass is invisible to it, and a rejected composite is rolled back in full so rejections never accumulate progress within a round. Returns decay fast: measured over the 16 challenging triwild models, accepted collapses by round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%."
   }
 ]

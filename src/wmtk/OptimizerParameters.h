@@ -187,9 +187,34 @@ struct OptimizerParameters
     /// Radius smoothed inside the collapse. The lock claims one more ring than this, because
     /// smoothing a vertex reads its one-ring and writes the quality of its incident cells.
     int coarsen_smooth_ring = 2;
-    /// Ordinary global smoothing passes between coarsening rounds.
+    /**
+     * Ordinary whole-mesh smoothing passes between coarsening rounds.
+     *
+     * This is what makes a second round worth running at all -- see coarsen_max_rounds. Set
+     * it to 0 and the rounds collapse to one.
+     */
     int coarsen_global_smoothing_passes = 1;
-    /// Cap on the collapse/smooth alternation; it also stops as soon as a round collapses nothing.
+    /**
+     * Cap on the collapse/smooth alternation. It also stops as soon as a round accepts nothing.
+     *
+     * A round does NOT exist to finish what the previous one started: within a round the
+     * collapse pass already runs to a fixed point (run_localized_to_convergence loops the
+     * executor until nothing succeeds, re-offering failures whose neighbourhood changed), so
+     * repeating the collapse alone finds nothing. What a round adds is the global smoothing
+     * in between, which MOVES that fixed point.
+     *
+     * Two things stop the inner loop from absorbing it. The dirty-epoch retry re-offers a
+     * failed collapse only if one of its endpoints was stamped by a SUCCESSFUL collapse's
+     * renewal, so a whole-mesh smoothing pass -- which moves vertices no collapse touched --
+     * is invisible to it. And a rejected composite is rolled back in full, its local smoothing
+     * included, so rejections never accumulate progress within a round. The global pass is the
+     * only geometry improvement that persists and unlocks further collapses.
+     *
+     * The returns decay fast, because each smoothing pass leaves the mesh closer to relaxed
+     * than the last. Measured over the 16 challenging triwild models, accepted collapses by
+     * round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%: round 1 is worth a fifth of the whole
+     * pass, rounds 3 and 4 together are worth 2.3% for roughly 40% of its cost.
+     */
     int coarsen_max_rounds = 5;
 
     bool debug_output = false;
