@@ -860,6 +860,7 @@ bool TriMesh::split_edge(const Tuple& t, std::vector<Tuple>& new_tris)
         for (size_t f : new_fids)
             if (f == INVALID_SLOT) slots_ok = false;
         if (!slots_ok) {
+            note_slot_exhausted();
             if (new_vid != INVALID_SLOT) m_vertex_connectivity[new_vid].m_is_removed = true;
             for (size_t f : new_fids)
                 if (f != INVALID_SLOT) m_tri_connectivity[f].m_is_removed = true;
@@ -1701,6 +1702,7 @@ bool TriMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tris)
     {
         constexpr size_t INVALID_SLOT = static_cast<size_t>(-1);
         if (new_vid == INVALID_SLOT || new_fid1 == INVALID_SLOT || new_fid2 == INVALID_SLOT) {
+            note_slot_exhausted();
             if (new_vid != INVALID_SLOT) m_vertex_connectivity[new_vid].m_is_removed = true;
             if (new_fid1 != INVALID_SLOT) m_tri_connectivity[new_fid1].m_is_removed = true;
             if (new_fid2 != INVALID_SLOT) m_tri_connectivity[new_fid2].m_is_removed = true;
