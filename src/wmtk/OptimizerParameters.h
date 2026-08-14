@@ -211,11 +211,13 @@ struct OptimizerParameters
      * only geometry improvement that persists and unlocks further collapses.
      *
      * The returns decay fast, because each smoothing pass leaves the mesh closer to relaxed
-     * than the last. Measured over the 16 challenging triwild models, accepted collapses by
-     * round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%: round 1 is worth a fifth of the whole
-     * pass, rounds 3 and 4 together are worth 2.3% for roughly 40% of its cost.
+     * than the last. Measured over the 16 challenging triwild models at five rounds, accepted
+     * collapses by round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%. Every round costs a full
+     * collapse_edge_before sweep over all edges plus a smoothing pass, so the default is two:
+     * they carry 90.5% of the coarsening between them, and the three that would follow are
+     * worth 9.5% for 60% of the pass's budget.
      */
-    int coarsen_max_rounds = 5;
+    int coarsen_max_rounds = 2;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
