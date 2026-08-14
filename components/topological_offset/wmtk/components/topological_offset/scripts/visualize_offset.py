@@ -385,11 +385,13 @@ def main():
         ]
 
     def set_mode(i):
+        # 3D only: in 2D the offset is a curve network and carries no scalar layers.
+        if err is None or dim != 3:
+            return
         m = ps.get_surface_mesh("offset surface")
-        if err is not None and dim == 3:
-            m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
-                                  vminmax=(0.0, float(rel.max())), enabled=(i == 0))
-            m.add_scalar_quantity("distance to input", dist, cmap="viridis", enabled=(i == 1))
+        m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
+                              vminmax=(0.0, float(rel.max())), enabled=(i == 0))
+        m.add_scalar_quantity("distance to input", dist, cmap="viridis", enabled=(i == 1))
 
     if len(surf["offset"]):
         set_mode(0)
