@@ -981,6 +981,15 @@ public:
      * @param vids Global vertex index of the face
      */
     std::tuple<Tuple, size_t> tuple_from_face(const std::array<size_t, 3>& vids) const;
+    /**
+     * @brief tuple_from_face for callers where a missing face is an answer, not a bug.
+     *
+     * The asserting form is right for the many callers that ask for a face they know exists.
+     * collapse_edge_after is not one of them: it asks for a face across the merged vertex that
+     * the collapse may have just removed, and it already has a branch for that case.
+     */
+    std::optional<std::tuple<Tuple, size_t>> try_tuple_from_face(
+        const std::array<size_t, 3>& vids) const;
 
     /**
      * @brief Lowest tet id incident to all three vertices, or size_t(-1) if there is none.

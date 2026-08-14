@@ -926,6 +926,15 @@ public:
     }
 
     std::tuple<Tuple, size_t> tuple_from_edge(const std::array<size_t, 2>& vids) const;
+    /**
+     * @brief tuple_from_edge for callers where a missing edge is an answer, not a bug.
+     *
+     * The asserting form is right for the many callers that ask for an edge they know exists.
+     * collapse_edge_after is not one of them: it asks for an edge across the merged vertex
+     * that the collapse may have just removed, and it already has a branch for that case.
+     */
+    std::optional<std::tuple<Tuple, size_t>> try_tuple_from_edge(
+        const std::array<size_t, 2>& vids) const;
 
 public:
     /**

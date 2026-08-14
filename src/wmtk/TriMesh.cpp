@@ -2033,6 +2033,17 @@ std::array<size_t, 2> TriMesh::get_edge_vids(const Tuple& t) const
 
 std::tuple<TriMesh::Tuple, size_t> TriMesh::tuple_from_edge(const std::array<size_t, 2>& vids) const
 {
+    const auto found = try_tuple_from_edge(vids);
+    // Most callers ask for an edge they know exists, and a miss is a bug worth catching. The
+    // ones for which absence is a legitimate answer -- collapse_edge_after, asking for an edge
+    // the collapse may have just removed -- call try_tuple_from_edge instead.
+    assert(found.has_value());
+    return found.value_or(std::make_tuple(Tuple(), std::numeric_limits<size_t>::max()));
+}
+
+std::optional<std::tuple<TriMesh::Tuple, size_t>> TriMesh::try_tuple_from_edge(
+    const std::array<size_t, 2>& vids) const
+{
     const std::vector<size_t>& fids = m_vertex_connectivity[vids[0]].m_conn_tris;
 
     // find face that contains both vertices
@@ -2058,7 +2069,13 @@ std::tuple<TriMesh::Tuple, size_t> TriMesh::tuple_from_edge(const std::array<siz
         fid = f;
         break;
     }
-    assert(local_eid != std::numeric_limits<size_t>::max());
+    if (local_eid == std::numeric_limits<size_t>::max()) {
+        // No face carries both vertices. This used to fall through and build an eid out of two
+        // SIZE_MAX sentinels -- 3 * fid + local_eid wraps to SIZE_MAX - 3, which is neither a
+        // valid id nor the -1 the callers test for, so the miss was reported as a plausible
+        // index and written to.
+        return std::nullopt;
+    }
 
     const Tuple edge(vids[0], local_eid, fid, *this);
     const size_t eid = 3 * fid + local_eid;

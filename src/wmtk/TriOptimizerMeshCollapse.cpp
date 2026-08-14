@@ -355,11 +355,11 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         //
-        auto [_, global_fid] = tuple_from_edge({{v2_id, old_vids[1]}});
-        if (global_fid == -1) {
-            return false;
+        const auto found = try_tuple_from_edge({{v2_id, old_vids[1]}});
+        if (!found.has_value()) {
+            return false; // the collapse removed the edge this attribute was to land on
         }
-        m_edge_attribute[global_fid] = f_attr;
+        m_edge_attribute[std::get<1>(found.value())] = f_attr;
     }
 
     collapse_after_vertex(v1_id, v2_id);

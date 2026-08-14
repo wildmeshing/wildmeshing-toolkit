@@ -424,11 +424,11 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         //
-        auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
-        if (global_fid == -1) {
-            return false;
+        const auto found = try_tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+        if (!found.has_value()) {
+            return false; // the collapse removed the face this attribute was to land on
         }
-        m_face_attribute[global_fid] = f_attr;
+        m_face_attribute[std::get<1>(found.value())] = f_attr;
     }
 
     if (!m_coarsen_mode) {

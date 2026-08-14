@@ -454,6 +454,17 @@ size_t TetMesh::lowest_common_tet(const size_t v0_id, const size_t v1_id, const 
 
 std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<size_t, 3>& vids) const
 {
+    const auto found = try_tuple_from_face(vids);
+    // Most callers ask for a face they know exists, and a miss is a bug worth catching. The
+    // ones for which absence is a legitimate answer -- collapse_edge_after, asking for a face
+    // the collapse may have just removed -- call try_tuple_from_face instead.
+    assert(found.has_value());
+    return found.value_or(std::make_tuple(Tuple(), std::numeric_limits<size_t>::max()));
+}
+
+std::optional<std::tuple<TetMesh::Tuple, size_t>> TetMesh::try_tuple_from_face(
+    const std::array<size_t, 3>& vids) const
+{
     size_t v0_id = vids[0];
     size_t v1_id = vids[1];
     size_t v2_id = vids[2];
@@ -467,14 +478,12 @@ std::tuple<TetMesh::Tuple, size_t> TetMesh::tuple_from_face(const std::array<siz
         const auto& t2 = m_vertex_connectivity[v2_id].m_conn_tets;
 
         if (t0.empty() || t1.empty() || t2.empty()) {
-            assert(false && "tuple_from_face: one of the vertices has no incident tets");
-            return {Tuple(), -1};
+            return std::nullopt; // a vertex the collapse left isolated
         }
 
         global_tid = lowest_common_tet(v0_id, v1_id, v2_id);
         if (global_tid == std::numeric_limits<size_t>::max()) {
-            assert(false && "tuple_from_face: no common tet found for the three vertices");
-            return {Tuple(), -1};
+            return std::nullopt; // the three vertices no longer share a tet
         }
     }
 
