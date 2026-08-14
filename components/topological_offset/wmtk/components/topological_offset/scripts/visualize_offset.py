@@ -26,7 +26,10 @@ groups, and
   inner interface   offset group against the input groups: hugs the complex at distance
                     ~0 by construction, drawn dim and off by default, so it cannot be
                     mistaken for the offset
-  <other tags>      any remaining group boundary, off by default
+  region boundaries every facet where the two sides' tag memberships differ (green);
+                    on by default when the input-surface layer is empty
+  envelope curves   the EnvelopeSurface line entity, 2D outputs only: the
+                    region-boundary geometry the envelope was built from (orange)
 
 The offset surface carries two scalar layers: distance to the input surface, and
 |distance - delta| / delta. delta comes from the config (`target_distance`, else
@@ -83,7 +86,7 @@ def eval_selection(expr, names):
 
 
 def read_groups(path):
-    """(points, dim, {group name: cell array}) from a topological_offset .msh."""
+    """(points, dim, {group name: cell array}, envelope segments) from the .msh."""
     m = meshio.read(str(path))
     kind, ncol = ("tetra", 4) if any(c.type == "tetra" for c in m.cells) else ("triangle", 3)
     # One block per physical group, in the same order as field_data; pair them by the
@@ -96,7 +99,13 @@ def read_groups(path):
         name = id_to_name.get(int(phys[0]), "group_%d" % int(phys[0]))
         groups.setdefault(name, []).append(block.data)
     groups = {k: np.vstack(v) for k, v in groups.items()}
-    return m.points, ncol - 1, groups
+    # The 2D writer also emits the envelope's segments as an "EnvelopeSurface" line
+    # entity -- the region-boundary geometry the envelope was built from, which is the
+    # closest thing in the file to the input geometry itself. (The 3D writer's envelope
+    # block is commented out, so this is empty for tets.)
+    env = [c.data for c in m.cells if c.type == "line"]
+    env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
+    return m.points, ncol - 1, groups, env
 
 
 def interfaces(points, dim, groups):
@@ -247,7 +256,7 @@ def resolve(args):
 
 def load(msh, cfg):
     """Everything main() draws, as plain arrays -- no polyscope."""
-    points, dim, groups = read_groups(msh)
+    points, dim, groups, envelope = read_groups(msh)
     offset_tags = set(cfg.get("offset_output_tags", ["offset"])) & set(groups)
     if not offset_tags:
         offset_tags = {"offset"} & set(groups)
@@ -281,6 +290,26 @@ def load(msh, cfg):
     classed = {k: np.asarray(v) if v else np.zeros((0, dim + 1), np.int64)
                for k, v in classed.items()}
 
+    # REGION BOUNDARIES: facets where the two sides' group-membership sets differ -- the
+    # rule label_offset_boundary() classifies edges by. This is what shows the tag-region
+    # outlines (and the curve an expression selection lives on) when the selection has no
+    # cell region of its own, which is every 2D integration test. Membership sets are
+    # mapped to disjoint pseudo-groups so the pairing logic stays count-based and clean;
+    # pairs touching the offset class are dropped, the offset layer already draws those.
+    memb_groups = {}
+    for row, names in seen.values():
+        if names & offset_tags:
+            key = "__offset"
+        else:
+            key = "|".join(sorted(names))
+        memb_groups.setdefault(key, []).append(row)
+    memb_groups = {k: np.asarray(v) for k, v in memb_groups.items()}
+    region = [
+        f for pair, f in interfaces(points, dim, memb_groups).items()
+        if "__offset" not in pair and pair[1] != ""
+    ]
+    region = np.vstack(region) if region else np.zeros((0, dim), np.int64)
+
     iface = interfaces(points, dim, classed)
 
     def pick(*pairs):
@@ -293,6 +322,8 @@ def load(msh, cfg):
         # clipped at the domain boundary -- both included by the C++ metric.
         "offset": pick(("ambient", "offset"), ("offset", "")),
         "inner": pick(("input", "offset")),
+        "region": region,
+        "envelope": envelope,
     }
 
     delta = float(cfg.get("target_distance", -1.0))
@@ -334,8 +365,8 @@ def main():
     print("delta  %g  (%s)" % (delta, prov))
     for n in sorted(groups):
         print("  group %-16s %8d cells" % (n, len(groups[n])))
-    for n in ("input", "offset", "inner"):
-        print("  %-22s %8d facets" % (n + " surface", len(surf[n])))
+    for n in ("input", "offset", "inner", "region", "envelope"):
+        print("  %-22s %8d facets" % (n, len(surf[n])))
     if err is not None:
         _, _, dist, rel = err
         print("  offset vertices: dist to input  min %.6g  max %.6g   |err|/delta  avg %.4f  max %.4f"
@@ -366,10 +397,22 @@ def main():
         s.set_enabled(enabled)
         return s
 
+    def register_curves(name, segs, color, enabled):
+        if len(segs) == 0:
+            return None
+        p, c = compact(points, segs)
+        s = ps.register_curve_network(name, p, c, color=color, radius=0.0018)
+        s.set_enabled(enabled)
+        return s
+
     layers = [
         ("input surface (orange)", register("input surface", surf["input"], C_INPUT, True)),
         ("offset surface", register("offset surface", surf["offset"], C_OFFSET, True)),
         ("inner interface (grey)", register("inner interface", surf["inner"], C_INNER, False)),
+        ("region boundaries (green)",
+         register("region boundaries", surf["region"], C_OTHER, len(surf["input"]) == 0)),
+        ("envelope curves (orange)",
+         register_curves("envelope curves", surf["envelope"], C_INPUT, True)),
     ]
 
     # The offset surface's colour modes. Re-adding a quantity under the same name just
