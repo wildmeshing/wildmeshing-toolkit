@@ -132,6 +132,13 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         m_vertex_extra[v1].m_is_on_input = true;
         m_vertex_extra[v2].m_is_on_input = true;
         m_vertex_extra[v3].m_is_on_input = true;
+        // The base's own flag, which is a DIFFERENT field from the two above: those say which of
+        // the offset's two tracked surfaces a vertex belongs to, this says that it belongs to one
+        // at all. Every surface-aware path in the shared engine gates on it -- see
+        // optimize_offset(), where the same omission had teeth.
+        m_vertex_attribute[v1].m_is_on_surface = true;
+        m_vertex_attribute[v2].m_is_on_surface = true;
+        m_vertex_attribute[v3].m_is_on_surface = true;
 
         tempF.emplace_back(v1, v2, v3);
     }
@@ -1209,6 +1216,19 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         auto vs = get_face_vids(f);
         for (const size_t& vid : vs) {
             m_vertex_extra[vid].m_is_on_offset = true;
+            // THE BASE'S UNION FLAG, and the one the shared operations actually read. 2D sets it
+            // in label_offset_boundary(); 3D set neither this nor its counterpart at
+            // init_surfaces_and_boundaries(), so m_is_on_surface was false on every vertex of the
+            // mesh for the whole optimization.
+            //
+            // TetOptimizerMesh::is_edge_on_surface() short-circuits on it before it ever looks at
+            // the face attributes, so no offset edge was ever recognised as carrying tracked
+            // geometry: the collapse's surface link condition and preserve_topology (which both
+            // gate on VA[..].m_is_on_surface), and the split's propagation of the flag to the new
+            // vertex, were dead code for the offset. Instrumented on specific_models/prism, 0 of
+            // ~1700 offset-edge split attempts per iteration were seen as surface edges; 1727 with
+            // this line.
+            m_vertex_attribute[vid].m_is_on_surface = true;
         }
     }
 
