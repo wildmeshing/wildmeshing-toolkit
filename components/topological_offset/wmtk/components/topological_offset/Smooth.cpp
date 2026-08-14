@@ -16,6 +16,7 @@
 
 #include <optional>
 #include <set>
+#include <vector>
 
 namespace wmtk::components::topological_offset {
 
@@ -266,15 +267,40 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
         p_laplace /= n_neighs;
     }
 
-    // Quadric built from 4 target_distance-offset samples of the input complex per incident
-    // offset-surface face (centroid + one near each corner, weighted 1/0.1/0.1/0.1), following
-    // Quadrics.cpp's get_triangle_samples_and_area(). Taking several samples rather than just
-    // the centroid is what lets the quadric stay feature-aware: near a sharp fold of the input
-    // complex, samples on either side pull the per-vertex quadric's minimum toward the fold
-    // instead of averaging it away, the same way classic QEM simplification preserves features
-    // by summing quadrics from multiple differently-oriented triangles.
-    Quadrics q(0., 0., 0., 0.);
-    bool any_sample = false;
+    // Quadric built from 4 offset samples of the input complex per incident offset-surface face
+    // (centroid + one near each corner, weighted 1/0.1/0.1/0.1), following Quadrics.cpp's
+    // get_triangle_samples_and_area(). Taking several samples rather than just the centroid is
+    // what lets the quadric stay feature-aware: near a sharp fold of the input complex, samples
+    // on either side pull the per-vertex quadric's minimum toward the fold instead of averaging
+    // it away, the same way classic QEM simplification preserves features by summing quadrics
+    // from multiple differently-oriented triangles.
+    //
+    // ONE SHARED TARGET DISTANCE is used for every sample of every incident face, following the
+    // reference implementation's vertex-level Quadrics constructor
+    // (internal/utils/Quadrics.cpp, the PrimitiveType::Vertex branch), which pools the samples
+    // of all incident faces into a single quadric and places every sample's plane at
+    // `nearest + dist_avg * normal` for one aggregate distance:
+    //
+    //     dist_avg = sum(offset_distance * area) / sum(area)  // adapted delta-hat, area-weighted
+    //     dist_min = min over samples of the CURRENT distance to the input complex
+    //     dist_avg = 0.5 * (dist_avg + dist_min)
+    //
+    // The first line collapses to target_distance here: distance adaptation (paper Sec. 5.3.1)
+    // is deliberately not implemented, so delta-hat is a single global constant and the
+    // area-weighted mean of a constant is that constant. The third line -- the damping -- is
+    // deliberately NOT applied; see the measurements at dist_target below.
+    //
+    // Samples are gathered into one list before any quadric is built because the reference's
+    // shared distance is an aggregate over all of them, so no plane can be placed until every
+    // sample is known. That stays true of any spatially adapted delta-hat, which is why the
+    // shape is kept even though the value used below is currently a constant.
+    struct WeightedSample
+    {
+        OffsetSurfaceSample s;
+        double area; // of the face the sample came from
+    };
+    std::vector<WeightedSample> samples;
+    samples.reserve(4 * offset_faces.size());
     for (const Tuple& f : offset_faces) {
         const std::array<Tuple, 3> face_verts = get_face_vertices(f);
         const Vector3d p_a = m_vertex_attribute[face_verts[0].vid(*this)].m_posf;
@@ -282,20 +308,50 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
         const Vector3d p_c = m_vertex_attribute[face_verts[2].vid(*this)].m_posf;
         const double area = 0.5 * (p_b - p_a).cross(p_c - p_a).norm();
 
-        Quadrics face_q(0., 0., 0., 0.);
         for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
             if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no valid normal
-            const Vector3d target = s.nearest + m_offset_params.target_distance * s.normal;
-            face_q += Quadrics(target, s.normal) * s.weight;
-            any_sample = true;
+            samples.push_back({s, area});
         }
-        face_q *= area;
-
-        q += face_q;
     }
-    if (!any_sample) {
+    if (samples.empty()) {
         ++m_smooth_trace.offset_on_complex;
         return false;
+    }
+
+    // THE REFERENCE'S DAMPING IS DELIBERATELY NOT APPLIED. Its third line,
+    //
+    //     dist_avg = 0.5 * (dist_avg + dist_min)
+    //
+    // aims the quadric halfway between the target distance and where the surface currently is.
+    // Measured on prism (delta = 0.8368, convergence_target 0.0418), final iteration of a 5
+    // iteration run, against the undamped `delta` used here:
+    //
+    //     undamped delta                    max 0.1647  avg 0.0595   worst vertex 20% too far OUT
+    //     0.5 * (delta + dist_min)          max 0.3540  avg 0.0459   worst vertex 42% too far IN
+    //     0.5 * (delta + this vertex's d)   max 0.3351  avg 0.1218   worst vertex too far out
+    //
+    // The damping buys average distance error and costs more than twice as much maximum, and
+    // max_dist_err is the criterion the run is failing. Keying it to the vertex's own current
+    // distance rather than the minimum over samples -- the obvious suspect, since dist_min lets
+    // one badly-placed neighbour drag a whole patch's target down -- is worse still on the
+    // average, so that was not the mechanism either.
+    //
+    // The reference can afford the damping because it runs distance adaptation (paper Sec.
+    // 5.3.1) first, so its offset starts near-correct and dist_min is already close to
+    // delta-hat: there the term is a small correction, not a systematic inward pull. This
+    // implementation deliberately skips adaptation, so the offset starts wherever conservative
+    // growth left it and the damping becomes a brake on the one quantity that has to converge.
+    //
+    // NOTE the pooling above is behaviour-neutral on its own: summing one quadric over every
+    // sample weighted by w*area is algebraically the same as summing a per-face quadric scaled
+    // by area, which is what this built before. It is kept because it is the reference's shape
+    // and it is where a spatially adapted delta-hat would attach.
+    const double dist_target = m_offset_params.target_distance;
+
+    Quadrics q(0., 0., 0., 0.);
+    for (const WeightedSample& ws : samples) {
+        const Vector3d target = ws.s.nearest + dist_target * ws.s.normal;
+        q += Quadrics(target, ws.s.normal) * (ws.s.weight * ws.area);
     }
 
     const Vector3d p_optimal = q.solve(p_laplace, m_offset_params.quadrics_svd_threshold);
@@ -307,10 +363,33 @@ bool TopoOffsetTetMesh::smooth_after_offset_surface(const Tuple& t)
     const Vector3d p_final = p_blend;
 
     const double frac = move_to(p_final);
-    if (frac < 0.) {
-        // p0 itself inverts a tet, so no fraction of the move is legal and the vertex is stuck
-        // where it is. Not a rejection here -- invariants(), below, is what rolls it back.
+
+    // A SEARCH THAT FINDS NO LEGAL STEP IS A REJECTION, not a zero-length success. This follows
+    // the reference implementation (internal/OffsetOptimization.cpp, the smoothing lambda),
+    // which backs the move off geometrically (u = 1/2, 1/4, ... 1/1024), accepts the first
+    // fraction that clears the inversion invariant, and if all ten fail restores p0 and returns
+    // FALSE -- "Vertex position is not optimal but it cannot be moved either".
+    //
+    // Note what this does and does not change. A PARTIAL fraction is still accepted, exactly as
+    // the reference accepts its backed-off u; only a search that reaches nothing at all is
+    // refused. What it ends is reporting a vertex the search could not move as an accepted
+    // smooth: this returned true unconditionally, so offset_accepted counted vertices that had
+    // received none of their correction, and record() folded their unchanged error into the
+    // "err over moved verts" averages of vertices that had in fact not moved.
+    //
+    // move_to() has already restored p0 in both failing cases -- it ends by setting
+    // p0 + lo*(target - p0) with lo == 0 -- so there is nothing to undo here.
+    //
+    // 2D DIFFERS: project_offset_vertex() accepts its clamped result and returns success, which
+    // is why .claude/CLAUDE.md tells the reader to watch the `smooth moves:` line rather than
+    // the rejection counts to spot a fully-blocked offset. In 3D the rejection counts now carry
+    // it directly. This is a deliberate divergence, adopted on the reference's authority rather
+    // than forced by the dimension; the two logs still diff field-for-field.
+    if (frac <= 0.) {
+        // Inversion is the only constraint on this path in 3D, so it is what blocked every
+        // fraction -- whether or not p0 itself is inverted as well (frac < 0).
         ++m_smooth_trace.offset_inverted;
+        return false;
     }
     record(frac);
 
