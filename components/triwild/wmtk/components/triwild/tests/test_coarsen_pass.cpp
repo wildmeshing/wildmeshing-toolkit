@@ -199,7 +199,7 @@ TEST_CASE("triwild-coarsen-removes-what-the-mesh-does-not-need", "[triwild_opera
     mesh.coarsen_mesh();
 
     REQUIRE(mesh.m_coarsen_stats.accepted > 0);
-    REQUIRE(mesh.m_coarsen_stats.faces_after < mesh.m_coarsen_stats.faces_before);
+    REQUIRE(mesh.m_coarsen_stats.cells_after < mesh.m_coarsen_stats.cells_before);
     REQUIRE(mesh.m_coarsen_stats.max_energy_after <= mesh.m_coarsen_stats.max_energy_before);
 }
 
@@ -219,17 +219,25 @@ TEST_CASE("triwild-coarsen-never-raises-max-energy", "[triwild_operation][coarse
 
     mesh.coarsen_mesh();
 
-    REQUIRE(mesh.m_coarsen_stats.faces_before == faces_before);
+    REQUIRE(mesh.m_coarsen_stats.cells_before == faces_before);
     REQUIRE(mesh.m_coarsen_stats.max_energy_before == max_before);
     REQUIRE(mesh.m_coarsen_stats.max_energy_after <= mesh.m_coarsen_stats.max_energy_before);
-    REQUIRE(mesh.m_coarsen_stats.faces_after <= mesh.m_coarsen_stats.faces_before);
+    REQUIRE(mesh.m_coarsen_stats.cells_after <= mesh.m_coarsen_stats.cells_before);
 
     // The stored qualities must still describe the geometry -- a partial rollback would show
-    // up here as a face whose cached quality no longer matches its vertices.
+    // up here as a face whose cached quality belongs to a different configuration entirely.
+    //
+    // Compared to a relative tolerance, NOT exactly. collapse_edge_after stores the value
+    // collapse_edge_before computed from the PREDICTED post-collapse vids, substituting v2 for
+    // v1 in place; recomputing here reads the vids the connectivity actually ended up with,
+    // which may be a rotation of that triple. AMIPS is rotation invariant mathematically but
+    // not bit-for-bit, so an exact comparison here asserts something the code never promised --
+    // and it does fail, rarely, on whichever face happens to differ.
     for (const TriMesh::Tuple& f : mesh.get_faces()) {
         const size_t fid = f.fid(mesh);
-        REQUIRE(
-            mesh.m_face_attribute[fid].m_quality == mesh.get_quality(mesh.oriented_tri_vids(fid)));
+        const double stored = mesh.m_face_attribute[fid].m_quality;
+        const double recomputed = mesh.get_quality(mesh.oriented_tri_vids(fid));
+        REQUIRE(std::abs(stored - recomputed) <= 1e-9 * std::max(1.0, std::abs(recomputed)));
     }
 }
 
@@ -244,5 +252,27 @@ TEST_CASE("triwild-coarsen-pass-off-is-a-no-op", "[triwild_operation][coarsen]")
     const MeshSnapshot before = snapshot(mesh);
     REQUIRE(mesh.coarsen_mesh() == 0);
     REQUIRE(snapshot(mesh) == before);
-    REQUIRE(mesh.m_coarsen_stats.faces_before == 0); // untouched, so the report reads zero
+    REQUIRE(mesh.m_coarsen_stats.cells_before == 0); // untouched, so the report reads zero
+}
+
+TEST_CASE("triwild-coarsen-bounded-stops-at-the-target-length", "[triwild_operation][coarsen]")
+{
+    // The gate the coarsen_unbounded option controls. Every edge of the grid is length 1, so
+    // driving the collapse threshold below that must stop the pass dead -- and lifting it with
+    // coarsen_unbounded must bring the same mesh straight back to coarsening.
+    const auto run = [](bool unbounded, double collapsing_l2) {
+        Parameters params = make_params();
+        params.coarsen_unbounded = unbounded;
+        TriWildMesh mesh(params, params.eps, 0);
+        build_grid(mesh, 8, 8);
+        // init() derived this from the bounding box; override it after the mesh is built so the
+        // threshold, not the geometry, is what differs between the two arms.
+        mesh.m_params.collapsing_l2 = collapsing_l2;
+        mesh.coarsen_mesh();
+        return mesh.m_coarsen_stats.accepted;
+    };
+
+    REQUIRE(run(false, 0.25) == 0); // every edge is at 1.0, well past a 0.5 threshold
+    REQUIRE(run(true, 0.25) > 0); // same mesh, same threshold, gate lifted
+    REQUIRE(run(false, 4.0) > 0); // threshold above the edge length: the gate lets them through
 }

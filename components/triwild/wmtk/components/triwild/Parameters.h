@@ -103,6 +103,7 @@ struct Parameters : public wmtk::OptimizerParameters
 
         // Coarsening pass.
         coarsen_pass = json_params["coarsen_pass"];
+        coarsen_unbounded = json_params["coarsen_unbounded"];
         coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
         coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
         coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];

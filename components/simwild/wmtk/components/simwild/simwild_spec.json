@@ -39,6 +39,7 @@
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
       "coarsen_pass",
+      "coarsen_unbounded",
       "coarsen_local_smoothing_passes",
       "coarsen_smooth_ring",
       "coarsen_global_smoothing_passes",
@@ -629,5 +630,11 @@
     "type": "int",
     "default": 2,
     "doc": "Cap on the coarsen/smooth alternation; the pass also stops as soon as a round accepts no collapse. A round does NOT exist to finish what the previous one started: within a round the collapse pass already runs to a fixed point, so repeating the collapse alone finds nothing. What a round adds is the global smoothing in between, which moves that fixed point -- the dirty-epoch retry only re-offers failures next to a SUCCESSFUL collapse, so a whole-mesh smoothing pass is invisible to it, and a rejected composite is rolled back in full so rejections never accumulate progress within a round. Returns decay fast: measured over the 16 challenging triwild models at five rounds, accepted collapses by round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%. Every round costs a full pre-check sweep over all edges plus a smoothing pass, so the default is two -- they carry 90.5% of the coarsening, and the three that would follow are worth 9.5% for 60% of the pass's budget."
+  },
+  {
+    "pointer": "/coarsen_unbounded",
+    "type": "bool",
+    "default": false,
+    "doc": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and left unbounded that is a much more aggressive question than it sounds -- the answer ignores how big the elements become; measured on tetwild's integration models it takes meshes from 40008 to 3563 cells at unchanged max energy, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. By default the pass therefore leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary. Set this when element count matters more than element size."
   }
 ]

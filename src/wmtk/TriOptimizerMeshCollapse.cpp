@@ -105,6 +105,17 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
 
     cache.edge_length = (VA[v1_id].m_posf - VA[v2_id].m_posf).norm();
 
+    // The coarsening pass stops at the target edge length unless told otherwise. Collapsing
+    // an edge that is already at target only makes its neighbours longer, so this is where
+    // "as few elements as hold the max energy" has to be traded against "elements the size
+    // the user asked for". Deliberately NOT scaled by the sizing field: see
+    // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work.
+    if (m_coarsen_mode && !m_params.coarsen_unbounded) {
+        if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
+            return false;
+        }
+    }
+
     ///check if on bbox/surface/boundary
     if (!collapse_before_vertex(v1_id, v2_id)) {
         return false;
@@ -533,16 +544,16 @@ size_t TriOptimizerMesh::coarsen_mesh()
         }
     }
 
-    m_coarsen_stats.faces_before = faces_before;
-    m_coarsen_stats.faces_after = get_faces().size();
+    m_coarsen_stats.cells_before = faces_before;
+    m_coarsen_stats.cells_after = get_faces().size();
     m_coarsen_stats.accepted = total;
     m_coarsen_stats.max_energy_before = max_before;
     m_coarsen_stats.max_energy_after = std::get<0>(optimization_quality_stats());
     logger().info(
         "coarsening: accepted {} | #F {} -> {} | max energy {:.6} -> {:.6} | time = {:.4}s",
         total,
-        m_coarsen_stats.faces_before,
-        m_coarsen_stats.faces_after,
+        m_coarsen_stats.cells_before,
+        m_coarsen_stats.cells_after,
         m_coarsen_stats.max_energy_before,
         m_coarsen_stats.max_energy_after,
         timer.getElapsedTimeInSec());

@@ -256,8 +256,8 @@ public:
     struct CoarsenStats
     {
         size_t accepted = 0;
-        size_t faces_before = 0;
-        size_t faces_after = 0;
+        size_t cells_before = 0;
+        size_t cells_after = 0;
         double max_energy_before = 0.;
         double max_energy_after = 0.;
     };

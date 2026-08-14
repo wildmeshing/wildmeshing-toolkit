@@ -98,6 +98,7 @@ struct Parameters : public wmtk::OptimizerParameters
         // Coarsening pass. Implemented on the shared 2D optimizer, so it applies to simwild's
         // 2D mesh and is inert on its 3D one.
         coarsen_pass = json_params["coarsen_pass"];
+        coarsen_unbounded = json_params["coarsen_unbounded"];
         coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
         coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
         coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];

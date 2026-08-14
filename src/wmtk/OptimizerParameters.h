@@ -182,6 +182,28 @@ struct OptimizerParameters
      * outside that region is untouched, "no worse locally" is exactly "no worse globally".
      */
     bool coarsen_pass = true;
+    /**
+     * Coarsen as far as the quality guarantee allows, instead of stopping at the target edge
+     * length.
+     *
+     * The pass answers "how few elements can hold this max energy", and left unbounded that is
+     * a much more aggressive question than it sounds -- the answer ignores how big the elements
+     * become. Measured on tetwild's integration models it takes meshes from 40008 to 3563 cells
+     * at unchanged max energy, because a converged mesh is sized by `l` and the adaptive sizing
+     * field, not by what the quality target strictly requires, and all of that slack is
+     * available once nothing bounds the element size.
+     *
+     * So by default the pass stops at the target edge length: an edge already at or past
+     * `collapsing_l2` (0.8 * l, the same threshold the ordinary collapse uses) is left alone,
+     * because collapsing it only makes its neighbours longer still. The sizing FIELD is
+     * deliberately not applied -- that is a local refinement request driven by the optimizer's
+     * own history, and honouring it here would leave the pass unable to undo refinement that
+     * turned out to be unnecessary. The target length is the user's stated intent; the sizing
+     * field is the optimizer's scratch work.
+     *
+     * Set this when element count matters more than element size.
+     */
+    bool coarsen_unbounded = false;
     /// Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
     int coarsen_local_smoothing_passes = 2;
     /// Radius smoothed inside the collapse. The lock claims one more ring than this, because
