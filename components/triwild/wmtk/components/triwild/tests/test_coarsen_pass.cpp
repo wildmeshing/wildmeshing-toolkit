@@ -276,3 +276,80 @@ TEST_CASE("triwild-coarsen-bounded-stops-at-the-target-length", "[triwild_operat
     REQUIRE(run(true, 0.25) > 0); // same mesh, same threshold, gate lifted
     REQUIRE(run(false, 4.0) > 0); // threshold above the edge length: the gate lets them through
 }
+
+namespace {
+
+/**
+ * @brief TriWild with a per-face quality target, standing in for SimWild's quality_field.
+ *
+ * TriWild's own target is uniform, so raw and relative quality order its faces identically and
+ * nothing in the shared code can tell them apart. SimWild's is per tag, and that is where they
+ * come apart -- so the seam needs a mesh whose target actually varies to be tested at all.
+ */
+class TargetedTriWildMesh : public TriWildMesh
+{
+public:
+    using TriWildMesh::TriWildMesh;
+
+    std::vector<double> m_target;
+
+    double quality_rel(const size_t fid) const override
+    {
+        return m_face_attribute.at(fid).m_quality / m_target.at(fid);
+    }
+};
+
+} // namespace
+
+TEST_CASE("triwild-coarsen-judges-on-the-per-face-target", "[triwild_operation][coarsen]")
+{
+    // The coarsening accept test compares one face's quality against another's, which is only
+    // meaningful once both are expressed relative to what each face is required to reach. This
+    // pins that it goes through quality_rel rather than reading the raw quality directly.
+    //
+    // Same lattice and same edge as the rejection test above, so the geometry is already known
+    // to produce faces worse than the ones it replaces -- raw, this collapse is refused.
+    const auto build = [](TargetedTriWildMesh& mesh) {
+        build_lattice(mesh, 6, 6);
+        const auto vid = [](size_t i, size_t j) { return j * 7 + i; };
+        REQUIRE(mesh.get_one_ring_fids_for_vertex(vid(3, 3)).size() == 6);
+        REQUIRE(mesh.get_one_ring_fids_for_vertex(vid(4, 3)).size() == 6);
+        return std::get<0>(mesh.tuple_from_edge({{vid(3, 3), vid(4, 3)}}));
+    };
+
+    Parameters params = make_params();
+    params.coarsen_local_smoothing_passes = 0; // the collapse is the only thing writing quality
+
+    // Arm 1: uniform target. Every face is at the AMIPS optimum, so whatever the collapse
+    // produces is worse, and the pass refuses it -- exactly as it does without any target at all.
+    {
+        TargetedTriWildMesh mesh(params, params.eps, 0);
+        const TriMesh::Tuple edge = build(mesh);
+        mesh.m_target.assign(mesh.tri_capacity(), 1.0);
+
+        std::vector<TriMesh::Tuple> new_tris;
+        REQUIRE_FALSE(mesh.coarsen_collapse_edge(edge, new_tris));
+    }
+
+    // Arm 2: the same collapse, accepted -- because the faces it degrades are the ones allowed
+    // to be bad, and the region's worst RELATIVE face is one the collapse never touches. Read
+    // raw, this is the shielding that makes the unfixed comparison unsound: the worst raw face
+    // rises and the test still has to notice. Read relative, the ceiling belongs to a face that
+    // did not move, so the collapse is genuinely free and taking it is correct.
+    {
+        TargetedTriWildMesh mesh(params, params.eps, 0);
+        const TriMesh::Tuple edge = build(mesh);
+        const auto vid = [](size_t i, size_t j) { return j * 7 + i; };
+
+        const double q0 = mesh.m_face_attribute[0].m_quality; // uniform on an equilateral lattice
+        mesh.m_target.assign(mesh.tri_capacity(), q0 / 10.); // untouched faces sit at rel 10
+        for (const size_t endpoint : {vid(3, 3), vid(4, 3)}) {
+            for (const size_t fid : mesh.get_one_ring_fids_for_vertex(endpoint)) {
+                mesh.m_target[fid] = 100. * q0; // whatever the collapse does here stays under 1
+            }
+        }
+
+        std::vector<TriMesh::Tuple> new_tris;
+        REQUIRE(mesh.coarsen_collapse_edge(edge, new_tris));
+    }
+}

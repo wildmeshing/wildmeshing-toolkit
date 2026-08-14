@@ -297,6 +297,24 @@ public:
     virtual std::vector<size_t> active_vertices() const;
 
     /**
+     * @brief A face's quality relative to the quality it is required to reach; <= 1 means it
+     * meets it.
+     *
+     * The only quality that is comparable ACROSS faces. Raw m_quality is not, once an
+     * application gives different regions different targets: the loose region's raw ceiling
+     * then hides degradation in the strict one, because a strict face may get much worse and
+     * still sit below a number set somewhere it has nothing to do with. Shared code that
+     * compares one face's quality against another's must go through here.
+     *
+     * TriWild's target is uniform, so this is the raw quality over a constant -- which cancels
+     * out of any before/after comparison and leaves its behaviour unchanged.
+     */
+    virtual double quality_rel(const size_t fid) const
+    {
+        return m_face_attribute.at(fid).m_quality / m_params.stop_energy;
+    }
+
+    /**
      * @brief Round a vertex position to floating point, if that inverts no incident face.
      * @return True if successful or already rounded, false otherwise.
      */
@@ -423,9 +441,9 @@ protected:
         std::vector<std::array<size_t, 2>> surface_edges;
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
-        /// Coarsening pass only: the worst quality in the region the composite may disturb,
-        /// measured before the collapse. See collapse_edge_after.
-        double region_max_before = 0.;
+        /// Coarsening pass only: the worst relative quality in the region the composite may
+        /// disturb, measured before the collapse. See collapse_edge_after.
+        double region_max_rel_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -466,8 +484,9 @@ private:
     const std::vector<size_t>&
     collect_vertex_ball(const size_t* seeds, size_t n_seeds, int n, CoarsenScratch& scr) const;
 
-    /// Worst face quality over the faces incident to any vertex of @p vids.
-    double region_max_quality(const std::vector<size_t>& vids) const;
+    /// Worst relative quality (quality_rel) over the faces incident to any vertex of
+    /// @p vids.
+    double region_max_quality_rel(const std::vector<size_t>& vids) const;
 
     /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
     bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);

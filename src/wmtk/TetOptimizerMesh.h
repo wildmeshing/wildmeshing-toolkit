@@ -15,6 +15,7 @@
 #include <igl/Timer.h>
 
 #include <atomic>
+#include <cmath>
 #include <functional>
 #include <map>
 #include <memory>
@@ -179,6 +180,27 @@ public:
      */
     virtual double cell_quality(const size_t tid) const = 0;
     virtual void set_cell_quality(const size_t tid, const double q) = 0;
+
+    /**
+     * @brief A cell's quality relative to the quality it is required to reach; <= 1 means it
+     * meets it.
+     *
+     * The only quality that is comparable ACROSS cells. Raw cell_quality is not, once an
+     * application gives different regions different targets: the loose region's raw ceiling
+     * then hides degradation in the strict one, because a strict cell may get much worse and
+     * still sit below a number set somewhere it has nothing to do with. Shared code that
+     * compares one cell's quality against another's must go through here.
+     *
+     * The cube root is because cell_quality stores AMIPS^3, so that this means the same thing
+     * as its 2D twin: AMIPS relative to target, not AMIPS^3 relative to target. TetWild's
+     * target is uniform, so this is a monotone function of the raw quality divided by a
+     * constant -- neither of which can change the outcome of a before/after comparison, so its
+     * behaviour is unchanged.
+     */
+    virtual double quality_rel(const size_t tid) const
+    {
+        return std::cbrt(cell_quality(tid)) / m_params.stop_energy;
+    }
 
     // TODO This should not be here but inside wmtk
     void compute_vertex_partition();
@@ -496,9 +518,9 @@ protected:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
-        /// Coarsening pass only: the worst quality in the region the composite may disturb,
-        /// measured before the collapse. See collapse_edge_after.
-        double region_max_before = 0.;
+        /// Coarsening pass only: the worst relative quality in the region the composite may
+        /// disturb, measured before the collapse. See collapse_edge_after.
+        double region_max_rel_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
 
@@ -531,8 +553,9 @@ private:
     const std::vector<size_t>&
     collect_vertex_ball(const size_t* seeds, size_t n_seeds, int n, CoarsenScratch& scr) const;
 
-    /// Worst cell quality over the cells incident to any vertex of @p vids.
-    double region_max_quality(const std::vector<size_t>& vids) const;
+    /// Worst relative quality (quality_rel) over the cells incident to any vertex of
+    /// @p vids.
+    double region_max_quality_rel(const std::vector<size_t>& vids) const;
 
     /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
     bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);

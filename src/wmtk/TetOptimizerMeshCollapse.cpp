@@ -329,8 +329,8 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     if (m_coarsen_mode) {
         const size_t seeds[2] = {v1_id, v2_id};
         auto& scr = coarsen_scratch.local();
-        cache.region_max_before =
-            region_max_quality(collect_vertex_ball(seeds, 2, m_params.coarsen_smooth_ring, scr));
+        cache.region_max_rel_before = region_max_quality_rel(
+            collect_vertex_ball(seeds, 2, m_params.coarsen_smooth_ring, scr));
     }
 
     return true;
@@ -457,8 +457,10 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
 
     // Keep it only if the worst element in the region this operation could have disturbed is
     // no worse than before. Nothing outside that region was touched, so this local test is
-    // exactly the global one: max energy cannot have risen.
-    return region_max_quality(scr.ring) <= cache.region_max_before;
+    // exactly the global one: max energy cannot have risen. Measured relative to each cell's
+    // own target -- see quality_rel for why a raw comparison would not hold when an
+    // application gives different regions different targets.
+    return region_max_quality_rel(scr.ring) <= cache.region_max_rel_before;
 }
 
 const std::vector<size_t>& TetOptimizerMesh::collect_vertex_ball(
@@ -522,12 +524,12 @@ const std::vector<size_t>& TetOptimizerMesh::collect_vertex_ball(
     return scr.ring;
 }
 
-double TetOptimizerMesh::region_max_quality(const std::vector<size_t>& vids) const
+double TetOptimizerMesh::region_max_quality_rel(const std::vector<size_t>& vids) const
 {
     double worst = 0.;
     for (const size_t vid : vids) {
         for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-            worst = std::max(worst, cell_quality(tid));
+            worst = std::max(worst, quality_rel(tid));
         }
     }
     return worst;
