@@ -1142,43 +1142,210 @@ bool TetMesh::try_set_face_mutex_n_ring(size_t v1, size_t v2, size_t v3, int thr
     return lock_vertex_ball(seeds, 3, threadid, n, mutex_release_stack.local().size());
 }
 
+// Not balls: these skip expanding through a vertex the thread already owns, so they claim
+// materially less than their names suggest. That is deliberate and load-bearing -- see the
+// "Ring lockers -- NOT balls" note on their declarations in TetMesh.h, which carries the
+// reasoning and the measurement. lock_vertex_ball above is the honest version, for callers
+// that ask for a radius explicitly.
+
 bool TetMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
-    return try_set_vertex_mutex_n_ring(v, threadid, 2);
+    auto& stack = mutex_release_stack.local();
+    for (auto v_one_ring : get_one_ring_vertices_for_vertex(v)) {
+        if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) continue;
+        if (try_set_vertex_mutex(v_one_ring, threadid)) {
+            stack.push_back(v_one_ring.vid(*this));
+            for (auto v_two_ring : get_one_ring_vertices_for_vertex(v_one_ring)) {
+                if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) continue;
+                if (try_set_vertex_mutex(v_two_ring, threadid)) {
+                    stack.push_back(v_two_ring.vid(*this));
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool TetMesh::try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid)
 {
-    return try_set_vertex_mutex_n_ring(v.vid(*this), threadid, 2);
+    auto& cache = get_one_ring_cache.local();
+    auto& stack = mutex_release_stack.local();
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), cache)) {
+        if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
+        if (try_set_vertex_mutex(v_one_ring, threadid)) {
+            {
+                stack.push_back(v_one_ring);
+            }
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring, cache)) {
+                if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
+                if (try_set_vertex_mutex(v_two_ring, threadid)) {
+                    stack.push_back(v_two_ring);
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool TetMesh::try_set_vertex_mutex_two_ring_vid(size_t v, int threadid)
 {
-    return try_set_vertex_mutex_n_ring(v, threadid, 2);
+    auto& cache = get_one_ring_cache.local();
+    auto& stack = mutex_release_stack.local();
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v, cache)) {
+        if (m_vertex_mutex[v_one_ring].get_owner() == threadid) continue;
+        if (try_set_vertex_mutex(v_one_ring, threadid)) {
+            stack.push_back(v_one_ring);
+            for (auto v_two_ring : get_one_ring_vids_for_vertex(v_one_ring, cache)) {
+                if (m_vertex_mutex[v_two_ring].get_owner() == threadid) continue;
+                if (try_set_vertex_mutex(v_two_ring, threadid)) {
+                    stack.push_back(v_two_ring);
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
 }
+
 
 bool TetMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 {
-    return try_set_edge_mutex_n_ring(e, threadid, 2);
+    const Tuple& v1 = e;
+    auto& stack = mutex_release_stack.local();
+
+    stack.reserve(128);
+
+    // try v1
+    auto acquire_lock = [&]() {
+        if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
+            if (try_set_vertex_mutex(v1, threadid)) {
+                stack.push_back(v1.vid(*this));
+            } else {
+                return false;
+            }
+        }
+        if (!v1.is_valid(*this)) {
+            return false;
+        }
+
+        // try v2
+        Tuple v2 = switch_vertex(v1);
+        if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
+            if (try_set_vertex_mutex(v2, threadid)) {
+                stack.push_back(v2.vid(*this));
+            } else {
+                return false;
+            }
+        }
+        if (!v2.is_valid(*this)) {
+            return false;
+        }
+
+        // try v1 two ring
+        return (
+            try_set_vertex_mutex_two_ring_vid(v1, threadid) &&
+            try_set_vertex_mutex_two_ring_vid(v2, threadid));
+    };
+
+    if (!acquire_lock()) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+    return true;
 }
 
 bool TetMesh::try_set_face_mutex_two_ring(const Tuple& f, int threadid)
 {
-    const size_t mark = mutex_release_stack.local().size();
+    Tuple v1 = f;
+    bool release_flag = false;
+    auto& stack = mutex_release_stack.local();
 
-    // v2 and v3 are read off the incident tet, so claim v1 and re-check the face first.
-    const size_t v1 = f.vid(*this);
-    if (!try_set_vertex_mutex_n_ring(v1, threadid, 0) || !f.is_valid(*this)) {
-        release_vertex_mutex_to(mark);
+
+    // try v1
+    if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v1, threadid)) {
+            stack.push_back(v1.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v1.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
         return false;
     }
 
-    const Tuple t2 = switch_vertex(f);
-    const size_t seeds[3] = {
-        v1,
-        t2.vid(*this),
-        t2.switch_edge(*this).switch_vertex(*this).vid(*this)};
-    return lock_vertex_ball(seeds, 3, threadid, 2, mark);
+    // try v2
+    Tuple v2 = switch_vertex(f);
+    if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v2, threadid)) {
+            stack.push_back(v2.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v2.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v3
+    Tuple v3 = switch_edge(v2).switch_vertex(*this);
+    if (m_vertex_mutex[v3.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v3, threadid)) {
+            stack.push_back(v3.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v3.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v1 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v1, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v2 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v2, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v3 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v3, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+    return true;
 }
 
 bool TetMesh::try_set_face_mutex_two_ring(
@@ -1187,17 +1354,144 @@ bool TetMesh::try_set_face_mutex_two_ring(
     const Tuple& v3,
     int threadid)
 {
-    return try_set_face_mutex_n_ring(v1.vid(*this), v2.vid(*this), v3.vid(*this), threadid, 2);
+    bool release_flag = false;
+    auto& stack = mutex_release_stack.local();
+
+    // try v1
+    if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v1, threadid)) {
+            stack.push_back(v1.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v1.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v2
+    // if (!vector_contains(stack, v2.vid(*this))) {
+    if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v2, threadid)) {
+            stack.push_back(v2.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v2.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v3
+    if (m_vertex_mutex[v3.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v3, threadid)) {
+            stack.push_back(v3.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v3.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v1 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v1, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v2 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v2, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v3 two ring
+    release_flag = !try_set_vertex_mutex_two_ring_vid(v3, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+    return true;
 }
 
 bool TetMesh::try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid)
 {
-    return try_set_face_mutex_n_ring(v1, v2, v3, threadid, 2);
+    bool release_flag = false;
+    auto& stack = mutex_release_stack.local();
+
+    auto try_all = [&]() {
+        for (auto vv : {v1, v2, v3}) {
+            if (m_vertex_mutex[vv].get_owner() != threadid) {
+                if (try_set_vertex_mutex(vv, threadid)) {
+                    stack.push_back(vv);
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        for (auto vv : {v1, v2, v3}) {
+            if (try_set_vertex_mutex_two_ring_vid(vv, threadid) == false) {
+                return false;
+            };
+        }
+        return true;
+    };
+
+
+    if (try_all() == false) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    return true;
 }
 
 bool TetMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 {
-    return try_set_vertex_mutex_n_ring(v, threadid, 1);
+    auto& stack = mutex_release_stack.local();
+    auto& cache = get_one_ring_cache.local();
+    // Claiming the seed and claiming its ring are separate steps. They used to be nested, so a
+    // caller that already held the seed got `true` back having claimed NOTHING -- the whole
+    // ring skipped, reported as success. Unreachable through the executor, which always calls
+    // this with an empty release stack, but it is a trap for anything that composes lock
+    // acquisitions, and the fix is inert until something does.
+    if (m_vertex_mutex[v.vid(*this)].get_owner() != threadid) {
+        if (!try_set_vertex_mutex(v, threadid)) {
+            release_vertex_mutex_in_stack();
+            return false;
+        }
+        stack.push_back(v.vid(*this));
+    }
+    for (auto v_one_ring : get_one_ring_vids_for_vertex(v.vid(*this), cache)) {
+        if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
+            if (try_set_vertex_mutex(v_one_ring, threadid)) {
+                stack.push_back(v_one_ring);
+            } else {
+                release_vertex_mutex_in_stack();
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 void TetMesh::for_each_edge(const std::function<void(const TetMesh::Tuple&)>& func)

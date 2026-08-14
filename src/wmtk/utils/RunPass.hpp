@@ -27,6 +27,14 @@ enum class PassLock {
  * Two rings for a topology change (it rewrites the one-ring and reads the ring beyond), one
  * for smoothing (it moves one vertex and reads its one-ring). An operation that does more
  * than that -- one that also re-smooths a k-ring, say -- has to ask for more.
+ *
+ * @warning At this radius, and ONLY at this radius, `make_locker` routes to the mesh's named
+ * `try_set_*_two_ring` / `_one_ring` helper rather than to `try_set_*_n_ring`. Those two are
+ * not the same set: the named two-ring helpers skip expanding through a vertex the thread
+ * already owns, so they claim materially less than the ball. That is load-bearing for
+ * performance -- the complete ball costs +80% wall clock on the challenging tetwild set at 16
+ * threads -- and the special case exists to preserve it. See the "Ring lockers -- NOT balls"
+ * note in TetMesh.h / TriMesh.h. Anything that needs a real ball must pass an explicit radius.
  */
 constexpr int default_ring(PassLock lock)
 {

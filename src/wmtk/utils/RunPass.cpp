@@ -11,16 +11,27 @@ template <class Mesh>
 std::function<bool(Mesh&, const typename Mesh::Tuple&, int)> make_locker(PassLock lock, int ring)
 {
     using Tuple = typename Mesh::Tuple;
+
+    // At the default radius, go through the named helper rather than the generic ball. The
+    // two are the same set in 2D -- TriMesh's helpers delegate -- but deliberately are NOT in
+    // 3D, where the hand-written form under-claims and the honest ball costs +80% wall clock
+    // on the challenging tetwild set. See the note above TetMesh::try_set_vertex_mutex_two_ring.
+    const bool at_default = ring == default_ring(lock);
+
     switch (lock) {
     case PassLock::VertexRing:
+        if (at_default) {
+            return [](Mesh& m, const Tuple& e, int task_id) {
+                return m.try_set_vertex_mutex_one_ring(e, task_id);
+            };
+        }
         return [ring](Mesh& m, const Tuple& e, int task_id) {
             return m.try_set_vertex_mutex_n_ring(e, task_id, ring);
         };
     case PassLock::FaceRing:
         if constexpr (std::is_base_of<TetMesh, Mesh>::value) {
-            // The face variant seeds from three vertices and only exists in 3D, so it keeps
-            // its own entry point rather than going through try_set_edge_mutex_n_ring.
-            if (ring != default_ring(PassLock::FaceRing)) {
+            // The face variant seeds from three vertices and only exists in 3D.
+            if (!at_default) {
                 log_and_throw_error("PassLock::FaceRing supports only its default radius");
             }
             return [](Mesh& m, const Tuple& e, int task_id) {
@@ -30,6 +41,11 @@ std::function<bool(Mesh&, const typename Mesh::Tuple&, int)> make_locker(PassLoc
             log_and_throw_error("PassLock::FaceRing is only meaningful on a tet mesh");
         }
     case PassLock::EdgeRing: break;
+    }
+    if (at_default) {
+        return [](Mesh& m, const Tuple& e, int task_id) {
+            return m.try_set_edge_mutex_two_ring(e, task_id);
+        };
     }
     return [ring](Mesh& m, const Tuple& e, int task_id) {
         return m.try_set_edge_mutex_n_ring(e, task_id, ring);

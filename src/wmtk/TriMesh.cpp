@@ -2633,19 +2633,122 @@ bool TriMesh::try_set_edge_mutex_n_ring(const Tuple& e, int threadid, int n)
     return lock_vertex_ball(seeds, 2, threadid, n, mark);
 }
 
+// Not balls: these skip expanding through a vertex the thread already owns, so they claim
+// materially less than their names suggest. That is deliberate and load-bearing -- see the
+// "Ring lockers -- NOT balls" note on their declarations in TriMesh.h, which carries the
+// reasoning and the measurement. lock_vertex_ball above is the honest version, for callers
+// that ask for a radius explicitly.
+
 bool TriMesh::try_set_vertex_mutex_two_ring(const Tuple& v, int threadid)
 {
-    return try_set_vertex_mutex_n_ring(v, threadid, 2);
+    for (const Tuple& v_one_ring : get_one_ring_edges_for_vertex(v)) {
+        if (m_vertex_mutex[v_one_ring.vid(*this)].get_owner() == threadid) {
+            continue;
+        }
+        if (try_set_vertex_mutex(v_one_ring, threadid)) {
+            mutex_release_stack.local().push_back(v_one_ring.vid(*this));
+            for (const Tuple& v_two_ring : get_one_ring_edges_for_vertex(v_one_ring)) {
+                if (m_vertex_mutex[v_two_ring.vid(*this)].get_owner() == threadid) {
+                    continue;
+                }
+                if (try_set_vertex_mutex(v_two_ring, threadid)) {
+                    mutex_release_stack.local().push_back(v_two_ring.vid(*this));
+                } else {
+                    return false;
+                }
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool TriMesh::try_set_edge_mutex_two_ring(const Tuple& e, int threadid)
 {
-    return try_set_edge_mutex_n_ring(e, threadid, 2);
+    Tuple v1 = e;
+    bool release_flag = false;
+
+    // try v1
+    if (m_vertex_mutex[v1.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v1, threadid)) {
+            mutex_release_stack.local().push_back(v1.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+
+    if (!v1.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v2
+    Tuple v2 = switch_vertex(e);
+    if (m_vertex_mutex[v2.vid(*this)].get_owner() != threadid) {
+        if (try_set_vertex_mutex(v2, threadid)) {
+            mutex_release_stack.local().push_back(v2.vid(*this));
+        } else {
+            release_flag = true;
+        }
+    }
+    if (!v2.is_valid(*this)) {
+        release_flag = true;
+    }
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v1 two ring
+    release_flag = !try_set_vertex_mutex_two_ring(v1, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    // try v2 two ring
+    release_flag = !try_set_vertex_mutex_two_ring(v2, threadid);
+
+    if (release_flag) {
+        release_vertex_mutex_in_stack();
+        return false;
+    }
+
+    return true;
 }
 
 bool wmtk::TriMesh::try_set_vertex_mutex_one_ring(const Tuple& v, int threadid)
 {
-    return try_set_vertex_mutex_n_ring(v, threadid, 1);
+    auto& stack = mutex_release_stack.local();
+    auto vid = v.vid(*this);
+    // Claiming the seed and claiming its ring are separate steps. They used to be nested, so a
+    // caller that already held the seed got `true` back having claimed NOTHING -- the whole
+    // ring skipped, reported as success. Unreachable through the executor, which always calls
+    // this with an empty release stack, but it is a trap for anything that composes lock
+    // acquisitions, and the fix is inert until something does.
+    if (m_vertex_mutex[vid].get_owner() != threadid) {
+        if (!try_set_vertex_mutex(v, threadid)) {
+            release_vertex_mutex_in_stack();
+            return false;
+        }
+        stack.push_back(vid);
+    }
+    for (auto v_one_ring : get_one_ring_vids_for_vertex_duplicate(vid)) {
+        if (m_vertex_mutex[v_one_ring].get_owner() != threadid) {
+            if (try_set_vertex_mutex(v_one_ring, threadid)) {
+                stack.push_back(v_one_ring);
+            } else {
+                release_vertex_mutex_in_stack();
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool TriMesh::try_set_face_mutex_one_ring(const Tuple& f, int threadid)

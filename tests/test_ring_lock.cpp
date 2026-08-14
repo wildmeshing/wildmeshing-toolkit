@@ -137,6 +137,38 @@ TEST_CASE("ring_lock_failure_unwinds_to_its_own_watermark", "[threading][lock]")
     m.release_vertex_mutex_in_stack();
 }
 
+TEST_CASE("named_two_ring_helpers_are_not_balls", "[threading][lock]")
+{
+    // Pins the difference the "Ring lockers -- NOT balls" note in TriMesh.h / TetMesh.h
+    // describes, so that swapping the named helpers onto lock_vertex_ball fails here rather
+    // than silently costing +80% wall clock on the challenging tetwild set.
+    //
+    // Two facts, both load-bearing:
+    //   1. the named helper claims a STRICT SUBSET of the ball -- it skips expanding through a
+    //      vertex the thread already owns, and v2 is owned before v1's ring is walked;
+    //   2. it nevertheless claims the complete ONE-ring of the edge, which is the operation's
+    //      write set and the reason the shortfall in the second ring is not a race.
+    TriMesh m;
+    make_grid(m, 8, 8);
+    const TriMesh::Tuple e = m.tuple_from_edge(60, 0);
+    const size_t v1 = e.vid(m);
+    const size_t v2 = e.switch_vertex(m).vid(m);
+
+    REQUIRE(m.try_set_edge_mutex_two_ring(e, 0));
+    const std::set<size_t> named = locked_set(m);
+    m.release_vertex_mutex_in_stack();
+
+    REQUIRE(m.try_set_edge_mutex_n_ring(e, 0, 2));
+    const std::set<size_t> ball = locked_set(m);
+    m.release_vertex_mutex_in_stack();
+
+    REQUIRE(std::includes(ball.begin(), ball.end(), named.begin(), named.end()));
+    REQUIRE(named.size() < ball.size());
+
+    const std::set<size_t> one_ring = reference_ball(m, {v1, v2}, 1);
+    REQUIRE(std::includes(named.begin(), named.end(), one_ring.begin(), one_ring.end()));
+}
+
 TEST_CASE("ring_lock_zero_claims_only_the_seed", "[threading][lock]")
 {
     TriMesh m;

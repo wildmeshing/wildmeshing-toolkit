@@ -1362,7 +1362,7 @@ public:
     /**
      * @brief Lock every vertex within graph distance @p n of @p v, the seed included.
      *
-     * A breadth-first ball, expanded only through vertices this thread holds, so every
+     * A true breadth-first ball, expanded only through vertices this thread holds, so every
      * connectivity read is made under a lock. On failure it releases exactly what it took and
      * returns false; the caller must not assume anything about the mesh afterwards.
      *
@@ -1370,6 +1370,10 @@ public:
      * ball is the caller's job: an operation must claim every vertex it READS as well as
      * every vertex it writes, which for an operation that also re-smooths a k-ring means k+1
      * (smoothing a vertex reads its one-ring and writes the quality of its incident cells).
+     *
+     * @warning This is NOT a drop-in replacement for the *_two_ring / *_one_ring helpers
+     * below, which claim a strictly smaller set. Read the note on them before "simplifying"
+     * one into the other -- in 3D it has a very large, measured cost.
      */
     bool try_set_vertex_mutex_n_ring(const Tuple& v, int threadid, int n);
     bool try_set_vertex_mutex_n_ring(size_t vid, int threadid, int n);
@@ -1382,86 +1386,66 @@ public:
      */
     bool try_set_face_mutex_n_ring(size_t v1, size_t v2, size_t v3, int threadid, int n);
 
-    // helpers
     /**
-     * @brief try lock the two-ring neighboring traingles' incident vertices
+     * @name Ring lockers -- NOT balls
      *
-     * @param v Tuple refers to the vertex
-     * @param threadid
-     * @return true if all locked successfully
+     * The helpers below are the ones every pass actually uses, and **none of the two-ring
+     * ones claims the ball its name suggests**. Each walks the ring with
+     *
+     *     if (m_vertex_mutex[w].get_owner() == threadid) continue;
+     *
+     * and that `continue` skips the EXPANSION as well as the lock. So a vertex this thread
+     * already holds contributes none of its neighbours. In try_set_edge_mutex_two_ring the
+     * effect is systematic rather than incidental: v2 is locked up front, so walking v1's
+     * ring skips straight past it, and by the time v2's ring is walked almost everything in
+     * it is already owned from v1's expansion and is skipped in turn. What comes out is
+     * roughly *2-ring(v1) union N(v2)* -- the vertices at distance 2 from v2 and 3 from v1
+     * are simply not claimed. The face variants compose the same helper three times and
+     * inherit the same shortfall.
+     *
+     * **This is deliberate, and swapping in try_set_vertex_mutex_n_ring is a performance
+     * regression, not a cleanup.** Measured: routing the passes through the complete ball
+     * cost +80% wall clock on the 14 challenging tetwild models at 16 threads (844s -> 1522s),
+     * against -0.4% on the 16 challenging triwild ones. 3D is where it hurts, because a tet
+     * vertex has ~30 neighbours and the honest 2-ring ball is enormous next to what these
+     * claim.
+     *
+     * It is also a coverage-vs-name mismatch rather than a known race. What the operations
+     * rely on is that the whole ONE-ring of the seed simplex is held, and that they do hold:
+     * the outer loops lock every unowned neighbour directly and only skip expanding through
+     * owned ones, so `{v1, v2} u N(v1) u N(v2)` is always claimed. That set is the operation's
+     * entire write set, and two operations interfere only if their one-rings meet -- in which
+     * case they contend on the shared vertex and serialise. The second ring is defensive
+     * margin. No failing case is known for the part that is missing; if you find one, the fix
+     * is to widen the specific pass that needs it via try_set_vertex_mutex_n_ring, not to
+     * widen all of them.
+     *
+     * A caller that genuinely needs a complete ball asks for one explicitly, as the 2D
+     * coarsening pass does: it re-smooths a k-ring, so it writes the k-ring and reads the
+     * (k+1)-ring, well past what a plain collapse claims.
+     * @{
      */
+    /// Lock v's one-ring and, partially, its two-ring. See the note above.
     bool try_set_vertex_mutex_two_ring(const Tuple& v, int threadid);
-    /**
-     * @brief try lock the two-ring neighboring traingles' incident vertices using vids
-     *
-     * @param v Tuple refers to the vertex
-     * @param threadid
-     * @return true if all locked successfully
-     */
+    /// try_set_vertex_mutex_two_ring reached through vids rather than Tuples.
     bool try_set_vertex_mutex_two_ring_vid(const Tuple& v, int threadid);
-    /**
-     * @brief a duplicate of ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid that gets vids
-     using the vid of the input Tuple
-     *
-     * @param v Tuple refers to the vertex
-     * @param threadid
-     * @return true if all locked successfully
-     */
+    /// try_set_vertex_mutex_two_ring reached through vids rather than Tuples.
     bool try_set_vertex_mutex_two_ring_vid(size_t v, int threadid);
-
-    // can be called
-    /**
-     * @brief try lock the two-ring neighboring triangles' incident vertices for the two ends of an
-     * edge
-     *
-     * @param e Tuple refers to the edge
-     * @param threadid
-     * @return true if all locked successfully
-     */
+    /// Lock the edge's one-ring and, partially, its two-ring. See the note above.
     bool try_set_edge_mutex_two_ring(const Tuple& e, int threadid = 0);
-    /**
-     * @brief try lock the two-ring neighboring triangles' incident vertices for the 3 vertices of a
-     * face
-     *
-     * @param f Tuple refers to the face
-     * @param threadid
-     * @return true if all locked successfully
-     */
+    /// Lock the face's one-ring and, partially, its two-ring. See the note above.
     bool try_set_face_mutex_two_ring(const Tuple& f, int threadid = 0);
-    /**
-     * @brief locking the two-ring neighboring triangles' incident vertices given the 3 vertex
-     * Tuples of the face
-     *
-     * @param v1 a Tuple refering to one vertex of the face
-     * @param v2 a Tuple refering to one vertex of the face
-     * @param v3 a Tuple refering to one vertex of the face
-     * @param threadid
-     * @return true if all locked successfully
-     */
+    /// Lock the face's one-ring and, partially, its two-ring. See the note above.
     bool try_set_face_mutex_two_ring(
         const Tuple& v1,
         const Tuple& v2,
         const Tuple& v3,
         int threadid = 0);
-    /**
-     * @brief a duplicate of ConcurrentTetMesh::try_set_face_mutex_two_ring usign the vids of the 3
-     * vertices of a face
-     *
-     * @param v1 the vid of one vertex of the face
-     * @param v2 the vid of one vertex of the face
-     * @param v3 the vid of one vertex of the face
-     * @param threadid
-     * @return true if all locked successfully
-     */
+    /// Lock the face's one-ring and, partially, its two-ring. See the note above.
     bool try_set_face_mutex_two_ring(size_t v1, size_t v2, size_t v3, int threadid = 0);
-    /**
-     * @brief try lock the one-ring neighboring traingles' incident vertices
-     *
-     * @param v Tuple refers to the vertex
-     * @param threadid
-     * @return true if all locked successfully
-     */
+    /// Lock v and its one-ring. Complete, unlike the two-ring family.
     bool try_set_vertex_mutex_one_ring(const Tuple& v, int threadid = 0);
+    /** @} */
 
 public:
     /**
