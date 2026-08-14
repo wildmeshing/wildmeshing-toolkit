@@ -6,7 +6,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
-#include <wmtk/threading/spin_mutex.hpp>
+#include <wmtk/threading/vertex_mutex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
@@ -971,26 +971,9 @@ public:
     // Moved code from concurrent TriMesh
 
 public:
-    class VertexMutex
-    {
-        wmtk::threading::spin_mutex mutex;
-        int owner = std::numeric_limits<int>::max();
-
-    public:
-        bool trylock() { return mutex.try_lock(); }
-
-        void unlock()
-        {
-            reset_owner();
-            mutex.unlock();
-        }
-
-        int get_owner() { return owner; }
-
-        void set_owner(int n) { owner = n; }
-
-        void reset_owner() { owner = std::numeric_limits<int>::max(); }
-    };
+    /// @see wmtk::threading::VertexMutex. Aliased rather than nested so TriMesh and TetMesh
+    /// cannot drift apart again -- they already had.
+    using VertexMutex = wmtk::threading::VertexMutex;
 
 private:
     std::vector<VertexMutex> m_vertex_mutex;
