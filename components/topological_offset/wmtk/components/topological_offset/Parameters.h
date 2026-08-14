@@ -187,6 +187,16 @@ struct Parameters : public wmtk::OptimizerParameters
         // changed in wmtk.
         preserve_topology = true;
 
+        // The engine's stall-driven sizing refinement is the offset's PRIMARY refinement
+        // mechanism, not an escape hatch, so it must be on: num_worst defaults to 0 in
+        // OptimizerParameters, which disables it. The values are starting points, not tuned.
+        // force_split is off because the offset's refine_sizing_around_worst() selects worst
+        // VERTICES of the band rather than worst tets, so there is no worst cell whose longest
+        // edge the engine's force-split contract refers to.
+        stuck_refine_num_worst = 100;
+        stuck_refine_rings = 2;
+        stuck_refine_force_split = false;
+
         // Fills diag_l, l/lr and splitting_l2 / collapsing_l2 -- the same 16/9 and 16/25
         // factors this used to spell out itself. It also derives eps from epsr, which the
         // offset never reads: its envelope tolerance is m_envelope_eps, set on the mesh.

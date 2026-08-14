@@ -327,13 +327,22 @@ public:
     void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
 
     /**
-     * @brief The offset's sizing refinement, as the base's stall escape hatch.
+     * @brief The engine's stall-driven sizing refinement, driven by the offset's criterion.
      *
-     * The base fires this when the max energy stops improving; the offset also runs
-     * update_sizing_field() unconditionally once per iteration, since its sizing field is
-     * driven by the shape of the offset triangulation rather than by the optimizer stalling.
+     * mesh_improvement() fires this when optimization_quality_stats()'s max stalls; the
+     * override ratchets the sizing down around the worst-placed band vertices only
+     * (TetWildMesh::refine_sizing_around_worst with distance error in place of AMIPS), and
+     * keeps the paper's 1.5x growth where the surface is flat, in-band and well-shaped.
      */
-    size_t refine_sizing_around_worst(double) override { return update_sizing_field(); }
+    size_t refine_sizing_around_worst(double) override;
+
+    /**
+     * @brief (max, avg) band-vertex distance error over convergence_target; the engine's stop
+     * metric is therefore 1.0. Distance only -- the average-normal-deviation criterion is
+     * tested after the loop.
+     */
+    std::tuple<double, double> optimization_quality_stats() override;
+    double optimization_stop_metric() const override { return 1.; }
 
     /**
      * @brief Which tag the tets a swap creates should carry.
@@ -816,7 +825,6 @@ public:
      * to an unrelated coarse one. Called once per optimize_offset() iteration, after smoothing.
      * @note skeleton: unlike the reference, this doesn't also factor in normal deviation.
      */
-    size_t update_sizing_field();
     //// sizing field
 
     //// swap

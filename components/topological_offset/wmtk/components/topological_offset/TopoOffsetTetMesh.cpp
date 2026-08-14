@@ -856,114 +856,125 @@ TopoOffsetTetMesh::mean_ratio_metric(const Vector3d& p0, const Vector3d& p1, con
     return prefactor * area / sq_length_sum;
 }
 
-size_t TopoOffsetTetMesh::update_sizing_field()
+std::tuple<double, double> TopoOffsetTetMesh::optimization_quality_stats()
 {
-    const std::vector<std::array<size_t, 3>> offset_faces =
-        get_faces_by_condition([](const FaceAttributes& f) {
-            return f.m_is_surface_fs && f.m_surface_class == OFFSET_SURFACE_CLASS;
-        });
+    // The engine's "quality" is the offset's distance criterion: (max, avg) distance error over
+    // the band's outer vertices, normalized so 1.0 is the convergence target. mesh_improvement()
+    // stops when the max drops below optimization_stop_metric() = 1.0, i.e. exactly when the
+    // worst-placed offset vertex enters the target band.
+    //
+    // DISTANCE ONLY -- the criterion's average-normal-deviation half cannot be a max-based stop
+    // and is tested after the loop in optimize_offset(); see the comment there. Kept cheap and
+    // side-effect-light because the engine calls this after every operation pass.
+    const auto [max_dist, avg_dist] = compute_distance_deviation();
+    const double ct = std::max(m_offset_params.convergence_target, 1e-16);
+    return {max_dist / ct, avg_dist / ct};
+}
 
-    std::vector<double> min_mrm(vert_capacity(), std::numeric_limits<double>::max());
-    std::vector<bool> touched(vert_capacity(), false);
-
-    for (const std::array<size_t, 3>& f : offset_faces) {
-        const double mrm = mean_ratio_metric(
-            m_vertex_attribute[f[0]].m_posf,
-            m_vertex_attribute[f[1]].m_posf,
-            m_vertex_attribute[f[2]].m_posf);
-        for (const size_t v : f) {
-            min_mrm[v] = std::min(min_mrm[v], mrm);
-            touched[v] = true;
-        }
-    }
-
-    // Paper Sec. 5.3.3, Step 1:
+size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
+{
+    // THE ENGINE'S STRATEGY, DRIVEN BY THE OFFSET'S CRITERION. mesh_improvement() calls this only
+    // when the metric STALLS, and this refines only around the worst-placed band vertices --
+    // TetWildMesh::refine_sizing_around_worst() with the offset's distance error in place of
+    // AMIPS energy.
     //
-    //   "if one of the incident triangles has a shape regularity below 0.5 or a normal deviation
-    //    above the user-defined maximum sigma_max, we divide the target length by two. If shape
-    //    regularity is [above] 0.5 and the normal deviation is [below] sigma_min, we increase the
-    //    target length by 1.5."
-    //
-    // (The paper's second sentence reads "below 0.5 ... above sigma_min", which contradicts the
-    // first; the only self-consistent reading -- and the only one that does not refine and coarsen
-    // the same vertex -- is the good-and-flat one used here.)
-    //
-    // NORMAL DEVIATION is the driver, and that is the whole point. The previous rule here was
-    // shape-only: refine on a bad mean-ratio metric, otherwise coarsen unconditionally. Nothing
-    // stopped a well-shaped but under-resolved offset surface being coarsened into flat patches,
-    // because a triangle can be perfectly shaped and still span a feature. sigma is what
-    // refinement can actually reduce -- now that face_normal_deviation() is the paper's
-    // field-vs-field quantity rather than misorientation -- so it is what the field is driven by.
-    //
-    // The distance error is kept as an ADDITIONAL refine trigger and an additional veto on
-    // coarsening. The paper does not need it (it re-derives a spatially adapted delta first, so
-    // its offset starts near-correct), but this implementation deliberately skips distance
-    // adaptation, so distance error is the only signal that a patch is misplaced rather than
-    // merely under-resolved. Both conditions only ever make the field finer than the paper's.
-    const double sigma_max = m_offset_params.max_normal_deviation_deg;
-    const double sigma_min = m_offset_params.min_normal_deviation_deg;
-    // l_min is an absolute length; the sizing scalar multiplies m_params.l, so the floor in
-    // scalar terms is l_min / l. This is what stops refinement running away at a feature, where
-    // the field normals disagree no matter how small the triangle gets.
+    // This replaces a per-element rule (halve every offset vertex failing sigma_max or the
+    // distance band, every iteration) whose failure mode was measured on prism: sigma at a
+    // genuine crease exceeds sigma_max at any resolution, so the crease bands ratcheted to the
+    // floor unconditionally, gradation dragged the fine sizing into the surrounding volume, and
+    // iteration 4 reached 2.8M edges. Stall-driven and worst-first, a crease that stops paying
+    // for refinement stops being selected, and the ratchet stops with it.
     const double l = std::max(m_params.l, 1e-16);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    const double ct = std::max(m_offset_params.convergence_target, 1e-16);
 
-    std::vector<size_t> refined; // seeds for gradation: vertices whose sizing was just lowered
-    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
-        if (!touched[vid]) continue;
+    // The band's outer vertices, by the rule compute_distance_deviation() uses.
+    std::vector<bool> on_band(vert_capacity(), false);
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        for (const size_t vid : get_face_vids(f)) on_band[vid] = true;
+    }
 
+    const auto dist_rel = [&](size_t vid) {
         const Vector3d p = m_vertex_attribute[vid].m_posf;
         const double d = (p - m_input_complex_bvh.nearest_point(p)).norm();
-        const double err = std::abs(d - m_offset_params.target_distance) /
-                           std::max(m_offset_params.target_distance, 1e-16);
-        // Refine wherever a vertex sits outside the band the run is trying to reach.
-        // convergence_target_rel is that band, already expressed relative to target_distance, so
-        // it compares like-for-like against `err`.
-        //
-        // 2D compares `err` against sizing_mrm_threshold instead, which is a category error: that
-        // parameter is the MEAN-RATIO METRIC bar -- the paper's "shape regularity below 0.5" -- a
-        // dimensionless shape measure with no relation to a relative distance. At its 0.5 default
-        // a vertex must be 50% of target_distance out of place before it asks for refinement, so
-        // the trigger never fires in any run that is near converging. Ported here verbatim it
-        // stalled geneva_base: splits fell to 0 from iteration 3 and max_dist_err plateaued at
-        // 10.6% of delta with nothing left to drive it down. See the 2D notes in
-        // .claude/CLAUDE.md; the 2D side keeps the old expression until its PR lands.
-        //
-        // The reference implementation (internal/OffsetOptimization.cpp) has no distance trigger
-        // at all -- normal deviation and mean-ratio only -- because it runs distance adaptation
-        // (paper Sec. 5.3.1) first, so its offset starts near-correct. This implementation skips
-        // that step, which is precisely why distance error has to be a signal here. Guarded on
-        // > 0 so a disabled convergence target cannot turn this into refine-everything.
-        const bool dist_bad = m_offset_params.convergence_target_rel > 0. &&
-                              err > m_offset_params.convergence_target_rel;
+        return std::abs(d - m_offset_params.target_distance) / ct;
+    };
 
-        const double sigma = max_offset_surface_normal_deviation_at_vertex(vid);
-        const bool shape_bad = min_mrm[vid] < m_offset_params.sizing_mrm_threshold;
+    // Worst band vertices above the criterion (filter 1.0: a vertex already inside the target
+    // band is never a reason to refine), capped at stuck_refine_num_worst.
+    const auto worst = wmtk::utils::select_worst_cells(
+        vert_capacity(),
+        [&](size_t vid) { return on_band[vid]; },
+        dist_rel,
+        1.0,
+        m_params.stuck_refine_num_worst);
+    if (worst.empty()) {
+        return 0;
+    }
 
-        double& s = m_vertex_attribute[vid].m_sizing_scalar;
-        const double old_s = s;
-        if (shape_bad || sigma > sigma_max || dist_bad) {
-            s *= 0.5;
-        } else if (sigma < sigma_min) {
-            s *= 1.5;
-        } // otherwise between sigma_min and sigma_max: resolved well enough, leave it alone
-        s = std::clamp(s, s_floor, m_offset_params.max_sizing_scalar);
-        if (s < old_s) {
-            refined.push_back(vid);
+    std::vector<size_t> seeds;
+    seeds.reserve(worst.size());
+    for (const auto& [_, vid] : worst) {
+        seeds.push_back(vid);
+    }
+    const auto region = wmtk::utils::grow_vertex_region(
+        seeds,
+        std::max(0, m_params.stuck_refine_rings),
+        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+
+    std::vector<size_t> refined = wmtk::utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        s_floor,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+
+    // GROWTH, kept from the paper (Sec. 5.3.3, Step 1: "if shape regularity is [above] 0.5 and
+    // the normal deviation is [below] sigma_min, we increase the target length by 1.5") and
+    // deliberately NOT part of the engine's monotone-down strategy -- recorded as a decision to
+    // revisit. It now runs on stall rather than every iteration, which is a change of frequency,
+    // not of rule. The guards are the old rule's: grow only where the vertex is inside the
+    // distance band, flat (sigma < sigma_min) and well-shaped, so growth can never fight the
+    // refinement above.
+    {
+        const double sigma_min = m_offset_params.min_normal_deviation_deg;
+        std::vector<double> min_mrm(vert_capacity(), std::numeric_limits<double>::max());
+        for (const Tuple& f : get_faces()) {
+            if (!face_is_offset_surface_live(f)) continue;
+            const auto vs = get_face_vids(f);
+            const double mrm = mean_ratio_metric(
+                m_vertex_attribute[vs[0]].m_posf,
+                m_vertex_attribute[vs[1]].m_posf,
+                m_vertex_attribute[vs[2]].m_posf);
+            for (const size_t v : vs) {
+                min_mrm[v] = std::min(min_mrm[v], mrm);
+            }
+        }
+        for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+            if (!on_band[vid]) continue;
+            if (region.count(vid)) continue; // just refined; growing it back would be a tug-of-war
+            if (dist_rel(vid) > 1.) continue;
+            if (min_mrm[vid] < m_offset_params.sizing_mrm_threshold) continue;
+            if (max_offset_surface_normal_deviation_at_vertex(vid) >= sigma_min) continue;
+            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
+            sc = std::clamp(sc * 1.5, s_floor, m_offset_params.max_sizing_scalar);
         }
     }
 
-    // Gradation: propagate the refinement outward so neighboring sizing scalars never differ
-    // by more than sizing_gradation, matching SimWildMesh::gradation_smooth_sizing(). This is
-    // monotone (only ever lowers a neighbor's scalar), so a vertex that was just coarsened
-    // above can still get pulled back down here if it sits next to a freshly refined one.
     wmtk::utils::gradation_smooth_sizing(
         m_offset_params.sizing_gradation,
         refined,
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
         [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
 
+    logger().info(
+        "[stuck-refine] worst {} band vertices (worst dist {:.4}x target), refined {} of {} "
+        "region vertices",
+        worst.size(),
+        worst.empty() ? 0. : worst.back().first,
+        refined.size(),
+        region.size());
     return refined.size();
 }
 
@@ -1087,10 +1098,34 @@ void TopoOffsetTetMesh::diag_offset_bands(const char* tag) const
         else
             ++above43;
     }
+    // Valence of the band's vertices: the split pass's high-valence gate refuses splits whose
+    // link vertex exceeds split_high_valence_threshold incident tets, so a band that
+    // accumulates valence stops being refinable regardless of what the sizing field asks.
+    std::set<size_t> band_verts;
+    for (const auto& e : edges) {
+        band_verts.insert(e[0]);
+        band_verts.insert(e[1]);
+    }
+    // And over every vertex: the gate tests the LINK of the split edge, so a high-valence
+    // vertex anywhere in the band's halo blocks the band edges it links.
+    size_t gval_max = 0, gval_over = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t val = get_one_ring_tids_for_vertex(v).size();
+        gval_max = std::max(gval_max, val);
+        gval_over += (val > size_t(std::max(0, m_params.split_high_valence_threshold)));
+    }
+    size_t val_max = 0, val_sum = 0, val_over = 0;
+    for (const size_t v : band_verts) {
+        const size_t val = get_one_ring_tids_for_vertex(tuple_from_vertex(v)).size();
+        val_max = std::max(val_max, val);
+        val_sum += val;
+        val_over += (val > size_t(std::max(0, m_params.split_high_valence_threshold)));
+    }
     const size_t n = edges.size();
     logger().info(
         "\t[offset {}] {} faces, {} edges | L/target: <4/5 {} ({:.1f}%), in band {} ({:.1f}%), "
-        ">4/3 {} ({:.1f}%) | mean sizing s {:.4}",
+        ">4/3 {} ({:.1f}%) | mean sizing s {:.4} | band valence max {} mean {:.1f}, {} over "
+        "threshold | global valence max {} ({} over)",
         tag,
         n_faces,
         n,
@@ -1100,7 +1135,12 @@ void TopoOffsetTetMesh::diag_offset_bands(const char* tag) const
         n ? 100. * ok / n : 0.,
         above43,
         n ? 100. * above43 / n : 0.,
-        n ? s_sum / n : 0.);
+        n ? s_sum / n : 0.,
+        val_max,
+        band_verts.empty() ? 0. : double(val_sum) / band_verts.size(),
+        val_over,
+        gval_max,
+        gval_over);
 }
 
 std::pair<double, double> TopoOffsetTetMesh::compute_distance_deviation() const
@@ -1306,149 +1346,97 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    m_converged = false;
-    for (int i = 0; i < m_offset_params.optimization_iterations; ++i) {
-        logger().info(
-            "Optimization iteration {} / {}",
-            i + 1,
-            m_offset_params.optimization_iterations);
+    // THE SHARED ENGINE'S OWN LOOP, driving the offset's convergence criterion. This used to be
+    // a hand-rolled loop: one split/collapse/swap/smooth round per iteration, then halve the
+    // sizing scalar at EVERY offset vertex failing a criterion, every iteration. That
+    // unconditional halving is what made the runtime explode once refinement actually landed --
+    // sigma at a genuine crease exceeds sigma_max at any resolution, so the crease bands
+    // ratcheted to the floor regardless of whether refinement was helping, and gradation dragged
+    // that fine sizing into the surrounding volume at x8 tets per halving (prism: 2.8M edges by
+    // iteration 4).
+    //
+    // mesh_improvement() is the engine's alternative, and the offset plugs into it the same way
+    // simwild does, through three virtuals:
+    //   - optimization_quality_stats(): (max, avg) distance error over the band's outer
+    //     vertices, normalized by convergence_target;
+    //   - optimization_stop_metric(): 1.0 -- the loop stops when the worst vertex is inside the
+    //     target band;
+    //   - refine_sizing_around_worst(): ratchet the sizing down ONLY around the worst-placed
+    //     vertices, and only when the metric STALLS -- see the override for the details.
+    // The engine consolidates every iteration and re-collects the operation queue, which is also
+    // its own answer to the slot-pool exhaustion the previous hand-rolled retry loop existed
+    // for: work dropped in one pass is retried in the next. The [slots] warning still reports
+    // any pass that came up short.
+    //
+    // DISTANCE ONLY drives the loop. The convergence criterion's other half -- AVERAGE normal
+    // deviation -- is an average, and the engine stops on a max, so it cannot be folded into the
+    // per-vertex metric without changing what it means. It is tested after the loop instead: a
+    // run can therefore exit converged-on-distance and still be reported unconverged below.
+    // Deliberate, recorded, and to be revisited once distance convergence is routine.
+    iter_cnt_split = 0;
+    iter_cnt_collapse = 0;
+    iter_cnt_collapse_offset_removed = 0;
+    iter_cnt_swap = 0;
+    iter_cnt_collapse_nd_reject = 0;
+    iter_cnt_swap_nd_reject = 0;
+    m_smooth_trace.reset();
 
-        // Reset immediately before the operation passes, not at the top of the iteration, so
-        // each entry is this iteration's own total.
-        iter_cnt_split = 0;
-        iter_cnt_collapse = 0;
-        iter_cnt_collapse_offset_removed = 0;
-        iter_cnt_swap = 0;
-        iter_cnt_collapse_nd_reject = 0;
-        iter_cnt_swap_nd_reject = 0;
-        m_smooth_trace.reset();
+    diag_offset_bands("pre");
+    mesh_improvement(m_offset_params.optimization_iterations);
 
-        // One split pass, one collapse pass, one swap pass (2-3/3-2, 4-4 and 5-6 edge swaps
-        // together, then the 2-3 face swap) and num_smoothing_passes smoothing passes, with
-        // the sanity checks, debug output and per-pass energy reporting the shared driver
-        // does. Deliberately not mesh_improvement(): its stop condition and stall-driven
-        // refinement both need a stop metric the offset has not defined, and its sizing field
-        // is driven by the shape of the offset triangulation rather than by the optimizer
-        // getting stuck, so it is refreshed every iteration below rather than on a stall.
-        // SPLIT UNTIL THE PASS IS NO LONGER SLOT-LIMITED, then the rest of the operations.
-        //
-        // The split pass abandons operations once the preallocated slot pool runs dry, before any
-        // application hook, and only consolidate_mesh() returns the pool -- see
-        // TetMesh::slot_exhausted(). Running one split pass per iteration therefore delivers a
-        // fraction of the refinement the sizing field asked for, with no way to tell from the log
-        // that anything was missed. Repeat until it stops reporting exhaustion.
-        //
-        // Bounded, because a pass refusing splits for some other reason would otherwise spin.
-        int split_attempts = 0;
-        for (; split_attempts < 8; ++split_attempts) {
-            local_operations({{1, 0, 0, 0}});
-            const size_t lost = slot_exhausted();
-            if (lost == 0) break;
+    // Cumulative over the whole run, not per iteration as before: the engine loop has no
+    // per-iteration hook, and the per-pass numbers it logs itself carry the history.
+    log_smooth_trace();
+    logger().info(
+        "splits = {}  |  collapses = {} ({} refused by normal deviation, {} removed an offset "
+        "vertex)  |  swaps = {} ({} refused by normal deviation)",
+        iter_cnt_split.load(),
+        iter_cnt_collapse.load(),
+        iter_cnt_collapse_nd_reject.load(),
+        iter_cnt_collapse_offset_removed.load(),
+        iter_cnt_swap.load(),
+        iter_cnt_swap_nd_reject.load());
+    op_counts.push_back({{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
+
+    // Final metrics and the convergence verdict. One entry, for the whole run: the engine loop
+    // owns the iterations now, so optimization_metrics is a summary rather than a history.
+    //
+    // The asymmetry -- max for distance, average for angle -- is the paper's (Sec. 5.3,
+    // Termination), and it is forced by the geometry: distance error can genuinely go to zero
+    // everywhere, so the max is a fair bar, while normal deviation has a floor at every sharp
+    // feature that no refinement can lower, so only its average can be asked for.
+    // convergence_normal_deviation <= 0 disables the angular half entirely.
+    diag_offset_bands("final");
+    const auto [max_dist, avg_dist] = compute_distance_deviation();
+    const auto [max_norm, avg_norm] = compute_normal_deviation();
+    logger().info(
+        "max dist err: {} | avg dist err: {} | max normal dev: {} | avg normal dev: {}",
+        max_dist,
+        avg_dist,
+        max_norm,
+        avg_norm);
+    optimization_metrics.push_back({{max_dist, avg_dist, max_norm, avg_norm}});
+    log_worst_dist_vertex();
+
+    const bool dist_ok = max_dist <= m_offset_params.convergence_target;
+    const bool norm_ok = m_offset_params.convergence_normal_deviation <= 0. ||
+                         avg_norm <= m_offset_params.convergence_normal_deviation;
+    m_converged = dist_ok && norm_ok;
+    if (m_converged) {
+        if (m_offset_params.convergence_normal_deviation > 0.) {
             logger().info(
-                "\tsplit pass dropped {} operations for want of slots; consolidating and repeating",
-                lost);
-            consolidate_mesh();
-        }
-        if (split_attempts == 8) {
-            logger().warn("\tsplit pass still slot-limited after 8 attempts; giving up on it");
-        }
-        diag_offset_bands("after split");
-        local_operations({{0, 1, 0, 0}});
-        logger().info(
-            "\t[offset] collapses removing an offset vertex: {} of {}",
-            iter_cnt_collapse_offset_removed.load(),
-            iter_cnt_collapse.load());
-        diag_offset_bands("after collapse");
-        local_operations({{0, 0, 1, m_offset_params.num_smoothing_passes}});
-
-        log_smooth_trace();
-
-        op_counts.push_back(
-            {{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
-        logger().info(
-            "splits = {}  |  collapses = {} ({} refused by normal deviation)  |  swaps = {} ({} "
-            "refused by normal deviation)",
-            iter_cnt_split.load(),
-            iter_cnt_collapse.load(),
-            iter_cnt_collapse_nd_reject.load(),
-            iter_cnt_swap.load(),
-            iter_cnt_swap_nd_reject.load());
-
-        // RECLAIM THE SLOT POOL. TetMesh preallocates vertex/tet storage as
-        // reserved_capacity() = 6x the live count, fixed at the last consolidate, and hands it
-        // out through get_next_empty_slot_v(). A collapse only MARKS its slots removed -- the
-        // allocation cursor never moves back -- so the pool is consumed by the split pass and
-        // never returned. When it runs out, TetMesh::split_edge() bails at
-        //     int v_id = get_next_empty_slot_v();
-        //     if (v_id < 0) return false;   // out of preallocated vertex slots
-        // which is BEFORE split_edge_after(), so no application hook is involved and nothing is
-        // logged: the splits simply all fail. Only consolidate_mesh() compacts the removed slots
-        // away and re-reserves from the new live count.
-        //
-        // mesh_improvement() does exactly this, once per iteration (TetOptimizerMesh.cpp), and
-        // this loop deliberately does not call mesh_improvement -- see the comment above
-        // local_operations() -- so it has to do the consolidate itself.
-        //
-        // Measured on specific_models/prism before this: the offset seeds at 1286 vertices,
-        // iteration 1 splits to 12526 and collapses back to a LIVE 1515, and from iteration 2
-        // on every split fails -- 7450 approved by split_edge_before(), 0 reaching
-        // split_edge_after() -- while 1775 of 1950 offset edges still exceed their target
-        // length. max_dist_err and max_norm_dev then sit flat for the rest of the run.
-        //
-        // Note this renumbers the mesh, so it changes the order later passes enumerate
-        // operations in and therefore the run; that is the same effect DEBUG_output has via
-        // write_vtu(), and it is unavoidable here.
-        consolidate_mesh();
-
-        logger().info("\tUpdating sizing field...");
-        update_sizing_field();
-
-        // metrics
-        const auto [max_dist, avg_dist] = compute_distance_deviation();
-        const auto [max_norm, avg_norm] = compute_normal_deviation();
-        logger().info(
-            "max dist err: {} | avg dist err: {} | max normal dev: {} | avg normal dev: {}",
-            max_dist,
-            avg_dist,
-            max_norm,
-            avg_norm);
-        optimization_metrics.push_back({{max_dist, avg_dist, max_norm, avg_norm}});
-        log_worst_dist_vertex();
-
-        // Convergence: the worst-placed offset vertex has reached the target error band, and the
-        // offset's AVERAGE facing has reached the target normal deviation.
-        //
-        // The asymmetry -- max for distance, average for angle -- is the paper's (Sec. 5.3,
-        // Termination: "the average sigma_max ... both the maximum and mean distance error"),
-        // and it is forced by the geometry rather than chosen for convenience. Distance error
-        // genuinely can go to zero everywhere, so the max is a fair bar. Normal deviation cannot:
-        // at a sharp feature of the input the distance field's normal is discontinuous by the
-        // feature's own angle, at every scale, so max sigma has a floor no refinement, no smaller
-        // target_distance and no operation can lower.
-        //
-        // max_norm is still computed and reported; it is a diagnostic, not a bar.
-        // convergence_normal_deviation <= 0 disables the angular half entirely.
-        const bool dist_ok = max_dist <= m_offset_params.convergence_target;
-        const bool norm_ok = m_offset_params.convergence_normal_deviation <= 0. ||
-                             avg_norm <= m_offset_params.convergence_normal_deviation;
-        m_converged = dist_ok && norm_ok;
-        if (m_converged) {
-            if (m_offset_params.convergence_normal_deviation > 0.) {
-                logger().info(
-                    "Converged ([max_dist] {} <= {} [convergence_target], [avg_normal_dev] {} <= "
-                    "{} [convergence_normal_deviation]), terminating early...",
-                    max_dist,
-                    m_offset_params.convergence_target,
-                    avg_norm,
-                    m_offset_params.convergence_normal_deviation);
-            } else {
-                logger().info(
-                    "Converged ([max_dist] {} <= {} [convergence_target], normal deviation "
-                    "criterion disabled), terminating early...",
-                    max_dist,
-                    m_offset_params.convergence_target);
-            }
-            break;
+                "Converged ([max_dist] {} <= {} [convergence_target], [avg_normal_dev] {} <= "
+                "{} [convergence_normal_deviation])",
+                max_dist,
+                m_offset_params.convergence_target,
+                avg_norm,
+                m_offset_params.convergence_normal_deviation);
+        } else {
+            logger().info(
+                "Converged ([max_dist] {} <= {} [convergence_target], normal deviation "
+                "criterion disabled)",
+                max_dist,
+                m_offset_params.convergence_target);
         }
     }
 
