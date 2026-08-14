@@ -5,8 +5,11 @@
     ./visualize_offset.py out.msh                    # mesh alone
     ./visualize_offset.py out.msh config.json        # mesh + the config it ran under
 
-Needs polyscope, meshio and numpy (same venv as visualize_triwild.py; see the triwild
-scripts README).
+Needs polyscope, meshio and numpy. The simwild conda env has all three:
+
+    conda activate simwild && python visualize_offset.py <run dir>
+
+Otherwise any env with those packages works (see the triwild scripts README for a venv).
 
 The output .msh holds one cell block per physical group -- `ambient`, one group per tag,
 and the offset output tag(s). Nothing in the file marks the surfaces the optimization is
