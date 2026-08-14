@@ -114,6 +114,14 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
     params.interleaved_smoothing = json_params["interleaved_smoothing"];
     params.interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+
+    // Coarsening pass.
+    params.coarsen_pass = json_params["coarsen_pass"];
+    params.coarsen_unbounded = json_params["coarsen_unbounded"];
+    params.coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
+    params.coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
+    params.coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
+    params.coarsen_max_rounds = json_params["coarsen_max_rounds"];
     params.w_amips = json_params["w_amips"];
     params.smoothing_mode = json_params["smoothing_mode"];
     params.project_line_search_steps = json_params["project_line_search_steps"];
@@ -738,6 +746,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
         report["#iterations"] = mesh_new.m_iterations_used;
+        // What the final coarsening pass bought. All zero when coarsen_pass is off, which is
+        // also how an A/B tells the two arms apart.
+        report["coarsen_accepted"] = mesh_new.m_coarsen_stats.accepted;
+        report["coarsen_t_before"] = mesh_new.m_coarsen_stats.cells_before;
+        report["coarsen_t_after"] = mesh_new.m_coarsen_stats.cells_after;
+        report["coarsen_max_energy_before"] = mesh_new.m_coarsen_stats.max_energy_before;
+        report["coarsen_max_energy_after"] = mesh_new.m_coarsen_stats.max_energy_after;
         report["time"] = time;
         // d(output -> input); the key kept its name so existing consumers keep working,
         // but it now holds the containment direction rather than the coverage one.

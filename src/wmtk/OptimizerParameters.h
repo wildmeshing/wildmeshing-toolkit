@@ -165,6 +165,84 @@ struct OptimizerParameters
     bool interleaved_smoothing = true;
     int interleaved_smoothing_passes = 1;
 
+    // ---- Coarsening pass -------------------------------------------------
+    /**
+     * A final pass that removes vertices without letting the max energy rise.
+     *
+     * The ordinary collapse refuses anything whose resulting cells are worse than the ring
+     * they replace, and it judges that on the raw post-collapse geometry -- the worst moment
+     * in the operation's life, before smoothing has had any chance to absorb the damage. So a
+     * collapse that would be perfectly fine once its neighbourhood relaxes never happens, and
+     * the converged mesh carries vertices it does not need.
+     *
+     * This pass takes the collapse optimistically instead: no quality pre-check, then
+     * coarsen_local_smoothing_passes sweeps of smoothing over the coarsen_smooth_ring around
+     * the merged vertex, and only then a decision -- keep it if the worst cell in the region
+     * touched is no worse than before, undo the whole block otherwise. Because every cell
+     * outside that region is untouched, "no worse locally" is exactly "no worse globally".
+     */
+    bool coarsen_pass = true;
+    /**
+     * Coarsen as far as the quality guarantee allows, instead of stopping at the target edge
+     * length.
+     *
+     * The pass answers "how few elements can hold this max energy", and left unbounded that is
+     * a much more aggressive question than it sounds -- the answer ignores how big the elements
+     * become. Measured on tetwild's integration models it takes meshes from 40008 to 3563 cells
+     * at unchanged max energy, because a converged mesh is sized by `l` and the adaptive sizing
+     * field, not by what the quality target strictly requires, and all of that slack is
+     * available once nothing bounds the element size.
+     *
+     * Turned off, the pass instead stops at the target edge length: an edge already at or past
+     * `collapsing_l2` (0.8 * l, the same threshold the ordinary collapse uses) is left alone,
+     * because collapsing it only makes its neighbours longer still. The sizing FIELD is
+     * deliberately not applied -- that is a local refinement request driven by the optimizer's
+     * own history, and honouring it here would leave the pass unable to undo refinement that
+     * turned out to be unnecessary. The target length is the user's stated intent; the sizing
+     * field is the optimizer's scratch work.
+     *
+     * On by default: the element count is the thing worth having, and a mesh that meets its
+     * quality target with an eighth of the cells is the better answer even though its elements
+     * are larger than length_rel nominally asked for. Turn it off to hold the target size.
+     */
+    bool coarsen_unbounded = true;
+    /// Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
+    int coarsen_local_smoothing_passes = 2;
+    /// Radius smoothed inside the collapse. The lock claims one more ring than this, because
+    /// smoothing a vertex reads its one-ring and writes the quality of its incident cells.
+    int coarsen_smooth_ring = 2;
+    /**
+     * Ordinary whole-mesh smoothing passes between coarsening rounds.
+     *
+     * This is what makes a second round worth running at all -- see coarsen_max_rounds. Set
+     * it to 0 and the rounds collapse to one.
+     */
+    int coarsen_global_smoothing_passes = 1;
+    /**
+     * Cap on the collapse/smooth alternation. It also stops as soon as a round accepts nothing.
+     *
+     * A round does NOT exist to finish what the previous one started: within a round the
+     * collapse pass already runs to a fixed point (run_localized_to_convergence loops the
+     * executor until nothing succeeds, re-offering failures whose neighbourhood changed), so
+     * repeating the collapse alone finds nothing. What a round adds is the global smoothing
+     * in between, which MOVES that fixed point.
+     *
+     * Two things stop the inner loop from absorbing it. The dirty-epoch retry re-offers a
+     * failed collapse only if one of its endpoints was stamped by a SUCCESSFUL collapse's
+     * renewal, so a whole-mesh smoothing pass -- which moves vertices no collapse touched --
+     * is invisible to it. And a rejected composite is rolled back in full, its local smoothing
+     * included, so rejections never accumulate progress within a round. The global pass is the
+     * only geometry improvement that persists and unlocks further collapses.
+     *
+     * The returns decay fast, because each smoothing pass leaves the mesh closer to relaxed
+     * than the last. Measured over the 16 challenging triwild models at five rounds, accepted
+     * collapses by round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%. Every round costs a full
+     * collapse_edge_before sweep over all edges plus a smoothing pass, so the default is two:
+     * they carry 90.5% of the coarsening between them, and the three that would follow are
+     * worth 9.5% for 60% of the pass's budget.
+     */
+    int coarsen_max_rounds = 2;
+
     bool debug_output = false;
     bool perform_sanity_checks = false;
 

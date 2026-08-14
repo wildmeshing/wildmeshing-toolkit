@@ -43,7 +43,7 @@ void TetOptimizerMesh::split_all_edges()
     wmtk::logger().info("edge split prepare time: {:.4}s", time);
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
         "edge split operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_simple;

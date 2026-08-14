@@ -15,6 +15,7 @@
 #include <igl/Timer.h>
 
 #include <atomic>
+#include <cmath>
 #include <functional>
 #include <map>
 #include <memory>
@@ -180,6 +181,27 @@ public:
     virtual double cell_quality(const size_t tid) const = 0;
     virtual void set_cell_quality(const size_t tid, const double q) = 0;
 
+    /**
+     * @brief A cell's quality relative to the quality it is required to reach; <= 1 means it
+     * meets it.
+     *
+     * The only quality that is comparable ACROSS cells. Raw cell_quality is not, once an
+     * application gives different regions different targets: the loose region's raw ceiling
+     * then hides degradation in the strict one, because a strict cell may get much worse and
+     * still sit below a number set somewhere it has nothing to do with. Shared code that
+     * compares one cell's quality against another's must go through here.
+     *
+     * The cube root is because cell_quality stores AMIPS^3, so that this means the same thing
+     * as its 2D twin: AMIPS relative to target, not AMIPS^3 relative to target. TetWild's
+     * target is uniform, so this is a monotone function of the raw quality divided by a
+     * constant -- neither of which can change the outcome of a before/after comparison, so its
+     * behaviour is unchanged.
+     */
+    virtual double quality_rel(const size_t tid) const
+    {
+        return std::cbrt(cell_quality(tid)) / m_params.stop_energy;
+    }
+
     // TODO This should not be here but inside wmtk
     void compute_vertex_partition();
     void compute_vertex_partition_morton();
@@ -319,6 +341,37 @@ public:
     void collapse_all_edges(bool is_limit_length = true);
     bool collapse_edge_before(const Tuple& t) override;
     bool collapse_edge_after(const Tuple& t) override;
+
+    /**
+     * @brief Coarsen the mesh without letting the max energy rise.
+     *
+     * The 3D twin of TriOptimizerMesh::coarsen_mesh; see OptimizerParameters::coarsen_pass for
+     * what makes the collapse in this pass different, and collapse_edge_after for how it is
+     * undone when it does not pay off. A no-op when m_params.coarsen_pass is false.
+     *
+     * @return the number of collapses accepted across all rounds.
+     */
+    size_t coarsen_mesh();
+
+    /**
+     * @brief One collapse under the coarsening rules, outside a coarsening pass.
+     *
+     * The pass sets the mode once and leaves it set for its whole duration, because every
+     * worker reads it; this is the single-operation form, for callers that want one and are
+     * not sharing the mesh with other threads.
+     */
+    bool coarsen_collapse_edge(const Tuple& e, std::vector<Tuple>& new_tets);
+
+    /// What coarsen_mesh() achieved, for the run report. Zeroed when the pass is off.
+    struct CoarsenStats
+    {
+        size_t accepted = 0;
+        size_t cells_before = 0;
+        size_t cells_after = 0;
+        double max_energy_before = 0.;
+        double max_energy_after = 0.;
+    };
+    CoarsenStats m_coarsen_stats;
 
     // TetWild's complete swap engine. SimWild inherits these operations and customizes only
     // the tag bookkeeping through the hooks below.
@@ -465,8 +518,49 @@ protected:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
+        /// Coarsening pass only: the worst relative quality in the region the composite may
+        /// disturb, measured before the collapse. See collapse_edge_after.
+        double region_max_rel_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+
+    /// Set for the duration of coarsen_mesh(); read-only while a pass is running.
+    bool m_coarsen_mode = false;
+
+private:
+    /**
+     * @brief Per-thread buffers for the coarsening composite, so it allocates nothing.
+     *
+     * `saved_*` holds one vertex's attributes and the quality of its incident cells, which is
+     * everything an individual smooth writes -- smooth_vertex_3d returns false only after
+     * having written both, deliberately (see its contract), so a rejected smooth has to be
+     * undone by its caller.
+     */
+    struct CoarsenScratch
+    {
+        std::vector<size_t> ring; // vertices to re-smooth, BFS order
+        std::vector<size_t> frontier;
+        std::vector<size_t> next;
+        std::vector<size_t> one_ring;
+        std::vector<uint32_t> stamp;
+        uint32_t epoch = 0;
+        VertexAttributes saved_vertex;
+        std::vector<std::pair<size_t, double>> saved_qualities;
+    };
+    wmtk::threading::enumerable_thread_specific<CoarsenScratch> coarsen_scratch;
+
+    /// Vertices within @p n edges of @p seeds, in BFS order. Uses coarsen_scratch.
+    const std::vector<size_t>&
+    collect_vertex_ball(const size_t* seeds, size_t n_seeds, int n, CoarsenScratch& scr) const;
+
+    /// Worst relative quality (quality_rel) over the cells incident to any vertex of
+    /// @p vids.
+    double region_max_quality_rel(const std::vector<size_t>& vids) const;
+
+    /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
+    bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);
+
+    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring);
 };
 
 } // namespace wmtk
