@@ -14,8 +14,10 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <queue>
 #include <stdexcept>
@@ -335,6 +337,15 @@ public:
         std::vector<LocalQueue> queues(num_threads);
         SharedQueue final_queue;
 
+        // Contention accounting. Everything here is either a per-task local folded in once or a
+        // write to the task's own slot, so it adds nothing to the inner loop. It answers the
+        // two questions the pass could not previously be asked: how often ring acquisition
+        // loses a race, and how much of a "parallel" pass is really the serial drain.
+        m_stats = PassStats{};
+        std::atomic<size_t> lock_failures(0);
+        std::atomic<size_t> overflowed(0);
+        std::vector<double> task_seconds(queues.size(), 0.);
+
         auto run_single_queue = [&](auto& Q, int task_id) {
             // Per-task tallies folded into the shared counters once, on the way out. The guard
             // is RAII rather than a line at the bottom because the loop below has early
@@ -343,14 +354,20 @@ public:
             {
                 std::atomic_int& success_total;
                 std::atomic_int& fail_total;
+                std::atomic<size_t>& lock_failure_total;
+                std::atomic<size_t>& overflow_total;
                 int success = 0;
                 int fail = 0;
+                size_t lock_failure = 0;
+                size_t overflow = 0;
                 ~CountFlusher()
                 {
                     success_total.fetch_add(success, std::memory_order_relaxed);
                     fail_total.fetch_add(fail, std::memory_order_relaxed);
+                    lock_failure_total.fetch_add(lock_failure, std::memory_order_relaxed);
+                    overflow_total.fetch_add(overflow, std::memory_order_relaxed);
                 }
-            } counts{cnt_success, cnt_fail};
+            } counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
             Elem ele_in_queue;
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
@@ -366,11 +383,13 @@ public:
                         tup,
                         task_id); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
+                        counts.lock_failure++;
                         retry++;
                         if (retry < max_retry_limit) {
                             Q.emplace(ele_in_queue);
                         } else {
                             retry = 0;
+                            counts.overflow++;
                             final_queue.emplace(ele_in_queue);
                         }
                         continue;
@@ -437,15 +456,37 @@ public:
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0);
             }
             // Comment out parallel: work on serial first.
+            using clock = std::chrono::steady_clock;
+            const auto t_parallel = clock::now();
             wmtk::threading::task_group tg;
             for (int task_id = 0; task_id < queues.size(); task_id++) {
-                tg.run([&run_single_queue, &queues, task_id] {
+                tg.run([&run_single_queue, &queues, &task_seconds, task_id] {
+                    const auto t0 = clock::now();
                     run_single_queue(queues[task_id], task_id);
+                    // Each task writes only its own slot.
+                    task_seconds[task_id] =
+                        std::chrono::duration<double>(clock::now() - t0).count();
                 });
             }
             tg.wait();
+            m_stats.parallel_seconds =
+                std::chrono::duration<double>(clock::now() - t_parallel).count();
+            m_stats.final_queue_size = final_queue.size();
+
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
+
+            const auto t_tail = clock::now();
             run_single_queue(final_queue, 0);
+            m_stats.serial_tail_seconds =
+                std::chrono::duration<double>(clock::now() - t_tail).count();
+        }
+
+        m_stats.lock_failures = lock_failures.load(std::memory_order_relaxed);
+        m_stats.overflowed = overflowed.load(std::memory_order_relaxed);
+        if (!task_seconds.empty()) {
+            const auto mm = std::minmax_element(task_seconds.begin(), task_seconds.end());
+            m_stats.idlest_task_seconds = *mm.first;
+            m_stats.busiest_task_seconds = *mm.second;
         }
 
         logger().info(
@@ -453,15 +494,70 @@ public:
             (int)cnt_success + (int)cnt_fail,
             (int)cnt_success,
             (int)cnt_fail);
+        log_contention();
         return true;
     }
 
     int get_cnt_success() const { return cnt_success; }
     int get_cnt_fail() const { return cnt_fail; }
 
+    /**
+     * @brief What the last pass cost in contention, as opposed to in work.
+     *
+     * Populated by every `operator()` call, so under run_localized_to_convergence it describes
+     * the most recent round only. Zeroed at the start of each pass.
+     */
+    struct PassStats
+    {
+        /// Operations that could not claim their ring and were requeued. Counts *attempts*, so
+        /// one stubborn operation can contribute up to max_retry_limit.
+        size_t lock_failures = 0;
+        /// Operations that exhausted max_retry_limit and were pushed to the post-barrier queue.
+        size_t overflowed = 0;
+        /// Size of that queue once every task had finished.
+        size_t final_queue_size = 0;
+        /// Wall time inside the parallel region, and in the serial drain that follows it. The
+        /// pass is billed as "parallel" in the driver's log line, but it is the sum of these.
+        double parallel_seconds = 0.;
+        double serial_tail_seconds = 0.;
+        /// Busy time of the longest- and shortest-running task. A wide gap means the partition
+        /// split the work unevenly, and since tasks never steal, the tail is one thread.
+        double busiest_task_seconds = 0.;
+        double idlest_task_seconds = 0.;
+    };
+    const PassStats& stats() const { return m_stats; }
+
 private:
+    /// Debug-level because it is per pass and there are many passes per iteration. Enable with
+    /// the logger at debug to see whether contention is worth acting on.
+    void log_contention() const
+    {
+        if (policy == ExecutionPolicy::kSeq || !logger().should_log(spdlog::level::debug)) {
+            return;
+        }
+        const int executed = (int)cnt_success + (int)cnt_fail;
+        const double total = m_stats.parallel_seconds + m_stats.serial_tail_seconds;
+        logger().debug(
+            "  contention: {} ring-acquisition failures over {} executed ops ({:.2f} per op); "
+            "{} overflowed to the serial queue ({} queued at the barrier)",
+            m_stats.lock_failures,
+            executed,
+            executed > 0 ? double(m_stats.lock_failures) / executed : 0.,
+            m_stats.overflowed,
+            m_stats.final_queue_size);
+        logger().debug(
+            "  time: {:.4}s parallel + {:.4}s serial tail ({:.1f}% of the pass); busiest task "
+            "{:.4}s, idlest {:.4}s",
+            m_stats.parallel_seconds,
+            m_stats.serial_tail_seconds,
+            total > 0. ? 100. * m_stats.serial_tail_seconds / total : 0.,
+            m_stats.busiest_task_seconds,
+            m_stats.idlest_task_seconds);
+    }
+
     // Totals for the whole pass. Written once per task, at the end -- see CountFlusher.
     std::atomic_int cnt_success = 0;
     std::atomic_int cnt_fail = 0;
+    PassStats m_stats;
 };
 } // namespace wmtk
