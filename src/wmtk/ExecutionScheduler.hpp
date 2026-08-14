@@ -3,6 +3,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/threading/concurrent_priority_queue.hpp>
+#include <wmtk/threading/serial_priority_queue.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -74,8 +75,23 @@ struct ExecutePass
         return false; // non-stop, process everything
     };
     /**
-     * @brief checking frequency to decide whether to stop execution given the stopping criterion
+     * @brief Cumulative successful operations before `stopping_criterion` is first consulted.
      *
+     * Despite the name this is a threshold, not a period: the count it is tested against is
+     * never reset, so once the pass has had this many successes the criterion is consulted after
+     * every subsequent operation. Both current users rely on exactly that -- they set the
+     * criterion to `return true` and the threshold to the number of collapses needed to reach a
+     * target vertex count, making this a decimation counter that stops the pass on its first
+     * check. It is not a "check every N operations" knob, and writing a genuinely periodic
+     * criterion against it would evaluate that criterion on every operation forever after.
+     *
+     * Left at the default, the criterion is never consulted at all, which is the case for every
+     * tetwild/triwild/simwild pass.
+     *
+     * (There used to be a `cnt_update` member here that was incremented per success and reset
+     * inside the check, as if the threshold were a period. Nothing ever read it -- the reset was
+     * on a branch the always-true criteria above never reach -- so it was one more contended
+     * atomic on the hot path buying nothing, and it is gone.)
      */
     size_t stopping_criterion_checking_frequency = std::numeric_limits<size_t>::max();
     /**
@@ -274,7 +290,13 @@ public:
         // per-operation dispatch from a string-keyed std::map lookup into an index.
         using OpId = uint32_t;
         using Elem = std::tuple<double, OpId, Tuple, size_t>; // priority, op index, tuple, #retries
-        using Queue = wmtk::threading::concurrent_priority_queue<Elem>;
+        // Each task owns its queue outright -- it is seeded before any thread starts, and the
+        // task both pops from it and pushes its renewed operations back into it -- so those need
+        // no lock. `final_queue` is the one that genuinely crosses threads: tasks push retry
+        // overflow into it while running, and it is drained after the barrier. Both are
+        // std::priority_queue with the same comparator underneath, so pop order is unchanged.
+        using LocalQueue = wmtk::threading::serial_priority_queue<Elem>;
+        using SharedQueue = wmtk::threading::concurrent_priority_queue<Elem>;
 
         std::vector<const Op*> op_name;
         std::vector<std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>*>
@@ -301,12 +323,35 @@ public:
         std::atomic<bool> stop(false);
         cnt_success = 0;
         cnt_fail = 0;
-        cnt_update = 0;
 
-        std::vector<Queue> queues(num_threads);
-        Queue final_queue;
+        // Whether anything actually watches the success count *while the pass runs*. When no
+        // stopping criterion is configured -- the case for every tetwild/triwild/simwild pass --
+        // nobody does, and the counters can be accumulated per task and folded in at the end
+        // instead of hammering one shared cache line from every thread on every operation.
+        const bool track_live_success =
+            stopping_criterion_checking_frequency != std::numeric_limits<size_t>::max();
+        std::atomic<size_t> live_success(0);
 
-        auto run_single_queue = [&](Queue& Q, int task_id) {
+        std::vector<LocalQueue> queues(num_threads);
+        SharedQueue final_queue;
+
+        auto run_single_queue = [&](auto& Q, int task_id) {
+            // Per-task tallies folded into the shared counters once, on the way out. The guard
+            // is RAII rather than a line at the bottom because the loop below has early
+            // returns.
+            struct CountFlusher
+            {
+                std::atomic_int& success_total;
+                std::atomic_int& fail_total;
+                int success = 0;
+                int fail = 0;
+                ~CountFlusher()
+                {
+                    success_total.fetch_add(success, std::memory_order_relaxed);
+                    fail_total.fetch_add(fail, std::memory_order_relaxed);
+                }
+            } counts{cnt_success, cnt_fail};
+
             Elem ele_in_queue;
             while ([&]() { return Q.try_pop(ele_in_queue); }()) {
                 auto& [weight, op, tup, retry] = ele_in_queue;
@@ -342,11 +387,13 @@ public:
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
-                            cnt_success++;
-                            cnt_update++;
+                            counts.success++;
+                            if (track_live_success) {
+                                live_success.fetch_add(1, std::memory_order_relaxed);
+                            }
                         } else {
                             on_fail(m, op_str, tup);
-                            cnt_fail++;
+                            counts.fail++;
                         }
                         for (const auto& [o, e] : renewed_tuples) {
                             auto val = priority(m, o, e);
@@ -364,12 +411,12 @@ public:
                 if (stop.load(std::memory_order_acquire)) {
                     return;
                 }
-                if (cnt_success > stopping_criterion_checking_frequency) {
+                if (track_live_success && live_success.load(std::memory_order_relaxed) >
+                                              stopping_criterion_checking_frequency) {
                     if (stopping_criterion(m)) {
                         stop.store(true);
                         return;
                     }
-                    cnt_update.store(0, std::memory_order_release);
                 }
             }
         };
@@ -413,7 +460,7 @@ public:
     int get_cnt_fail() const { return cnt_fail; }
 
 private:
-    std::atomic_int cnt_update = 0;
+    // Totals for the whole pass. Written once per task, at the end -- see CountFlusher.
     std::atomic_int cnt_success = 0;
     std::atomic_int cnt_fail = 0;
 };

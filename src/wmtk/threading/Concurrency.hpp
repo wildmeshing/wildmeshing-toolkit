@@ -26,5 +26,7 @@
 #include "enumerable_thread_specific.hpp"
 #include "parallel_for.hpp"
 #include "range.hpp"
+#include "serial_priority_queue.hpp"
 #include "spin_mutex.hpp"
 #include "task_group.hpp"
+#include "vertex_mutex.hpp"
