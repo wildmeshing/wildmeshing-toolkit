@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <queue>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
 
 namespace wmtk {
@@ -119,10 +120,50 @@ struct ExecutePass
     int num_threads = 1;
 
     /**
-     * To Avoid mutual locking, retry limit is set, and then put in a serial queue in the end.
+     * @brief Attempts an operation gets at claiming its ring before it is handed to the serial
+     * queue drained after the barrier.
      *
+     * 10 was swept and left alone. Measured on 128k-tet Thingi10K 103197 at 16 threads, three
+     * reps each, in µs per attempted operation:
+     *
+     *   immediate requeue (before the second-chance deferral below existed):
+     *       1: +17.0%   2: +7.2%   3: +6.2%   5: +4.6%   10: best   20: +6.2%
+     *   with the deferral:
+     *       2: 2.170    3: 1.969    10: 1.974          (baseline at 10 was 2.527)
+     *
+     * So under the old immediate-requeue behaviour the value mattered a lot -- a low limit sent
+     * everything it stopped retrying to the serial queue, and that tail (23% of scheduler time
+     * at 10, 39% at 1) cost more than the spinning it avoided. With the deferral the retries are
+     * nearly free, the overflow pressure disappears, and 3 and 10 become indistinguishable.
+     * Left at 10 because nothing argues for moving it.
+     *
+     * Below about 3 it still hurts: at 2 the overflow rate climbs enough to be visible again.
      */
     size_t max_retry_limit = 10;
+
+    /**
+     * @brief Operations to run before handing deferred operations back to the queue, or 0 to
+     * wait until the queue empties.
+     *
+     * Bounding this is what makes the second-chance list pay. A per-thread queue holds thousands
+     * of operations, so draining only at queue-empty means a deferred operation waits that long,
+     * by which time the mesh around it has moved, `is_weight_up_to_date` rejects it, and the work
+     * has to be rediscovered. That inflates the attempt count by roughly a fifth and eats most of
+     * the per-operation saving.
+     *
+     * Measured at 16 threads, three reps, optimization wall time against the pre-deferral
+     * baseline, with attempts in brackets:
+     *
+     *                    103197 (base 23.0M)      101881 (base 48.8M)
+     *      window 0       -2.2%  [28.5M]          -20.4%  [45.7M]
+     *      window 32     -16.3%  [23.7M]          -21.6%  [43.7M]
+     *      window 128    -17.9%  [23.1M]          -26.4%  [41.9M]
+     *      window 512    -17.0%  [23.7M]          -25.5%  [42.7M]
+     *
+     * 128 is at or near best on both and keeps the attempt count closest to the baseline's. The
+     * result is not sharp between 32 and 512; it is sharp against 0.
+     */
+    size_t deferral_window = 128;
     /**
      * @brief Construct a new Execute Pass object. It contains the name-to-operation map and the
      *functions that define the rules for operations
@@ -370,7 +411,45 @@ public:
             } counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
             Elem ele_in_queue;
-            while ([&]() { return Q.try_pop(ele_in_queue); }()) {
+            // Operations that lost a race for their ring wait here rather than going straight
+            // back into the live queue. Pushing them back immediately is a spin: the element was
+            // just popped as the queue's maximum, `retry` is the last tie-break key in Elem, so
+            // the requeued copy compares strictly greater than what was popped and nothing else
+            // was added -- it comes right back off the top and is retried against a conflict that
+            // has had no time to clear. Deferring lets every other operation this task owns run
+            // first, which is both useful work and the delay the conflict needs.
+            std::vector<Elem> second_chance;
+            // Operations popped since the deferred list was last given back to the queue.
+            // Waiting for the queue to drain completely can mean thousands of operations, by
+            // which time the mesh around a deferred operation has moved and its work has to be
+            // rediscovered. A bounded window gives the conflict time to clear without letting
+            // the operation go stale. 0 = only when the queue empties.
+            size_t since_refill = 0;
+            const auto refill = [&] {
+                for (auto& e : second_chance) {
+                    Q.emplace(std::move(e));
+                }
+                second_chance.clear();
+                since_refill = 0;
+            };
+            for (;;) {
+                if (!second_chance.empty() && deferral_window > 0 &&
+                    since_refill >= deferral_window) {
+                    refill();
+                }
+                if (!Q.try_pop(ele_in_queue)) {
+                    if (second_chance.empty()) {
+                        break;
+                    }
+                    // Queue exhausted: the deferred operations have now had everything else
+                    // run ahead of them, so give them another go. `retry` still increments on
+                    // each attempt and still overflows to final_queue at max_retry_limit, so
+                    // this terminates after at most that many rounds.
+                    refill();
+                    std::this_thread::yield();
+                    continue;
+                }
+                ++since_refill;
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) {
                     continue;
@@ -386,7 +465,7 @@ public:
                         counts.lock_failure++;
                         retry++;
                         if (retry < max_retry_limit) {
-                            Q.emplace(ele_in_queue);
+                            second_chance.push_back(ele_in_queue);
                         } else {
                             retry = 0;
                             counts.overflow++;
