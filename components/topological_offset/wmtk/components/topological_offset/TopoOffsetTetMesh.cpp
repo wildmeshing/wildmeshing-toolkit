@@ -982,19 +982,51 @@ void TopoOffsetTetMesh::init_offset_sizing_field()
     //
     // Starting from the current lengths says instead: keep the resolution you have, and change it
     // only where update_sizing_field() finds a reason to. The field is per-vertex, so a vertex
-    // takes the mean length of its incident offset-surface edges.
-    const double l = std::max(m_params.l, 1e-16);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-
-    double raw_sum = 0.;
-    int n_seeded = 0;
+    // takes the mean length of its incident edges.
+    //
+    // THE SAME RULE APPLIES TO THE BACKGROUND. The paper's sentence is not about the offset
+    // specifically, and a background vertex left at the default scalar asks for a target length of
+    // m_params.l, which the mesh does not have either: on specific_models/prism, l = 4.18 against a
+    // background whose own edges are longer, so background edges above (4/3)l were split and those
+    // below (4/5)l collapsed, and ~20 of the 2640 vertices each split pass created were on the
+    // offset.
+    //
+    // WHAT THIS DOES AND DOES NOT FIX, measured rather than predicted. It does not stop the
+    // split/collapse churn: prism still goes ~800 -> ~4400 -> ~800 per iteration and the slot pool
+    // still runs dry. Seeding from current lengths does NOT imply that no edge starts out of band,
+    // because the seed is a vertex's MEAN incident length while the gates compare a single edge
+    // against it -- and prism's edge lengths span a factor of 125, so a large fraction of edges sit
+    // outside (4/5, 4/3) of their own local mean and are split or collapsed on the first pass
+    // regardless.
+    //
+    // What it does buy is that the background stops being driven toward a length it never had, so
+    // less of the split budget is spent there and more of it reaches the offset. Prism's final
+    // iteration: max dist err 0.1647 -> 0.1257, avg 0.0595 -> 0.0455, avg normal deviation 19.7 ->
+    // 17.9 deg, and the live vertex count after the collapse pass 630 -> 794. Both 3D integration
+    // tests improve on every reported figure and neither regresses; 2D is untouched.
+    //
+    // l ITSELF IS DERIVED HERE, not read. Once every vertex is seeded from its own resolution, l
+    // is nothing but the constant the per-vertex scalars are expressed against: the quantity that
+    // reaches the split and collapse gates is l * s_v, which is the vertex's own mean edge length
+    // whatever l is. So l is set to the largest of those means, which is the choice that makes
+    // max_sizing_scalar = 1 mean something real -- no vertex may be asked for an edge longer than
+    // the coarsest place in the mesh already has -- and, being an upper bound, the choice that
+    // keeps the top clamp below from binding on any vertex.
+    //
+    // Nothing else reads m_params.l: the only other use in the engine is
+    // OptimizerParameters::init_lengths_from_diagonal(), which derives splitting_l2 and
+    // collapsing_l2 from it, and those are re-derived here alongside it. Both are read only by the
+    // split and collapse length gates. This runs after all construction, so the marching and
+    // growth phases are unaffected.
+    std::vector<double> seed_len(vert_capacity(), -1.);
+    double l_new = 0.;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
 
-        // Mean length of the offset-surface edges at this vertex. Collected from the offset faces
-        // rather than the one-ring edges so a background edge that merely touches the surface
-        // does not drag the seed toward the ambient scale.
+        // On the offset surface, the mean is over the offset-surface edges only. Collected from
+        // the offset faces rather than the one-ring so a background edge that merely touches the
+        // surface does not drag the seed toward the ambient scale. Off it, there is no such
+        // distinction to draw and the mean is over the whole one-ring.
         double sum_len = 0.;
         int n = 0;
         std::set<size_t> seen;
@@ -1005,18 +1037,65 @@ void TopoOffsetTetMesh::init_offset_sizing_field()
                 ++n;
             }
         }
-        if (n == 0) continue; // not on the offset surface: the background keeps the base target
+        if (n == 0) {
+            for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
+                if (nb == vid) continue;
+                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
+                ++n;
+            }
+        }
+        if (n == 0) continue; // isolated: nothing to measure, keep the default
 
-        raw_sum += sum_len / n;
+        seed_len[vid] = sum_len / n;
+        l_new = std::max(l_new, seed_len[vid]);
+    }
+
+    if (l_new > 0.) {
+        logger().info(
+            "\tBase target edge length l: {:.6} (length_rel) -> {:.6} (coarsest vertex's mean "
+            "incident edge length)",
+            m_params.l,
+            l_new);
+        m_params.l = l_new;
+        m_params.splitting_l2 = l_new * l_new * (16 / 9.);
+        m_params.collapsing_l2 = l_new * l_new * (16 / 25.);
+    }
+
+    const double l = std::max(m_params.l, 1e-16);
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    // The floor is meant to be the absolute length l_min; min_sizing_scalar is a relative backstop
+    // that should sit below it. Since l is derived above rather than configured, say so if the
+    // relative one has overtaken the absolute one, which would silently raise the finest edge the
+    // field may ask for.
+    if (m_offset_params.min_sizing_scalar * l > m_offset_params.min_edge_length) {
+        logger().warn(
+            "\tSizing floor is set by min_sizing_scalar ({} * l = {:.6}), not by l_min ({:.6}): "
+            "refinement will stop coarser than 2*delta*sin(sigma_max) asks for.",
+            m_offset_params.min_sizing_scalar,
+            m_offset_params.min_sizing_scalar * l,
+            m_offset_params.min_edge_length);
+    }
+
+    double raw_sum = 0.;
+    int n_seeded = 0, n_offset = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (seed_len[vid] < 0.) continue;
         ++n_seeded;
+        if (m_vertex_extra[vid].m_is_on_offset) {
+            raw_sum += seed_len[vid];
+            ++n_offset;
+        }
         m_vertex_attribute[vid].m_sizing_scalar =
-            std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
+            std::clamp(seed_len[vid] / l, s_floor, m_offset_params.max_sizing_scalar);
     }
     logger().info(
-        "\tOffset sizing seed: {} vertices, mean incident length {:.6} (base l {:.6}, l_min {:.6} "
-        "= 2*{}*sin({} deg), scalar floor {:.6})",
+        "\tSizing seed: {} vertices ({} on the offset, mean incident length {:.6}) (base l {:.6}, "
+        "l_min {:.6} = 2*{}*sin({} deg), scalar floor {:.6})",
         n_seeded,
-        n_seeded > 0 ? raw_sum / n_seeded : 0.,
+        n_offset,
+        n_offset > 0 ? raw_sum / n_offset : 0.,
         l,
         m_offset_params.min_edge_length,
         m_offset_params.target_distance,
