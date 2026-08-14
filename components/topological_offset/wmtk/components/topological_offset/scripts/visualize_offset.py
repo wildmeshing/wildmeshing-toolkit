@@ -20,7 +20,9 @@ groups, and
   input surface     boundary of the non-ambient, non-offset groups -- the complex the
                     offset is measured against (orange)
   offset surface    offset group against ambient: the band's OUTER surface, the one
-                    supposed to sit at target_distance (blue)
+                    supposed to sit at target_distance. Coloured by |dist-delta|/delta
+                    by default (reds, white 0 -> dark red at the max, range shown in the
+                    panel); switchable to raw distance (viridis) or solid blue
   inner interface   offset group against the input groups: hugs the complex at distance
                     ~0 by construction, drawn dim and off by default, so it cannot be
                     mistaken for the offset
@@ -366,16 +368,34 @@ def main():
 
     layers = [
         ("input surface (orange)", register("input surface", surf["input"], C_INPUT, True)),
-        ("offset surface (blue)", register("offset surface", surf["offset"], C_OFFSET, True)),
+        ("offset surface", register("offset surface", surf["offset"], C_OFFSET, True)),
         ("inner interface (grey)", register("inner interface", surf["inner"], C_INNER, False)),
     ]
+
+    # The offset surface's colour modes. Re-adding a quantity under the same name just
+    # updates it, so switching modes is a re-add with the right `enabled` -- this works
+    # on every polyscope version, unlike holding quantity handles.
+    modes = ["solid blue"]
     if err is not None and dim == 3:
         op, oc, dist, rel = err
-        s = ps.get_surface_mesh("offset surface")
-        s.add_scalar_quantity("distance to input", dist, cmap="viridis")
-        s.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds", enabled=True)
+        modes = [
+            "|dist-delta|/delta   reds: white 0 -> dark red %.4g" % rel.max(),
+            "distance to input    viridis: dark %.4g -> yellow %.4g" % (dist.min(), dist.max()),
+            "solid blue",
+        ]
+
+    def set_mode(i):
+        m = ps.get_surface_mesh("offset surface")
+        if err is not None and dim == 3:
+            m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
+                                  vminmax=(0.0, float(rel.max())), enabled=(i == 0))
+            m.add_scalar_quantity("distance to input", dist, cmap="viridis", enabled=(i == 1))
+
+    if len(surf["offset"]):
+        set_mode(0)
 
     state = {label: (s is not None and s.is_enabled()) for label, s in layers}
+    state["mode"] = 0
 
     def callback():
         psim.TextUnformatted("%s   delta %g" % (msh.name, delta))
@@ -386,6 +406,13 @@ def main():
             changed, state[label] = psim.Checkbox(label, state[label])
             if changed:
                 s.set_enabled(state[label])
+        if len(surf["offset"]) and len(modes) > 1:
+            psim.Separator()
+            psim.TextUnformatted("offset surface colour:")
+            for i, label in enumerate(modes):
+                if psim.RadioButton(label, state["mode"] == i):
+                    state["mode"] = i
+                    set_mode(i)
 
     ps.set_user_callback(callback)
     ps.show()
