@@ -160,8 +160,30 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // a patch crosses the threshold it is unprotected, and the next collapses take it to 90. In 2D
     // it decimated the offset from 429 to 80 elements with only 8 collapses refused; using the
     // worse-of bar took that run from not-converging to converging, with 58 then 54 refused.
-    const double bar =
-        std::max(m_offset_params.max_normal_deviation_deg, m_collapse_nd_before.local());
+    // THE PAPER'S RULE, FLAT: "a collapse is only performed if the user-defined maximum normal
+    // deviation is not exceeded." The reference implementation ships exactly this -- its
+    // NormalDeviationAfterInvariant has a compare_with_before mode and the offset collapse is
+    // constructed with it FALSE (OffsetOptimization.cpp:1135) -- so the softer variant was
+    // built there and deliberately not used.
+    //
+    // This diverges from 2D, which uses the worse-of bar
+    //     max(max_normal_deviation_deg, nd_before)
+    // to avoid freezing patches that sit over sigma_max on a genuine feature. Measured on
+    // specific_models/prism, the worse-of bar is a leak in 3D: nd_before is the MAX over the
+    // patch, so one 35-degree face at a sharp edge licenses coarsening of its whole
+    // neighbourhood -- nothing there can raise the max -- and the guard fired only 36-270 times
+    // per iteration against ~2800 accepted offset-vertex removals. The collapse pass took the
+    // offset surface 4x past its own sizing target (50.2% of offset edges beyond 4/3 of l*s
+    // afterwards, sizing unchanged across the pass) and destroyed 75% of its faces.
+    //
+    // Flat, the guard fires 3800-22600 times per iteration, the collapse keeps 52% of offset
+    // faces where it kept 25%, and prism's max_dist_err falls 0.676 -> 0.247 -> 0.104 over
+    // three iterations where the worse-of bar plateaued at ~0.11. The cost is the paper's own:
+    // a face over sigma_max at a genuine feature can no longer be coarsened, so the crease
+    // bands refine to the l_min floor and stay there. 2D is left on the worse-of bar: it
+    // converges with it, and its counterexample (the 429 -> 80 decimation) was against the
+    // RATCHET rule, not against flat.
+    const double bar = m_offset_params.max_normal_deviation_deg;
     if (max_offset_surface_normal_deviation_at_vertex(v2_id) > bar) {
         ++iter_cnt_collapse_nd_reject;
         return false;
