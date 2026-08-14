@@ -729,6 +729,7 @@ public:
      * compute_distance_deviation() for why that case must not be dropped.
      */
     bool face_is_offset_surface_live(const Tuple& f) const;
+    void diag_offset_bands(const char* tag) const;
 
     /// Whether tet `tid` is part of the offset BAND (as opposed to the input complex it wraps).
     bool cell_is_offset_band(const size_t tid) const { return m_tet_attribute[tid].label == 2; }
@@ -763,6 +764,7 @@ public:
     std::atomic<int> iter_cnt_collapse{0};
     std::atomic<int> iter_cnt_swap{0};
     std::atomic<int> iter_cnt_collapse_nd_reject{0};
+    std::atomic<int> iter_cnt_collapse_offset_removed{0};
     std::atomic<int> iter_cnt_swap_nd_reject{0};
 
     /**

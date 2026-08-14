@@ -172,6 +172,7 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
 
 void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v2_id)
 {
+    if (m_vertex_extra.at(v1_id).m_is_on_offset) ++iter_cnt_collapse_offset_removed;
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
     m_vertex_extra[v2_id].m_is_on_input =
         m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;

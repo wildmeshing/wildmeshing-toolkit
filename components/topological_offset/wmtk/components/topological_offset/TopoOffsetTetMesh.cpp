@@ -1052,6 +1052,57 @@ bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
     return !cell_is_input_complex(a ? tb : ta);
 }
 
+
+void TopoOffsetTetMesh::diag_offset_bands(const char* tag) const
+{
+    // OFFSET-surface edges only, against their own target l*s. The global histogram is
+    // dominated by background edges, whose target is the configured length_rel scale; this is
+    // the surface the optimization is actually about.
+    std::set<std::array<size_t, 2>> edges;
+    size_t n_faces = 0;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        ++n_faces;
+        const auto vs = get_face_vids(f);
+        for (int i = 0; i < 3; ++i) {
+            std::array<size_t, 2> e{{vs[i], vs[(i + 1) % 3]}};
+            if (e[0] > e[1]) std::swap(e[0], e[1]);
+            edges.insert(e);
+        }
+    }
+    size_t below45 = 0, ok = 0, above43 = 0;
+    double s_sum = 0.;
+    for (const auto& e : edges) {
+        const double L = (m_vertex_attribute[e[0]].m_posf - m_vertex_attribute[e[1]].m_posf).norm();
+        const double sc = 0.5 * (m_vertex_attribute[e[0]].m_sizing_scalar +
+                                 m_vertex_attribute[e[1]].m_sizing_scalar);
+        s_sum += sc;
+        const double t = m_params.l * sc;
+        if (t <= 0.) continue;
+        const double r = L / t;
+        if (r < 4. / 5.)
+            ++below45;
+        else if (r <= 4. / 3.)
+            ++ok;
+        else
+            ++above43;
+    }
+    const size_t n = edges.size();
+    logger().info(
+        "\t[offset {}] {} faces, {} edges | L/target: <4/5 {} ({:.1f}%), in band {} ({:.1f}%), "
+        ">4/3 {} ({:.1f}%) | mean sizing s {:.4}",
+        tag,
+        n_faces,
+        n,
+        below45,
+        n ? 100. * below45 / n : 0.,
+        ok,
+        n ? 100. * ok / n : 0.,
+        above43,
+        n ? 100. * above43 / n : 0.,
+        n ? s_sum / n : 0.);
+}
+
 std::pair<double, double> TopoOffsetTetMesh::compute_distance_deviation() const
 {
     // One entry per vertex, not per face-vertex: a vertex shared by several band-outer faces
@@ -1266,6 +1317,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         // each entry is this iteration's own total.
         iter_cnt_split = 0;
         iter_cnt_collapse = 0;
+        iter_cnt_collapse_offset_removed = 0;
         iter_cnt_swap = 0;
         iter_cnt_collapse_nd_reject = 0;
         iter_cnt_swap_nd_reject = 0;
@@ -1278,7 +1330,36 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         // refinement both need a stop metric the offset has not defined, and its sizing field
         // is driven by the shape of the offset triangulation rather than by the optimizer
         // getting stuck, so it is refreshed every iteration below rather than on a stall.
-        local_operations({{1, 1, 1, m_offset_params.num_smoothing_passes}});
+        // SPLIT UNTIL THE PASS IS NO LONGER SLOT-LIMITED, then the rest of the operations.
+        //
+        // The split pass abandons operations once the preallocated slot pool runs dry, before any
+        // application hook, and only consolidate_mesh() returns the pool -- see
+        // TetMesh::slot_exhausted(). Running one split pass per iteration therefore delivers a
+        // fraction of the refinement the sizing field asked for, with no way to tell from the log
+        // that anything was missed. Repeat until it stops reporting exhaustion.
+        //
+        // Bounded, because a pass refusing splits for some other reason would otherwise spin.
+        int split_attempts = 0;
+        for (; split_attempts < 8; ++split_attempts) {
+            local_operations({{1, 0, 0, 0}});
+            const size_t lost = slot_exhausted();
+            if (lost == 0) break;
+            logger().info(
+                "\tsplit pass dropped {} operations for want of slots; consolidating and repeating",
+                lost);
+            consolidate_mesh();
+        }
+        if (split_attempts == 8) {
+            logger().warn("\tsplit pass still slot-limited after 8 attempts; giving up on it");
+        }
+        diag_offset_bands("after split");
+        local_operations({{0, 1, 0, 0}});
+        logger().info(
+            "\t[offset] collapses removing an offset vertex: {} of {}",
+            iter_cnt_collapse_offset_removed.load(),
+            iter_cnt_collapse.load());
+        diag_offset_bands("after collapse");
+        local_operations({{0, 0, 1, m_offset_params.num_smoothing_passes}});
 
         log_smooth_trace();
 
