@@ -63,7 +63,13 @@ if(WMTK_BUILD_INTEGRATION_TESTS)
     add_sanitizers(wmtk_integration_tests) # for detecting memory errors in integration tests
     wmtk_copy_dll(wmtk_integration_tests)
 
-    # Register unit tests
-    catch_discover_tests(wmtk_integration_tests)
+    # Register unit tests.
+    #
+    # Well past ctest's 1500s default: the coarsening pass runs at the end of every tetwild and
+    # triwild config and roughly triples what those cost, which is the point of it -- it trades
+    # time for elements. Set on discovery rather than with set_tests_properties, because
+    # catch_discover_tests registers the test at build time, when a configure-time property
+    # call has nothing to attach to.
+    catch_discover_tests(wmtk_integration_tests PROPERTIES TIMEOUT 7200)
 
 endif()

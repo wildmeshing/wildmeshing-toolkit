@@ -193,7 +193,7 @@ struct OptimizerParameters
      * field, not by what the quality target strictly requires, and all of that slack is
      * available once nothing bounds the element size.
      *
-     * So by default the pass stops at the target edge length: an edge already at or past
+     * Turned off, the pass instead stops at the target edge length: an edge already at or past
      * `collapsing_l2` (0.8 * l, the same threshold the ordinary collapse uses) is left alone,
      * because collapsing it only makes its neighbours longer still. The sizing FIELD is
      * deliberately not applied -- that is a local refinement request driven by the optimizer's
@@ -201,9 +201,11 @@ struct OptimizerParameters
      * turned out to be unnecessary. The target length is the user's stated intent; the sizing
      * field is the optimizer's scratch work.
      *
-     * Set this when element count matters more than element size.
+     * On by default: the element count is the thing worth having, and a mesh that meets its
+     * quality target with an eighth of the cells is the better answer even though its elements
+     * are larger than length_rel nominally asked for. Turn it off to hold the target size.
      */
-    bool coarsen_unbounded = false;
+    bool coarsen_unbounded = true;
     /// Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
     int coarsen_local_smoothing_passes = 2;
     /// Radius smoothed inside the collapse. The lock claims one more ring than this, because
