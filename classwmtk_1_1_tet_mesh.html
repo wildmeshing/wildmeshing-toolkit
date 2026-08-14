@@ -106,6 +106,9 @@ Inheritance diagram for wmtk::TetMesh:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html">RingLockScratch</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-thread buffers for the n-ring lock, so a lock acquisition allocates nothing.  <a href="structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_smart_tuple.html">SmartTuple</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a></td></tr>
@@ -240,6 +243,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capa
 <tr class="memitem:a0d213a73673c8351f2cf63f9c8f4cfc4" id="r_a0d213a73673c8351f2cf63f9c8f4cfc4"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a0d213a73673c8351f2cf63f9c8f4cfc4">tuple_from_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
 <tr class="memdesc:a0d213a73673c8351f2cf63f9c8f4cfc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> and the global face index from global vertex index of the face.  <br /></td></tr>
 <tr class="separator:a0d213a73673c8351f2cf63f9c8f4cfc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a533d9c75396231e85206a5fa14ee198e" id="r_a533d9c75396231e85206a5fa14ee198e"><td class="memItemLeft" align="right" valign="top">std::optional&lt; std::tuple&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>, size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a533d9c75396231e85206a5fa14ee198e">try_tuple_from_face</a> (const std::array&lt; size_t, 3 &gt; &amp;vids) const</td></tr>
+<tr class="memdesc:a533d9c75396231e85206a5fa14ee198e"><td class="mdescLeft">&#160;</td><td class="mdescRight">tuple_from_face for callers where a missing face is an answer, not a bug.  <br /></td></tr>
+<tr class="separator:a533d9c75396231e85206a5fa14ee198e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a110594e16e75a527eedde84b1d4d3133" id="r_a110594e16e75a527eedde84b1d4d3133"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133">lowest_common_tet</a> (size_t v0_id, size_t v1_id, size_t v2_id) const</td></tr>
 <tr class="memdesc:a110594e16e75a527eedde84b1d4d3133"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lowest tet id incident to all three vertices, or size_t(-1) if there is none.  <br /></td></tr>
 <tr class="separator:a110594e16e75a527eedde84b1d4d3133"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -366,30 +372,23 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>rollback_protected_at
 <tr class="memitem:acc48c6b2823ff1ed56b3cddb7e5675d5" id="r_acc48c6b2823ff1ed56b3cddb7e5675d5"><td class="memItemLeft" align="right" valign="top"><a id="acc48c6b2823ff1ed56b3cddb7e5675d5" name="acc48c6b2823ff1ed56b3cddb7e5675d5"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>release_vertex_mutex_in_stack</b> ()</td></tr>
 <tr class="separator:acc48c6b2823ff1ed56b3cddb7e5675d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac51d0d254cb04f788e947253a6302678" id="r_ac51d0d254cb04f788e947253a6302678"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ac51d0d254cb04f788e947253a6302678">try_set_vertex_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
-<tr class="memdesc:ac51d0d254cb04f788e947253a6302678"><td class="mdescLeft">&#160;</td><td class="mdescRight">try lock the two-ring neighboring traingles' incident vertices  <br /></td></tr>
-<tr class="separator:ac51d0d254cb04f788e947253a6302678"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e4e98081c46f6fadcbdbd6cf08a6104" id="r_a4e4e98081c46f6fadcbdbd6cf08a6104"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a4e4e98081c46f6fadcbdbd6cf08a6104">try_set_vertex_mutex_two_ring_vid</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
-<tr class="memdesc:a4e4e98081c46f6fadcbdbd6cf08a6104"><td class="mdescLeft">&#160;</td><td class="mdescRight">try lock the two-ring neighboring traingles' incident vertices using vids  <br /></td></tr>
-<tr class="separator:a4e4e98081c46f6fadcbdbd6cf08a6104"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac472663ce807722a6b0bd6a5882d5772" id="r_ac472663ce807722a6b0bd6a5882d5772"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ac472663ce807722a6b0bd6a5882d5772">try_set_vertex_mutex_two_ring_vid</a> (size_t v, int threadid)</td></tr>
-<tr class="memdesc:ac472663ce807722a6b0bd6a5882d5772"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid that gets vids using the vid of the input <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a>  <br /></td></tr>
-<tr class="separator:ac472663ce807722a6b0bd6a5882d5772"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacef21dc04a22a0345bb6c442381c3ac" id="r_aacef21dc04a22a0345bb6c442381c3ac"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aacef21dc04a22a0345bb6c442381c3ac">try_set_edge_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e, int threadid=0)</td></tr>
-<tr class="memdesc:aacef21dc04a22a0345bb6c442381c3ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">try lock the two-ring neighboring triangles' incident vertices for the two ends of an edge  <br /></td></tr>
-<tr class="separator:aacef21dc04a22a0345bb6c442381c3ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9f26ed60c1e32130451157fbf49a219" id="r_ad9f26ed60c1e32130451157fbf49a219"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ad9f26ed60c1e32130451157fbf49a219">try_set_face_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f, int threadid=0)</td></tr>
-<tr class="memdesc:ad9f26ed60c1e32130451157fbf49a219"><td class="mdescLeft">&#160;</td><td class="mdescRight">try lock the two-ring neighboring triangles' incident vertices for the 3 vertices of a face  <br /></td></tr>
-<tr class="separator:ad9f26ed60c1e32130451157fbf49a219"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3b505a9de73e467bbccf607cd2e51be" id="r_ad3b505a9de73e467bbccf607cd2e51be"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ad3b505a9de73e467bbccf607cd2e51be">try_set_face_mutex_two_ring</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v1, const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v2, const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v3, int threadid=0)</td></tr>
-<tr class="memdesc:ad3b505a9de73e467bbccf607cd2e51be"><td class="mdescLeft">&#160;</td><td class="mdescRight">locking the two-ring neighboring triangles' incident vertices given the 3 vertex Tuples of the face  <br /></td></tr>
-<tr class="separator:ad3b505a9de73e467bbccf607cd2e51be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1c9cba2fa43d0c80018f04bbc9f4189" id="r_ae1c9cba2fa43d0c80018f04bbc9f4189"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ae1c9cba2fa43d0c80018f04bbc9f4189">try_set_face_mutex_two_ring</a> (size_t v1, size_t v2, size_t v3, int threadid=0)</td></tr>
-<tr class="memdesc:ae1c9cba2fa43d0c80018f04bbc9f4189"><td class="mdescLeft">&#160;</td><td class="mdescRight">a duplicate of ConcurrentTetMesh::try_set_face_mutex_two_ring usign the vids of the 3 vertices of a face  <br /></td></tr>
-<tr class="separator:ae1c9cba2fa43d0c80018f04bbc9f4189"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ddb1f80644bd2c6ac1bf5237583dd83" id="r_a3ddb1f80644bd2c6ac1bf5237583dd83"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a3ddb1f80644bd2c6ac1bf5237583dd83">try_set_vertex_mutex_one_ring</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid=0)</td></tr>
-<tr class="memdesc:a3ddb1f80644bd2c6ac1bf5237583dd83"><td class="mdescLeft">&#160;</td><td class="mdescRight">try lock the one-ring neighboring traingles' incident vertices  <br /></td></tr>
-<tr class="separator:a3ddb1f80644bd2c6ac1bf5237583dd83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba7524206b0dbd5f6d5c155bb30f610e" id="r_aba7524206b0dbd5f6d5c155bb30f610e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aba7524206b0dbd5f6d5c155bb30f610e">release_vertex_mutex_to</a> (size_t mark)</td></tr>
+<tr class="memdesc:aba7524206b0dbd5f6d5c155bb30f610e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release the mutexes taken since the release stack held <code>mark</code> entries.  <br /></td></tr>
+<tr class="separator:aba7524206b0dbd5f6d5c155bb30f610e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5b6eb56f9b65613ddaa93d94624bcf7" id="r_ac5b6eb56f9b65613ddaa93d94624bcf7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#ac5b6eb56f9b65613ddaa93d94624bcf7">try_set_vertex_mutex_n_ring</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid, int n)</td></tr>
+<tr class="memdesc:ac5b6eb56f9b65613ddaa93d94624bcf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock every vertex within graph distance <code>n</code> of <code>v</code>, the seed included.  <br /></td></tr>
+<tr class="separator:ac5b6eb56f9b65613ddaa93d94624bcf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a148534e3b0ef8811667ef8b2dc00a82d" id="r_a148534e3b0ef8811667ef8b2dc00a82d"><td class="memItemLeft" align="right" valign="top"><a id="a148534e3b0ef8811667ef8b2dc00a82d" name="a148534e3b0ef8811667ef8b2dc00a82d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_n_ring</b> (size_t vid, int threadid, int n)</td></tr>
+<tr class="separator:a148534e3b0ef8811667ef8b2dc00a82d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f69fcc1df8da7ff6acad0c273296f41" id="r_a6f69fcc1df8da7ff6acad0c273296f41"><td class="memItemLeft" align="right" valign="top"><a id="a6f69fcc1df8da7ff6acad0c273296f41" name="a6f69fcc1df8da7ff6acad0c273296f41"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_edge_mutex_n_ring</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e, int threadid, int n)</td></tr>
+<tr class="memdesc:a6f69fcc1df8da7ff6acad0c273296f41"><td class="mdescLeft">&#160;</td><td class="mdescRight">try_set_vertex_mutex_n_ring seeded from both ends of an edge. <br /></td></tr>
+<tr class="separator:a6f69fcc1df8da7ff6acad0c273296f41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1293679ecd21ccb5f456eecb11818d65" id="r_a1293679ecd21ccb5f456eecb11818d65"><td class="memItemLeft" align="right" valign="top"><a id="a1293679ecd21ccb5f456eecb11818d65" name="a1293679ecd21ccb5f456eecb11818d65"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_face_mutex_n_ring</b> (size_t v1, size_t v2, size_t v3, int threadid, int n)</td></tr>
+<tr class="memdesc:a1293679ecd21ccb5f456eecb11818d65"><td class="mdescLeft">&#160;</td><td class="mdescRight">try_set_vertex_mutex_n_ring seeded from the three vertices of a face. <br /></td></tr>
+<tr class="separator:a1293679ecd21ccb5f456eecb11818d65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab555af7281d2b082c9edf877b5d08798" id="r_ab555af7281d2b082c9edf877b5d08798"><td class="memItemLeft" align="right" valign="top"><a id="ab555af7281d2b082c9edf877b5d08798" name="ab555af7281d2b082c9edf877b5d08798"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_edge</b> (const std::function&lt; void(const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">TetMesh::Tuple</a> &amp;)&gt; &amp;)</td></tr>
 <tr class="memdesc:ab555af7281d2b082c9edf877b5d08798"><td class="mdescLeft">&#160;</td><td class="mdescRight">perform the given function for each edge <br /></td></tr>
@@ -429,6 +428,45 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_tetra</b> (c
 <tr class="memitem:aa85f8199512a563b9c64b1338536e261" id="r_aa85f8199512a563b9c64b1338536e261"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aa85f8199512a563b9c64b1338536e261">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:aa85f8199512a563b9c64b1338536e261"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:aa85f8199512a563b9c64b1338536e261"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Ring lockers &ndash; NOT balls</div></td></tr>
+<tr><td colspan="2"><div class="groupText"><p>The helpers below are the ones every pass actually uses, and <b>none of the two-ring ones claims the ball its name suggests</b>. Each walks the ring with </p><pre class="fragment">if (m_vertex_mutex[w].get_owner() == threadid) continue;
+</pre><p> and that <code>continue</code> skips the EXPANSION as well as the lock. So a vertex this thread already holds contributes none of its neighbours. In try_set_edge_mutex_two_ring the effect is systematic rather than incidental: v2 is locked up front, so walking v1's ring skips straight past it, and by the time v2's ring is walked almost everything in it is already owned from v1's expansion and is skipped in turn. What comes out is roughly <em>2-ring(v1) union N(v2)</em> &ndash; the vertices at distance 2 from v2 and 3 from v1 are simply not claimed. The face variants compose the same helper three times and inherit the same shortfall.</p>
+<p><b>This is deliberate, and swapping in try_set_vertex_mutex_n_ring is a performance regression, not a cleanup.</b> Measured: routing the passes through the complete ball cost +80% wall clock on the 14 challenging tetwild models at 16 threads (844s -&gt; 1522s), against -0.4% on the 16 challenging triwild ones. 3D is where it hurts, because a tet vertex has ~30 neighbours and the honest 2-ring ball is enormous next to what these claim.</p>
+<p>It is also a coverage-vs-name mismatch rather than a known race. What the operations rely on is that the whole ONE-ring of the seed simplex is held, and that they do hold: the outer loops lock every unowned neighbour directly and only skip expanding through owned ones, so <code>{v1, v2} u N(v1) u N(v2)</code> is always claimed. That set is the operation's entire write set, and two operations interfere only if their one-rings meet &ndash; in which case they contend on the shared vertex and serialise. The second ring is defensive margin. No failing case is known for the part that is missing; if you find one, the fix is to widen the specific pass that needs it via try_set_vertex_mutex_n_ring, not to widen all of them.</p>
+<p>A caller that genuinely needs a complete ball asks for one explicitly, as the 2D coarsening pass does: it re-smooths a k-ring, so it writes the k-ring and reads the (k+1)-ring, well past what a plain collapse claims. </p>
+</div></td></tr>
+<tr class="memitem:ac51d0d254cb04f788e947253a6302678" id="r_ac51d0d254cb04f788e947253a6302678"><td class="memItemLeft" align="right" valign="top"><a id="ac51d0d254cb04f788e947253a6302678" name="ac51d0d254cb04f788e947253a6302678"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_two_ring</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
+<tr class="memdesc:ac51d0d254cb04f788e947253a6302678"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock v's one-ring and, partially, its two-ring. See the note above. <br /></td></tr>
+<tr class="separator:ac51d0d254cb04f788e947253a6302678"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e4e98081c46f6fadcbdbd6cf08a6104" id="r_a4e4e98081c46f6fadcbdbd6cf08a6104"><td class="memItemLeft" align="right" valign="top"><a id="a4e4e98081c46f6fadcbdbd6cf08a6104" name="a4e4e98081c46f6fadcbdbd6cf08a6104"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_two_ring_vid</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
+<tr class="memdesc:a4e4e98081c46f6fadcbdbd6cf08a6104"><td class="mdescLeft">&#160;</td><td class="mdescRight">try_set_vertex_mutex_two_ring reached through vids rather than Tuples. <br /></td></tr>
+<tr class="separator:a4e4e98081c46f6fadcbdbd6cf08a6104"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac472663ce807722a6b0bd6a5882d5772" id="r_ac472663ce807722a6b0bd6a5882d5772"><td class="memItemLeft" align="right" valign="top"><a id="ac472663ce807722a6b0bd6a5882d5772" name="ac472663ce807722a6b0bd6a5882d5772"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_two_ring_vid</b> (size_t v, int threadid)</td></tr>
+<tr class="memdesc:ac472663ce807722a6b0bd6a5882d5772"><td class="mdescLeft">&#160;</td><td class="mdescRight">try_set_vertex_mutex_two_ring reached through vids rather than Tuples. <br /></td></tr>
+<tr class="separator:ac472663ce807722a6b0bd6a5882d5772"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aacef21dc04a22a0345bb6c442381c3ac" id="r_aacef21dc04a22a0345bb6c442381c3ac"><td class="memItemLeft" align="right" valign="top"><a id="aacef21dc04a22a0345bb6c442381c3ac" name="aacef21dc04a22a0345bb6c442381c3ac"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_edge_mutex_two_ring</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e, int threadid=0)</td></tr>
+<tr class="memdesc:aacef21dc04a22a0345bb6c442381c3ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock the edge's one-ring and, partially, its two-ring. See the note above. <br /></td></tr>
+<tr class="separator:aacef21dc04a22a0345bb6c442381c3ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9f26ed60c1e32130451157fbf49a219" id="r_ad9f26ed60c1e32130451157fbf49a219"><td class="memItemLeft" align="right" valign="top"><a id="ad9f26ed60c1e32130451157fbf49a219" name="ad9f26ed60c1e32130451157fbf49a219"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_face_mutex_two_ring</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f, int threadid=0)</td></tr>
+<tr class="memdesc:ad9f26ed60c1e32130451157fbf49a219"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock the face's one-ring and, partially, its two-ring. See the note above. <br /></td></tr>
+<tr class="separator:ad9f26ed60c1e32130451157fbf49a219"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3b505a9de73e467bbccf607cd2e51be" id="r_ad3b505a9de73e467bbccf607cd2e51be"><td class="memItemLeft" align="right" valign="top"><a id="ad3b505a9de73e467bbccf607cd2e51be" name="ad3b505a9de73e467bbccf607cd2e51be"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_face_mutex_two_ring</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v1, const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v2, const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v3, int threadid=0)</td></tr>
+<tr class="memdesc:ad3b505a9de73e467bbccf607cd2e51be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock the face's one-ring and, partially, its two-ring. See the note above. <br /></td></tr>
+<tr class="separator:ad3b505a9de73e467bbccf607cd2e51be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1c9cba2fa43d0c80018f04bbc9f4189" id="r_ae1c9cba2fa43d0c80018f04bbc9f4189"><td class="memItemLeft" align="right" valign="top"><a id="ae1c9cba2fa43d0c80018f04bbc9f4189" name="ae1c9cba2fa43d0c80018f04bbc9f4189"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_face_mutex_two_ring</b> (size_t v1, size_t v2, size_t v3, int threadid=0)</td></tr>
+<tr class="memdesc:ae1c9cba2fa43d0c80018f04bbc9f4189"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock the face's one-ring and, partially, its two-ring. See the note above. <br /></td></tr>
+<tr class="separator:ae1c9cba2fa43d0c80018f04bbc9f4189"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ddb1f80644bd2c6ac1bf5237583dd83" id="r_a3ddb1f80644bd2c6ac1bf5237583dd83"><td class="memItemLeft" align="right" valign="top"><a id="a3ddb1f80644bd2c6ac1bf5237583dd83" name="a3ddb1f80644bd2c6ac1bf5237583dd83"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_one_ring</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid=0)</td></tr>
+<tr class="memdesc:a3ddb1f80644bd2c6ac1bf5237583dd83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock v and its one-ring. Complete, unlike the two-ring family. <br /></td></tr>
+<tr class="separator:a3ddb1f80644bd2c6ac1bf5237583dd83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -576,6 +614,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</
 <tr class="memitem:aed20b39e14544bad43b868fda24464a0" id="r_aed20b39e14544bad43b868fda24464a0"><td class="memItemLeft" align="right" valign="top"><a id="aed20b39e14544bad43b868fda24464a0" name="aed20b39e14544bad43b868fda24464a0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>unlock_vertex_mutex</b> (size_t vid)</td></tr>
 <tr class="separator:aed20b39e14544bad43b868fda24464a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fddcac3db6744e7a8da0b0f8c041d5c" id="r_a6fddcac3db6744e7a8da0b0f8c041d5c"><td class="memItemLeft" align="right" valign="top"><a id="a6fddcac3db6744e7a8da0b0f8c041d5c" name="a6fddcac3db6744e7a8da0b0f8c041d5c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>lock_vertex_ball</b> (const size_t *seeds, size_t n_seeds, int threadid, int n, size_t mark)</td></tr>
+<tr class="memdesc:a6fddcac3db6744e7a8da0b0f8c041d5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The n-ring BFS. <code>mark</code> is the release-stack watermark to unwind to on failure. <br /></td></tr>
+<tr class="separator:a6fddcac3db6744e7a8da0b0f8c041d5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-methods" name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -609,6 +651,9 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>m_v_empty_slot</b> = 0
 <tr class="memitem:a0a403d5dff5a1dc28b3ffe6af28daf8d" id="r_a0a403d5dff5a1dc28b3ffe6af28daf8d"><td class="memItemLeft" align="right" valign="top"><a id="a0a403d5dff5a1dc28b3ffe6af28daf8d" name="a0a403d5dff5a1dc28b3ffe6af28daf8d"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
 <tr class="separator:a0a403d5dff5a1dc28b3ffe6af28daf8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95800547e625a68297d674a16bce593b" id="r_a95800547e625a68297d674a16bce593b"><td class="memItemLeft" align="right" valign="top"><a id="a95800547e625a68297d674a16bce593b" name="a95800547e625a68297d674a16bce593b"></a>
+<a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html">RingLockScratch</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ring_lock_scratch</b></td></tr>
+<tr class="separator:a95800547e625a68297d674a16bce593b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
 Static Private Attributes</h2></td></tr>
@@ -1778,6 +1823,27 @@ false </dd></dl>
       </table>
 </div><div class="memdoc">
 <p>Positively oriented 4 vertices ids in a tetra. </p><dl class="section return"><dt>Returns</dt><dd>std::array&lt;size_t, 4&gt; of the vertex ids. </dd></dl>
+
+</div>
+</div>
+<a id="aba7524206b0dbd5f6d5c155bb30f610e" name="aba7524206b0dbd5f6d5c155bb30f610e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba7524206b0dbd5f6d5c155bb30f610e">&#9670;&#160;</a></span>release_vertex_mutex_to()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::TetMesh::release_vertex_mutex_to </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>mark</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Release the mutexes taken since the release stack held <code>mark</code> entries. </p>
+<p>Unwinding to a watermark rather than clearing the whole stack is what lets one lock acquisition be composed out of several, and what lets a failed acquisition leave the caller's own locks alone. <code>release_vertex_mutex_in_stack()</code> is this with mark = 0. </p>
 
 </div>
 </div>
@@ -3175,194 +3241,14 @@ false </dd></dl>
 
 </div>
 </div>
-<a id="aacef21dc04a22a0345bb6c442381c3ac" name="aacef21dc04a22a0345bb6c442381c3ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aacef21dc04a22a0345bb6c442381c3ac">&#9670;&#160;</a></span>try_set_edge_mutex_two_ring()</h2>
+<a id="ac5b6eb56f9b65613ddaa93d94624bcf7" name="ac5b6eb56f9b65613ddaa93d94624bcf7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5b6eb56f9b65613ddaa93d94624bcf7">&#9670;&#160;</a></span>try_set_vertex_mutex_n_ring()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_edge_mutex_two_ring </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>e</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>try lock the two-ring neighboring triangles' incident vertices for the two ends of an edge </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">e</td><td><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refers to the edge </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
-
-</div>
-</div>
-<a id="ad9f26ed60c1e32130451157fbf49a219" name="ad9f26ed60c1e32130451157fbf49a219"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9f26ed60c1e32130451157fbf49a219">&#9670;&#160;</a></span>try_set_face_mutex_two_ring() <span class="overload">[1/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_face_mutex_two_ring </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>f</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>try lock the two-ring neighboring triangles' incident vertices for the 3 vertices of a face </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">f</td><td><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refers to the face </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
-
-</div>
-</div>
-<a id="ad3b505a9de73e467bbccf607cd2e51be" name="ad3b505a9de73e467bbccf607cd2e51be"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3b505a9de73e467bbccf607cd2e51be">&#9670;&#160;</a></span>try_set_face_mutex_two_ring() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_face_mutex_two_ring </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>v1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>v2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>v3</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>locking the two-ring neighboring triangles' incident vertices given the 3 vertex Tuples of the face </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">v1</td><td>a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refering to one vertex of the face </td></tr>
-    <tr><td class="paramname">v2</td><td>a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refering to one vertex of the face </td></tr>
-    <tr><td class="paramname">v3</td><td>a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refering to one vertex of the face </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
-
-</div>
-</div>
-<a id="ae1c9cba2fa43d0c80018f04bbc9f4189" name="ae1c9cba2fa43d0c80018f04bbc9f4189"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1c9cba2fa43d0c80018f04bbc9f4189">&#9670;&#160;</a></span>try_set_face_mutex_two_ring() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_face_mutex_two_ring </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v2</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v3</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a duplicate of ConcurrentTetMesh::try_set_face_mutex_two_ring usign the vids of the 3 vertices of a face </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">v1</td><td>the vid of one vertex of the face </td></tr>
-    <tr><td class="paramname">v2</td><td>the vid of one vertex of the face </td></tr>
-    <tr><td class="paramname">v3</td><td>the vid of one vertex of the face </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
-
-</div>
-</div>
-<a id="a3ddb1f80644bd2c6ac1bf5237583dd83" name="a3ddb1f80644bd2c6ac1bf5237583dd83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ddb1f80644bd2c6ac1bf5237583dd83">&#9670;&#160;</a></span>try_set_vertex_mutex_one_ring()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_vertex_mutex_one_ring </td>
+          <td class="memname">bool wmtk::TetMesh::try_set_vertex_mutex_n_ring </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
           <td class="paramname"><em>v</em>, </td>
@@ -3371,45 +3257,13 @@ false </dd></dl>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em> = <code>0</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>try lock the one-ring neighboring traingles' incident vertices </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">v</td><td><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refers to the vertex </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
-
-</div>
-</div>
-<a id="ac51d0d254cb04f788e947253a6302678" name="ac51d0d254cb04f788e947253a6302678"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac51d0d254cb04f788e947253a6302678">&#9670;&#160;</a></span>try_set_vertex_mutex_two_ring()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_vertex_mutex_two_ring </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>v</em>, </td>
+          <td class="paramname"><em>threadid</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em>&#160;</td>
+          <td class="paramname"><em>n</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -3419,91 +3273,31 @@ false </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p>try lock the two-ring neighboring traingles' incident vertices </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">v</td><td><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refers to the vertex </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
+<p>Lock every vertex within graph distance <code>n</code> of <code>v</code>, the seed included. </p>
+<p>A true breadth-first ball, expanded only through vertices this thread holds, so every connectivity read is made under a lock. On failure it releases exactly what it took and returns false; the caller must not assume anything about the mesh afterwards.</p>
+<p>n == 0 locks the seed alone; n == 1 the seed and its one-ring, and so on. Sizing the ball is the caller's job: an operation must claim every vertex it READS as well as every vertex it writes, which for an operation that also re-smooths a k-ring means k+1 (smoothing a vertex reads its one-ring and writes the quality of its incident cells).</p>
+<dl class="section warning"><dt>Warning</dt><dd>This is NOT a drop-in replacement for the *_two_ring / *_one_ring helpers below, which claim a strictly smaller set. Read the note on them before "simplifying" one into the other &ndash; in 3D it has a very large, measured cost. </dd></dl>
 
 </div>
 </div>
-<a id="a4e4e98081c46f6fadcbdbd6cf08a6104" name="a4e4e98081c46f6fadcbdbd6cf08a6104"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e4e98081c46f6fadcbdbd6cf08a6104">&#9670;&#160;</a></span>try_set_vertex_mutex_two_ring_vid() <span class="overload">[1/2]</span></h2>
+<a id="a533d9c75396231e85206a5fa14ee198e" name="a533d9c75396231e85206a5fa14ee198e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a533d9c75396231e85206a5fa14ee198e">&#9670;&#160;</a></span>try_tuple_from_face()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid </td>
+          <td class="memname">std::optional&lt; std::tuple&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">TetMesh::Tuple</a>, size_t &gt; &gt; wmtk::TetMesh::try_tuple_from_face </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>v</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="paramtype">const std::array&lt; size_t, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>vids</em></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>try lock the two-ring neighboring traingles' incident vertices using vids </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">v</td><td><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refers to the vertex </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
-
-</div>
-</div>
-<a id="ac472663ce807722a6b0bd6a5882d5772" name="ac472663ce807722a6b0bd6a5882d5772"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac472663ce807722a6b0bd6a5882d5772">&#9670;&#160;</a></span>try_set_vertex_mutex_two_ring_vid() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::TetMesh::try_set_vertex_mutex_two_ring_vid </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>threadid</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>a duplicate of ConcurrentTetMesh::try_set_vertex_mutex_two_ring_vid that gets vids using the vid of the input <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">v</td><td><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> refers to the vertex </td></tr>
-    <tr><td class="paramname">threadid</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all locked successfully </dd></dl>
+<p>tuple_from_face for callers where a missing face is an answer, not a bug. </p>
+<p>The asserting form is right for the many callers that ask for a face they know exists. collapse_edge_after is not one of them: it asks for a face across the merged vertex that the collapse may have just removed, and it already has a branch for that case. </p>
 
 </div>
 </div>
