@@ -231,6 +231,39 @@ public:
     bool collapse_edge_after(const Tuple& t) override;
 
     /**
+     * @brief Coarsen the mesh without letting the max energy rise.
+     *
+     * Alternates coarsening-collapse passes with ordinary smoothing passes, as the main
+     * optimization does, for at most m_params.coarsen_max_rounds rounds or until a round
+     * accepts nothing. See OptimizerParameters::coarsen_pass for what makes the collapse in
+     * this pass different, and collapse_edge_after for how it is undone when it does not pay
+     * off. A no-op when m_params.coarsen_pass is false.
+     *
+     * @return the number of collapses accepted across all rounds.
+     */
+    size_t coarsen_mesh();
+
+    /**
+     * @brief One collapse under the coarsening rules, outside a coarsening pass.
+     *
+     * The pass sets the mode once and leaves it set for its whole duration, because every
+     * worker reads it; this is the single-operation form, for callers that want one and are
+     * not sharing the mesh with other threads.
+     */
+    bool coarsen_collapse_edge(const Tuple& e, std::vector<Tuple>& new_tris);
+
+    /// What coarsen_mesh() achieved, for the run report. Zeroed when the pass is off.
+    struct CoarsenStats
+    {
+        size_t accepted = 0;
+        size_t faces_before = 0;
+        size_t faces_after = 0;
+        double max_energy_before = 0.;
+        double max_energy_after = 0.;
+    };
+    CoarsenStats m_coarsen_stats;
+
+    /**
      * @brief Run TriWild's quality-improving interior edge-flip pass.
      *
      * This operation is shared verbatim by TriWild and SimWild. Face tags are copied from
@@ -390,8 +423,14 @@ protected:
         std::vector<std::array<size_t, 2>> surface_edges;
         std::vector<size_t> changed_fids;
         std::vector<double> changed_energies;
+        /// Coarsening pass only: the worst quality in the region the composite may disturb,
+        /// measured before the collapse. See collapse_edge_after.
+        double region_max_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+
+    /// Set for the duration of coarsen_mesh(); read-only while a pass is running.
+    bool m_coarsen_mode = false;
 
 private:
     struct SwapInfoCache
@@ -401,6 +440,39 @@ private:
         std::set<int64_t> face_tags;
     };
     wmtk::threading::enumerable_thread_specific<SwapInfoCache> swap_cache;
+
+    /**
+     * @brief Per-thread buffers for the coarsening composite, so it allocates nothing.
+     *
+     * `saved` holds one vertex's attributes and the quality of its incident faces, which is
+     * everything an individual smooth writes -- smooth_vertex_2d returns false only after
+     * having written both, deliberately (see its contract), so a rejected smooth has to be
+     * undone by its caller.
+     */
+    struct CoarsenScratch
+    {
+        std::vector<size_t> ring; // vertices to re-smooth, BFS order
+        std::vector<size_t> frontier;
+        std::vector<size_t> next;
+        std::vector<size_t> one_ring;
+        std::vector<uint32_t> stamp;
+        uint32_t epoch = 0;
+        VertexAttributes saved_vertex;
+        std::vector<std::pair<size_t, double>> saved_qualities;
+    };
+    wmtk::threading::enumerable_thread_specific<CoarsenScratch> coarsen_scratch;
+
+    /// Vertices within @p n edges of @p seeds, in BFS order. Uses coarsen_scratch.
+    const std::vector<size_t>&
+    collect_vertex_ball(const size_t* seeds, size_t n_seeds, int n, CoarsenScratch& scr) const;
+
+    /// Worst face quality over the faces incident to any vertex of @p vids.
+    double region_max_quality(const std::vector<size_t>& vids) const;
+
+    /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
+    bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);
+
+    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring);
 };
 
 } // namespace wmtk

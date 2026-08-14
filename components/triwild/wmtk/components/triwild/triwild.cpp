@@ -624,6 +624,13 @@ void triwild(nlohmann::json json_params)
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
         report["#iterations"] = mesh.m_iterations_used;
+        // What the final coarsening pass bought. All zero when coarsen_pass is off, which is
+        // also how an A/B tells the two arms apart.
+        report["coarsen_accepted"] = mesh.m_coarsen_stats.accepted;
+        report["coarsen_f_before"] = mesh.m_coarsen_stats.faces_before;
+        report["coarsen_f_after"] = mesh.m_coarsen_stats.faces_after;
+        report["coarsen_max_energy_before"] = mesh.m_coarsen_stats.max_energy_before;
+        report["coarsen_max_energy_after"] = mesh.m_coarsen_stats.max_energy_after;
         // report["time"] = time;
         // "hausdorff" keeps its name and now holds containment, the invariant; "coverage" is
         // the other direction. Same convention as the tetwild report.

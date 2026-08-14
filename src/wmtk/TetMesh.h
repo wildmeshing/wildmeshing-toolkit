@@ -13,6 +13,7 @@
 #include <atomic>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <map>
 #include <optional>
@@ -1318,6 +1319,25 @@ private:
     void unlock_vertex_mutex(const Tuple& v) { m_vertex_mutex[v.vid(*this)].unlock(); }
     void unlock_vertex_mutex(size_t vid) { m_vertex_mutex[vid].unlock(); }
 
+    /**
+     * @brief Per-thread buffers for the n-ring lock, so a lock acquisition allocates nothing.
+     *
+     * `stamp[vid] == epoch` marks a vertex already in the ball being built; the epoch is
+     * bumped per acquisition instead of clearing the vector.
+     */
+    struct RingLockScratch
+    {
+        std::vector<uint32_t> stamp;
+        uint32_t epoch = 0;
+        std::vector<size_t> frontier;
+        std::vector<size_t> next;
+        std::vector<size_t> one_ring;
+    };
+    wmtk::threading::enumerable_thread_specific<RingLockScratch> m_ring_lock_scratch;
+
+    /// The n-ring BFS. @p mark is the release-stack watermark to unwind to on failure.
+    bool lock_vertex_ball(const size_t* seeds, size_t n_seeds, int threadid, int n, size_t mark);
+
 protected:
     void resize_vertex_mutex(size_t v)
     {
@@ -1330,6 +1350,37 @@ public:
 
     // void init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& tets);
     int release_vertex_mutex_in_stack();
+    /**
+     * @brief Release the mutexes taken since the release stack held @p mark entries.
+     *
+     * Unwinding to a watermark rather than clearing the whole stack is what lets one lock
+     * acquisition be composed out of several, and what lets a failed acquisition leave the
+     * caller's own locks alone. `release_vertex_mutex_in_stack()` is this with mark = 0.
+     */
+    int release_vertex_mutex_to(size_t mark);
+
+    /**
+     * @brief Lock every vertex within graph distance @p n of @p v, the seed included.
+     *
+     * A breadth-first ball, expanded only through vertices this thread holds, so every
+     * connectivity read is made under a lock. On failure it releases exactly what it took and
+     * returns false; the caller must not assume anything about the mesh afterwards.
+     *
+     * n == 0 locks the seed alone; n == 1 the seed and its one-ring, and so on. Sizing the
+     * ball is the caller's job: an operation must claim every vertex it READS as well as
+     * every vertex it writes, which for an operation that also re-smooths a k-ring means k+1
+     * (smoothing a vertex reads its one-ring and writes the quality of its incident cells).
+     */
+    bool try_set_vertex_mutex_n_ring(const Tuple& v, int threadid, int n);
+    bool try_set_vertex_mutex_n_ring(size_t vid, int threadid, int n);
+    /**
+     * @brief try_set_vertex_mutex_n_ring seeded from both ends of an edge.
+     */
+    bool try_set_edge_mutex_n_ring(const Tuple& e, int threadid, int n);
+    /**
+     * @brief try_set_vertex_mutex_n_ring seeded from the three vertices of a face.
+     */
+    bool try_set_face_mutex_n_ring(size_t v1, size_t v2, size_t v3, int threadid, int n);
 
     // helpers
     /**

@@ -37,7 +37,7 @@ void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
     logger().info("edge collapse prepare time: {:.4}s", time);
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
         "edge collapse operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {

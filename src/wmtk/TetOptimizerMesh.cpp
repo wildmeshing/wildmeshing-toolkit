@@ -333,7 +333,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         logger().debug("Num verts {}", collect_all_ops.size());
         run_pass(
             *this,
-            PassLock::VertexOneRing,
+            PassLock::VertexRing,
             "vertex smoothing operation",
             [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());

@@ -10,13 +10,28 @@
 namespace wmtk {
 
 /**
- * @brief Which mutex an operation has to claim before it may run in parallel.
+ * @brief Which simplex an operation seeds its lock from, before it may run in parallel.
+ *
+ * The RADIUS is a separate argument: see `default_ring` for what each kind claims when the
+ * caller does not say, and the five-argument `run_pass` below for when it should.
  */
 enum class PassLock {
-    EdgeTwoRing, ///< topology-changing operations queued on edges
-    FaceTwoRing, ///< face swaps (3D only)
-    VertexOneRing, ///< smoothing, which moves a single vertex and changes no connectivity
+    EdgeRing, ///< topology-changing operations queued on edges
+    FaceRing, ///< face swaps (3D only)
+    VertexRing, ///< smoothing, which moves a single vertex and changes no connectivity
 };
+
+/**
+ * @brief The radius each lock kind claims when the caller does not specify one.
+ *
+ * Two rings for a topology change (it rewrites the one-ring and reads the ring beyond), one
+ * for smoothing (it moves one vertex and reads its one-ring). An operation that does more
+ * than that -- one that also re-smooths a k-ring, say -- has to ask for more.
+ */
+constexpr int default_ring(PassLock lock)
+{
+    return lock == PassLock::VertexRing ? 1 : 2;
+}
 
 /**
  * @brief Run one optimization pass, serial or parallel according to the mesh's NUM_THREADS.
@@ -39,17 +54,40 @@ enum class PassLock {
  * @note The mesh is taken as the optimizer base, so the callbacks installed on the executor see
  * the base type too. A lambda that needs an application-specific member must capture `this`
  * rather than reach through the executor's mesh argument.
+ *
+ * @p ring is the radius of the vertex ball to claim, in edges; the overload without it uses
+ * `default_ring(lock)`.
  */
 void run_pass(
     TriOptimizerMesh& m,
     PassLock lock,
+    int ring,
     const std::string& label,
     const std::function<void(ExecutePass<TriOptimizerMesh>&, TriOptimizerMesh&)>& body);
 
 void run_pass(
     TetOptimizerMesh& m,
     PassLock lock,
+    int ring,
     const std::string& label,
     const std::function<void(ExecutePass<TetOptimizerMesh>&, TetOptimizerMesh&)>& body);
+
+inline void run_pass(
+    TriOptimizerMesh& m,
+    PassLock lock,
+    const std::string& label,
+    const std::function<void(ExecutePass<TriOptimizerMesh>&, TriOptimizerMesh&)>& body)
+{
+    run_pass(m, lock, default_ring(lock), label, body);
+}
+
+inline void run_pass(
+    TetOptimizerMesh& m,
+    PassLock lock,
+    const std::string& label,
+    const std::function<void(ExecutePass<TetOptimizerMesh>&, TetOptimizerMesh&)>& body)
+{
+    run_pass(m, lock, default_ring(lock), label, body);
+}
 
 } // namespace wmtk

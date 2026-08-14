@@ -165,6 +165,33 @@ struct OptimizerParameters
     bool interleaved_smoothing = true;
     int interleaved_smoothing_passes = 1;
 
+    // ---- Coarsening pass -------------------------------------------------
+    /**
+     * A final pass that removes vertices without letting the max energy rise.
+     *
+     * The ordinary collapse refuses anything whose resulting cells are worse than the ring
+     * they replace, and it judges that on the raw post-collapse geometry -- the worst moment
+     * in the operation's life, before smoothing has had any chance to absorb the damage. So a
+     * collapse that would be perfectly fine once its neighbourhood relaxes never happens, and
+     * the converged mesh carries vertices it does not need.
+     *
+     * This pass takes the collapse optimistically instead: no quality pre-check, then
+     * coarsen_local_smoothing_passes sweeps of smoothing over the coarsen_smooth_ring around
+     * the merged vertex, and only then a decision -- keep it if the worst cell in the region
+     * touched is no worse than before, undo the whole block otherwise. Because every cell
+     * outside that region is untouched, "no worse locally" is exactly "no worse globally".
+     */
+    bool coarsen_pass = true;
+    /// Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
+    int coarsen_local_smoothing_passes = 2;
+    /// Radius smoothed inside the collapse. The lock claims one more ring than this, because
+    /// smoothing a vertex reads its one-ring and writes the quality of its incident cells.
+    int coarsen_smooth_ring = 2;
+    /// Ordinary global smoothing passes between coarsening rounds.
+    int coarsen_global_smoothing_passes = 1;
+    /// Cap on the collapse/smooth alternation; it also stops as soon as a round collapses nothing.
+    int coarsen_max_rounds = 5;
+
     bool debug_output = false;
     bool perform_sanity_checks = false;
 

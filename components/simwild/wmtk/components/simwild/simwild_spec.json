@@ -38,6 +38,11 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
+      "coarsen_pass",
+      "coarsen_local_smoothing_passes",
+      "coarsen_smooth_ring",
+      "coarsen_global_smoothing_passes",
+      "coarsen_max_rounds",
       "write_vtu",
       "write_envelope",
       "log_file",
@@ -594,5 +599,35 @@
     "type": "string",
     "default": "_ | !_",
     "doc": "A boolean expression that defines the input selection for intent operations. `_` represents empty tags."
+  },
+  {
+    "pointer": "/coarsen_pass",
+    "type": "bool",
+    "default": true,
+    "doc": "Run a final coarsening pass after the optimization has converged. The ordinary collapse judges a candidate on the raw post-collapse geometry -- the worst moment in the operation's life, before smoothing has absorbed any of the damage -- so a collapse that would be fine once its neighbourhood relaxes is never taken, and the converged mesh keeps vertices it does not need. This pass takes the collapse optimistically, re-smooths coarsen_smooth_ring around the merged vertex, and keeps it only if the worst element in the region it touched is no worse than before; every element outside that region is untouched, so 'no worse locally' is exactly 'no worse globally'. Alternates with ordinary smoothing passes, as the main optimization does."
+  },
+  {
+    "pointer": "/coarsen_local_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Smoothing sweeps over the ring inside each candidate coarsening collapse, before its max energy is measured. This is what gives the collapse a chance to be judged on a relaxed neighbourhood rather than on the configuration it lands in."
+  },
+  {
+    "pointer": "/coarsen_smooth_ring",
+    "type": "int",
+    "default": 2,
+    "doc": "Radius, in edges from the merged vertex, of the neighbourhood re-smoothed inside a coarsening collapse. The parallel lock claims one ring more than this, because smoothing a vertex reads its one-ring and writes the quality of its incident faces."
+  },
+  {
+    "pointer": "/coarsen_global_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "doc": "Ordinary whole-mesh smoothing passes run between coarsening rounds."
+  },
+  {
+    "pointer": "/coarsen_max_rounds",
+    "type": "int",
+    "default": 5,
+    "doc": "Cap on the coarsen/smooth alternation. The pass also stops as soon as a round accepts no collapse."
   }
 ]

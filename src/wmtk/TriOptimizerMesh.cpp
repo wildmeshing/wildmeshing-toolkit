@@ -114,6 +114,11 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
 
     logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
+
+    // Removing what the mesh does not need is the last thing to do, not something to
+    // interleave: it trades vertices for nothing but the guarantee that the max energy does
+    // not rise, which is only worth taking once the energy is where it is going to end up.
+    coarsen_mesh();
 }
 
 std::tuple<double, double> TriOptimizerMesh::local_operations(
@@ -226,7 +231,7 @@ size_t TriOptimizerMesh::swap_all_edges()
     logger().info("edge swap prepare time: {:.4}s", timer.getElapsedTimeInSec());
 
     size_t total_success = 0;
-    run_pass(*this, PassLock::EdgeTwoRing, "", [&](auto& executor, auto& mesh) {
+    run_pass(*this, PassLock::EdgeRing, "", [&](auto& executor, auto& mesh) {
         executor.renew_neighbor_tuples = renew_swap_neighbors;
         executor.priority = [](const TriOptimizerMesh& m, std::string, const Tuple& e) {
             return m.swap_weight(e);
