@@ -11,6 +11,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <wmtk/utils/EnvelopeBudget.hpp>
 #include <wmtk/utils/Preallocation.hpp>
 #include "Parameters.h"
 #include "SimWildMesh.h"
@@ -155,6 +156,29 @@ void apply_operation(MeshT& mesh, const nlohmann::json& json_params)
 namespace {
 
 /**
+ * @brief Does a simplification actually run, and so have to be charged against eps?
+ *
+ * SimWild simplifies in one of two places, and which one applies turns on preserve_topology:
+ *
+ *  - BEFORE insertion, in read_mesh / read_curves (read_image_msh.cpp), when
+ *    `!preserve_topology && !skip_simplify`. Simplification can change the topology of the
+ *    input, so this route only runs where the caller has said that is acceptable.
+ *  - AFTER insertion, SimWildMesh::simplify() from run_3D, when
+ *    `preserve_topology && !skip_simplify && operation == "remeshing"`. It collapses at
+ *    eps_simplify with the quality check off and then REBUILDS the envelope around the
+ *    result, so it displaces the envelope geometry exactly as the pre-insertion route does.
+ *
+ * The 2D route has no post-insertion counterpart -- SimWildMeshTri has no simplify() -- so
+ * under preserve_topology nothing simplifies there.
+ */
+bool simplification_runs(const Parameters& params, bool is_3d)
+{
+    if (params.skip_simplify) return false;
+    if (!params.preserve_topology) return true; // pre-insertion, both dimensions
+    return is_3d && params.operation == "remeshing"; // post-insertion, 3D only
+}
+
+/**
  * @brief The eps the optimizer's envelope should use.
  *
  * SimWild already builds its envelope around the SIMPLIFIED geometry -- read_mesh in 3D and
@@ -168,33 +192,16 @@ namespace {
  * only the remainder, which makes the total deviation eps as advertised.
  *
  * Narrowing here rather than at each init_envelope call is deliberate: every later rebuild
- * reads m_envelope_eps, so doing it once at construction covers them all and cannot
- * double-subtract.
+ * reads m_envelope_eps, so doing it once at construction covers them all -- including the
+ * rebuild at the end of SimWildMesh::simplify() -- and cannot double-subtract.
  */
-double optimization_envelope_eps(const Parameters& params)
+double optimization_envelope_eps(const Parameters& params, bool is_3d)
 {
-    if (!params.optimize_envelope_around_simplified) return params.eps;
-    if (params.preserve_topology || params.skip_simplify) {
-        // No simplification ran -- the envelope geometry IS the input, so the full eps is
-        // already centred on it and there is nothing to charge.
-        return params.eps;
-    }
-    const double remaining = params.eps - params.eps_simplify;
-    if (remaining <= 0) {
-        logger().warn(
-            "optimize_envelope_around_simplified: eps_simplify {:.6} leaves nothing of eps "
-            "{:.6}; keeping the full eps",
-            params.eps_simplify,
-            params.eps);
-        return params.eps;
-    }
-    logger().info(
-        "optimization envelope: eps {:.6} (eps {:.6} - eps_simplify {:.6}) around the "
-        "simplified input",
-        remaining,
+    return wmtk::utils::optimization_envelope_eps(
         params.eps,
-        params.eps_simplify);
-    return remaining;
+        params.eps_simplify,
+        params.optimize_envelope_around_simplified,
+        simplification_runs(params, is_3d));
 }
 
 } // namespace
@@ -207,7 +214,10 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     igl::Timer timer;
     timer.start();
 
-    simwild::SimWildMesh mesh(params, optimization_envelope_eps(params), params.NUM_THREADS);
+    simwild::SimWildMesh mesh(
+        params,
+        optimization_envelope_eps(params, /*is_3d=*/true),
+        params.NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
@@ -299,7 +309,7 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
 
     simwild::tri::SimWildMeshTri mesh(
         params,
-        optimization_envelope_eps(params),
+        optimization_envelope_eps(params, /*is_3d=*/false),
         params.NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope

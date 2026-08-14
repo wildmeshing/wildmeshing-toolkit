@@ -29,6 +29,7 @@
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
+#include <wmtk/utils/EnvelopeBudget.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 #include <tetwild_spec.hpp>
@@ -343,8 +344,19 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // surface handed over already close to the boundary has most of its moves refused, and
     // deliberately starving that headroom (simplify_envelope_ratio 0.95) was enough to turn a
     // converging run into a diverging one on 1368052.
+    //
+    // The narrowing is charged for the simplification's deviation, so it applies only when a
+    // simplification actually ran. Under skip_simplify the "simplified" surface IS the input,
+    // there is nothing to charge, and subtracting anyway would confine the optimizer to a
+    // fraction of the tolerance its result is judged against -- for no gain, since the
+    // geometry already starts centred in the full envelope.
     const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
-    const double opt_eps = env_around_simplified ? (tet_eps - simplify_eps) : tet_eps;
+    const bool charge_simplify = env_around_simplified && !skip_simplify;
+    const double opt_eps = wmtk::utils::optimization_envelope_eps(
+        tet_eps,
+        simplify_eps,
+        env_around_simplified,
+        /*simplification_ran=*/!skip_simplify);
 
     auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
     {
@@ -382,7 +394,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
         tet_envelope->use_exact ? "EXACT" : "sampled",
         std::sqrt(tet_envelope->eps2),
-        env_around_simplified ? "SIMPLIFIED surface" : "input");
+        !env_around_simplified ? "input"
+        : charge_simplify      ? "SIMPLIFIED surface"
+                               : "input (skip_simplify: nothing to charge, full eps)");
 
     if (json_params["DEBUG_disable_envelope"]) {
         logger().warn(

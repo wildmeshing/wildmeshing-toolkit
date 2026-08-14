@@ -20,7 +20,10 @@
 // answers, and in particular the two places where the backends legitimately disagree: the band
 // the sampled test gives up to its own conservatism, and a gap narrower than the sample
 // spacing, where the sampled test is simply wrong.
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+
+#include <wmtk/utils/EnvelopeBudget.hpp>
 
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
@@ -248,5 +251,52 @@ TEST_CASE("an exact query against the wrong kind of envelope throws", "[envelope
         const std::array<Eigen::Vector3d, 2> e = {
             {Eigen::Vector3d(1, 0, 0), Eigen::Vector3d(3, 0, 0)}};
         CHECK_NOTHROW(sampled.is_outside(e));
+    }
+}
+
+// The deviation budget: which eps the optimizer's envelope is allowed to spend.
+//
+// Every app promises the output stays within eps of the ORIGINAL input, and two stages move
+// geometry towards that limit. These pin the arithmetic that shares the budget between them,
+// and in particular the two ways of getting it wrong that this function exists to prevent:
+// charging for a simplification that never ran, and letting the remainder go non-positive.
+TEST_CASE("envelope_budget", "[envelope]")
+{
+    using wmtk::utils::optimization_envelope_eps;
+    const double eps = 1e-3;
+    const double simplify_eps = 4e-4;
+
+    SECTION("envelope around the input gets the whole budget")
+    {
+        // The envelope measures against the thing the promise is about, so the two stages do
+        // not add up and there is nothing to share -- whether or not a simplification ran.
+        CHECK(optimization_envelope_eps(eps, simplify_eps, false, true) == eps);
+        CHECK(optimization_envelope_eps(eps, simplify_eps, false, false) == eps);
+    }
+
+    SECTION("envelope around the simplified geometry gets the remainder")
+    {
+        CHECK(
+            optimization_envelope_eps(eps, simplify_eps, true, true) ==
+            Catch::Approx(eps - simplify_eps));
+    }
+
+    SECTION("nothing is charged when no simplification ran")
+    {
+        // The regression this function was extracted for. The "simplified" geometry IS the
+        // input, so it already sits at the centre of the full envelope; narrowing would
+        // confine the optimizer to a fraction of the tolerance its result is judged against,
+        // and buy nothing.
+        CHECK(optimization_envelope_eps(eps, simplify_eps, true, false) == eps);
+    }
+
+    SECTION("a remainder that would be non-positive falls back to the full eps")
+    {
+        // Never returns <= 0. SampleEnvelope::init SQUARES its argument, so a negative eps
+        // would come back as a positive eps2 -- a silently smaller envelope rather than an
+        // error -- and a zero one vetoes every operation.
+        CHECK(optimization_envelope_eps(eps, eps, true, true) == eps);
+        CHECK(optimization_envelope_eps(eps, 1.5 * eps, true, true) == eps);
+        CHECK(optimization_envelope_eps(eps, 0.999999 * eps, true, true) > 0);
     }
 }
