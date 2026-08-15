@@ -1,6 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriOptimizerMesh.h>
+#include <wmtk/optimization/solver.hpp>
 #include <algorithm>
 #include <atomic>
 #include <functional>
@@ -93,6 +94,20 @@ public:
     int m_vtu_counter = 0;
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
     size_t m_tags_count;
+    /**
+     * @brief The input complex as loaded. BUILT ONCE, NEVER REBUILT.
+     *
+     * Every offset quantity is measured against this: the distance error, the offset field's
+     * normals, project_offset_vertex()'s target, the sizing score. init_input_complex_bvh() has
+     * exactly one call site, in the driver, before execute_offset() runs -- so this holds the
+     * original geometry however the mesh elements representing the complex are later refined,
+     * coarsened or smoothed.
+     *
+     * That invariant is load-bearing and easy to break by accident. Since the complex stopped
+     * being frozen, rebuilding this from the live mesh would redefine the offset distance in
+     * terms of a surface the optimizer had just moved, and the convergence criterion would then
+     * be measuring the mesh against itself.
+     */
     SimplicialComplexBVH m_input_complex_bvh;
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -147,6 +162,11 @@ public:
         m_vertex_attr_group.add(&m_vertex_extra);
         m_edge_attr_group.add(&m_edge_extra);
         m_face_attr_group.add(&m_face_extra);
+
+        // As in 3D. The per-vertex Newton solver logs a line per smoothing attempt at info
+        // level, which is one line per vertex per pass: on a 13k-vertex mesh over 80 iterations
+        // that is a 1.9 GB log with the run's own output buried in it.
+        optimization::deactivate_opt_logger();
     }
 
     ~TopoOffsetTriMesh() override = default;
@@ -510,8 +530,8 @@ public:
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
 
-    /// Note the test is `== INPUT`, not `!= OFFSET`: a region boundary is neither, and calling
-    /// one "input" would freeze it outright via edge_is_frozen().
+    /// Note the test is `== INPUT`, not `!= OFFSET`: a region boundary is neither, and the two
+    /// are held to different rules -- see surface_envelope_for_edge().
     bool edge_is_input(const size_t eid) const
     {
         return m_edge_attribute[eid].m_is_surface_fs &&
@@ -519,21 +539,33 @@ public:
     }
 
     /**
-     * @brief The two simplex sets the optimization may not touch at all.
+     * @brief The one simplex set the optimization may not touch at all.
      *
-     * The input simplicial complex is the geometry the offset is measured against, and the
-     * domain boundary is the box the background mesh lives in. Neither is something to be
-     * improved: an operation that splits, collapses or moves any of their simplices changes the
-     * reference the whole result is defined against. This is categorical, not a tolerance --
-     * unlike the tag-region boundaries, which may move within m_envelope.
+     * The domain boundary is the box the background mesh lives in; there is nothing outside it
+     * for a vertex to move into and nothing the optimizer gains by re-triangulating it, so it is
+     * refused categorically.
+     *
+     * The INPUT COMPLEX used to be refused here too, and is not any more. It is the geometry the
+     * offset distance is measured against, but "measured against" is a statement about
+     * m_input_complex_bvh -- which holds the input as loaded and is never rebuilt -- not about
+     * the mesh elements that happen to represent it. Freezing those elements bought nothing and
+     * cost two things: the faces pinned between two frozen vertices could never reach
+     * stop_energy, and a band vertex sitting on the complex could never be moved off it, which
+     * pinned the loop's own convergence metric flat (measured in 3D: 119 of 544 band vertices,
+     * the metric identical to six significant figures at every iteration).
+     *
+     * The input complex is now tracked exactly as TriWild tracks its input surface: held inside
+     * m_envelope, re-projected onto it by the shared smoother, and topologically preserved by
+     * substructure_link_condition(), which collapse_edge_before() already applies
+     * unconditionally. See §2 of the design note in optimize_offset().
      */
-    bool vertex_is_frozen(const size_t vid) const
+    bool vertex_is_on_domain_boundary(const size_t vid) const
     {
-        return m_vertex_extra[vid].m_is_on_input || !m_vertex_attribute[vid].on_bbox_faces.empty();
+        return !m_vertex_attribute[vid].on_bbox_faces.empty();
     }
-    bool edge_is_frozen(const size_t eid) const
+    bool edge_is_on_domain_boundary(const size_t eid) const
     {
-        return edge_is_input(eid) || m_edge_attribute[eid].m_is_bbox_fs >= 0;
+        return m_edge_attribute[eid].m_is_bbox_fs >= 0;
     }
 
     /**
@@ -673,13 +705,17 @@ public:
     ////// wmtk::TriOptimizerMesh hooks
 
     /**
-     * @brief Only REGION_SURFACE_CLASS segments carry a containment requirement.
+     * @brief REGION_SURFACE_CLASS and INPUT_SURFACE_CLASS segments carry a containment
+     * requirement; the offset boundary does not.
      *
-     * The envelope's whole job is to hold the other tag regions where they are. The offset
-     * boundary must be exempt: it is the surface the optimization exists to move, and containing
-     * it inside a tube around its initial position caps how far it can ever travel toward
-     * target_distance. The input complex and the domain boundary are exempt for the opposite
-     * reason -- they are frozen outright, so no operation ever offers them a new position.
+     * The envelope holds the other tag regions where they are, and -- since the complex stopped
+     * being frozen -- the input complex too. That half is exactly TriWild's input envelope: the
+     * complex may be split, collapsed and smoothed, and this is what bounds how far the result
+     * may drift from the geometry as loaded.
+     *
+     * The offset boundary must be exempt: it is the surface the optimization exists to move, and
+     * containing it inside a tube around its initial position caps how far it can ever travel
+     * toward target_distance.
      *
      * Null means "no containment requirement", which the base handles by skipping the check.
      */
@@ -694,31 +730,89 @@ public:
             // lets a region drift.
             return m_envelope;
         }
-        // LIVE, not edge_is_region_boundary(eid): this is called from inside the very
-        // split/collapse/swap passes that create the segment being asked about, well before the
-        // next label_offset_boundary() would ever revisit its cached class. See
+        // LIVE for the region class, not edge_is_region_boundary(eid): this is called from
+        // inside the very split/collapse/swap passes that create the segment being asked about,
+        // well before the next label_offset_boundary() would ever revisit its cached class. See
         // edge_is_region_boundary_live()'s comment for the collapse case that motivated this.
-        return edge_is_region_boundary_live(t) ? m_envelope : nullptr;
+        // edge_is_input() needs no live form: it reads the surface class the shared operations
+        // themselves propagate onto the segments they create.
+        return (edge_is_region_boundary_live(t) || edge_is_input(eid)) ? m_envelope : nullptr;
     }
 
-    /// An offset-boundary vertex is placed by project_offset_vertex(); the base's smoother is
-    /// only allowed to move genuinely interior ones, and the input complex never moves.
-    bool smoothing_position_is_allowed(size_t vid, const Vector2d&) const override
+    /// No per-vertex positional constraint beyond the envelope. An offset-boundary vertex never
+    /// reaches the base's smoother (smooth_after routes it to project_offset_vertex), and an
+    /// input-complex vertex is held by m_envelope like any TriWild surface vertex.
+    bool smoothing_position_is_allowed(size_t, const Vector2d&) const override { return true; }
+
+    /**
+     * @brief The loop's convergence metric, normalized so that 1.0 means "done".
+     *
+     * The max of the THREE criteria this optimization has to meet, each divided by its own
+     * target, so mesh_improvement() stops exactly when all of them are met:
+     *
+     *   - max face AMIPS over stop_energy      -- TriWild's, via quality_rel()
+     *   - max distance error over convergence_target, over the REACHABLE band (below)
+     *   - average normal deviation over convergence_normal_deviation, dropped when that is <= 0
+     *
+     * The average returned alongside it is the same expression over the three averages, so both
+     * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
+     */
+    std::tuple<double, double> optimization_quality_stats() override;
+    double optimization_stop_metric() const override { return 1.; }
+
+    /// Re-derive the tracked surfaces from the face labels, and log where each of the three
+    /// criteria stands. See the base's declaration for why this needs a hook at all.
+    void optimization_iteration_begin() override;
+
+    /**
+     * @brief The band's distance error, split by whether the optimizer can do anything about it.
+     *
+     * REACHABLE: a band vertex free to be placed at target_distance. PINNED: one that cannot be,
+     * whatever the optimizer does -- it lies on the input complex, where the distance is 0 by
+     * definition and the envelope keeps it, or on the domain boundary, where conservative growth
+     * ran out of room. Neither is an optimization failure and neither can be improved by
+     * refining around it, so only the reachable half drives the loop and the sizing field.
+     *
+     * They are still reported. compute_distance_deviation() deliberately measures the whole band
+     * -- dropping the clipped vertices once let a run whose band was half missing report a 4.8%
+     * error and "converge" having measured nothing -- so the two numbers are logged side by side
+     * and a pinned vertex out of band is warned about as a construction defect.
+     */
+    struct DistanceSplit
     {
-        return !m_vertex_extra[vid].m_is_on_input;
+        double max_reachable = 0., avg_reachable = 0.;
+        double max_pinned = 0.;
+        size_t n_reachable = 0, n_pinned = 0;
+    };
+    DistanceSplit distance_deviation_split() const;
+    /// Which vertices lie on the band's OUTER surface -- the one that is supposed to sit at
+    /// target_distance. Shared by every measurement so they all agree on what "the band" is.
+    std::vector<bool> band_vertex_mask() const;
+    /// |dist(vid, input complex) - target_distance|.
+    double band_vertex_distance_error(const size_t vid) const;
+    /// Whether vid is a band vertex the optimizer could still place at target_distance.
+    bool band_vertex_is_reachable(const size_t vid) const
+    {
+        return !m_vertex_extra[vid].m_is_on_input && !vertex_is_on_domain_boundary(vid);
     }
 
     /**
-     * @brief Sizing refinement over the offset polyline.
+     * @brief TriWild's stall-driven sizing refinement, scored by this application's criterion.
      *
-     * The 3D field is driven by the mean ratio of the offset TRIANGULATION; a polyline has no
-     * such metric, so this uses the quantity that actually matters in 2D -- how far each
-     * offset-boundary vertex sits from the target distance. A vertex whose error exceeds
-     * sizing_mrm_threshold of the target gets a shorter target edge length, so the next split
-     * pass resolves that stretch more finely.
+     * Structurally TriWildMesh::refine_sizing_around_worst, down to the shared helpers in
+     * wmtk/utils/SizingField.hpp and every stuck_refine_* parameter: rank faces, force-split the
+     * worst ones' longest edges, grow the region by rings, lower the per-vertex sizing scalar,
+     * grade it outward.
+     *
+     * The one substitution is the per-face score. TriWild ranks a face by its AMIPS energy;
+     * here a face is ranked by the max of the same three normalized criteria the loop stops on,
+     * evaluated on that face. Ranking by AMIPS while the loop stalls on distance would refine
+     * the wrong elements.
      */
-    size_t refine_sizing_around_worst(double) override { return update_sizing_field(); }
-    size_t update_sizing_field();
+    size_t refine_sizing_around_worst(double max_metric) override;
+    /// The per-face score refine_sizing_around_worst ranks by; >= 1 means the face fails at
+    /// least one criterion. Also the per-face form of optimization_quality_stats()'s max.
+    double face_criterion_rel(const size_t fid) const;
     void write_smoothing_debug_output(const std::string& path) const override
     {
         const_cast<TopoOffsetTriMesh*>(this)->write_vtu(path);

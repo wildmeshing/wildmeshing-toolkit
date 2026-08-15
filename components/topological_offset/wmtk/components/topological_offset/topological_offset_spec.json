@@ -33,8 +33,10 @@
             "log_file",
             "report",
             "num_threads",
-            "smoothing_iterations",
-            "optimization_iterations",
+            "num_smoothing_passes",
+            "interleaved_smoothing",
+            "interleaved_smoothing_passes",
+            "max_iterations",
             "length_rel",
             "length",
             "stop_energy",
@@ -49,7 +51,15 @@
             "sizing_mrm_threshold",
             "sizing_gradation",
             "split_high_valence_threshold",
-            "skip_good_regions",
+            "coarsen_pass",
+            "stuck_refine_stall_eps",
+            "stuck_refine_cooldown",
+            "stuck_refine_num_worst",
+            "stuck_refine_rings",
+            "stuck_refine_factor",
+            "stuck_refine_min_scalar",
+            "stuck_refine_gradation",
+            "stuck_refine_force_split",
             "w_amips",
             "smoothing_mode",
             "project_line_search_steps",
@@ -233,10 +243,10 @@
         "doc": "Number of threads used for parallel execution (smoothing, edge collapse). 0 means single-threaded."
     },
     {
-        "pointer": "/smoothing_iterations",
+        "pointer": "/num_smoothing_passes",
         "type": "int",
-        "default": 3,
-        "doc": "Number of smoothing passes run during offset optimization (only used if optimize is true)."
+        "default": 2,
+        "doc": "Smoothing passes per operation round in the shared optimization loop. TriWild's key and TriWild's default."
     },
     {
         "pointer": "/length_rel",
@@ -257,10 +267,76 @@
         "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
     },
     {
-        "pointer": "/optimization_iterations",
+        "pointer": "/max_iterations",
         "type": "int",
-        "default": 3,
-        "doc": "Number of split/collapse/swap/smooth passes run during offset optimization (only used if optimize is true)."
+        "default": 80,
+        "doc": "Maximum iterations of the shared optimization loop. The loop exits as soon as every convergence criterion is met, so this is an upper bound, not a schedule. TriWild's key and TriWild's default."
+    },
+    {
+        "pointer": "/interleaved_smoothing",
+        "type": "bool",
+        "default": true,
+        "doc": "Run split, collapse and swap as three separate rounds with smoothing after each, instead of one combined round. TriWild's default."
+    },
+    {
+        "pointer": "/interleaved_smoothing_passes",
+        "type": "int",
+        "default": 1,
+        "doc": "Smoothing passes after each round when interleaved_smoothing is on."
+    },
+    {
+        "pointer": "/coarsen_pass",
+        "type": "bool",
+        "default": false,
+        "doc": "Run the final coarsening pass, which removes elements as long as the max energy does not rise. OFF for the offset, unlike the other applications: its accept test is on element quality alone, so nothing there protects the offset boundary's resolution, and measured on the 3D double_sphere it removed 27% of the offset surface for 39% of the wall time."
+    },
+    {
+        "pointer": "/stuck_refine_stall_eps",
+        "type": "float",
+        "default": 0.1,
+        "doc": "Fire the sizing refinement when an iteration's improvement is small next to the distance the metric still has to cover: (prev - cur) <= stall_eps * (cur - target). 0 means only when it does not improve at all."
+    },
+    {
+        "pointer": "/stuck_refine_cooldown",
+        "type": "int",
+        "default": 0,
+        "doc": "Iterations to skip after a sizing refinement before another may fire. 0 allows one every iteration."
+    },
+    {
+        "pointer": "/stuck_refine_num_worst",
+        "type": "int",
+        "default": 0,
+        "doc": "How many worst faces seed the refinement. 0 means every face above the filter threshold, which is TriWild's default."
+    },
+    {
+        "pointer": "/stuck_refine_rings",
+        "type": "int",
+        "default": 0,
+        "doc": "Vertex rings grown around each seeded face before the sizing scalar is lowered."
+    },
+    {
+        "pointer": "/stuck_refine_factor",
+        "type": "float",
+        "default": 0.5,
+        "doc": "Multiplicative reduction of the per-vertex sizing scalar per refinement."
+    },
+    {
+        "pointer": "/stuck_refine_min_scalar",
+        "type": "float",
+        "default": 0.001,
+        "doc": "Floor on the per-vertex sizing scalar."
+    },
+    {
+        "pointer": "/stuck_refine_gradation",
+        "type": "float",
+        "default": 2.0,
+        "doc": "Neighbouring sizing scalars may differ by at most this factor. The smoothing only ever lowers a scalar, spreading refinement outward. <= 1 disables it."
+    },
+    {
+        "pointer": "/stuck_refine_force_split",
+        "type": "bool",
+        "default": true,
+        "doc": "On a stall, also split each seeded face's longest edge once, bypassing the length gate and without touching the sizing field."
     },
     {
         "pointer": "/max_normal_deviation_deg",
@@ -327,12 +403,6 @@
         "type": "int",
         "default": 200,
         "doc": "Incident-tet count above which a vertex in a split edge's link accepts only one valence-increasing split per pass, or 0 to disable. Spreads refinement instead of letting it pile onto one vertex (only used if optimize is true)."
-    },
-    {
-        "pointer": "/skip_good_regions",
-        "type": "bool",
-        "default": false,
-        "doc": "Only smooth vertices incident to a tet whose energy is still far from stop_energy. Smoothing a vertex surrounded by good tets does nothing, so skipping it is free (only used if optimize is true)."
     },
     {
         "pointer": "/project_line_search_steps",

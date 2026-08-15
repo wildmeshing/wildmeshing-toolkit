@@ -1382,7 +1382,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     m_smooth_trace.reset();
 
     diag_offset_bands("pre");
-    mesh_improvement(m_offset_params.optimization_iterations);
+    mesh_improvement(m_offset_params.max_iterations);
 
     // Cumulative over the whole run, not per iteration as before: the engine loop has no
     // per-iteration hook, and the per-pass numbers it logs itself carry the history.
@@ -1492,7 +1492,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             "Optimization did not converge and throw_on_nonconvergence is set. Ran {} of {} "
             "iterations; see the warnings above for the criterion that failed.",
             optimization_metrics.size(),
-            m_offset_params.optimization_iterations);
+            m_offset_params.max_iterations);
     }
 }
 

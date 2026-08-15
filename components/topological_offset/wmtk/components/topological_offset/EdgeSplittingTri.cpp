@@ -18,11 +18,12 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
     // marching-triangles machinery, which places the new vertex on the offset's distance field
     // and carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        // Splitting an edge of the input complex or of the domain boundary replaces that edge
-        // with two, which changes those simplex sets -- and on a curved input the midpoint
-        // leaves the curve entirely. Both are frozen, so the split is refused before the shared
-        // engine ever sees it.
-        if (edge_is_frozen(t.eid(*this))) {
+        // The domain boundary is refused outright: there is nothing outside the box for the new
+        // vertex to be placed against. An INPUT-COMPLEX edge is not refused any more -- the
+        // shared split places its midpoint and then checks it against m_envelope, which is
+        // exactly what TriWild does to its input surface, and refining the complex is how the
+        // faces pinned against it reach stop_energy.
+        if (edge_is_on_domain_boundary(t.eid(*this))) {
             return false;
         }
 

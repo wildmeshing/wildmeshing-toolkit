@@ -1,6 +1,7 @@
 #include "TopoOffsetTriMesh.h"
 
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SizingField.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -181,9 +182,12 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
-    // The base refuses tracked-surface edges, which covers the input complex, but a bbox edge
-    // is tracked separately and would slip through.
-    if (edge_is_frozen(t.eid(*this))) {
+    // The base refuses tracked-surface edges, which covers the input complex and the region
+    // boundaries, but a bbox edge is tracked separately and would slip through. Flipping a
+    // tracked edge re-triangulates the curve it belongs to and so moves it; that is true of the
+    // input complex whether or not its vertices may move, which is why unfreezing the complex
+    // changes nothing here.
+    if (edge_is_on_domain_boundary(t.eid(*this))) {
         return false;
     }
 
@@ -256,14 +260,21 @@ void TopoOffsetTriMesh::init_region_boundary_envelope_from_input()
 {
     // Pre-offset there is no band and no offset boundary, so every tag change IS a genuine
     // region boundary -- the exclusion that edge_is_region_boundary() exists to perform has
-    // nothing to exclude yet. Only the two frozen classes are skipped, exactly as there.
+    // nothing to exclude yet.
+    //
+    // THE INPUT COMPLEX'S BOUNDARY IS INCLUDED, and this is the point of the whole envelope now.
+    // It used to be skipped as "frozen": the complex could not move, so nothing could contain
+    // it. It moves now, and this tube -- captured here, from the mesh as loaded, before
+    // execute_offset() touches anything -- is what bounds how far. That makes it the exact
+    // counterpart of TriWild's input envelope, at the same relative radius (envelope_size_rel
+    // 1e-3 against TriWild's epsr 1e-3).
     std::vector<Eigen::Vector2i> segs;
     for (const Tuple& e : get_edges()) {
         const std::optional<Tuple> opp = e.switch_face(*this);
         if (!opp) continue; // domain boundary: frozen, never a region boundary
         const size_t fa = e.fid(*this), fb = opp->fid(*this);
-        if (face_is_input_complex(fa) != face_is_input_complex(fb)) continue; // frozen
-        if (m_face_attribute[fa].tags == m_face_attribute[fb].tags) continue;
+        const bool input_boundary = face_is_input_complex(fa) != face_is_input_complex(fb);
+        if (!input_boundary && m_face_attribute[fa].tags == m_face_attribute[fb].tags) continue;
         segs.emplace_back(e.vid(*this), e.switch_vertex(*this).vid(*this));
     }
 
@@ -301,12 +312,18 @@ void TopoOffsetTriMesh::init_region_boundary_envelope()
     // the dragon rectangle that was 429 of the 1392 segments, and it capped every offset vertex
     // at envelope_size of travel from its initial position, which is what pinned max_dist_err.
     //
-    // The other two classes are deliberately absent as well. The input complex and the domain
-    // boundary are frozen outright, so they can never fail a containment test; only the region
-    // boundaries are both free to move and required to stay put.
+    // The INPUT COMPLEX is included, for the reason given in the _from_input variant: it is free
+    // to move now, so it needs containing, and this envelope is what contains it. The domain
+    // boundary stays out -- it is refused categorically, so it can never fail a containment
+    // test.
+    //
+    // This path only runs with region_envelope_from_input off. It is strictly worse for the
+    // input complex than the _from_input variant, because by now conservative growth may have
+    // re-triangulated the mesh around it; the parameter defaults to true for that reason.
     std::vector<Eigen::Vector2i> segs;
     for (const Tuple& e : get_edges()) {
-        if (!edge_is_region_boundary(e.eid(*this))) continue;
+        const size_t eid = e.eid(*this);
+        if (!edge_is_region_boundary(eid) && !edge_is_input(eid)) continue;
         segs.emplace_back(e.vid(*this), e.switch_vertex(*this).vid(*this));
     }
 
@@ -330,15 +347,18 @@ bool TopoOffsetTriMesh::region_boundary_is_outside_envelope(const size_t vid) co
     if (!m_envelope) return false;
     const Vector2d p = m_vertex_attribute[vid].m_posf;
     for (const Tuple& e : get_one_ring_edges_for_vertex(tuple_from_vertex(vid))) {
-        // Region-class edges only, matching what the envelope was built from. An offset-class
-        // edge incident to this vertex is not contained by anything -- the distance projection,
-        // the inversion test and the topology guards are what govern the offset surface.
+        // Region-class and INPUT-class edges, matching what the envelope is built from. An
+        // offset-class edge incident to this vertex is not contained by anything -- the distance
+        // projection, the inversion test and the topology guards are what govern the offset
+        // surface.
         //
         // LIVE, not the cached edge_is_region_boundary(): smoothing runs after split/collapse/
         // swap within the same iteration, so a neighbour edge those passes just created or
         // re-pointed carries whatever cached class its slot defaulted to, not one
-        // label_offset_boundary() has had a chance to set.
-        if (!edge_is_region_boundary_live(e)) continue;
+        // label_offset_boundary() has had a chance to set. edge_is_input() reads the same
+        // attribute the shared operations propagate across a split or collapse, so it needs no
+        // live counterpart.
+        if (!edge_is_region_boundary_live(e) && !edge_is_input(e.eid(*this))) continue;
         const size_t nb = (e.vid(*this) == vid) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
         if (m_envelope->is_outside(std::array<Vector2d, 2>{{p, m_vertex_attribute[nb].m_posf}})) {
             return true;
@@ -426,11 +446,38 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
 
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
 {
-    // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position). If
-    // v1 belongs to the input complex or the domain boundary, removing it deletes a simplex of
-    // a set that must not change at all, so the collapse is refused outright -- including the
-    // input-onto-input case the surface rule below would otherwise allow.
-    if (vertex_is_frozen(v1_id)) {
+    // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position). The
+    // domain boundary may not lose a vertex: the box is not something to be coarsened.
+    //
+    // An INPUT-COMPLEX vertex may now be removed, provided it merges onto another input-complex
+    // vertex (the per-class rule below) and the result stays inside m_envelope (the shared
+    // collapse's own containment check) and preserves the substructure topology
+    // (substructure_link_condition, applied unconditionally in collapse_edge_before). That is
+    // TriWild's rule for its input surface, and it is what lets the complex be coarsened where
+    // it is over-resolved instead of pinning every face incident to it.
+    if (vertex_is_on_domain_boundary(v1_id)) {
+        return false;
+    }
+
+    // THE OFFSET BOUNDARY IS ALWAYS LENGTH-LIMITED, whatever the pass says.
+    //
+    // Every other tracked surface here is held by m_envelope, which bounds how far it can be
+    // decimated no matter what the length gate is doing. The offset boundary deliberately has no
+    // envelope -- it is the surface the optimization exists to MOVE -- so its sizing field is the
+    // only thing bounding its resolution, and a pass that switches the length gate off removes
+    // that too. mesh_improvement() runs exactly such a pass twice, `it pre` and `it post`, which
+    // is right for TriWild and wrong here.
+    //
+    // Measured on topological_offset_2d_vertex_input: `it pre` alone took the mesh from 2619 to
+    // 462 vertices and the band's max distance error from 0.125 to 0.25 -- exactly
+    // target_distance, i.e. a band vertex had been collapsed onto the input complex. From there
+    // the distance criterion can never be met, so the loop never stopped, the stall detector
+    // fired every iteration, and the sizing ratcheted the mesh to 13.5k vertices with the max
+    // AMIPS climbing through 1e6.
+    //
+    // This is the same rule init_offset_sizing_field() exists to serve, stated for the one pass
+    // that would otherwise bypass it. The interior mesh still gets TriWild's unlimited warm-up.
+    if (!m_collapse_limit_length && m_vertex_extra[v1_id].m_is_on_offset) {
         return false;
     }
 
@@ -536,23 +583,31 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
         }
         return false;
     }
-    // the input complex must stay exactly where it is: it is the geometry the offset is
-    // measured against, not something to be improved
-    if (m_vertex_extra[t.vid(*this)].m_is_on_input) {
-        ++m_smooth_trace.before_on_input;
-        return false;
-    }
+    // The input complex is no longer refused here. It is smoothed like any other tracked
+    // surface: the shared smoother projects it back onto m_envelope, which is built around the
+    // input as loaded. See vertex_is_on_domain_boundary()'s comment for why freezing it was
+    // costing more than it bought.
     return true;
 }
 
 bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
 {
+    // A vertex ON THE INPUT COMPLEX takes the shared path first, whatever else it is on. Its job
+    // is to represent the input, and the shared smoother is what keeps it there: it projects
+    // onto m_envelope and vetoes any position that leaves it -- TriWild's mechanism, applied to
+    // TriWild's kind of surface. Aiming such a vertex at target_distance instead would be asking
+    // it to leave the very geometry the distance is measured from; where the offset boundary
+    // runs into the complex, that vertex is one the offset cannot place, and the metric counts
+    // it as pinned rather than pretending otherwise (see distance_deviation_split()).
+    if (m_vertex_extra[t.vid(*this)].m_is_on_input) {
+        ++m_smooth_trace.interior_attempted;
+        return TriOptimizerMesh::smooth_after(t);
+    }
     // Only a vertex on the OFFSET boundary is placed against the input complex's distance field,
     // because only that surface is supposed to sit at target_distance. A vertex on some other
     // tag region's boundary is not: it goes to the shared AMIPS smoother like any other
     // background vertex, and the envelope plus the inversion test are what keep its region
-    // where it is. (Both flags can be set at once, where the two boundaries meet; the offset
-    // wins, since that vertex does carry the offset.)
+    // where it is.
     if (m_vertex_extra[t.vid(*this)].m_is_on_offset) {
         ++m_smooth_trace.offset_attempted;
         const bool ok = project_offset_vertex(t);
@@ -642,13 +697,46 @@ bool TopoOffsetTriMesh::project_offset_vertex(const Tuple& t)
     const Vector2d target = (1 - w - u) * p0 + w * p_proj + u * p_laplace;
 
     const std::vector<Tuple> ring = get_one_ring_tris_for_vertex(t);
+
+    // THE SHAPE BAR. The shared smoother refuses outright any position that raises the worst
+    // quality in the ring (optimization::smooth_vertex_2d's quality veto). This placement had no
+    // such test: any position that was non-inverted and inside the envelope was taken, however
+    // badly shaped it left the neighbourhood. Non-inverted is a very weak bar -- a triangle can
+    // be arbitrarily close to collinear and still have the right orientation -- and measured on
+    // topological_offset_2d one smoothing pass took the mesh's worst AMIPS from 21.7 to 305430.
+    //
+    // That was survivable only while nothing read element quality: the old loop stopped on
+    // distance alone. Now AMIPS is one of the three criteria the loop stops on, so a placement
+    // free to wreck shape and a stop condition that waits for good shape simply fight, and the
+    // run burns every iteration it is given.
+    //
+    // The bar is the WORSE of where the ring already is and stop_energy: never make a good ring
+    // bad, never make a bad ring worse. That is the same "worse-of" convention this file already
+    // applies to normal deviation in collapse_edge_after(), and it matters for the same reason --
+    // a flat veto against the ring's current max would freeze a vertex whose neighbourhood is
+    // already over target, which is exactly where the distance error tends to be worst.
+    //
+    // Folded into `rejected` rather than checked at the end, so the binary search below scales
+    // the move back to the largest fraction that satisfies all three constraints at once. A
+    // vertex is therefore still moved as far toward its target distance as shape allows, instead
+    // of being refused outright.
+    double quality_bar = 0.;
+    for (const Tuple& f : ring) {
+        quality_bar = std::max(quality_bar, get_quality(f.fid(*this)));
+    }
+    quality_bar = std::max(quality_bar, m_params.stop_energy);
+
     // The offset boundary is a region boundary, so it is envelope-contained like every other
     // one. This placement never goes through the shared operations, so the containment test
     // that the shared split and collapse get for free has to be made here -- folded into the
-    // same predicate as the inversion test, so the binary search below satisfies both at once.
+    // same predicate as the inversion and shape tests, so the binary search below satisfies all
+    // of them at once.
     const auto rejected = [&]() {
         for (const Tuple& f : ring) {
             if (is_inverted(f)) return true;
+        }
+        for (const Tuple& f : ring) {
+            if (get_quality(f.fid(*this)) > quality_bar) return true;
         }
         return region_boundary_is_outside_envelope(vid);
     };
@@ -759,6 +847,25 @@ bool TopoOffsetTriMesh::project_offset_vertex(const Tuple& t)
                 ++m_smooth_trace.offset_slid;
             }
         }
+        // THE INCIDENT FACES' CACHED QUALITY MUST BE REWRITTEN, exactly as the shared smoother
+        // does before it returns (optimization::smooth_vertex_2d). This placement moves a vertex
+        // without going through any shared operation, so nothing else will.
+        //
+        // Leaving it stale is not merely a reporting problem. m_quality is what the collapse
+        // compares its ring against (collapse_quality_allowed, CollapseInfoCache::max_energy and
+        // changed_energies) and what the swap weighs, so every such decision taken next to the
+        // offset boundary was being made on the quality the mesh had before the boundary last
+        // moved. It went unnoticed because label_offset_boundary() recomputes every face's
+        // quality once per iteration, which hid the staleness from anything that only looked
+        // between iterations -- including the old convergence report. It stops being hidden the
+        // moment AMIPS enters the loop's stop metric: measured on topological_offset_2d, the
+        // per-pass log ended an iteration at 14.3x target while the recomputed value at the top
+        // of the next was 3.2e5x.
+        for (const Tuple& f : ring) {
+            const size_t fid = f.fid(*this);
+            m_face_attribute[fid].m_quality = get_quality(fid);
+        }
+
         record(frac);
         return true;
     }
@@ -944,84 +1051,12 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
         s_floor);
 }
 
-size_t TopoOffsetTriMesh::update_sizing_field()
-{
-    // Paper Sec. 5.3.3, Step 1, adapted to a 1-simplex offset surface:
-    //
-    //   "if one of the incident triangles has a shape regularity below 0.5 or a normal
-    //    deviation above the user-defined maximum sigma_max, we divide the target length by
-    //    two. If shape regularity is [above] 0.5 and the normal deviation is [below] sigma_min,
-    //    we increase the target length by 1.5."
-    //
-    // (The paper's second sentence reads "below 0.5 ... above sigma_min", which contradicts the
-    // first; the only self-consistent reading -- and the only one that does not refine and
-    // coarsen the same vertex -- is the good-and-flat one used here.)
-    //
-    // Normal deviation is the driver, which is the whole point: it is what refinement can
-    // actually reduce, and it is what stops the offset polyline being coarsened into chords.
-    // The distance error is kept as an ADDITIONAL refine trigger and an additional veto on
-    // coarsening. The paper does not need it -- it re-derives a spatially adapted delta first,
-    // so its offset starts near-correct -- but this implementation deliberately skips distance
-    // adaptation, so distance error is the only signal that a stretch is misplaced rather than
-    // merely under-resolved. Both conditions only ever make the field finer than the paper's,
-    // never coarser, so the paper's guarantees still hold.
-    const double sigma_max = m_offset_params.max_normal_deviation_deg;
-    const double sigma_min = m_offset_params.min_normal_deviation_deg;
-    // l_min is an absolute length; the sizing scalar multiplies m_params.l, so the floor in
-    // scalar terms is l_min / l. This is what stops refinement running away at a feature, where
-    // the field normals disagree no matter how short the edge gets.
-    const double l = std::max(m_params.l, 1e-16);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-
-    std::vector<size_t> refined;
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        if (!m_vertex_extra[vid].m_is_on_offset) continue;
-
-        const Vector2d p = m_vertex_attribute[vid].m_posf;
-        const Vector3d near3 = m_input_complex_bvh.nearest_point(VectorXd(p));
-        const double d = (p - Vector2d(near3[0], near3[1])).norm();
-        const double err = std::abs(d - m_offset_params.target_distance) /
-                           std::max(m_offset_params.target_distance, 1e-16);
-        const bool dist_bad = err > m_offset_params.sizing_mrm_threshold;
-
-        // sigma over the offset-surface edges at this vertex, the 1-simplex stand-in for the
-        // paper's "one of the incident triangles".
-        const double sigma = max_offset_normal_deviation_at_vertex(vid);
-
-        // Shape regularity of the incident faces, via the AMIPS energy the base already
-        // maintains: stop_energy is the "good enough" bar everywhere else in this optimizer.
-        double worst_q = 0.;
-        for (const Tuple& f : get_one_ring_tris_for_vertex(v)) {
-            worst_q = std::max(worst_q, m_face_attribute[f.fid(*this)].m_quality);
-        }
-        const bool shape_bad = worst_q > m_params.stop_energy;
-
-        double& s = m_vertex_attribute[vid].m_sizing_scalar;
-        const double old_s = s;
-        if (shape_bad || sigma > sigma_max || dist_bad) {
-            s *= 0.5;
-        } else if (sigma < sigma_min) {
-            s *= 1.5;
-        } // otherwise between sigma_min and sigma_max: resolved well enough, leave it alone
-        s = std::clamp(s, s_floor, m_offset_params.max_sizing_scalar);
-        if (s < old_s) refined.push_back(vid);
-    }
-
-    // Grade the refinement outward so neighbouring sizings never differ by more than
-    // sizing_gradation. Monotone: it only ever lowers a neighbour's scalar.
-    gradation_smooth_sizing(m_offset_params.sizing_gradation, refined);
-    return refined.size();
-}
-
 bool TopoOffsetTriMesh::face_is_offset_band(const size_t fid) const
 {
     return m_face_extra[fid].label == 2;
 }
 
-// returns max_dist_err, avg_dist_err
-std::pair<double, double> TopoOffsetTriMesh::compute_distance_deviation() const
+std::vector<bool> TopoOffsetTriMesh::band_vertex_mask() const
 {
     // Read from the TAGS, not from m_vertex_extra[].m_is_on_offset. The flag is only refreshed
     // by label_offset_boundary() once per iteration, while the shared operations maintain the
@@ -1066,6 +1101,23 @@ std::pair<double, double> TopoOffsetTriMesh::compute_distance_deviation() const
         on_band[e.vid(*this)] = true;
         on_band[e.switch_vertex(*this).vid(*this)] = true;
     }
+    return on_band;
+}
+
+double TopoOffsetTriMesh::band_vertex_distance_error(const size_t vid) const
+{
+    // dist() pads a 2D point to 3D itself, and in 2D the complex's triangles lie in the
+    // z = 0 plane, so a point inside the input complex reports 0 -- the same convention the
+    // 3D version gets from its inside-any-tet check.
+    const Vector2d p = m_vertex_attribute[vid].m_posf;
+    return std::abs(m_input_complex_bvh.dist(VectorXd(p)) - m_offset_params.target_distance);
+}
+
+// returns max_dist_err, avg_dist_err over the WHOLE band, pinned vertices included -- see
+// distance_deviation_split() for why the loop uses a different number than the report does.
+std::pair<double, double> TopoOffsetTriMesh::compute_distance_deviation() const
+{
+    const std::vector<bool> on_band = band_vertex_mask();
 
     double max_dist = 0.0;
     double sum_dist = 0.0;
@@ -1075,12 +1127,7 @@ std::pair<double, double> TopoOffsetTriMesh::compute_distance_deviation() const
         const size_t vid = v.vid(*this);
         if (!on_band[vid]) continue;
         ++n_verts;
-        const Vector2d p = m_vertex_attribute[vid].m_posf;
-        // dist() pads a 2D point to 3D itself, and in 2D the complex's triangles lie in the
-        // z = 0 plane, so a point inside the input complex reports 0 -- the same convention the
-        // 3D version gets from its inside-any-tet check.
-        const double dist =
-            std::abs(m_input_complex_bvh.dist(VectorXd(p)) - m_offset_params.target_distance);
+        const double dist = band_vertex_distance_error(vid);
         if (dist > max_dist) {
             max_dist = dist;
             m_worst_dist_vid = vid;
@@ -1091,8 +1138,205 @@ std::pair<double, double> TopoOffsetTriMesh::compute_distance_deviation() const
     return std::make_pair(max_dist, avg_dist);
 }
 
+TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::distance_deviation_split() const
+{
+    const std::vector<bool> on_band = band_vertex_mask();
+
+    DistanceSplit s;
+    double sum_reachable = 0.;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!on_band[vid]) continue;
+        const double err = band_vertex_distance_error(vid);
+        if (band_vertex_is_reachable(vid)) {
+            s.max_reachable = std::max(s.max_reachable, err);
+            sum_reachable += err;
+            ++s.n_reachable;
+        } else {
+            s.max_pinned = std::max(s.max_pinned, err);
+            ++s.n_pinned;
+        }
+    }
+    s.avg_reachable = (s.n_reachable > 0) ? sum_reachable / s.n_reachable : 0.;
+    return s;
+}
+
+void TopoOffsetTriMesh::optimization_iteration_begin()
+{
+    label_offset_boundary();
+
+    // The three criteria, separately, once per iteration. optimization_quality_stats() returns
+    // only their max, so without this the log says the loop is stuck without saying on what --
+    // and the three behave completely differently: AMIPS is the mesh's own business, distance is
+    // driven by the smoother, and normal deviation has a floor at every feature of the input.
+    double max_q = 0.;
+    for (const Tuple& f : get_faces()) {
+        max_q = std::max(max_q, quality_rel(f.fid(*this)));
+    }
+    const DistanceSplit d = distance_deviation_split();
+    const auto [max_nd, avg_nd] = compute_normal_deviation();
+    const double ct = std::max(m_offset_params.convergence_target, 1e-16);
+    const double cnd = m_offset_params.convergence_normal_deviation;
+    logger().info(
+        "[criteria] amips {:.4}x (max {:.6} / {:.6}) | dist {:.4}x (max {:.6} / {:.6}, {} pinned) "
+        "| normal {} | #V {} #F {} (band {})",
+        max_q,
+        max_q * m_params.stop_energy,
+        m_params.stop_energy,
+        d.max_reachable / ct,
+        d.max_reachable,
+        m_offset_params.convergence_target,
+        d.n_pinned,
+        cnd > 0. ? fmt::format("{:.4}x (avg {:.6} / {:.6})", avg_nd / cnd, avg_nd, cnd)
+                 : fmt::format("off (avg {:.6}, max {:.6})", avg_nd, max_nd),
+        get_vertices().size(),
+        get_faces().size(),
+        d.n_reachable + d.n_pinned);
+}
+
+std::tuple<double, double> TopoOffsetTriMesh::optimization_quality_stats()
+{
+    // TriWild's own criterion, unchanged and first: the worst face relative to stop_energy.
+    // quality_rel() is the base's, so this is exactly the number TriWild's loop stops on.
+    double max_q = 0., sum_q = 0.;
+    size_t n_faces = 0;
+    for (const Tuple& f : get_faces()) {
+        const double q = quality_rel(f.fid(*this));
+        max_q = std::max(max_q, q);
+        sum_q += q;
+        ++n_faces;
+    }
+    double max_metric = max_q;
+    double avg_metric = (n_faces > 0) ? sum_q / n_faces : 0.;
+
+    // Distance, over the reachable band only. A pinned vertex cannot be placed at
+    // target_distance by any operation, so leaving it in would hold the metric above the bar
+    // forever: the loop would never stop and the stall detector would fire every iteration,
+    // refining around vertices nothing can help.
+    const double ct = std::max(m_offset_params.convergence_target, 1e-16);
+    const DistanceSplit d = distance_deviation_split();
+    max_metric = std::max(max_metric, d.max_reachable / ct);
+    avg_metric = std::max(avg_metric, d.avg_reachable / ct);
+
+    // Normal deviation, on the AVERAGE. The max has a floor at every sharp feature of the input
+    // that no refinement can lower, which is why the convergence criterion asks for the average
+    // and why this does too. <= 0 disables the criterion entirely.
+    if (m_offset_params.convergence_normal_deviation > 0.) {
+        const double cnd = m_offset_params.convergence_normal_deviation;
+        const auto [max_nd, avg_nd] = compute_normal_deviation();
+        (void)max_nd;
+        max_metric = std::max(max_metric, avg_nd / cnd);
+        avg_metric = std::max(avg_metric, avg_nd / cnd);
+    }
+
+    return {max_metric, avg_metric};
+}
+
+double TopoOffsetTriMesh::face_criterion_rel(const size_t fid) const
+{
+    // The per-face form of optimization_quality_stats()'s max: the same three criteria, each
+    // over its own target, restricted to what this face carries. >= 1 means the face fails at
+    // least one of them, which is what makes it a candidate for refinement.
+    double score = quality_rel(fid);
+
+    const double ct = std::max(m_offset_params.convergence_target, 1e-16);
+    const double cnd = m_offset_params.convergence_normal_deviation;
+    for (int j = 0; j < 3; ++j) {
+        const Tuple e = tuple_from_edge(fid, j);
+        if (!edge_is_offset_surface_live(e)) continue;
+        if (cnd > 0.) {
+            score = std::max(score, edge_normal_deviation(e) / cnd);
+        }
+        for (const size_t vid : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
+            if (!band_vertex_is_reachable(vid)) continue;
+            score = std::max(score, band_vertex_distance_error(vid) / ct);
+        }
+    }
+    return score;
+}
+
+size_t TopoOffsetTriMesh::refine_sizing_around_worst(const double max_metric)
+{
+    // TriWildMesh::refine_sizing_around_worst, with face_criterion_rel() in place of the raw
+    // AMIPS energy and 1.0 -- the normalized target -- in place of stop_energy. At TriWild's own
+    // default stop_energy of 100 the two filter expressions are the same number.
+    //
+    // The clamp is TriWild's and exists for the same reason: without it a single degenerate face
+    // (quality MAX_ENERGY) sets the filter astronomically high and select_worst_cells then picks
+    // out only the degenerate faces, so refinement stops seeing the merely-bad ones it exists to
+    // fix.
+    const int n_rings = std::max(0, m_params.stuck_refine_rings);
+    const double filter = std::min(std::max(max_metric / 100., 1.0), 100.);
+
+    const auto worst = wmtk::utils::select_worst_cells(
+        tri_capacity(),
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) { return face_criterion_rel(fid); },
+        filter,
+        m_params.stuck_refine_num_worst);
+
+    if (worst.empty()) {
+        return 0;
+    }
+
+    // Force-split: the longest edge of each selected face, split once next pass regardless of
+    // the length gate, WITHOUT touching the sizing field. This is what unsticks a face whose
+    // edges are already shorter than their target.
+    m_force_split_edges.clear();
+    if (m_params.stuck_refine_force_split) {
+        for (const auto& [q, fid] : worst) {
+            m_force_split_edges.insert(wmtk::utils::longest_edge(
+                oriented_tri_vids(fid),
+                [this](size_t vid) -> const Vector2d& { return m_vertex_attribute[vid].m_posf; }));
+        }
+    }
+
+    std::vector<size_t> seeds;
+    seeds.reserve(3 * worst.size());
+    for (const auto& [_, fid] : worst) {
+        for (const size_t v : oriented_tri_vids(fid)) {
+            seeds.push_back(v);
+        }
+    }
+    const auto region = wmtk::utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
+        return get_one_ring_vids_for_vertex_duplicate(v);
+    });
+
+    const auto refined = wmtk::utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        m_params.stuck_refine_min_scalar,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+    logger().info(
+        "[stuck-refine] worst {} faces (worst {:.4}x target), refined {} of {} region vertices, "
+        "filter {:.4}",
+        worst.size(),
+        worst.back().first,
+        refined.size(),
+        region.size(),
+        filter);
+    return refined.size();
+}
+
 void TopoOffsetTriMesh::log_worst_dist_vertex() const
 {
+    // The band split, first: how much of the distance error is the optimizer's to fix. The loop
+    // and the sizing field only ever see the reachable half, so a run whose reported max looks
+    // bad but whose reachable max is fine is a construction problem, not an optimization one.
+    {
+        const DistanceSplit d = distance_deviation_split();
+        logger().info(
+            "\tband split: {} reachable (max err {:.6}, avg {:.6}) | {} PINNED (max err {:.6})",
+            d.n_reachable,
+            d.max_reachable,
+            d.avg_reachable,
+            d.n_pinned,
+            d.max_pinned);
+    }
+
     const size_t vid = m_worst_dist_vid;
     if (vid == static_cast<size_t>(-1)) return;
 
@@ -1324,52 +1568,50 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
+    // THE SHARED ENGINE'S OWN LOOP, driving the offset's convergence criterion -- the same move
+    // 3D made in 9aa78ded29, and for the same reasons. What this replaces was a fixed number of
+    // split/collapse/swap/smooth rounds with a whole-band sizing sweep after each: no stall
+    // detection, no `it pre`/`it post` passes, no consolidation between iterations, and a
+    // refine_sizing_around_worst() override that nothing could ever call.
+    //
+    // The offset plugs into mesh_improvement() through three virtuals, exactly as simwild does:
+    //   - optimization_quality_stats(): the max of AMIPS, distance and normal deviation, each
+    //     over its own target;
+    //   - optimization_stop_metric(): 1.0, since all three are normalized;
+    //   - refine_sizing_around_worst(): TriWild's, fired only on a stall.
+    // The engine consolidates every iteration and re-collects the operation queue, which is
+    // also its own answer to slot-pool exhaustion: work dropped in one pass is retried in the
+    // next.
+    //
+    // optimization_iteration_begin() re-derives the tracked surfaces each iteration. The shared
+    // operations maintain the edge tags they are given, but a split creates edges the labelling
+    // never classified, and the collapse's substructure link condition is only as good as the
+    // substructure it is shown.
+    iter_cnt_split = 0;
+    iter_cnt_collapse = 0;
+    iter_cnt_swap = 0;
+    iter_cnt_collapse_nd_reject = 0;
+    iter_cnt_swap_nd_reject = 0;
+    m_smooth_trace.reset();
+
+    mesh_improvement(m_offset_params.max_iterations);
+
+    // Cumulative over the whole run, not per iteration as before: the engine loop has no
+    // per-iteration hook for reporting, and the per-pass numbers it logs itself carry the
+    // history. Matches 3D.
+    log_smooth_trace();
+    op_counts.push_back({{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
+    logger().info(
+        "splits = {}  |  collapses = {} ({} refused by normal deviation)  |  swaps = {} ({} "
+        "refused by normal deviation)",
+        iter_cnt_split.load(),
+        iter_cnt_collapse.load(),
+        iter_cnt_collapse_nd_reject.load(),
+        iter_cnt_swap.load(),
+        iter_cnt_swap_nd_reject.load());
+
     bool converged = false;
-    for (int i = 0; i < m_offset_params.optimization_iterations; ++i) {
-        logger().info(
-            "Optimization iteration {} / {}",
-            i + 1,
-            m_offset_params.optimization_iterations);
-
-        // One split, one collapse, one swap and num_smoothing_passes smoothing passes, with
-        // the sanity checks, debug output and per-pass energy reporting the shared driver does.
-        // Not mesh_improvement(), for the same reason as in 3D: its stop condition needs a stop
-        // metric the offset has not defined.
-        // Re-derive the tracked surfaces from the labels each iteration. The shared
-        // operations maintain the edge tags they are given, but a split creates edges the
-        // labelling never classified, and the collapse's substructure link condition is only
-        // as good as the substructure it is shown. Now that the label survives a split, this
-        // is cheap and keeps the two in step.
-        label_offset_boundary();
-
-        // Reset immediately before the operation passes, not at the top of the iteration: the
-        // relabelling above performs no operations, but keeping the reset adjacent to what it
-        // counts is what makes each entry this iteration's own total.
-        iter_cnt_split = 0;
-        iter_cnt_collapse = 0;
-        iter_cnt_swap = 0;
-        iter_cnt_collapse_nd_reject = 0;
-        iter_cnt_swap_nd_reject = 0;
-        m_smooth_trace.reset();
-
-        local_operations({{1, 1, 1, m_offset_params.num_smoothing_passes}});
-
-        log_smooth_trace();
-
-        op_counts.push_back(
-            {{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
-        logger().info(
-            "splits = {}  |  collapses = {} ({} refused by normal deviation)  |  swaps = {} ({} "
-            "refused by normal deviation)",
-            iter_cnt_split.load(),
-            iter_cnt_collapse.load(),
-            iter_cnt_collapse_nd_reject.load(),
-            iter_cnt_swap.load(),
-            iter_cnt_swap_nd_reject.load());
-
-        logger().info("\tUpdating sizing field...");
-        update_sizing_field();
-
+    {
         // metrics
         const auto [max_dist, avg_dist] = compute_distance_deviation();
         const auto [max_norm, avg_norm] = compute_normal_deviation();
@@ -1382,8 +1624,16 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         optimization_metrics.push_back({{max_dist, avg_dist, max_norm, avg_norm}});
         log_worst_dist_vertex();
 
-        // Convergence: the worst-placed offset vertex has reached the target error band, and the
-        // offset's AVERAGE facing has reached the target normal deviation.
+        // THE VERDICT IS ON THE REACHABLE BAND, which is what the optimization controls. A
+        // pinned vertex -- one on the input complex, or on the domain boundary where growth ran
+        // out of room -- cannot be placed at target_distance by any operation, so failing the
+        // run on it would be reporting a construction defect as an optimization failure. It is
+        // warned about separately, right below, and compute_distance_deviation() above still
+        // reports the whole band so the defect is never hidden.
+        const DistanceSplit d = distance_deviation_split();
+
+        // Convergence: the worst-placed reachable offset vertex has reached the target error
+        // band, and the offset's AVERAGE facing has reached the target normal deviation.
         //
         // The asymmetry -- max for distance, average for angle -- is the paper's (Sec. 5.3,
         // Termination: "the average sigma_max ... both the maximum and mean distance error"),
@@ -1398,7 +1648,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         //
         // max_norm is still computed and reported; it is a diagnostic, not a bar.
         // convergence_normal_deviation <= 0 disables the angular half entirely.
-        const bool dist_ok = max_dist <= m_offset_params.convergence_target;
+        const bool dist_ok = d.max_reachable <= m_offset_params.convergence_target;
         const bool norm_ok = m_offset_params.convergence_normal_deviation <= 0. ||
                              avg_norm <= m_offset_params.convergence_normal_deviation;
         converged = dist_ok && norm_ok;
@@ -1406,25 +1656,43 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             if (m_offset_params.convergence_normal_deviation > 0.) {
                 logger().info(
                     "Converged ([max_dist] {} <= {} [convergence_target], [avg_normal_dev] {} <= "
-                    "{} [convergence_normal_deviation]), terminating early...",
-                    max_dist,
+                    "{} [convergence_normal_deviation])",
+                    d.max_reachable,
                     m_offset_params.convergence_target,
                     avg_norm,
                     m_offset_params.convergence_normal_deviation);
             } else {
                 logger().info(
                     "Converged ([max_dist] {} <= {} [convergence_target], normal deviation "
-                    "criterion disabled), terminating early...",
-                    max_dist,
+                    "criterion disabled)",
+                    d.max_reachable,
                     m_offset_params.convergence_target);
             }
-            break;
+        }
+
+        // A pinned vertex outside the target band is not something the optimizer can fix, so it
+        // is reported here rather than failing the run -- but it IS a defect in the offset, so
+        // it is never silent.
+        if (d.max_pinned > m_offset_params.convergence_target) {
+            logger().warn(
+                "{} of {} band vertices are PINNED and {} of them sit outside the target band "
+                "(worst error {} against {} [convergence_target]). A pinned vertex lies on the "
+                "input complex, where its distance to the complex is 0 by definition, or on the "
+                "domain boundary, where conservative growth ran out of room. No split, collapse "
+                "or smoothing move can place it at target_distance, so this is the offset as "
+                "CONSTRUCTED, not something the optimization left undone: the band still touches "
+                "the input complex, or the box is too tight for target_distance.",
+                d.n_pinned,
+                d.n_pinned + d.n_reachable,
+                d.n_pinned,
+                d.max_pinned,
+                m_offset_params.convergence_target);
         }
     }
     if (!converged && !optimization_metrics.empty()) {
         // Name the criterion that actually failed; with two of them, reporting only the distance
         // sends you looking at the wrong one.
-        const double max_dist = optimization_metrics.back()[0];
+        const double max_dist = distance_deviation_split().max_reachable;
         const double avg_norm = optimization_metrics.back()[3];
         if (max_dist > m_offset_params.convergence_target) {
             logger().warn(
@@ -1498,8 +1766,8 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         log_and_throw_error(
             "Optimization did not converge and throw_on_nonconvergence is set. Ran {} of {} "
             "iterations; see the warnings above for the criterion that failed.",
-            optimization_metrics.size(),
-            m_offset_params.optimization_iterations);
+            m_iterations_used,
+            m_offset_params.max_iterations);
     }
 
     // Deliberately NOT re-derived here. From the moment the tracked surfaces are tagged, it is

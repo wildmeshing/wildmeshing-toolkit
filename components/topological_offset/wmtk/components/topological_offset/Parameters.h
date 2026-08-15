@@ -15,8 +15,9 @@ namespace wmtk::components::topological_offset {
  * the target edge length and the split/collapse thresholds derived from it, the smoothing
  * weights and pass count, the sizing-refinement knobs, the debug switch -- come from
  * wmtk::OptimizerParameters rather than being spelled out again here. The json keys are
- * unchanged: `length`/`length_rel` feed the base's `l`/`lr`, `smoothing_iterations` feeds
- * `num_smoothing_passes`, `DEBUG_output` feeds `debug_output`.
+ * unchanged where they already matched, and where they did not the base's own name is now used:
+ * `length`/`length_rel` feed the base's `l`/`lr`, `DEBUG_output` feeds `debug_output`, and the
+ * loop and sizing knobs are spelled exactly as TriWild spells them.
  *
  * The bounding box stays here, as it does in every application: the base deliberately does not
  * own it, because its type and meaning differ per application.
@@ -57,7 +58,9 @@ struct Parameters : public wmtk::OptimizerParameters
     bool save_vtu;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    int optimization_iterations; // number of split/collapse/swap/smooth passes in optimize_offset()
+    // Upper bound on the shared optimization loop, which exits as soon as every convergence
+    // criterion is met. TriWild's `max_iterations`, under TriWild's name and default.
+    int max_iterations;
 
     // max angle (degrees, 0-90) allowed between an offset-surface face's own normal and the
     // input-complex normal it is supposed to approximate, before collapse/swap reject a move
@@ -142,7 +145,7 @@ struct Parameters : public wmtk::OptimizerParameters
         save_vtu = json_params["save_vtu"];
 
         num_threads = json_params["num_threads"];
-        optimization_iterations = json_params["optimization_iterations"];
+        max_iterations = json_params["max_iterations"];
 
         max_normal_deviation_deg = json_params["max_normal_deviation_deg"];
         min_normal_deviation_deg = json_params["min_normal_deviation_deg"];
@@ -162,9 +165,24 @@ struct Parameters : public wmtk::OptimizerParameters
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];
-        num_smoothing_passes = json_params["smoothing_iterations"];
+        num_smoothing_passes = json_params["num_smoothing_passes"];
+        interleaved_smoothing = json_params["interleaved_smoothing"];
+        interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
         split_high_valence_threshold = json_params["split_high_valence_threshold"];
-        skip_good_regions = json_params["skip_good_regions"];
+        // skip_good_regions is deliberately NOT exposed. It restricts a smoothing pass to the
+        // vertices of cells that are still far from stop_energy, and the offset needs every
+        // vertex smoothed every pass: the offset boundary is placed BY the smoother, and a
+        // well-shaped but badly-placed patch is exactly what the filter would skip. Left at
+        // OptimizerParameters' `false`.
+        coarsen_pass = json_params["coarsen_pass"];
+        stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
+        stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
+        stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
+        stuck_refine_rings = json_params["stuck_refine_rings"];
+        stuck_refine_factor = json_params["stuck_refine_factor"];
+        stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
+        stuck_refine_gradation = json_params["stuck_refine_gradation"];
+        stuck_refine_force_split = json_params["stuck_refine_force_split"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
@@ -186,16 +204,6 @@ struct Parameters : public wmtk::OptimizerParameters
         // flag; tetwild and simwild leave the flag off, which is why it is set here and not
         // changed in wmtk.
         preserve_topology = true;
-
-        // The engine's stall-driven sizing refinement is the offset's PRIMARY refinement
-        // mechanism, not an escape hatch, so it must be on: num_worst defaults to 0 in
-        // OptimizerParameters, which disables it. The values are starting points, not tuned.
-        // force_split is off because the offset's refine_sizing_around_worst() selects worst
-        // VERTICES of the band rather than worst tets, so there is no worst cell whose longest
-        // edge the engine's force-split contract refers to.
-        stuck_refine_num_worst = 100;
-        stuck_refine_rings = 2;
-        stuck_refine_force_split = false;
 
         // Fills diag_l, l/lr and splitting_l2 / collapsing_l2 -- the same 16/9 and 16/25
         // factors this used to spell out itself. It also derives eps from epsr, which the
