@@ -74,6 +74,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
@@ -84,6 +85,12 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">What the last pass cost in contention, as opposed to in work.  <a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a15645e72c41371271fd2dd2451634066" id="r_a15645e72c41371271fd2dd2451634066"><td class="memItemLeft" align="right" valign="top"><a id="a15645e72c41371271fd2dd2451634066" name="a15645e72c41371271fd2dd2451634066"></a>
@@ -107,6 +114,9 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>get_cnt_success</b> ()
 <tr class="memitem:a21ed2776d66d88f6b4f41e09e06be8ec" id="r_a21ed2776d66d88f6b4f41e09e06be8ec"><td class="memItemLeft" align="right" valign="top"><a id="a21ed2776d66d88f6b4f41e09e06be8ec" name="a21ed2776d66d88f6b4f41e09e06be8ec"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>get_cnt_fail</b> () const</td></tr>
 <tr class="separator:a21ed2776d66d88f6b4f41e09e06be8ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cb9b91009d1ecb4fcfe8b6c612e11a1" id="r_a1cb9b91009d1ecb4fcfe8b6c612e11a1"><td class="memItemLeft" align="right" valign="top"><a id="a1cb9b91009d1ecb4fcfe8b6c612e11a1" name="a1cb9b91009d1ecb4fcfe8b6c612e11a1"></a>
+const <a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>stats</b> () const</td></tr>
+<tr class="separator:a1cb9b91009d1ecb4fcfe8b6c612e11a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -130,9 +140,8 @@ std::function&lt; bool(double)&gt;&#160;</td><td class="memItemRight" valign="bo
 <tr class="memitem:af20086623771fe01053a53b98a086b9b" id="r_af20086623771fe01053a53b98a086b9b"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(const AppMesh &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#af20086623771fe01053a53b98a086b9b">stopping_criterion</a></td></tr>
 <tr class="memdesc:af20086623771fe01053a53b98a086b9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stopping Criterion based on the whole mesh For efficiency, not every time is checked. In serial, this may go over all the elements. For parallel, this involves synchronization. So there is a checking frequency.  <br /></td></tr>
 <tr class="separator:af20086623771fe01053a53b98a086b9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a821948f937feea93d9de593b525cde58" id="r_a821948f937feea93d9de593b525cde58"><td class="memItemLeft" align="right" valign="top"><a id="a821948f937feea93d9de593b525cde58" name="a821948f937feea93d9de593b525cde58"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>stopping_criterion_checking_frequency</b> = std::numeric_limits&lt;size_t&gt;::max()</td></tr>
-<tr class="memdesc:a821948f937feea93d9de593b525cde58"><td class="mdescLeft">&#160;</td><td class="mdescRight">checking frequency to decide whether to stop execution given the stopping criterion <br /></td></tr>
+<tr class="memitem:a821948f937feea93d9de593b525cde58" id="r_a821948f937feea93d9de593b525cde58"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a821948f937feea93d9de593b525cde58">stopping_criterion_checking_frequency</a> = std::numeric_limits&lt;size_t&gt;::max()</td></tr>
+<tr class="memdesc:a821948f937feea93d9de593b525cde58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cumulative successful operations before <code>stopping_criterion</code> is first consulted.  <br /></td></tr>
 <tr class="separator:a821948f937feea93d9de593b525cde58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fe5a0adce54ae594b2067748e0b2a53" id="r_a5fe5a0adce54ae594b2067748e0b2a53"><td class="memItemLeft" align="right" valign="top">std::function&lt; bool(const AppMesh &amp;, const std::tuple&lt; double, Op, Tuple &gt; &amp;t)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a5fe5a0adce54ae594b2067748e0b2a53">is_weight_up_to_date</a></td></tr>
 <tr class="memdesc:a5fe5a0adce54ae594b2067748e0b2a53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should Process drops some Tuple from being processed. For example, if the energy is out-dated. This is in addition to calling tuple valid.  <br /></td></tr>
@@ -147,7 +156,11 @@ ExecutionPolicy&#160;</td><td class="memItemRight" valign="bottom"><b>policy</b>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>num_threads</b> = 1</td></tr>
 <tr class="separator:a0b265e367953809f88baac59a8aab6a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02a89f6f7fe09f5c6f1d1c2207ed4c58" id="r_a02a89f6f7fe09f5c6f1d1c2207ed4c58"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a02a89f6f7fe09f5c6f1d1c2207ed4c58">max_retry_limit</a> = 10</td></tr>
+<tr class="memdesc:a02a89f6f7fe09f5c6f1d1c2207ed4c58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts an operation gets at claiming its ring before it is handed to the serial queue drained after the barrier.  <br /></td></tr>
 <tr class="separator:a02a89f6f7fe09f5c6f1d1c2207ed4c58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad528fecedb797a7ebe3b1bb7ac882bf4" id="r_ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4">deferral_window</a> = 128</td></tr>
+<tr class="memdesc:ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Operations to run before handing deferred operations back to the queue, or 0 to wait until the queue empties.  <br /></td></tr>
+<tr class="separator:ad528fecedb797a7ebe3b1bb7ac882bf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -157,18 +170,20 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>operation_cleanup</b>
 <tr class="memitem:a91b4d3835c9160e8347fd9b28ed82e08" id="r_a91b4d3835c9160e8347fd9b28ed82e08"><td class="memItemLeft" align="right" valign="top"><a id="a91b4d3835c9160e8347fd9b28ed82e08" name="a91b4d3835c9160e8347fd9b28ed82e08"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_partition_id</b> (const AppMesh &amp;m, const Tuple &amp;e)</td></tr>
 <tr class="separator:a91b4d3835c9160e8347fd9b28ed82e08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a406de64b79dfcc15aa5a1ea627309e18" id="r_a406de64b79dfcc15aa5a1ea627309e18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">log_contention</a> () const</td></tr>
+<tr class="separator:a406de64b79dfcc15aa5a1ea627309e18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a410392fe83579d385a4c835f6d4b000c" id="r_a410392fe83579d385a4c835f6d4b000c"><td class="memItemLeft" align="right" valign="top"><a id="a410392fe83579d385a4c835f6d4b000c" name="a410392fe83579d385a4c835f6d4b000c"></a>
-std::atomic_int&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_update</b> = 0</td></tr>
-<tr class="separator:a410392fe83579d385a4c835f6d4b000c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8f2dfa9597e4f3117ef1ee7399b4fe6" id="r_ab8f2dfa9597e4f3117ef1ee7399b4fe6"><td class="memItemLeft" align="right" valign="top"><a id="ab8f2dfa9597e4f3117ef1ee7399b4fe6" name="ab8f2dfa9597e4f3117ef1ee7399b4fe6"></a>
 std::atomic_int&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_success</b> = 0</td></tr>
 <tr class="separator:ab8f2dfa9597e4f3117ef1ee7399b4fe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdbeca361c0184aef938a59c60f2045b" id="r_afdbeca361c0184aef938a59c60f2045b"><td class="memItemLeft" align="right" valign="top"><a id="afdbeca361c0184aef938a59c60f2045b" name="afdbeca361c0184aef938a59c60f2045b"></a>
 std::atomic_int&#160;</td><td class="memItemRight" valign="bottom"><b>cnt_fail</b> = 0</td></tr>
 <tr class="separator:afdbeca361c0184aef938a59c60f2045b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9f7e57668d34822c8d7f96337ea0b29" id="r_ad9f7e57668d34822c8d7f96337ea0b29"><td class="memItemLeft" align="right" valign="top"><a id="ad9f7e57668d34822c8d7f96337ea0b29" name="ad9f7e57668d34822c8d7f96337ea0b29"></a>
+<a class="el" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_stats</b></td></tr>
+<tr class="separator:ad9f7e57668d34822c8d7f96337ea0b29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a922fdd528b06468eafe56f70d0b8d2aa" name="a922fdd528b06468eafe56f70d0b8d2aa"></a>
@@ -203,6 +218,34 @@ template&lt;class AppMesh &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a406de64b79dfcc15aa5a1ea627309e18" name="a406de64b79dfcc15aa5a1ea627309e18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a406de64b79dfcc15aa5a1ea627309e18">&#9670;&#160;</a></span>log_contention()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::log_contention </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Debug-level because it is per pass and there are many passes per iteration. Enable with the logger at debug to see whether contention is worth acting on. </p>
+
+</div>
+</div>
 <a id="ac7d73ef75b92299972f3fb90c5ef048b" name="ac7d73ef75b92299972f3fb90c5ef048b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac7d73ef75b92299972f3fb90c5ef048b">&#9670;&#160;</a></span>operator()()</h2>
 
@@ -252,6 +295,31 @@ template&lt;class AppMesh &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="ad528fecedb797a7ebe3b1bb7ac882bf4" name="ad528fecedb797a7ebe3b1bb7ac882bf4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad528fecedb797a7ebe3b1bb7ac882bf4">&#9670;&#160;</a></span>deferral_window</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::deferral_window = 128</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Operations to run before handing deferred operations back to the queue, or 0 to wait until the queue empties. </p>
+<p>Bounding this is what makes the second-chance list pay. A per-thread queue holds thousands of operations, so draining only at queue-empty means a deferred operation waits that long, by which time the mesh around it has moved, <code>is_weight_up_to_date</code> rejects it, and the work has to be rediscovered. That inflates the attempt count by roughly a fifth and eats most of the per-operation saving.</p>
+<p>Measured at 16 threads, three reps, optimization wall time against the pre-deferral baseline, with attempts in brackets: </p><pre class="fragment">               103197 (base 23.0M)      101881 (base 48.8M)
+ window 0       -2.2%  [28.5M]          -20.4%  [45.7M]
+ window 32     -16.3%  [23.7M]          -21.6%  [43.7M]
+ window 128    -17.9%  [23.1M]          -26.4%  [41.9M]
+ window 512    -17.0%  [23.7M]          -25.5%  [42.7M]
+</pre><p> 128 is at or near best on both and keeps the attempt count closest to the baseline's. The result is not sharp between 32 and 512; it is sharp against 0. </p>
+
+</div>
+</div>
 <a id="a5fe5a0adce54ae594b2067748e0b2a53" name="a5fe5a0adce54ae594b2067748e0b2a53"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5fe5a0adce54ae594b2067748e0b2a53">&#9670;&#160;</a></span>is_weight_up_to_date</h2>
 
@@ -308,7 +376,12 @@ template&lt;class AppMesh &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>To Avoid mutual locking, retry limit is set, and then put in a serial queue in the end. </p>
+
+<p>Attempts an operation gets at claiming its ring before it is handed to the serial queue drained after the barrier. </p>
+<p>10 was swept and left alone. Measured on 128k-tet Thingi10K 103197 at 16 threads, three reps each, in µs per attempted operation:</p>
+<p>immediate requeue (before the second-chance deferral below existed): 1: +17.0% 2: +7.2% 3: +6.2% 5: +4.6% 10: best 20: +6.2% with the deferral: 2: 2.170 3: 1.969 10: 1.974 (baseline at 10 was 2.527)</p>
+<p>So under the old immediate-requeue behaviour the value mattered a lot &ndash; a low limit sent everything it stopped retrying to the serial queue, and that tail (23% of scheduler time at 10, 39% at 1) cost more than the spinning it avoided. With the deferral the retries are nearly free, the overflow pressure disappears, and 3 and 10 become indistinguishable. Left at 10 because nothing argues for moving it.</p>
+<p>Below about 3 it still hurts: at 2 the overflow rate climbs enough to be visible again. </p>
 
 </div>
 </div>
@@ -392,6 +465,27 @@ template&lt;class AppMesh &gt; </div>
 <div class="line">    }</div>
 </div><!-- fragment -->
 <p>Stopping Criterion based on the whole mesh For efficiency, not every time is checked. In serial, this may go over all the elements. For parallel, this involves synchronization. So there is a checking frequency. </p>
+
+</div>
+</div>
+<a id="a821948f937feea93d9de593b525cde58" name="a821948f937feea93d9de593b525cde58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a821948f937feea93d9de593b525cde58">&#9670;&#160;</a></span>stopping_criterion_checking_frequency</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class AppMesh &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a>&lt; AppMesh &gt;::stopping_criterion_checking_frequency = std::numeric_limits&lt;size_t&gt;::max()</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Cumulative successful operations before <code>stopping_criterion</code> is first consulted. </p>
+<p>Despite the name this is a threshold, not a period: the count it is tested against is never reset, so once the pass has had this many successes the criterion is consulted after every subsequent operation. Both current users rely on exactly that &ndash; they set the criterion to <code>return true</code> and the threshold to the number of collapses needed to reach a target vertex count, making this a decimation counter that stops the pass on its first check. It is not a "check every N operations" knob, and writing a genuinely periodic criterion against it would evaluate that criterion on every operation forever after.</p>
+<p>Left at the default, the criterion is never consulted at all, which is the case for every tetwild/triwild/simwild pass.</p>
+<p>(There used to be a <code>cnt_update</code> member here that was incremented per success and reset inside the check, as if the threshold were a period. Nothing ever read it &ndash; the reset was on a branch the always-true criteria above never reach &ndash; so it was one more contended atomic on the hot path buying nothing, and it is gone.) </p>
 
 </div>
 </div>

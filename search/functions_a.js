@@ -8,6 +8,7 @@ var searchData=
   ['load_5fspec_5',['load_spec',['../namespacesimwild_1_1polyfem__ops_1_1spec.html#a504b7be205f90a4bc6b999dbc0fe2e65',1,'simwild::polyfem_ops::spec']]],
   ['local_5feid_6',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]],
   ['lock_5fvertex_5fball_7',['lock_vertex_ball',['../classwmtk_1_1_tet_mesh.html#a6fddcac3db6744e7a8da0b0f8c041d5c',1,'wmtk::TetMesh::lock_vertex_ball()'],['../classwmtk_1_1_tri_mesh.html#a276b16a28db1c00a4cd8f33f7a5c9abc',1,'wmtk::TriMesh::lock_vertex_ball()']]],
-  ['log_5ftotal_5fsurface_5fenergy_8',['log_total_surface_energy',['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a42414110473cbf3b104e02c3105ecee5',1,'wmtk::components::simwild::tri::SimWildMeshTri']]],
-  ['lowest_5fcommon_5ftet_9',['lowest_common_tet',['../classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133',1,'wmtk::TetMesh']]]
+  ['log_5fcontention_8',['log_contention',['../structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18',1,'wmtk::ExecutePass']]],
+  ['log_5ftotal_5fsurface_5fenergy_9',['log_total_surface_energy',['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a42414110473cbf3b104e02c3105ecee5',1,'wmtk::components::simwild::tri::SimWildMeshTri']]],
+  ['lowest_5fcommon_5ftet_10',['lowest_common_tet',['../classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133',1,'wmtk::TetMesh']]]
 ];

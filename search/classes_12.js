@@ -7,6 +7,6 @@ var searchData=
   ['vertexextra_4',['VertexExtra',['../classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html',1,'wmtk::components::topological_offset']]],
   ['vertexextra2d_5',['VertexExtra2d',['../classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html',1,'wmtk::components::topological_offset']]],
   ['vertexextras_6',['vertexextras',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_vertex_extras.html',1,'wmtk::components::tetwild::TetWildMesh::VertexExtras'],['../structwmtk_1_1components_1_1triwild_1_1_tri_wild_mesh_1_1_vertex_extras.html',1,'wmtk::components::triwild::TriWildMesh::VertexExtras']]],
-  ['vertexmutex_7',['vertexmutex',['../classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html',1,'wmtk::TetMesh::VertexMutex'],['../classwmtk_1_1_tri_mesh_1_1_vertex_mutex.html',1,'wmtk::TriMesh::VertexMutex']]],
+  ['vertexmutex_7',['VertexMutex',['../classwmtk_1_1threading_1_1_vertex_mutex.html',1,'wmtk::threading']]],
   ['vertexsmoother_8',['VertexSmoother',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_vertex_smoother.html',1,'wmtk::components::tetwild::orig']]]
 ];

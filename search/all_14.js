@@ -15,9 +15,11 @@ var searchData=
   ['load_5fspec_12',['load_spec',['../namespacesimwild_1_1polyfem__ops_1_1spec.html#a504b7be205f90a4bc6b999dbc0fe2e65',1,'simwild::polyfem_ops::spec']]],
   ['local_5feid_13',['local_eid',['../classwmtk_1_1_tri_mesh_1_1_tuple.html#af74485b73b9169fc3978dc11264b2b1b',1,'wmtk::TriMesh::Tuple']]],
   ['localoperations_14',['LocalOperations',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_local_operations.html',1,'wmtk::components::tetwild::orig']]],
-  ['lock_5fvertex_5fball_15',['lock_vertex_ball',['../classwmtk_1_1_tri_mesh.html#a276b16a28db1c00a4cd8f33f7a5c9abc',1,'wmtk::TriMesh::lock_vertex_ball()'],['../classwmtk_1_1_tet_mesh.html#a6fddcac3db6744e7a8da0b0f8c041d5c',1,'wmtk::TetMesh::lock_vertex_ball()']]],
-  ['lock_5fvertices_16',['lock_vertices',['../structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95',1,'wmtk::ExecutePass']]],
-  ['log_5ftotal_5fsurface_5fenergy_17',['log_total_surface_energy',['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a42414110473cbf3b104e02c3105ecee5',1,'wmtk::components::simwild::tri::SimWildMeshTri']]],
-  ['looking_20at_20one_20result_20—_20tt_20visualize_5ftriwild_20py_20tt_18',['Looking at one result — &lt;tt&gt;visualize_triwild.py&lt;/tt&gt;',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md51',1,'']]],
-  ['lowest_5fcommon_5ftet_19',['lowest_common_tet',['../classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133',1,'wmtk::TetMesh']]]
+  ['lock_5ffailures_15',['lock_failures',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b',1,'wmtk::ExecutePass::PassStats']]],
+  ['lock_5fvertex_5fball_16',['lock_vertex_ball',['../classwmtk_1_1_tri_mesh.html#a276b16a28db1c00a4cd8f33f7a5c9abc',1,'wmtk::TriMesh::lock_vertex_ball()'],['../classwmtk_1_1_tet_mesh.html#a6fddcac3db6744e7a8da0b0f8c041d5c',1,'wmtk::TetMesh::lock_vertex_ball()']]],
+  ['lock_5fvertices_17',['lock_vertices',['../structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95',1,'wmtk::ExecutePass']]],
+  ['log_5fcontention_18',['log_contention',['../structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18',1,'wmtk::ExecutePass']]],
+  ['log_5ftotal_5fsurface_5fenergy_19',['log_total_surface_energy',['../classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a42414110473cbf3b104e02c3105ecee5',1,'wmtk::components::simwild::tri::SimWildMeshTri']]],
+  ['looking_20at_20one_20result_20—_20tt_20visualize_5ftriwild_20py_20tt_20',['Looking at one result — &lt;tt&gt;visualize_triwild.py&lt;/tt&gt;',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2triwild_2wmtk_2co450a7c81acd9202a0fabdb01b28654a5.html#autotoc_md51',1,'']]],
+  ['lowest_5fcommon_5ftet_21',['lowest_common_tet',['../classwmtk_1_1_tet_mesh.html#a110594e16e75a527eedde84b1d4d3133',1,'wmtk::TetMesh']]]
 ];

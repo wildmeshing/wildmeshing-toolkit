@@ -118,8 +118,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html">VertexMutex</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -127,6 +125,8 @@ Public Types</h2></td></tr>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vector</b> = std::vector&lt; T &gt;</td></tr>
 <tr class="separator:a2800e82bb0cb3288c8cefb78b2f834e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdb25494468c101ae7c8dfbaa04abcb1" id="r_abdb25494468c101ae7c8dfbaa04abcb1"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#abdb25494468c101ae7c8dfbaa04abcb1">VertexMutex</a> = <a class="el" href="classwmtk_1_1threading_1_1_vertex_mutex.html">wmtk::threading::VertexMutex</a></td></tr>
+<tr class="separator:abdb25494468c101ae7c8dfbaa04abcb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -649,7 +649,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>m_t_empty_slot</b> = 0
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_v_empty_slot</b> = 0</td></tr>
 <tr class="separator:ad3a48653df59c91d885d598066a24273"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a403d5dff5a1dc28b3ffe6af28daf8d" id="r_a0a403d5dff5a1dc28b3ffe6af28daf8d"><td class="memItemLeft" align="right" valign="top"><a id="a0a403d5dff5a1dc28b3ffe6af28daf8d" name="a0a403d5dff5a1dc28b3ffe6af28daf8d"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_mutex.html">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh.html#abdb25494468c101ae7c8dfbaa04abcb1">VertexMutex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_mutex</b></td></tr>
 <tr class="separator:a0a403d5dff5a1dc28b3ffe6af28daf8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95800547e625a68297d674a16bce593b" id="r_a95800547e625a68297d674a16bce593b"><td class="memItemLeft" align="right" valign="top"><a id="a95800547e625a68297d674a16bce593b" name="a95800547e625a68297d674a16bce593b"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1_tet_mesh_1_1_ring_lock_scratch.html">RingLockScratch</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_ring_lock_scratch</b></td></tr>
@@ -690,6 +690,22 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_cell</b> (size_t cid) const</td></tr>
 <tr class="separator:a1c21956bfa1c739eb303ff02b999460f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="abdb25494468c101ae7c8dfbaa04abcb1" name="abdb25494468c101ae7c8dfbaa04abcb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdb25494468c101ae7c8dfbaa04abcb1">&#9670;&#160;</a></span>VertexMutex</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1_tet_mesh.html#abdb25494468c101ae7c8dfbaa04abcb1">wmtk::TetMesh::VertexMutex</a> =  <a class="el" href="classwmtk_1_1threading_1_1_vertex_mutex.html">wmtk::threading::VertexMutex</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classwmtk_1_1threading_1_1_vertex_mutex.html" title="A per-vertex lock plus the id of the thread currently holding it.">wmtk::threading::VertexMutex</a>. Aliased rather than nested so <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> and <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> cannot drift apart again &ndash; they already had. </dd></dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a96119301d2b8a9d5c34e52cac42ac7d6" name="a96119301d2b8a9d5c34e52cac42ac7d6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a96119301d2b8a9d5c34e52cac42ac7d6">&#9670;&#160;</a></span>check_mesh_connectivity_validity()</h2>

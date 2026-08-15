@@ -7,5 +7,6 @@ var searchData=
   ['begin_5fprotect_4',['begin_protect',['../structwmtk_1_1_attribute_collection.html#ae0505eb2677a9eb03e9a76fe03ccf770',1,'wmtk::AttributeCollection']]],
   ['bindings_5',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
   ['bite_20you_6',['Two things that will bite you',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md43',1,'']]],
-  ['boundary_5fedges_7',['boundary_edges',['../namespaceview__offset.html#a1ccaaf955426e363e5bb7537c11c1950',1,'view_offset']]]
+  ['boundary_5fedges_7',['boundary_edges',['../namespaceview__offset.html#a1ccaaf955426e363e5bb7537c11c1950',1,'view_offset']]],
+  ['busiest_5ftask_5fseconds_8',['busiest_task_seconds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2',1,'wmtk::ExecutePass::PassStats']]]
 ];
