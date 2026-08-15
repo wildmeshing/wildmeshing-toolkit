@@ -328,6 +328,20 @@ protected:
     virtual size_t refine_sizing_around_worst(double max_metric) = 0;
     virtual bool optimization_stop_at_float() const { return false; }
 
+    /**
+     * @brief Called once at the top of every mesh_improvement iteration, before the passes.
+     *
+     * For application state that has to be re-derived from the mesh each iteration rather than
+     * maintained by the operations. topological_offset re-labels its tracked surfaces here: a
+     * split creates edges the labelling never classified, and the collapse's substructure link
+     * condition is only as good as the substructure it is shown.
+     *
+     * Deliberately not a hook for anything the operations could maintain themselves -- it runs
+     * over the whole mesh, so what goes here is paid for on every iteration. Empty by default;
+     * triwild and simwild do not override it.
+     */
+    virtual void optimization_iteration_begin() {}
+
     virtual void collapse_pass_begin() {}
     virtual void collapse_pass_end(size_t) {}
     virtual bool collapse_before_vertex(size_t, size_t) { return true; }

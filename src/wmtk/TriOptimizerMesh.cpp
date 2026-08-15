@@ -48,6 +48,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; ++it) {
         m_iterations_used = it + 1;
         logger().info("\n========it {}========", it);
+        optimization_iteration_begin();
 
         double max_metric = 0.;
         double avg_metric = 0.;
