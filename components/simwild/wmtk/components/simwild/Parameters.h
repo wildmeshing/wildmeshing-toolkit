@@ -95,6 +95,15 @@ struct Parameters : public wmtk::OptimizerParameters
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
 
+        // Coarsening pass. Implemented on the shared 2D optimizer, so it applies to simwild's
+        // 2D mesh and is inert on its 3D one.
+        coarsen_pass = json_params["coarsen_pass"];
+        coarsen_unbounded = json_params["coarsen_unbounded"];
+        coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
+        coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
+        coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
+        coarsen_max_rounds = json_params["coarsen_max_rounds"];
+
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
         check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];

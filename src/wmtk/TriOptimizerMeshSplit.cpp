@@ -38,7 +38,7 @@ void TriOptimizerMesh::split_all_edges()
     logger().info("edge split prepare time: {:.4}s", time);
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
         "edge split operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples =

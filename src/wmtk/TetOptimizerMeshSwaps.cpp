@@ -99,7 +99,7 @@ size_t TetOptimizerMesh::swap_all_edges_32()
     }
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
         "edge swap operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_edges;
@@ -371,7 +371,7 @@ size_t TetOptimizerMesh::swap_all_faces()
     size_t total_success = 0;
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::FaceTwoRing,
+        wmtk::PassLock::FaceRing,
         "face swap operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_faces;
@@ -481,7 +481,7 @@ size_t TetOptimizerMesh::swap_all_edges_all()
     }
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
         "edge swap operation",
         [&](auto& executor, auto& mesh) {
             // executor.renew_neighbor_tuples = wmtk::renewal_edges;
@@ -529,7 +529,7 @@ size_t TetOptimizerMesh::swap_all_edges_44()
     if (check_surface_topology()) sig_before = surface_topology_signature();
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
         "edge swap 44 operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_edges;
@@ -651,7 +651,7 @@ size_t TetOptimizerMesh::swap_all_edges_56()
     if (check_surface_topology()) sig_before = surface_topology_signature();
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
         "edge swap 56 operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = wmtk::renewal_edges;

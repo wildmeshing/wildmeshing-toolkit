@@ -29,6 +29,7 @@
 #include <igl/remove_unreferenced.h>
 #include <igl/write_triangle_mesh.h>
 #include <spdlog/common.h>
+#include <wmtk/utils/EnvelopeBudget.hpp>
 #include <wmtk/utils/predicates.hpp>
 
 #include <tetwild_spec.hpp>
@@ -114,6 +115,14 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
     params.interleaved_smoothing = json_params["interleaved_smoothing"];
     params.interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
+
+    // Coarsening pass.
+    params.coarsen_pass = json_params["coarsen_pass"];
+    params.coarsen_unbounded = json_params["coarsen_unbounded"];
+    params.coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
+    params.coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
+    params.coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
+    params.coarsen_max_rounds = json_params["coarsen_max_rounds"];
     params.w_amips = json_params["w_amips"];
     params.smoothing_mode = json_params["smoothing_mode"];
     params.project_line_search_steps = json_params["project_line_search_steps"];
@@ -335,8 +344,19 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // surface handed over already close to the boundary has most of its moves refused, and
     // deliberately starving that headroom (simplify_envelope_ratio 0.95) was enough to turn a
     // converging run into a diverging one on 1368052.
+    //
+    // The narrowing is charged for the simplification's deviation, so it applies only when a
+    // simplification actually ran. Under skip_simplify the "simplified" surface IS the input,
+    // there is nothing to charge, and subtracting anyway would confine the optimizer to a
+    // fraction of the tolerance its result is judged against -- for no gain, since the
+    // geometry already starts centred in the full envelope.
     const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
-    const double opt_eps = env_around_simplified ? (tet_eps - simplify_eps) : tet_eps;
+    const bool charge_simplify = env_around_simplified && !skip_simplify;
+    const double opt_eps = wmtk::utils::optimization_envelope_eps(
+        tet_eps,
+        simplify_eps,
+        env_around_simplified,
+        /*simplification_ran=*/!skip_simplify);
 
     auto tet_envelope = std::make_shared<wmtk::SampleEnvelope>(!use_sample_envelope);
     {
@@ -374,7 +394,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         "tetrahedralisation envelope: {} (eps {:.6}) around the {}",
         tet_envelope->use_exact ? "EXACT" : "sampled",
         std::sqrt(tet_envelope->eps2),
-        env_around_simplified ? "SIMPLIFIED surface" : "input");
+        !env_around_simplified ? "input"
+        : charge_simplify      ? "SIMPLIFIED surface"
+                               : "input (skip_simplify: nothing to charge, full eps)");
 
     if (json_params["DEBUG_disable_envelope"]) {
         logger().warn(
@@ -738,6 +760,13 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
         report["#iterations"] = mesh_new.m_iterations_used;
+        // What the final coarsening pass bought. All zero when coarsen_pass is off, which is
+        // also how an A/B tells the two arms apart.
+        report["coarsen_accepted"] = mesh_new.m_coarsen_stats.accepted;
+        report["coarsen_t_before"] = mesh_new.m_coarsen_stats.cells_before;
+        report["coarsen_t_after"] = mesh_new.m_coarsen_stats.cells_after;
+        report["coarsen_max_energy_before"] = mesh_new.m_coarsen_stats.max_energy_before;
+        report["coarsen_max_energy_after"] = mesh_new.m_coarsen_stats.max_energy_after;
         report["time"] = time;
         // d(output -> input); the key kept its name so existing consumers keep working,
         // but it now holds the containment direction rather than the coverage one.

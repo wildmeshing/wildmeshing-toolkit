@@ -30,6 +30,12 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
+      "coarsen_pass",
+      "coarsen_unbounded",
+      "coarsen_local_smoothing_passes",
+      "coarsen_smooth_ring",
+      "coarsen_global_smoothing_passes",
+      "coarsen_max_rounds",
       "preserve_topology",
       "preserve_feature_points",
       "allow_junction_cleanup",
@@ -391,5 +397,41 @@
     "type": "float",
     "default": 0.9,
     "doc": "A triangle is 'active' (worth smoothing around) when its energy is at least this fraction of stop_energy. The AMIPS2D energy of an equilateral triangle is 2, so the filter only skips anything once skip_good_regions_margin * stop_energy exceeds 2."
+  },
+  {
+    "pointer": "/coarsen_pass",
+    "type": "bool",
+    "default": true,
+    "doc": "Run a final coarsening pass after the optimization has converged. The ordinary collapse judges a candidate on the raw post-collapse geometry -- the worst moment in the operation's life, before smoothing has absorbed any of the damage -- so a collapse that would be fine once its neighbourhood relaxes is never taken, and the converged mesh keeps vertices it does not need. This pass takes the collapse optimistically, re-smooths coarsen_smooth_ring around the merged vertex, and keeps it only if the worst element in the region it touched is no worse than before; every element outside that region is untouched, so 'no worse locally' is exactly 'no worse globally'. Alternates with ordinary smoothing passes, as the main optimization does."
+  },
+  {
+    "pointer": "/coarsen_local_smoothing_passes",
+    "type": "int",
+    "default": 2,
+    "doc": "Smoothing sweeps over the ring inside each candidate coarsening collapse, before its max energy is measured. This is what gives the collapse a chance to be judged on a relaxed neighbourhood rather than on the configuration it lands in."
+  },
+  {
+    "pointer": "/coarsen_smooth_ring",
+    "type": "int",
+    "default": 2,
+    "doc": "Radius, in edges from the merged vertex, of the neighbourhood re-smoothed inside a coarsening collapse. The parallel lock claims one ring more than this, because smoothing a vertex reads its one-ring and writes the quality of its incident faces."
+  },
+  {
+    "pointer": "/coarsen_global_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "doc": "Ordinary whole-mesh smoothing passes run between coarsening rounds. This is what makes a second round worth running at all -- see coarsen_max_rounds -- so setting it to 0 collapses the rounds to one."
+  },
+  {
+    "pointer": "/coarsen_max_rounds",
+    "type": "int",
+    "default": 2,
+    "doc": "Cap on the coarsen/smooth alternation; the pass also stops as soon as a round accepts no collapse. A round does NOT exist to finish what the previous one started: within a round the collapse pass already runs to a fixed point, so repeating the collapse alone finds nothing. What a round adds is the global smoothing in between, which moves that fixed point -- the dirty-epoch retry only re-offers failures next to a SUCCESSFUL collapse, so a whole-mesh smoothing pass is invisible to it, and a rejected composite is rolled back in full so rejections never accumulate progress within a round. Returns decay fast: measured over the 16 challenging triwild models at five rounds, accepted collapses by round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%. Every round costs a full pre-check sweep over all edges plus a smoothing pass, so the default is two -- they carry 90.5% of the coarsening, and the three that would follow are worth 9.5% for 60% of the pass's budget."
+  },
+  {
+    "pointer": "/coarsen_unbounded",
+    "type": "bool",
+    "default": true,
+    "doc": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary."
   }
 ]

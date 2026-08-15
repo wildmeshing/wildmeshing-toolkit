@@ -476,6 +476,20 @@ bool TetMesh::collapse_edge_conn(
         // boundry case - find another tet vertex
         boundary_flag = true;
         v_C_tuple = tt.switch_vertex().switch_edge().switch_face().switch_tetrahedron();
+        if (!v_C_tuple.has_value()) {
+            // BOTH probes ran into a boundary face, so there is no neighbouring tet to name
+            // v_C with and the return tuple this function has to produce does not exist.
+            // Refuse the collapse. This used to fall through to the .value() below and throw
+            // bad_optional_access, i.e. take the process down; nothing here has mutated the
+            // mesh yet, so returning false is a clean refusal.
+            //
+            // Normally unreachable because collapse_edge_before refuses to move a vertex off
+            // the bbox or the surface long before this, and in a tetwild mesh every boundary
+            // vertex carries one of those tags. The coarsening pass drops the quality gate,
+            // which lets many more candidates reach here, and an untagged boundary -- which a
+            // unit test can build and an application generally does not -- hits it.
+            return false;
+        }
     }
     const size_t v_C = v_C_tuple.value().switch_face().switch_edge().switch_vertex().vid();
     const size_t v_A = tt.switch_edge().switch_vertex().vid();

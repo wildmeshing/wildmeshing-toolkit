@@ -18,6 +18,11 @@ namespace wmtk {
 
 void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
 {
+    collapse_all_edges_impl(is_limit_length, wmtk::default_ring(wmtk::PassLock::EdgeRing));
+}
+
+size_t TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring)
+{
     m_collapse_limit_length = is_limit_length;
     igl::Timer timer;
     double time;
@@ -35,9 +40,11 @@ void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
     logger().info("#edges = {}", collect_all_ops.size() / 2);
     time = timer.getElapsedTime();
     logger().info("edge collapse prepare time: {:.4}s", time);
+    size_t accepted = 0;
     wmtk::run_pass(
         *this,
-        wmtk::PassLock::EdgeTwoRing,
+        wmtk::PassLock::EdgeRing,
+        lock_ring,
         "edge collapse operation",
         [&](auto& executor, auto& mesh) {
             executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
@@ -60,8 +67,9 @@ void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
             };
             // Retry a failed collapse only where the mesh actually changed this round
             // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            accepted = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
         });
+    return accepted;
 }
 
 bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edge
@@ -84,6 +92,17 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
 
     cache.edge_length =
         (VA[v1_id].m_posf - VA[v2_id].m_posf).norm(); // todo: duplicated computation
+
+    // The coarsening pass stops at the target edge length unless told otherwise. Collapsing
+    // an edge that is already at target only makes its neighbours longer, so this is where
+    // "as few elements as hold the max energy" has to be traded against "elements the size
+    // the user asked for". Deliberately NOT scaled by the sizing field: see
+    // OptimizerParameters::coarsen_unbounded. Cheap, so it goes before any ring work.
+    if (m_coarsen_mode && !m_params.coarsen_unbounded) {
+        if (cache.edge_length * cache.edge_length > m_params.collapsing_l2) {
+            return false;
+        }
+    }
 
     ///check if on bbox/surface/boundary
     // bbox
@@ -143,7 +162,11 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
             return false;
         }
         double q = get_quality(vs);
-        if (!collapse_quality_allowed(v1_id, q, cache.max_energy)) {
+        // The coarsening pass deliberately skips the quality gate and decides on the region
+        // AFTER re-smoothing instead -- that is the whole point of it. The inversion check
+        // above still applies: an inverted cell is not something smoothing can repair, since
+        // smooth_vertex_3d refuses to start from one.
+        if (!m_coarsen_mode && !collapse_quality_allowed(v1_id, q, cache.max_energy)) {
             return false;
         }
         cache.changed_energies.emplace_back(q);
@@ -302,6 +325,14 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         }
     }
 
+    // Last, so a candidate rejected above never pays for the ball walk.
+    if (m_coarsen_mode) {
+        const size_t seeds[2] = {v1_id, v2_id};
+        auto& scr = coarsen_scratch.local();
+        cache.region_max_rel_before = region_max_quality_rel(
+            collect_vertex_ball(seeds, 2, m_params.coarsen_smooth_ring, scr));
+    }
+
     return true;
 }
 
@@ -393,14 +424,214 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         auto& f_attr = info.first;
         auto& old_vids = info.second;
         //
-        auto [_, global_fid] = tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
-        if (global_fid == -1) {
-            return false;
+        const auto found = try_tuple_from_face({{v2_id, old_vids[1], old_vids[2]}});
+        if (!found.has_value()) {
+            return false; // the collapse removed the face this attribute was to land on
         }
-        m_face_attribute[global_fid] = f_attr;
+        m_face_attribute[std::get<1>(found.value())] = f_attr;
     }
 
-    return true;
+    if (!m_coarsen_mode) {
+        return true;
+    }
+
+    // ---- The coarsening composite ---------------------------------------------------
+    //
+    // Everything from here on happens inside TetMesh::collapse_edge's protected region, so a
+    // `false` return undoes the smoothing below AND the collapse above in one shot:
+    // collapse_edge_rollback restores the connectivity and the old tet hashes, and
+    // rollback_protected_attributes replays the attribute journal. The journal records each
+    // index on FIRST write, so however many times the loop below rewrites a position, the
+    // recorded value is still the pre-collapse one.
+    auto& scr = coarsen_scratch.local();
+    const size_t seed = v2_id; // v1 was merged into v2
+    collect_vertex_ball(&seed, 1, m_params.coarsen_smooth_ring, scr);
+
+    // smooth_vertex_reversible touches only scr's saved_* members, so iterating scr.ring
+    // while handing it the same scratch is safe.
+    for (int pass = 0; pass < m_params.coarsen_local_smoothing_passes; ++pass) {
+        for (size_t i = 0; i < scr.ring.size(); ++i) {
+            smooth_vertex_reversible(scr.ring[i], scr);
+        }
+    }
+
+    // Keep it only if the worst element in the region this operation could have disturbed is
+    // no worse than before. Nothing outside that region was touched, so this local test is
+    // exactly the global one: max energy cannot have risen. Measured relative to each cell's
+    // own target -- see quality_rel for why a raw comparison would not hold when an
+    // application gives different regions different targets.
+    return region_max_quality_rel(scr.ring) <= cache.region_max_rel_before;
+}
+
+const std::vector<size_t>& TetOptimizerMesh::collect_vertex_ball(
+    const size_t* seeds,
+    size_t n_seeds,
+    int n,
+    CoarsenScratch& scr) const
+{
+    const size_t cap = vert_capacity();
+    if (scr.stamp.size() < cap) {
+        scr.stamp.resize(cap, 0);
+    }
+    if (++scr.epoch == 0) { // wrapped: every stale stamp would read as current
+        std::fill(scr.stamp.begin(), scr.stamp.end(), 0);
+        scr.epoch = 1;
+    }
+    const uint32_t epoch = scr.epoch;
+
+    // BFS order, nearest first, which is also the order the smoothing wants: relax the merged
+    // vertex before the ring around it. Deterministic because m_conn_tets is kept sorted.
+    scr.ring.clear();
+    scr.frontier.clear();
+    // An empty one-ring is how a removed or isolated vertex presents itself; such a vertex has
+    // no quality to measure and nothing to smooth, so it never enters the ball. v1 lands here
+    // on every call from collapse_edge_after, having just been merged away.
+    const auto skip = [this](size_t v) { return get_one_ring_tids_for_vertex(v).empty(); };
+
+    for (size_t i = 0; i < n_seeds; ++i) {
+        const size_t v = seeds[i];
+        if (scr.stamp[v] == epoch || skip(v)) {
+            continue;
+        }
+        scr.stamp[v] = epoch;
+        scr.ring.push_back(v);
+        scr.frontier.push_back(v);
+    }
+
+    for (int depth = 0; depth < n; ++depth) {
+        scr.next.clear();
+        for (const size_t v : scr.frontier) {
+            scr.one_ring.clear();
+            for (const size_t tid : get_one_ring_tids_for_vertex(v)) {
+                for (const size_t w : oriented_tet_vids(tid)) {
+                    scr.one_ring.push_back(w);
+                }
+            }
+            for (const size_t w : scr.one_ring) {
+                if (scr.stamp[w] == epoch || skip(w)) {
+                    continue;
+                }
+                scr.stamp[w] = epoch;
+                scr.ring.push_back(w);
+                scr.next.push_back(w);
+            }
+        }
+        if (scr.next.empty()) {
+            break;
+        }
+        scr.frontier.swap(scr.next);
+    }
+    return scr.ring;
+}
+
+double TetOptimizerMesh::region_max_quality_rel(const std::vector<size_t>& vids) const
+{
+    double worst = 0.;
+    for (const size_t vid : vids) {
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            worst = std::max(worst, quality_rel(tid));
+        }
+    }
+    return worst;
+}
+
+bool TetOptimizerMesh::smooth_vertex_reversible(const size_t vid, CoarsenScratch& scr)
+{
+    const Tuple t = tuple_from_vertex(vid);
+    if (!t.is_valid(*this)) {
+        return false;
+    }
+
+    // smooth_vertex_3d writes the position and the one-ring qualities and only THEN decides
+    // whether to keep them -- its contract puts the undo on the caller, because its usual
+    // caller (TetMesh::smooth_vertex) has a protected region of its own. Here the protected
+    // region belongs to the collapse and is all-or-nothing, so one rejected vertex would
+    // poison the whole composite; hence this narrower save/restore.
+    scr.saved_vertex = m_vertex_attribute.at(vid);
+    scr.saved_qualities.clear();
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        scr.saved_qualities.emplace_back(tid, cell_quality(tid));
+    }
+
+    if (smooth_before(t) && smooth_after(t)) {
+        return true;
+    }
+
+    m_vertex_attribute[vid] = scr.saved_vertex;
+    for (const auto& [tid, quality] : scr.saved_qualities) {
+        set_cell_quality(tid, quality);
+    }
+    return false;
+}
+
+bool TetOptimizerMesh::coarsen_collapse_edge(const Tuple& e, std::vector<Tuple>& new_tets)
+{
+    const bool saved = m_coarsen_mode;
+    const bool saved_limit = m_collapse_limit_length;
+    m_coarsen_mode = true;
+    m_collapse_limit_length = false;
+    const bool accepted = collapse_edge(e, new_tets);
+    m_coarsen_mode = saved;
+    m_collapse_limit_length = saved_limit;
+    return accepted;
+}
+
+size_t TetOptimizerMesh::coarsen_mesh()
+{
+    if (!m_params.coarsen_pass) {
+        return 0;
+    }
+
+    logger().info("========coarsening========");
+    igl::Timer timer;
+    timer.start();
+
+    const size_t cells_before = get_tets().size();
+    const double max_before = std::get<0>(optimization_quality_stats());
+
+    size_t total = 0;
+    for (int round = 0; round < m_params.coarsen_max_rounds; ++round) {
+        m_coarsen_mode = true;
+        // The lock claims one ring more than the smoothing reaches: smoothing a vertex at
+        // distance r reads its one-ring and writes the quality of its incident cells.
+        const size_t accepted = collapse_all_edges_impl(false, m_params.coarsen_smooth_ring + 1);
+        m_coarsen_mode = false;
+        total += accepted;
+
+        smooth_all_vertices(size_t(m_params.coarsen_global_smoothing_passes));
+        if (m_params.coarsen_global_smoothing_passes > 0) {
+            round_all_vertices();
+        }
+
+        const auto [max_metric, avg_metric] = optimization_quality_stats();
+        logger().info(
+            "coarsen round {}: accepted {} | #V = {}, #T = {} | max energy = {:.6} avg = {:.6}",
+            round,
+            accepted,
+            get_vertices().size(),
+            get_tets().size(),
+            max_metric,
+            avg_metric);
+
+        if (accepted == 0) {
+            break;
+        }
+    }
+
+    m_coarsen_stats.cells_before = cells_before;
+    m_coarsen_stats.cells_after = get_tets().size();
+    m_coarsen_stats.accepted = total;
+    m_coarsen_stats.max_energy_before = max_before;
+    m_coarsen_stats.max_energy_after = std::get<0>(optimization_quality_stats());
+    logger().info(
+        "coarsening: accepted {} | #T {} -> {} | max energy {:.6} -> {:.6} | time = {:.4}s",
+        total,
+        m_coarsen_stats.cells_before,
+        m_coarsen_stats.cells_after,
+        m_coarsen_stats.max_energy_before,
+        m_coarsen_stats.max_energy_after,
+        timer.getElapsedTimeInSec());
+    return total;
 }
 
 } // namespace wmtk

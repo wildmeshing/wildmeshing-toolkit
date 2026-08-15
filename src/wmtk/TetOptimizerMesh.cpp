@@ -116,6 +116,11 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
 
     logger().info("========it post========");
     local_operations({{0, 1, 0, 0}});
+
+    // Removing what the mesh does not need is the last thing to do, not something to
+    // interleave: it trades cells for nothing but the guarantee that the max energy does not
+    // rise, which is only worth taking once the energy is where it is going to end up.
+    coarsen_mesh();
 }
 
 std::tuple<double, double> TetOptimizerMesh::local_operations(
@@ -333,7 +338,7 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
         logger().debug("Num verts {}", collect_all_ops.size());
         run_pass(
             *this,
-            PassLock::VertexOneRing,
+            PassLock::VertexRing,
             "vertex smoothing operation",
             [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());

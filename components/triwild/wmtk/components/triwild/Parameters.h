@@ -101,6 +101,14 @@ struct Parameters : public wmtk::OptimizerParameters
         interleaved_smoothing = json_params["interleaved_smoothing"];
         interleaved_smoothing_passes = json_params["interleaved_smoothing_passes"];
 
+        // Coarsening pass.
+        coarsen_pass = json_params["coarsen_pass"];
+        coarsen_unbounded = json_params["coarsen_unbounded"];
+        coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
+        coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
+        coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
+        coarsen_max_rounds = json_params["coarsen_max_rounds"];
+
         // Stuck-element sizing refinement.
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
         stuck_refine_cooldown = json_params["stuck_refine_cooldown"];

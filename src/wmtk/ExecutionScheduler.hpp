@@ -3,6 +3,7 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
 #include <wmtk/threading/concurrent_priority_queue.hpp>
+#include <wmtk/threading/serial_priority_queue.hpp>
 #include <wmtk/threading/task_group.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -13,11 +14,14 @@
 #include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
+#include <algorithm>
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <queue>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
 
 namespace wmtk {
@@ -74,8 +78,23 @@ struct ExecutePass
         return false; // non-stop, process everything
     };
     /**
-     * @brief checking frequency to decide whether to stop execution given the stopping criterion
+     * @brief Cumulative successful operations before `stopping_criterion` is first consulted.
      *
+     * Despite the name this is a threshold, not a period: the count it is tested against is
+     * never reset, so once the pass has had this many successes the criterion is consulted after
+     * every subsequent operation. Both current users rely on exactly that -- they set the
+     * criterion to `return true` and the threshold to the number of collapses needed to reach a
+     * target vertex count, making this a decimation counter that stops the pass on its first
+     * check. It is not a "check every N operations" knob, and writing a genuinely periodic
+     * criterion against it would evaluate that criterion on every operation forever after.
+     *
+     * Left at the default, the criterion is never consulted at all, which is the case for every
+     * tetwild/triwild/simwild pass.
+     *
+     * (There used to be a `cnt_update` member here that was incremented per success and reset
+     * inside the check, as if the threshold were a period. Nothing ever read it -- the reset was
+     * on a branch the always-true criteria above never reach -- so it was one more contended
+     * atomic on the hot path buying nothing, and it is gone.)
      */
     size_t stopping_criterion_checking_frequency = std::numeric_limits<size_t>::max();
     /**
@@ -101,10 +120,50 @@ struct ExecutePass
     int num_threads = 1;
 
     /**
-     * To Avoid mutual locking, retry limit is set, and then put in a serial queue in the end.
+     * @brief Attempts an operation gets at claiming its ring before it is handed to the serial
+     * queue drained after the barrier.
      *
+     * 10 was swept and left alone. Measured on 128k-tet Thingi10K 103197 at 16 threads, three
+     * reps each, in µs per attempted operation:
+     *
+     *   immediate requeue (before the second-chance deferral below existed):
+     *       1: +17.0%   2: +7.2%   3: +6.2%   5: +4.6%   10: best   20: +6.2%
+     *   with the deferral:
+     *       2: 2.170    3: 1.969    10: 1.974          (baseline at 10 was 2.527)
+     *
+     * So under the old immediate-requeue behaviour the value mattered a lot -- a low limit sent
+     * everything it stopped retrying to the serial queue, and that tail (23% of scheduler time
+     * at 10, 39% at 1) cost more than the spinning it avoided. With the deferral the retries are
+     * nearly free, the overflow pressure disappears, and 3 and 10 become indistinguishable.
+     * Left at 10 because nothing argues for moving it.
+     *
+     * Below about 3 it still hurts: at 2 the overflow rate climbs enough to be visible again.
      */
     size_t max_retry_limit = 10;
+
+    /**
+     * @brief Operations to run before handing deferred operations back to the queue, or 0 to
+     * wait until the queue empties.
+     *
+     * Bounding this is what makes the second-chance list pay. A per-thread queue holds thousands
+     * of operations, so draining only at queue-empty means a deferred operation waits that long,
+     * by which time the mesh around it has moved, `is_weight_up_to_date` rejects it, and the work
+     * has to be rediscovered. That inflates the attempt count by roughly a fifth and eats most of
+     * the per-operation saving.
+     *
+     * Measured at 16 threads, three reps, optimization wall time against the pre-deferral
+     * baseline, with attempts in brackets:
+     *
+     *                    103197 (base 23.0M)      101881 (base 48.8M)
+     *      window 0       -2.2%  [28.5M]          -20.4%  [45.7M]
+     *      window 32     -16.3%  [23.7M]          -21.6%  [43.7M]
+     *      window 128    -17.9%  [23.1M]          -26.4%  [41.9M]
+     *      window 512    -17.0%  [23.7M]          -25.5%  [42.7M]
+     *
+     * 128 is at or near best on both and keeps the attempt count closest to the baseline's. The
+     * result is not sharp between 32 and 512; it is sharp against 0.
+     */
+    size_t deferral_window = 128;
     /**
      * @brief Construct a new Execute Pass object. It contains the name-to-operation map and the
      *functions that define the rules for operations
@@ -274,7 +333,13 @@ public:
         // per-operation dispatch from a string-keyed std::map lookup into an index.
         using OpId = uint32_t;
         using Elem = std::tuple<double, OpId, Tuple, size_t>; // priority, op index, tuple, #retries
-        using Queue = wmtk::threading::concurrent_priority_queue<Elem>;
+        // Each task owns its queue outright -- it is seeded before any thread starts, and the
+        // task both pops from it and pushes its renewed operations back into it -- so those need
+        // no lock. `final_queue` is the one that genuinely crosses threads: tasks push retry
+        // overflow into it while running, and it is drained after the barrier. Both are
+        // std::priority_queue with the same comparator underneath, so pop order is unchanged.
+        using LocalQueue = wmtk::threading::serial_priority_queue<Elem>;
+        using SharedQueue = wmtk::threading::concurrent_priority_queue<Elem>;
 
         std::vector<const Op*> op_name;
         std::vector<std::function<std::optional<std::vector<Tuple>>(AppMesh&, const Tuple&)>*>
@@ -301,14 +366,90 @@ public:
         std::atomic<bool> stop(false);
         cnt_success = 0;
         cnt_fail = 0;
-        cnt_update = 0;
 
-        std::vector<Queue> queues(num_threads);
-        Queue final_queue;
+        // Whether anything actually watches the success count *while the pass runs*. When no
+        // stopping criterion is configured -- the case for every tetwild/triwild/simwild pass --
+        // nobody does, and the counters can be accumulated per task and folded in at the end
+        // instead of hammering one shared cache line from every thread on every operation.
+        const bool track_live_success =
+            stopping_criterion_checking_frequency != std::numeric_limits<size_t>::max();
+        std::atomic<size_t> live_success(0);
 
-        auto run_single_queue = [&](Queue& Q, int task_id) {
+        std::vector<LocalQueue> queues(num_threads);
+        SharedQueue final_queue;
+
+        // Contention accounting. Everything here is either a per-task local folded in once or a
+        // write to the task's own slot, so it adds nothing to the inner loop. It answers the
+        // two questions the pass could not previously be asked: how often ring acquisition
+        // loses a race, and how much of a "parallel" pass is really the serial drain.
+        m_stats = PassStats{};
+        std::atomic<size_t> lock_failures(0);
+        std::atomic<size_t> overflowed(0);
+        std::vector<double> task_seconds(queues.size(), 0.);
+
+        auto run_single_queue = [&](auto& Q, int task_id) {
+            // Per-task tallies folded into the shared counters once, on the way out. The guard
+            // is RAII rather than a line at the bottom because the loop below has early
+            // returns.
+            struct CountFlusher
+            {
+                std::atomic_int& success_total;
+                std::atomic_int& fail_total;
+                std::atomic<size_t>& lock_failure_total;
+                std::atomic<size_t>& overflow_total;
+                int success = 0;
+                int fail = 0;
+                size_t lock_failure = 0;
+                size_t overflow = 0;
+                ~CountFlusher()
+                {
+                    success_total.fetch_add(success, std::memory_order_relaxed);
+                    fail_total.fetch_add(fail, std::memory_order_relaxed);
+                    lock_failure_total.fetch_add(lock_failure, std::memory_order_relaxed);
+                    overflow_total.fetch_add(overflow, std::memory_order_relaxed);
+                }
+            } counts{cnt_success, cnt_fail, lock_failures, overflowed};
+
             Elem ele_in_queue;
-            while ([&]() { return Q.try_pop(ele_in_queue); }()) {
+            // Operations that lost a race for their ring wait here rather than going straight
+            // back into the live queue. Pushing them back immediately is a spin: the element was
+            // just popped as the queue's maximum, `retry` is the last tie-break key in Elem, so
+            // the requeued copy compares strictly greater than what was popped and nothing else
+            // was added -- it comes right back off the top and is retried against a conflict that
+            // has had no time to clear. Deferring lets every other operation this task owns run
+            // first, which is both useful work and the delay the conflict needs.
+            std::vector<Elem> second_chance;
+            // Operations popped since the deferred list was last given back to the queue.
+            // Waiting for the queue to drain completely can mean thousands of operations, by
+            // which time the mesh around a deferred operation has moved and its work has to be
+            // rediscovered. A bounded window gives the conflict time to clear without letting
+            // the operation go stale. 0 = only when the queue empties.
+            size_t since_refill = 0;
+            const auto refill = [&] {
+                for (auto& e : second_chance) {
+                    Q.emplace(std::move(e));
+                }
+                second_chance.clear();
+                since_refill = 0;
+            };
+            for (;;) {
+                if (!second_chance.empty() && deferral_window > 0 &&
+                    since_refill >= deferral_window) {
+                    refill();
+                }
+                if (!Q.try_pop(ele_in_queue)) {
+                    if (second_chance.empty()) {
+                        break;
+                    }
+                    // Queue exhausted: the deferred operations have now had everything else
+                    // run ahead of them, so give them another go. `retry` still increments on
+                    // each attempt and still overflows to final_queue at max_retry_limit, so
+                    // this terminates after at most that many rounds.
+                    refill();
+                    std::this_thread::yield();
+                    continue;
+                }
+                ++since_refill;
                 auto& [weight, op, tup, retry] = ele_in_queue;
                 if (!tup.is_valid(m)) {
                     continue;
@@ -321,11 +462,13 @@ public:
                         tup,
                         task_id); // Note that returning `Tuples` would be invalid.
                     if (!locked_vid) {
+                        counts.lock_failure++;
                         retry++;
                         if (retry < max_retry_limit) {
-                            Q.emplace(ele_in_queue);
+                            second_chance.push_back(ele_in_queue);
                         } else {
                             retry = 0;
+                            counts.overflow++;
                             final_queue.emplace(ele_in_queue);
                         }
                         continue;
@@ -342,11 +485,13 @@ public:
                         std::vector<std::pair<Op, Tuple>> renewed_tuples;
                         if (newtup) {
                             renewed_tuples = renew_neighbor_tuples(m, op_str, newtup.value());
-                            cnt_success++;
-                            cnt_update++;
+                            counts.success++;
+                            if (track_live_success) {
+                                live_success.fetch_add(1, std::memory_order_relaxed);
+                            }
                         } else {
                             on_fail(m, op_str, tup);
-                            cnt_fail++;
+                            counts.fail++;
                         }
                         for (const auto& [o, e] : renewed_tuples) {
                             auto val = priority(m, o, e);
@@ -364,12 +509,12 @@ public:
                 if (stop.load(std::memory_order_acquire)) {
                     return;
                 }
-                if (cnt_success > stopping_criterion_checking_frequency) {
+                if (track_live_success && live_success.load(std::memory_order_relaxed) >
+                                              stopping_criterion_checking_frequency) {
                     if (stopping_criterion(m)) {
                         stop.store(true);
                         return;
                     }
-                    cnt_update.store(0, std::memory_order_release);
                 }
             }
         };
@@ -390,15 +535,37 @@ public:
                 queues[get_partition_id(m, e)].emplace(priority(m, op, e), id_of(op), e, 0);
             }
             // Comment out parallel: work on serial first.
+            using clock = std::chrono::steady_clock;
+            const auto t_parallel = clock::now();
             wmtk::threading::task_group tg;
             for (int task_id = 0; task_id < queues.size(); task_id++) {
-                tg.run([&run_single_queue, &queues, task_id] {
+                tg.run([&run_single_queue, &queues, &task_seconds, task_id] {
+                    const auto t0 = clock::now();
                     run_single_queue(queues[task_id], task_id);
+                    // Each task writes only its own slot.
+                    task_seconds[task_id] =
+                        std::chrono::duration<double>(clock::now() - t0).count();
                 });
             }
             tg.wait();
+            m_stats.parallel_seconds =
+                std::chrono::duration<double>(clock::now() - t_parallel).count();
+            m_stats.final_queue_size = final_queue.size();
+
             logger().debug("Parallel Complete, remains element {}", final_queue.size());
+
+            const auto t_tail = clock::now();
             run_single_queue(final_queue, 0);
+            m_stats.serial_tail_seconds =
+                std::chrono::duration<double>(clock::now() - t_tail).count();
+        }
+
+        m_stats.lock_failures = lock_failures.load(std::memory_order_relaxed);
+        m_stats.overflowed = overflowed.load(std::memory_order_relaxed);
+        if (!task_seconds.empty()) {
+            const auto mm = std::minmax_element(task_seconds.begin(), task_seconds.end());
+            m_stats.idlest_task_seconds = *mm.first;
+            m_stats.busiest_task_seconds = *mm.second;
         }
 
         logger().info(
@@ -406,15 +573,70 @@ public:
             (int)cnt_success + (int)cnt_fail,
             (int)cnt_success,
             (int)cnt_fail);
+        log_contention();
         return true;
     }
 
     int get_cnt_success() const { return cnt_success; }
     int get_cnt_fail() const { return cnt_fail; }
 
+    /**
+     * @brief What the last pass cost in contention, as opposed to in work.
+     *
+     * Populated by every `operator()` call, so under run_localized_to_convergence it describes
+     * the most recent round only. Zeroed at the start of each pass.
+     */
+    struct PassStats
+    {
+        /// Operations that could not claim their ring and were requeued. Counts *attempts*, so
+        /// one stubborn operation can contribute up to max_retry_limit.
+        size_t lock_failures = 0;
+        /// Operations that exhausted max_retry_limit and were pushed to the post-barrier queue.
+        size_t overflowed = 0;
+        /// Size of that queue once every task had finished.
+        size_t final_queue_size = 0;
+        /// Wall time inside the parallel region, and in the serial drain that follows it. The
+        /// pass is billed as "parallel" in the driver's log line, but it is the sum of these.
+        double parallel_seconds = 0.;
+        double serial_tail_seconds = 0.;
+        /// Busy time of the longest- and shortest-running task. A wide gap means the partition
+        /// split the work unevenly, and since tasks never steal, the tail is one thread.
+        double busiest_task_seconds = 0.;
+        double idlest_task_seconds = 0.;
+    };
+    const PassStats& stats() const { return m_stats; }
+
 private:
-    std::atomic_int cnt_update = 0;
+    /// Debug-level because it is per pass and there are many passes per iteration. Enable with
+    /// the logger at debug to see whether contention is worth acting on.
+    void log_contention() const
+    {
+        if (policy == ExecutionPolicy::kSeq || !logger().should_log(spdlog::level::debug)) {
+            return;
+        }
+        const int executed = (int)cnt_success + (int)cnt_fail;
+        const double total = m_stats.parallel_seconds + m_stats.serial_tail_seconds;
+        logger().debug(
+            "  contention: {} ring-acquisition failures over {} executed ops ({:.2f} per op); "
+            "{} overflowed to the serial queue ({} queued at the barrier)",
+            m_stats.lock_failures,
+            executed,
+            executed > 0 ? double(m_stats.lock_failures) / executed : 0.,
+            m_stats.overflowed,
+            m_stats.final_queue_size);
+        logger().debug(
+            "  time: {:.4}s parallel + {:.4}s serial tail ({:.1f}% of the pass); busiest task "
+            "{:.4}s, idlest {:.4}s",
+            m_stats.parallel_seconds,
+            m_stats.serial_tail_seconds,
+            total > 0. ? 100. * m_stats.serial_tail_seconds / total : 0.,
+            m_stats.busiest_task_seconds,
+            m_stats.idlest_task_seconds);
+    }
+
+    // Totals for the whole pass. Written once per task, at the end -- see CountFlusher.
     std::atomic_int cnt_success = 0;
     std::atomic_int cnt_fail = 0;
+    PassStats m_stats;
 };
 } // namespace wmtk

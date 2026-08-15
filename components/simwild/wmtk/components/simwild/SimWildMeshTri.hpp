@@ -122,7 +122,9 @@ public:
 
     double target_quality(const size_t tid) const;
     double target_quality(const Tuple& t) const;
-    double quality_rel(const size_t tid) const;
+    /// SimWild's target is per tag, so this normalizes each face by its own before the shared
+    /// optimizer compares one face against another. See TriOptimizerMesh::quality_rel.
+    double quality_rel(const size_t tid) const override;
     double quality_rel(const Tuple& t) const;
     bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
     std::vector<size_t> active_vertices() const override;

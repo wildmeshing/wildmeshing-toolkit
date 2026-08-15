@@ -10,6 +10,8 @@
 #include <wmtk/utils/resolve_path.hpp>
 
 #include <wmtk/utils/EmbedSegments.hpp>
+#include <wmtk/utils/EnvelopeBudget.hpp>
+
 #include "Parameters.h"
 #include "TriWildMesh.h"
 
@@ -311,7 +313,8 @@ void triwild(nlohmann::json json_params)
 
     MatrixXd V_simp = V_in;
     MatrixXi E_simp = E_in;
-    if (json_params["skip_simplify"]) {
+    const bool skip_simplify = json_params["skip_simplify"];
+    if (skip_simplify) {
         logger().info("skip simplification");
     } else {
         SampleEnvelope simplify_envelope(!simplify_use_sample_envelope);
@@ -410,14 +413,27 @@ void triwild(nlohmann::json json_params)
     // rather than somewhere inside it. The envelope is a hard veto rather than a penalty, so a
     // mesh handed over close to the boundary has most of its moves refused. See the tetwild
     // driver for the measurements.
+    //
+    // The narrowing is charged for the simplification's deviation, so it applies only when a
+    // simplification actually ran. Under skip_simplify the "simplified" curves ARE the input,
+    // there is nothing to charge, and subtracting anyway would confine the optimizer to a
+    // fraction of the tolerance its result is judged against -- for no gain, since the
+    // geometry already starts centred in the full envelope.
     const bool env_around_simplified = json_params["optimize_envelope_around_simplified"];
-    const double opt_eps = env_around_simplified ? (envelope_eps - simplify_eps) : envelope_eps;
+    const bool charge_simplify = env_around_simplified && !skip_simplify;
+    const double opt_eps = wmtk::utils::optimization_envelope_eps(
+        envelope_eps,
+        simplify_eps,
+        env_around_simplified,
+        /*simplification_ran=*/!skip_simplify);
     const MatrixXd& V_env = env_around_simplified ? V_simp : V_in;
     const MatrixXi& E_env = env_around_simplified ? E_simp : E_in;
     if (env_around_simplified) {
         logger().info(
-            "optimization envelope: eps {:.6} around the SIMPLIFIED curves (#V {}, #E {})",
+            "optimization envelope: eps {:.6} ({}) around the {} curves (#V {}, #E {})",
             opt_eps,
+            charge_simplify ? "full eps minus the simplification's share" : "the full eps",
+            charge_simplify ? "SIMPLIFIED" : "input, un-simplified,",
             V_env.rows(),
             E_env.rows());
     }
@@ -624,6 +640,13 @@ void triwild(nlohmann::json json_params)
         report["eps"] = params.eps;
         report["threads"] = NUM_THREADS;
         report["#iterations"] = mesh.m_iterations_used;
+        // What the final coarsening pass bought. All zero when coarsen_pass is off, which is
+        // also how an A/B tells the two arms apart.
+        report["coarsen_accepted"] = mesh.m_coarsen_stats.accepted;
+        report["coarsen_f_before"] = mesh.m_coarsen_stats.cells_before;
+        report["coarsen_f_after"] = mesh.m_coarsen_stats.cells_after;
+        report["coarsen_max_energy_before"] = mesh.m_coarsen_stats.max_energy_before;
+        report["coarsen_max_energy_after"] = mesh.m_coarsen_stats.max_energy_after;
         // report["time"] = time;
         // "hausdorff" keeps its name and now holds containment, the invariant; "coverage" is
         // the other direction. Same convention as the tetwild report.
