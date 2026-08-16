@@ -1313,11 +1313,12 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
         m_force_split_edges.clear();
         if (m_params.stuck_refine_force_split) {
             for (const auto& [unused_score, tid] : worst) {
-                m_force_split_edges.insert(wmtk::utils::longest_edge(
-                    oriented_tet_vids(tid),
-                    [this](size_t vid) -> const Vector3d& {
-                        return m_vertex_attribute[vid].m_posf;
-                    }));
+                m_force_split_edges.insert(
+                    wmtk::utils::longest_edge(
+                        oriented_tet_vids(tid),
+                        [this](size_t vid) -> const Vector3d& {
+                            return m_vertex_attribute[vid].m_posf;
+                        }));
             }
         }
 
@@ -1326,10 +1327,9 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
         for (const auto& [unused_score, tid] : worst) {
             for (const size_t v : oriented_tet_vids(tid)) seeds.push_back(v);
         }
-        const auto region = wmtk::utils::grow_vertex_region(
-            seeds,
-            n_rings,
-            [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
+        const auto region = wmtk::utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
+            return get_one_ring_vids_for_vertex_adj(v);
+        });
 
         const auto refined = wmtk::utils::apply_sizing_refinement(
             region,
