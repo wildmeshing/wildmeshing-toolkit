@@ -48,6 +48,7 @@ Two honesty notes on the error layer:
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -298,10 +299,20 @@ def resolve(args):
             sys.exit("no such file or directory: %s" % d)
         # A SERIES if the directory holds debug frames, otherwise the single result mesh.
         # Frames are what DEBUG_output writes: one .vtu per pass, numbered.
-        # write_vtu() emits a `_surf` companion beside each frame; it is the tracked-surface
-        # geometry alone, which this viewer re-derives itself, so it is not a frame.
+        #
+        # A FRAME IS `<name>debug_<N>.vtu` AND NOTHING ELSE. write_vtu() drops companions beside
+        # each frame -- `_surf` in 2D, and `_surf`, `_off` and `_edge` in 3D -- carrying the
+        # tracked surface, the offset surface and the wire complex on their own. This viewer
+        # re-derives all three from the volume mesh, so none of them is a frame.
+        #
+        # Matching the counter exactly rather than excluding known suffixes: excluding `_surf`
+        # alone was right when only 2D wrote frames, and silently tripled the 3D series the day
+        # 3D started writing them -- 37 frames read as 111, two thirds of them companions. The
+        # `_edge` companion is a wire mesh with no tets, so it has no tagged cells at all and
+        # meshio cannot even read it as a volume mesh; the series died on the second frame.
         frames = sorted(
-            (f for f in d.glob("*debug_*.vtu") if not f.stem.endswith("_surf")), key=frame_key)
+            (f for f in d.glob("*debug_*.vtu") if re.fullmatch(r".*debug_\d+", f.stem)),
+            key=frame_key)
         if frames:
             meshes = frames
         else:
