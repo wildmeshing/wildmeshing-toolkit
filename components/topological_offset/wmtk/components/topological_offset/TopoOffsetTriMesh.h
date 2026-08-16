@@ -808,6 +808,12 @@ public:
         double max_reachable = 0., avg_reachable = 0.;
         double max_pinned = 0.;
         size_t n_reachable = 0, n_pinned = 0;
+        /// max_reachable, split by where it was measured. The two answer different questions:
+        /// the vertex max says the boundary is in the wrong PLACE, the edge max says it is too
+        /// COARSE to be in the right place -- and they call for different remedies (smoothing vs
+        /// refinement), so a run that is not converging needs to know which it is. On the dragon
+        /// the whole residual is in the second: 0.73% of delta at the vertices, 14% between them.
+        double max_at_vertex = 0., max_in_edge = 0.;
     };
     DistanceSplit distance_deviation_split() const;
 

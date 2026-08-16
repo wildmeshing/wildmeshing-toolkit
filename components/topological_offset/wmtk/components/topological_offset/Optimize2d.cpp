@@ -790,6 +790,7 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
         const double err = band_vertex_residual(vid);
         if (band_vertex_is_reachable(vid)) {
             s.max_reachable = std::max(s.max_reachable, err);
+            s.max_at_vertex = std::max(s.max_at_vertex, err);
             sum_reachable += err;
             ++s.n_reachable;
         } else {
@@ -804,6 +805,7 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
         const EdgeSamples es = offset_edge_samples(e);
         if (es.n == 0) continue; // no samples asked for, or an unreachable endpoint
         s.max_reachable = std::max(s.max_reachable, es.max);
+        s.max_in_edge = std::max(s.max_in_edge, es.max);
         sum_reachable += es.sum;
         s.n_reachable += es.n;
     }
@@ -1337,8 +1339,11 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         const DistanceSplit r = residual_split();
         const auto [max_dist, avg_dist] = compute_distance_deviation();
         logger().info(
-            "max phi residual: {} | avg phi residual: {} || max euclidean dist err: {} | avg: {}",
+            "max phi residual: {} (at vertices {}, along edges {}) | avg phi residual: {} || "
+            "max euclidean dist err: {} | avg: {}",
             r.max_reachable,
+            r.max_at_vertex,
+            r.max_in_edge,
             r.avg_reachable,
             max_dist,
             avg_dist);
