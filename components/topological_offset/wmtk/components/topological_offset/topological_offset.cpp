@@ -124,6 +124,7 @@ void topological_offset(nlohmann::json json_params)
 
         // initialize BVH
         mesh.init_input_complex_bvh();
+        mesh.init_offset_potential();
         mesh.consolidate_mesh();
 
         // set initial counts

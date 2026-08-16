@@ -890,6 +890,21 @@ public:
      */
     void init_input_complex_bvh();
 
+    /**
+     * @brief Build the smooth offset potential from the extraction init_input_complex_bvh() kept.
+     *
+     * Separate from that call only because it needs target_distance and offset_dhat_factor, which
+     * a caller wanting nothing but the distance field has no reason to have set. The GEOMETRY is
+     * still extracted exactly once, so the potential and the BVH cannot describe different inputs.
+     */
+    void init_offset_potential();
+
+    /// The complex as the potential sees it: vertices, its BOUNDARY segments, and its isolated
+    /// points. Filled by init_input_complex_bvh(), consumed by init_offset_potential().
+    MatrixXd m_phi_V;
+    MatrixXi m_phi_E;
+    std::vector<int> m_phi_P;
+
     //// overriden splits/invariants
     bool split_edge_before(const Tuple& t) override;
     bool split_edge_after(const Tuple& t) override;

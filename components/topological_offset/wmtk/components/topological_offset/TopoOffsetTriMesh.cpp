@@ -430,10 +430,25 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
         P_phi.push_back(P(i, 0));
     }
 
+    // KEPT, not built. The extraction is what must not diverge from the BVH's, so it is done
+    // here and once; the potential itself needs target_distance and offset_dhat_factor, which a
+    // caller that only wants the distance field (the unit tests build a TopoOffsetTriMesh from a
+    // default-constructed Parameters) has no reason to have set.
+    m_phi_V = V;
+    m_phi_E = E_phi;
+    m_phi_P = P_phi;
+}
+
+
+void TopoOffsetTriMesh::init_offset_potential()
+{
+    if (m_phi_V.rows() == 0) {
+        log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
+    }
     m_offset_potential = std::make_shared<OffsetPotential>(
-        V,
-        E_phi,
-        P_phi,
+        m_phi_V,
+        m_phi_E,
+        m_phi_P,
         m_offset_params.target_distance,
         m_offset_params.offset_dhat_factor);
 }
