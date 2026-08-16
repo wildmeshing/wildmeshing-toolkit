@@ -80,6 +80,23 @@ endif()
 # this only ever showed up on the Windows jobs.
 target_compile_definitions(ipc_toolkit PUBLIC _USE_MATH_DEFINES)
 
+# ipc-toolkit's high_order_contact headers use std::array, std::uint*_t and <algorithm> without
+# including them, and get away with it on libc++ and libstdc++, which pull those in transitively
+# through other standard headers. MSVC's do not, so the Windows build fails with things like
+#
+#     high_order_contact_parameters.hpp(13): error C2079:
+#       'ipc::FaceQuadPoint::lambda' uses undefined class 'std::array<double,3>'
+#
+# Force-include them rather than fix the headers here: this is a mirror we do not want to fork
+# for whitespace-level changes, and the alternative is one CI round trip per missing include.
+# PUBLIC for the same reason as _USE_MATH_DEFINES -- the offending declarations are in headers
+# wmtk includes, so our translation units need the same treatment.
+#
+# TODO: push the includes upstream to wildmeshing/ipc-toolkit and drop this.
+if(MSVC)
+    target_compile_options(ipc_toolkit PUBLIC /FIarray /FIcstdint /FIalgorithm)
+endif()
+
 # ipc-toolkit links its hash-map backends PRIVATE, but leaks them through the PUBLIC header
 # ipc/utils/unordered_map_and_set.hpp, so any consumer including it fails to find
 # <tsl/robin_map.h> / <absl/hash/hash.h>. Upstream's own test target works around this by
