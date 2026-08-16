@@ -445,9 +445,10 @@ void TopoOffsetTriMesh::init_offset_potential()
     if (m_phi_V.rows() == 0) {
         log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
     }
-    m_offset_potential = std::make_shared<OffsetPotential>(
+    m_offset_potential = std::make_shared<OffsetPotential2D>(
         m_phi_V,
         m_phi_E,
+        MatrixXi(0, 3), // no triangle primitive in 2D
         m_phi_P,
         m_offset_params.target_distance,
         m_offset_params.offset_dhat_factor);

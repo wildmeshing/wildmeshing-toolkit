@@ -11,6 +11,8 @@
 
 #include <cmath>
 #include <limits>
+#include <map>
+#include <string>
 
 namespace wmtk::components::topological_offset {
 
@@ -20,9 +22,14 @@ namespace {
 /// one and logs a warning for order 1. 2 is the smallest value it accepts silently.
 constexpr int UNUSED_QUAD_ORDER = 2;
 
-/// dbar_factor, likewise unread by the 2D vertex path (it feeds the near/far barrier split,
-/// which this does not use). 1.0 is upstream's default.
+/// dbar_factor, likewise unread by the vertex path (it feeds the near/far barrier split, which
+/// this does not use). 1.0 is upstream's default.
 constexpr double UNUSED_DBAR_FACTOR = 1.0;
+
+/// The dict type upstream hands back for a vertex query. In 3D DIM is the template's own
+/// default, so `<VERTEX, 3>` and `<VERTEX>` name the same type and the helpers below match.
+template <int DIM>
+using VertexDict = ipc::HighOrderCollisionDict<ipc::PointType::VERTEX, DIM>;
 } // namespace
 
 
@@ -34,18 +41,28 @@ constexpr double UNUSED_DBAR_FACTOR = 1.0;
  * last row"). Its topology never changes, so it is built once; an evaluation only writes the
  * last row and rebuilds the small collision set around it.
  */
-struct OffsetPotential::Impl
+template <int DIM>
+struct OffsetPotential<DIM>::Impl
 {
-    ipc::CollisionMesh mesh; ///< complex vertices + the query vertex; edges = complex segments
+    ipc::CollisionMesh mesh; ///< complex vertices + the query vertex
     ipc::HighOrderContactParameters params;
     size_t n_complex_v = 0; ///< index of the query vertex, one past the complex's own
 
-    /// Broad phase. ipc's own Candidates::build sweeps the WHOLE mesh and, in 2D, only ever
-    /// pairs isolated vertices with each other -- neither of which suits a single moving query
-    /// point against a fixed complex. So the broad phase is ours: one box query per evaluation,
-    /// against the complex as loaded.
-    SimpleBVH::BVH edge_bvh;
+    /// Broad phase. ipc's own Candidates::build sweeps the WHOLE mesh and pairs its primitives
+    /// with each other, neither of which suits a single moving query point against a fixed
+    /// complex. So the broad phase is ours: one box query per evaluation, against the complex as
+    /// loaded.
+    ///
+    /// 3D indexes the TRIANGLES and derives their edges and vertices from a hit, which is
+    /// complete: a primitive within dhat of q lies inside the AABB of every triangle containing
+    /// it, and that AABB therefore meets the query box. 2D has no triangles and indexes the
+    /// segments instead. Isolated edges (a wire, which belongs to no triangle) and isolated
+    /// points can only be reached by their own trees.
+    SimpleBVH::BVH face_bvh; ///< 3D only: the complex's triangles
+    bool has_faces = false;
+    SimpleBVH::BVH edge_bvh; ///< 2D: every segment. 3D: only the segments in no triangle.
     bool has_edges = false;
+    std::vector<int> edge_ids; ///< edge_bvh row -> edge id in `mesh`
     SimpleBVH::BVH point_bvh; ///< isolated complex vertices, as degenerate segments
     bool has_points = false;
     std::vector<int> isolated; ///< complex vertex ids with no incident segment
@@ -67,8 +84,7 @@ struct OffsetPotential::Impl
 
     /// The collision set at `p`, or null when nothing is within the support. Writes the query
     /// point into the calling thread's scratch V first, so the caller evaluates against `s.V`.
-    std::unique_ptr<ipc::HighOrderCollisionDict<ipc::PointType::VERTEX, 2>>
-    collisions(const Vector2d& p, Scratch& s) const
+    std::unique_ptr<VertexDict<DIM>> collisions(const VecD& p, Scratch& s) const
     {
         const auto q = static_cast<ipc::index_t>(n_complex_v);
         const double dhat = params.dhat;
@@ -80,59 +96,106 @@ struct OffsetPotential::Impl
         }
         s.V.row(n_complex_v) = p.transpose();
 
-        // Everything within dhat of p, from our own BVH. In 2D, Candidates::vv_set() derives
-        // the vertex-vertex candidates from the ENDPOINTS of the edge candidates, so seeding
-        // the edge set alone also yields every complex vertex whose incident segment is in
-        // range -- which is what makes a convex corner work at all, since there no edge claims
-        // the point and only the vertex does.
-        const SimpleBVH::Vector3d lo(p[0] - dhat, p[1] - dhat, -dhat);
-        const SimpleBVH::Vector3d hi(p[0] + dhat, p[1] + dhat, dhat);
+        SimpleBVH::Vector3d lo(-dhat, -dhat, -dhat);
+        SimpleBVH::Vector3d hi(dhat, dhat, dhat);
+        for (int d = 0; d < DIM; ++d) {
+            lo[d] += p[d];
+            hi[d] += p[d];
+        }
 
+        s.candidates.m_vf_set.clear();
         s.candidates.m_ve_set.clear();
         s.candidates.m_vv_set.clear();
 
         std::vector<unsigned int> hits;
+
+        if (has_faces) {
+            // 3D. vf_set, ve_set and vv_set are read INDEPENDENTLY by the 3D builder -- unlike
+            // 2D, where Candidates::vv_set() derives the vertex candidates from the endpoints of
+            // the edge candidates -- so a triangle's edges and vertices have to be seeded here
+            // too. Missing one is silent and wrong in the direction that looks fine: a convex
+            // feature whose vertex is never a candidate contributes nothing and the level set
+            // has a hole where it should have a spherical cap.
+            face_bvh.intersect_box(lo, hi, hits);
+            if (!hits.empty()) {
+                std::set<ipc::index_t>& vf = s.candidates.m_vf_set[q];
+                std::set<ipc::index_t>& ve = s.candidates.m_ve_set[q];
+                std::set<ipc::index_t>& vv = s.candidates.m_vv_set[q];
+                for (const unsigned int f : hits) {
+                    vf.insert(static_cast<ipc::index_t>(f));
+                    for (int j = 0; j < 3; ++j) {
+                        ve.insert(mesh.faces_to_edges()(f, j));
+                        vv.insert(mesh.faces()(f, j));
+                    }
+                }
+            }
+        }
         if (has_edges) {
             edge_bvh.intersect_box(lo, hi, hits);
             if (!hits.empty()) {
                 std::set<ipc::index_t>& ve = s.candidates.m_ve_set[q];
                 for (const unsigned int e : hits) {
-                    ve.insert(static_cast<ipc::index_t>(e));
+                    const auto ei = static_cast<ipc::index_t>(edge_ids[e]);
+                    ve.insert(ei);
+                    if constexpr (DIM == 3) {
+                        // 2D gets its vertex candidates for free: Candidates::vv_set() derives
+                        // them from the endpoints of the edge candidates, which is what makes a
+                        // convex corner work at all, since there no edge claims the point and
+                        // only the vertex does. 3D has no such derivation.
+                        std::set<ipc::index_t>& vv = s.candidates.m_vv_set[q];
+                        vv.insert(mesh.edges()(ei, 0));
+                        vv.insert(mesh.edges()(ei, 1));
+                    }
                 }
             }
         }
         if (has_points) {
             point_bvh.intersect_box(lo, hi, hits);
             if (!hits.empty()) {
-                // An isolated complex vertex is in no segment, so it can only reach the
-                // potential as an explicit vertex-vertex candidate.
+                // An isolated complex vertex is in no segment and no triangle, so it can only
+                // reach the potential as an explicit vertex-vertex candidate.
                 std::set<ipc::index_t>& vv = s.candidates.m_vv_set[q];
                 for (const unsigned int i : hits) {
                     vv.insert(static_cast<ipc::index_t>(isolated[i]));
                 }
             }
         }
-        if (s.candidates.m_ve_set.empty() && s.candidates.m_vv_set.empty()) {
+        if (s.candidates.m_vf_set.empty() && s.candidates.m_ve_set.empty() &&
+            s.candidates.m_vv_set.empty()) {
             return nullptr;
         }
 
         // Upstream decides which of those candidates actually contribute: the OGC
-        // feasible-region rule, the P_E interiority test and the dhat cut. Deliberately not
+        // feasible-region rule, the interiority tests and the dhat cut. Deliberately not
         // reimplemented here.
         const ipc::PointPotential pp(mesh, s.candidates, params, nullptr);
         size_t n_pairs = 0;
-        auto dict = pp.build_collisions_at_vertex_ogc_2d(s.V, q, n_pairs);
+        std::unique_ptr<VertexDict<DIM>> dict;
+        if constexpr (DIM == 2) {
+            dict = pp.build_collisions_at_vertex_ogc_2d(s.V, q, n_pairs);
+        } else {
+            dict = pp.build_collisions_at_vertex_ogc_3d(s.V, q, n_pairs);
+        }
         if (!dict || dict->size() == 0) {
             return nullptr;
         }
         return dict;
     }
+
+    /// Phi's stencil covers the query point and every complex vertex it touches; only the query
+    /// point moves, so only its DIM-sized block of a gradient (or DIMxDIM of a Hessian) is ours.
+    ipc::index_t local_query_index(const VertexDict<DIM>& dict) const
+    {
+        return dict.vertex_ids_inverse(static_cast<ipc::index_t>(n_complex_v));
+    }
 };
 
 
-OffsetPotential::OffsetPotential(
+template <int DIM>
+OffsetPotential<DIM>::OffsetPotential(
     const MatrixXd& V,
     const MatrixXi& E,
+    const MatrixXi& F,
     const std::vector<int>& P,
     const double delta,
     const double dhat_factor)
@@ -152,27 +215,30 @@ OffsetPotential::OffsetPotential(
             dhat_factor);
     }
 
-    build(V, E, P);
+    build(V, E, F, P);
 
     // CALIBRATION, through this same code path rather than from a closed form. Phi at
-    // perpendicular distance delta from a long straight edge: one active pair, no feature
+    // perpendicular distance delta from one large flat primitive: one active pair, no feature
     // interaction, so this is the level the offset takes on any flat stretch of the input.
     const OffsetPotential reference(delta, dhat_factor, 0);
-    m_c = reference.value(Vector2d(0., delta));
-    m_grad_ref = reference.gradient(Vector2d(0., delta)).norm();
+    VecD probe = VecD::Zero();
+    probe[DIM - 1] = delta;
+    m_c = reference.value(probe);
+    m_grad_ref = reference.gradient(probe).norm();
 
     if (!(m_c > 0.) || !(m_grad_ref > 0.)) {
         log_and_throw_error(
-            "OffsetPotential: calibration failed (c = {}, |grad| = {}). The straight-edge "
-            "reference produced no active contact pair, which means the collision set is not "
-            "being built.",
+            "OffsetPotential: calibration failed (c = {}, |grad| = {}). The flat reference "
+            "produced no active contact pair, which means the collision set is not being built.",
             m_c,
             m_grad_ref);
     }
 
     logger().info(
-        "\tSmooth offset potential: delta {:.6}, dhat {:.6} ({}x delta), level c {:.6}, "
-        "|grad Phi| at the level set {:.6} | complex: {} vertices, {} segments, {} isolated points",
+        "\tSmooth offset potential ({}D): delta {:.6}, dhat {:.6} ({}x delta), level c {:.6}, "
+        "|grad Phi| at the level set {:.6} | complex: {} vertices, {} segments, {} triangles, "
+        "{} isolated points",
+        DIM,
         m_delta,
         m_dhat,
         dhat_factor,
@@ -180,79 +246,155 @@ OffsetPotential::OffsetPotential(
         m_grad_ref,
         V.rows(),
         E.rows(),
+        F.rows(),
         P.size());
 }
 
 
-OffsetPotential::OffsetPotential(const double delta, const double dhat_factor, int)
+template <int DIM>
+OffsetPotential<DIM>::OffsetPotential(const double delta, const double dhat_factor, int)
     : m_delta(delta)
     , m_dhat(dhat_factor * delta)
 {
-    // A single segment long enough that the query point at (0, delta) projects to its interior
-    // and both endpoints are far outside the support, so exactly one Vertex2-Edge2P1 pair is
-    // active -- which is the definition of "a flat stretch of input".
+    // One primitive large enough that the probe at perpendicular distance delta projects into
+    // its interior and every one of its boundary features is far outside the support, so exactly
+    // one pair is active -- which is the definition of "a flat stretch of input".
     const double L = 100. * m_dhat;
-    MatrixXd V(2, 2);
-    V << -L, 0., L, 0.;
-    MatrixXi E(1, 2);
-    E << 0, 1;
-    build(V, E, {});
+    if constexpr (DIM == 2) {
+        MatrixXd V(2, 2);
+        V << -L, 0., L, 0.;
+        MatrixXi E(1, 2);
+        E << 0, 1;
+        build(V, E, MatrixXi(0, 3), {});
+    } else {
+        // (0,0) sits strictly inside this triangle at ~0.45 L from its nearest edge.
+        MatrixXd V(3, 3);
+        V << -L, -L, 0., L, -L, 0., 0., L, 0.;
+        MatrixXi E(3, 2);
+        E << 0, 1, 1, 2, 2, 0;
+        MatrixXi F(1, 3);
+        F << 0, 1, 2;
+        build(V, E, F, {});
+    }
     // m_c and m_grad_ref stay 0 here: the reference is only ever asked for value() and
     // gradient(), never for a residual.
 }
 
 
-OffsetPotential::~OffsetPotential() = default;
+template <int DIM>
+OffsetPotential<DIM>::~OffsetPotential() = default;
 
 
-void OffsetPotential::build(const MatrixXd& V, const MatrixXi& E, const std::vector<int>& P)
+template <int DIM>
+void OffsetPotential<DIM>::build(
+    const MatrixXd& V,
+    const MatrixXi& E,
+    const MatrixXi& F,
+    const std::vector<int>& P)
 {
-    if (V.cols() != 2) {
-        log_and_throw_error("OffsetPotential is 2D only, got {} columns", V.cols());
+    if (V.cols() != DIM) {
+        log_and_throw_error(
+            "OffsetPotential<{}> was given {}-column vertices",
+            DIM,
+            V.cols());
+    }
+    if constexpr (DIM == 2) {
+        if (F.rows() != 0) {
+            log_and_throw_error("OffsetPotential<2> has no triangle primitive, got {}", F.rows());
+        }
     }
 
     m_impl = std::make_unique<Impl>(m_dhat);
     m_impl->n_complex_v = static_cast<size_t>(V.rows());
 
     // The collision mesh: the complex, plus one trailing row that every evaluation overwrites
-    // with the query point. It belongs to no segment, so it never appears as a contact
-    // PRIMITIVE -- only as the point the primitives are measured from.
+    // with the query point. It belongs to no segment and no triangle, so it never appears as a
+    // contact PRIMITIVE -- only as the point the primitives are measured from.
     //
-    // A COMPLEX OF ISOLATED POINTS ONLY (topological_offset_2d_vertex_input is exactly this)
-    // needs one more row still. ipc::CollisionMesh::are_adjacencies_initialized() requires all
-    // three adjacency tables to be non-empty, and the edge-vertex table is sized by the edge
-    // count -- so with no edges it reads as "not initialized" and every accessor throws,
-    // including the one the OGC feasible-region test calls. A single sentinel segment, placed
-    // far outside the complex, makes the table non-empty. It is unreachable by construction:
-    // the only source of collision CANDIDATES is our own BVH below, which does not index it.
+    // A COMPLEX WITH NO SEGMENTS AT ALL (topological_offset_2d_vertex_input is exactly this, a
+    // set of isolated points) needs one more row still. ipc::CollisionMesh's
+    // are_adjacencies_initialized() requires all three adjacency tables to be non-empty, and the
+    // edge-vertex table is sized by the EDGE count -- so with no edges it reads as "not
+    // initialized" and every accessor throws, including the one the OGC feasible-region test
+    // calls. A single sentinel segment, placed far outside the complex, makes the table
+    // non-empty. It is unreachable by construction: the only source of collision CANDIDATES is
+    // our own BVHs below, which do not index it. No sentinel TRIANGLE is ever needed, because a
+    // complex with triangles necessarily has their edges.
     const bool needs_sentinel = (E.rows() == 0);
     const int n_extra = needs_sentinel ? 3 : 1;
 
-    MatrixXd V_ext(V.rows() + n_extra, 2);
+    MatrixXd V_ext(V.rows() + n_extra, DIM);
     V_ext.topRows(V.rows()) = V;
     V_ext.bottomRows(n_extra).setZero();
 
     MatrixXi E_ext = E;
     if (needs_sentinel) {
-        const Vector2d far = V.colwise().maxCoeff().transpose() +
-                             Vector2d::Constant(1e3 * m_dhat + 1.);
+        const VecD far =
+            V.colwise().maxCoeff().transpose() + VecD::Constant(1e3 * m_dhat + 1.);
+        VecD far2 = far;
+        far2[0] += m_dhat;
         V_ext.row(V.rows() + 1) = far.transpose();
-        V_ext.row(V.rows() + 2) = (far + Vector2d(m_dhat, 0.)).transpose();
+        V_ext.row(V.rows() + 2) = far2.transpose();
         E_ext.resize(1, 2);
         E_ext << static_cast<int>(V.rows()) + 1, static_cast<int>(V.rows()) + 2;
     }
 
-    m_impl->mesh = ipc::CollisionMesh(V_ext, E_ext, Eigen::MatrixXi());
+    m_impl->mesh = ipc::CollisionMesh(V_ext, E_ext, F);
     m_impl->mesh.init_adjacencies(); // the OGC feasible-region test reads them
 
-    // Broad phase. SimpleBVH is 3D, so pad; the complex lies in z = 0.
+    // Broad phase. SimpleBVH is 3D, so pad; a 2D complex lies in z = 0.
     MatrixXd V3(V.rows(), 3);
     V3.setZero();
-    V3.leftCols(2) = V;
+    V3.leftCols(DIM) = V;
 
-    if (E.rows() > 0) {
-        m_impl->edge_bvh.init(V3, E, 1e-6);
+    if (F.rows() > 0) {
+        m_impl->face_bvh.init(V3, F, 1e-6);
+        m_impl->has_faces = true;
+    }
+
+    // In 3D a triangle's own edges are reached through the triangle, so the edge tree only has
+    // to carry the segments that belong to no triangle -- the complex's wires. Indexing all of
+    // them would be correct but would seed the same candidates twice.
+    std::vector<int> tree_edges;
+    if constexpr (DIM == 3) {
+        std::vector<bool> in_face(E.rows(), false);
+        std::map<std::pair<int, int>, int> edge_of;
+        for (int i = 0; i < E.rows(); ++i) {
+            edge_of[{std::min(E(i, 0), E(i, 1)), std::max(E(i, 0), E(i, 1))}] = i;
+        }
+        for (int f = 0; f < F.rows(); ++f) {
+            for (int j = 0; j < 3; ++j) {
+                const int a = F(f, j);
+                const int b = F(f, (j + 1) % 3);
+                const auto it = edge_of.find({std::min(a, b), std::max(a, b)});
+                if (it == edge_of.end()) {
+                    // ipc would throw the same thing from construct_faces_to_edges, but with no
+                    // hint about which caller built the list.
+                    log_and_throw_error(
+                        "OffsetPotential<3>: edge ({}, {}) of triangle {} is missing from E. The "
+                        "edge list must contain every edge of every triangle.",
+                        a,
+                        b,
+                        f);
+                }
+                in_face[it->second] = true;
+            }
+        }
+        for (int i = 0; i < E.rows(); ++i) {
+            if (!in_face[i]) tree_edges.push_back(i);
+        }
+    } else {
+        for (int i = 0; i < E.rows(); ++i) tree_edges.push_back(i);
+    }
+
+    if (!tree_edges.empty()) {
+        MatrixXi E_tree(tree_edges.size(), 2);
+        for (size_t i = 0; i < tree_edges.size(); ++i) {
+            E_tree.row(i) = E.row(tree_edges[i]);
+        }
+        m_impl->edge_bvh.init(V3, E_tree, 1e-6);
         m_impl->has_edges = true;
+        m_impl->edge_ids = tree_edges;
     }
 
     m_impl->isolated = P;
@@ -270,54 +412,96 @@ void OffsetPotential::build(const MatrixXd& V, const MatrixXi& E, const std::vec
 }
 
 
-double OffsetPotential::value(const Vector2d& p) const
+template <int DIM>
+double OffsetPotential<DIM>::value(const VecD& p) const
 {
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
     if (!dict) {
         return 0.; // nothing within the support: Phi is identically zero out here
     }
-    return ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
-        s.V, *dict, m_impl->params, nullptr);
-}
-
-
-Vector2d OffsetPotential::gradient(const Vector2d& p) const
-{
-    auto& s = m_impl->scratch.local();
-    const auto dict = m_impl->collisions(p, s);
-    if (!dict) {
-        return Vector2d::Zero();
+    if constexpr (DIM == 2) {
+        return ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
+            s.V, *dict, m_impl->params, nullptr);
+    } else {
+        return ipc::PointPotentialHelper::evaluate_potential_at_vertex_with_cached_collisions(
+            s.V, *dict, m_impl->params, nullptr);
     }
-    const Eigen::VectorXd g = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_2d(
-        s.V, *dict, m_impl->params, nullptr);
-    // The gradient covers the whole stencil -- the query point and every complex vertex it
-    // touches. Only the query point moves, so only its 2x2 block is ours.
-    const ipc::index_t li =
-        dict->vertex_ids_inverse(static_cast<ipc::index_t>(m_impl->n_complex_v));
-    return g.segment<2>(2 * li);
 }
 
 
-Matrix2d OffsetPotential::hessian(const Vector2d& p) const
+template <int DIM>
+typename OffsetPotential<DIM>::VecD OffsetPotential<DIM>::gradient(const VecD& p) const
 {
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
     if (!dict) {
-        return Matrix2d::Zero();
+        return VecD::Zero();
+    }
+    Eigen::VectorXd g;
+    if constexpr (DIM == 2) {
+        g = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_2d(
+            s.V, *dict, m_impl->params, nullptr);
+    } else {
+        g = ipc::PointPotentialHelper::
+            evaluate_potential_gradient_at_vertex_with_cached_collisions(
+                s.V, *dict, m_impl->params, nullptr);
+    }
+    const ipc::index_t li = m_impl->local_query_index(*dict);
+    return g.template segment<DIM>(DIM * li);
+}
+
+
+template <int DIM>
+typename OffsetPotential<DIM>::MatD OffsetPotential<DIM>::hessian(const VecD& p) const
+{
+    auto& s = m_impl->scratch.local();
+    const auto dict = m_impl->collisions(p, s);
+    if (!dict) {
+        return MatD::Zero();
     }
     // PSDProjectionMethod::NONE: the TRUE Hessian, projected (or not) by the caller. The
     // smoothing energy squares the residual and takes its own Gauss-Newton approximation, which
     // is a different and better-motivated way to reach a PSD matrix than clamping this one.
-    const Eigen::MatrixXd H = ipc::PointPotentialHelper::evaluate_potential_hessian_at_vertex_2d(
-        s.V, *dict, m_impl->params, nullptr, ipc::PSDProjectionMethod::NONE);
-    const ipc::index_t li =
-        dict->vertex_ids_inverse(static_cast<ipc::index_t>(m_impl->n_complex_v));
-    return H.block<2, 2>(2 * li, 2 * li);
+    Eigen::MatrixXd H;
+    if constexpr (DIM == 2) {
+        H = ipc::PointPotentialHelper::evaluate_potential_hessian_at_vertex_2d(
+            s.V, *dict, m_impl->params, nullptr, ipc::PSDProjectionMethod::NONE);
+    } else {
+        H = ipc::PointPotentialHelper::
+            evaluate_potential_hessian_at_vertex_with_cached_collisions(
+                s.V, *dict, m_impl->params, nullptr, ipc::PSDProjectionMethod::NONE);
+    }
+    const ipc::index_t li = m_impl->local_query_index(*dict);
+    return H.template block<DIM, DIM>(DIM * li, DIM * li);
 }
 
 
-double OffsetPotential::residual_length(const Vector2d& p) const
+template <int DIM>
+std::string OffsetPotential<DIM>::describe_active(const VecD& p) const
+{
+    auto& s = m_impl->scratch.local();
+    const auto dict = m_impl->collisions(p, s);
+    if (!dict) return "<nothing active>";
+    std::string out;
+    for (int i = 0; i < dict->size(); ++i) {
+        const auto& cc = (*dict)[i];
+        std::string ids;
+        for (const ipc::index_t v : cc.vertex_ids()) {
+            ids += fmt::format("{} ", v);
+        }
+        out += fmt::format(
+            "[{} w={} verts: {}] ",
+            cc.name(),
+            cc.weight,
+            ids);
+    }
+    return out;
+}
+
+
+template <int DIM>
+double OffsetPotential<DIM>::residual_length(const VecD& p) const
 {
     // |Phi(p) - c| divided by the REFERENCE gradient magnitude -- the slope of Phi at the level
     // set on a flat stretch of input -- rather than by the local |grad Phi(p)|.
@@ -342,8 +526,9 @@ double OffsetPotential::residual_length(const Vector2d& p) const
 // ---------------------------------------------------------------------------------------------
 
 
-OffsetEnergy2D::OffsetEnergy2D(
-    const std::shared_ptr<const OffsetPotential>& potential,
+template <int DIM>
+OffsetEnergy<DIM>::OffsetEnergy(
+    const std::shared_ptr<const OffsetPotential<DIM>>& potential,
     const double weight,
     const bool gauss_newton)
     : m_potential(potential)
@@ -353,31 +538,40 @@ OffsetEnergy2D::OffsetEnergy2D(
 }
 
 
-double OffsetEnergy2D::value(const TVector& x)
+template <int DIM>
+double OffsetEnergy<DIM>::value(const TVector& x)
 {
-    const double r = m_potential->value(Vector2d(x[0], x[1])) - m_potential->target_level();
+    const double r = m_potential->value(VecD(x.head(DIM))) - m_potential->target_level();
     return m_weight * r * r;
 }
 
 
-void OffsetEnergy2D::gradient(const TVector& x, TVector& gradv)
+template <int DIM>
+void OffsetEnergy<DIM>::gradient(const TVector& x, TVector& gradv)
 {
-    const Vector2d p(x[0], x[1]);
+    const VecD p = x.head(DIM);
     const double r = m_potential->value(p) - m_potential->target_level();
     gradv = 2. * m_weight * r * m_potential->gradient(p);
 }
 
 
-void OffsetEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+template <int DIM>
+void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 {
-    const Vector2d p(x[0], x[1]);
-    const Vector2d g = m_potential->gradient(p);
-    Matrix2d H = 2. * m_weight * g * g.transpose();
+    const VecD p = x.head(DIM);
+    const VecD g = m_potential->gradient(p);
+    MatD H = 2. * m_weight * g * g.transpose();
     if (!m_gauss_newton) {
         const double r = m_potential->value(p) - m_potential->target_level();
         H += 2. * m_weight * r * m_potential->hessian(p);
     }
     hessian = H;
 }
+
+
+template class OffsetPotential<2>;
+template class OffsetPotential<3>;
+template class OffsetEnergy<2>;
+template class OffsetEnergy<3>;
 
 } // namespace wmtk::components::topological_offset

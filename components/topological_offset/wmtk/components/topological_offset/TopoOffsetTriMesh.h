@@ -120,7 +120,7 @@ public:
      *
      * shared_ptr because OffsetEnergy2D holds one per smoothing call.
      */
-    std::shared_ptr<OffsetPotential> m_offset_potential;
+    std::shared_ptr<OffsetPotential2D> m_offset_potential;
 
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
