@@ -10,8 +10,8 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 
-#include <polysolve/nonlinear/Problem.hpp>
 #include <spdlog/fmt/bundled/format.h>
+#include <polysolve/nonlinear/Problem.hpp>
 
 #include <atomic>
 #include <limits>

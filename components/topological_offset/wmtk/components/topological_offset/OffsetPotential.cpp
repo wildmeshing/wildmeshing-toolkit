@@ -79,8 +79,7 @@ struct OffsetPotential<DIM>::Impl
 
     Impl(const double dhat)
         : params(dhat, UNUSED_DBAR_FACTOR, UNUSED_QUAD_ORDER, /*ogc_collisions=*/true)
-    {
-    }
+    {}
 
     /// The collision set at `p`, or null when nothing is within the support. Writes the query
     /// point into the calling thread's scratch V first, so the caller evaluates against `s.V`.
@@ -293,10 +292,7 @@ void OffsetPotential<DIM>::build(
     const std::vector<int>& P)
 {
     if (V.cols() != DIM) {
-        log_and_throw_error(
-            "OffsetPotential<{}> was given {}-column vertices",
-            DIM,
-            V.cols());
+        log_and_throw_error("OffsetPotential<{}> was given {}-column vertices", DIM, V.cols());
     }
     if constexpr (DIM == 2) {
         if (F.rows() != 0) {
@@ -329,8 +325,7 @@ void OffsetPotential<DIM>::build(
 
     MatrixXi E_ext = E;
     if (needs_sentinel) {
-        const VecD far =
-            V.colwise().maxCoeff().transpose() + VecD::Constant(1e3 * m_dhat + 1.);
+        const VecD far = V.colwise().maxCoeff().transpose() + VecD::Constant(1e3 * m_dhat + 1.);
         VecD far2 = far;
         far2[0] += m_dhat;
         V_ext.row(V.rows() + 1) = far.transpose();
@@ -422,10 +417,16 @@ double OffsetPotential<DIM>::value(const VecD& p) const
     }
     if constexpr (DIM == 2) {
         return ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
-            s.V, *dict, m_impl->params, nullptr);
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr);
     } else {
         return ipc::PointPotentialHelper::evaluate_potential_at_vertex_with_cached_collisions(
-            s.V, *dict, m_impl->params, nullptr);
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr);
     }
 }
 
@@ -441,11 +442,16 @@ typename OffsetPotential<DIM>::VecD OffsetPotential<DIM>::gradient(const VecD& p
     Eigen::VectorXd g;
     if constexpr (DIM == 2) {
         g = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_2d(
-            s.V, *dict, m_impl->params, nullptr);
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr);
     } else {
-        g = ipc::PointPotentialHelper::
-            evaluate_potential_gradient_at_vertex_with_cached_collisions(
-                s.V, *dict, m_impl->params, nullptr);
+        g = ipc::PointPotentialHelper::evaluate_potential_gradient_at_vertex_with_cached_collisions(
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr);
     }
     const ipc::index_t li = m_impl->local_query_index(*dict);
     return g.template segment<DIM>(DIM * li);
@@ -466,11 +472,18 @@ typename OffsetPotential<DIM>::MatD OffsetPotential<DIM>::hessian(const VecD& p)
     Eigen::MatrixXd H;
     if constexpr (DIM == 2) {
         H = ipc::PointPotentialHelper::evaluate_potential_hessian_at_vertex_2d(
-            s.V, *dict, m_impl->params, nullptr, ipc::PSDProjectionMethod::NONE);
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr,
+            ipc::PSDProjectionMethod::NONE);
     } else {
-        H = ipc::PointPotentialHelper::
-            evaluate_potential_hessian_at_vertex_with_cached_collisions(
-                s.V, *dict, m_impl->params, nullptr, ipc::PSDProjectionMethod::NONE);
+        H = ipc::PointPotentialHelper::evaluate_potential_hessian_at_vertex_with_cached_collisions(
+            s.V,
+            *dict,
+            m_impl->params,
+            nullptr,
+            ipc::PSDProjectionMethod::NONE);
     }
     const ipc::index_t li = m_impl->local_query_index(*dict);
     return H.template block<DIM, DIM>(DIM * li, DIM * li);
@@ -490,11 +503,7 @@ std::string OffsetPotential<DIM>::describe_active(const VecD& p) const
         for (const ipc::index_t v : cc.vertex_ids()) {
             ids += fmt::format("{} ", v);
         }
-        out += fmt::format(
-            "[{} w={} verts: {}] ",
-            cc.name(),
-            cc.weight,
-            ids);
+        out += fmt::format("[{} w={} verts: {}] ", cc.name(), cc.weight, ids);
     }
     return out;
 }
@@ -534,8 +543,7 @@ OffsetEnergy<DIM>::OffsetEnergy(
     : m_potential(potential)
     , m_weight(weight)
     , m_gauss_newton(gauss_newton)
-{
-}
+{}
 
 
 template <int DIM>

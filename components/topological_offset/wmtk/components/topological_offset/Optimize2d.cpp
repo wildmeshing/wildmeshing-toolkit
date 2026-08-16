@@ -614,9 +614,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     // smoother proposed, not necessarily the one kept. That is deliberate -- it separates "the
     // solver could not find a better place" from "it found one and the accept checks refused
     // it" -- but it means the two numbers must always be read next to the accepted count.
-    const auto nano = [](double x) {
-        return static_cast<long long>(std::min(x, 1e9) * 1e9);
-    };
+    const auto nano = [](double x) { return static_cast<long long>(std::min(x, 1e9) * 1e9); };
     m_smooth_trace.res_before_nano += nano(before);
     m_smooth_trace.res_after_nano += nano(after);
     atomic_max(m_smooth_trace.res_max_before_nano, nano(before));
@@ -1107,9 +1105,12 @@ size_t TopoOffsetTriMesh::refine_sizing_around_worst(const double max_metric)
     m_force_split_edges.clear();
     if (m_params.stuck_refine_force_split) {
         for (const auto& [q, fid] : worst) {
-            m_force_split_edges.insert(wmtk::utils::longest_edge(
-                oriented_tri_vids(fid),
-                [this](size_t vid) -> const Vector2d& { return m_vertex_attribute[vid].m_posf; }));
+            m_force_split_edges.insert(
+                wmtk::utils::longest_edge(
+                    oriented_tri_vids(fid),
+                    [this](size_t vid) -> const Vector2d& {
+                        return m_vertex_attribute[vid].m_posf;
+                    }));
         }
     }
 

@@ -1,11 +1,11 @@
 #pragma once
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriOptimizerMesh.h>
-#include <wmtk/optimization/solver.hpp>
 #include <algorithm>
 #include <atomic>
 #include <functional>
 #include <set>
+#include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "OffsetPotential.hpp"
 #include "Parameters.h"
@@ -742,8 +742,9 @@ public:
     /// "how close is close enough" is stated in units of the offset the run asked for.
     double offset_residual_tolerance() const
     {
-        return std::max(m_offset_params.offset_residual_rel * m_offset_params.target_distance,
-                        1e-16);
+        return std::max(
+            m_offset_params.offset_residual_rel * m_offset_params.target_distance,
+            1e-16);
     }
 
     /**

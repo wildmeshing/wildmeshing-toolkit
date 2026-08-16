@@ -1563,8 +1563,7 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
                 for (int j = 1; j < n - i; ++j) {
                     const int lg = n - i - j;
                     if (lg < 1) continue;
-                    const Vector3d q =
-                        (double(i) * a + double(j) * b + double(lg) * c) / double(n);
+                    const Vector3d q = (double(i) * a + double(j) * b + double(lg) * c) / double(n);
                     per_sample += fmt::format(
                         "({},{},{}) d {:.5} r {:.5} phi {:.5} | ",
                         i,

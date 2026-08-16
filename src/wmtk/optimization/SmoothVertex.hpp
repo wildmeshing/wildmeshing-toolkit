@@ -524,8 +524,9 @@ bool smooth_vertex_2d(
         assert(!surf_neighbors.empty());
     }
 
-    // Per-vertex rather than the mesh's single m_envelope: see TriOptimizerMesh::smoothing_envelope.
-    // The default returns exactly the old expression, so TriWild and SimWild are unaffected.
+    // Per-vertex rather than the mesh's single m_envelope: see
+    // TriOptimizerMesh::smoothing_envelope. The default returns exactly the old expression, so
+    // TriWild and SimWild are unaffected.
     const std::shared_ptr<SampleEnvelope> envelope = m.smoothing_envelope(vid);
 
     if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {

@@ -990,12 +990,16 @@ void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) con
         for (int i = 0; i < n; ++i) {
             const int k = j * n + i;
             const Vector2d p(
-                lo[0] + (hi[0] - lo[0]) * i / (n - 1), lo[1] + (hi[1] - lo[1]) * j / (n - 1));
+                lo[0] + (hi[0] - lo[0]) * i / (n - 1),
+                lo[1] + (hi[1] - lo[1]) * j / (n - 1));
             V.row(k) = p.transpose();
             // Phi diverges on the input complex, which would flatten the colour map everywhere
             // else; clamped to a few times the level value, which is the range that matters.
-            phi(k, 0) = std::min(m_offset_potential->value(p), 8. * m_offset_potential->target_level());
-            residual(k, 0) = std::min(m_offset_potential->residual_length(p), 8. * m_offset_params.target_distance);
+            phi(k, 0) =
+                std::min(m_offset_potential->value(p), 8. * m_offset_potential->target_level());
+            residual(k, 0) = std::min(
+                m_offset_potential->residual_length(p),
+                8. * m_offset_params.target_distance);
             euclid(k, 0) = m_input_complex_bvh.dist(VectorXd(p));
         }
     }

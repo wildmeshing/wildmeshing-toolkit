@@ -2,9 +2,9 @@
 #include "TopoOffsetTetMesh.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
-#include <array>
 #include <map>
 #include <set>
 

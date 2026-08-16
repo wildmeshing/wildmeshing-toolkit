@@ -221,7 +221,8 @@ TriSoup uv_sphere(const double R, const int n_theta, const int n_phi)
         for (int j = 0; j < n_phi; ++j) {
             const double ph = 2. * M_PI * j / n_phi;
             pts.emplace_back(
-                R * std::sin(th) * std::cos(ph), R * std::sin(th) * std::sin(ph),
+                R * std::sin(th) * std::cos(ph),
+                R * std::sin(th) * std::sin(ph),
                 R * std::cos(th));
         }
     }
@@ -359,7 +360,11 @@ TEST_CASE("offset-potential-straight-edge", "[offset][potential]")
 
     for (const double x : {-4., -1., 0., 2., 5.}) {
         const double r = level_set_radius(
-            phi, Vector2d(x, 3.), Vector2d(0., 1.), 0.05 * delta, 0.999 * phi.dhat());
+            phi,
+            Vector2d(x, 3.),
+            Vector2d(0., 1.),
+            0.05 * delta,
+            0.999 * phi.dhat());
         CHECK(r == Catch::Approx(delta).epsilon(1e-9));
     }
 
@@ -387,7 +392,11 @@ TEST_CASE("offset-potential-isolated-point", "[offset][potential]")
     for (int i = 0; i < 32; ++i) {
         const double a = 2. * M_PI * i / 32;
         const double r = level_set_radius(
-            phi, o, Vector2d(std::cos(a), std::sin(a)), 0.05 * delta, 0.999 * phi.dhat());
+            phi,
+            o,
+            Vector2d(std::cos(a), std::sin(a)),
+            0.05 * delta,
+            0.999 * phi.dhat());
         max_err = std::max(max_err, std::abs(r - delta));
     }
     CHECK(max_err <= 1e-9 * delta);
@@ -425,8 +434,8 @@ TEST_CASE("offset-potential-vs-euclidean-circle", "[offset][potential]")
         sum_err += err;
     }
     INFO(
-        "circle R=" << R << " delta=" << delta << ": max |offset - delta| = " << max_err
-                    << " (" << 100. * max_err / delta << "% of delta), mean "
+        "circle R=" << R << " delta=" << delta << ": max |offset - delta| = " << max_err << " ("
+                    << 100. * max_err / delta << "% of delta), mean "
                     << 100. * (sum_err / n) / delta << "%");
     // 1% of delta. The convex case is the easy one and is expected to be tight.
     CHECK(max_err <= 0.01 * delta);
@@ -441,19 +450,24 @@ TEST_CASE("offset-potential-vs-euclidean-square", "[offset][potential]")
     // arcs -- so the smoothed offset should reproduce it closely.
     const double h = 1.0; // half-side
     const double delta = 0.1;
-    const Polyline p = closed_polyline(
-        {Vector2d(-h, -h), Vector2d(h, -h), Vector2d(h, h), Vector2d(-h, h)});
+    const Polyline p =
+        closed_polyline({Vector2d(-h, -h), Vector2d(h, -h), Vector2d(h, h), Vector2d(-h, h)});
     const OffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     // Along the flats: the level set must sit at exactly h + delta.
     double flat_err = 0.;
     for (const double x : {-0.7, -0.3, 0.0, 0.4, 0.8}) {
         const double y = level_set_radius(
-            phi, Vector2d(x, h), Vector2d(0., 1.), 0.05 * delta, 0.999 * phi.dhat());
+            phi,
+            Vector2d(x, h),
+            Vector2d(0., 1.),
+            0.05 * delta,
+            0.999 * phi.dhat());
         flat_err = std::max(flat_err, std::abs(y - delta));
     }
-    INFO("square flat side: max |offset - delta| = " << flat_err << " (" << 100. * flat_err / delta
-                                                     << "% of delta)");
+    INFO(
+        "square flat side: max |offset - delta| = " << flat_err << " (" << 100. * flat_err / delta
+                                                    << "% of delta)");
     CHECK(flat_err <= 0.01 * delta);
 
     // Around a convex corner: the exact offset is the arc of radius delta about the corner.
@@ -468,8 +482,9 @@ TEST_CASE("offset-potential-vs-euclidean-square", "[offset][potential]")
             0.999 * phi.dhat());
         corner_err = std::max(corner_err, std::abs(r - delta));
     }
-    INFO("square convex corner: max |offset - delta| = "
-         << corner_err << " (" << 100. * corner_err / delta << "% of delta)");
+    INFO(
+        "square convex corner: max |offset - delta| = "
+        << corner_err << " (" << 100. * corner_err / delta << "% of delta)");
     CHECK(corner_err <= 0.01 * delta);
 }
 
@@ -521,8 +536,7 @@ TEST_CASE("offset-potential-vs-euclidean-wedge", "[offset][potential]")
     // so the smoothing is LOCAL to the feature, which is the property that makes it usable.
     const Vector2d dir(std::sin(half_angle), std::cos(half_angle)); // along the +x arm
     const Vector2d nrm(dir[1], -dir[0]); // outward normal of that arm
-    const double d_far = level_set_radius(
-        phi, 1.5 * dir, nrm, 0.05 * delta, 0.999 * phi.dhat());
+    const double d_far = level_set_radius(phi, 1.5 * dir, nrm, 0.05 * delta, 0.999 * phi.dhat());
     INFO("reentrant wedge, far along an arm: " << d_far << " vs delta " << delta);
     CHECK(d_far == Catch::Approx(delta).epsilon(0.01));
 }
@@ -559,7 +573,12 @@ TEST_CASE("offset-energy-derivatives", "[offset][potential]")
         {Vector2d(-1., 0.), Vector2d(0., 0.), Vector2d(0.3, 0.4), Vector2d(0.9, 0.1)});
     const double delta = 0.1;
     const auto phi = std::make_shared<const OffsetPotential2D>(
-        p.V, p.E, MatrixXi(0, 3), std::vector<int>{}, delta, DHAT_FACTOR);
+        p.V,
+        p.E,
+        MatrixXi(0, 3),
+        std::vector<int>{},
+        delta,
+        DHAT_FACTOR);
 
     OffsetEnergy2D energy(phi, 1.0);
 
@@ -600,9 +619,13 @@ TEST_CASE("offset-energy-lands-on-the-level-set", "[offset][potential]")
     const double delta = 0.25;
     MatrixXd V(1, 2);
     V << 0., 0.;
-    const auto phi =
-        std::make_shared<const OffsetPotential2D>(
-            V, MatrixXi(0, 2), MatrixXi(0, 3), std::vector<int>{0}, delta, DHAT_FACTOR);
+    const auto phi = std::make_shared<const OffsetPotential2D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
 
     auto solver = wmtk::optimization::create_basic_solver();
 
@@ -748,11 +771,16 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
     double face_err = 0.;
     for (int f = 0; f < s.F.rows(); ++f) {
         const double r = level_set_radius<3>(
-            phi, tri_centroid(s, f), tri_normal(s, f), 0.05 * delta, 0.999 * phi.dhat());
+            phi,
+            tri_centroid(s, f),
+            tri_normal(s, f),
+            0.05 * delta,
+            0.999 * phi.dhat());
         face_err = std::max(face_err, std::abs(r - delta));
     }
-    INFO("cube face: max |offset - delta| = " << face_err << " (" << 100. * face_err / delta
-                                              << "% of delta)");
+    INFO(
+        "cube face: max |offset - delta| = " << face_err << " (" << 100. * face_err / delta
+                                             << "% of delta)");
     CHECK(face_err <= 1e-9 * delta);
 
     // EDGES. Out of the middle of each of the 12 cube edges, along the diagonal of the two faces
@@ -766,14 +794,14 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
                 o[(axis + 2) % 3] = sb * h;
                 d[(axis + 1) % 3] = sa;
                 d[(axis + 2) % 3] = sb;
-                const double r =
-                    level_set_radius<3>(phi, o, d, 0.05 * delta, 0.999 * phi.dhat());
+                const double r = level_set_radius<3>(phi, o, d, 0.05 * delta, 0.999 * phi.dhat());
                 edge_err = std::max(edge_err, std::abs(r - delta));
             }
         }
     }
-    INFO("cube edge: max |offset - delta| = " << edge_err << " (" << 100. * edge_err / delta
-                                              << "% of delta)");
+    INFO(
+        "cube edge: max |offset - delta| = " << edge_err << " (" << 100. * edge_err / delta
+                                             << "% of delta)");
     CHECK(edge_err <= 1e-9 * delta);
 
     // CORNERS. Out along the body diagonal from each of the 8 corners: the exact offset is the
@@ -785,13 +813,18 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
             for (const double sz : {-1., 1.}) {
                 const Vector3d o(sx * h, sy * h, sz * h);
                 const double r = level_set_radius<3>(
-                    phi, o, Vector3d(sx, sy, sz), 0.05 * delta, 0.999 * phi.dhat());
+                    phi,
+                    o,
+                    Vector3d(sx, sy, sz),
+                    0.05 * delta,
+                    0.999 * phi.dhat());
                 corner_err = std::max(corner_err, std::abs(r - delta));
             }
         }
     }
-    INFO("cube corner: max |offset - delta| = " << corner_err << " (" << 100. * corner_err / delta
-                                                << "% of delta)");
+    INFO(
+        "cube corner: max |offset - delta| = " << corner_err << " (" << 100. * corner_err / delta
+                                               << "% of delta)");
     CHECK(corner_err <= 1e-9 * delta);
 }
 
@@ -821,9 +854,15 @@ TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
                 const double th = M_PI * (i + 0.31) / 12.;
                 const double ph = 2. * M_PI * (j + 0.17) / 12.; // off the vertices, deliberately
                 const Vector3d d(
-                    std::sin(th) * std::cos(ph), std::sin(th) * std::sin(ph), std::cos(th));
+                    std::sin(th) * std::cos(ph),
+                    std::sin(th) * std::sin(ph),
+                    std::cos(th));
                 const double r = level_set_radius<3>(
-                    phi, Vector3d::Zero(), d, R + 0.05 * delta, R + 0.999 * phi.dhat());
+                    phi,
+                    Vector3d::Zero(),
+                    d,
+                    R + 0.05 * delta,
+                    R + 0.999 * phi.dhat());
                 const double err = std::abs((r - R) - delta);
                 max_err = std::max(max_err, err);
                 sum_err += err;
@@ -837,10 +876,9 @@ TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
     const auto [fine_max, fine_avg] = measure(96, 192);
     INFO(
         "sphere R=" << R << " delta=" << delta << ": max |offset - delta| = " << fine_max << " ("
-                    << 100. * fine_max / delta << "% of delta), mean "
-                    << 100. * fine_avg / delta << "% | one quarter the edge length: "
-                    << 100. * coarse_max / delta << "% max, " << 100. * coarse_avg / delta
-                    << "% mean");
+                    << 100. * fine_max / delta << "% of delta), mean " << 100. * fine_avg / delta
+                    << "% | one quarter the edge length: " << 100. * coarse_max / delta << "% max, "
+                    << 100. * coarse_avg / delta << "% mean");
     CHECK(fine_max <= 0.01 * delta);
     CHECK(fine_max <= 0.25 * coarse_max); // converging with the mesh, not a floor of Phi's
 }
@@ -912,9 +950,10 @@ TEST_CASE("offset-potential-3d-isolated-point", "[offset][potential]")
         for (int j = 0; j < 8; ++j) {
             const double th = M_PI * (i + 0.5) / 8., ph = 2. * M_PI * j / 8.;
             const Vector3d d(
-                std::sin(th) * std::cos(ph), std::sin(th) * std::sin(ph), std::cos(th));
-            const double r =
-                level_set_radius<3>(phi, o, d, 0.05 * delta, 0.999 * phi.dhat());
+                std::sin(th) * std::cos(ph),
+                std::sin(th) * std::sin(ph),
+                std::cos(th));
+            const double r = level_set_radius<3>(phi, o, d, 0.05 * delta, 0.999 * phi.dhat());
             max_err = std::max(max_err, std::abs(r - delta));
         }
     }
@@ -943,8 +982,8 @@ TEST_CASE("offset-potential-3d-vs-euclidean-reentrant", "[offset][potential]")
     const OffsetPotential3D phi(V, edges_of(F), F, {}, delta, DHAT_FACTOR);
 
     const Vector3d bis(1., 0., 1.);
-    const double t = level_set_radius<3>(
-        phi, Vector3d::Zero(), bis, 0.05 * delta, 0.999 * phi.dhat());
+    const double t =
+        level_set_radius<3>(phi, Vector3d::Zero(), bis, 0.05 * delta, 0.999 * phi.dhat());
     // On the bisector at parameter t the Euclidean distance to either quad is t/sqrt(2).
     const double euclid = t / std::sqrt(2.);
     INFO(
@@ -958,7 +997,11 @@ TEST_CASE("offset-potential-3d-vs-euclidean-reentrant", "[offset][potential]")
 
     // Far from the crease, on the z = 0 quad: exact again.
     const double d_far = level_set_radius<3>(
-        phi, Vector3d(1.2, 0., 0.), Vector3d(0., 0., 1.), 0.05 * delta, 0.999 * phi.dhat());
+        phi,
+        Vector3d(1.2, 0., 0.),
+        Vector3d(0., 0., 1.),
+        0.05 * delta,
+        0.999 * phi.dhat());
     INFO("reentrant dihedral, far from the crease: " << d_far << " vs delta " << delta);
     CHECK(d_far == Catch::Approx(delta).epsilon(0.01));
 }
@@ -1000,7 +1043,12 @@ TEST_CASE("offset-energy-3d-lands-on-the-level-set", "[offset][potential]")
     MatrixXd V(1, 3);
     V << 0., 0., 0.;
     const auto phi = std::make_shared<const OffsetPotential3D>(
-        V, MatrixXi(0, 2), MatrixXi(0, 3), std::vector<int>{0}, delta, DHAT_FACTOR);
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
 
     auto solver = wmtk::optimization::create_basic_solver();
 

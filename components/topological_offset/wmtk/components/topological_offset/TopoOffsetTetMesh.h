@@ -428,8 +428,7 @@ public:
     /// frozen there because conservative growth ran out of room. Neither is fixable.
     bool band_vertex_is_reachable(const size_t vid) const
     {
-        return !m_vertex_extra[vid].m_is_on_input &&
-               m_vertex_attribute[vid].on_bbox_faces.empty();
+        return !m_vertex_extra[vid].m_is_on_input && m_vertex_attribute[vid].on_bbox_faces.empty();
     }
 
     /// Which vertices lie on the offset surface. Shared by every measurement so they all agree

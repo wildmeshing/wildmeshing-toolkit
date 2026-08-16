@@ -240,8 +240,7 @@ void topological_offset(nlohmann::json json_params)
                 report["op_counts"]["splits"] = splits;
                 report["op_counts"]["collapses"] = collapses;
                 report["op_counts"]["swaps"] = swaps;
-                report["converged"] =
-                    max_residual.back() <= mesh.offset_residual_tolerance();
+                report["converged"] = max_residual.back() <= mesh.offset_residual_tolerance();
                 report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
