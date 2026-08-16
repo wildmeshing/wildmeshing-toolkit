@@ -135,14 +135,14 @@ struct SmoothVertexOptions
      * veto's premise is that the solver only ever asks for a SMALL move, so refusing costs
      * almost nothing and the next pass retries from the same place: a TriWild surface vertex
      * starts on the input and the envelope term keeps it there. topological_offset's offset
-     * boundary is placed by minimising a term whose minimum can be most of the offset distance
-     * away, so nearly every solved position worsens some incident face and nearly every move is
-     * refused -- measured on topological_offset_2d_dragon, 0 of 6117 offset-vertex moves were
-     * accepted over a whole run while the positions the solver found lowered their residual by
-     * 2x. There the mesh's shape is the topological passes' job and the smoother's job is to
-     * place the boundary, so the veto is turned off and the two are left to their own work.
+     * boundary is placed by minimising a term (see smoothing_extra_energy) whose minimum can be
+     * most of the offset distance away, so a solved position routinely worsens some incident
+     * element and would be refused. There the mesh's shape is the topological passes' job and
+     * the smoother's job is to place the boundary, so the veto is turned off and the two are
+     * left to their own work.
      *
      * False disables the check for EVERY vertex; quality_veto_on_surface only ever narrowed it.
+     * Read by both smooth_vertex_2d and smooth_vertex_3d.
      */
     bool quality_veto = true;
 
@@ -182,8 +182,11 @@ struct SmoothVertexOptions
  *   - m_vertex_attribute[vid].{m_pos, m_posf, m_is_on_surface}
  *   - cell_quality(tid) / set_cell_quality(tid, quality)
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
- *   - std::shared_ptr<SampleEnvelope> smoothing_envelope(size_t vid) const
+ *   - std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(size_t vid) const
+ *     and smoothing_containment_envelope(size_t vid) const
  *     (null is allowed and means "no envelope term for this vertex")
+ *   - std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(size_t vid) const
+ *     (null is allowed and means "AMIPS plus the envelope, as before")
  *
  * @return true if the new position was accepted; false leaves it to the caller's rollback.
  */
@@ -232,7 +235,21 @@ bool smooth_vertex_3d(
 
     const double amips_w = opts.w_amips > 0 ? opts.s_amips * opts.w_amips : 1.0;
     auto amips_energy = std::make_shared<AMIPSEnergy3D>(assembles, amips_w);
-    std::shared_ptr<polysolve::nonlinear::Problem> total_energy = amips_energy;
+
+    // An application-supplied term for this vertex. It carries its own weight, exactly as
+    // ExactDistanceEnergy3D below does, so it is summed here at 1. Null for TetWild and SimWild,
+    // which leaves `base_energy` as `amips_energy` and every expression below exactly what it
+    // was.
+    const std::shared_ptr<polysolve::nonlinear::Problem> extra_energy =
+        m.smoothing_extra_energy(vid);
+    std::shared_ptr<polysolve::nonlinear::Problem> base_energy = amips_energy;
+    if (extra_energy) {
+        auto sum = std::make_shared<EnergySum>();
+        if (opts.w_amips > 0) sum->add_energy(amips_energy);
+        sum->add_energy(extra_energy);
+        base_energy = sum;
+    }
+    std::shared_ptr<polysolve::nonlinear::Problem> total_energy = base_energy;
 
     auto solve = [&]() {
         VectorXd x = VA[vid].m_posf;
@@ -251,7 +268,7 @@ bool smooth_vertex_3d(
     if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         // Smooth as if the vertex were interior, then walk back onto the input.
         const Vector3d x_orig = VA[vid].m_posf;
-        total_energy = amips_energy;
+        total_energy = base_energy;
         solve();
         const Vector3d x_new = VA[vid].m_posf;
 
@@ -331,6 +348,7 @@ bool smooth_vertex_3d(
             auto warmup = std::make_shared<EnergySum>();
             if (opts.w_amips > 0) warmup->add_energy(amips_energy, 1. / opts.w_amips);
             if (opts.w_envelope > 0) warmup->add_energy(envelope_energy, 1. / opts.w_envelope);
+            if (extra_energy) warmup->add_energy(extra_energy);
             total_energy = warmup;
             solve();
         }
@@ -338,6 +356,7 @@ bool smooth_vertex_3d(
         auto weighted = std::make_shared<EnergySum>();
         if (opts.w_amips > 0) weighted->add_energy(amips_energy);
         if (opts.w_envelope > 0) weighted->add_energy(envelope_energy);
+        if (extra_energy) weighted->add_energy(extra_energy);
         total_energy = weighted;
         solve();
     } else {
@@ -377,7 +396,7 @@ bool smooth_vertex_3d(
         max_after_quality = std::max(max_after_quality, quality);
     }
 
-    if (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {
+    if (opts.quality_veto && (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface)) {
         if (max_after_quality > max_quality) {
             if (counters) ++counters->quality;
             return false;

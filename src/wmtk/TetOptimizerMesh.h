@@ -428,6 +428,25 @@ public:
     virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
     virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
+    /**
+     * @brief An extra term the application adds to this vertex's smoothing objective, or null.
+     *
+     * The extension point that lets an application place a vertex by MINIMISING something
+     * rather than by computing a position and then defending it. topological_offset uses it for
+     * the offset surface: the term is w (Phi - c)^2, whose minimum is the offset itself, so an
+     * offset-surface vertex goes through this same smoother -- the same line search, the same
+     * exact inversion test, the same quality veto -- as every other vertex, instead of through
+     * the hand-rolled quadrics/Laplacian blend that bypassed all three.
+     *
+     * Null by default, so TetWild and SimWild compose exactly the energy they composed before.
+     * The 2D twin is TriOptimizerMesh::smoothing_extra_energy.
+     */
+    virtual std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t /*vid*/) const
+    {
+        return nullptr;
+    }
+
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);

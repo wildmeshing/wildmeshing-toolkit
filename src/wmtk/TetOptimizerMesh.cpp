@@ -308,6 +308,7 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
+    opts.quality_veto = m_params.smooth_quality_veto;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }
