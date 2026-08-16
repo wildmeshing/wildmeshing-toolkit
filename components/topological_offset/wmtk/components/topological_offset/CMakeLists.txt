@@ -29,16 +29,25 @@ set(SRC_FILES
 	Circle.hpp
 	Sphere.hpp
 
+	OffsetPotential.hpp
+	OffsetPotential.cpp
+
 	topological_offset.hpp
 	topological_offset.cpp
 )
 
 target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 
+# The smooth offset potential. Deliberately linked HERE and not into wmtk::toolkit: this is the
+# only consumer, and ipc-toolkit brings geogram, filib, TBB and tight_inclusion with it, none of
+# which tetwild / triwild / simwild have any use for.
+include(ipc_toolkit)
+
 target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	wmtk::toolkit
 	wmtk::simwild
 	jse::jse
+	ipc::toolkit
 )
 
 # #####################

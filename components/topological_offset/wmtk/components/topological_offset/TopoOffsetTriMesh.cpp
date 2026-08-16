@@ -388,6 +388,54 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     // set BVH
     m_input_complex_bvh.clear(); // in case resetting it now
     m_input_complex_bvh.init(V, T, F, E, P);
+
+    // THE SMOOTH OFFSET POTENTIAL, from the same extraction and in the same call, so the two
+    // descriptions of the input can never diverge.
+    //
+    // Phi's 2D primitives are segments and points; there is no 2D area primitive. A solid input
+    // region therefore enters as its BOUNDARY -- the edges of the complex's triangles that have
+    // exactly one incident complex triangle. Outside the region, which is the only place an
+    // offset exists, "distance to the region" and "distance to its boundary" are the same
+    // number, so nothing is lost. (Inside the region they differ, and Phi has a second, mirrored
+    // level set in there; it is unreachable, because the band is grown outward and the runaway
+    // guard would catch a vertex that crossed the complex.)
+    std::map<simplex::Edge, int> boundary_count;
+    for (const simplex::Face& f_simp : complex_faces) {
+        const auto vs = f_simp.vertices();
+        ++boundary_count[simplex::Edge(vs[0], vs[1])];
+        ++boundary_count[simplex::Edge(vs[1], vs[2])];
+        ++boundary_count[simplex::Edge(vs[0], vs[2])];
+    }
+
+    std::vector<Eigen::Vector2i> phi_segs;
+    for (const auto& [e_simp, count] : boundary_count) {
+        if (count != 1) continue; // interior to the complex: carries no boundary geometry
+        const auto vs = e_simp.vertices();
+        phi_segs.emplace_back(v_index_map[vs[0]], v_index_map[vs[1]]);
+    }
+    for (int i = 0; i < E.rows(); ++i) { // isolated edges of the complex
+        phi_segs.emplace_back(E(i, 0), E(i, 1));
+    }
+
+    MatrixXi E_phi(phi_segs.size(), 2);
+    for (size_t i = 0; i < phi_segs.size(); ++i) {
+        E_phi.row(i) = phi_segs[i];
+    }
+
+    // Isolated points: those of the complex, plus any vertex the boundary extraction left with
+    // no segment at all (a complex that is a single triangle contributes its three edges, so
+    // this only fires for genuinely isolated input vertices).
+    std::vector<int> P_phi;
+    for (int i = 0; i < P.rows(); ++i) {
+        P_phi.push_back(P(i, 0));
+    }
+
+    m_offset_potential = std::make_shared<OffsetPotential>(
+        V,
+        E_phi,
+        P_phi,
+        m_offset_params.target_distance,
+        m_offset_params.offset_dhat_factor);
 }
 
 
@@ -903,6 +951,59 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         surf_writer
             ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
     }
+}
+
+
+void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) const
+{
+    // A dense triangulated grid over the bounding box carrying Phi as a VERTEX field, so that a
+    // viewer can draw the level set Phi = c as an isoline rather than a cloud of coloured dots.
+    // This is the only way to SEE what the optimization is actually minimising: the offset is a
+    // level set of a field that exists everywhere, and the mesh only ever samples it along one
+    // curve.
+    if (n < 2 || !m_offset_potential) return;
+
+    const Vector2d lo = m_offset_params.box_min.head<2>();
+    const Vector2d hi = m_offset_params.box_max.head<2>();
+
+    MatrixXd V(n * n, 2);
+    MatrixXi F(2 * (n - 1) * (n - 1), 3);
+    MatrixXd phi(n * n, 1), residual(n * n, 1), euclid(n * n, 1);
+
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            const int k = j * n + i;
+            const Vector2d p(
+                lo[0] + (hi[0] - lo[0]) * i / (n - 1), lo[1] + (hi[1] - lo[1]) * j / (n - 1));
+            V.row(k) = p.transpose();
+            // Phi diverges on the input complex, which would flatten the colour map everywhere
+            // else; clamped to a few times the level value, which is the range that matters.
+            phi(k, 0) = std::min(m_offset_potential->value(p), 8. * m_offset_potential->target_level());
+            residual(k, 0) = std::min(m_offset_potential->residual_length(p), 8. * m_offset_params.target_distance);
+            euclid(k, 0) = m_input_complex_bvh.dist(VectorXd(p));
+        }
+    }
+    int f = 0;
+    for (int j = 0; j + 1 < n; ++j) {
+        for (int i = 0; i + 1 < n; ++i) {
+            const int a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+            F.row(f++) << a, b, d;
+            F.row(f++) << a, d, c;
+        }
+    }
+
+    logger().info(
+        "Write {}_phi.vtu ({}x{} samples of the smooth offset potential; the offset is the "
+        "isoline phi = {})",
+        path,
+        n,
+        n,
+        m_offset_potential->target_level());
+    auto writer = std::make_shared<paraviewo::VTUWriter>();
+    writer->add_field("phi", phi);
+    writer->add_field("phi_residual_length", residual);
+    writer->add_field("euclidean_distance", euclid);
+    writer->write_mesh(path + "_phi.vtu", V, F, paraviewo::CellType::Triangle);
 }
 
 

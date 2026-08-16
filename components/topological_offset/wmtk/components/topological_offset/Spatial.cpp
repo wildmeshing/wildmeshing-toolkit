@@ -294,27 +294,56 @@ bool TopoOffsetTetMesh::tag_tet_consistent_topology(size_t t_id, int64_t tag) co
 bool TopoOffsetTriMesh::tri_is_in_offset_conservative(const size_t f_id, const double threshold_r)
     const
 {
+    // IS THE WHOLE TRIANGLE INSIDE THE OFFSET REGION { Phi > c }?
+    //
+    // Deciding that for a SET rather than a point needs a bound over the set, and Phi has no
+    // Lipschitz constant to give one -- it diverges on the input complex. The Euclidean distance
+    // does (its constant is 1), and it BRACKETS Phi exactly:
+    //
+    //   Phi(x) >= b(d(x))    the closest feature of the complex is always in the OGC feasible
+    //                        region of the point, so it always contributes; every other
+    //                        contribution is non-negative.
+    //   b is decreasing, and b(delta) = c by the calibration.
+    //
+    // so over a circle of radius r about p:
+    //
+    //   d(p) + r <  delta  =>  Phi > c on the whole circle          (inside)
+    //   d(p) - r >  delta  =>  the circle MAY still be inside, at a reentrant feature where
+    //                          two contributions add -- but it is not inside by this argument,
+    //                          so it is treated as outside (conservative: under-grow, never
+    //                          overshoot, and the optimization then moves the boundary out to
+    //                          the level set, which is exactly what it exists to do).
+    //
+    // Both branches are therefore the same comparisons this always made, and that is not a
+    // coincidence: the Euclidean test IS the conservative form of the Phi test. What has
+    // changed is the bail-out below.
     std::queue<Circle> q;
     q.emplace(*this, f_id);
 
-    bool initial = true;
     while (!q.empty()) {
         Circle circ = q.front();
         q.pop();
 
-        if (circ.radius() < threshold_r) {
-            if (initial) {
-                logger().warn(
-                    "Initial approximating circle for tri is smaller than threshold radius. "
-                    "Tri not considered for offset growth. Decrease relative_ball_threshold.");
-            }
-            return false; // circle too small --> tri outside offset
-        }
-        initial = false;
-
         const bool overlap = circ.overlaps_tri(*this, f_id);
         if (!overlap) {
             continue;
+        }
+
+        if (circ.radius() < threshold_r) {
+            // Too small to bracket anything: DECIDE it, by evaluating Phi at the centre.
+            //
+            // This used to return false -- "circle too small, therefore the triangle is
+            // outside" -- with a warning telling the user to decrease relative_ball_threshold.
+            // That turns a resolution limit into a geometric verdict, always in the same
+            // direction, and it is why the threshold's default of 0.1 could reject triangles
+            // wholesale and produce an offset that ignored target_distance. At this radius the
+            // circle is smaller than the resolution the offset is being built at, so the point
+            // test is the honest answer and it is unbiased.
+            if (m_offset_potential->value(circ.center().head<2>()) >
+                m_offset_potential->target_level()) {
+                continue;
+            }
+            return false;
         }
 
         const double d = m_input_complex_bvh.dist(circ.center());

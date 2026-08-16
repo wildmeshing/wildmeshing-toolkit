@@ -7,11 +7,11 @@
 #include <functional>
 #include <set>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "OffsetPotential.hpp"
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 
 using CellTag = std::set<int64_t>;
-
 
 namespace wmtk::components::topological_offset {
 
@@ -97,11 +97,11 @@ public:
     /**
      * @brief The input complex as loaded. BUILT ONCE, NEVER REBUILT.
      *
-     * Every offset quantity is measured against this: the distance error, the offset field's
-     * normals, project_offset_vertex()'s target, the sizing score. init_input_complex_bvh() has
-     * exactly one call site, in the driver, before execute_offset() runs -- so this holds the
-     * original geometry however the mesh elements representing the complex are later refined,
-     * coarsened or smoothed.
+     * The EUCLIDEAN distance to the input, now a diagnostic rather than the definition of the
+     * offset -- see m_offset_potential, which is what the optimization is driven by.
+     * init_input_complex_bvh() has exactly one call site, in the driver, before execute_offset()
+     * runs -- so this holds the original geometry however the mesh elements representing the
+     * complex are later refined, coarsened or smoothed.
      *
      * That invariant is load-bearing and easy to break by accident. Since the complex stopped
      * being frozen, rebuilding this from the live mesh would redefine the offset distance in
@@ -109,6 +109,19 @@ public:
      * be measuring the mesh against itself.
      */
     SimplicialComplexBVH m_input_complex_bvh;
+
+    /**
+     * @brief The SMOOTH OFFSET POTENTIAL, and with it the definition of the offset itself.
+     *
+     * The offset boundary is the level set Phi = c. Built from the SAME extraction as
+     * m_input_complex_bvh, in the same call, so the two describe the same geometry and the
+     * identical never-rebuilt invariant applies. See OffsetPotential for what Phi is and why
+     * the Euclidean distance was not usable as the thing to minimise.
+     *
+     * shared_ptr because OffsetEnergy2D holds one per smoothing call.
+     */
+    std::shared_ptr<OffsetPotential> m_offset_potential;
+
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // tag name maps
@@ -135,8 +148,8 @@ public:
      * completely different reason (the shared swap copies one incident face's tags onto both
      * faces it creates, so an unguarded flip across a tag boundary silently moves that region),
      * and which has no business being pushed toward the offset distance. Filing both under
-     * OFFSET is what sent project_offset_vertex() at vertices sitting ~40x target_distance from
-     * the input complex, and what left update_sizing_field() refining around them forever.
+     * OFFSET is what sent the offset smoothing energy at vertices sitting ~40x target_distance
+     * from the input complex, and what left the sizing field refining around them forever.
      */
     static constexpr int INPUT_SURFACE_CLASS = 0;
     static constexpr int OFFSET_SURFACE_CLASS = 1;
@@ -253,8 +266,8 @@ public:
      * It used to read the TAGS, which cannot express the distinction the label exists for:
      * the band is named by the output tag, and nothing stops that tag already appearing
      * somewhere else in the input mesh. Every such face would then read as offset band, its
-     * boundary would classify as OFFSET rather than REGION, and project_offset_vertex() would
-     * drag an unrelated region toward target_distance.
+     * boundary would classify as OFFSET rather than REGION, and the offset smoothing energy
+     * would drag an unrelated region toward the level set.
      */
     bool face_in_region(const size_t fid) const;
 
@@ -277,60 +290,6 @@ public:
     bool vertex_is_on_surface(const size_t vid) const override;
     bool edge_is_on_surface(const std::array<size_t, 2>& vids) const override;
 
-    /// Move an offset-boundary vertex back onto the target distance from the input complex,
-    /// blended with the Laplacian of its offset-boundary neighbours.
-    bool project_offset_vertex(const Tuple& t);
-
-    /**
-     * @brief The direction the REGION curve runs through this vertex, if it has one.
-     *
-     * Only region-class edges count -- the offset boundary is exempt from the envelope, so its
-     * direction is not a wall to slide along. Two incident region edges give the chord between
-     * the two neighbours (the discrete tangent of a curve passing through); one gives that
-     * edge's own direction (a curve terminating here, e.g. where a region outline meets the
-     * offset). Zero or three or more is not a curve -- returns false, and the caller keeps
-     * whatever the scaled search gave it.
-     *
-     * @param[out] tang unit tangent, written only on success. Sign is arbitrary; callers
-     *                  project onto it, which is sign-independent.
-     */
-    bool region_boundary_tangent(const Tuple& t, Vector2d& tang) const;
-
-    /**
-     * @brief Put a vertex at the distance-error minimum along its region tangent.
-     *
-     * A vertex on a region boundary is effectively constrained to that curve -- the envelope
-     * admits motion along it and almost none across it -- so the right thing to solve is the 1D
-     * problem ON the curve: minimise |dist(p, input complex) - target_distance| over
-     * p = p0 + s*tang. What this replaces is a single step of length (target - p0).tang, i.e.
-     * the desired move PROJECTED onto the tangent, which fixes a direction and then takes an
-     * arbitrary length in it.
-     *
-     * The measurement that motivated this, over the 122 slide events of the dragon rectangle at
-     * target_distance_rel 5e-3: the projected step was never the best point on its own line.
-     * 108 of 122 undershot and 14 overshot, and the best feasible point on the line had a median
-     * of 52x lower error (worst case 36295x). The envelope was not what stopped them -- zero of
-     * the 122 were blocked before the projected step, and 113 were still feasible at 20x it. The
-     * vertices were under-stepped, not locked, which is also why splitting their incident region
-     * edges would not have helped: a split adds samples to the curve, it does not enlarge the set
-     * of positions the envelope admits.
-     *
-     * Bracket first, then minimise. `rejected` is the caller's feasibility predicate (envelope
-     * plus inversion, evaluated at whatever position the vertex currently holds); the feasible
-     * extent is found by geometric expansion out to `cap` and bisection of the first refusal,
-     * separately in each direction, then golden-section search runs on the bracket with
-     * infeasible probes scored as infinite. `cap` bounds how far along the curve a single pass
-     * may travel.
-     *
-     * Leaves the vertex at the minimiser and returns its signed offset s along `tang`.
-     */
-    double minimize_distance_along_tangent(
-        const size_t vid,
-        const Vector2d& p0,
-        const Vector2d& tang,
-        const double cap,
-        const std::function<bool()>& rejected);
-
     /// The 2D optimization phase: split / collapse / swap / smooth on the shared driver.
     void optimize_offset(const std::filesystem::path& output_file);
 
@@ -347,8 +306,8 @@ public:
      * recomputes the same rule label_offset_boundary() applies, straight from the current face
      * tags, every time it is called.
      *
-     * This is what surface_envelope_for_edge() and region_boundary_is_outside_envelope() must
-     * use, not the cached class: split, collapse and swap all run between one relabelling and
+     * This is what surface_envelope_for_edge() and smoothing_envelope() must use, not the
+     * cached class: split, collapse and swap all run between one relabelling and
      * the next, and collapse in particular re-points a vertex's neighbours onto brand-new edge
      * slots whose cached m_surface_class was never set (it defaults to 0, i.e. INPUT/untracked).
      * Querying the cache on such a segment silently reports "not region", the containment check
@@ -386,43 +345,9 @@ public:
     mutable size_t m_worst_dist_vid = static_cast<size_t>(-1);
     void log_worst_dist_vertex() const;
 
-    /**
-     * @brief How far the offset boundary faces from where it should be: {max, avg} in DEGREES.
-     *
-     * The angle between an offset-boundary edge's own normal and the direction the distance
-     * field says it should be facing -- the unit vector from the nearest point on the input
-     * complex out to a sample on the edge. Measured over the same band-outer-surface edges
-     * compute_distance_deviation() measures vertices over, and reported alongside it.
-     *
-     * Distance error alone does not pin down the offset: a boundary can have every vertex at
-     * exactly target_distance while zig-zagging between them, which reads as converged but is
-     * not the offset. The normal deviation is what sees that, which is why the paper's own
-     * Termination criterion (Sec. 5.3.3) tests sigma_max alongside the distance errors.
-     */
-    std::pair<double, double> compute_normal_deviation() const;
-
-    /**
-     * @brief Paper Definition 5 for a 1-simplex: max angle between the offset normal at the
-     * edge's center and the offset normal at p_i = 0.1*p_c + 0.9*p_v, in degrees.
-     *
-     * Note this is NOT what the 3D branch's face_normal_deviation() computes -- that compares
-     * the element's own geometric normal against the field. Both terms here are field normals,
-     * which is what makes the quantity vanish under refinement and therefore something the
-     * sizing field can actually drive to zero.
-     */
-    double edge_normal_deviation(const Tuple& e) const;
-
-    /// The offset normal at an arbitrary point: the unit vector from the nearest point on the
-    /// input complex out to `p`. False when `p` sits on the complex, where it is undefined.
-    bool offset_field_normal(const Vector2d& p, Vector2d& n) const;
-
     /// Whether this edge is on the band's OUTER surface, recomputed from the tags on every call
     /// -- the live counterpart of edge_is_offset(), for use inside the operation passes.
     bool edge_is_offset_surface_live(const Tuple& e) const;
-
-    /// Worst normal deviation over the offset-surface edges incident to `vid`, in degrees. The
-    /// 2D counterpart of 3D's max_offset_surface_normal_deviation_at_vertex().
-    double max_offset_normal_deviation_at_vertex(const size_t vid) const;
 
     /// Seed the sizing field from the offset's CURRENT edge lengths (paper Sec. 5.3.3, Step 1),
     /// once, before the first operation pass. Without it the field starts at the background
@@ -440,22 +365,6 @@ public:
     /// iteration's own count, not a running total. Mirrors the 3D counters of the same names.
     std::vector<std::array<int, 3>> op_counts;
     std::atomic<int> iter_cnt_split = 0, iter_cnt_collapse = 0, iter_cnt_swap = 0;
-    /// Collapses and swaps refused by the normal-deviation guards this iteration -- reported,
-    /// not stored, because they say whether the guards are what is holding the offset's
-    /// resolution up.
-    std::atomic<int> iter_cnt_collapse_nd_reject = 0;
-    std::atomic<int> iter_cnt_swap_nd_reject = 0;
-
-    /// The offset surface's worst normal deviation around the collapsing edge, captured in
-    /// collapse_edge_before() for collapse_edge_after() to compare against. Thread-local: the
-    /// collapse pass runs in parallel, exactly as the 3D m_collapse_nd_before it mirrors.
-    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_nd_before;
-
-    /// The same for swap, plus the four vertices of the two incident triangles: after the flip
-    /// the tuple names the NEW edge, so the two apexes would otherwise be unreachable.
-    mutable wmtk::threading::enumerable_thread_specific<double> m_swap_nd_before;
-    mutable wmtk::threading::enumerable_thread_specific<std::array<size_t, 4>> m_swap_verts;
-
     /// Dispatch: the optimization phase runs the shared split, everything else the
     /// marching-triangles one.
     /// Parent face labels for an optimization split, keyed by the apex vertex opposite the
@@ -501,9 +410,6 @@ public:
     bool swap_edge_after(const Tuple& t) override;
     bool collapse_before_vertex(size_t v1, size_t v2) override;
     void collapse_after_vertex(size_t v1, size_t v2) override;
-    /// The offset's normal-deviation guard on collapse (paper Sec. 5.3.3, Step 2). Needs to be
-    /// the bool-returning hook rather than collapse_after_vertex(), which cannot reject.
-    bool collapse_edge_after(const Tuple& t) override;
     void split_after_vertex(size_t v_new) override;
 
     /**
@@ -625,76 +531,54 @@ public:
      */
     void warn_if_offset_reaches_domain_boundary() const;
 
-    /// Whether any tracked-surface segment at this vertex has left the envelope. The shared
-    /// operations run their own containment checks through surface_envelope_for_edge(); this is
-    /// for project_offset_vertex(), which places a vertex itself and never reaches them.
-    bool region_boundary_is_outside_envelope(const size_t vid) const;
-
     /**
-     * @brief Why smoothing refused a vertex, one counter per site where it can say no.
+     * @brief What smoothing did with each class of vertex, per pass.
      *
-     * The base's SmoothRejectCounters only sees the vertices that reach
-     * TriOptimizerMesh::smooth_after(), which for the offset is the INTERIOR ones -- an
-     * offset-boundary vertex is placed by project_offset_vertex() and never touches them. So
-     * the whole offset boundary, the part that actually carries the distance error, is
-     * invisible in the base's "accepted N | rejected: ..." line. These counters cover every
-     * site on both paths.
+     * The base's SmoothRejectCounters says WHY a move was refused; it cannot say what kind of
+     * vertex was asking. Every vertex now takes the same path -- the shared smoother -- so what
+     * is worth counting here is only the dispatch: how many attempts were on the offset
+     * boundary (the ones carrying the offset term), how many on another region's boundary, and
+     * how many were turned away before the smoother saw them at all.
+     *
+     * The old per-site offset counters are gone with the placement they instrumented: there is
+     * no separate offset path left to instrument, and "clamped", "slid" and "on the complex"
+     * were properties of a hand-rolled projection that no longer exists.
      */
     struct SmoothTrace
     {
         std::atomic<int> attempted{0}; ///< smooth_before() entered
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
-        std::atomic<int> before_on_input{0}; ///< input complex, frozen
-        std::atomic<int> offset_attempted{0}; ///< dispatched to project_offset_vertex()
-        std::atomic<int> offset_no_neighbours{0}; ///< no offset-boundary neighbour to average
-        std::atomic<int> offset_on_complex{0}; ///< sits on the complex, no offset direction
-        std::atomic<int> offset_inverted{0}; ///< search exhausted, a face still inverts
-        std::atomic<int> offset_envelope{0}; ///< search exhausted, still outside the envelope
-        std::atomic<int> offset_accepted{0};
-        /// Accepted, but the binary search had to stop short of the blended target. These are
-        /// invisible in offset_accepted, which is the point: a clamped move reports success
-        /// while delivering a fraction of the requested correction.
-        std::atomic<int> offset_clamped{0}; ///< accepted with the search fraction < 0.99
-        std::atomic<int> offset_clamp_env{0}; ///< ... and the envelope is what stopped it
-        std::atomic<int> offset_clamp_inv{0}; ///< ... and an inverted face is what stopped it
-        /// ... and sliding along the region curve recovered ground the scaled search could not.
-        /// A vertex flush against the envelope wall has a scaled search that can only return 0:
-        /// every positive multiple of a vector pointing even slightly out of the tube is out of
-        /// the tube. The tangential component of that same vector is legal and is most of it.
-        std::atomic<int> offset_slid{0};
-        /// Distance error over the offset vertices this pass actually touched, before and after
-        /// the move, in units of 1e-9 so an atomic<int> can accumulate a max/sum.
-        std::atomic<long long> offset_err_before_nano{0};
-        std::atomic<long long> offset_err_after_nano{0};
-        std::atomic<int> offset_err_max_before_nano{0};
-        std::atomic<int> offset_err_max_after_nano{0};
-        std::atomic<int> interior_attempted{0}; ///< dispatched to the shared AMIPS smoother
+        std::atomic<int> offset_attempted{0}; ///< reached the smoother with the offset term
+        std::atomic<int> offset_accepted{0}; ///< ... and the smoother kept the new position
+        std::atomic<int> interior_attempted{0}; ///< reached it without one
         std::atomic<int> region_attempted{0}; ///< ... of which sat on another region's boundary
+        /// Phi residual over the offset vertices this pass actually touched, before and after,
+        /// in units of 1e-9 so an integer atomic can accumulate a sum and a max.
+        ///
+        /// This is the one number that says whether the offset term is DOING anything. An
+        /// acceptance count cannot: the shared smoother's quality veto refuses a move outright
+        /// rather than shortening it, so a pass can accept most of what it tries and still
+        /// leave every badly-placed vertex exactly where it was.
+        std::atomic<long long> res_before_nano{0};
+        std::atomic<long long> res_after_nano{0};
+        std::atomic<long long> res_max_before_nano{0};
+        std::atomic<long long> res_max_after_nano{0};
 
         void reset()
         {
-            offset_err_before_nano.store(0);
-            offset_err_after_nano.store(0);
             for (std::atomic<int>* c :
                  {&attempted,
                   &before_bbox,
                   &before_unrounded,
-                  &before_on_input,
                   &offset_attempted,
-                  &offset_no_neighbours,
-                  &offset_on_complex,
-                  &offset_inverted,
-                  &offset_envelope,
                   &offset_accepted,
-                  &offset_clamped,
-                  &offset_clamp_env,
-                  &offset_clamp_inv,
-                  &offset_slid,
-                  &offset_err_max_before_nano,
-                  &offset_err_max_after_nano,
                   &interior_attempted,
                   &region_attempted}) {
+                c->store(0);
+            }
+            for (std::atomic<long long>* c :
+                 {&res_before_nano, &res_after_nano, &res_max_before_nano, &res_max_after_nano}) {
                 c->store(0);
             }
         }
@@ -739,28 +623,158 @@ public:
         return (edge_is_region_boundary_live(t) || edge_is_input(eid)) ? m_envelope : nullptr;
     }
 
-    /// No per-vertex positional constraint beyond the envelope. An offset-boundary vertex never
-    /// reaches the base's smoother (smooth_after routes it to project_offset_vertex), and an
-    /// input-complex vertex is held by m_envelope like any TriWild surface vertex.
-    bool smoothing_position_is_allowed(size_t, const Vector2d&) const override { return true; }
+    /**
+     * @brief A vertex that IS the input complex may not leave it.
+     *
+     * For a 2- or 1-dimensional input the envelope already does this, and this is the same tube
+     * evaluated pointwise. For a 0-DIMENSIONAL one there is no envelope at all: the envelope is
+     * built from SEGMENTS where the tags or the input-ness change, and an input made of isolated
+     * points has none, so init_region_boundary_envelope_from_input() finds nothing to contain
+     * and every input point is left free to be smoothed like an ordinary interior vertex.
+     *
+     * It is not one. m_input_complex_bvh holds the input as LOADED and every offset quantity is
+     * measured against it, so a mesh vertex that drifts off an input point takes the band with
+     * it and leaves the offset trailing behind geometry that is no longer there. Measured on
+     * topological_offset_2d_vertex_input: the three input points drifted, the band followed, and
+     * the band's own boundary ended up 0.001 from the original point -- where Phi diverges, the
+     * residual reads infinity and the run's convergence metric is meaningless.
+     *
+     * The rule admits exactly the motion TriWild admits for a surface vertex: free to slide
+     * ALONG the complex (a vertex on an input segment stays at distance 0 wherever it moves on
+     * it), pinned across it. An isolated point has nowhere to slide, so it is pinned outright.
+     *
+     * Everything an offset-boundary vertex has to satisfy is in the objective instead -- the
+     * offset term -- or in the shared smoother's own accept checks.
+     */
+    bool smoothing_position_is_allowed(const size_t vid, const Vector2d& p) const override
+    {
+        if (!m_vertex_extra[vid].m_is_on_input) return true;
+        return m_input_complex_bvh.dist(VectorXd(p)) <= m_offset_params.envelope_size;
+    }
+
+    /**
+     * @brief The offset boundary is the one tracked surface with NO containment envelope.
+     *
+     * It is the surface the optimization exists to move: a tube around wherever conservative
+     * growth left it would cap how far it can ever travel toward the level set. Every other
+     * vertex -- input complex, another region's outline, plain interior -- gets the base's
+     * answer unchanged.
+     *
+     * A vertex on the offset boundary AND on one of the others keeps the envelope: the region
+     * curve it also belongs to still has to be held where it is, and the offset term is a
+     * penalty rather than a hard constraint, so the two coexist.
+     */
+    std::shared_ptr<SampleEnvelope> smoothing_envelope(const size_t vid) const override
+    {
+        const auto& ve = m_vertex_extra[vid];
+        if (ve.m_is_on_offset && !ve.m_is_on_input && !ve.m_is_on_region) {
+            return nullptr;
+        }
+        return wmtk::TriOptimizerMesh::smoothing_envelope(vid);
+    }
+
+    /**
+     * @brief The offset term, for a vertex on the offset boundary; null for everything else.
+     *
+     * THIS IS WHERE THE OFFSET IS PLACED. w (Phi - c)^2, minimised by the shared smoother
+     * alongside AMIPS -- so the offset boundary is subject to the same line search, the same
+     * exact inversion test and the same quality veto as every other vertex in the mesh, which
+     * the previous hand-rolled projection was not.
+     *
+     * A vertex that is also on the INPUT COMPLEX is excluded. It sits at distance 0 from the
+     * complex by definition, where Phi diverges; asking it to reach the level set would be
+     * asking it to leave the geometry the offset is measured from. Those vertices are what
+     * distance_deviation_split() counts as pinned.
+     */
+    std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t vid) const override
+    {
+        const auto& ve = m_vertex_extra[vid];
+        if (!ve.m_is_on_offset || ve.m_is_on_input || !m_offset_potential) {
+            return nullptr;
+        }
+        // Same weight the envelope term carries, and for the same reason: with w_amips at its
+        // default 1e-4 the placement dominates and AMIPS is a light shape preference on top.
+        return std::make_shared<OffsetEnergy2D>(m_offset_potential, m_params.w_envelope);
+    }
 
     /**
      * @brief The loop's convergence metric, normalized so that 1.0 means "done".
      *
-     * The max of the THREE criteria this optimization has to meet, each divided by its own
-     * target, so mesh_improvement() stops exactly when all of them are met:
+     * The max of the TWO criteria this optimization has to meet, each divided by its own
+     * target, so mesh_improvement() stops exactly when both are met:
      *
-     *   - max face AMIPS over stop_energy      -- TriWild's, via quality_rel()
-     *   - max distance error over convergence_target, over the REACHABLE band (below)
-     *   - average normal deviation over convergence_normal_deviation, dropped when that is <= 0
+     *   - max face AMIPS over stop_energy -- TriWild's, via quality_rel()
+     *   - max Phi residual over offset_residual_rel * target_distance, over the REACHABLE band
      *
-     * The average returned alongside it is the same expression over the three averages, so both
+     * The average returned alongside it is the same expression over the two averages, so both
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
      */
     std::tuple<double, double> optimization_quality_stats() override;
     double optimization_stop_metric() const override { return 1.; }
 
-    /// Re-derive the tracked surfaces from the face labels, and log where each of the three
+    /// The two criteria, each normalized by its own target so 1.0 means met.
+    struct Criteria
+    {
+        double amips = 0.;
+        double phi = 0.;
+
+        double max() const { return std::max(amips, phi); }
+    };
+    Criteria optimization_criteria();
+
+    /// The tolerance the Phi residual is measured against: a fraction of target_distance, so
+    /// "how close is close enough" is stated in units of the offset the run asked for.
+    double offset_residual_tolerance() const
+    {
+        return std::max(m_offset_params.offset_residual_rel * m_offset_params.target_distance,
+                        1e-16);
+    }
+
+    /**
+     * @brief Stop the run if any reachable band vertex has left the potential's support.
+     *
+     * Beyond dhat, Phi is identically zero WITH a zero gradient: the vertex is given no
+     * direction back, its residual saturates instead of growing, and the sizing field refines
+     * around a vertex nothing can move. There is no recovery from that state and no honest
+     * report of it either, so it is a hard error rather than a warning -- if it turns out to
+     * fire on real inputs, the answer is a larger offset_dhat_factor, not a quieter log line.
+     *
+     * Called once per optimization iteration, and once on the band as constructed.
+     */
+    void check_offset_within_support(const char* when) const;
+
+    /**
+     * @brief Refine only when EVERY criterion that is still unmet has stopped improving.
+     *
+     * The base asks the question of one scalar, and that scalar is the max -- so it only ever
+     * reports on whichever criterion is currently worst, and a run whose worst criterion is
+     * stuck refines on every iteration however well the other is doing. Measured on
+     * topological_offset_2d: distance sat near 9.6x and was the max throughout, while AMIPS
+     * moved between 0.78x and 1.87x and the normal deviation moved too; neither ever entered
+     * the comparison, refinement fired on all 20 iterations, and the mesh grew from 2601 to
+     * 69855 vertices.
+     *
+     * A criterion already at or below its target is excluded rather than counted as stalled:
+     * it is finished, so it is neither a reason to refine nor a reason to hold off. The base's
+     * own inequality is then applied to each of the rest -- both are normalized to a target of
+     * 1.0, so it is the identical formula with no new parameter.
+     */
+    bool optimization_stalled(double prev, double cur) override;
+
+    /**
+     * @brief Consolidate at every pass boundary, whether or not a debug frame is written.
+     *
+     * write_vtu() consolidates, which renumbers, which changes the order every later pass
+     * enumerates operations in -- so with the write gated on debug_output, turning the flag on
+     * silently produced a different run. It was measured on the dragon rectangle as
+     * converged-in-7 against not-converged-in-10. 3D settled this by consolidating whether or
+     * not anything is written; this is the same remedy at the pass boundary, which is where the
+     * shared driver writes its frames.
+     */
+    void optimization_debug_checkpoint() override;
+
+    /// Re-derive the tracked surfaces from the face labels, and log where each of the two
     /// criteria stands. See the base's declaration for why this needs a hook at all.
     void optimization_iteration_begin() override;
 
@@ -785,11 +799,20 @@ public:
         size_t n_reachable = 0, n_pinned = 0;
     };
     DistanceSplit distance_deviation_split() const;
+
+    /// The same split over the quantity the LOOP converges on: the Phi residual, as a length.
+    /// Reported beside the Euclidean one so the two offsets can always be compared.
+    DistanceSplit residual_split() const;
     /// Which vertices lie on the band's OUTER surface -- the one that is supposed to sit at
     /// target_distance. Shared by every measurement so they all agree on what "the band" is.
     std::vector<bool> band_vertex_mask() const;
-    /// |dist(vid, input complex) - target_distance|.
+    /// |dist(vid, input complex) - target_distance|. DIAGNOSTIC: the Euclidean offset, which
+    /// the level set only coincides with away from reentrant features.
     double band_vertex_distance_error(const size_t vid) const;
+
+    /// How far vid is from the level set Phi = c, as a length. This is what the loop converges
+    /// on and what the sizing field refines by.
+    double band_vertex_residual(const size_t vid) const;
     /// Whether vid is a band vertex the optimizer could still place at target_distance.
     bool band_vertex_is_reachable(const size_t vid) const
     {
@@ -805,18 +828,24 @@ public:
      * grade it outward.
      *
      * The one substitution is the per-face score. TriWild ranks a face by its AMIPS energy;
-     * here a face is ranked by the max of the same three normalized criteria the loop stops on,
-     * evaluated on that face. Ranking by AMIPS while the loop stalls on distance would refine
+     * here a face is ranked by the max of the same two normalized criteria the loop stops on,
+     * evaluated on that face. Ranking by AMIPS while the loop stalls on the offset would refine
      * the wrong elements.
      */
     size_t refine_sizing_around_worst(double max_metric) override;
     /// The per-face score refine_sizing_around_worst ranks by; >= 1 means the face fails at
-    /// least one criterion. Also the per-face form of optimization_quality_stats()'s max.
+    /// least one of the two criteria. Also the per-face form of optimization_quality_stats().
     double face_criterion_rel(const size_t fid) const;
+    /// The driver hands a bare `debug_N`; put the frames beside the run's own output instead of
+    /// in whatever directory it happened to be launched from.
     void write_smoothing_debug_output(const std::string& path) const override
     {
-        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(path);
+        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(m_offset_params.output_path + "_" + path);
     }
+
+    /// Previous iteration's criteria, captured at the top of each iteration -- which is the end
+    /// of the one before, the same interval the driver's own stall test spans.
+    Criteria m_prev_criteria;
 
 
     /**
@@ -852,7 +881,12 @@ public:
     bool empty_input_complex();
 
     /**
-     * @brief initialize BVH for input complex. Must be called after init_from_image(...)
+     * @brief Build the input complex's BVH and its smooth offset potential, from one extraction.
+     *
+     * Must be called after init_from_image(...) and label_input_complex(). The potential is
+     * built from the BOUNDARY of the complex rather than its interior: Phi's 2D primitives are
+     * segments and points, so a solid input region enters as its outline. Outside the region --
+     * which is the only place an offset exists -- the two descriptions agree exactly.
      */
     void init_input_complex_bvh();
 
@@ -940,6 +974,20 @@ public:
     bool offset_is_manifold();
 
     //// output stuff
+    /**
+     * @brief Sample the smooth offset potential on a dense grid and write it as `<path>_phi.vtu`.
+     *
+     * The offset is a level set of a field defined everywhere, and the output mesh only ever
+     * samples that field along one curve -- so a result that looks wrong is impossible to
+     * diagnose from the mesh alone. This writes the field itself: Phi (clamped, since it
+     * diverges on the input complex), the residual as a length, and the exact Euclidean distance
+     * beside it, all as VERTEX fields on a triangulated grid so a viewer can draw the isoline
+     * Phi = c directly and compare it against the Euclidean offset in the same window.
+     *
+     * @param n samples per side; 0 or 1 writes nothing.
+     */
+    void write_phi_grid(const std::string& path, int n) const;
+
     void write_input_complex(const std::string& path);
     void write_vtu(const std::string& path);
     // void write_msh(const std::string& file);

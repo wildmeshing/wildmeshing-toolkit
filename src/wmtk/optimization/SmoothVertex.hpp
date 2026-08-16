@@ -128,6 +128,28 @@ struct SmoothVertexOptions
     int project_line_search_steps = 12;
 
     /**
+     * When the accept checks refuse the solved position, BACK OFF toward the start instead of
+     * refusing the move outright: bisect [start, solved] for the largest fraction that passes
+     * every check, and keep that. 0 disables the pass, which is the historical behaviour and
+     * what TriWild and SimWild use.
+     *
+     * The veto below is all-or-nothing, and that is the right rule when the objective only ever
+     * asks for a SMALL move -- a TriWild surface vertex starts on the input and the envelope
+     * term keeps it there, so a refused step costs almost nothing and the next pass tries again
+     * from the same place. It is the wrong rule when the objective asks for a LARGE one.
+     * topological_offset is that case: an offset-boundary vertex is placed by minimising a term
+     * whose minimum can be most of the offset distance away, so essentially every solved
+     * position worsens some incident face and essentially every move is refused. Measured on
+     * topological_offset_2d_dragon: 0 of 6117 offset-vertex moves were accepted over a whole
+     * run, while the positions the solver had found lowered their residual by 2x.
+     *
+     * Backing off converts that into partial progress -- the vertex advances as far toward its
+     * target as its one-ring allows, which is what the hand-rolled projection this replaced did
+     * with its own binary search, and why that projection could move the offset at all.
+     */
+    int reject_backoff_steps = 0;
+
+    /**
      * Second pass, run only when the first found nothing: partial projections.
      *
      * The first pass only ever tests points ON the input, so a vertex whose one-ring cannot
@@ -442,9 +464,26 @@ bool smooth_vertex_2d(
         solver = create_basic_solver();
     }
 
+    // Where the vertex started, for the back-off pass at the bottom.
+    const Vector2d x_start = m.smoothing_position(vid);
+
     const double amips_w = opts.w_amips > 0 ? opts.s_amips * opts.w_amips : 1.0;
     auto amips_energy = std::make_shared<AMIPSEnergy2D>(assembles, amips_w);
-    std::shared_ptr<polysolve::nonlinear::Problem> total_energy = amips_energy;
+
+    // An application-supplied term for this vertex. It carries its own weight, exactly as
+    // ExactDistanceEnergy2D below does, so it is summed here at 1. Null for TriWild and
+    // SimWild, which leaves `base_energy` as `amips_energy` and every expression below exactly
+    // what it was.
+    const std::shared_ptr<polysolve::nonlinear::Problem> extra_energy =
+        m.smoothing_extra_energy(vid);
+    std::shared_ptr<polysolve::nonlinear::Problem> base_energy = amips_energy;
+    if (extra_energy) {
+        auto sum = std::make_shared<EnergySum>();
+        if (opts.w_amips > 0) sum->add_energy(amips_energy);
+        sum->add_energy(extra_energy);
+        base_energy = sum;
+    }
+    std::shared_ptr<polysolve::nonlinear::Problem> total_energy = base_energy;
 
     auto solve = [&]() {
         VectorXd x = m.smoothing_position(vid);
@@ -471,12 +510,13 @@ bool smooth_vertex_2d(
         assert(!surf_neighbors.empty());
     }
 
-    const std::shared_ptr<SampleEnvelope> envelope =
-        VA[vid].m_is_on_surface ? m.m_envelope : nullptr;
+    // Per-vertex rather than the mesh's single m_envelope: see TriOptimizerMesh::smoothing_envelope.
+    // The default returns exactly the old expression, so TriWild and SimWild are unaffected.
+    const std::shared_ptr<SampleEnvelope> envelope = m.smoothing_envelope(vid);
 
     if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         const Vector2d x_orig = m.smoothing_position(vid);
-        total_energy = amips_energy;
+        total_energy = base_energy;
         solve();
         const Vector2d x_new = m.smoothing_position(vid);
 
@@ -554,6 +594,7 @@ bool smooth_vertex_2d(
             auto warmup = std::make_shared<EnergySum>();
             if (opts.w_amips > 0) warmup->add_energy(amips_energy, 1. / opts.w_amips);
             if (opts.w_envelope > 0) warmup->add_energy(envelope_energy, 1. / opts.w_envelope);
+            if (extra_energy) warmup->add_energy(extra_energy);
             total_energy = warmup;
             solve();
         }
@@ -561,49 +602,105 @@ bool smooth_vertex_2d(
         auto weighted = std::make_shared<EnergySum>();
         if (opts.w_amips > 0) weighted->add_energy(amips_energy);
         if (opts.w_envelope > 0) weighted->add_energy(envelope_energy);
+        if (extra_energy) weighted->add_energy(extra_energy);
         total_energy = weighted;
         solve();
     } else {
         solve();
     }
 
-    // Per-vertex positional constraint, on top of the envelope. A mesh uses this to pin a
-    // vertex to a 0-dimensional feature it stands for -- within a ball, so the vertex is
-    // still free to move and improve quality, it just cannot walk away from the feature.
-    // Meshes with no such features answer true unconditionally.
-    if (!m.smoothing_position_is_allowed(vid, m.smoothing_position(vid))) {
-        if (counters) ++counters->envelope;
-        return false;
-    }
+    // THE ACCEPT CHECKS, as a predicate on the position the vertex currently holds. Written as
+    // one function rather than inline so the back-off pass below can ask the same question of a
+    // shortened step; the reason each check exists is unchanged.
+    //
+    // `why` names the first check that refused, for the counters. Face quality is written back
+    // as a side effect, exactly as before -- whatever position is finally kept, the cached
+    // quality of the incident faces describes it.
+    enum class Refusal { None, Position, Envelope, Inverted, Quality };
+    const auto refusal_at = [&]() -> Refusal {
+        // Per-vertex positional constraint, on top of the envelope. A mesh uses this to pin a
+        // vertex to a 0-dimensional feature it stands for -- within a ball, so the vertex is
+        // still free to move and improve quality, it just cannot walk away from the feature.
+        // Meshes with no such features answer true unconditionally.
+        if (!m.smoothing_position_is_allowed(vid, m.smoothing_position(vid))) {
+            return Refusal::Position;
+        }
 
-    // Containment, edge by edge rather than face by face as in 3D.
-    if (envelope) {
-        const Vector2d p = m.smoothing_position(vid);
-        for (const Vector2d& q : surf_neighbors) {
-            const std::array<Eigen::Vector2d, 2> edge = {{p, q}};
-            if (envelope->is_outside(edge)) {
-                if (counters) ++counters->envelope;
-                return false;
+        // Containment, edge by edge rather than face by face as in 3D.
+        if (envelope) {
+            const Vector2d p = m.smoothing_position(vid);
+            for (const Vector2d& q : surf_neighbors) {
+                const std::array<Eigen::Vector2d, 2> edge = {{p, q}};
+                if (envelope->is_outside(edge)) {
+                    return Refusal::Envelope;
+                }
             }
         }
+
+        double max_after_quality = 0.;
+        for (const size_t fid : locs) {
+            if (m.is_inverted(fid)) {
+                return Refusal::Inverted;
+            }
+            const double q = m.get_quality(fid);
+            FA[fid].m_quality = q;
+            max_after_quality = std::max(max_after_quality, q);
+        }
+
+        if (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {
+            if (max_after_quality > max_quality) {
+                return Refusal::Quality;
+            }
+        }
+        return Refusal::None;
+    };
+
+    Refusal why = refusal_at();
+
+    // Back off toward the start rather than refusing outright. See reject_backoff_steps.
+    //
+    // Bisection for the LARGEST acceptable fraction, not halving down from 1: t = 1 is already
+    // known to fail, so [0, 1] brackets the boundary and the search converges up to it from
+    // below. Halving would cap the result at the midpoint and leave the vertex needlessly short
+    // of where its one-ring would have let it go.
+    if (why != Refusal::None && opts.reject_backoff_steps > 0) {
+        const Vector2d x_solved = m.smoothing_position(vid);
+        double lo = 0.0, hi = 1.0; // lo: best acceptable so far, hi: known bad
+        Vector2d best;
+        bool found = false;
+        for (int i = 0; i < opts.reject_backoff_steps; ++i) {
+            const double mid = 0.5 * (lo + hi);
+            m.set_smoothing_position(vid, Vector2d(x_start + mid * (x_solved - x_start)));
+            if (refusal_at() == Refusal::None) {
+                lo = mid;
+                best = m.smoothing_position(vid);
+                found = true;
+            } else {
+                hi = mid;
+            }
+        }
+        if (found) {
+            // refusal_at() left the vertex wherever the last probe was, which is not necessarily
+            // the best one, and its side effect on FA must describe the position finally kept.
+            m.set_smoothing_position(vid, best);
+            why = refusal_at();
+        } else {
+            m.set_smoothing_position(vid, x_solved); // nothing gained; let the caller roll back
+        }
     }
 
-    double max_after_quality = 0.;
-    for (const size_t fid : locs) {
-        if (m.is_inverted(fid)) {
-            if (counters) ++counters->inverted;
-            return false;
-        }
-        const double q = m.get_quality(fid);
-        FA[fid].m_quality = q;
-        max_after_quality = std::max(max_after_quality, q);
-    }
-
-    if (!VA[vid].m_is_on_surface || opts.quality_veto_on_surface) {
-        if (max_after_quality > max_quality) {
-            if (counters) ++counters->quality;
-            return false;
-        }
+    switch (why) {
+    case Refusal::Position:
+    case Refusal::Envelope:
+        if (counters) ++counters->envelope;
+        return false;
+    case Refusal::Inverted:
+        if (counters) ++counters->inverted;
+        return false;
+    case Refusal::Quality:
+        if (counters) ++counters->quality;
+        return false;
+    case Refusal::None: break;
     }
 
     if (counters) ++counters->accepted;

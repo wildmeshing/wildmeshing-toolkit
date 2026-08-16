@@ -108,6 +108,35 @@ def read_groups(path):
     return m.points, ncol - 1, groups, env
 
 
+def read_groups_vtu(path):
+    """(points, dim, {group name: cell array}, envelope segments) from a debug .vtu frame.
+
+    The debug frames the optimization writes are .vtu, not .msh, and carry their groups
+    differently: write_vtu() emits one CELL FIELD per tag (1 where the cell carries it) plus
+    `offset_tag`, which is 1 on the band and is derived from the construction LABEL rather than
+    from the tags -- so it is the reliable band marker even where a tag was written elsewhere.
+    """
+    m = meshio.read(str(path))
+    kind, ncol = ("tetra", 4) if any(c.type == "tetra" for c in m.cells) else ("triangle", 3)
+    cells = np.vstack([c.data for c in m.cells if c.type == kind])
+    groups = {}
+    for name, arrays in m.cell_data.items():
+        vals = np.concatenate([
+            np.asarray(a).reshape(-1)
+            for a, c in zip(arrays, m.cells) if c.type == kind
+        ])
+        sel = cells[vals > 0.5]
+        if len(sel):
+            groups[name] = sel
+    env = [c.data for c in m.cells if c.type == "line"]
+    env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
+    return m.points, ncol - 1, groups, env
+
+
+def read_any(path):
+    return read_groups_vtu(path) if path.suffix == ".vtu" else read_groups(path)
+
+
 def interfaces(points, dim, groups):
     """{(group a, group b): facet array}, a < b, plus (group, '') for domain boundary."""
     names = sorted(groups)
@@ -221,22 +250,66 @@ def dist_to_triangles(q, t0, t1, t2):
     return out
 
 
+FRAME_RE = __import__("re").compile(r"(\d+)(?=\D*$)")
+
+
+def frame_key(p):
+    """Sort debug frames by the counter in their name, not lexically -- debug_9 precedes
+    debug_10, which a plain sort gets backwards."""
+    m = FRAME_RE.search(p.stem)
+    return (int(m.group(1)) if m else -1, p.stem)
+
+
 def resolve(args):
-    """Command line -> (msh path, config dict or {})."""
-    paths = [Path(a) for a in args]
-    msh = next((p for p in paths if p.suffix == ".msh"), None)
+    """Command line -> (list of mesh paths, config dict or {}, stride)."""
+    stride, max_frames, rest = 1, 60, []
+    it = iter(args)
+    for a in it:
+        if a in ("--stride", "-s"):
+            stride = max(1, int(next(it)))
+        elif a == "--max-frames":
+            max_frames = max(1, int(next(it)))
+        else:
+            rest.append(a)
+    paths = [Path(a) for a in rest]
+
     cfg_path = next((p for p in paths if p.suffix == ".json"), None)
-    if msh is None:
+    meshes = [p for p in paths if p.suffix in (".msh", ".vtu")]
+
+    if not meshes:
         d = paths[0] if paths else Path.cwd()
         if not d.is_dir():
             sys.exit("no such file or directory: %s" % d)
-        found = sorted(d.glob("*.msh"))
-        if len(found) != 1:
-            sys.exit("expected exactly one .msh in %s, found %d" % (d, len(found)))
-        msh = found[0]
+        # A SERIES if the directory holds debug frames, otherwise the single result mesh.
+        # Frames are what DEBUG_output writes: one .vtu per pass, numbered.
+        # write_vtu() emits a `_surf` companion beside each frame; it is the tracked-surface
+        # geometry alone, which this viewer re-derives itself, so it is not a frame.
+        frames = sorted(
+            (f for f in d.glob("*debug_*.vtu") if not f.stem.endswith("_surf")), key=frame_key)
+        if frames:
+            meshes = frames
+        else:
+            found = sorted(d.glob("*.msh")) or sorted(d.glob("*.vtu"))
+            if len(found) != 1:
+                sys.exit("expected one .msh/.vtu (or *debug_*.vtu frames) in %s, found %d"
+                         % (d, len(found)))
+            meshes = found
+
+    if len(meshes) > 1:
+        meshes = sorted(meshes, key=frame_key)
+        kept = meshes[::stride]
+        if len(kept) > max_frames:
+            # Say what was dropped rather than silently showing part of the run.
+            extra = -(-len(kept) // max_frames)
+            print("%d frames after stride %d exceeds --max-frames %d; taking every %d instead"
+                  % (len(kept), stride, max_frames, stride * extra))
+            kept = meshes[::stride * extra]
+        if len(kept) != len(meshes):
+            print("series: %d of %d frames (stride %d)" % (len(kept), len(meshes), stride))
+        meshes = kept
+
     if cfg_path is None:
-        # Any json beside the mesh that declares the right application.
-        for c in sorted(msh.parent.glob("*.json")):
+        for c in sorted(meshes[0].parent.glob("*.json")):
             try:
                 j = json.load(open(c))
             except Exception:
@@ -251,13 +324,17 @@ def resolve(args):
             print("config %s" % cfg_path)
         except Exception as e:
             print("config %s unreadable (%s); using defaults" % (cfg_path, e))
-    return msh, cfg
+    return meshes, cfg, stride
 
 
 def load(msh, cfg):
     """Everything main() draws, as plain arrays -- no polyscope."""
-    points, dim, groups, envelope = read_groups(msh)
-    offset_tags = set(cfg.get("offset_output_tags", ["offset"])) & set(groups)
+    points, dim, groups, envelope = read_any(msh)
+    # `offset_tag` is the .vtu frames' label-based band marker and is preferred where
+    # present; .msh files name the band by its output tag instead.
+    offset_tags = {"offset_tag"} & set(groups)
+    if not offset_tags:
+        offset_tags = set(cfg.get("offset_output_tags", ["offset"])) & set(groups)
     if not offset_tags:
         offset_tags = {"offset"} & set(groups)
 
@@ -280,15 +357,32 @@ def load(msh, cfg):
                 seen[k] = (row, {name})
     expr = cfg.get("offset_selection", "!_")
     classed = {"offset": [], "input": [], "ambient": []}
+    # The same cells again, deduplicated and in one stable order, so the background mesh can
+    # be drawn with per-cell quantities that line up with it: which of the three classes each
+    # cell is in, and which tag groups it belongs to. The groups OVERLAP -- a cell is written
+    # into every group whose tag set contains that tag -- so tag membership cannot be one
+    # scalar and is one boolean layer per tag instead.
+    all_rows, all_class, all_names = [], [], []
     for row, names in seen.values():
         if names & offset_tags:
-            classed["offset"].append(row)
+            cls, key = 2, "offset"
         elif eval_selection(expr, names):
-            classed["input"].append(row)
+            cls, key = 1, "input"
         else:
-            classed["ambient"].append(row)
+            cls, key = 0, "ambient"
+        classed[key].append(row)
+        all_rows.append(row)
+        all_class.append(cls)
+        all_names.append(names)
     classed = {k: np.asarray(v) if v else np.zeros((0, dim + 1), np.int64)
                for k, v in classed.items()}
+
+    mesh_cells = np.asarray(all_rows) if all_rows else np.zeros((0, dim + 1), np.int64)
+    mesh_class = np.asarray(all_class, np.float64)
+    mesh_tags = {
+        g: np.asarray([1.0 if g in names else 0.0 for names in all_names])
+        for g in sorted(groups)
+    }
 
     # REGION BOUNDARIES: facets where the two sides' group-membership sets differ -- the
     # rule label_offset_boundary() classifies edges by. This is what shows the tag-region
@@ -352,112 +446,233 @@ def load(msh, cfg):
             dist = dist_to_segments(op, r[:, 0], r[:, 1])
         err = (op, oc, dist, np.abs(dist - delta) / delta)
 
-    return points, dim, groups, surf, delta, prov, err
+    mesh = (mesh_cells, mesh_class, mesh_tags)
+    return points, dim, groups, surf, delta, prov, err, mesh
+
+
+LAYERS = [
+    ("background mesh (tags as cell layers)", "background mesh"),
+    ("input surface (orange)", "input surface"),
+    ("offset surface", "offset surface"),
+    ("inner interface (grey)", "inner interface"),
+    ("region boundaries (green)", "region boundaries"),
+    ("envelope curves (orange)", "envelope curves"),
+]
+
+
+def register_frame(prefix, points, dim, surf, err, mesh):
+    """Register one frame's layers, all disabled. Returns {layer label: structure}."""
+    mesh_cells, mesh_class, mesh_tags = mesh
+    out = {}
+
+    def curve_or_surface(name, facets, color, radius):
+        if len(facets) == 0:
+            return None
+        pts, c = compact(points, facets)
+        if dim == 3 and len(facets[0]) == 3:
+            s = ps.register_surface_mesh(prefix + name, pts, c, color=color, edge_width=1.0)
+        else:
+            s = ps.register_curve_network(prefix + name, pts, c, color=color, radius=radius)
+        s.set_enabled(False)
+        return s
+
+    if len(mesh_cells):
+        if dim == 3:
+            m = ps.register_volume_mesh(prefix + "background mesh", points, mesh_cells)
+        else:
+            m = ps.register_surface_mesh(
+                prefix + "background mesh", points, mesh_cells,
+                color=(0.85, 0.85, 0.87), edge_width=1.0,
+            )
+        where = "cells" if dim == 3 else "faces"
+        m.add_scalar_quantity("class (0 ambient, 1 input, 2 offset)", mesh_class,
+                              defined_on=where, cmap="spectral", vminmax=(0.0, 2.0), enabled=True)
+        for g, v in mesh_tags.items():
+            m.add_scalar_quantity(g, v, defined_on=where, cmap="blues", vminmax=(0.0, 1.0))
+        m.set_enabled(False)
+        out["background mesh (tags as cell layers)"] = m
+
+    out["input surface (orange)"] = curve_or_surface("input surface", surf["input"], C_INPUT, 0.0022)
+    out["offset surface"] = curve_or_surface("offset surface", surf["offset"], C_OFFSET, 0.0022)
+    out["inner interface (grey)"] = curve_or_surface("inner interface", surf["inner"], C_INNER, 0.0022)
+    out["region boundaries (green)"] = curve_or_surface("region boundaries", surf["region"], C_OTHER, 0.0022)
+    out["envelope curves (orange)"] = curve_or_surface("envelope curves", surf["envelope"], C_INPUT, 0.0018)
+
+    if err is not None and dim == 3 and len(surf["offset"]):
+        _, _, dist, rel = err
+        m = ps.get_surface_mesh(prefix + "offset surface")
+        m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
+                              vminmax=(0.0, float(rel.max())), enabled=True)
+        m.add_scalar_quantity("distance to input", dist, cmap="viridis")
+    return {k: v for k, v in out.items() if v is not None}
+
+
+def load_phi_grid(meshes):
+    """The sampled smooth offset potential, written beside the result as `<output>_phi.vtu`.
+
+    THE OFFSET IS A LEVEL SET of a field that exists everywhere, and the result mesh only ever
+    samples that field along one curve -- so when the offset lands somewhere unexpected, the mesh
+    alone cannot say whether the field is wrong or the optimization failed to reach it. This
+    layer is the field itself, drawn as a dense background surface with `phi` as a VERTEX scalar
+    so polyscope's isoline mode draws the level set directly.
+
+    Written only when phi_grid_resolution > 0 in the config. Returns None when absent.
+    """
+    for m in meshes:
+        for cand in (m.with_name(m.stem + "_phi.vtu"),
+                     m.parent / (m.stem.split("_debug")[0] + "_phi.vtu")):
+            if cand.is_file():
+                try:
+                    grid = meshio.read(str(cand))
+                except Exception as e:  # a truncated file should not stop the viewer
+                    print("could not read %s: %s" % (cand, e))
+                    return None
+                cells = np.vstack([b.data for b in grid.cells if b.type == "triangle"])
+                return cand, grid.points[:, :2], cells, grid.point_data
+    return None
 
 
 def main():
-    msh, cfg = resolve(sys.argv[1:])
-    if not msh.is_file():
-        sys.exit("missing mesh: %s" % msh)
-    points, dim, groups, surf, delta, prov, err = load(msh, cfg)
+    meshes, cfg, stride = resolve(sys.argv[1:])
+    for m in meshes:
+        if not m.is_file():
+            sys.exit("missing mesh: %s" % m)
+    series = len(meshes) > 1
 
-    print("mesh   %s  (%s)" % (msh, "tets" if dim == 3 else "triangles"))
-    print("delta  %g  (%s)" % (delta, prov))
-    for n in sorted(groups):
-        print("  group %-16s %8d cells" % (n, len(groups[n])))
-    for n in ("input", "offset", "inner", "region", "envelope"):
-        print("  %-22s %8d facets" % (n, len(surf[n])))
-    if err is not None:
-        _, _, dist, rel = err
-        print("  offset vertices: dist to input  min %.6g  max %.6g   |err|/delta  avg %.4f  max %.4f"
-              % (dist.min(), dist.max(), rel.mean(), rel.max()))
-        print("  (reference = the band's inner interface, sampled at offset vertices:"
-              " a cross-check against the log, not the metric itself)")
-    else:
-        print("  distance layer omitted: no input-region cells to measure against"
-              " (edge or vertex input complex, or empty surfaces)")
+    frames = []
+    for k, path in enumerate(meshes):
+        points, dim, groups, surf, delta, prov, err, mesh = load(path, cfg)
+        frames.append((path, points, dim, groups, surf, delta, prov, err, mesh))
+        if k == 0 or not series:
+            print("mesh   %s  (%s)" % (path, "tets" if dim == 3 else "triangles"))
+            print("delta  %g  (%s)" % (delta, prov))
+            print("  %-22s %8d cells, %d vertices" % ("background mesh", len(mesh[0]), len(points)))
+            for n in sorted(groups):
+                print("  group %-16s %8d cells" % (n, len(groups[n])))
+            for n in ("input", "offset", "inner", "region", "envelope"):
+                print("  %-22s %8d facets" % (n, len(surf[n])))
+            if dim == 2:
+                print("  (the surface layers are 1D in 2D, so they are polyscope CURVE NETWORKS:"
+                      " they are the offset boundary and the input surface, not decoration)")
+            if err is not None:
+                _, _, dist, rel = err
+                print("  offset vertices: dist to input  min %.6g  max %.6g   |err|/delta  avg %.4f  max %.4f"
+                      % (dist.min(), dist.max(), rel.mean(), rel.max()))
+            elif not series:
+                print("  distance layer omitted: no input-region cells to measure against"
+                      " (edge or vertex input complex, or empty surfaces)")
+    if series:
+        print("series: %d frames, %s .. %s" % (len(frames), meshes[0].name, meshes[-1].name))
 
+    dim = frames[0][2]
     ps.init()
     if dim == 2:
-        # Flat data: same setup and rationale as visualize_triwild.py.
         ps.set_up_dir("y_up")
         ps.set_front_dir("z_front")
         ps.set_view_projection_mode("orthographic")
         ps.set_navigation_style("planar")
     ps.set_ground_plane_mode("none")
 
-    def register(name, facets, color, enabled):
-        if len(facets) == 0:
-            return None
-        p, c = compact(points, facets)
-        if dim == 3:
-            s = ps.register_surface_mesh(name, p, c, color=color, edge_width=1.0)
-        else:
-            s = ps.register_curve_network(name, p, c, color=color, radius=0.0022)
-        s.set_enabled(enabled)
-        return s
+    registered = []
+    for k, (path, points, d, groups, surf, delta, prov, err, mesh) in enumerate(frames):
+        prefix = ("f%04d " % k) if series else ""
+        registered.append(register_frame(prefix, points, d, surf, err, mesh))
 
-    def register_curves(name, segs, color, enabled):
-        if len(segs) == 0:
-            return None
-        p, c = compact(points, segs)
-        s = ps.register_curve_network(name, p, c, color=color, radius=0.0018)
-        s.set_enabled(enabled)
-        return s
+    # The potential, ONE structure for the whole series: the input complex never moves, so
+    # neither does phi, and re-registering it per frame would only cost memory.
+    phi_struct = None
+    phi_grid = load_phi_grid(meshes) if dim == 2 else None
+    if phi_grid is not None:
+        src, pts, cells, pdata = phi_grid
+        phi = pdata["phi"]
+        print("phi grid  %s  (%d samples, %d triangles)" % (src.name, len(pts), len(cells)))
+        phi_struct = ps.register_surface_mesh(
+            "smooth offset potential", pts, cells, color=(0.85, 0.85, 0.9), edge_width=0.0)
+        # The level value c is not in the file, but it is exactly what the isoline should sit on
+        # and it is recoverable: the offset boundary is where phi = c, so take phi at the
+        # OFFSET SURFACE vertices of the first frame. Falls back to the median otherwise.
+        level = float(np.median(phi))
+        f0 = frames[0]
+        off = f0[4]["offset surface"] if "offset surface" in f0[4] else f0[4].get("offset", [])
+        if len(off):
+            vids = np.unique(np.asarray(off).ravel())
+            near = f0[1][vids][:, :2]
+            # nearest grid sample to each offset vertex
+            idx = [int(np.argmin(((pts - q) ** 2).sum(axis=1))) for q in near[:200]]
+            level = float(np.median(phi[idx]))
+        q = phi_struct.add_scalar_quantity("phi", phi, cmap="coolwarm", enabled=True,
+                                           isolines_enabled=True)
+        try:
+            q.set_isoline_width(abs(level) if level else 0.05, True)
+        except Exception:
+            pass
+        phi_struct.add_scalar_quantity("phi residual (length)", pdata["phi_residual_length"],
+                                       cmap="viridis")
+        phi_struct.add_scalar_quantity("euclidean distance to input",
+                                       pdata["euclidean_distance"], cmap="viridis")
+        phi_struct.set_enabled(False)
+        print("  phi at the offset surface (the level c): %.6g" % level)
 
-    layers = [
-        ("input surface (orange)", register("input surface", surf["input"], C_INPUT, True)),
-        ("offset surface", register("offset surface", surf["offset"], C_OFFSET, True)),
-        ("inner interface (grey)", register("inner interface", surf["inner"], C_INNER, False)),
-        ("region boundaries (green)",
-         register("region boundaries", surf["region"], C_OTHER, len(surf["input"]) == 0)),
-        ("envelope curves (orange)",
-         register_curves("envelope curves", surf["envelope"], C_INPUT, True)),
-    ]
+    # Which LAYERS are on is one choice for the whole series; which FRAME is showing is another.
+    # Defaults match the single-mesh viewer: the mesh and the two surfaces, plus the region
+    # outlines when there is no input surface to show.
+    state = {label: False for label, _ in LAYERS}
+    state["background mesh (tags as cell layers)"] = dim == 2
+    state["input surface (orange)"] = True
+    state["offset surface"] = True
+    state["region boundaries (green)"] = len(frames[0][4]["input"]) == 0
+    state["envelope curves (orange)"] = True
+    state["smooth offset potential"] = False
+    state["frame"] = 0
+    state["play"] = False
+    state["tick"] = 0
 
-    # The offset surface's colour modes. Re-adding a quantity under the same name just
-    # updates it, so switching modes is a re-add with the right `enabled` -- this works
-    # on every polyscope version, unlike holding quantity handles.
-    modes = ["solid blue"]
-    if err is not None and dim == 3:
-        op, oc, dist, rel = err
-        modes = [
-            "|dist-delta|/delta   reds: white 0 -> dark red %.4g" % rel.max(),
-            "distance to input    viridis: dark %.4g -> yellow %.4g" % (dist.min(), dist.max()),
-            "solid blue",
-        ]
+    def apply_visibility():
+        cur = state["frame"]
+        for k, layers in enumerate(registered):
+            for label, s in layers.items():
+                s.set_enabled(k == cur and state[label])
+        if phi_struct is not None:
+            phi_struct.set_enabled(state["smooth offset potential"])
 
-    def set_mode(i):
-        # 3D only: in 2D the offset is a curve network and carries no scalar layers.
-        if err is None or dim != 3:
-            return
-        m = ps.get_surface_mesh("offset surface")
-        m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
-                              vminmax=(0.0, float(rel.max())), enabled=(i == 0))
-        m.add_scalar_quantity("distance to input", dist, cmap="viridis", enabled=(i == 1))
-
-    if len(surf["offset"]):
-        set_mode(0)
-
-    state = {label: (s is not None and s.is_enabled()) for label, s in layers}
-    state["mode"] = 0
+    apply_visibility()
 
     def callback():
-        psim.TextUnformatted("%s   delta %g" % (msh.name, delta))
+        f = frames[state["frame"]]
+        psim.TextUnformatted("%s   delta %g" % (f[0].name, f[5]))
+        if series:
+            psim.TextUnformatted(
+                "frame %d / %d   (stride %d)" % (state["frame"] + 1, len(frames), stride))
+            changed, v = psim.SliderInt("frame", state["frame"], 0, len(frames) - 1)
+            if changed:
+                state["frame"] = v
+                apply_visibility()
+            if psim.Button("prev") and state["frame"] > 0:
+                state["frame"] -= 1
+                apply_visibility()
+            psim.SameLine()
+            if psim.Button("next") and state["frame"] + 1 < len(frames):
+                state["frame"] += 1
+                apply_visibility()
+            psim.SameLine()
+            _, state["play"] = psim.Checkbox("play", state["play"])
+            if state["play"]:
+                state["tick"] += 1
+                if state["tick"] % 6 == 0:  # ~10 fps at a 60 Hz draw
+                    state["frame"] = (state["frame"] + 1) % len(frames)
+                    apply_visibility()
         psim.Separator()
-        for label, s in layers:
-            if s is None:
+        for label, _ in LAYERS:
+            if not any(label in layers for layers in registered):
                 continue
             changed, state[label] = psim.Checkbox(label, state[label])
             if changed:
-                s.set_enabled(state[label])
-        if len(surf["offset"]) and len(modes) > 1:
-            psim.Separator()
-            psim.TextUnformatted("offset surface colour:")
-            for i, label in enumerate(modes):
-                if psim.RadioButton(label, state["mode"] == i):
-                    state["mode"] = i
-                    set_mode(i)
+                apply_visibility()
+        if phi_struct is not None:
+            changed, state["smooth offset potential"] = psim.Checkbox(
+                "smooth offset potential (phi)", state["smooth offset potential"])
+            if changed:
+                apply_visibility()
 
     ps.set_user_callback(callback)
     ps.show()

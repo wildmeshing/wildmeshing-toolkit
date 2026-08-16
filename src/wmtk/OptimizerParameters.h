@@ -158,6 +158,12 @@ struct OptimizerParameters
     int project_line_search_steps = 12;
     /// Partial-projection bisections tried after it gives up; 0 disables that pass.
     int project_line_search_nested_steps = 0;
+
+    /// Bisection steps used to back a refused smoothing move off toward its starting position
+    /// instead of refusing it outright. 0 (TriWild's and SimWild's value) disables the pass
+    /// entirely; see optimization::SmoothVertexOptions::reject_backoff_steps for when it is
+    /// needed and what it costs.
+    int smooth_reject_backoff_steps = 0;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.

@@ -11,6 +11,7 @@
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 
 #include <polysolve/nonlinear/Problem.hpp>
+#include <spdlog/fmt/bundled/format.h>
 
 #include <atomic>
 #include <limits>
@@ -290,6 +291,42 @@ public:
     void set_smoothing_position(size_t vid, const Vector2d& p);
     virtual bool smoothing_position_is_allowed(size_t vid, const Vector2d& p) const = 0;
 
+    /**
+     * @brief The envelope this vertex is both pulled toward and contained by while smoothing.
+     *
+     * Null means "no envelope for this vertex", which the smoother handles by minimising AMIPS
+     * (plus whatever smoothing_extra_energy() adds) with no containment check.
+     *
+     * The default is what TriWild and SimWild both do -- one envelope, applied to every vertex
+     * on the tracked surface -- so overriding nothing leaves their behaviour untouched. An
+     * application tracking more than one surface overrides it: topological_offset returns null
+     * for a vertex that is ONLY on the offset boundary, because that is the surface the
+     * optimization exists to move, and a tube around its initial position caps how far it can
+     * ever travel.
+     */
+    virtual std::shared_ptr<SampleEnvelope> smoothing_envelope(const size_t vid) const
+    {
+        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
+    }
+
+    /**
+     * @brief An extra term the application adds to this vertex's smoothing objective, or null.
+     *
+     * The extension point that lets an application place a vertex by MINIMISING something
+     * rather than by computing a position and then defending it. topological_offset uses it for
+     * the offset boundary: the term is w (Phi - c)^2, whose minimum is the offset itself, so an
+     * offset-boundary vertex goes through this same smoother -- the same line search, the same
+     * inversion test, the same quality veto -- as every other vertex, instead of through a
+     * hand-rolled projection that bypassed all three.
+     *
+     * Null by default, so TriWild and SimWild compose exactly the energy they composed before.
+     */
+    virtual std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t vid) const
+    {
+        return nullptr;
+    }
+
     double active_quality_threshold() const
     {
         return m_params.skip_good_regions_margin * m_params.stop_energy;
@@ -341,6 +378,41 @@ protected:
      * triwild and simwild do not override it.
      */
     virtual void optimization_iteration_begin() {}
+
+    /**
+     * @brief Whether an iteration that moved the metric from @p prev to @p cur is stalled, and
+     * the sizing refinement should therefore fire.
+     *
+     * Exactly the expression mesh_improvement() used inline: the improvement is small next to
+     * the distance the metric still has to cover, i.e. the mesh is not on course to reach the
+     * target within about 1/stall_eps more iterations.
+     *
+     * It is a virtual because the scalar the driver has is a MAX over criteria, and for an
+     * application with more than one criterion that max only ever reports on whichever is
+     * currently worst -- so a run whose worst criterion is stuck refines every iteration even
+     * while the others are improving. An application that knows its criteria apart overrides
+     * this to ask the question of each of them.
+     */
+    virtual bool optimization_stalled(double prev, double cur)
+    {
+        return (prev - cur) <= m_params.stuck_refine_stall_eps * (cur - optimization_stop_metric());
+    }
+
+    /**
+     * @brief Called at every pass boundary, whether or not debug output is on.
+     *
+     * The default writes a debug frame when m_params.debug_output is set and does nothing
+     * otherwise. An application whose writer MUTATES the mesh -- topological_offset's
+     * write_vtu() consolidates, which renumbers, which changes the order every later pass
+     * enumerates operations in -- overrides this to do that mutation unconditionally, so that
+     * turning debug output on does not silently change the run it is supposed to be observing.
+     */
+    virtual void optimization_debug_checkpoint()
+    {
+        if (m_params.debug_output) {
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+    }
 
     virtual void collapse_pass_begin() {}
     virtual void collapse_pass_end(size_t) {}

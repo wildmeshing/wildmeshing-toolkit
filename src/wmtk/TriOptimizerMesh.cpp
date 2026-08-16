@@ -103,8 +103,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_metric > optimization_stop_metric() &&
-            (pre_max_metric - max_metric) <=
-                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");
@@ -180,9 +179,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             if (ops[i] > 0) round_all_vertices();
         }
 
-        if (m_params.debug_output) {
-            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
-        }
+        optimization_debug_checkpoint();
         const auto [max_metric, avg_metric] = optimization_quality_stats();
         static constexpr std::array<const char*, 4> names = {
             {"split", "collapse", "swap", "smooth"}};

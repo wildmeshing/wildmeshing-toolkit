@@ -52,10 +52,27 @@ struct Parameters : public wmtk::OptimizerParameters
     // boundaries it grows through. See TopoOffsetTriMesh::init_region_boundary_envelope_from_input.
     // 2D only; the 3D path never builds this envelope.
     bool region_envelope_from_input;
+    // Subdivision floor for conservative offset growth, as a fraction of target_distance: a
+    // candidate circle/sphere smaller than this stops being subdivided and is decided outright.
     double relative_ball_threshold;
+
+    // ---- the smooth offset potential (2D) ----
+    // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset
+    // level set has to lie strictly inside the support, or the vertices on it get no gradient.
+    // 2 by default -- the potential is active out to twice the offset distance, and a band vertex
+    // that travels further than that is a hard error rather than a silently frozen vertex.
+    double offset_dhat_factor;
+    // Convergence tolerance on the offset, as a fraction of target_distance. The quantity it
+    // bounds is the Phi RESIDUAL expressed as a length -- the first-order distance from a band
+    // vertex to the level set -- so 0.1 means "every offset vertex is within 10% of the offset
+    // distance of where the potential says it belongs".
+    double offset_residual_rel;
     bool sorted_marching;
     std::string output_path; // no extension
     bool save_vtu;
+    // Samples per side of the grid the smooth offset potential is written on, beside the result,
+    // for the viewer. 0 disables it. 2D only.
+    int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
     // Upper bound on the shared optimization loop, which exits as soon as every convergence
@@ -134,6 +151,8 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size_rel = json_params["envelope_size_rel"];
         region_envelope_from_input = json_params["region_envelope_from_input"];
         relative_ball_threshold = json_params["relative_ball_threshold"];
+        offset_dhat_factor = json_params["offset_dhat_factor"];
+        offset_residual_rel = json_params["offset_residual_rel"];
         if (relative_ball_threshold < 0.0 || relative_ball_threshold > 1.0) {
             log_and_throw_error(
                 "Invalid relative_ball_threshold [{}], must be between 0 and 1.",
@@ -143,6 +162,7 @@ struct Parameters : public wmtk::OptimizerParameters
         sorted_marching = json_params["sorted_marching"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
+        phi_grid_resolution = json_params["phi_grid_resolution"];
 
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
@@ -187,6 +207,7 @@ struct Parameters : public wmtk::OptimizerParameters
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
         project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
+        smooth_reject_backoff_steps = json_params["smooth_reject_backoff_steps"];
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }
@@ -216,13 +237,20 @@ struct Parameters : public wmtk::OptimizerParameters
             target_distance = target_distance_rel * diag_l;
         }
 
-        // The convergence threshold is an error in the SAME quantity target_distance measures --
-        // how far an offset vertex sits from where it should be -- so it is relative to
-        // target_distance, not to the bounding box diagonal like every other relative length.
+        // An ordinary relative length against the bounding-box diagonal, exactly like
+        // envelope_size and every other length here.
+        //
+        // It used to be relative to target_distance instead, on the argument that it measures an
+        // error in the same quantity. That is true and it made the parameter hard to reason
+        // about: the bar then moved with delta, so two runs on the same model at different
+        // offset distances were held to different absolute accuracies, and the one number in
+        // the component that says "how close is close enough" was the only one not expressed in
+        // the model's own units. Everything else -- the envelope, the target edge length,
+        // l_min -- scales with the diagonal, so this does too.
         if (convergence_target > 0) {
-            convergence_target_rel = convergence_target / target_distance;
+            convergence_target_rel = convergence_target / diag_l;
         } else {
-            convergence_target = convergence_target_rel * target_distance;
+            convergence_target = convergence_target_rel * diag_l;
         }
 
         // An ordinary relative length, unlike convergence_target: it bounds how far a region

@@ -76,6 +76,8 @@ void topological_offset(nlohmann::json json_params)
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
         logger().info("relative_ball_threshold: {}", params.relative_ball_threshold);
+        logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
+        logger().info("offset_residual_rel: {}", params.offset_residual_rel);
         logger().info("===============================");
     }
 
@@ -213,17 +215,20 @@ void topological_offset(nlohmann::json json_params)
             report["threads"] = NUM_THREADS;
             report["time"] = time;
             if (!mesh.optimization_metrics.empty()) {
-                std::vector<double> max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev;
+                // The Euclidean distance error is a DIAGNOSTIC now -- the offset is the level set
+                // of the smooth potential, so what the run converged on is the Phi residual. Both
+                // are reported, and the two agree away from reentrant features of the input.
+                std::vector<double> max_dist_err, avg_dist_err, max_residual, avg_residual;
                 for (const auto& m : mesh.optimization_metrics) {
                     max_dist_err.push_back(m[0]);
                     avg_dist_err.push_back(m[1]);
-                    max_norm_dev.push_back(m[2]);
-                    avg_norm_dev.push_back(m[3]);
+                    max_residual.push_back(m[2]);
+                    avg_residual.push_back(m[3]);
                 }
                 report["optimization_metrics"]["max_dist_err"] = max_dist_err;
                 report["optimization_metrics"]["avg_dist_err"] = avg_dist_err;
-                report["optimization_metrics"]["max_norm_dev"] = max_norm_dev;
-                report["optimization_metrics"]["avg_norm_dev"] = avg_norm_dev;
+                report["optimization_metrics"]["max_phi_residual"] = max_residual;
+                report["optimization_metrics"]["avg_phi_residual"] = avg_residual;
 
                 std::vector<int> splits, collapses, swaps;
                 for (const auto& c : mesh.op_counts) {
@@ -234,15 +239,11 @@ void topological_offset(nlohmann::json json_params)
                 report["op_counts"]["splits"] = splits;
                 report["op_counts"]["collapses"] = collapses;
                 report["op_counts"]["swaps"] = swaps;
-                // Both criteria, matching optimize_offset()'s own test: MAX for distance, AVERAGE
-                // for normal deviation (see the reasoning there). convergence_normal_deviation
-                // <= 0 disables the angular half.
-                const double nd_target = mesh.m_offset_params.convergence_normal_deviation;
                 report["converged"] =
-                    max_dist_err.back() <= mesh.m_offset_params.convergence_target &&
-                    (nd_target <= 0. || avg_norm_dev.back() <= nd_target);
-                report["convergence_target"] = mesh.m_offset_params.convergence_target;
-                report["convergence_normal_deviation"] = nd_target;
+                    max_residual.back() <= mesh.offset_residual_tolerance();
+                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
+                report["offset_level"] = mesh.m_offset_potential->target_level();
+                report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
             f_out << std::setw(4) << report;
             f_out.close();
@@ -252,6 +253,7 @@ void topological_offset(nlohmann::json json_params)
         if (mesh.m_offset_params.save_vtu) { // write .vtu
             mesh.write_vtu(output_filename.string());
         }
+        mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
         wmtk::logger().info("======= finish =========");
     } else { // input is a 3d tet mesh
