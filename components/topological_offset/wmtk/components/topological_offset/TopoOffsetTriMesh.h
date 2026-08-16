@@ -667,8 +667,8 @@ public:
     std::shared_ptr<SampleEnvelope> smoothing_envelope(const size_t vid) const override
     {
         const auto& ve = m_vertex_extra[vid];
-        if (ve.m_is_on_offset && !ve.m_is_on_input && !ve.m_is_on_region) {
-            return nullptr;
+        if (ve.m_is_on_offset && !ve.m_is_on_input) {
+            return nullptr; // EXPERIMENT: was `&& !ve.m_is_on_region`
         }
         return wmtk::TriOptimizerMesh::smoothing_envelope(vid);
     }
@@ -722,6 +722,10 @@ public:
         double max() const { return std::max(amips, phi); }
     };
     Criteria optimization_criteria();
+
+    /// Samples per band edge; see offset_edge_samples(). 0 falls back to a vertex-only
+    /// criterion, which is measurably blind to a band too coarse to be the offset.
+    int offset_residual_samples() const { return m_offset_params.offset_residual_samples; }
 
     /// The tolerance the Phi residual is measured against: a fraction of target_distance, so
     /// "how close is close enough" is stated in units of the offset the run asked for.
@@ -813,6 +817,39 @@ public:
     /// How far vid is from the level set Phi = c, as a length. This is what the loop converges
     /// on and what the sizing field refines by.
     double band_vertex_residual(const size_t vid) const;
+
+    /// The residual sampled at points ALONG a band edge -- see offset_edge_samples().
+    struct EdgeSamples
+    {
+        double max = 0.;
+        double sum = 0.;
+        size_t n = 0;
+    };
+
+    /**
+     * @brief The Phi residual at `offset_residual_samples` interior points of band edge `e`.
+     *
+     * THE CRITERION CANNOT BE A VERTEX CRITERION. Distance error at the vertices alone does not
+     * pin down the offset: a boundary can have every vertex exactly on the level set while
+     * zig-zagging or cutting corners between them, which reads as converged and is not the
+     * offset. That is the same gap the paper's normal-deviation criterion (Sec. 5.3.3) covered,
+     * and it is not hypothetical -- measured on topological_offset_2d_vertex_input, a band that
+     * had decimated to twelve segments reported a vertex error of 0.2% of target_distance while
+     * its edge midpoints sat at 18% of target_distance from the input; and on the dragon, 5.5%
+     * at the vertices against 26% at the midpoints.
+     *
+     * Sampling the EDGES is what the potential makes possible and the old distance field did
+     * not: Phi is defined everywhere, so the offset can be measured anywhere along the band
+     * rather than only where the mesh happens to have put a vertex. The same samples feed
+     * face_criterion_rel(), so the sizing field refines a band that is too coarse to represent
+     * the offset instead of letting it decimate.
+     *
+     * Samples are uniform interior points, i/(k+1) for i = 1..k, so k = 1 is the midpoint.
+     * Returns nothing for an edge with an UNREACHABLE endpoint: a segment running onto the
+     * input complex is legitimately closer than target_distance along its length, and no
+     * operation can change that.
+     */
+    EdgeSamples offset_edge_samples(const Tuple& e) const;
     /// Whether vid is a band vertex the optimizer could still place at target_distance.
     bool band_vertex_is_reachable(const size_t vid) const
     {

@@ -67,6 +67,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // vertex to the level set -- so 0.1 means "every offset vertex is within 10% of the offset
     // distance of where the potential says it belongs".
     double offset_residual_rel;
+    // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;
+    // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to
+    // a band whose vertices sit on the level set while its edges cut across it.
+    int offset_residual_samples;
     bool sorted_marching;
     std::string output_path; // no extension
     bool save_vtu;
@@ -153,6 +157,7 @@ struct Parameters : public wmtk::OptimizerParameters
         relative_ball_threshold = json_params["relative_ball_threshold"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_residual_rel = json_params["offset_residual_rel"];
+        offset_residual_samples = json_params["offset_residual_samples"];
         if (relative_ball_threshold < 0.0 || relative_ball_threshold > 1.0) {
             log_and_throw_error(
                 "Invalid relative_ball_threshold [{}], must be between 0 and 1.",

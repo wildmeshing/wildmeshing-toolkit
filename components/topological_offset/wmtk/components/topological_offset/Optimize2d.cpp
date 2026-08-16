@@ -704,6 +704,27 @@ double TopoOffsetTriMesh::band_vertex_residual(const size_t vid) const
     return m_offset_potential->residual_length(m_vertex_attribute[vid].m_posf);
 }
 
+TopoOffsetTriMesh::EdgeSamples TopoOffsetTriMesh::offset_edge_samples(const Tuple& e) const
+{
+    EdgeSamples s;
+    const int k = m_offset_params.offset_residual_samples;
+    if (k <= 0) return s;
+
+    const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+    if (!band_vertex_is_reachable(va) || !band_vertex_is_reachable(vb)) return s;
+
+    const Vector2d pa = m_vertex_attribute[va].m_posf;
+    const Vector2d pb = m_vertex_attribute[vb].m_posf;
+    for (int i = 1; i <= k; ++i) {
+        const double t = double(i) / (k + 1);
+        const double r = m_offset_potential->residual_length(pa + t * (pb - pa));
+        s.max = std::max(s.max, r);
+        s.sum += r;
+        ++s.n;
+    }
+    return s;
+}
+
 TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
 {
     // distance_deviation_split(), over the Phi residual instead of the Euclidean error. Same
@@ -726,6 +747,17 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
             ++s.n_pinned;
         }
     }
+    // ... and the same measurement ALONG the band, which is what stops a boundary whose
+    // vertices sit on the level set but whose edges cut across it from reading as converged.
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        const EdgeSamples es = offset_edge_samples(e);
+        if (es.n == 0) continue; // no samples asked for, or an unreachable endpoint
+        s.max_reachable = std::max(s.max_reachable, es.max);
+        sum_reachable += es.sum;
+        s.n_reachable += es.n;
+    }
+
     s.avg_reachable = (s.n_reachable > 0) ? sum_reachable / s.n_reachable : 0.;
     return s;
 }
@@ -845,7 +877,7 @@ void TopoOffsetTriMesh::optimization_iteration_begin()
     const DistanceSplit d = distance_deviation_split();
     logger().info(
         "[criteria] amips {:.4}x (max {:.6} / {:.6}) | phi {:.4}x (max residual {:.6} / {:.6}, "
-        "{} pinned) | euclid dist err {:.6} (avg {:.6}) | #V {} #F {} (band {})",
+        "{} pinned) | euclid dist err {:.6} (avg {:.6}) | #V {} #F {} (band {} samples)",
         c.amips,
         c.amips * m_params.stop_energy,
         m_params.stop_energy,
@@ -947,6 +979,9 @@ double TopoOffsetTriMesh::face_criterion_rel(const size_t fid) const
             if (!band_vertex_is_reachable(vid)) continue;
             score = std::max(score, band_vertex_residual(vid) / tol);
         }
+        // ALONG the edge as well, so a face carrying a stretch of band too coarse to represent
+        // the offset is refined -- which is the mechanism that keeps the band resolved at all.
+        score = std::max(score, offset_edge_samples(e).max / tol);
     }
     return score;
 }

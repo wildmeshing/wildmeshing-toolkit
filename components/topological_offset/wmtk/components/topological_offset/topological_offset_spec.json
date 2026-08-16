@@ -28,6 +28,7 @@
             "relative_ball_threshold",
             "offset_dhat_factor",
             "offset_residual_rel",
+            "offset_residual_samples",
             "sorted_marching",
             "check_manifoldness",
             "save_vtu",
@@ -215,6 +216,12 @@
             "default": 0.1,
             "type": "float",
             "doc": "Convergence tolerance on the offset, as a fraction of target_distance, applied to the potential residual expressed as a length."
+        },
+        {
+            "pointer": "/offset_residual_samples",
+            "default": 3,
+            "type": "int",
+            "doc": "Points sampled in the interior of each band edge when measuring the offset's residual (k = 1 is the midpoint). 0 measures only at band vertices, which is blind to a band whose vertices sit on the level set while its edges cut across it."
         },
     {
         "pointer": "/sorted_marching",

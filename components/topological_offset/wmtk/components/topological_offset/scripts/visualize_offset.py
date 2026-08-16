@@ -177,6 +177,22 @@ def compact(points, cells):
     return points[used], remap[cells]
 
 
+def sample_regular_grid(pts, vals, q):
+    """Bilinear sample of a field defined on the regular grid `pts` (as written by
+    write_phi_grid) at the query points `q`. None if `pts` is not such a grid."""
+    n = int(round(np.sqrt(len(pts))))
+    if n < 2 or n * n != len(pts):
+        return None
+    lo, hi = pts.min(axis=0), pts.max(axis=0)
+    span = np.where(hi - lo > 0, hi - lo, 1.0)
+    g = np.asarray(vals).reshape(n, n)  # sample k = j*n + i, so [j, i]
+    t = np.clip((q - lo) / span * (n - 1), 0, n - 1 - 1e-9)
+    i0, j0 = t[:, 0].astype(int), t[:, 1].astype(int)
+    fx, fy = t[:, 0] - i0, t[:, 1] - j0
+    return (g[j0, i0] * (1 - fx) * (1 - fy) + g[j0, i0 + 1] * fx * (1 - fy)
+            + g[j0 + 1, i0] * (1 - fx) * fy + g[j0 + 1, i0 + 1] * fx * fy)
+
+
 def dist_to_segments(q, a, b):
     """(nq,) exact distance from each query point to the nearest of the segments (a, b)."""
     ab = b - a  # (ns, 3)
@@ -498,9 +514,11 @@ def register_frame(prefix, points, dim, surf, err, mesh):
     out["region boundaries (green)"] = curve_or_surface("region boundaries", surf["region"], C_OTHER, 0.0022)
     out["envelope curves (orange)"] = curve_or_surface("envelope curves", surf["envelope"], C_INPUT, 0.0018)
 
-    if err is not None and dim == 3 and len(surf["offset"]):
+    if err is not None and len(surf["offset"]):
         _, _, dist, rel = err
-        m = ps.get_surface_mesh(prefix + "offset surface")
+        # In 2D the offset surface is a CURVE NETWORK, in 3D a surface mesh; both take vertex
+        # scalars, and the error along the offset is the first thing worth looking at.
+        m = (ps.get_surface_mesh if dim == 3 else ps.get_curve_network)(prefix + "offset surface")
         m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
                               vminmax=(0.0, float(rel.max())), enabled=True)
         m.add_scalar_quantity("distance to input", dist, cmap="viridis")
@@ -539,9 +557,29 @@ def main():
             sys.exit("missing mesh: %s" % m)
     series = len(meshes) > 1
 
+    # THE RUN'S OWN DISTANCE FIELD, where it wrote one. Everything below prefers it to the
+    # distance this viewer can compute for itself, and the difference is not small.
+    #
+    # The viewer measures the offset against the band's INNER INTERFACE, because the result mesh
+    # is all it has -- but the offset band REPLACES the tags on the faces it grows through, so
+    # the region the offset was measured from is only partly still tagged in the output. On
+    # topological_offset_2d_dragon that is 605 of the input's 1579 cells, and measuring against
+    # the survivors reported the worst offset vertex at 92% of delta off target where the run's
+    # own number -- against the input as LOADED -- is 5.5%, which an independent check confirmed.
+    #
+    # <output>_phi.vtu carries `euclidean_distance` sampled from the very BVH the run used, so
+    # reading it back is the same measurement rather than a reconstruction of it.
+    phi_grid = load_phi_grid(meshes)
+
     frames = []
     for k, path in enumerate(meshes):
         points, dim, groups, surf, delta, prov, err, mesh = load(path, cfg)
+        if phi_grid is not None and len(surf["offset"]):
+            op, oc = compact(points, surf["offset"])
+            d = sample_regular_grid(
+                phi_grid[1], np.asarray(phi_grid[3]["euclidean_distance"]).ravel(), op[:, :2])
+            if d is not None:
+                err = (op, oc, d, np.abs(d - delta) / delta)
         frames.append((path, points, dim, groups, surf, delta, prov, err, mesh))
         if k == 0 or not series:
             print("mesh   %s  (%s)" % (path, "tets" if dim == 3 else "triangles"))
@@ -556,8 +594,11 @@ def main():
                       " they are the offset boundary and the input surface, not decoration)")
             if err is not None:
                 _, _, dist, rel = err
-                print("  offset vertices: dist to input  min %.6g  max %.6g   |err|/delta  avg %.4f  max %.4f"
-                      % (dist.min(), dist.max(), rel.mean(), rel.max()))
+                print("  offset vertices: dist to input  min %.6g  max %.6g   |err|/delta  avg %.4f  max %.4f  [%s]"
+                      % (dist.min(), dist.max(), rel.mean(), rel.max(),
+                         "sampled from the run's own distance field"
+                         if phi_grid is not None else
+                         "measured against the band's inner interface -- see the note in main()"))
             elif not series:
                 print("  distance layer omitted: no input-region cells to measure against"
                       " (edge or vertex input complex, or empty surfaces)")
@@ -581,7 +622,6 @@ def main():
     # The potential, ONE structure for the whole series: the input complex never moves, so
     # neither does phi, and re-registering it per frame would only cost memory.
     phi_struct = None
-    phi_grid = load_phi_grid(meshes) if dim == 2 else None
     if phi_grid is not None:
         src, pts, cells, pdata = phi_grid
         # meshio hands back (N, 1) for a scalar point field; polyscope wants (N,).
