@@ -366,6 +366,10 @@ public:
     std::vector<std::array<int, 3>> op_counts;
     std::atomic<int> iter_cnt_split = 0, iter_cnt_collapse = 0, iter_cnt_swap = 0;
     /// Operations refused because they would have left an offset-boundary face over tolerance.
+    /// The worst offset-face criterion around the operation, captured before it runs -- the bar
+    /// its `after` hook compares against, mirroring how the AMIPS gates use cache.max_energy.
+    wmtk::threading::enumerable_thread_specific<double> m_collapse_offset_rel_before;
+    wmtk::threading::enumerable_thread_specific<double> m_swap_offset_rel_before;
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
     /// Splits of an OFFSET-boundary edge: offered, accepted. The 3D twin showed splits landing

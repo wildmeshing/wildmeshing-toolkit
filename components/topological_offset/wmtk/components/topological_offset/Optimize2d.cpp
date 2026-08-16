@@ -199,6 +199,15 @@ void TopoOffsetTriMesh::label_offset_boundary()
 
 bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
 {
+    // The bar swap_edge_after() compares against, captured before the flip runs.
+    if (m_offset_potential) {
+        double worst = 0.;
+        for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
+            worst = std::max(worst, face_criterion_rel(fid));
+        }
+        m_swap_offset_rel_before.local() = worst;
+    }
+
     if (!TriOptimizerMesh::swap_edge_before(t)) {
         return false;
     }
@@ -356,11 +365,13 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
     // for the argument, which is identical. A flip moves no vertex, but the diagonal it picks
     // decides whether the boundary follows the level set or cuts across it.
     if (m_offset_potential) {
+        double after = 0.;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
-            if (face_criterion_rel(fid) > 1.0) {
-                ++iter_cnt_swap_offset_reject;
-                return false;
-            }
+            after = std::max(after, face_criterion_rel(fid));
+        }
+        if (after > m_swap_offset_rel_before.local()) {
+            ++iter_cnt_swap_offset_reject;
+            return false;
         }
     }
     ++iter_cnt_swap;
@@ -372,16 +383,20 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::collapse_edge_after(t)) {
         return false;
     }
-    // A COLLAPSE IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES. See the declaration
-    // for the argument. FLAT, not "no worse than before": a before/after bar reads the max over a
-    // patch, so one already-bad face licenses coarsening its whole neighbourhood -- measured in
-    // 3D, the worse-of bar still let the offset surface fall from 1172 faces to 496.
+    // A COLLAPSE IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES, and NON-DEGRADING
+    // rather than absolute -- see the declaration. An absolute bar refuses a collapse for the
+    // state the mesh is already in rather than for the change the collapse makes; measured on
+    // the dragon, that made a degenerate face permanent (collapse is what removes one, and its
+    // neighbour being over tolerance refused the removal forever) and pinned AMIPS at
+    // MAX_ENERGY for the rest of the run.
     if (m_offset_potential) {
+        double after = 0.;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
-            if (face_criterion_rel(fid) > 1.0) {
-                ++iter_cnt_collapse_offset_reject;
-                return false;
-            }
+            after = std::max(after, face_criterion_rel(fid));
+        }
+        if (after > m_collapse_offset_rel_before.local()) {
+            ++iter_cnt_collapse_offset_reject;
+            return false;
         }
     }
     return true;
@@ -403,6 +418,17 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
 
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
 {
+    // The bar collapse_edge_after() compares against, captured before the collapse runs.
+    if (m_offset_potential) {
+        double worst = 0.;
+        for (const size_t v : {v1_id, v2_id}) {
+            for (const size_t fid : get_one_ring_fids_for_vertex(v)) {
+                worst = std::max(worst, face_criterion_rel(fid));
+            }
+        }
+        m_collapse_offset_rel_before.local() = worst;
+    }
+
     // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position). The
     // domain boundary may not lose a vertex: the box is not something to be coarsened.
     //

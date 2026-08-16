@@ -197,7 +197,12 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     if (m_collapse_limit_length && VA[v1_id].m_is_rounded) {
         const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
         const double len2 = cache.edge_length * cache.edge_length;
-        if (len2 > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+        // UNCONDITIONAL, where this used to fire only for an edge longer than the collapse
+        // target. A collapse that makes the worst element in the ring worse is a bad collapse
+        // whatever the edge's length is; exempting short edges meant the overwhelming majority
+        // of collapses -- the ones a length-driven pass actually performs -- had no quality gate
+        // at all, and could freely degrade the mesh.
+        {
             double max_after = 0.;
             for (const double q : cache.changed_energies) {
                 max_after = std::max(max_after, q);

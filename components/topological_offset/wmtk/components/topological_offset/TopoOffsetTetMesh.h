@@ -574,6 +574,11 @@ public:
 private:
 public:
 private:
+    /// The worst offset-face criterion around the operation, captured before it runs -- the bar
+    /// its `after` hook compares against, mirroring how the AMIPS gates use cache.max_energy.
+    wmtk::threading::enumerable_thread_specific<double> m_collapse_offset_rel_before;
+    wmtk::threading::enumerable_thread_specific<double> m_swap_offset_rel_before;
+
     bool swap_capture_tag(const std::vector<size_t>& tids);
     /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
     wmtk::threading::enumerable_thread_specific<CellTag> m_swap_tag;

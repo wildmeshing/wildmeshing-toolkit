@@ -102,6 +102,17 @@ bool TopoOffsetTetMesh::swap_before_surface(
         return false;
     }
 
+    // The bar swap_after_cells() compares against, captured before the flip.
+    if (m_offset_potential) {
+        double worst = 0.;
+        for (const size_t v : {a, b, c, d}) {
+            for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v))) {
+                worst = std::max(worst, face_criterion_rel(f));
+            }
+        }
+        m_swap_offset_rel_before.local() = worst;
+    }
+
     // An OFFSET-surface flip is allowed unconditionally. It used to be gated on
     // offset_swap_normal_deviation_ok(), which refused a flip whose new diagonal made the
     // sampled field normals disagree more than the old one did -- a proxy for "this flip cuts
@@ -132,6 +143,7 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // the offset surface untouched and the check would be pure cost.
     if (is_surface_flip && m_offset_potential) {
         std::set<size_t> seen;
+        double after = 0.;
         for (const size_t t : tids) {
             const std::array<size_t, 4> vs = oriented_tet_vids(t);
             for (int skip = 0; skip < 4; ++skip) {
@@ -144,11 +156,12 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
                 if (!f.is_valid(*this)) continue;
                 if (!seen.insert(f.fid(*this)).second) continue;
                 if (!face_is_offset_surface_live(f)) continue;
-                if (face_criterion_rel(f) > 1.0) {
-                    ++iter_cnt_swap_offset_reject;
-                    return false;
-                }
+                after = std::max(after, face_criterion_rel(f));
             }
+        }
+        if (after > m_swap_offset_rel_before.local()) {
+            ++iter_cnt_swap_offset_reject;
+            return false;
         }
     }
     ++iter_cnt_swap;

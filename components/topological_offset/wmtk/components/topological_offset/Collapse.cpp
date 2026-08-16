@@ -54,6 +54,18 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         return false;
     }
 
+    // The bar collapse_after_connectivity() compares against: how bad the offset surface around
+    // this edge already is. Captured here because the removed vertex's faces are gone afterwards.
+    if (m_offset_potential) {
+        double worst = 0.;
+        for (const size_t v : {v1_id, v2_id}) {
+            for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v))) {
+                worst = std::max(worst, face_criterion_rel(f));
+            }
+        }
+        m_collapse_offset_rel_before.local() = worst;
+    }
+
     return true;
 }
 
@@ -78,17 +90,22 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // the run is for. So the guard is the criterion itself, flat: after the collapse, no offset
     // face at the surviving vertex may be over tolerance.
     //
-    // FLAT, not "no worse than before". A before/after bar reads the max over a patch, so a
-    // single face that is already bad licenses coarsening its whole neighbourhood -- nothing
-    // there can raise the max. That is the leak the 3D normal-deviation guard was rewritten to
-    // close before this port, and it is the same leak here: with the worse-of bar the surface
-    // still fell to 496 faces.
+    // NON-DEGRADING, mirroring the AMIPS gate a few lines up rather than imposing an absolute
+    // bar. The first version of this WAS absolute -- refuse if any offset face at the survivor
+    // is over tolerance -- and that is a different rule from the one every other operation
+    // obeys: it refuses a collapse for the state the mesh is already IN rather than for the
+    // change the collapse makes. Early in a run most offset faces are over tolerance, so it
+    // froze them, and in 2D it made a degenerate face permanent -- collapse is what removes
+    // one, and its neighbour being over tolerance refused the removal forever, pinning AMIPS at
+    // MAX_ENERGY for the rest of the run.
     if (m_offset_potential) {
+        double after = 0.;
         for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v2_id))) {
-            if (face_criterion_rel(f) > 1.0) {
-                ++iter_cnt_collapse_offset_reject;
-                return false;
-            }
+            after = std::max(after, face_criterion_rel(f));
+        }
+        if (after > m_collapse_offset_rel_before.local()) {
+            ++iter_cnt_collapse_offset_reject;
+            return false;
         }
     }
     ++iter_cnt_collapse;
