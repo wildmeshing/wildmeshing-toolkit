@@ -22,11 +22,15 @@ message(STATUS "Third-party: creating target 'ipc::toolkit'")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Eigen FIRST, and deliberately. ipc-toolkit ships its own recipes/eigen.cmake, which creates the
-# same Eigen3::Eigen target and defaults EIGEN_DONT_VECTORIZE to ON -- whichever recipe runs first
-# wins, and the loser returns early. Creating the target from wmtk's recipe here means wmtk's
-# settings are the ones the whole build gets, including the ABI pin that recipe pins.
+# EIGEN AND GEOGRAM FIRST, and deliberately. ipc-toolkit ships its own recipe for each, and both
+# recipes -- theirs and ours -- open with `if(TARGET ...) return()`, so whichever runs first wins
+# and the loser is a no-op. Creating both targets here means wmtk's settings are the ones the
+# whole build gets: the Eigen ABI pin (recipes/eigen.cmake) and geogram at a version whose
+# bundled PoissonRecon still compiles on current MSVC (recipes/geogram.cmake). Each of those
+# files explains what breaks without it; both broke the build in ways that surface a long way
+# from here.
 include(eigen)
+include(geogram)
 
 include(CPM)
 CPMAddPackage(
