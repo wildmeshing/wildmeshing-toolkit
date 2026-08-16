@@ -944,8 +944,298 @@ TopoOffsetTetMesh::mean_ratio_metric(const Vector3d& p0, const Vector3d& p1, con
     return prefactor * area / sq_length_sum;
 }
 
+void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
+{
+    // A VERTEX ON BOTH SURFACES IS UNSATISFIABLE, not merely awkward. It sits at distance 0 from
+    // the input complex, where Phi diverges, and is simultaneously required to sit on the level
+    // set at distance target_distance. No placement satisfies both, so no amount of smoothing or
+    // refinement can fix it -- which is why the rest of the component quietly steps around it:
+    // smoothing_extra_energy() gives it no offset term, band_vertex_is_reachable() drops it from
+    // the metric, and residual_split() books it under max_pinned. Stepping around it is right for
+    // the measurement and wrong as a response: it means a construction defect can sit in the mesh
+    // contributing nothing but a surface that cannot be placed, and never say so.
+    //
+    // ON THE BOUNDING BOX IS DIFFERENT and deliberately not checked here. Such a vertex is
+    // constrained but not contradictory -- it slides on the box and can still reach the level set
+    // where the box permits -- and it is a legitimate outcome of growth meeting the domain edge.
+    //
+    // Checked after every phase, not only at construction: collapse_after_vertex() ORs the two
+    // flags onto the surviving vertex, so a collapse that merges an offset vertex into an input
+    // one CREATES this state out of two individually fine vertices.
+    std::vector<size_t> both;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (m_vertex_extra[vid].m_is_on_offset && m_vertex_extra[vid].m_is_on_input) {
+            both.push_back(vid);
+        }
+    }
+    if (both.empty()) {
+        return;
+    }
+
+    const size_t n_show = std::min<size_t>(both.size(), 8);
+    std::string detail;
+    for (size_t i = 0; i < n_show; ++i) {
+        const size_t vid = both[i];
+        const double d = m_input_complex_bvh.dist(VectorXd(m_vertex_attribute[vid].m_posf));
+        detail += fmt::format("{}{} (dist to input {:.6g})", i ? ", " : "", vid, d);
+    }
+    log_and_throw_error(
+        "[{}] {} vertices are on BOTH the input complex and the offset surface. Such a vertex is "
+        "at distance 0 from the input and is asked to be at target_distance {} from it at the "
+        "same time, so the optimization cannot place it and the offset surface through it cannot "
+        "converge. This is a construction defect, not an optimization failure. Offending "
+        "vertices: {}{}",
+        when,
+        both.size(),
+        m_offset_params.target_distance,
+        detail,
+        both.size() > n_show ? ", ..." : "");
+}
+
+void TopoOffsetTetMesh::rebuild_offset_envelope()
+{
+    std::vector<Eigen::Vector3d> V(vert_capacity());
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        V[i] = m_vertex_attribute[i].m_posf;
+    }
+    std::vector<Eigen::Vector3i> F;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const auto vs = get_face_vids(f);
+        F.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
+    }
+    if (F.empty()) {
+        // Nothing to hold. Not an error: a run whose offset region never formed has other
+        // problems, and they are reported where they happen.
+        m_offset_envelope = nullptr;
+        logger().warn("\t[phase A] no offset-surface faces; the offset envelope is empty");
+        return;
+    }
+
+    // ONE PHI TOLERANCE by default, so Phase A may move the offset surface by exactly as much as
+    // the convergence test is willing to ignore. Tighter and Phase A cannot improve the elements
+    // straddling the surface at all; looser and it can undo a Phi that Phase B had already
+    // brought inside tolerance.
+    const double eps =
+        std::max(m_offset_params.ab_offset_envelope_rel * offset_residual_tolerance(), 1e-12);
+
+    m_offset_envelope = std::make_shared<SampleEnvelope>();
+    m_offset_envelope->use_exact = true;
+    m_offset_envelope->init(V, F, eps);
+    logger().info(
+        "\t[phase A] offset envelope rebuilt: {} faces, eps {:.6g} ({:.4}x the Phi tolerance)",
+        F.size(),
+        eps,
+        m_offset_params.ab_offset_envelope_rel);
+}
+
+size_t TopoOffsetTetMesh::phase_b_smooth()
+{
+    // SMOOTHING ONLY, TO A FIXED POINT. No topology: Phase B's single job is to move the offset
+    // surface onto the level set, and the mesh it does that on is whatever Phase A left. Running
+    // to convergence rather than for a fixed count is what makes the stuck check afterwards
+    // meaningful -- a face still over tolerance once nothing moves is one smoothing genuinely
+    // cannot place, which is a resolution problem and therefore the sizing field's business.
+    std::vector<Vector3d> before(vert_capacity());
+
+    size_t pass = 0;
+    double disp = 0.;
+    for (; pass < size_t(std::max(1, m_offset_params.ab_smooth_max_passes)); ++pass) {
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            before[i] = m_vertex_attribute[i].m_posf;
+        }
+
+        smooth_all_vertices(1);
+
+        disp = 0.;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            disp = std::max(disp, (m_vertex_attribute[vid].m_posf - before[vid]).norm());
+        }
+        // Relative to the target edge length, so the test means the same thing at any scale.
+        const double tol = m_offset_params.ab_smooth_tol * std::max(m_params.l, 1e-16);
+        logger().info(
+            "\t[phase B] pass {}: max vertex displacement {:.6g} (tol {:.6g})",
+            pass + 1,
+            disp,
+            tol);
+        if (disp <= tol) {
+            ++pass;
+            break;
+        }
+    }
+    return pass;
+}
+
+size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
+{
+    // WHAT SMOOTHING COULD NOT PLACE. Phase B has just run to a fixed point, so an offset face
+    // still over tolerance is not badly placed, it is under-resolved: the three vertices are
+    // where the energy wants them and the triangle between them still cuts across the level set.
+    // That is the one situation refinement actually answers, which is why this is the only place
+    // Phi is allowed to drive the sizing field -- unlike the joint loop, where the field was
+    // refined whenever the combined metric stalled, which was nearly every iteration regardless
+    // of whether Phi needed resolution.
+    const double tol = offset_residual_tolerance();
+    std::vector<std::pair<double, std::array<size_t, 3>>> stuck;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const double score = face_criterion_rel(f);
+        if (score <= 1.0) continue;
+        stuck.emplace_back(score, get_face_vids(f));
+    }
+    if (stuck.empty()) {
+        return 0;
+    }
+    std::sort(stuck.begin(), stuck.end(), [](const auto& a, const auto& b) {
+        return a.first > b.first;
+    });
+    const size_t n_worst = (m_params.stuck_refine_num_worst > 0)
+                               ? std::min<size_t>(stuck.size(), m_params.stuck_refine_num_worst)
+                               : stuck.size();
+
+    std::vector<size_t> seeds;
+    seeds.reserve(3 * n_worst);
+    for (size_t i = 0; i < n_worst; ++i) {
+        for (const size_t v : stuck[i].second) seeds.push_back(v);
+    }
+    const auto region = wmtk::utils::grow_vertex_region(
+        seeds,
+        std::max(0, m_params.stuck_refine_rings),
+        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
+    const auto refined = wmtk::utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        s_floor,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+    wmtk::utils::gradation_smooth_sizing(
+        m_offset_params.sizing_gradation,
+        refined,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
+        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+
+    logger().info(
+        "\t[phase B] {} of {} offset faces stuck over tolerance (worst {:.4}x), refined {} of {} "
+        "region vertices (floor {:.4})",
+        n_worst,
+        stuck.size(),
+        stuck.front().first,
+        refined.size(),
+        region.size(),
+        s_floor);
+    return refined.size();
+}
+
+void TopoOffsetTetMesh::optimize_offset_alternating()
+{
+    const int rounds = std::max(1, m_offset_params.ab_max_rounds);
+    const int a_iters = std::max(1, m_offset_params.ab_phase_a_iterations);
+
+    // Before anything runs, so a construction defect is reported as one rather than surfacing
+    // later as a residual that will not converge.
+    check_no_vertex_on_both_surfaces("construction");
+
+    for (int round = 0; round < rounds; ++round) {
+        // ---- PHASE A: TetWild, with the offset held inside its envelope ----
+        logger().info("======== A/B round {} / {}: phase A ========", round + 1, rounds);
+        m_phase = OptPhase::A;
+        rebuild_offset_envelope();
+        mesh_improvement(a_iters);
+
+        // ASK THE LOOP, in the loop's own units. Recomputing the bar by hand is what produced the
+        // first two bugs in this driver: optimization_quality_stats() reports AMIPS against
+        // optimization_stop_metric() = stop_energy, while cell_quality is AMIPS^3, so a check
+        // written as cell_quality/stop_energy > 1 fails a Phase A that converged -- measured, it
+        // read 4845.51 where the loop read 78.5 against 100 and had already stopped.
+        const double amips = std::get<0>(optimization_quality_stats());
+        const double bar = optimization_stop_metric();
+        if (m_params.debug_output) {
+            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+
+        // PHASE A HAS TO CONVERGE. It is TetWild on a mesh TetWild can improve, with the offset
+        // surface pinned to a tolerance-wide tube; if element quality is still above stop_energy
+        // when the loop gives up, something is wrong that iterating further will not fix, and
+        // continuing into Phase B would optimize the offset on a mesh that cannot carry it.
+        if (amips > bar) {
+            log_and_throw_error(
+                "Phase A did not converge within {} iterations: max element quality {:.6} against "
+                "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
+                "{}), or the mesh has elements no operation can fix.",
+                a_iters,
+                amips,
+                bar,
+                m_offset_params.ab_offset_envelope_rel);
+        }
+        logger().info("\t[phase A] converged: max element quality {:.4} (stop {:.4})", amips, bar);
+        // Phase A collapses can merge an offset vertex into an input one, and
+        // collapse_after_vertex() ORs both flags onto the survivor.
+        check_no_vertex_on_both_surfaces(fmt::format("round {} phase A", round + 1).c_str());
+
+        // ---- PHASE B: smoothing only, and the stuck check ----
+        logger().info("======== A/B round {} / {}: phase B ========", round + 1, rounds);
+        m_phase = OptPhase::B;
+        // Released, so smoothing can actually move the surface. Phase A rebuilds it next round
+        // around wherever this leaves it.
+        m_offset_envelope = nullptr;
+
+        const size_t passes = phase_b_smooth();
+
+        const DistanceSplit r = residual_split();
+        report_outside_support("A/B round", r);
+        const double phi = r.max_reachable / offset_residual_tolerance();
+        logger().info(
+            "\t[phase B] {} smoothing passes, max Phi residual {:.4}x tolerance",
+            passes,
+            phi);
+        if (m_params.debug_output) {
+            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+
+        if (phi <= 1.0) {
+            logger().info(
+                "A/B converged after {} round(s): amips {:.4}x, phi {:.4}x",
+                round + 1,
+                amips,
+                phi);
+            return;
+        }
+
+        // Not converged: refine where smoothing could not place the surface, and let the next
+        // Phase A rebuild the mesh at that resolution.
+        refine_sizing_where_phi_is_stuck();
+    }
+
+    logger().warn(
+        "A/B did not converge in {} rounds (ab_max_rounds); the offset residual is still above "
+        "tolerance",
+        rounds);
+}
+
 std::tuple<double, double> TopoOffsetTetMesh::optimization_quality_stats()
 {
+    // PHASE A IS TETWILD, so its metric is TetWild's: element quality alone, in units of
+    // stop_energy, with no Phi term in the stop test, the stall test or the refinement ranking.
+    // The offset is not unattended there -- m_offset_envelope holds it -- and mixing Phi back in
+    // is exactly what made the two criteria fight, since a Phi that cannot improve holds the
+    // metric up and keeps the stall detector firing on a mesh whose quality is still descending.
+    // DELEGATED, not reimplemented. The base's version IS TetWild's, and it reports ABSOLUTE
+    // AMIPS against optimization_stop_metric() = stop_energy. Returning a normalized metric here
+    // instead -- 1.0 means converged, as Phase B does -- silently broke the stall refinement,
+    // because refine_sizing_around_worst derives its filter from this number and then compares it
+    // against cbrt(cell_quality), which is absolute: with stop_energy 10 the filter came out at
+    // 100 while the worst element scored 97, so select_worst_cells returned nothing, no sizing
+    // was refined and no force-split edge was ever queued. Phase A stalled at exactly 91783.4 for
+    // every one of its 20 iterations with the stall detector firing 19 times and doing nothing.
+    // Units are part of "identical to TetWild".
+    if (m_phase == OptPhase::A) {
+        return wmtk::TetOptimizerMesh::optimization_quality_stats();
+    }
+
     // The engine's "quality" is the offset's own criterion: (max, avg) PHI RESIDUAL over the
     // reachable band, normalized so 1.0 is the tolerance. mesh_improvement() stops when the max
     // drops below optimization_stop_metric() = 1.0, i.e. exactly when the whole offset surface --
@@ -987,8 +1277,78 @@ std::tuple<double, double> TopoOffsetTetMesh::optimization_quality_stats()
     return {std::max(amips, phi), std::max(amips, r.avg_reachable / tol)};
 }
 
-size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
+size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
 {
+    // ONE SIZING FIELD, TWO REASONS TO REFINE IT.
+    //
+    // In PHASE A this is TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element
+    // quality, clamped the same way, seeding the same force-split edges. Phase A is TetWild, and
+    // that includes how it responds to a stall; the field it writes is the same field Phase B
+    // reads and writes, so the refinement each phase asks for accumulates rather than competing.
+    //
+    // Note the force-split half, which the offset has never had: TetWild records each worst
+    // tet's LONGEST edge and split_all_edges splits exactly those, bypassing the length gate
+    // and without touching the sizing field. That is how a stuck sliver gets broken up rather
+    // than merely surrounded by a finer field, and its absence is measurable -- [force-split]
+    // fired 0 times in every offset run to date.
+    if (m_phase == OptPhase::A) {
+        const int n_rings = std::max(0, m_params.stuck_refine_rings);
+        // Clamped above exactly as TetWild does: without it a single degenerate tet sets the
+        // filter so high that refinement sees only the degenerate ones and stops fixing the
+        // merely-bad tets it exists for.
+        const double filter_energy =
+            std::min(std::max(max_metric / 100, m_params.stop_energy), 100.);
+
+        // cell_quality is AMIPS^3, so the energy "max energy" refers to is its cube root.
+        const auto worst = wmtk::utils::select_worst_cells(
+            tet_capacity(),
+            [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
+            [this](size_t tid) { return std::cbrt(cell_quality(tid)); },
+            filter_energy,
+            m_params.stuck_refine_num_worst);
+        if (worst.empty()) {
+            return 0;
+        }
+
+        m_force_split_edges.clear();
+        if (m_params.stuck_refine_force_split) {
+            for (const auto& [unused_score, tid] : worst) {
+                m_force_split_edges.insert(wmtk::utils::longest_edge(
+                    oriented_tet_vids(tid),
+                    [this](size_t vid) -> const Vector3d& {
+                        return m_vertex_attribute[vid].m_posf;
+                    }));
+            }
+        }
+
+        std::vector<size_t> seeds;
+        seeds.reserve(4 * worst.size());
+        for (const auto& [unused_score, tid] : worst) {
+            for (const size_t v : oriented_tet_vids(tid)) seeds.push_back(v);
+        }
+        const auto region = wmtk::utils::grow_vertex_region(
+            seeds,
+            n_rings,
+            [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
+
+        const auto refined = wmtk::utils::apply_sizing_refinement(
+            region,
+            m_params.stuck_refine_factor,
+            m_params.stuck_refine_min_scalar,
+            [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+        gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+        logger().info(
+            "[stuck-refine A] {} worst tets (max energy {:.4}, filter {:.4}), refined {} of {} "
+            "region vertices",
+            worst.size(),
+            max_metric,
+            filter_energy,
+            refined.size(),
+            region.size());
+        return refined.size();
+    }
+
     // THE ENGINE'S STRATEGY, DRIVEN BY THE OFFSET'S CRITERION. mesh_improvement() calls this only
     // when the metric STALLS, and this refines only around the worst-scoring offset-surface
     // faces -- TetWildMesh::refine_sizing_around_worst() with face_criterion_rel() in place of
@@ -1740,7 +2100,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
-    mesh_improvement(m_offset_params.max_iterations);
+    optimize_offset_alternating();
 
     // Cumulative over the whole run, not per iteration as before: the engine loop has no
     // per-iteration hook, and the per-pass numbers it logs itself carry the history.

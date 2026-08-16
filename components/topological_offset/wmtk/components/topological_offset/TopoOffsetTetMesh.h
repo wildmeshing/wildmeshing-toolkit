@@ -112,6 +112,73 @@ public:
     static constexpr int OFFSET_SURFACE_CLASS = 1;
 
     /**
+     * @brief Which half of the alternating optimization is running.
+     *
+     * THE TWO CRITERIA ARE OPTIMIZED IN TURN, NOT JOINTLY. Driving AMIPS and the Phi residual
+     * from one loop put them in direct competition: split refined the band, the elements it
+     * produced were badly shaped, collapse removed them on quality grounds, and the next
+     * iteration started from where the last one did. Measured over 20 iterations on
+     * topological_offset_3d_convex: the metric's best value came at iteration 5 and drifted
+     * upward for the remaining fifteen, while every iteration ran split 945 -> 11973 vertices
+     * followed by collapse 11973 -> 742.
+     *
+     * PHASE A is TetWild, and nothing else. Same operations, same gates, same sizing field,
+     * same stall-driven refinement -- the offset contributes no energy term, no acceptance
+     * criterion and no stop metric. Its one addition is m_offset_envelope: the offset surface
+     * may not leave a tube of one Phi tolerance around wherever Phase B last placed it. That
+     * turns "do not degrade the offset" from a per-operation criterion, which reached only the
+     * 2% of collapses that touch the offset surface, into a geometric constraint every
+     * operation already honours through surface_triangle_is_outside().
+     *
+     * PHASE B moves the offset surface and nothing else: smoothing passes against the offset
+     * energy, run to a fixed point, with no envelope on the offset (it is what has to travel)
+     * and no topological operations at all.
+     *
+     * The sizing field is SHARED and both phases write it: Phase A through TetWild's own
+     * stall refinement on element quality, Phase B through the Phi residual of the faces that
+     * smoothing could not place. One field, two reasons to refine it.
+     */
+    enum class OptPhase { A, B };
+
+    /// Which phase is running. Read by every hook that differs between them; see OptPhase.
+    OptPhase m_phase = OptPhase::A;
+
+    /**
+     * @brief The tube the offset surface may not leave during Phase A. Null in Phase B.
+     *
+     * REBUILT AT THE START OF EVERY PHASE A, from the offset surface as Phase B just left it,
+     * with eps = ab_offset_envelope_rel x the Phi tolerance. Rebuilding is what lets the
+     * surface still travel across rounds: each Phase A pins it near its current position, and
+     * each Phase B is free to move it somewhere the next Phase A will then pin.
+     *
+     * m_envelope, the INPUT complex's, is built once and never rebuilt -- that geometry is what
+     * the offset distance is measured against and may not drift at all.
+     */
+    std::shared_ptr<SampleEnvelope> m_offset_envelope;
+
+    /// Build m_offset_envelope from the current offset-surface triangles. Called at the start
+    /// of each Phase A.
+    void rebuild_offset_envelope();
+
+    /// Hard error if any vertex is on BOTH the input complex and the offset surface -- a state
+    /// no placement satisfies. Called at construction and after every phase; see the definition
+    /// for why a collapse can create it out of two individually fine vertices.
+    void check_no_vertex_on_both_surfaces(const char* when) const;
+
+    /// The A/B driver: Phase A (TetWild + offset envelope), Phase B (smoothing to a fixed point,
+    /// then refine where Phi is stuck), repeated until both criteria are inside tolerance or
+    /// ab_max_rounds is reached. Replaces the single mesh_improvement() call.
+    void optimize_offset_alternating();
+
+    /// Phase B's smoothing loop. Returns the number of passes run; stops when the largest vertex
+    /// displacement in a pass falls below ab_smooth_tol x l, or at ab_smooth_max_passes.
+    size_t phase_b_smooth();
+
+    /// Refine the shared sizing field around the offset faces that are still over tolerance
+    /// after Phase B converged. Returns the number of vertices whose scalar was lowered.
+    size_t refine_sizing_where_phi_is_stuck();
+
+    /**
      * @brief AVERAGE distance error, as a fraction of target_distance, above which a
      * non-converged run with respect_all_topologies is reported as topologically blocked.
      *
@@ -300,10 +367,19 @@ public:
     std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const override
     {
+        bool all_input = true, all_offset = true;
         for (const size_t v : vids) {
-            if (!m_vertex_extra[v].m_is_on_input) return nullptr;
+            all_input = all_input && m_vertex_extra[v].m_is_on_input;
+            all_offset = all_offset && m_vertex_extra[v].m_is_on_offset;
         }
-        return m_envelope;
+        // The input complex first: a face on BOTH surfaces carries input geometry, which may not
+        // drift at all, so its envelope wins over the offset's looser one.
+        if (all_input) return m_envelope;
+        // Phase A holds the offset where Phase B left it; Phase B is what moves it, so it is
+        // unconstrained there. Null when there is no offset envelope yet -- the construction
+        // phase runs before the first one is built.
+        if (all_offset && m_phase == OptPhase::A) return m_offset_envelope;
+        return nullptr;
     }
 
     /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
@@ -320,13 +396,21 @@ public:
      * growth left it would cap how far it can ever travel toward the level set. What holds it
      * is the offset term in the OBJECTIVE -- smoothing_extra_energy() below -- not a container.
      *
-     * Input-complex vertices are frozen outright by smooth_before(), so they never reach the
-     * smoother and need nothing here either. The 2D twin returns the base's answer for every
-     * other vertex because 2D tracks region-boundary curves as well; 3D tracks only these two.
+     * The 2D twin returns the base's answer for every other vertex because 2D tracks
+     * region-boundary curves as well; 3D tracks only these two.
+     *
+     * The INPUT complex is the other tracked surface and gets TetWild's answer -- m_envelope, in
+     * both roles -- because it is now smoothed like any TetWild surface vertex rather than
+     * frozen. See smooth_before(): what pins the input geometry is that m_input_complex_bvh and
+     * m_offset_potential are built once from the input as loaded, not that the mesh elements
+     * representing it are immovable.
      */
-    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t) const override
+    std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
     {
-        return nullptr;
+        if (m_vertex_extra[vid].m_is_on_offset && !m_vertex_extra[vid].m_is_on_input) {
+            return nullptr;
+        }
+        return m_envelope;
     }
 
     /**
@@ -339,11 +423,17 @@ public:
      * surface, which would refuse every move the offset term asks for. The input complex keeps
      * the envelope (its vertices are frozen anyway, so this only ever answers for a vertex on
      * both surfaces at once).
+     *
+     * ... except in PHASE A, where it is contained by m_offset_envelope like any other tracked
+     * surface. Phase A is TetWild and its smoothing minimises AMIPS alone; without a container
+     * nothing would stop it relocating the offset surface for the sake of element shape, which
+     * is precisely what Phase B then has to undo. Phase B keeps the original answer -- null --
+     * because that is the pass whose whole job is to move the surface.
      */
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
     {
         if (m_vertex_extra[vid].m_is_on_offset && !m_vertex_extra[vid].m_is_on_input) {
-            return nullptr;
+            return m_phase == OptPhase::A ? m_offset_envelope : nullptr;
         }
         return wmtk::TetOptimizerMesh::smoothing_containment_envelope(vid);
     }
@@ -364,6 +454,12 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
+        // PHASE A CARRIES NO OFFSET TERM AT ALL. It is TetWild, and TetWild's smoothing
+        // minimises AMIPS; the offset surface is held by m_offset_envelope there, not by an
+        // energy. Phase B is the only pass that places it.
+        if (m_phase != OptPhase::B) {
+            return nullptr;
+        }
         const auto& ve = m_vertex_extra[vid];
         if (!ve.m_is_on_offset || ve.m_is_on_input || !m_offset_potential) {
             return nullptr;
@@ -402,7 +498,15 @@ public:
      * tolerance; the engine's stop metric is therefore 1.0.
      */
     std::tuple<double, double> optimization_quality_stats() override;
-    double optimization_stop_metric() const override { return 1.; }
+
+    /// Phase A is TetWild, so it stops where TetWild stops: absolute AMIPS against stop_energy,
+    /// which is the base's default. Phase B's metric is the Phi residual normalized by its own
+    /// tolerance, so 1.0 means converged. The two must agree with optimization_quality_stats()
+    /// above -- a metric in one unit tested against a bar in another is what stalled Phase A.
+    double optimization_stop_metric() const override
+    {
+        return m_phase == OptPhase::A ? wmtk::TetOptimizerMesh::optimization_stop_metric() : 1.;
+    }
 
     /// The tolerance the Phi residual is measured against: a fraction of target_distance, so
     /// "how close is close enough" is stated in units of the offset the run asked for.

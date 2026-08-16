@@ -81,6 +81,16 @@ struct Parameters : public wmtk::OptimizerParameters
     // criterion is met. TriWild's `max_iterations`, under TriWild's name and default.
     int max_iterations;
 
+    /**
+     * The alternating optimization. See TopoOffsetTetMesh::OptPhase for why the two criteria are
+     * optimized in turn rather than jointly. 3D only for now; 2D still runs the joint loop.
+     */
+    int ab_max_rounds; ///< cap on A/B rounds
+    int ab_phase_a_iterations; ///< iterations of TetWild's loop inside one Phase A
+    int ab_smooth_max_passes; ///< cap on Phase B smoothing passes
+    double ab_smooth_tol; ///< "nothing moves any more", as a fraction of the target length l
+    double ab_offset_envelope_rel; ///< Phase A's offset envelope eps, in Phi tolerances
+
     // l_min from the paper: the shortest edge the sizing field may ask for. Tied to the OFFSET
     // DISTANCE rather than to the bounding box, because that is the scale the offset actually
     // has -- so it is given relatively, as a multiple of target_distance, and min_edge_length is
@@ -158,6 +168,11 @@ struct Parameters : public wmtk::OptimizerParameters
 
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
+        ab_max_rounds = json_params["ab_max_rounds"];
+        ab_phase_a_iterations = json_params["ab_phase_a_iterations"];
+        ab_smooth_max_passes = json_params["ab_smooth_max_passes"];
+        ab_smooth_tol = json_params["ab_smooth_tol"];
+        ab_offset_envelope_rel = json_params["ab_offset_envelope_rel"];
 
         min_edge_length = json_params["min_edge_length"];
         min_edge_length_rel = json_params["min_edge_length_rel"];

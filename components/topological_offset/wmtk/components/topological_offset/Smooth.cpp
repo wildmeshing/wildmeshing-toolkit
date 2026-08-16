@@ -21,12 +21,24 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
         }
         return false;
     }
-    // the input complex must stay exactly where it is: it is the geometry the offset is
-    // measured against, not something to be improved
-    if (m_vertex_extra[t.vid(*this)].m_is_on_input) {
-        ++m_smooth_trace.before_on_input;
-        return false;
-    }
+    // AN INPUT-COMPLEX VERTEX IS SMOOTHED, exactly as TetWild smooths a surface vertex.
+    //
+    // This used to refuse it: "the input complex must stay exactly where it is, it is the
+    // geometry the offset is measured against". The second half is true and the first half does
+    // not follow from it. What the offset is measured against is m_input_complex_bvh and
+    // m_offset_potential, both built ONCE from the input as loaded and never rebuilt -- so the
+    // distance field does not care where the mesh elements representing the complex end up. All
+    // freezing them bought was a fixed set of vertices; what it cost is that every element
+    // touching the input complex was unimprovable, and the faces pinned between two frozen
+    // vertices could never reach stop_energy.
+    //
+    // TetWild's mechanism is the right one and it is already here: the vertex is smoothed by the
+    // shared solver and held inside m_envelope, which smoothing_containment_envelope() answers
+    // for it, with the projection step smoothing_mode = "projected" performs. That is a
+    // tolerance the input surface may drift within, which is exactly what TetWild's own input
+    // surface gets -- not a licence to move anywhere.
+    //
+    // Measured before this change: 14758 of 229276 smoothing attempts refused here.
     return true;
 }
 
