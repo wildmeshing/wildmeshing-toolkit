@@ -374,7 +374,14 @@ public:
         return std::make_shared<OffsetEnergy3D>(m_offset_potential, m_params.w_envelope);
     }
 
-    void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
+    /// The driver hands a bare `debug_N`; put the frames beside the run's own output instead of
+    /// in whatever directory it happened to be launched from. Same as 2D's
+    /// write_smoothing_debug_output(), and what lets the viewer find them as a timeline -- it
+    /// globs `*debug_*.vtu` in the output directory and orders them by the counter.
+    void write_optimization_debug_output(const std::string& path) override
+    {
+        write_vtu(m_offset_params.output_path + "_" + path);
+    }
 
     /**
      * @brief The engine's stall-driven sizing refinement, driven by the offset's criterion.

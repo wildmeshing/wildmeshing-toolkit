@@ -1731,6 +1731,15 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     m_smooth_trace.reset();
 
     diag_offset_bands("pre");
+
+    // FRAME 0 IS THE MESH AS CONSTRUCTED, before the optimization touches it. The shared driver
+    // only writes a frame after each operation pass, so without this the timeline starts at the
+    // end of the first split and there is nothing to compare against. Consumes counter 0, so the
+    // driver's own frames run from 1 and the viewer's ordering is unchanged.
+    if (m_params.debug_output) {
+        write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+
     mesh_improvement(m_offset_params.max_iterations);
 
     // Cumulative over the whole run, not per iteration as before: the engine loop has no
