@@ -72,6 +72,14 @@ if(NOT WMTK_EIGEN_DEFS MATCHES "EIGEN_MAX_STATIC_ALIGN_BYTES")
         "wmtk_test_manifold_extraction and wmtk_test_topological_offset.")
 endif()
 
+# MSVC only defines M_PI when _USE_MATH_DEFINES is set before <cmath>, and ipc-toolkit does not
+# set it -- so high_order_contact/collisions/high_order_quadrature.hpp fails to compile with
+# `error C2065: 'M_PI': undeclared identifier`. PUBLIC because the offending use is in a header
+# wmtk includes, so the definition has to reach our translation units too. Invisible on
+# macOS/Linux, where the libc++ and libstdc++ <cmath> define M_PI unconditionally -- which is why
+# this only ever showed up on the Windows jobs.
+target_compile_definitions(ipc_toolkit PUBLIC _USE_MATH_DEFINES)
+
 # ipc-toolkit links its hash-map backends PRIVATE, but leaks them through the PUBLIC header
 # ipc/utils/unordered_map_and_set.hpp, so any consumer including it fails to find
 # <tsl/robin_map.h> / <absl/hash/hash.h>. Upstream's own test target works around this by
