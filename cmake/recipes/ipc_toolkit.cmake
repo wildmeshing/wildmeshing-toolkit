@@ -36,7 +36,7 @@ include(CPM)
 CPMAddPackage(
     NAME ipc_toolkit
     GITHUB_REPOSITORY wildmeshing/ipc-toolkit
-    GIT_TAG 5f301a258bb7cf9cd4e8fb7a348d1089aafcb0e7
+    GIT_TAG 67bb3d7a0e1486578bf321ee688d04a873bff06f
     OPTIONS
     "IPC_TOOLKIT_BUILD_TESTS OFF"
     "IPC_TOOLKIT_BUILD_PYTHON OFF"
@@ -70,31 +70,6 @@ if(NOT WMTK_EIGEN_DEFS MATCHES "EIGEN_MAX_STATIC_ALIGN_BYTES")
         "the targets that link ipc a different alignment for Vector2d/Vector4d/Vector3r than "
         "the rest of the build, and Eigen's unaligned-array assert aborts "
         "wmtk_test_manifold_extraction and wmtk_test_topological_offset.")
-endif()
-
-# MSVC only defines M_PI when _USE_MATH_DEFINES is set before <cmath>, and ipc-toolkit does not
-# set it -- so high_order_contact/collisions/high_order_quadrature.hpp fails to compile with
-# `error C2065: 'M_PI': undeclared identifier`. PUBLIC because the offending use is in a header
-# wmtk includes, so the definition has to reach our translation units too. Invisible on
-# macOS/Linux, where the libc++ and libstdc++ <cmath> define M_PI unconditionally -- which is why
-# this only ever showed up on the Windows jobs.
-target_compile_definitions(ipc_toolkit PUBLIC _USE_MATH_DEFINES)
-
-# ipc-toolkit's high_order_contact headers use std::array, std::uint*_t and <algorithm> without
-# including them, and get away with it on libc++ and libstdc++, which pull those in transitively
-# through other standard headers. MSVC's do not, so the Windows build fails with things like
-#
-#     high_order_contact_parameters.hpp(13): error C2079:
-#       'ipc::FaceQuadPoint::lambda' uses undefined class 'std::array<double,3>'
-#
-# Force-include them rather than fix the headers here: this is a mirror we do not want to fork
-# for whitespace-level changes, and the alternative is one CI round trip per missing include.
-# PUBLIC for the same reason as _USE_MATH_DEFINES -- the offending declarations are in headers
-# wmtk includes, so our translation units need the same treatment.
-#
-# TODO: push the includes upstream to wildmeshing/ipc-toolkit and drop this.
-if(MSVC)
-    target_compile_options(ipc_toolkit PUBLIC /FIarray /FIcstdint /FIalgorithm)
 endif()
 
 # ipc-toolkit links its hash-map backends PRIVATE, but leaks them through the PUBLIC header
