@@ -535,6 +535,24 @@ bool TopoOffsetTetMesh::split_after_cells(
     const size_t v_id,
     const std::vector<Tuple>&)
 {
+    // THE NEW VERTEX'S SURFACE MEMBERSHIP, DERIVED FROM ITS ENDPOINTS RATHER THAN FROM THE
+    // CACHE. A vertex placed on an edge lies on whichever tracked surfaces BOTH endpoints lie
+    // on -- that is what it means to be on the edge -- and v1_id and v2_id are right here, so
+    // there is nothing to carry and nothing to get out of step.
+    //
+    // The cache held is_edge_on_offset from split_before_cells(), and something on that path
+    // loses it: instrumented on topological_offset_3d_convex, 4258 offset edges reach
+    // split_edge_before per 3 iterations, 0 are frozen, 422 are refused by the base -- and only
+    // 41 arrived here with the flag set. The consequence is not a bad diagnostic, it is the
+    // offset surface failing to grow: an unmarked vertex is not an offset vertex, so the faces
+    // around it stop being offset faces, so the splits that DID happen bought nothing. 2D never
+    // showed this because it re-derives the whole offset boundary from the face labels every
+    // iteration (label_offset_boundary(), from optimization_iteration_begin()), which papers
+    // over exactly this class of loss; 3D marks m_is_on_offset once in optimize_offset() and has
+    // nothing to fall back on.
+    m_vertex_extra[v_id].m_is_on_offset =
+        m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
+
     const auto& cache = m_opt_split_cache.local();
     for (const size_t v_end : {v1_id, v2_id}) {
         const simplex::Edge half(v_end, v_id);
@@ -575,16 +593,17 @@ bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vect
     // split_after_vertex()'s own below.
     const auto& cache = m_opt_split_cache.local();
     m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_input;
-    m_vertex_extra[v_id].m_is_on_offset = cache.is_edge_on_offset;
     return true; // the position itself is the base's business, and it is happy with it
 }
 
 void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge_open_boundary)
 {
     const auto& cache = m_opt_split_cache.local();
-    // The base has already set m_is_on_surface, which is the union; these say which.
+    // The base has already set m_is_on_surface, which is the union; this says which. The offset
+    // half is NOT rewritten here -- split_after_cells() has already derived it from the two
+    // endpoints, which is the authority; taking the cache's answer again would put the loss it
+    // suffers back.
     m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_input;
-    m_vertex_extra[v_id].m_is_on_offset = cache.is_edge_on_offset;
     if (is_edge_open_boundary) {
         m_vertex_attribute[v_id].m_order = 2;
     }
