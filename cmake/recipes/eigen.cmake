@@ -47,6 +47,34 @@ if(EIGEN_DONT_VECTORIZE)
   target_compile_definitions(Eigen3_Eigen INTERFACE EIGEN_DONT_VECTORIZE)
 endif()
 
+# PIN EIGEN'S ABI FOR THE WHOLE BUILD. Not a tuning knob -- a correctness requirement.
+#
+# Eigen's alignment is normally inferred per translation unit, and EIGEN_MAX_STATIC_ALIGN_BYTES
+# is part of the ABI: it sets alignof() for every fixed-size type whose byte size is a multiple
+# of 16 (Vector2d, Vector4d, Matrix2d, Matrix4d, and wmtk's own Vector2r/Vector3r, since an
+# mpq_t is 32 bytes). Two translation units that infer it differently disagree about the layout
+# of those types while agreeing on their mangled names, so the linker merges inline definitions
+# from both worlds arbitrarily and a caller built for 8-byte alignment hands its stack slot to a
+# callee built for 16.
+#
+# That is not hypothetical here. ipc-toolkit exports EIGEN_DONT_VECTORIZE PUBLIC (see
+# recipes/ipc_toolkit.cmake), which zeroes the inferred alignment -- but only for the targets
+# that link it. Core wildmeshing_toolkit does not link it and kept 16. The result was Eigen's
+# unaligned-array assert aborting wmtk_test_manifold_extraction and wmtk_test_topological_offset
+# on every platform in both Debug and Release, inside to_rational(), a function neither the
+# offset nor ipc has anything to do with.
+#
+# Setting the two macros explicitly wins over the inference (ConfigureVectorization.h guards its
+# default with #ifndef), so every TU gets the same layout no matter what else it defines. 16 is
+# the value every wmtk platform already inferred, so this pins the status quo rather than
+# changing it: alignment only, never arithmetic, so no result moves. It also decouples the ABI
+# from -mavx, which would otherwise raise a subset of targets to 32 and split the build the same
+# way.
+target_compile_definitions(Eigen3_Eigen INTERFACE
+    EIGEN_MAX_ALIGN_BYTES=16
+    EIGEN_MAX_STATIC_ALIGN_BYTES=16
+)
+
 if(EIGEN_WITH_MKL)
     # TODO: Checks that, on 64bits systems, `mkl::mkl` is using the LP64 interface
     # (by looking at the compile definition of the target)
