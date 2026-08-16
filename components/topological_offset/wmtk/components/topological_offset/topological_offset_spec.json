@@ -33,6 +33,7 @@
             "DEBUG_output",
             "log_file",
             "report",
+            "preallocation_factor",
             "num_threads",
             "num_smoothing_passes",
             "interleaved_smoothing",
@@ -239,6 +240,13 @@
         "type": "string",
         "default": "",
         "doc": "A JSON file that stores information about the result and the method execution, e.g., runtime."
+    },
+    {
+        "pointer": "/preallocation_factor",
+        "type": "float",
+        "default": 6.0,
+        "min": 1.0,
+        "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom and are retried once it is exhausted. Lower it for pure-decimation runs, raise it for aggressive refinement. The offset refines aggressively -- its surface has to reach the offset's own scale, not the background's -- so a run whose log carries [slots] warnings is dropping the very splits the criterion asked for."
     },
     {
         "pointer": "/num_threads",
