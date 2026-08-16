@@ -1081,7 +1081,7 @@ void TopoOffsetTetMesh::init_offset_sizing_field()
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
 
     double raw_sum = 0.;
-    int n_seeded = 0;
+    int n_seeded = 0, n_background = 0;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
 
@@ -1098,18 +1098,40 @@ void TopoOffsetTetMesh::init_offset_sizing_field()
                 ++n;
             }
         }
-        if (n == 0) continue; // not on the offset surface: the background keeps the base target
+        // EVERY vertex is seeded, not just the offset surface's. A vertex the loop above found
+        // no offset face at falls back to its whole one-ring, which is the same rule applied to
+        // whatever scale it happens to sit at.
+        //
+        // Leaving the background at the base target -- a fraction of the bounding box, which on
+        // any reasonable configuration is far coarser than the mesh the construction produced --
+        // is what makes the FIRST collapse pass destructive. The gate is edge length against the
+        // target at its endpoints, so a background target of l against actual edges a fraction of
+        // that marks essentially every interior edge as collapsible, and the pass runs before any
+        // criterion has been evaluated. Seeding from the mesh as built says "keep the resolution
+        // you have" everywhere, and leaves changing it to update_sizing_field(), which has a
+        // reason.
+        if (n == 0) {
+            for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
+                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
+                ++n;
+            }
+            if (n == 0) continue; // isolated vertex; nothing to measure
+            ++n_background;
+        } else {
+            ++n_seeded;
+            raw_sum += sum_len / n;
+        }
 
-        raw_sum += sum_len / n;
-        ++n_seeded;
         m_vertex_attribute[vid].m_sizing_scalar =
             std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
     }
     logger().info(
-        "\tOffset sizing seed: {} vertices, mean incident length {:.6} (base l {:.6}, l_min {:.6} "
-        "= {} x target_distance {}, scalar floor {:.6})",
+        "\tOffset sizing seed: {} offset-surface vertices (mean incident length {:.6}) + {} "
+        "background vertices from their one-rings (base l {:.6}, l_min {:.6} = {} x "
+        "target_distance {}, scalar floor {:.6})",
         n_seeded,
         n_seeded > 0 ? raw_sum / n_seeded : 0.,
+        n_background,
         l,
         m_offset_params.min_edge_length,
         m_offset_params.min_edge_length_rel,
@@ -1684,11 +1706,23 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // per-iteration hook, and the per-pass numbers it logs itself carry the history.
     log_smooth_trace();
     logger().info(
-        "splits = {}  |  collapses = {} ({} removed an offset vertex)  |  swaps = {}",
+        "splits = {} (offset-edge: {} offered, {} frozen, {} refused by the base -> {} tried "
+        "-> {} accepted, {} refused)  |  "
+        "collapses = {} ({} "
+        "removed an offset vertex, {} refused by the offset criterion)  |  swaps = {} ({} "
+        "refused by the offset criterion)",
         iter_cnt_split.load(),
+        iter_cnt_split_offset_before.load(),
+        iter_cnt_split_offset_frozen.load(),
+        iter_cnt_split_offset_base_reject.load(),
+        iter_cnt_split_offset_tried.load(),
+        iter_cnt_split_offset.load(),
+        iter_cnt_split_offset_reject.load(),
         iter_cnt_collapse.load(),
         iter_cnt_collapse_offset_removed.load(),
-        iter_cnt_swap.load());
+        iter_cnt_collapse_offset_reject.load(),
+        iter_cnt_swap.load(),
+        iter_cnt_swap_offset_reject.load());
     op_counts.push_back({{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
 
     // Final metrics and the convergence verdict. One entry, for the whole run: the engine loop

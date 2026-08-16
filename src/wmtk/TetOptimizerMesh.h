@@ -459,6 +459,30 @@ protected:
     virtual std::tuple<double, double> optimization_quality_stats();
     virtual double optimization_stop_metric() const { return m_params.stop_energy; }
     virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+
+    /**
+     * @brief Whether the loop opens with an UNLIMITED-LENGTH collapse pass.
+     *
+     * mesh_improvement() begins with local_operations({{0,1,0,0}}, false) -- a collapse pass
+     * with collapse_limit_length FALSE, so no edge is too short to be collapsed and no edge is
+     * too long to be collapsed either. For TetWild and SimWild that is exactly right: it strips
+     * the redundancy left by insertion before the real work starts, and their tracked surface is
+     * held in place by an envelope throughout.
+     *
+     * It is wrong for an application whose tracked surface is what the optimization exists to
+     * PLACE, and which therefore has no envelope holding it. topological_offset's offset surface
+     * is such a surface: measured on topological_offset_3d_convex, the opening pass alone took it
+     * from 1172 faces to 326 -- a 72% decimation -- before the loop had run at all, and nothing
+     * downstream can undo that. The sizing field can ask for refinement afterwards; it cannot
+     * refuse a collapse.
+     *
+     * This governs the three BARE coarsening steps -- the opening pass, the closing pass, and
+     * coarsen_mesh() -- and not the collapse inside the loop, which is interleaved with splits
+     * and smoothing and answers to the criterion. Measured on the same model with only the
+     * closing pass left enabled: 1172 faces to 350, so gating the opening one alone is not
+     * enough.
+     */
+    virtual bool optimization_bare_coarsen_passes() const { return true; }
     virtual void write_optimization_debug_output(const std::string& path) = 0;
     virtual void optimization_sanity_checks_extra() {}
     virtual bool optimization_stop_at_float() const { return false; }

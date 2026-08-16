@@ -59,22 +59,38 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
 
 bool TopoOffsetTetMesh::collapse_after_connectivity(
     const size_t,
-    const size_t,
+    const size_t v2_id,
     const std::vector<std::array<size_t, 2>>&)
 {
-    // NO NORMAL-DEVIATION GUARD, in either hook. Both used to be here, and both were the paper's
-    // Sec. 5.3.3 Step 2 rule: refuse a collapse that leaves the offset surface's FIELD normals
-    // disagreeing across a face by more than sigma_max. They existed because the criterion the
-    // loop converged on was measured at VERTICES only, and a vertex criterion cannot see a
-    // surface that has decimated to a few large triangles cutting across the offset -- so the
-    // decimation had to be forbidden operation by operation instead of measured.
+    // A COLLAPSE IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES.
     //
-    // The face-sampled Phi residual measures it directly (see offset_face_samples()), and feeds
-    // face_criterion_rel(), so a band too coarse to be the offset now REFINES instead of having
-    // to be protected. Same substitution 2D made when its collapse_edge_after() guard went.
+    // The smoother places an offset vertex by minimising w (Phi - c)^2 and the loop converges
+    // when the Phi residual is inside tolerance everywhere on the offset surface, vertices and
+    // face interiors alike. Every other operation has to answer to that same measure, or it can
+    // undo in one collapse what the smoother spent an iteration achieving -- and it did:
+    // measured on topological_offset_3d_convex, collapse alone took the offset surface from 1172
+    // faces to 326 while the vertices it left behind sat at 0.95% of delta, which is what a
+    // vertex-only view of the world calls perfect.
     //
-    // This is the one deletion here that changes what the collapse pass may do rather than only
-    // where a computation lives, so it is the one to look at first if the 3D offset decimates.
+    // Length gates cannot express this. They ask whether an edge is short relative to a sizing
+    // target, which is a statement about the MESH; the criterion asks whether the surface is
+    // still the offset, which is a statement about the GEOMETRY, and only the second one is what
+    // the run is for. So the guard is the criterion itself, flat: after the collapse, no offset
+    // face at the surviving vertex may be over tolerance.
+    //
+    // FLAT, not "no worse than before". A before/after bar reads the max over a patch, so a
+    // single face that is already bad licenses coarsening its whole neighbourhood -- nothing
+    // there can raise the max. That is the leak the 3D normal-deviation guard was rewritten to
+    // close before this port, and it is the same leak here: with the worse-of bar the surface
+    // still fell to 496 faces.
+    if (m_offset_potential) {
+        for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v2_id))) {
+            if (face_criterion_rel(f) > 1.0) {
+                ++iter_cnt_collapse_offset_reject;
+                return false;
+            }
+        }
+    }
     ++iter_cnt_collapse;
     return true;
 }

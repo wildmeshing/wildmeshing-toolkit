@@ -16,15 +16,22 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        const bool dbg_on_offset = is_edge_on_offset(t);
+        if (dbg_on_offset) ++iter_cnt_split_offset_before;
         // Splitting an edge of the input complex or of the domain boundary replaces that edge
         // with two, which changes those simplex sets -- and on a curved input the midpoint
         // leaves the surface entirely. Both are frozen, so the split is refused before the
         // shared engine ever sees it. Only the Optimization mode is guarded: the marching path
         // below is how the offset is CONSTRUCTED, and it has to be able to cut through anything.
         if (edge_is_frozen(t)) {
+            if (dbg_on_offset) ++iter_cnt_split_offset_frozen;
             return false;
         }
-        return TetOptimizerMesh::split_edge_before(t);
+        if (!TetOptimizerMesh::split_edge_before(t)) {
+            if (dbg_on_offset) ++iter_cnt_split_offset_base_reject;
+            return false;
+        }
+        return true;
     }
     return marching_split_edge_before(t);
 }
@@ -149,8 +156,14 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        if (!TetOptimizerMesh::split_edge_after(t)) return false;
+        const bool on_offset = m_opt_split_cache.local().is_edge_on_offset;
+        if (on_offset) ++iter_cnt_split_offset_tried;
+        if (!TetOptimizerMesh::split_edge_after(t)) {
+            if (on_offset) ++iter_cnt_split_offset_reject;
+            return false;
+        }
         ++iter_cnt_split;
+        if (on_offset) ++iter_cnt_split_offset;
         return true;
     }
     return marching_split_edge_after(t);

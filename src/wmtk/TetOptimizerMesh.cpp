@@ -40,8 +40,10 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it pre========");
+        local_operations({{0, 1, 0, 0}}, false);
+    }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
@@ -114,13 +116,15 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         pre_max_metric = max_metric;
     }
 
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it post========");
+        local_operations({{0, 1, 0, 0}});
 
-    // Removing what the mesh does not need is the last thing to do, not something to
-    // interleave: it trades cells for nothing but the guarantee that the max energy does not
-    // rise, which is only worth taking once the energy is where it is going to end up.
-    coarsen_mesh();
+        // Removing what the mesh does not need is the last thing to do, not something to
+        // interleave: it trades cells for nothing but the guarantee that the max energy does not
+        // rise, which is only worth taking once the energy is where it is going to end up.
+        coarsen_mesh();
+    }
 }
 
 std::tuple<double, double> TetOptimizerMesh::local_operations(

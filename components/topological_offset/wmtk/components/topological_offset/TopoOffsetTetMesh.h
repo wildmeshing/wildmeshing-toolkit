@@ -385,6 +385,11 @@ public:
      */
     size_t refine_sizing_around_worst(double) override;
 
+    /// No. The offset surface is the thing being placed and has no envelope holding it, so a
+    /// bare collapse pass -- one not interleaved with splits and smoothing, and answering to no
+    /// criterion -- can only decimate it. See the base for the measurement.
+    bool optimization_bare_coarsen_passes() const override { return false; }
+
     /**
      * @brief (max, avg) Phi residual over the reachable offset surface, in units of its
      * tolerance; the engine's stop metric is therefore 1.0.
@@ -565,6 +570,8 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache> m_opt_split_cache;
 
+public:
+private:
 public:
 private:
     bool swap_capture_tag(const std::vector<size_t>& tids);
@@ -823,6 +830,16 @@ public:
     std::atomic<int> iter_cnt_collapse{0};
     std::atomic<int> iter_cnt_swap{0};
     std::atomic<int> iter_cnt_collapse_offset_removed{0};
+    /// Operations refused because they would have left an offset face over tolerance.
+    std::atomic<int> iter_cnt_collapse_offset_reject{0};
+    std::atomic<int> iter_cnt_swap_offset_reject{0};
+    /// Splits of an OFFSET-surface edge: reached split_edge_after, accepted, refused there.
+    std::atomic<int> iter_cnt_split_offset_before{0};
+    std::atomic<int> iter_cnt_split_offset_frozen{0};
+    std::atomic<int> iter_cnt_split_offset_base_reject{0};
+    std::atomic<int> iter_cnt_split_offset_tried{0};
+    std::atomic<int> iter_cnt_split_offset{0};
+    std::atomic<int> iter_cnt_split_offset_reject{0};
 
     //// collapse
 

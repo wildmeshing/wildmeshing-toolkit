@@ -8,6 +8,9 @@ namespace wmtk::components::topological_offset {
 
 bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
 {
+    if (m_edge_split_mode == EdgeSplitMode::Optimization && edge_is_offset_surface_live(t)) {
+        ++iter_cnt_split_offset_before;
+    }
     // Cleared for BOTH modes, not just the optimization one: split_after_vertex() reads
     // emptiness to tell which mode produced the split, and the marching path sets its own
     // labels. Leaving a previous optimization split's entries here would have it stamp those
@@ -133,6 +136,7 @@ bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
         // filled with a tag the mesh already uses elsewhere would relabel that other region as
         // offset. See face_is_offset_band().
         ++iter_cnt_split;
+        if (m_vertex_extra[t.vid(*this)].m_is_on_offset) ++iter_cnt_split_offset;
         return true;
     }
     return marching_split_edge_after(t);

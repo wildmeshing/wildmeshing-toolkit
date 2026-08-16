@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <array>
 #include <map>
+#include <set>
 
 namespace wmtk::components::topological_offset {
 
@@ -110,13 +112,44 @@ bool TopoOffsetTetMesh::swap_before_surface(
     return true;
 }
 
-bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool)
+bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip)
 {
     const CellTag& tag = m_swap_tag.local();
     const int label = m_swap_label.local();
     for (const size_t t : tids) {
         m_tet_attribute[t].tag = tag;
         m_tet_attribute[t].label = label;
+    }
+
+    // A SWAP IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES -- see
+    // collapse_after_connectivity() for the argument, which is identical. A surface flip moves no
+    // vertex, so it cannot change where the offset passes through space except through the
+    // diagonal it picks; but that diagonal is exactly what decides whether the two triangles
+    // follow the level set or cut across it, and the criterion is what can tell.
+    //
+    // Only a surface flip is checked. An interior swap is within one label by construction (the
+    // ring would otherwise span a region boundary, which swap_capture_tag refuses), so it leaves
+    // the offset surface untouched and the check would be pure cost.
+    if (is_surface_flip && m_offset_potential) {
+        std::set<size_t> seen;
+        for (const size_t t : tids) {
+            const std::array<size_t, 4> vs = oriented_tet_vids(t);
+            for (int skip = 0; skip < 4; ++skip) {
+                std::array<size_t, 3> fv;
+                int k = 0;
+                for (int j = 0; j < 4; ++j) {
+                    if (j != skip) fv[k++] = vs[j];
+                }
+                const auto [f, unused_tid] = tuple_from_face(fv);
+                if (!f.is_valid(*this)) continue;
+                if (!seen.insert(f.fid(*this)).second) continue;
+                if (!face_is_offset_surface_live(f)) continue;
+                if (face_criterion_rel(f) > 1.0) {
+                    ++iter_cnt_swap_offset_reject;
+                    return false;
+                }
+            }
+        }
     }
     ++iter_cnt_swap;
     return true;

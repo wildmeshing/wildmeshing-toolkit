@@ -363,6 +363,20 @@ protected:
     virtual std::tuple<double, double> optimization_quality_stats();
     virtual double optimization_stop_metric() const { return m_params.stop_energy; }
     virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+
+    /**
+     * @brief Whether the loop opens and closes with BARE collapse passes.
+     *
+     * mesh_improvement() brackets the loop with local_operations({{0,1,0,0}}) -- collapse alone,
+     * not interleaved with splits or smoothing, and the opening one with collapse_limit_length
+     * FALSE so no length gate applies at all. For TriWild and SimWild that is right: it strips
+     * the redundancy left by insertion, and their tracked surface is held by an envelope.
+     *
+     * It is wrong for an application whose tracked surface is what the optimization exists to
+     * PLACE, and which therefore has no envelope holding it. See the 3D twin,
+     * TetOptimizerMesh::optimization_bare_coarsen_passes, for the measurement that found it.
+     */
+    virtual bool optimization_bare_coarsen_passes() const { return true; }
     virtual bool optimization_stop_at_float() const { return false; }
 
     /**

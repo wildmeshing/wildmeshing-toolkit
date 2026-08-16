@@ -352,7 +352,38 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::swap_edge_after(t)) {
         return false;
     }
+    // A SWAP IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES -- see collapse_edge_after()
+    // for the argument, which is identical. A flip moves no vertex, but the diagonal it picks
+    // decides whether the boundary follows the level set or cuts across it.
+    if (m_offset_potential) {
+        for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
+            if (face_criterion_rel(fid) > 1.0) {
+                ++iter_cnt_swap_offset_reject;
+                return false;
+            }
+        }
+    }
     ++iter_cnt_swap;
+    return true;
+}
+
+bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
+{
+    if (!TriOptimizerMesh::collapse_edge_after(t)) {
+        return false;
+    }
+    // A COLLAPSE IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES. See the declaration
+    // for the argument. FLAT, not "no worse than before": a before/after bar reads the max over a
+    // patch, so one already-bad face licenses coarsening its whole neighbourhood -- measured in
+    // 3D, the worse-of bar still let the offset surface fall from 1172 faces to 496.
+    if (m_offset_potential) {
+        for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
+            if (face_criterion_rel(fid) > 1.0) {
+                ++iter_cnt_collapse_offset_reject;
+                return false;
+            }
+        }
+    }
     return true;
 }
 
@@ -613,7 +644,26 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
             sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
             ++n;
         }
-        if (n == 0) continue; // not on the offset surface: the background keeps the base target
+        // EVERY vertex is seeded, not just the offset boundary's. A vertex with no incident
+        // offset edge falls back to its whole one-ring -- the same rule applied to whatever scale
+        // it happens to sit at.
+        //
+        // Leaving the background at the base target -- a fraction of the bounding box, which on
+        // any reasonable configuration is far coarser than the mesh the construction produced --
+        // is what makes a bare collapse pass destructive. The gate is edge length against the
+        // target at its endpoints, so a background target of l against actual edges a fraction of
+        // that marks essentially every interior edge as collapsible. Seeding from the mesh as
+        // built says "keep the resolution you have" everywhere.
+        if (n == 0) {
+            for (const size_t nb : get_one_ring_vids_for_vertex_duplicate(vid)) {
+                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
+                ++n;
+            }
+            if (n == 0) continue; // isolated vertex; nothing to measure
+            m_vertex_attribute[vid].m_sizing_scalar =
+                std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
+            continue;
+        }
         raw_sum += sum_len / n;
         ++n_seeded;
         m_vertex_attribute[vid].m_sizing_scalar =
@@ -1266,10 +1316,15 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     log_smooth_trace();
     op_counts.push_back({{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
     logger().info(
-        "splits = {}  |  collapses = {}  |  swaps = {}",
+        "splits = {} (offset-edge: {} offered -> {} accepted)  |  collapses = {} ({} refused by "
+        "the offset criterion)  |  swaps = {} ({} refused by the offset criterion)",
         iter_cnt_split.load(),
+        iter_cnt_split_offset_before.load(),
+        iter_cnt_split_offset.load(),
         iter_cnt_collapse.load(),
-        iter_cnt_swap.load());
+        iter_cnt_collapse_offset_reject.load(),
+        iter_cnt_swap.load(),
+        iter_cnt_swap_offset_reject.load());
 
     bool converged = false;
     {

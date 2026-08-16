@@ -365,6 +365,13 @@ public:
     /// iteration's own count, not a running total. Mirrors the 3D counters of the same names.
     std::vector<std::array<int, 3>> op_counts;
     std::atomic<int> iter_cnt_split = 0, iter_cnt_collapse = 0, iter_cnt_swap = 0;
+    /// Operations refused because they would have left an offset-boundary face over tolerance.
+    std::atomic<int> iter_cnt_collapse_offset_reject{0};
+    std::atomic<int> iter_cnt_swap_offset_reject{0};
+    /// Splits of an OFFSET-boundary edge: offered, accepted. The 3D twin showed splits landing
+    /// everywhere BUT the offset surface, so this is what says whether 2D does the same.
+    std::atomic<int> iter_cnt_split_offset_before{0};
+    std::atomic<int> iter_cnt_split_offset{0};
     /// Dispatch: the optimization phase runs the shared split, everything else the
     /// marching-triangles one.
     /// Parent face labels for an optimization split, keyed by the apex vertex opposite the
@@ -870,6 +877,26 @@ public:
      * the wrong elements.
      */
     size_t refine_sizing_around_worst(double max_metric) override;
+
+    /// No. The offset boundary is the thing being placed and has no envelope holding it, so a
+    /// bare collapse pass -- one not interleaved with splits and smoothing, and answering to no
+    /// criterion -- can only decimate it. See the base for the measurement (3D, but the same
+    /// mechanism: measured there at 1172 offset faces down to 326 before the loop had run).
+    bool optimization_bare_coarsen_passes() const override { return false; }
+
+    /**
+     * @brief A collapse is accepted by the SAME criterion the smoothing minimises.
+     *
+     * The smoother places an offset vertex by minimising w (Phi - c)^2 and the loop converges
+     * when the Phi residual is inside tolerance along the whole offset boundary, vertices and
+     * edge interiors alike. Every other operation has to answer to that same measure, or it can
+     * undo in one collapse what the smoother spent an iteration achieving. Length gates cannot
+     * express it: they ask whether an edge is short relative to a sizing target, which is a
+     * statement about the MESH, while the criterion asks whether the boundary is still the
+     * offset, which is a statement about the GEOMETRY -- and only the second is what the run is
+     * for.
+     */
+    bool collapse_edge_after(const Tuple& t) override;
     /// The per-face score refine_sizing_around_worst ranks by; >= 1 means the face fails at
     /// least one of the two criteria. Also the per-face form of optimization_quality_stats().
     double face_criterion_rel(const size_t fid) const;
