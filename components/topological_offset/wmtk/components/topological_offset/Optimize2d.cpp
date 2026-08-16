@@ -364,7 +364,9 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
     // A SWAP IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES -- see collapse_edge_after()
     // for the argument, which is identical. A flip moves no vertex, but the diagonal it picks
     // decides whether the boundary follows the level set or cuts across it.
-    if (m_offset_potential) {
+    //
+    // NOT IN PHASE A, for the reason given in collapse_edge_after().
+    if (m_offset_potential && offset_criterion_gates_operations()) {
         double after = 0.;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
             after = std::max(after, face_criterion_rel(fid));
@@ -401,7 +403,15 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     // face_criterion_rel() returns the max of -- must be inside tolerance afterwards. A collapse
     // that leaves anything over tolerance is not a saving, it is a regression with fewer
     // elements.
-    if (m_offset_potential) {
+    //
+    // NEITHER BAR APPLIES IN PHASE A. Phase A is TriWild: its job is element quality, and the
+    // offset is held there by m_offset_envelope, geometrically, on every operation rather than
+    // on the 2% that touch the boundary. Leaving the criterion on as well would refuse exactly
+    // the collapses Phase A exists to make -- one that improves AMIPS while moving Phi a hair in
+    // the wrong direction is refused, which is the two-criteria fight the A/B split is for, just
+    // at operation granularity instead of loop granularity. See
+    // offset_criterion_gates_operations().
+    if (m_offset_potential && offset_criterion_gates_operations()) {
         double after = 0.;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
             after = std::max(after, face_criterion_rel(fid));
@@ -964,9 +974,15 @@ void TopoOffsetTriMesh::optimization_iteration_begin()
 
     const DistanceSplit r = residual_split();
     const DistanceSplit d = distance_deviation_split();
+    // BOTH criteria are logged in BOTH phases, deliberately, even though Phase A neither stops
+    // on Phi nor refines by it. This is the instrument 3D does not have: it says whether Phase A
+    // is quietly undoing the placement Phase B just achieved. A residual that climbs across a
+    // Phase A means the re-triangulation inside the envelope is cutting new chords across the
+    // level set, which no amount of Phase B smoothing can get back.
     logger().info(
-        "[criteria] amips {:.4}x (max {:.6} / {:.6}) | phi {:.4}x (max residual {:.6} / {:.6}, "
-        "{} pinned) | euclid dist err {:.6} (avg {:.6}) | #V {} #F {} (band {} samples)",
+        "[criteria] phase {} | amips {:.4}x (max {:.6} / {:.6}) | phi {:.4}x (max residual {:.6} "
+        "/ {:.6}, {} pinned) | euclid dist err {:.6} (avg {:.6}) | #V {} #F {} (band {} samples)",
+        m_phase == OptPhase::A ? 'A' : 'B',
         c.amips,
         c.amips * m_params.stop_energy,
         m_params.stop_energy,
@@ -981,8 +997,15 @@ void TopoOffsetTriMesh::optimization_iteration_begin()
         r.n_reachable + r.n_pinned);
 }
 
-bool TopoOffsetTriMesh::optimization_stalled(double, double)
+bool TopoOffsetTriMesh::optimization_stalled(double prev_metric, double cur_metric)
 {
+    // PHASE A IS TRIWILD, down to how it decides it is stuck: one scalar, the base's inequality,
+    // in the base's units. The per-criterion form below exists because the joint loop had two
+    // criteria to be stuck on; Phase A has one.
+    if (m_phase == OptPhase::A) {
+        return wmtk::TriOptimizerMesh::optimization_stalled(prev_metric, cur_metric);
+    }
+
     const Criteria cur = optimization_criteria();
     const Criteria& prev = m_prev_criteria;
 
@@ -1029,6 +1052,19 @@ void TopoOffsetTriMesh::optimization_debug_checkpoint()
 
 std::tuple<double, double> TopoOffsetTriMesh::optimization_quality_stats()
 {
+    // PHASE A IS TRIWILD, so its metric is TriWild's: element quality alone, in ABSOLUTE AMIPS
+    // against optimization_stop_metric() = stop_energy, with no Phi term in the stop test, the
+    // stall test or the refinement ranking. The offset is not unattended there --
+    // m_offset_envelope holds it -- and mixing Phi back in is what made the two criteria fight.
+    //
+    // DELEGATED, not reimplemented, and the units are the whole reason. See
+    // optimization_stop_metric() for what returning a normalized number here instead did to the
+    // 3D Phase A: filter 100 against a worst element of 97, no refinement, 20 bit-identical
+    // iterations.
+    if (m_phase == OptPhase::A) {
+        return wmtk::TriOptimizerMesh::optimization_quality_stats();
+    }
+
     // The max of the two criteria, which is what the driver stops on. TriWild's own criterion
     // is the AMIPS term, via the base's quality_rel(), so this is exactly the number TriWild's
     // loop stops on with the offset residual maxed in beside it.
@@ -1077,15 +1113,80 @@ double TopoOffsetTriMesh::face_criterion_rel(const size_t fid) const
 
 size_t TopoOffsetTriMesh::refine_sizing_around_worst(const double max_metric)
 {
-    // TriWildMesh::refine_sizing_around_worst, with face_criterion_rel() in place of the raw
-    // AMIPS energy and 1.0 -- the normalized target -- in place of stop_energy. At TriWild's own
-    // default stop_energy of 100 the two filter expressions are the same number.
+    // ONE SIZING FIELD, TWO REASONS TO REFINE IT.
     //
-    // The clamp is TriWild's and exists for the same reason: without it a single degenerate face
-    // (quality MAX_ENERGY) sets the filter astronomically high and select_worst_cells then picks
-    // out only the degenerate faces, so refinement stops seeing the merely-bad ones it exists to
-    // fix.
+    // In PHASE A this is TriWildMesh::refine_sizing_around_worst verbatim -- ranked by
+    // m_face_attribute[].m_quality, filtered against stop_energy, seeding the same force-split
+    // edges. Phase A is TriWild, and that includes how it responds to a stall; the field it
+    // writes is the same field Phase B reads and writes, so the refinement each phase asks for
+    // accumulates rather than competing.
+    //
+    // NOTE THE UNITS: max_metric arrives from mesh_improvement() as whatever
+    // optimization_quality_stats() returned, which in Phase A is ABSOLUTE AMIPS, and the score
+    // it is compared against is absolute too. The Phase B branch below is entirely in normalized
+    // units. Mixing the two is the bug that cost 3D twenty iterations.
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
+
+    if (m_phase == OptPhase::A) {
+        // Clamped above exactly as TriWild does: without it a single degenerate face (quality
+        // MAX_ENERGY) sets filter_energy astronomically high and select_worst_cells then picks
+        // out only the degenerate faces, so refinement stops fixing the merely-bad ones.
+        const double filter_energy =
+            std::min(std::max(max_metric / 100., m_params.stop_energy), 100.);
+
+        // m_quality is the AMIPS2D energy itself, so no cube root (unlike tetwild/simwild).
+        const auto worst = wmtk::utils::select_worst_cells(
+            tri_capacity(),
+            [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+            [this](size_t fid) { return m_face_attribute[fid].m_quality; },
+            filter_energy,
+            m_params.stuck_refine_num_worst);
+        if (worst.empty()) {
+            return 0;
+        }
+
+        m_force_split_edges.clear();
+        if (m_params.stuck_refine_force_split) {
+            for (const auto& [unused_score, fid] : worst) {
+                m_force_split_edges.insert(
+                    wmtk::utils::longest_edge(
+                        oriented_tri_vids(fid),
+                        [this](size_t vid) -> const Vector2d& {
+                            return m_vertex_attribute[vid].m_posf;
+                        }));
+            }
+        }
+
+        std::vector<size_t> seeds;
+        seeds.reserve(3 * worst.size());
+        for (const auto& [unused_score, fid] : worst) {
+            for (const size_t v : oriented_tri_vids(fid)) seeds.push_back(v);
+        }
+        const auto region = wmtk::utils::grow_vertex_region(seeds, n_rings, [this](size_t v) {
+            return get_one_ring_vids_for_vertex_duplicate(v);
+        });
+
+        const auto refined = wmtk::utils::apply_sizing_refinement(
+            region,
+            m_params.stuck_refine_factor,
+            m_params.stuck_refine_min_scalar,
+            [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+        gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+        logger().info(
+            "[stuck-refine A] worst {} tris (max energy {:.4}, filter {:.4}), refined {} of {} "
+            "region vertices",
+            worst.size(),
+            max_metric,
+            filter_energy,
+            refined.size(),
+            region.size());
+        return refined.size();
+    }
+
+    // PHASE B: the same shape, with face_criterion_rel() in place of the raw AMIPS energy and
+    // 1.0 -- the normalized target -- in place of stop_energy. At TriWild's own default
+    // stop_energy of 100 the two filter expressions are the same number.
     const double filter = std::min(std::max(max_metric / 100., 1.0), 100.);
 
     const auto worst = wmtk::utils::select_worst_cells(
@@ -1286,6 +1387,333 @@ bool TopoOffsetTriMesh::edge_is_offset_surface_live(const Tuple& e) const
     return !face_is_input_complex(a ? fb : fa);
 }
 
+void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
+{
+    // A VERTEX ON BOTH SURFACES IS UNSATISFIABLE, not merely awkward. It sits at distance 0 from
+    // the input complex, where Phi diverges, and is simultaneously required to sit on the level
+    // set at target_distance from it. No placement satisfies both, so no amount of smoothing or
+    // refinement can fix it -- which is why the rest of the component quietly steps around it:
+    // smoothing_extra_energy() gives it no offset term, band_vertex_is_reachable() drops it from
+    // the metric, and residual_split() books it under max_pinned. Stepping around it is right for
+    // the measurement and wrong as a response: a construction defect can otherwise sit in the
+    // mesh contributing nothing but a boundary that cannot be placed, and never say so.
+    //
+    // ON THE DOMAIN BOUNDARY IS DIFFERENT and deliberately not checked here. Such a vertex is
+    // constrained but not contradictory, and it is a legitimate outcome of growth meeting the
+    // edge of the domain.
+    //
+    // Checked after every phase, not only at construction: collapse_after_vertex() ORs the flags
+    // onto the surviving vertex, so a collapse that merges an offset vertex into an input one
+    // CREATES this state out of two individually fine vertices.
+    std::vector<size_t> both;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (m_vertex_extra[vid].m_is_on_offset && m_vertex_extra[vid].m_is_on_input) {
+            both.push_back(vid);
+        }
+    }
+    if (both.empty()) {
+        return;
+    }
+
+    const size_t n_show = std::min<size_t>(both.size(), 8);
+    std::string detail;
+    for (size_t i = 0; i < n_show; ++i) {
+        const size_t vid = both[i];
+        const double d = m_input_complex_bvh.dist(VectorXd(m_vertex_attribute[vid].m_posf));
+        detail += fmt::format("{}{} (dist to input {:.6g})", i ? ", " : "", vid, d);
+    }
+    log_and_throw_error(
+        "[{}] {} vertices are on BOTH the input complex and the offset boundary. Such a vertex is "
+        "at distance 0 from the input and is asked to be at target_distance {} from it at the "
+        "same time, so the optimization cannot place it and the offset through it cannot "
+        "converge. This is a construction defect, not an optimization failure. Offending "
+        "vertices: {}{}",
+        when,
+        both.size(),
+        m_offset_params.target_distance,
+        detail,
+        both.size() > n_show ? ", ..." : "");
+}
+
+void TopoOffsetTriMesh::rebuild_offset_envelope()
+{
+    std::vector<Eigen::Vector2i> segs;
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        segs.emplace_back(int(e.vid(*this)), int(e.switch_vertex(*this).vid(*this)));
+    }
+    if (segs.empty()) {
+        // Nothing to hold. Not an error: a run whose offset region never formed has other
+        // problems, and they are reported where they happen.
+        m_offset_envelope = nullptr;
+        logger().warn("\t[phase A] no offset-boundary segments; the offset envelope is empty");
+        return;
+    }
+
+    std::vector<Eigen::Vector2d> verts(vert_capacity());
+    for (size_t i = 0; i < vert_capacity(); ++i) {
+        verts[i] = m_vertex_attribute[i].m_posf;
+    }
+
+    // ONE PHI TOLERANCE by default, so Phase A may move the offset by exactly as much as the
+    // convergence test is willing to ignore. Tighter and Phase A cannot improve the elements
+    // straddling the boundary at all; looser and it can undo a Phi that Phase B had already
+    // brought inside tolerance.
+    //
+    // A LENGTH, and this is where 2D could most easily go wrong: offset_residual_tolerance() is
+    // offset_residual_rel x target_distance, a distance in model units, and SampleEnvelope's eps
+    // is a distance in the same units -- the same pairing 3D uses. It is NOT the normalized
+    // criterion, and it is not envelope_size_rel (a fraction of the bounding-box diagonal, which
+    // is what m_envelope is built from).
+    const double eps =
+        std::max(m_offset_params.ab_offset_envelope_rel * offset_residual_tolerance(), 1e-12);
+
+    m_offset_envelope = std::make_shared<SampleEnvelope>();
+    m_offset_envelope->init(verts, segs, eps);
+    logger().info(
+        "\t[phase A] offset envelope rebuilt: {} segments, {} (eps {:.6g} = {:.4}x the Phi "
+        "tolerance {:.6g})",
+        segs.size(),
+        m_offset_envelope->use_exact ? "EXACT" : "sampled",
+        eps,
+        m_offset_params.ab_offset_envelope_rel,
+        offset_residual_tolerance());
+}
+
+size_t TopoOffsetTriMesh::phase_b_smooth()
+{
+    // SMOOTHING ONLY, TO A FIXED POINT. No topology: Phase B's single job is to move the offset
+    // boundary onto the level set, and the mesh it does that on is whatever Phase A left. Running
+    // to convergence rather than for a fixed count is what makes the stuck check afterwards
+    // meaningful -- an edge still over tolerance once nothing moves is one smoothing genuinely
+    // cannot place, which is a resolution problem and therefore the sizing field's business.
+    std::vector<Vector2d> before(vert_capacity());
+
+    size_t pass = 0;
+    double disp = 0.;
+    for (; pass < size_t(std::max(1, m_offset_params.ab_smooth_max_passes)); ++pass) {
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            before[i] = m_vertex_attribute[i].m_posf;
+        }
+
+        smooth_all_vertices(1);
+
+        disp = 0.;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            disp = std::max(disp, (m_vertex_attribute[vid].m_posf - before[vid]).norm());
+        }
+        // Relative to the target edge length, so the test means the same thing at any scale.
+        const double tol = m_offset_params.ab_smooth_tol * std::max(m_params.l, 1e-16);
+        logger().info(
+            "\t[phase B] pass {}: max vertex displacement {:.6g} (tol {:.6g})",
+            pass + 1,
+            disp,
+            tol);
+        if (disp <= tol) {
+            ++pass;
+            break;
+        }
+    }
+    return pass;
+}
+
+size_t TopoOffsetTriMesh::refine_sizing_where_phi_is_stuck()
+{
+    // WHAT SMOOTHING COULD NOT PLACE. Phase B has just run to a fixed point, so an offset segment
+    // still over tolerance is not badly placed, it is under-resolved: both endpoints are where
+    // the energy wants them and the chord between them still cuts across the level set. That is
+    // the one situation refinement actually answers, which is why this is the only place Phi is
+    // allowed to drive the sizing field -- unlike the joint loop, where the field was refined
+    // whenever the combined metric stalled, which on topological_offset_2d was 13 iterations out
+    // of 13 regardless of whether Phi needed resolution.
+    //
+    // SCORED ON THE SEGMENT, not the face. In 2D the offset IS a polyline, so the thing that can
+    // be too coarse is a segment; face_criterion_rel() folds AMIPS in beside it, and AMIPS is
+    // Phase A's business here, not this pass's.
+    const double tol = offset_residual_tolerance();
+    std::vector<std::pair<double, std::array<size_t, 2>>> stuck;
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        const std::array<size_t, 2> vids = {{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
+        double score = offset_edge_samples(e).max / tol;
+        for (const size_t vid : vids) {
+            if (!band_vertex_is_reachable(vid)) continue;
+            score = std::max(score, band_vertex_residual(vid) / tol);
+        }
+        if (score <= 1.0) continue;
+        stuck.emplace_back(score, vids);
+    }
+    if (stuck.empty()) {
+        return 0;
+    }
+    std::sort(stuck.begin(), stuck.end(), [](const auto& a, const auto& b) {
+        return a.first > b.first;
+    });
+    const size_t n_worst = (m_params.stuck_refine_num_worst > 0)
+                               ? std::min<size_t>(stuck.size(), m_params.stuck_refine_num_worst)
+                               : stuck.size();
+
+    std::vector<size_t> seeds;
+    seeds.reserve(2 * n_worst);
+    for (size_t i = 0; i < n_worst; ++i) {
+        for (const size_t v : stuck[i].second) seeds.push_back(v);
+    }
+    // FORCE-SPLIT THE STUCK SEGMENTS THEMSELVES, and this is not optional -- it is the half of
+    // TriWild's stall response that lowering a scalar cannot substitute for.
+    //
+    // Lowering a sizing scalar only PERMITS a split next pass; the length gate still has to agree,
+    // and once the scalar is at the floor it never will. Force-split MAKES the split, once, gate
+    // or no gate. Measured on topological_offset_2d without it: [force-split] fired 0 times in the
+    // whole run against 4 times in the joint loop it replaced, the band stalled at 4348 vertices
+    // against the joint loop's 5604, and the residual sat between 2.0x and 2.7x tolerance for
+    // eight rounds while every vertex on it was inside 3% of tolerance -- the boundary was in the
+    // right place and too coarse to stay there between the vertices.
+    //
+    // In 2D the stuck thing IS an edge, so it is queued directly; TriWild's version has to go via
+    // the longest edge of a stuck FACE because a face is what it ranks.
+    m_force_split_edges.clear();
+    if (m_params.stuck_refine_force_split) {
+        for (size_t i = 0; i < n_worst; ++i) {
+            m_force_split_edges.insert(simplex::Edge(stuck[i].second[0], stuck[i].second[1]));
+        }
+    }
+
+    const auto region = wmtk::utils::grow_vertex_region(
+        seeds,
+        std::max(0, m_params.stuck_refine_rings),
+        [this](size_t v) { return get_one_ring_vids_for_vertex_duplicate(v); });
+
+    // THE FLOOR IS THE OPTIMIZATION'S, NOT THE CONSTRUCTION'S. stuck_refine_min_scalar (1e-3) is
+    // what every other stall refinement in this file clamps against, including the branch of
+    // refine_sizing_around_worst this pass took over from.
+    //
+    // min_edge_length is a different quantity for a different phase: it is derived from
+    // min_edge_length_rel x target_distance and bounds how fine the BAND is built, and on
+    // topological_offset_2d it works out to 0.1294 -- a scalar floor of 0.0366, 36x above
+    // stuck_refine_min_scalar. Using it here caps every band segment at roughly half the offset
+    // distance, and a chord that long across a curve of radius target_distance misses the level
+    // set by about the tolerance no matter where its endpoints sit. That is exactly the plateau
+    // measured above: refined 293 of 333 region vertices in round 1 falling to 9 of 52 by round
+    // 10, the ratio being the fraction not already pinned at the floor.
+    const double s_floor = m_params.stuck_refine_min_scalar;
+    const auto refined = wmtk::utils::apply_sizing_refinement(
+        region,
+        m_params.stuck_refine_factor,
+        s_floor,
+        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+
+    logger().info(
+        "\t[phase B] {} of {} offset segments stuck over tolerance (worst {:.4}x), {} force-split, "
+        "refined {} of {} region vertices (floor {:.4})",
+        n_worst,
+        stuck.size(),
+        stuck.front().first,
+        m_force_split_edges.size(),
+        refined.size(),
+        region.size(),
+        s_floor);
+    return refined.size();
+}
+
+void TopoOffsetTriMesh::optimize_offset_alternating()
+{
+    const int rounds = std::max(1, m_offset_params.ab_max_rounds);
+    const int a_iters = std::max(1, m_offset_params.ab_phase_a_iterations);
+
+    // Before anything runs, so a construction defect is reported as one rather than surfacing
+    // later as a residual that will not converge.
+    check_no_vertex_on_both_surfaces("construction");
+
+    for (int round = 0; round < rounds; ++round) {
+        // ---- PHASE A: TriWild, with the offset held inside its envelope ----
+        logger().info("======== A/B round {} / {}: phase A ========", round + 1, rounds);
+        m_phase = OptPhase::A;
+        rebuild_offset_envelope();
+        mesh_improvement(a_iters);
+
+        // ASK THE LOOP, in the loop's own units. Recomputing the bar by hand is what produced the
+        // first two bugs in the 3D driver: optimization_quality_stats() reports ABSOLUTE AMIPS
+        // against optimization_stop_metric() = stop_energy in Phase A, so a check written in
+        // normalized units fails a Phase A that converged.
+        const double amips = std::get<0>(optimization_quality_stats());
+        const double bar = optimization_stop_metric();
+
+        // PHASE A HAS TO CONVERGE. It is TriWild on a mesh TriWild can improve, with the offset
+        // pinned to a tolerance-wide tube; if element quality is still above stop_energy when the
+        // loop gives up, something is wrong that iterating further will not fix, and continuing
+        // into Phase B would optimize the offset on a mesh that cannot carry it.
+        if (amips > bar) {
+            log_and_throw_error(
+                "Phase A did not converge within {} iterations: max element quality {:.6} against "
+                "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
+                "{}), or the mesh has elements no operation can fix.",
+                a_iters,
+                amips,
+                bar,
+                m_offset_params.ab_offset_envelope_rel);
+        }
+        logger().info("\t[phase A] converged: max element quality {:.4} (stop {:.4})", amips, bar);
+        // Phase A collapses can merge an offset vertex into an input one, and
+        // collapse_after_vertex() ORs both flags onto the survivor.
+        check_no_vertex_on_both_surfaces(fmt::format("round {} phase A", round + 1).c_str());
+
+        // WHAT PHASE A DID TO PHI, measured before Phase B gets a chance to repair it. This is
+        // the number 3D cannot see, and the one that says whether the re-triangulation inside the
+        // envelope is undoing the placement rather than merely reshaping around it.
+        const double phi_after_a = residual_split().max_reachable / offset_residual_tolerance();
+        logger().info("\t[phase A] phi after phase A: {:.4}x tolerance", phi_after_a);
+        if (m_offset_params.debug_output) {
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+
+        // ---- PHASE B: smoothing only, and the stuck check ----
+        logger().info("======== A/B round {} / {}: phase B ========", round + 1, rounds);
+        m_phase = OptPhase::B;
+        // Released, so smoothing can actually move the boundary. Phase A rebuilds it next round
+        // around wherever this leaves it.
+        m_offset_envelope = nullptr;
+
+        const size_t passes = phase_b_smooth();
+
+        check_offset_within_support("A/B round");
+        const DistanceSplit r = residual_split();
+        const double phi = r.max_reachable / offset_residual_tolerance();
+        logger().info(
+            "\t[phase B] {} smoothing passes, max Phi residual {:.4}x tolerance (was {:.4}x after "
+            "phase A; at vertices {:.6}, along edges {:.6})",
+            passes,
+            phi,
+            phi_after_a,
+            r.max_at_vertex,
+            r.max_in_edge);
+        if (m_offset_params.debug_output) {
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+
+        if (phi <= 1.0) {
+            logger().info(
+                "A/B converged after {} round(s): amips {:.4} (stop {:.4}), phi {:.4}x",
+                round + 1,
+                amips,
+                bar,
+                phi);
+            return;
+        }
+
+        // Not converged: refine where smoothing could not place the boundary, and let the next
+        // Phase A rebuild the mesh at that resolution.
+        refine_sizing_where_phi_is_stuck();
+    }
+
+    logger().warn(
+        "A/B did not converge in {} rounds (ab_max_rounds); the offset residual is still above "
+        "tolerance",
+        rounds);
+}
+
 void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file)
 {
     logger().info("Optimizing offset (2D)...");
@@ -1331,15 +1759,19 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // refine_sizing_around_worst() override that nothing could ever call.
     //
     // The offset plugs into mesh_improvement() through the same virtuals simwild uses:
-    //   - optimization_quality_stats(): the max of AMIPS and the offset residual, each over its
-    //     own target;
-    //   - optimization_stop_metric(): 1.0, since both are normalized;
+    //   - optimization_quality_stats(): per phase -- TriWild's own in A, the max of AMIPS and the
+    //     offset residual in B;
+    //   - optimization_stop_metric(): per phase, in the SAME units as the line above;
     //   - refine_sizing_around_worst(): TriWild's, fired only on a stall.
     // Placement is no longer among them: the offset boundary is placed by the SHARED SMOOTHER,
     // through smoothing_extra_energy(), so it takes the same line search, inversion test and
     // quality veto as every other vertex. The engine consolidates every iteration and
     // re-collects the operation queue, which is also its own answer to slot-pool exhaustion:
     // work dropped in one pass is retried in the next.
+    //
+    // It is now driven ALTERNATELY rather than jointly -- see OptPhase. Each Phase A is one
+    // mesh_improvement() with a TriWild criterion; each Phase B is smoothing to a fixed point
+    // followed by Phi-driven refinement of the shared sizing field.
     //
     // optimization_iteration_begin() re-derives the tracked surfaces each iteration. The shared
     // operations maintain the edge tags they are given, but a split creates edges the labelling
@@ -1350,7 +1782,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_swap = 0;
     m_smooth_trace.reset();
 
-    mesh_improvement(m_offset_params.max_iterations);
+    optimize_offset_alternating();
 
     // Cumulative over the whole run, not per iteration as before: the engine loop has no
     // per-iteration hook for reporting, and the per-pass numbers it logs itself carry the

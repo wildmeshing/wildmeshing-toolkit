@@ -122,6 +122,91 @@ public:
      */
     std::shared_ptr<OffsetPotential2D> m_offset_potential;
 
+    /**
+     * @brief Which half of the alternating optimization is running.
+     *
+     * THE TWO CRITERIA ARE OPTIMIZED IN TURN, NOT JOINTLY. This is the 2D counterpart of
+     * TopoOffsetTetMesh::OptPhase, and its declaration carries the measurements that motivated
+     * the split in 3D. 2D's joint loop did converge on all three examples, so the case here is
+     * weaker in kind but the same in shape: on topological_offset_2d the residual descends to
+     * 1.25x tolerance by iteration 9 and then spends four more iterations moving 1.25 -> 1.03
+     * while the mesh grows 11460 -> 11566 vertices, converging at 0.978x -- a pass with 2% of
+     * margin. Element quality is never the binding criterion on that run (AMIPS holds at 0.39x
+     * of stop_energy throughout), so the two criteria are not sharing the loop so much as one is
+     * paying for the other's operations.
+     *
+     * PHASE A is TriWild, and nothing else. Same operations, same gates, same sizing field, same
+     * stall-driven refinement -- the offset contributes no energy term, no acceptance criterion
+     * and no stop metric. Its one addition is m_offset_envelope.
+     *
+     * PHASE B moves the offset boundary and nothing else: smoothing passes against the offset
+     * energy, run to a fixed point, with no envelope on the offset (it is what has to travel)
+     * and no topological operations at all.
+     *
+     * The sizing field is SHARED and both phases write it: Phase A through TriWild's own stall
+     * refinement on element quality, Phase B through the Phi residual of the faces smoothing
+     * could not place.
+     */
+    enum class OptPhase { A, B };
+
+    /// Which phase is running. Read by every hook that differs between them; see OptPhase.
+    OptPhase m_phase = OptPhase::A;
+
+    /**
+     * @brief Whether collapse and swap answer to the Phi criterion as well as to AMIPS.
+     *
+     * They do in PHASE B and in the post-loop COARSENING, which is where the offset is the thing
+     * being protected. They do not in PHASE A, where m_offset_envelope protects it instead.
+     *
+     * Coarsening is included even though it runs at the tail of a Phase A mesh_improvement():
+     * it is not optimizing anything, it is banking, and it trades elements for nothing except
+     * the promise that the result is still good -- so it answers to BOTH criteria absolutely,
+     * whichever phase happens to be current when it runs.
+     *
+     * NOTE, 3D DIFFERS: TopoOffsetTetMesh applies the criterion in both phases. The divergence is
+     * deliberate and untested rather than principled -- 3D shipped first and changing it is a
+     * measurable experiment of its own, not a free correction.
+     */
+    bool offset_criterion_gates_operations() const
+    {
+        return m_coarsen_mode || m_phase == OptPhase::B;
+    }
+
+    /**
+     * @brief The tube the offset boundary may not leave during Phase A. Null in Phase B.
+     *
+     * REBUILT AT THE START OF EVERY PHASE A, from the offset boundary as Phase B just left it,
+     * with eps = ab_offset_envelope_rel x the Phi tolerance. Rebuilding is what lets the boundary
+     * still travel across rounds: each Phase A pins it near its current position, and each
+     * Phase B is free to move it somewhere the next Phase A will then pin.
+     *
+     * m_envelope, the input complex's and the other regions', is built once from the input mesh
+     * and never rebuilt -- that geometry is what the offset distance is measured against.
+     */
+    std::shared_ptr<SampleEnvelope> m_offset_envelope;
+
+    /// Build m_offset_envelope from the current offset-boundary segments. Called at the start of
+    /// each Phase A.
+    void rebuild_offset_envelope();
+
+    /// Hard error if any vertex is on BOTH the input complex and the offset boundary -- a state
+    /// no placement satisfies. Called at construction and after every phase; see the definition
+    /// for why a collapse can create it out of two individually fine vertices.
+    void check_no_vertex_on_both_surfaces(const char* when) const;
+
+    /// The A/B driver: Phase A (TriWild + offset envelope), Phase B (smoothing to a fixed point,
+    /// then refine where Phi is stuck), repeated until both criteria are inside tolerance or
+    /// ab_max_rounds is reached. Replaces the single mesh_improvement() call.
+    void optimize_offset_alternating();
+
+    /// Phase B's smoothing loop. Returns the number of passes run; stops when the largest vertex
+    /// displacement in a pass falls below ab_smooth_tol x l, or at ab_smooth_max_passes.
+    size_t phase_b_smooth();
+
+    /// Refine the shared sizing field around the offset faces still over tolerance after Phase B
+    /// converged. Returns the number of vertices whose scalar was lowered.
+    size_t refine_sizing_where_phi_is_stuck();
+
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // tag name maps
@@ -608,9 +693,12 @@ public:
      * complex may be split, collapsed and smoothed, and this is what bounds how far the result
      * may drift from the geometry as loaded.
      *
-     * The offset boundary must be exempt: it is the surface the optimization exists to move, and
-     * containing it inside a tube around its initial position caps how far it can ever travel
-     * toward target_distance.
+     * The offset boundary is exempt IN PHASE B, where it is the surface the optimization exists
+     * to move and containing it inside a tube around its initial position would cap how far it
+     * can ever travel. In PHASE A it is held by m_offset_envelope instead -- a tube of one Phi
+     * tolerance around wherever Phase B last left it, rebuilt each round. That is what turns "do
+     * not degrade the offset" from a per-operation criterion into a geometric constraint every
+     * shared operation already honours through surface_edge_is_outside().
      *
      * Null means "no containment requirement", which the base handles by skipping the check.
      */
@@ -631,7 +719,15 @@ public:
         // edge_is_region_boundary_live()'s comment for the collapse case that motivated this.
         // edge_is_input() needs no live form: it reads the surface class the shared operations
         // themselves propagate onto the segments they create.
-        return (edge_is_region_boundary_live(t) || edge_is_input(eid)) ? m_envelope : nullptr;
+        if (edge_is_region_boundary_live(t) || edge_is_input(eid)) {
+            // THE INPUT WINS when a segment is both. m_envelope holds the geometry the offset is
+            // measured against; m_offset_envelope holds a level set that is allowed to move.
+            return m_envelope;
+        }
+        if (m_phase == OptPhase::A && edge_is_offset_surface_live(t)) {
+            return m_offset_envelope; // may be null before the first rebuild; the base skips it
+        }
+        return nullptr;
     }
 
     /**
@@ -664,22 +760,24 @@ public:
     }
 
     /**
-     * @brief The offset boundary is the one tracked surface with NO containment envelope.
+     * @brief In PHASE B the offset boundary is the one tracked surface with NO containment
+     * envelope; in PHASE A it is contained by m_offset_envelope like any other tracked surface.
      *
-     * It is the surface the optimization exists to move: a tube around wherever conservative
-     * growth left it would cap how far it can ever travel toward the level set. Every other
-     * vertex -- input complex, another region's outline, plain interior -- gets the base's
-     * answer unchanged.
+     * Phase B is where the boundary travels, so a tube around wherever it currently sits would
+     * cap how far it can ever get toward the level set. Phase A does not move it on purpose at
+     * all -- it minimises AMIPS -- so there the tube is exactly the right constraint: smoothing
+     * an offset vertex for element quality is welcome as long as it stays within one Phi
+     * tolerance of where Phase B put it.
      *
-     * A vertex on the offset boundary AND on one of the others keeps the envelope: the region
-     * curve it also belongs to still has to be held where it is, and the offset term is a
-     * penalty rather than a hard constraint, so the two coexist.
+     * Every other vertex -- input complex, another region's outline, plain interior -- gets the
+     * base's answer unchanged in both phases. A vertex on the offset boundary AND on one of the
+     * others keeps m_envelope: the curve it also belongs to still has to be held where it is.
      */
     std::shared_ptr<SampleEnvelope> smoothing_envelope(const size_t vid) const override
     {
         const auto& ve = m_vertex_extra[vid];
         if (ve.m_is_on_offset && !ve.m_is_on_input) {
-            return nullptr; // EXPERIMENT: was `&& !ve.m_is_on_region`
+            return m_phase == OptPhase::A ? m_offset_envelope : nullptr;
         }
         return wmtk::TriOptimizerMesh::smoothing_envelope(vid);
     }
@@ -700,6 +798,12 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
+        // PHASE A HAS NO OFFSET TERM. It is TriWild, so its objective is AMIPS and nothing else;
+        // the offset boundary is held by m_offset_envelope there, not by an energy pulling it
+        // somewhere the quality pass did not ask for.
+        if (m_phase != OptPhase::B) {
+            return nullptr;
+        }
         const auto& ve = m_vertex_extra[vid];
         if (!ve.m_is_on_offset || ve.m_is_on_input || !m_offset_potential) {
             return nullptr;
@@ -722,7 +826,24 @@ public:
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
      */
     std::tuple<double, double> optimization_quality_stats() override;
-    double optimization_stop_metric() const override { return 1.; }
+
+    /**
+     * @brief 1.0 in Phase B, where the metric is normalized; the base's stop_energy in Phase A.
+     *
+     * THE UNITS ARE PART OF "IDENTICAL TO TRIWILD", and getting this wrong is silent. The pair
+     * (optimization_quality_stats, optimization_stop_metric) has to be in ONE set of units,
+     * because refine_sizing_around_worst() derives its filter from the first and then compares
+     * that filter against a per-face score. Phase A ranks by m_face_attribute[].m_quality, which
+     * is absolute AMIPS, so its metric and its bar must be absolute too. In 3D, returning the
+     * normalized metric here while Phase A ranked by absolute quality put the filter at 100
+     * against a worst element of 97: select_worst_cells returned nothing, no sizing was refined,
+     * no force-split edge was ever queued, and Phase A sat at bit-identical 91783.4 for all 20
+     * of its iterations with the stall detector firing 19 times and doing nothing.
+     */
+    double optimization_stop_metric() const override
+    {
+        return m_phase == OptPhase::A ? wmtk::TriOptimizerMesh::optimization_stop_metric() : 1.;
+    }
 
     /// The two criteria, each normalized by its own target so 1.0 means met.
     struct Criteria
