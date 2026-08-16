@@ -521,8 +521,9 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     // EVERY VERTEX TAKES THE SHARED PATH. What used to be a fork -- offset-boundary vertices to
     // a hand-rolled projection, everything else to the shared smoother -- is now a difference in
     // the OBJECTIVE, assembled by smoothing_extra_energy() and smoothing_envelope(). So the
-    // offset boundary gets the shared line search, the exact inversion test and the quality veto
-    // that the projection never had, and this hook is left with nothing to do but count.
+    // offset boundary gets the shared line search and the exact inversion test that the
+    // projection never had, and this hook is left with nothing to do but count. (The shared
+    // quality veto is turned OFF for this application -- see SmoothVertexOptions::quality_veto.)
     const size_t vid = t.vid(*this);
     const auto& ve = m_vertex_extra[vid];
     if (ve.m_is_on_region) {
@@ -534,10 +535,15 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     }
 
     ++m_smooth_trace.offset_attempted;
-    const Vector2d p_before = m_vertex_attribute[vid].m_posf;
     const double before = band_vertex_residual(vid);
     const bool ok = TriOptimizerMesh::smooth_after(t);
     const double after = band_vertex_residual(vid);
+    if (ok) ++m_smooth_trace.offset_accepted;
+
+    // NOTE the residuals are read BEFORE the caller's rollback, so `after` is the position the
+    // smoother proposed, not necessarily the one kept. That is deliberate -- it separates "the
+    // solver could not find a better place" from "it found one and the accept checks refused
+    // it" -- but it means the two numbers must always be read next to the accepted count.
     const auto nano = [](double x) {
         return static_cast<long long>(std::min(x, 1e9) * 1e9);
     };

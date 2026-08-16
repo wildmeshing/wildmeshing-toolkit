@@ -584,32 +584,45 @@ def main():
     phi_grid = load_phi_grid(meshes) if dim == 2 else None
     if phi_grid is not None:
         src, pts, cells, pdata = phi_grid
-        phi = pdata["phi"]
+        # meshio hands back (N, 1) for a scalar point field; polyscope wants (N,).
+        phi = np.asarray(pdata["phi"]).ravel()
         print("phi grid  %s  (%d samples, %d triangles)" % (src.name, len(pts), len(cells)))
         phi_struct = ps.register_surface_mesh(
             "smooth offset potential", pts, cells, color=(0.85, 0.85, 0.9), edge_width=0.0)
-        # The level value c is not in the file, but it is exactly what the isoline should sit on
-        # and it is recoverable: the offset boundary is where phi = c, so take phi at the
-        # OFFSET SURFACE vertices of the first frame. Falls back to the median otherwise.
-        level = float(np.median(phi))
-        f0 = frames[0]
-        off = f0[4]["offset surface"] if "offset surface" in f0[4] else f0[4].get("offset", [])
-        if len(off):
-            vids = np.unique(np.asarray(off).ravel())
-            near = f0[1][vids][:, :2]
-            # nearest grid sample to each offset vertex
-            idx = [int(np.argmin(((pts - q) ** 2).sum(axis=1))) for q in near[:200]]
-            level = float(np.median(phi[idx]))
+        # THE LEVEL VALUE c is what the isoline has to sit on. The run writes it to its report
+        # as `offset_level`; failing that, recover it from the mesh -- the offset boundary IS
+        # where phi = c, so phi sampled at the offset-surface vertices is c by definition.
+        level = None
+        for rep in sorted(src.parent.glob("*_report.json")):
+            try:
+                level = float(json.load(open(rep)).get("offset_level"))
+                break
+            except Exception:
+                pass
+        if level is None:
+            off = frames[0][4].get("offset", [])
+            if len(off):
+                vids = np.unique(np.asarray(off).ravel())
+                near = frames[0][1][vids][:, :2]
+                idx = [int(np.argmin(((pts - q) ** 2).sum(axis=1))) for q in near[:200]]
+                level = float(np.median(phi[idx]))
+            else:
+                level = float(np.median(phi))
+
+        # Polyscope draws isolines at multiples of the isoline PERIOD, so a period of c puts one
+        # exactly on the level set (and the rest at 2c, 3c, ... which read as a contour map).
         q = phi_struct.add_scalar_quantity("phi", phi, cmap="coolwarm", enabled=True,
                                            isolines_enabled=True)
-        try:
-            q.set_isoline_width(abs(level) if level else 0.05, True)
-        except Exception:
-            pass
-        phi_struct.add_scalar_quantity("phi residual (length)", pdata["phi_residual_length"],
-                                       cmap="viridis")
-        phi_struct.add_scalar_quantity("euclidean distance to input",
-                                       pdata["euclidean_distance"], cmap="viridis")
+        for setter in ("set_isoline_period", "set_isoline_width"):
+            if hasattr(q, setter):
+                getattr(q, setter)(level, True)
+                break
+        phi_struct.add_scalar_quantity(
+            "phi residual (length)", np.asarray(pdata["phi_residual_length"]).ravel(),
+            cmap="viridis")
+        phi_struct.add_scalar_quantity(
+            "euclidean distance to input", np.asarray(pdata["euclidean_distance"]).ravel(),
+            cmap="viridis")
         phi_struct.set_enabled(False)
         print("  phi at the offset surface (the level c): %.6g" % level)
 

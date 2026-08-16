@@ -207,7 +207,7 @@ struct Parameters : public wmtk::OptimizerParameters
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
         project_line_search_nested_steps = json_params["project_line_search_nested_steps"];
-        smooth_reject_backoff_steps = json_params["smooth_reject_backoff_steps"];
+        smooth_quality_veto = json_params["smooth_quality_veto"];
         w_envelope = 1. - w_amips;
         perform_sanity_checks = json_params["perform_sanity_checks"];
     }

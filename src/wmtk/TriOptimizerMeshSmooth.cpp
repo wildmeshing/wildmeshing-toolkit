@@ -42,7 +42,7 @@ bool TriOptimizerMesh::smooth_after(const Tuple& t)
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
-    opts.reject_backoff_steps = m_params.smooth_reject_backoff_steps;
+    opts.quality_veto = m_params.smooth_quality_veto;
 
     // Deliberately retain TriWild's default quality_veto_on_surface=true. A homogeneous
     // SimWild mesh must accept and reject the same candidate positions as TriWild.
