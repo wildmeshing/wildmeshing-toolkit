@@ -98,12 +98,25 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // froze them, and in 2D it made a degenerate face permanent -- collapse is what removes
     // one, and its neighbour being over tolerance refused the removal forever, pinning AMIPS at
     // MAX_ENERGY for the rest of the run.
+    // TWO BARS, because the coarsening pass is asking a different question from the main loop.
+    //
+    // In the LOOP the rule mirrors the AMIPS gate: refuse an operation that makes things worse.
+    // That is right there, because the loop is still working -- most of the mesh is over
+    // tolerance early on and an absolute bar would freeze it.
+    //
+    // COARSENING is not working, it is banking. It runs after the loop has finished and trades
+    // elements for nothing except the promise that the result is still good, so the bar is
+    // ABSOLUTE: both criteria -- AMIPS and the offset residual, which is what
+    // face_criterion_rel() returns the max of -- must be inside tolerance afterwards. A collapse
+    // that leaves anything over tolerance is not a saving, it is a regression with fewer
+    // elements.
     if (m_offset_potential) {
         double after = 0.;
         for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v2_id))) {
             after = std::max(after, face_criterion_rel(f));
         }
-        if (after > m_collapse_offset_rel_before.local()) {
+        const double bar = m_coarsen_mode ? 1.0 : m_collapse_offset_rel_before.local();
+        if (after > bar) {
             ++iter_cnt_collapse_offset_reject;
             return false;
         }

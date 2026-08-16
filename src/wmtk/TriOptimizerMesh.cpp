@@ -117,12 +117,17 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     if (optimization_bare_coarsen_passes()) {
         logger().info("========it post========");
         local_operations({{0, 1, 0, 0}});
-
-        // Removing what the mesh does not need is the last thing to do, not something to
-        // interleave: it trades vertices for nothing but the guarantee that the max energy does
-        // not rise, which is only worth taking once the energy is where it is going to end up.
-        coarsen_mesh();
     }
+
+    // Removing what the mesh does not need is the last thing to do, not something to
+    // interleave: it trades vertices for nothing but the guarantee that the max energy does not
+    // rise, which is only worth taking once the energy is where it is going to end up.
+    //
+    // NOT gated with the bare passes above. Those are unguarded collapse sweeps; this one runs
+    // in m_coarsen_mode, which an application can use to demand more of an operation than the
+    // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
+    // afterwards, so coarsening can only ever trade elements for a result that is still good.
+    coarsen_mesh();
 }
 
 std::tuple<double, double> TriOptimizerMesh::local_operations(

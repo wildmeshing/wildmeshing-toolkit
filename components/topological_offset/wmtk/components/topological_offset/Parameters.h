@@ -181,7 +181,17 @@ struct Parameters : public wmtk::OptimizerParameters
         // vertex smoothed every pass: the offset boundary is placed BY the smoother, and a
         // well-shaped but badly-placed patch is exactly what the filter would skip. Left at
         // OptimizerParameters' `false`.
+        // The whole coarsening group, not just the on/off switch. Declaring a key in the spec
+        // is only half of making it settable: jse injects the default into the json, and if
+        // nothing copies it into the struct the value in force is whatever
+        // OptimizerParameters happens to hold. Measured the hard way -- setting
+        // coarsen_smooth_ring produced bit-identical output because it was never read.
         coarsen_pass = json_params["coarsen_pass"];
+        coarsen_unbounded = json_params["coarsen_unbounded"];
+        coarsen_local_smoothing_passes = json_params["coarsen_local_smoothing_passes"];
+        coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
+        coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
+        coarsen_max_rounds = json_params["coarsen_max_rounds"];
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
         stuck_refine_cooldown = json_params["stuck_refine_cooldown"];
         stuck_refine_num_worst = json_params["stuck_refine_num_worst"];
