@@ -471,6 +471,11 @@ public:
     /// The per-face score refine_sizing_around_worst ranks by; >= 1 means the face fails the
     /// criterion. Also the per-face form of optimization_quality_stats().
     double face_criterion_rel(const Tuple& f) const;
+    /// AMIPS of a cell over stop_energy -- the 3D twin of TriOptimizerMesh::quality_rel(), so
+    /// both dimensions express "how bad is this element" on the same 1.0 scale.
+    double cell_quality_rel(const size_t tid) const;
+    /// ... and the worst of the (up to two) cells a face separates.
+    double amips_rel_at_face(const Tuple& f) const;
 
     /**
      * @brief The offset surface's residual, split by whether the optimizer can do anything about

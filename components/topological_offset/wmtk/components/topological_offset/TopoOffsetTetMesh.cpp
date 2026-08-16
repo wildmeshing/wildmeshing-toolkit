@@ -972,8 +972,19 @@ std::tuple<double, double> TopoOffsetTetMesh::optimization_quality_stats()
     // the measurement.
     report_outside_support("Optimization iteration", r);
 
+    // MAX OF THE TWO CRITERIA, each over its own target, which is what 2D has always returned.
+    // Phi alone left AMIPS out of the loop's stop test, its stall test and its refinement
+    // ranking, so a degenerate element could sit in the mesh at MAX_ENERGY unseen and unfixed
+    // for a whole run -- and the offset criterion became the only thing holding the surface
+    // together, which is why weakening it decimated the surface here and not in 2D.
     const double tol = offset_residual_tolerance();
-    return {r.max_reachable / tol, r.avg_reachable / tol};
+    double amips = 0.;
+    for (const Tuple& t : get_tets()) {
+        amips = std::max(amips, cell_quality_rel(t.tid(*this)));
+    }
+    const double phi = r.max_reachable / tol;
+    logger().info("\t[criteria] amips {:.4}x | phi {:.4}x", amips, phi);
+    return {std::max(amips, phi), std::max(amips, r.avg_reachable / tol)};
 }
 
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
@@ -1400,13 +1411,34 @@ void TopoOffsetTetMesh::report_outside_support(const char* when, const DistanceS
         s.worst_outside_dist / std::max(m_offset_params.target_distance, 1e-16));
 }
 
+double TopoOffsetTetMesh::cell_quality_rel(const size_t tid) const
+{
+    return cell_quality(tid) / std::max(m_params.stop_energy, 1e-16);
+}
+
+double TopoOffsetTetMesh::amips_rel_at_face(const Tuple& f) const
+{
+    double q = cell_quality_rel(f.tid(*this));
+    if (const auto opp = f.switch_tetrahedron(*this)) {
+        q = std::max(q, cell_quality_rel(opp->tid(*this)));
+    }
+    return q;
+}
+
 double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
 {
     // The per-face form of optimization_quality_stats()'s max, restricted to what this face
-    // carries. >= 1 means the face fails the criterion, which is what makes it a candidate for
-    // refinement.
+    // carries. >= 1 means the face fails at least one criterion, which is what makes it a
+    // candidate for refinement.
+    //
+    // THE AMIPS TERM IS THE SAME ONE 2D RANKS BY. This used to be the Phi residual alone, and
+    // that asymmetry had teeth: a degenerate element is invisible to a phi-only score, so the
+    // sizing field never refines around one and the loop never sees it, while 2D -- whose score
+    // starts from quality_rel() -- treats it as the worst thing in the mesh. The two dimensions
+    // then needed opposite acceptance rules for the same operations, which is a symptom of
+    // measuring different things rather than of the dimensions differing.
     const double tol = offset_residual_tolerance();
-    double score = 0.;
+    double score = amips_rel_at_face(f);
     for (const size_t vid : get_face_vids(f)) {
         if (!band_vertex_is_reachable(vid)) continue;
         score = std::max(score, band_vertex_residual(vid) / tol);
