@@ -22,7 +22,7 @@ ExternalProject_Add(
     #
     # Keep this in sync with the `ref:` of the data2 checkout in .github/workflows/pip.yml --
     # the Python integration suite reads the same manifest and must see the same files.
-    GIT_TAG 0be5e37e34f6e9ac01c9d0404295cda1982d187a
+    GIT_TAG dbb3f518f47a1e5df1be99c77bcca7d092647bc7
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
