@@ -14,8 +14,6 @@ set(SRC_FILES
 	Smooth.cpp
 	Collapse.cpp
 	Swap.cpp
-	Quadrics.hpp
-	Quadrics.cpp
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp

@@ -621,14 +621,14 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
     }
     logger().info(
         "\tOffset sizing seed: {} vertices, mean incident length {:.6} -> target {:.6} "
-        "(base l {:.6}, l_min {:.6} = 2*{}*sin({} deg), scalar floor {:.6})",
+        "(base l {:.6}, l_min {:.6} = {} x target_distance {}, scalar floor {:.6})",
         n_seeded,
         n_seeded > 0 ? raw_sum / n_seeded : 0.,
         std::max(n_seeded > 0 ? raw_sum / n_seeded : 0., m_offset_params.min_edge_length),
         l,
         m_offset_params.min_edge_length,
+        m_offset_params.min_edge_length_rel,
         m_offset_params.target_distance,
-        m_offset_params.max_normal_deviation_deg,
         s_floor);
 }
 

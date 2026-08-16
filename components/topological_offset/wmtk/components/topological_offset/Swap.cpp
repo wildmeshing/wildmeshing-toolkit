@@ -82,8 +82,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // Both must belong to the SAME tracked surface: a mixed flip would hand a triangle of the
     // input complex to the offset boundary, or the reverse, moving the line where one meets the
     // other.
-    const auto [f_abc, fid_abc] = tuple_from_face(std::array<size_t, 3>{{a, b, c}});
-    const auto [f_abd, fid_abd] = tuple_from_face(std::array<size_t, 3>{{a, b, d}});
+    const size_t fid_abc = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, c}}));
+    const size_t fid_abd = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, d}}));
     if (fid_abc == static_cast<size_t>(-1) || fid_abd == static_cast<size_t>(-1)) {
         return false;
     }
@@ -99,7 +99,15 @@ bool TopoOffsetTetMesh::swap_before_surface(
         // the offset distance is measured against, so it may not drift at all.
         return false;
     }
-    return offset_swap_normal_deviation_ok(f_abc, f_abd, a, b, c, d);
+
+    // An OFFSET-surface flip is allowed unconditionally. It used to be gated on
+    // offset_swap_normal_deviation_ok(), which refused a flip whose new diagonal made the
+    // sampled field normals disagree more than the old one did -- a proxy for "this flip cuts
+    // across a feature", needed only because the loop's own criterion was blind to it. The
+    // face-sampled Phi residual sees it directly and refines instead. A flip does not move any
+    // vertex, so it cannot change where the offset surface passes through space except through
+    // the diagonal it picks, which is exactly what the criterion now measures.
+    return true;
 }
 
 bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool)
@@ -111,58 +119,6 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool)
         m_tet_attribute[t].label = label;
     }
     ++iter_cnt_swap;
-    return true;
-}
-
-bool TopoOffsetTetMesh::offset_swap_normal_deviation_ok(
-    const Tuple& face_abc,
-    const Tuple& face_abd,
-    size_t a,
-    size_t b,
-    size_t c,
-    size_t d) const
-{
-    // pool the 4 target-normal samples from both current offset faces, matching the
-    // reference's 8-sample pool (4 per triangle)
-    std::vector<OffsetSurfaceSample> samples;
-    for (const OffsetSurfaceSample& s : offset_surface_samples(face_abc)) samples.push_back(s);
-    for (const OffsetSurfaceSample& s : offset_surface_samples(face_abd)) samples.push_back(s);
-
-    const Vector3d pa = m_vertex_attribute[a].m_posf;
-    const Vector3d pb = m_vertex_attribute[b].m_posf;
-    const Vector3d pc = m_vertex_attribute[c].m_posf;
-    const Vector3d pd = m_vertex_attribute[d].m_posf;
-
-    // spread (max-min) of the angle between `dir` and every pooled sample, same formula as
-    // collapse_normal_deviation()
-    auto spread = [&samples](const Vector3d& dir) {
-        double min_angle = std::numeric_limits<double>::max();
-        double max_angle = std::numeric_limits<double>::lowest();
-        for (const OffsetSurfaceSample& s : samples) {
-            if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
-            const double dot = std::clamp(dir.dot(s.normal), -1., 1.);
-            const double angle = (180. / M_PI) * std::acos(dot);
-            min_angle = std::min(min_angle, angle);
-            max_angle = std::max(max_angle, angle);
-        }
-        if (min_angle > max_angle) return 0.; // no samples found at all
-        return max_angle - min_angle;
-    };
-
-    const double nd_old = spread((pb - pa).normalized()); // current diagonal (a,b)
-    const double nd_new = spread((pd - pc).normalized()); // diagonal after the flip (c,d)
-
-    if (nd_old >= m_max_normal_deviation_swap_max_deg ||
-        nd_new >= m_max_normal_deviation_swap_max_deg) {
-        // something might be off here, better don't flip
-        return false;
-    }
-
-    // only reject a regression: an already-poor alignment doesn't block the flip
-    if (nd_old < m_offset_params.max_normal_deviation_deg &&
-        nd_new >= m_offset_params.max_normal_deviation_deg) {
-        return false;
-    }
     return true;
 }
 

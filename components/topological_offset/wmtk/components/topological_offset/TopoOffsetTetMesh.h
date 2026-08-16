@@ -6,6 +6,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "OffsetPotential.hpp"
 #include "Parameters.h"
 #include "SimplicialComplexBVH.hpp"
 
@@ -85,23 +86,6 @@ public:
 
 
 /**
- * @brief one sample of the input complex's implicit offset field, taken near a point on an
- * offset-surface face. `normal` is Vector3d::Zero() if the sample point landed exactly on the
- * input complex, in which case no normal direction could be recovered.
- * @note mirrors a single sample of
- * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/utils/Quadrics.cpp's
- * get_triangle_samples_and_area()
- */
-struct OffsetSurfaceSample
-{
-    Vector3d point; // the sample point, on (or near a corner of) the face
-    Vector3d nearest; // nearest point on the input complex to `point`
-    Vector3d normal; // (point - nearest).normalized()
-    double weight; // 1 for the face centroid, 0.1 for the 3 near-corner samples
-};
-
-
-/**
  * @brief The offset's tet mesh, on the shared 3D optimizer.
  *
  * The construction phase -- marching tets, simplicial embedding, growing the offset region --
@@ -155,6 +139,19 @@ public:
     std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
     size_t m_tags_count;
     SimplicialComplexBVH m_input_complex_bvh;
+
+    /**
+     * @brief The smooth offset potential Phi of the input complex, as loaded.
+     *
+     * The offset surface is the level set Phi = c. Built from the SAME extraction as
+     * m_input_complex_bvh, in the same call, so the two describe the same geometry. Like the
+     * BVH, it is built once from the input and NEVER rebuilt: every offset quantity is measured
+     * against the input as given, not against whatever the mesh has drifted to.
+     *
+     * shared_ptr because OffsetEnergy3D holds one per smoothing call.
+     */
+    std::shared_ptr<OffsetPotential3D> m_offset_potential;
+
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // tag map stuff
@@ -316,12 +313,65 @@ public:
     bool allow_surface_swap() const override { return true; }
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
-    /// Input-complex vertices never move (smooth_before refuses them), and an offset-surface
-    /// vertex is pulled by the quadrics rather than by an envelope, so there is nothing to pull
-    /// anything toward.
+    /**
+     * @brief The offset surface is the one tracked surface with NO envelope, in either role.
+     *
+     * It is the surface the optimization exists to move: a tube around wherever conservative
+     * growth left it would cap how far it can ever travel toward the level set. What holds it
+     * is the offset term in the OBJECTIVE -- smoothing_extra_energy() below -- not a container.
+     *
+     * Input-complex vertices are frozen outright by smooth_before(), so they never reach the
+     * smoother and need nothing here either. The 2D twin returns the base's answer for every
+     * other vertex because 2D tracks region-boundary curves as well; 3D tracks only these two.
+     */
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t) const override
     {
         return nullptr;
+    }
+
+    /**
+     * @brief ... and it is not CONTAINED by one either.
+     *
+     * The base's default answers m_envelope for every vertex the union flag m_is_on_surface is
+     * set on, and here that flag covers both tracked surfaces. m_envelope is built from the
+     * INPUT complex's boundary, so answering it for an offset-surface vertex would require the
+     * offset to stay within eps of the input -- a tube of the wrong radius around the wrong
+     * surface, which would refuse every move the offset term asks for. The input complex keeps
+     * the envelope (its vertices are frozen anyway, so this only ever answers for a vertex on
+     * both surfaces at once).
+     */
+    std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
+    {
+        if (m_vertex_extra[vid].m_is_on_offset && !m_vertex_extra[vid].m_is_on_input) {
+            return nullptr;
+        }
+        return wmtk::TetOptimizerMesh::smoothing_containment_envelope(vid);
+    }
+
+    /**
+     * @brief The offset term, for a vertex on the offset surface; null for everything else.
+     *
+     * THIS IS WHERE THE OFFSET IS PLACED. w (Phi - c)^2, minimised by the shared smoother
+     * alongside AMIPS -- so the offset surface is subject to the same line search, the same
+     * exact inversion test and the same accept checks as every other vertex in the mesh, which
+     * the quadrics/Laplacian blend that used to place it was not.
+     *
+     * A vertex that is also on the INPUT COMPLEX is excluded. It sits at distance 0 from the
+     * complex by definition, where Phi diverges; asking it to reach the level set would be
+     * asking it to leave the geometry the offset is measured from. (It never gets here anyway --
+     * smooth_before() refuses it -- but the exclusion is stated where the reason lives.)
+     */
+    std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t vid) const override
+    {
+        const auto& ve = m_vertex_extra[vid];
+        if (!ve.m_is_on_offset || ve.m_is_on_input || !m_offset_potential) {
+            return nullptr;
+        }
+        // Same weight the envelope term carries in the applications that have one, and for the
+        // same reason: with w_amips at its default 1e-4 the placement dominates and AMIPS is a
+        // light shape preference on top.
+        return std::make_shared<OffsetEnergy3D>(m_offset_potential, m_params.w_envelope);
     }
 
     void write_optimization_debug_output(const std::string& path) override { write_vtu(path); }
@@ -330,19 +380,118 @@ public:
      * @brief The engine's stall-driven sizing refinement, driven by the offset's criterion.
      *
      * mesh_improvement() fires this when optimization_quality_stats()'s max stalls; the
-     * override ratchets the sizing down around the worst-placed band vertices only
-     * (TetWildMesh::refine_sizing_around_worst with distance error in place of AMIPS), and
-     * keeps the paper's 1.5x growth where the surface is flat, in-band and well-shaped.
+     * override ratchets the sizing down around the worst-scoring offset-surface FACES only
+     * (TetWildMesh::refine_sizing_around_worst with face_criterion_rel() in place of AMIPS).
      */
     size_t refine_sizing_around_worst(double) override;
 
     /**
-     * @brief (max, avg) band-vertex distance error over convergence_target; the engine's stop
-     * metric is therefore 1.0. Distance only -- the average-normal-deviation criterion is
-     * tested after the loop.
+     * @brief (max, avg) Phi residual over the reachable offset surface, in units of its
+     * tolerance; the engine's stop metric is therefore 1.0.
      */
     std::tuple<double, double> optimization_quality_stats() override;
     double optimization_stop_metric() const override { return 1.; }
+
+    /// The tolerance the Phi residual is measured against: a fraction of target_distance, so
+    /// "how close is close enough" is stated in units of the offset the run asked for.
+    double offset_residual_tolerance() const
+    {
+        return std::max(
+            m_offset_params.offset_residual_rel * m_offset_params.target_distance,
+            1e-16);
+    }
+
+    /**
+     * @brief Stop the run if any reachable offset-surface vertex has left the potential's support.
+     *
+     * Beyond dhat, Phi is identically zero WITH a zero gradient: the vertex is given no direction
+     * back, its residual saturates instead of growing, and the sizing field refines around a
+     * vertex nothing can move. There is no recovery from that state and no honest report of it
+     * either, so it is a hard error rather than a warning -- if it turns out to fire on real
+     * inputs, the answer is a larger offset_dhat_factor, not a quieter log line.
+     *
+     * Called once per optimization iteration, and once on the band as constructed.
+     */
+    void check_offset_within_support(const char* when) const;
+
+    /// How far vid is from the level set Phi = c, as a length. This is what the loop converges
+    /// on and what the sizing field refines by.
+    double band_vertex_residual(const size_t vid) const;
+
+    /// Whether vid is an offset-surface vertex the optimizer could still place on the level set.
+    /// A vertex on the input complex sits where Phi diverges; one on the domain boundary is
+    /// frozen there because conservative growth ran out of room. Neither is fixable.
+    bool band_vertex_is_reachable(const size_t vid) const
+    {
+        return !m_vertex_extra[vid].m_is_on_input &&
+               m_vertex_attribute[vid].on_bbox_faces.empty();
+    }
+
+    /// Which vertices lie on the offset surface. Shared by every measurement so they all agree
+    /// on what "the band" is.
+    std::vector<bool> band_vertex_mask() const;
+
+    /// The residual sampled at points INSIDE an offset-surface face -- see offset_face_samples().
+    struct FaceSamples
+    {
+        double max = 0.;
+        double sum = 0.;
+        size_t n = 0;
+    };
+
+    /**
+     * @brief The Phi residual at `offset_residual_samples` interior points of offset face `f`.
+     *
+     * THE CRITERION CANNOT BE A VERTEX CRITERION. Distance error at the vertices alone does not
+     * pin down the offset: a surface can have every vertex exactly on the level set while its
+     * triangles cut across it, which reads as converged and is not the offset. That is the same
+     * gap the paper's normal-deviation criterion (Sec. 5.3.3) covered, and it is not
+     * hypothetical -- measured in 2D on topological_offset_2d_vertex_input, a band that had
+     * decimated to twelve segments reported a vertex error of 0.2% of target_distance while its
+     * edge midpoints sat at 18%; on the dragon, 5.5% at the vertices against 26% between them.
+     *
+     * Sampling the face INTERIOR is what the potential makes possible and the old distance field
+     * did not: Phi is defined everywhere, so the offset can be measured anywhere on the surface
+     * rather than only where the mesh happens to have put a vertex. The same samples feed
+     * face_criterion_rel(), so the sizing field refines a surface too coarse to represent the
+     * offset instead of letting it decimate -- which is what allowed the per-operation
+     * normal-deviation guards in collapse and swap to be deleted.
+     *
+     * Returns nothing for a face with an UNREACHABLE corner: a triangle running onto the input
+     * complex is legitimately closer than target_distance across part of itself, and no
+     * operation can change that.
+     */
+    FaceSamples offset_face_samples(const Tuple& f) const;
+
+    /// The per-face score refine_sizing_around_worst ranks by; >= 1 means the face fails the
+    /// criterion. Also the per-face form of optimization_quality_stats().
+    double face_criterion_rel(const Tuple& f) const;
+
+    /**
+     * @brief The offset surface's residual, split by whether the optimizer can do anything about
+     * it. See band_vertex_is_reachable(). Only the reachable half drives the loop and the sizing
+     * field; the pinned half is reported so a construction defect stays visible.
+     */
+    struct DistanceSplit
+    {
+        double max_reachable = 0., avg_reachable = 0.;
+        double max_pinned = 0.;
+        size_t n_reachable = 0, n_pinned = 0;
+        /// max_reachable, split by where it was measured. The two answer different questions:
+        /// the vertex max says the surface is in the wrong PLACE, the face max says it is too
+        /// COARSE to be in the right place -- and they call for different remedies (smoothing
+        /// vs refinement), so a run that is not converging needs to know which it is.
+        double max_at_vertex = 0., max_in_face = 0.;
+        /// The runaway guard's tally, collected in the same traversal -- see
+        /// check_offset_within_support() and report_outside_support().
+        size_t n_outside_support = 0;
+        size_t worst_outside_vid = static_cast<size_t>(-1);
+        double worst_outside_dist = 0.;
+    };
+    DistanceSplit residual_split() const;
+    /// Turn a residual_split()'s outside-support tally into the hard error. Separate from
+    /// check_offset_within_support() so the per-iteration check can reuse a split it already has.
+    void report_outside_support(const char* when, const DistanceSplit& s) const;
 
     /**
      * @brief Which tag the tets a swap creates should carry.
@@ -418,11 +567,6 @@ private:
 
 public:
 private:
-    /// The worse of the two endpoints' offset-surface deviation before the collapse.
-    wmtk::threading::enumerable_thread_specific<double> m_collapse_nd_before;
-
-public:
-private:
     bool swap_capture_tag(const std::vector<size_t>& tids);
     /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
     wmtk::threading::enumerable_thread_specific<CellTag> m_swap_tag;
@@ -494,9 +638,29 @@ public:
     bool empty_input_complex();
 
     /**
-     * @brief initialize BVH for input complex. Must be called after init_from_image(...)
+     * @brief Build the input complex's BVH and keep the extraction the potential needs.
+     *
+     * Must be called after init_from_image(...). One extraction feeds both, so the exact
+     * distance field and the smooth potential can never describe different geometry.
      */
     void init_input_complex_bvh();
+
+    /**
+     * @brief Build the smooth offset potential from the extraction init_input_complex_bvh() kept.
+     *
+     * Separate from the BVH init because it needs target_distance and offset_dhat_factor, which
+     * a caller that only wants the distance field has no reason to have set.
+     */
+    void init_offset_potential();
+
+    /// The input complex as Phi's primitives: the BOUNDARY triangles of the label-1 tet region
+    /// plus the complex's isolated triangles, every edge of those triangles plus the complex's
+    /// wires, and its isolated points. Filled by init_input_complex_bvh(), consumed by
+    /// init_offset_potential().
+    MatrixXd m_phi_V;
+    MatrixXi m_phi_E;
+    MatrixXi m_phi_F;
+    std::vector<int> m_phi_P;
 
 
     /**
@@ -550,39 +714,11 @@ public:
     std::vector<Tuple> get_offset_surface_faces_for_vertex(const Tuple& t) const;
 
     /**
-     * @brief the 4 offset-field samples for face f (centroid + one near each corner), following
-     * Quadrics.cpp's get_triangle_samples_and_area(). Shared by the Quadrics construction below
-     * and by the feature-preserving checks in Collapse.cpp -- a single centroid sample cannot
-     * tell a locally-flat patch from one straddling a sharp feature of the input complex, since
-     * a single BVH nearest-point query just picks whichever side of the feature is closer.
-     * @note a sample is only accepted (non-zero OffsetSurfaceSample::normal) if it lies in the
-     * direction of offset_face_outward_normal(f); otherwise it is degenerate for our purposes,
-     * same as landing exactly on the input complex.
-     */
-    std::array<OffsetSurfaceSample, 4> offset_surface_samples(const Tuple& f) const;
-
-    /**
-     * @brief quadrics-based smoothing step for offset surface vertices: blends a Laplacian
-     * step with a projection onto quadrics built from target_distance-offset samples of the
-     * input complex, following
-     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/OffsetOptimization.cpp#L2226
-     * @note skeleton: no bisection fallback toward p0 on rejection.
-     */
-    bool smooth_after_offset_surface(const Tuple& t);
-
-    /**
      * @brief Why smoothing refused a vertex, one counter per site where it can say no.
      *
-     * The base's SmoothRejectCounters only sees the vertices that reach
-     * TetOptimizerMesh::smooth_after(), which for the offset is the INTERIOR ones -- an
-     * offset-surface vertex is placed by smooth_after_offset_surface() and never touches them.
-     * So the whole offset surface, the part that actually carries the distance error, is
-     * invisible in the base's "accepted N | rejected: ..." line. These counters cover every
-     * site on both paths.
-     *
-     * Field-for-field the same as TopoOffsetTriMesh::SmoothTrace, including the three counters
-     * 3D has no mechanism to raise yet -- they stay in so the two log lines diff cleanly, and
-     * so they light up on their own when the mechanism lands. Each is commented below.
+     * The base's SmoothRejectCounters covers the rejections inside the shared smoother, which is
+     * now every vertex; these cover the sites before it, where the offset says no for its own
+     * reasons, plus the split of what reached the smoother into offset-surface and interior.
      */
     struct SmoothTrace
     {
@@ -590,67 +726,24 @@ public:
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
         std::atomic<int> before_on_input{0}; ///< input complex, frozen
-        std::atomic<int> offset_attempted{0}; ///< dispatched to smooth_after_offset_surface()
-        std::atomic<int> offset_no_neighbours{0}; ///< no offset-surface neighbour to average
-        std::atomic<int> offset_on_complex{0}; ///< every sample degenerate: no offset direction
-        /// The binary search found no legal step at all: every fraction of the move inverts an
-        /// incident tet, possibly including the zero step (p0 itself already inverted). This IS
-        /// a rejection -- smooth_after_offset_surface() restores p0 and returns false, following
-        /// the reference implementation, which refuses rather than accepting a zero-length move.
-        /// A vertex in this state received none of its correction this pass.
-        std::atomic<int> offset_inverted{0};
-        /// Always 0 in 3D: the region-boundary envelope is 2D-only, so nothing on this path can
-        /// be rejected by containment. Kept for lock-step with 2D.
-        std::atomic<int> offset_envelope{0};
-        std::atomic<int> offset_accepted{0};
-        /// Accepted, but the binary search had to stop short of the blended target. These are
-        /// invisible in offset_accepted, which is the point: a clamped move reports success
-        /// while delivering a fraction of the requested correction.
-        std::atomic<int> offset_clamped{0}; ///< accepted with the search fraction < 0.99
-        /// Always 0 in 3D, for the same reason as offset_envelope.
-        std::atomic<int> offset_clamp_env{0};
-        std::atomic<int> offset_clamp_inv{0}; ///< ... and an inverted tet is what stopped it
-        /// Always 0 until the tangent-PLANE slide lands (the 3D counterpart of 2D's
-        /// minimize_distance_along_tangent(); see .claude/CLAUDE.md 3D note 7).
-        std::atomic<int> offset_slid{0};
-        /// Distance error over the offset vertices this pass actually touched, before and after
-        /// the move, in units of 1e-9 so an atomic<int> can accumulate a max/sum.
-        std::atomic<long long> offset_err_before_nano{0};
-        std::atomic<long long> offset_err_after_nano{0};
-        std::atomic<int> offset_err_max_before_nano{0};
-        std::atomic<int> offset_err_max_after_nano{0};
-        std::atomic<int> interior_attempted{0}; ///< dispatched to the shared AMIPS smoother
-        /// Always 0 in 3D: there is no REGION surface class here, only INPUT and OFFSET.
-        std::atomic<int> region_attempted{0};
+        std::atomic<int> offset_attempted{0}; ///< reached the smoother carrying the offset term
+        std::atomic<int> interior_attempted{0}; ///< reached it as an ordinary interior vertex
 
         void reset()
         {
-            offset_err_before_nano.store(0);
-            offset_err_after_nano.store(0);
             for (std::atomic<int>* c :
                  {&attempted,
                   &before_bbox,
                   &before_unrounded,
                   &before_on_input,
                   &offset_attempted,
-                  &offset_no_neighbours,
-                  &offset_on_complex,
-                  &offset_inverted,
-                  &offset_envelope,
-                  &offset_accepted,
-                  &offset_clamped,
-                  &offset_clamp_env,
-                  &offset_clamp_inv,
-                  &offset_slid,
-                  &offset_err_max_before_nano,
-                  &offset_err_max_after_nano,
-                  &interior_attempted,
-                  &region_attempted}) {
+                  &interior_attempted}) {
                 c->store(0);
             }
         }
     };
-    SmoothTrace m_smooth_trace;
+    mutable SmoothTrace m_smooth_trace;
+
     void log_smooth_trace() const;
 
 
@@ -658,38 +751,6 @@ public:
 
     //// collapse
 
-    // max angle (degrees, 0-90, orientation independent) allowed between an offset-surface
-    // face's own normal and the input-complex normal it is supposed to approximate, checked by
-    // collapse_edge_before/after and offset_swap_normal_deviation_ok(). Exposed to the user as
-    // /max_normal_deviation_deg (see Parameters::max_normal_deviation_deg). See
-    // face_normal_deviation() and
-    // https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/NormalDeviationAfterInvariant.cpp
-    // and .../invariants/OffsetCollapseBeforeInvariant.cpp
-    double m_max_normal_deviation_swap_max_deg = 75.0;
-
-    /**
-     * @brief Paper Definition 5: max angle (degrees) between the offset FIELD normal at face f's
-     * centroid and the field normal at each of its three near-corner samples.
-     *
-     * Both terms are field normals -- f's own geometric normal does not appear. n() is continuous
-     * away from the input complex's features, so shrinking a face drives sigma to zero, which is
-     * what makes this something update_sizing_field() can actually satisfy. The earlier version
-     * compared f's own normal against the samples, i.e. misorientation, which refinement does not
-     * fix and the sizing field could therefore never drive down.
-     *
-     * Mirrors TopoOffsetTriMesh::edge_normal_deviation(); the only difference is 3 samples
-     * instead of 2, because a triangle has three vertices and a segment has two.
-     */
-    double face_normal_deviation(const Tuple& f) const;
-
-    /**
-     * @brief The offset field's normal at an arbitrary point: the unit vector from the nearest
-     * point on the input complex out to p. False if p sits on the complex, where it has none.
-     *
-     * "The offset normal can be computed for any point in space by finding the projection point
-     * on the offset and normalizing the vector from the point in space to its projection."
-     * (paper, Appendix A.)
-     */
     /**
      * @brief Seed the sizing field from the offset surface's CURRENT edge lengths, once, before
      * the first pass. Paper Sec. 5.3.3 Step 1: "initialized with the current length of each edge."
@@ -699,8 +760,6 @@ public:
      * one and the surface is decimated before any metric is computed.
      */
     void init_offset_sizing_field();
-
-    bool offset_field_normal(const Vector3d& p, Vector3d& n) const;
 
     /**
      * @brief How far the offset surface is from where it should be: {max, avg} over its vertices.
@@ -717,15 +776,6 @@ public:
      * visible rather than silently dropped.
      */
     std::pair<double, double> compute_distance_deviation() const;
-
-    /**
-     * @brief How far the offset surface FACES from where it should be: {max, avg} in DEGREES.
-     *
-     * face_normal_deviation() over the same band-outer faces compute_distance_deviation() measures
-     * vertices over, reported alongside it. Distance alone does not pin the offset down: a surface
-     * can have every vertex at exactly target_distance while zig-zagging between them.
-     */
-    std::pair<double, double> compute_normal_deviation() const;
 
     /**
      * @brief The band's outer surface, recomputed live rather than read from the cached class.
@@ -772,27 +822,8 @@ public:
     std::atomic<int> iter_cnt_split{0};
     std::atomic<int> iter_cnt_collapse{0};
     std::atomic<int> iter_cnt_swap{0};
-    std::atomic<int> iter_cnt_collapse_nd_reject{0};
     std::atomic<int> iter_cnt_collapse_offset_removed{0};
-    std::atomic<int> iter_cnt_swap_nd_reject{0};
 
-    /**
-     * @brief max face_normal_deviation() over the offset-surface faces incident to vertex vid
-     */
-    double max_offset_surface_normal_deviation_at_vertex(size_t vid) const;
-
-    /**
-     * @brief OffsetCollapseBeforeInvariant analogue: pools offset_surface_samples() normals
-     * from every offset-surface face incident to remove_vid and returns the spread
-     * (max - min, degrees, orientation dependent via normal_angle_180-style acos) of their
-     * angles to the collapsing edge's direction. A small spread means the samples around the
-     * survivor agree with each other relative to the edge, i.e. the edge runs along a locally
-     * flat/consistent part of the offset surface; a large spread means the true target-normal
-     * field disagrees with itself nearby -- a sign of a feature edge -- and collapsing there
-     * should be rejected. See
-     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/OffsetCollapseBeforeInvariant.cpp
-     */
-    double collapse_normal_deviation(size_t v_from, size_t v_to, size_t remove_vid) const;
     //// collapse
 
 
@@ -829,25 +860,6 @@ public:
 
     //// swap
 
-
-    /**
-     * @brief OffsetSwapInvariant analogue: for the offset-surface diagonal flip (a,b) -> (c,d)
-     * across the two current offset faces (a,b,c)/(a,b,d), reject only a regression -- if the
-     * *old* diagonal (a,b) was already poorly aligned (spread >=
-     * m_offset_params.max_normal_deviation_deg) with the offset target-normal field sampled on both
-     * faces, the flip is not blocked on these grounds; if it was well aligned and the *new*
-     * diagonal (c,d) would not be, it is rejected. See
-     * https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/invariants/OffsetSwapInvariant.cpp
-     */
-    bool offset_swap_normal_deviation_ok(
-        const Tuple& face_abc,
-        const Tuple& face_abd,
-        size_t a,
-        size_t b,
-        size_t c,
-        size_t d) const;
-    //// swap
-
     /**
      * @brief execute simplistic marching tets. All edges with one vertex labelled 0 and the other
      * 1/2 are split, at the MIDPOINT (Midpoint) or at a fraction of the way toward the input
@@ -859,7 +871,7 @@ public:
      * the midpoint (Sec. 5.2: "we do not perform an interpolation ... we just place the inserted
      * vertices at the midpoint of the split edges") and leaves the distance entirely to the
      * Step-3 optimization; and they did the optimizer's job with a worse tool, having no error
-     * feedback and running none of the inversion guards smooth_after_offset_surface() does.
+     * feedback and running none of the accept checks the shared smoother does.
      */
     void marching_tets();
 

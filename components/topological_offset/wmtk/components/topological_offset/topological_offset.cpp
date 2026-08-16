@@ -302,8 +302,9 @@ void topological_offset(nlohmann::json json_params)
         size_t initial_num_comps = mesh.flood_fill();
         mesh.reset_connected_components();
 
-        // initialize BVH
+        // initialize BVH and the smooth offset potential, from one extraction
         mesh.init_input_complex_bvh();
+        mesh.init_offset_potential();
         mesh.consolidate_mesh();
 
         // record counts (mostly debugging, this is probably really slow)
@@ -429,17 +430,20 @@ void topological_offset(nlohmann::json json_params)
             report["threads"] = NUM_THREADS;
             report["time"] = time;
             if (!mesh.optimization_metrics.empty()) {
-                std::vector<double> max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev;
+                // The Euclidean distance error is a DIAGNOSTIC now -- the offset is the level set
+                // of the smooth potential, so what the run converged on is the Phi residual. Both
+                // are reported, and the two agree away from reentrant features of the input.
+                std::vector<double> max_dist_err, avg_dist_err, max_residual, avg_residual;
                 for (const auto& m : mesh.optimization_metrics) {
                     max_dist_err.push_back(m[0]);
                     avg_dist_err.push_back(m[1]);
-                    max_norm_dev.push_back(m[2]);
-                    avg_norm_dev.push_back(m[3]);
+                    max_residual.push_back(m[2]);
+                    avg_residual.push_back(m[3]);
                 }
                 report["optimization_metrics"]["max_dist_err"] = max_dist_err;
                 report["optimization_metrics"]["avg_dist_err"] = avg_dist_err;
-                report["optimization_metrics"]["max_norm_dev"] = max_norm_dev;
-                report["optimization_metrics"]["avg_norm_dev"] = avg_norm_dev;
+                report["optimization_metrics"]["max_phi_residual"] = max_residual;
+                report["optimization_metrics"]["avg_phi_residual"] = avg_residual;
 
                 std::vector<int> splits, collapses, swaps;
                 for (const auto& c : mesh.op_counts) {
@@ -454,9 +458,9 @@ void topological_offset(nlohmann::json json_params)
                 // optimize_offset() breaks out of the loop the moment it converges, so its own
                 // verdict is the authority and cannot drift from the criterion it applied.
                 report["converged"] = mesh.m_converged;
-                report["convergence_target"] = mesh.m_offset_params.convergence_target;
-                report["convergence_normal_deviation"] =
-                    mesh.m_offset_params.convergence_normal_deviation;
+                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
+                report["offset_level"] = mesh.m_offset_potential->target_level();
+                report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
             f_out << std::setw(4) << report;
             f_out.close();

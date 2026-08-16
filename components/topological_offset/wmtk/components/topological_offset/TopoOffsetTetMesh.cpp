@@ -653,6 +653,94 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     // set BVH
     m_input_complex_bvh.clear(); // in case resetting now
     m_input_complex_bvh.init(V, T, F, E, P);
+
+    // THE SMOOTH OFFSET POTENTIAL, from the same extraction and in the same call, so the two
+    // descriptions of the input can never diverge.
+    //
+    // Phi's 3D primitives are triangles, segments and points; there is no volume primitive. A
+    // solid input region therefore enters as its BOUNDARY -- the faces of the complex's tets
+    // that have exactly one incident complex tet. Outside the region, which is the only place an
+    // offset exists, "distance to the region" and "distance to its boundary" are the same
+    // number, so nothing is lost. (Inside the region they differ, and Phi has a second, mirrored
+    // level set in there; it is unreachable, because the band is grown outward and the runaway
+    // guard would catch a vertex that crossed the complex.) This is exactly what
+    // TopoOffsetTriMesh::init_input_complex_bvh does one dimension down.
+    std::map<simplex::Face, int> boundary_count;
+    for (const simplex::Tet& t_simp : complex_tets) {
+        for (const simplex::Face& f : t_simp.faces()) {
+            ++boundary_count[f];
+        }
+    }
+
+    std::vector<Vector3i> phi_tris;
+    for (const auto& [f_simp, count] : boundary_count) {
+        if (count != 1) continue; // interior to the complex: carries no boundary geometry
+        const auto vs = f_simp.vertices();
+        phi_tris.emplace_back(v_id_map[vs[0]], v_id_map[vs[1]], v_id_map[vs[2]]);
+    }
+    for (int i = 0; i < F.rows(); ++i) { // isolated triangles of the complex
+        phi_tris.emplace_back(F(i, 0), F(i, 1), F(i, 2));
+    }
+
+    // The edge list is NOT optional and not a convenience. ipc derives faces_to_edges from it and
+    // throws if a triangle edge is missing, and the OGC feasible-region test for a vertex reads
+    // that vertex's edge neighbours -- so an incomplete list would silently widen every Voronoi
+    // region and put a spurious spherical cap wherever a neighbour went unlisted.
+    std::set<std::pair<int, int>> phi_edge_set;
+    const auto add_edge = [&](const int a, const int b) {
+        phi_edge_set.emplace(std::min(a, b), std::max(a, b));
+    };
+    for (const Vector3i& t : phi_tris) {
+        add_edge(t[0], t[1]);
+        add_edge(t[1], t[2]);
+        add_edge(t[2], t[0]);
+    }
+    for (int i = 0; i < E.rows(); ++i) { // isolated edges (wires) of the complex
+        add_edge(E(i, 0), E(i, 1));
+    }
+
+    MatrixXi F_phi(phi_tris.size(), 3);
+    for (size_t i = 0; i < phi_tris.size(); ++i) {
+        F_phi.row(i) = phi_tris[i].transpose();
+    }
+    MatrixXi E_phi(phi_edge_set.size(), 2);
+    {
+        int i = 0;
+        for (const auto& [a, b] : phi_edge_set) {
+            E_phi(i, 0) = a;
+            E_phi(i, 1) = b;
+            ++i;
+        }
+    }
+
+    std::vector<int> P_phi;
+    for (int i = 0; i < P.rows(); ++i) {
+        P_phi.push_back(P(i, 0));
+    }
+
+    // KEPT, not built. The extraction is what must not diverge from the BVH's, so it is done
+    // here and once; the potential itself needs target_distance and offset_dhat_factor, which a
+    // caller that only wants the distance field (the unit tests build a TopoOffsetTetMesh from a
+    // default-constructed Parameters) has no reason to have set.
+    m_phi_V = V;
+    m_phi_E = E_phi;
+    m_phi_F = F_phi;
+    m_phi_P = P_phi;
+}
+
+
+void TopoOffsetTetMesh::init_offset_potential()
+{
+    if (m_phi_V.rows() == 0) {
+        log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
+    }
+    m_offset_potential = std::make_shared<OffsetPotential3D>(
+        m_phi_V,
+        m_phi_E,
+        m_phi_F,
+        m_phi_P,
+        m_offset_params.target_distance,
+        m_offset_params.offset_dhat_factor);
 }
 
 
@@ -858,25 +946,49 @@ TopoOffsetTetMesh::mean_ratio_metric(const Vector3d& p0, const Vector3d& p1, con
 
 std::tuple<double, double> TopoOffsetTetMesh::optimization_quality_stats()
 {
-    // The engine's "quality" is the offset's distance criterion: (max, avg) distance error over
-    // the band's outer vertices, normalized so 1.0 is the convergence target. mesh_improvement()
-    // stops when the max drops below optimization_stop_metric() = 1.0, i.e. exactly when the
-    // worst-placed offset vertex enters the target band.
+    // The engine's "quality" is the offset's own criterion: (max, avg) PHI RESIDUAL over the
+    // reachable band, normalized so 1.0 is the tolerance. mesh_improvement() stops when the max
+    // drops below optimization_stop_metric() = 1.0, i.e. exactly when the whole offset surface --
+    // its vertices AND the interiors of its triangles -- is within tolerance of the level set.
     //
-    // DISTANCE ONLY -- the criterion's average-normal-deviation half cannot be a max-based stop
-    // and is tested after the loop in optimize_offset(); see the comment there. Kept cheap and
-    // side-effect-light because the engine calls this after every operation pass.
-    const auto [max_dist, avg_dist] = compute_distance_deviation();
-    const double ct = std::max(m_offset_params.convergence_target, 1e-16);
-    return {max_dist / ct, avg_dist / ct};
+    // It used to be the Euclidean distance error at band VERTICES, with the average normal
+    // deviation tested separately after the loop because it could not be a max-based stop. Both
+    // are now one quantity: the residual is defined everywhere, so "the surface is in the wrong
+    // place" and "the surface is too coarse to be in the right place" are the same measurement
+    // taken at different points. The Euclidean distance is still computed and logged as a
+    // diagnostic -- see compute_distance_deviation() -- because it says how far the smoothed
+    // offset ended up from the exact one.
+    //
+    // Only the REACHABLE band counts: a pinned vertex sits on the input complex, where Phi
+    // diverges, or on the domain boundary, where growth ran out of room. Leaving those in would
+    // hold the metric above the bar forever -- the loop would never stop and the stall detector
+    // would fire every iteration, refining around vertices nothing can help.
+    const DistanceSplit r = residual_split();
+
+    // THE RUNAWAY GUARD, before anything reports a number derived from Phi. A vertex outside the
+    // support has a residual that saturates rather than growing, so the numbers below would
+    // under-report it, and no smoothing move can bring it back. Checked here because this is
+    // what the driver calls every iteration, and because residual_split() has already paid for
+    // the measurement.
+    report_outside_support("Optimization iteration", r);
+
+    const double tol = offset_residual_tolerance();
+    return {r.max_reachable / tol, r.avg_reachable / tol};
 }
 
 size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
 {
     // THE ENGINE'S STRATEGY, DRIVEN BY THE OFFSET'S CRITERION. mesh_improvement() calls this only
-    // when the metric STALLS, and this refines only around the worst-placed band vertices --
-    // TetWildMesh::refine_sizing_around_worst() with the offset's distance error in place of
-    // AMIPS energy.
+    // when the metric STALLS, and this refines only around the worst-scoring offset-surface
+    // faces -- TetWildMesh::refine_sizing_around_worst() with face_criterion_rel() in place of
+    // AMIPS energy, which is what 2D does.
+    //
+    // Ranking by FACE rather than by vertex is the half that matters. A vertex score cannot see a
+    // surface that has decimated to a few large triangles cutting across the offset -- every
+    // vertex can sit exactly on the level set while the triangles between them do not -- so a
+    // vertex-ranked field has nothing to refine and the decimation is stable. The face score
+    // samples the triangle's interior, so an under-resolved face is the highest-scoring thing in
+    // the mesh and is refined first.
     //
     // This replaces a per-element rule (halve every offset vertex failing sigma_max or the
     // distance band, every iteration) whose failure mode was measured on prism: sigma at a
@@ -887,37 +999,32 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
     const double l = std::max(m_params.l, 1e-16);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-    const double ct = std::max(m_offset_params.convergence_target, 1e-16);
 
-    // The band's outer vertices, by the rule compute_distance_deviation() uses.
-    std::vector<bool> on_band(vert_capacity(), false);
+    // Worst offset-surface faces above the criterion (a face already inside tolerance is never a
+    // reason to refine), capped at stuck_refine_num_worst.
+    std::vector<std::pair<double, std::array<size_t, 3>>> scored;
     for (const Tuple& f : get_faces()) {
         if (!face_is_offset_surface_live(f)) continue;
-        for (const size_t vid : get_face_vids(f)) on_band[vid] = true;
+        const double score = face_criterion_rel(f);
+        if (score <= 1.0) continue;
+        scored.emplace_back(score, get_face_vids(f));
     }
-
-    const auto dist_rel = [&](size_t vid) {
-        const Vector3d p = m_vertex_attribute[vid].m_posf;
-        const double d = (p - m_input_complex_bvh.nearest_point(p)).norm();
-        return std::abs(d - m_offset_params.target_distance) / ct;
-    };
-
-    // Worst band vertices above the criterion (filter 1.0: a vertex already inside the target
-    // band is never a reason to refine), capped at stuck_refine_num_worst.
-    const auto worst = wmtk::utils::select_worst_cells(
-        vert_capacity(),
-        [&](size_t vid) { return on_band[vid]; },
-        dist_rel,
-        1.0,
-        m_params.stuck_refine_num_worst);
-    if (worst.empty()) {
+    if (scored.empty()) {
         return 0;
     }
+    std::sort(scored.begin(), scored.end(), [](const auto& a, const auto& b) {
+        return a.first > b.first;
+    });
+    // stuck_refine_num_worst <= 0 means NO CAP -- every face above the filter -- which is what
+    // wmtk::utils::select_worst_cells does with the same parameter and is its shipped default.
+    const size_t n_worst = (m_params.stuck_refine_num_worst > 0)
+                               ? std::min<size_t>(scored.size(), m_params.stuck_refine_num_worst)
+                               : scored.size();
 
     std::vector<size_t> seeds;
-    seeds.reserve(worst.size());
-    for (const auto& [_, vid] : worst) {
-        seeds.push_back(vid);
+    seeds.reserve(3 * n_worst);
+    for (size_t i = 0; i < n_worst; ++i) {
+        for (const size_t v : scored[i].second) seeds.push_back(v);
     }
     const auto region = wmtk::utils::grow_vertex_region(
         seeds,
@@ -930,38 +1037,12 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
         s_floor,
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
 
-    // GROWTH, kept from the paper (Sec. 5.3.3, Step 1: "if shape regularity is [above] 0.5 and
-    // the normal deviation is [below] sigma_min, we increase the target length by 1.5") and
-    // deliberately NOT part of the engine's monotone-down strategy -- recorded as a decision to
-    // revisit. It now runs on stall rather than every iteration, which is a change of frequency,
-    // not of rule. The guards are the old rule's: grow only where the vertex is inside the
-    // distance band, flat (sigma < sigma_min) and well-shaped, so growth can never fight the
-    // refinement above.
-    {
-        const double sigma_min = m_offset_params.min_normal_deviation_deg;
-        std::vector<double> min_mrm(vert_capacity(), std::numeric_limits<double>::max());
-        for (const Tuple& f : get_faces()) {
-            if (!face_is_offset_surface_live(f)) continue;
-            const auto vs = get_face_vids(f);
-            const double mrm = mean_ratio_metric(
-                m_vertex_attribute[vs[0]].m_posf,
-                m_vertex_attribute[vs[1]].m_posf,
-                m_vertex_attribute[vs[2]].m_posf);
-            for (const size_t v : vs) {
-                min_mrm[v] = std::min(min_mrm[v], mrm);
-            }
-        }
-        for (size_t vid = 0; vid < vert_capacity(); ++vid) {
-            if (!on_band[vid]) continue;
-            if (region.count(vid)) continue; // just refined; growing it back would be a tug-of-war
-            if (dist_rel(vid) > 1.) continue;
-            if (min_mrm[vid] < m_offset_params.sizing_mrm_threshold) continue;
-            if (max_offset_surface_normal_deviation_at_vertex(vid) >= sigma_min) continue;
-            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
-            sc = std::clamp(sc * 1.5, s_floor, m_offset_params.max_sizing_scalar);
-        }
-    }
-
+    // NO GROWTH. The paper's Sec. 5.3.3 Step 1 raises the target length by 1.5x wherever the
+    // surface is flat (sigma < sigma_min), in-band and well-shaped, and this used to do that.
+    // Flatness was a normal-deviation test, which is gone; and 2D, which has run the whole
+    // optimization on the shared engine for longer, carries no growth either. Monotone-down in
+    // both dimensions is one fewer difference to reason about, and growth is the only direction
+    // that can un-resolve a band that the criterion has just paid to resolve.
     wmtk::utils::gradation_smooth_sizing(
         m_offset_params.sizing_gradation,
         refined,
@@ -969,10 +1050,11 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
         [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
 
     logger().info(
-        "[stuck-refine] worst {} band vertices (worst dist {:.4}x target), refined {} of {} "
-        "region vertices",
-        worst.size(),
-        worst.empty() ? 0. : worst.back().first,
+        "[stuck-refine] worst {} of {} offset faces over tolerance (worst {:.4}x), refined {} of "
+        "{} region vertices",
+        n_worst,
+        scored.size(),
+        scored.front().first,
         refined.size(),
         region.size());
     return refined.size();
@@ -1025,24 +1107,14 @@ void TopoOffsetTetMesh::init_offset_sizing_field()
     }
     logger().info(
         "\tOffset sizing seed: {} vertices, mean incident length {:.6} (base l {:.6}, l_min {:.6} "
-        "= 2*{}*sin({} deg), scalar floor {:.6})",
+        "= {} x target_distance {}, scalar floor {:.6})",
         n_seeded,
         n_seeded > 0 ? raw_sum / n_seeded : 0.,
         l,
         m_offset_params.min_edge_length,
+        m_offset_params.min_edge_length_rel,
         m_offset_params.target_distance,
-        m_offset_params.max_normal_deviation_deg,
         s_floor);
-}
-
-bool TopoOffsetTetMesh::offset_field_normal(const Vector3d& p, Vector3d& n) const
-{
-    const Vector3d nearest = m_input_complex_bvh.nearest_point(p);
-    const Vector3d diff = p - nearest;
-    const double d = diff.norm();
-    if (d < 1e-12) return false; // on the complex: the field has no direction here
-    n = diff / d;
-    return true;
 }
 
 bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
@@ -1172,18 +1244,156 @@ std::pair<double, double> TopoOffsetTetMesh::compute_distance_deviation() const
     return {max_dist, n_verts > 0 ? sum_dist / n_verts : 0.};
 }
 
-std::pair<double, double> TopoOffsetTetMesh::compute_normal_deviation() const
+double TopoOffsetTetMesh::band_vertex_residual(const size_t vid) const
 {
-    double max_nd = 0., sum_nd = 0.;
-    size_t n = 0;
+    // How far this vertex is from the level set Phi = c, as a LENGTH. The offset's own error, as
+    // opposed to compute_distance_deviation()'s Euclidean diagnostic.
+    return m_offset_potential->residual_length(m_vertex_attribute[vid].m_posf);
+}
+
+TopoOffsetTetMesh::FaceSamples TopoOffsetTetMesh::offset_face_samples(const Tuple& f) const
+{
+    FaceSamples s;
+    const int k = m_offset_params.offset_residual_samples;
+    if (k <= 0) return s;
+
+    const auto vs = get_face_vids(f);
+    for (const size_t v : vs) {
+        if (!band_vertex_is_reachable(v)) return s;
+    }
+    const Vector3d p0 = m_vertex_attribute[vs[0]].m_posf;
+    const Vector3d p1 = m_vertex_attribute[vs[1]].m_posf;
+    const Vector3d p2 = m_vertex_attribute[vs[2]].m_posf;
+
+    // Interior lattice points of the barycentric subdivision at denominator n = k + 2: every
+    // (i, j, l) with i + j + l = n and each >= 1, so nothing lands on an edge or a vertex (those
+    // are measured separately, and a sample ON a vertex would double-count it).
+    //
+    // n = k + 2 rather than 2D's k + 1 because a triangle has no interior lattice point at
+    // denominator 2. The counts are 1, 3, 6, 10 for k = 1, 2, 3, 4, so k keeps its meaning as
+    // "sampling density" and k = 1 is the centroid -- which is the sample that matters most,
+    // since a triangle inscribed in the offset is furthest from it at its centroid.
+    const int n = k + 2;
+    for (int i = 1; i < n; ++i) {
+        for (int j = 1; j < n - i; ++j) {
+            const int l = n - i - j;
+            if (l < 1) continue;
+            const Vector3d q = (double(i) * p0 + double(j) * p1 + double(l) * p2) / double(n);
+            const double r = m_offset_potential->residual_length(q);
+            s.max = std::max(s.max, r);
+            s.sum += r;
+            ++s.n;
+        }
+    }
+    return s;
+}
+
+std::vector<bool> TopoOffsetTetMesh::band_vertex_mask() const
+{
+    std::vector<bool> on_band(vert_capacity(), false);
     for (const Tuple& f : get_faces()) {
         if (!face_is_offset_surface_live(f)) continue;
-        const double nd = face_normal_deviation(f);
-        max_nd = std::max(max_nd, nd);
-        sum_nd += nd;
-        ++n;
+        for (const size_t vid : get_face_vids(f)) on_band[vid] = true;
     }
-    return {max_nd, n > 0 ? sum_nd / n : 0.};
+    return on_band;
+}
+
+TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::residual_split() const
+{
+    // The band's Phi residual, split by whether the optimizer can do anything about it.
+    //
+    // REACHABLE: an offset-surface vertex free to be placed on the level set. PINNED: one that
+    // cannot be, whatever the optimizer does -- it lies on the input complex, where Phi diverges
+    // and the distance is 0 by definition, or on the domain boundary, where conservative growth
+    // ran out of room. Neither is an optimization failure and neither can be improved by
+    // refining around it, so only the reachable half drives the loop and the sizing field.
+    const std::vector<bool> on_band = band_vertex_mask();
+
+    DistanceSplit s;
+    double sum_reachable = 0.;
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!on_band[vid]) continue;
+        const Vector3d p = m_vertex_attribute[vid].m_posf;
+        const double err = m_offset_potential->residual_length(p);
+        if (band_vertex_is_reachable(vid)) {
+            s.max_reachable = std::max(s.max_reachable, err);
+            s.max_at_vertex = std::max(s.max_at_vertex, err);
+            sum_reachable += err;
+            ++s.n_reachable;
+            // THE RUNAWAY GUARD's measurement, taken here rather than in its own traversal:
+            // this loop already visits exactly the vertices it cares about, and Phi is the
+            // expensive part. check_offset_within_support() turns this into the error.
+            if (!m_offset_potential->within_support(p)) {
+                ++s.n_outside_support;
+                const double d = m_input_complex_bvh.dist(VectorXd(p));
+                if (d > s.worst_outside_dist) {
+                    s.worst_outside_dist = d;
+                    s.worst_outside_vid = vid;
+                }
+            }
+        } else {
+            s.max_pinned = std::max(s.max_pinned, err);
+            ++s.n_pinned;
+        }
+    }
+    // ... and the same measurement ACROSS the band's faces, which is what stops a surface whose
+    // vertices sit on the level set but whose triangles cut across it from reading as converged.
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const FaceSamples fs = offset_face_samples(f);
+        if (fs.n == 0) continue; // no samples asked for, or an unreachable corner
+        s.max_reachable = std::max(s.max_reachable, fs.max);
+        s.max_in_face = std::max(s.max_in_face, fs.max);
+        sum_reachable += fs.sum;
+        s.n_reachable += fs.n;
+    }
+
+    s.avg_reachable = (s.n_reachable > 0) ? sum_reachable / s.n_reachable : 0.;
+    return s;
+}
+
+void TopoOffsetTetMesh::check_offset_within_support(const char* when) const
+{
+    report_outside_support(when, residual_split());
+}
+
+void TopoOffsetTetMesh::report_outside_support(const char* when, const DistanceSplit& s) const
+{
+    if (s.n_outside_support == 0) return;
+
+    log_and_throw_error(
+        "{}: {} offset-surface vertices have left the smooth offset potential's support "
+        "(dhat = {} = offset_dhat_factor x target_distance {}). The worst is vertex {} at "
+        "Euclidean distance {} from the input complex, which is {:.2f}x target_distance. Out "
+        "there Phi is identically zero WITH a zero gradient: the smoothing term gives those "
+        "vertices no direction back, their residual saturates instead of growing, and the "
+        "sizing field refines around vertices nothing can move. Raise offset_dhat_factor if "
+        "the offset legitimately has to travel that far, or reduce target_distance.",
+        when,
+        s.n_outside_support,
+        m_offset_potential->dhat(),
+        m_offset_params.target_distance,
+        s.worst_outside_vid,
+        s.worst_outside_dist,
+        s.worst_outside_dist / std::max(m_offset_params.target_distance, 1e-16));
+}
+
+double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
+{
+    // The per-face form of optimization_quality_stats()'s max, restricted to what this face
+    // carries. >= 1 means the face fails the criterion, which is what makes it a candidate for
+    // refinement.
+    const double tol = offset_residual_tolerance();
+    double score = 0.;
+    for (const size_t vid : get_face_vids(f)) {
+        if (!band_vertex_is_reachable(vid)) continue;
+        score = std::max(score, band_vertex_residual(vid) / tol);
+    }
+    // ACROSS the face as well, so a triangle too coarse to represent the offset is refined --
+    // which is the mechanism that keeps the band resolved at all, and the one that replaced the
+    // per-operation normal-deviation guards in collapse and swap.
+    score = std::max(score, offset_face_samples(f).max / tol);
+    return score;
 }
 
 void TopoOffsetTetMesh::warn_if_offset_reaches_domain_boundary() const
@@ -1249,6 +1459,79 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
         }
     }
     const auto& ve = m_vertex_extra[vid];
+    // WHICH FACE, not just how much. The vertex/face split above says whether the surface is in
+    // the wrong place or too coarse to be in the right place; this says where, and at what edge
+    // length -- which is what tells refinement from an irreducible feature.
+    {
+        double worst = 0.;
+        std::array<size_t, 3> worst_f{{0, 0, 0}};
+        for (const Tuple& f : get_faces()) {
+            if (!face_is_offset_surface_live(f)) continue;
+            const FaceSamples fs = offset_face_samples(f);
+            if (fs.n > 0 && fs.max > worst) {
+                worst = fs.max;
+                worst_f = get_face_vids(f);
+            }
+        }
+        if (worst > 0.) {
+            const Vector3d a = m_vertex_attribute[worst_f[0]].m_posf;
+            const Vector3d b = m_vertex_attribute[worst_f[1]].m_posf;
+            const Vector3d c = m_vertex_attribute[worst_f[2]].m_posf;
+            const auto d_in = [&](const Vector3d& p) {
+                return (p - m_input_complex_bvh.nearest_point(p)).norm();
+            };
+            logger().info(
+                "\tworst offset FACE ({}, {}, {}): edge lengths {:.5} {:.5} {:.5} (target_distance "
+                "{}), residual inside {:.5} | euclid dist at corners {:.5} {:.5} {:.5}, at "
+                "centroid {:.5} | sizing scalars {:.4} {:.4} {:.4} (floor {:.4})",
+                worst_f[0],
+                worst_f[1],
+                worst_f[2],
+                (b - a).norm(),
+                (c - b).norm(),
+                (a - c).norm(),
+                m_offset_params.target_distance,
+                worst,
+                d_in(a),
+                d_in(b),
+                d_in(c),
+                d_in(Vector3d((a + b + c) / 3.)),
+                m_vertex_attribute[worst_f[0]].m_sizing_scalar,
+                m_vertex_attribute[worst_f[1]].m_sizing_scalar,
+                m_vertex_attribute[worst_f[2]].m_sizing_scalar,
+                std::max(
+                    m_offset_params.min_sizing_scalar,
+                    m_offset_params.min_edge_length / std::max(m_params.l, 1e-16)));
+            const int k = m_offset_params.offset_residual_samples;
+            const int n = k + 2;
+            std::string per_sample;
+            for (int i = 1; i < n; ++i) {
+                for (int j = 1; j < n - i; ++j) {
+                    const int lg = n - i - j;
+                    if (lg < 1) continue;
+                    const Vector3d q =
+                        (double(i) * a + double(j) * b + double(lg) * c) / double(n);
+                    per_sample += fmt::format(
+                        "({},{},{}) d {:.5} r {:.5} phi {:.5} | ",
+                        i,
+                        j,
+                        lg,
+                        d_in(q),
+                        m_offset_potential->residual_length(q),
+                        m_offset_potential->value(q));
+                }
+            }
+            // Per sample, not just the max. A sample whose Phi is far from its neighbours' at
+            // essentially the same EUCLIDEAN distance is the signature of a second primitive
+            // switching on -- which is not something refinement can fix. See
+            // describe_active(), which names the pairs.
+            logger().info(
+                "\t  samples on that face (c = {:.5}): {}",
+                m_offset_potential->target_level(),
+                per_sample);
+        }
+    }
+
     logger().info(
         "\tworst-dist vertex {}: pos ({:.6}, {:.6}, {:.6}) dist {:.6} target {:.6} err {:.6}",
         vid,
@@ -1325,6 +1608,21 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
 
     init_vertex_order();
 
+    // The offset surface as CONSTRUCTED must already be inside the potential's support, or
+    // nothing the optimization does can move it. Checked before any operation runs so that a
+    // construction defect is reported as one.
+    check_offset_within_support("Offset as constructed");
+
+    logger().info(
+        "\tOffset criterion: Phi residual <= {} = offset_residual_rel {} x target_distance {} "
+        "| level c {:.6}, dhat {:.6}, {} interior samples per offset face",
+        offset_residual_tolerance(),
+        m_offset_params.offset_residual_rel,
+        m_offset_params.target_distance,
+        m_offset_potential->target_level(),
+        m_offset_potential->dhat(),
+        m_offset_params.offset_residual_samples);
+
     // Seed the sizing field from the offset surface's current edge lengths, before any operation
     // runs. Must come after the offset faces are classified above, since it reads them.
     init_offset_sizing_field();
@@ -1377,8 +1675,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_collapse = 0;
     iter_cnt_collapse_offset_removed = 0;
     iter_cnt_swap = 0;
-    iter_cnt_collapse_nd_reject = 0;
-    iter_cnt_swap_nd_reject = 0;
     m_smooth_trace.reset();
 
     diag_offset_bands("pre");
@@ -1388,77 +1684,66 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // per-iteration hook, and the per-pass numbers it logs itself carry the history.
     log_smooth_trace();
     logger().info(
-        "splits = {}  |  collapses = {} ({} refused by normal deviation, {} removed an offset "
-        "vertex)  |  swaps = {} ({} refused by normal deviation)",
+        "splits = {}  |  collapses = {} ({} removed an offset vertex)  |  swaps = {}",
         iter_cnt_split.load(),
         iter_cnt_collapse.load(),
-        iter_cnt_collapse_nd_reject.load(),
         iter_cnt_collapse_offset_removed.load(),
-        iter_cnt_swap.load(),
-        iter_cnt_swap_nd_reject.load());
+        iter_cnt_swap.load());
     op_counts.push_back({{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
 
     // Final metrics and the convergence verdict. One entry, for the whole run: the engine loop
     // owns the iterations now, so optimization_metrics is a summary rather than a history.
     //
-    // The asymmetry -- max for distance, average for angle -- is the paper's (Sec. 5.3,
-    // Termination), and it is forced by the geometry: distance error can genuinely go to zero
-    // everywhere, so the max is a fair bar, while normal deviation has a floor at every sharp
-    // feature that no refinement can lower, so only its average can be asked for.
-    // convergence_normal_deviation <= 0 disables the angular half entirely.
+    // ONE CRITERION, where there used to be two. The paper's termination test is a max on the
+    // distance error AND an average on the normal deviation, and the asymmetry was forced by the
+    // geometry: normal deviation has a floor at every sharp feature that no refinement can lower,
+    // so only its average could be asked for, and an average cannot be the engine's max-based
+    // stop -- which is why it was tested here, after the loop, and a run could exit
+    // "converged" on distance and be reported unconverged a few lines later.
+    //
+    // The Phi residual has no such floor. It is defined everywhere on the surface, so the two
+    // questions the old pair asked -- "is the surface in the right place" and "is it fine enough
+    // to be in the right place" -- are one measurement taken at vertices and at face interiors,
+    // and its max IS the engine's stop metric. See optimization_quality_stats().
+    //
+    // The Euclidean distance error is still computed and reported, because it says how far the
+    // SMOOTHED offset ended up from the exact one -- the quantity the whole design trades away
+    // at reentrant features on purpose. It is a diagnostic here, not a criterion.
     diag_offset_bands("final");
     const auto [max_dist, avg_dist] = compute_distance_deviation();
-    const auto [max_norm, avg_norm] = compute_normal_deviation();
+    const DistanceSplit r = residual_split();
+    const double tol = offset_residual_tolerance();
     logger().info(
-        "max dist err: {} | avg dist err: {} | max normal dev: {} | avg normal dev: {}",
+        "phi residual: max {} (avg {}) vs tolerance {} = {} x target_distance | at vertices {}, "
+        "inside faces {} | {} reachable samples, {} pinned vertices || euclid dist err: max {} | "
+        "avg {}",
+        r.max_reachable,
+        r.avg_reachable,
+        tol,
+        m_offset_params.offset_residual_rel,
+        r.max_at_vertex,
+        r.max_in_face,
+        r.n_reachable,
+        r.n_pinned,
         max_dist,
-        avg_dist,
-        max_norm,
-        avg_norm);
-    optimization_metrics.push_back({{max_dist, avg_dist, max_norm, avg_norm}});
+        avg_dist);
+    optimization_metrics.push_back({{max_dist, avg_dist, r.max_reachable, r.avg_reachable}});
     log_worst_dist_vertex();
 
-    const bool dist_ok = max_dist <= m_offset_params.convergence_target;
-    const bool norm_ok = m_offset_params.convergence_normal_deviation <= 0. ||
-                         avg_norm <= m_offset_params.convergence_normal_deviation;
-    m_converged = dist_ok && norm_ok;
+    m_converged = r.max_reachable <= tol;
     if (m_converged) {
-        if (m_offset_params.convergence_normal_deviation > 0.) {
-            logger().info(
-                "Converged ([max_dist] {} <= {} [convergence_target], [avg_normal_dev] {} <= "
-                "{} [convergence_normal_deviation])",
-                max_dist,
-                m_offset_params.convergence_target,
-                avg_norm,
-                m_offset_params.convergence_normal_deviation);
-        } else {
-            logger().info(
-                "Converged ([max_dist] {} <= {} [convergence_target], normal deviation "
-                "criterion disabled)",
-                max_dist,
-                m_offset_params.convergence_target);
-        }
+        logger().info(
+            "Converged ([max phi residual] {} <= {} [offset_residual_rel x target_distance])",
+            r.max_reachable,
+            tol);
     }
 
-    if (!m_converged && !optimization_metrics.empty()) {
-        // Name the criterion that actually failed; with two of them, reporting only the distance
-        // sends you looking at the wrong one.
-        const double max_dist = optimization_metrics.back()[0];
-        const double avg_norm = optimization_metrics.back()[3];
-        if (max_dist > m_offset_params.convergence_target) {
-            logger().warn(
-                "Optimization did not converge ([max_dist] {} > {} [convergence_target])",
-                max_dist,
-                m_offset_params.convergence_target);
-        }
-        if (m_offset_params.convergence_normal_deviation > 0. &&
-            avg_norm > m_offset_params.convergence_normal_deviation) {
-            logger().warn(
-                "Optimization did not converge ([avg_normal_dev] {} > {} "
-                "[convergence_normal_deviation])",
-                avg_norm,
-                m_offset_params.convergence_normal_deviation);
-        }
+    if (!m_converged) {
+        logger().warn(
+            "Optimization did not converge ([max phi residual] {} > {} [offset_residual_rel x "
+            "target_distance])",
+            r.max_reachable,
+            tol);
 
         // Is topological preservation holding the offset back, as opposed to a handful of
         // over-constrained vertices? See TOPOLOGY_BLOCK_AVG_FRAC for why the average is the

@@ -22,10 +22,31 @@ bool TopoOffsetTetMesh::tet_is_in_offset_conservative(const size_t t_id, const d
         if (sph.radius() < threshold_r) {
             if (initial) {
                 logger().warn(
-                    "Initial approximating sphere for tet is smaller than threshold radius. "
-                    "Tet not considered for offset growth. Decrease relative_ball_threshold.");
+                    "Initial approximating sphere for tet {} is smaller than the threshold "
+                    "radius; deciding it with the offset potential at its centre instead. "
+                    "Decrease relative_ball_threshold if this is frequent.",
+                    t_id);
             }
-            return false; // sphere too small --> conservatively, tet outside offset
+            // SUB-THRESHOLD: subdivision has run out of budget on a sphere the Euclidean bracket
+            // could not decide. This used to answer "outside" and stop, which is conservative in
+            // the sense of never growing too far but is a trap: the bracket is undecided exactly
+            // in a shell of width 2r around the offset, so lowering relative_ball_threshold moves
+            // the boundary and the region a run produces depends on a subdivision budget rather
+            // than on the geometry.
+            //
+            // Decide it with the potential instead. Phi is defined at a point, so there is no
+            // budget: the sphere's centre either is inside the level set or is not, and at this
+            // radius the difference between the two answers is below the threshold anyway.
+            //
+            // Note the whole bracket above IS the conservative form of this test: Phi(x) >= b(d(x))
+            // because the closest feature is always feasible, and b(delta) = c, so d + r < delta
+            // implies Phi > c over the whole sphere. The two agree; this only replaces the
+            // give-up branch.
+            if (m_offset_potential &&
+                m_offset_potential->value(sph.center()) >= m_offset_potential->target_level()) {
+                continue; // centre is inside the level set: treat this sphere as inside
+            }
+            return false;
         }
         initial = false;
 
