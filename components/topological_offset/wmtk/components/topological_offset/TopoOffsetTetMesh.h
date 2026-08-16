@@ -835,6 +835,7 @@ public:
     std::atomic<int> iter_cnt_swap_offset_reject{0};
     /// Splits of an OFFSET-surface edge: reached split_edge_after, accepted, refused there.
     std::atomic<int> iter_cnt_split_offset_before{0};
+    std::atomic<int> iter_cnt_split_offset_endpoints{0};
     std::atomic<int> iter_cnt_split_offset_frozen{0};
     std::atomic<int> iter_cnt_split_offset_base_reject{0};
     std::atomic<int> iter_cnt_split_offset_tried{0};

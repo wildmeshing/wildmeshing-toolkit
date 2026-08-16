@@ -156,14 +156,14 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        const bool on_offset = m_opt_split_cache.local().is_edge_on_offset;
-        if (on_offset) ++iter_cnt_split_offset_tried;
         if (!TetOptimizerMesh::split_edge_after(t)) {
-            if (on_offset) ++iter_cnt_split_offset_reject;
+            ++iter_cnt_split_offset_reject; // counts ALL refusals now; see the log line
             return false;
         }
         ++iter_cnt_split;
-        if (on_offset) ++iter_cnt_split_offset;
+        // Measured on the RESULT, not on a cached flag: the new vertex is on the offset iff
+        // split_after_cells() derived it so from the endpoints.
+        if (m_vertex_extra[t.vid(*this)].m_is_on_offset) ++iter_cnt_split_offset;
         return true;
     }
     return marching_split_edge_after(t);
@@ -552,6 +552,9 @@ bool TopoOffsetTetMesh::split_after_cells(
     // nothing to fall back on.
     m_vertex_extra[v_id].m_is_on_offset =
         m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
+    if (m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset) {
+        ++iter_cnt_split_offset_endpoints;
+    }
 
     const auto& cache = m_opt_split_cache.local();
     for (const size_t v_end : {v1_id, v2_id}) {

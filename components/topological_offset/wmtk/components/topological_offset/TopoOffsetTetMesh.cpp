@@ -1706,8 +1706,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // per-iteration hook, and the per-pass numbers it logs itself carry the history.
     log_smooth_trace();
     logger().info(
-        "splits = {} (offset-edge: {} offered, {} frozen, {} refused by the base -> {} tried "
-        "-> {} accepted, {} refused)  |  "
+        "splits = {} (offset-edge: {} offered, {} frozen, {} refused by the base's before-gate; "
+        "{} reached after_cells with both endpoints on-offset; {} splits produced an "
+        "on-offset vertex; {} splits refused in after)  |  "
         "collapses = {} ({} "
         "removed an offset vertex, {} refused by the offset criterion)  |  swaps = {} ({} "
         "refused by the offset criterion)",
@@ -1715,7 +1716,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_split_offset_before.load(),
         iter_cnt_split_offset_frozen.load(),
         iter_cnt_split_offset_base_reject.load(),
-        iter_cnt_split_offset_tried.load(),
+        iter_cnt_split_offset_endpoints.load(),
         iter_cnt_split_offset.load(),
         iter_cnt_split_offset_reject.load(),
         iter_cnt_collapse.load(),
