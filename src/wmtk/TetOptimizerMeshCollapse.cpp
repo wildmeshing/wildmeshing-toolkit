@@ -21,7 +21,8 @@ void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
     collapse_all_edges_impl(is_limit_length, wmtk::default_ring(wmtk::PassLock::EdgeRing));
 }
 
-size_t TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring)
+size_t
+TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes)
 {
     m_collapse_limit_length = is_limit_length;
     igl::Timer timer;
@@ -67,7 +68,8 @@ size_t TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_
             };
             // Retry a failed collapse only where the mesh actually changed this round
             // (dirty-epoch localized retry), instead of re-testing every failure every pass.
-            accepted = wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops);
+            accepted =
+                wmtk::run_localized_to_convergence(mesh, executor, collect_all_ops, max_passes);
         });
     return accepted;
 }
@@ -592,9 +594,15 @@ size_t TetOptimizerMesh::coarsen_mesh()
     size_t total = 0;
     for (int round = 0; round < m_params.coarsen_max_rounds; ++round) {
         m_coarsen_mode = true;
-        // The lock claims one ring more than the smoothing reaches: smoothing a vertex at
-        // distance r reads its one-ring and writes the quality of its incident cells.
-        const size_t accepted = collapse_all_edges_impl(false, m_params.coarsen_smooth_ring + 1);
+        // The lock claims one ring more than coarsen_smooth_ring. With smoothing on that is
+        // what the writes reach (smoothing a vertex at distance r reads its one-ring and
+        // writes the quality of its incident cells); with coarsen_local_smoothing_passes at 0
+        // it is what the accept test READS, since a cell incident to a distance-r vertex has
+        // vertices at r+1. Either way the +1 is required.
+        const size_t accepted = collapse_all_edges_impl(
+            false,
+            m_params.coarsen_smooth_ring + 1,
+            size_t(m_params.coarsen_max_inner_passes));
         m_coarsen_mode = false;
         total += accepted;
 

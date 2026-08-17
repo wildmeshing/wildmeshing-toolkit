@@ -123,6 +123,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
     params.coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
     params.coarsen_max_rounds = json_params["coarsen_max_rounds"];
+    params.coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
     params.w_amips = json_params["w_amips"];
     params.smoothing_mode = json_params["smoothing_mode"];
     params.project_line_search_steps = json_params["project_line_search_steps"];

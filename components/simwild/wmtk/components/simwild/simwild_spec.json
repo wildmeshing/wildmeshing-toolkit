@@ -44,6 +44,7 @@
       "coarsen_smooth_ring",
       "coarsen_global_smoothing_passes",
       "coarsen_max_rounds",
+      "coarsen_max_inner_passes",
       "write_vtu",
       "write_envelope",
       "log_file",
@@ -610,14 +611,14 @@
   {
     "pointer": "/coarsen_local_smoothing_passes",
     "type": "int",
-    "default": 2,
-    "doc": "Smoothing sweeps over the ring inside each candidate coarsening collapse, before its max energy is measured. This is what gives the collapse a chance to be judged on a relaxed neighbourhood rather than on the configuration it lands in."
+    "default": 0,
+    "doc": "Smoothing sweeps over the ring, inside each candidate collapse, before judging it. 0 by default, which means the pass judges the collapse on its raw post-collapse geometry and never smooths inside the operation. At the level of a single candidate that matters -- the composite's reject rate rises from 25% to 39% without it -- but it does not cost coarsening, because the pass runs to a fixed point: a candidate the smoothing would have rescued is replaced by another the pass finds instead, and the relaxation the mesh actually needs comes from the global smoothing between rounds. What it costs is time. The smoothed ball averaged 98 vertices on tetwild's octocat, so at the old default of 2 sweeps one candidate ran ~200 nonlinear smoothing solves and the pass ran 1.4 million of them to accept 5173 collapses. Over seven tetwild models, dropping this to 0 (with coarsen_max_inner_passes 1) made the pass 9.7x to 31.9x faster for about 1 percentage point of cell reduction."
   },
   {
     "pointer": "/coarsen_smooth_ring",
     "type": "int",
-    "default": 2,
-    "doc": "Radius, in edges from the merged vertex, of the neighbourhood re-smoothed inside a coarsening collapse. The parallel lock claims one ring more than this, because smoothing a vertex reads its one-ring and writes the quality of its incident faces."
+    "default": 1,
+    "doc": "Radius smoothed inside the collapse, and the radius the accept test measures over. The lock claims one more ring than this. With coarsen_local_smoothing_passes at 0 nothing is smoothed, so this only sets how wide a region the accept test compares; a wider region is a more permissive test (it admits untouched cells to both the before and after maxima, which is still sound) so ring 2 coarsens slightly more, but it also makes the pass lock 3 rings per operation where the ordinary collapse locks 2, which is the worst thing for its parallel scaling. 1 by default: on octocat that is 2.3x faster than ring 2 for 1.5 percentage points of cell reduction, and it puts the lock footprint back in line with every other pass."
   },
   {
     "pointer": "/coarsen_global_smoothing_passes",
@@ -630,6 +631,12 @@
     "type": "int",
     "default": 2,
     "doc": "Cap on the coarsen/smooth alternation; the pass also stops as soon as a round accepts no collapse. A round does NOT exist to finish what the previous one started: within a round the collapse pass already runs to a fixed point, so repeating the collapse alone finds nothing. What a round adds is the global smoothing in between, which moves that fixed point -- the dirty-epoch retry only re-offers failures next to a SUCCESSFUL collapse, so a whole-mesh smoothing pass is invisible to it, and a rejected composite is rolled back in full so rejections never accumulate progress within a round. Returns decay fast: measured over the 16 challenging triwild models at five rounds, accepted collapses by round were 68.8% / 21.7% / 7.2% / 1.8% / 0.5%. Every round costs a full pre-check sweep over all edges plus a smoothing pass, so the default is two -- they carry 90.5% of the coarsening, and the three that would follow are worth 9.5% for 60% of the pass's budget."
+  },
+  {
+    "pointer": "/coarsen_max_inner_passes",
+    "type": "int",
+    "default": 1,
+    "doc": "Cap on the collapse pass's own dirty-epoch retry loop within one coarsening round; 0 is uncapped. Distinct from coarsen_max_rounds, which counts collapse+global-smoothing alternations. This counts the passes the retry loop makes inside a single collapse pass, re-offering failures whose neighbourhood a successful collapse disturbed. That filter asks only whether the neighbourhood MOVED, not whether it moved helpfully, so a productive first pass re-offers most of the mesh. 1 by default, i.e. one pass per round and no retry within it: on octocat the first pass found 5110 collapses in 135.8s and the three that followed found 27 in 38.4s. Rounds still repeat the pass, and those do pay off, because the global smoothing between them moves the fixed point in a way this filter cannot see."
   },
   {
     "pointer": "/coarsen_unbounded",
