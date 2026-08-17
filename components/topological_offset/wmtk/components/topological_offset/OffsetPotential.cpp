@@ -710,6 +710,12 @@ std::string EuclideanOffsetPotential<DIM>::describe_active(const VecD& p) const
 }
 
 
+template <int DIM>
+OffsetPotential<DIM>::~OffsetPotential() = default;
+
+
+template class OffsetPotential<2>;
+template class OffsetPotential<3>;
 template class SmoothOffsetPotential<2>;
 template class SmoothOffsetPotential<3>;
 template class EuclideanOffsetPotential<2>;

@@ -47,7 +47,12 @@ public:
     using VecD = Eigen::Matrix<double, DIM, 1>;
     using MatD = Eigen::Matrix<double, DIM, DIM>;
 
-    virtual ~OffsetPotential() = default;
+    /// OUT OF LINE ON PURPOSE, so this class has a KEY FUNCTION and exactly one vtable, emitted
+    /// beside the explicit instantiations in OffsetPotential.cpp. With every virtual pure and
+    /// the destructor defaulted inline there is no key function, the vtable is emitted weakly
+    /// into every translation unit that sees the header, and the linker picks one -- which is
+    /// how a virtual call through a base pointer can end up jumping somewhere that is not code.
+    virtual ~OffsetPotential();
 
     /// The level value the offset boundary is placed on.
     double target_level() const { return m_c; }
