@@ -103,6 +103,7 @@ struct Parameters : public wmtk::OptimizerParameters
         coarsen_smooth_ring = json_params["coarsen_smooth_ring"];
         coarsen_global_smoothing_passes = json_params["coarsen_global_smoothing_passes"];
         coarsen_max_rounds = json_params["coarsen_max_rounds"];
+        coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];

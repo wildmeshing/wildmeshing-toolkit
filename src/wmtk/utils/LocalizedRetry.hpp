@@ -33,12 +33,21 @@ namespace wmtk {
  * `renew_neighbor_tuples` -- i.e. exactly the region the driver already considers
  * "affected" and re-enqueues within a pass -- so this stays consistent with the existing
  * intra-pass renewal logic.
+ *
+ * `max_passes` caps the loop; 0 means "until convergence". A cap is worth setting when a
+ * retry is expensive relative to what it finds. The dirty-epoch filter only asks whether a
+ * failure's neighbourhood MOVED, not whether it moved in a direction that helps, so after a
+ * productive first pass it re-offers most of the mesh. For a pass whose failures are cheap
+ * (pre-checks only) that is a good trade. For one whose every failure runs a full smoothing
+ * composite and rolls it back, it is not: measured on tetwild's octocat, passes 2+ of the
+ * coarsening loop cost 38.4s to find 27 collapses after pass 1 found 5110 in 135.8s.
  */
 template <class Mesh>
 size_t run_localized_to_convergence(
     Mesh& m,
     ExecutePass<Mesh>& executor,
-    std::vector<std::pair<Op, typename Mesh::Tuple>> ops)
+    std::vector<std::pair<Op, typename Mesh::Tuple>> ops,
+    size_t max_passes = 0)
 {
     using Tuple = typename Mesh::Tuple;
 
@@ -99,7 +108,8 @@ size_t run_localized_to_convergence(
                 ops.emplace_back(pr);
             }
         }
-    } while (executor.get_cnt_success() > 0 && !ops.empty());
+    } while (executor.get_cnt_success() > 0 && !ops.empty() &&
+             (max_passes == 0 || round < max_passes));
     return total_success;
 }
 
