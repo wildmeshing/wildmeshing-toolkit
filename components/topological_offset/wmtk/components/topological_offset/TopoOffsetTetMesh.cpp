@@ -1173,6 +1173,13 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
         // ---- PHASE A: TetWild, with the offset held inside its envelope ----
         logger().info("======== A/B round {} / {}: phase A ========", round + 1, rounds);
         m_phase = OptPhase::A;
+        // DIAGNOSTIC; see ab_no_collapse_after_first_round. Round 1 keeps its collapses because
+        // the mesh as constructed genuinely needs them -- it is the ROUNDS AFTER, where every
+        // split of the band is matched by a collapse removing a band vertex, that this probes.
+        m_ab_collapses_disabled = m_offset_params.ab_no_collapse_after_first_round && round > 0;
+        if (m_ab_collapses_disabled) {
+            logger().warn("\t[phase A] COLLAPSES DISABLED (ab_no_collapse_after_first_round)");
+        }
         rebuild_offset_envelope();
         mesh_improvement(a_iters);
 

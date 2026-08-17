@@ -40,6 +40,7 @@
             "interleaved_smoothing_passes",
             "max_iterations",
             "ab_max_rounds",
+            "ab_no_collapse_after_first_round",
             "ab_phase_a_iterations",
             "ab_smooth_max_passes",
             "ab_smooth_tol",
@@ -299,6 +300,12 @@
         "type": "int",
         "default": 10,
         "doc": "3D only. Maximum A/B rounds of the alternating optimization. One round is a full Phase A (TetWild, with the offset surface held inside a tolerance-wide envelope) followed by a full Phase B (smoothing to a fixed point, then refining the sizing field wherever the Phi residual is still over tolerance). The loop exits as soon as the residual is inside tolerance, so this is an upper bound; exhausting it is a warning, not an error, because a residual that needs more resolution is a legitimate outcome to inspect."
+    },
+    {
+        "pointer": "/ab_no_collapse_after_first_round",
+        "type": "bool",
+        "default": false,
+        "doc": "3D only, DIAGNOSTIC. Refuse every edge collapse from the second A/B round onwards. The offset band is in a one-for-one stalemate on topological_offset_3d_convex -- 3010 splits produced an on-offset vertex and 3063 collapses removed one, net -53 over six rounds -- so the band cannot be refined however much the sizing field is lowered. This switches the collapse half off to establish whether the stalemate is what holds the residual up, at the cost of every guarantee coarsening provides. Not a fix and not for production use."
     },
     {
         "pointer": "/ab_phase_a_iterations",

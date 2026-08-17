@@ -143,6 +143,10 @@ public:
     /// Which phase is running. Read by every hook that differs between them; see OptPhase.
     OptPhase m_phase = OptPhase::A;
 
+    /// DIAGNOSTIC: set by the driver after the first round when
+    /// ab_no_collapse_after_first_round is on, and read by collapse_edge_before().
+    bool m_ab_collapses_disabled = false;
+
     /**
      * @brief The tube the offset surface may not leave during Phase A. Null in Phase B.
      *

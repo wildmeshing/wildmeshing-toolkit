@@ -11,6 +11,14 @@ namespace wmtk::components::topological_offset {
 
 bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
 {
+    // DIAGNOSTIC, off by default. See ab_no_collapse_after_first_round: the band is in a
+    // one-for-one stalemate -- split creates an on-offset vertex and collapse removes one, net
+    // -53 over six rounds -- so this switches the collapse half off from round 2 to establish
+    // whether that stalemate is what holds the residual up. It gives up everything coarsening
+    // provides and is not a fix.
+    if (m_ab_collapses_disabled) {
+        return false;
+    }
     if (!TetOptimizerMesh::collapse_edge_before(t)) {
         return false;
     }

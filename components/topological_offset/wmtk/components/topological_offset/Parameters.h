@@ -86,6 +86,7 @@ struct Parameters : public wmtk::OptimizerParameters
      * optimized in turn rather than jointly. 3D only for now; 2D still runs the joint loop.
      */
     int ab_max_rounds; ///< cap on A/B rounds
+    bool ab_no_collapse_after_first_round; ///< DIAGNOSTIC: refuse all collapses from round 2
     int ab_phase_a_iterations; ///< iterations of TetWild's loop inside one Phase A
     int ab_smooth_max_passes; ///< cap on Phase B smoothing passes
     double ab_smooth_tol; ///< "nothing moves any more", as a fraction of the target length l
@@ -169,6 +170,7 @@ struct Parameters : public wmtk::OptimizerParameters
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
         ab_max_rounds = json_params["ab_max_rounds"];
+        ab_no_collapse_after_first_round = json_params["ab_no_collapse_after_first_round"];
         ab_phase_a_iterations = json_params["ab_phase_a_iterations"];
         ab_smooth_max_passes = json_params["ab_smooth_max_passes"];
         ab_smooth_tol = json_params["ab_smooth_tol"];
