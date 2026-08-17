@@ -296,7 +296,7 @@ TEST_CASE("offset-potential-gradient-fd", "[offset][potential]")
          Vector2d(1.6, 0.5)});
 
     const double delta = 0.1;
-    const OffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     const std::vector<Vector2d> samples = segment_normal_samples(p, phi.dhat());
     REQUIRE(samples.size() >= 24);
@@ -321,7 +321,7 @@ TEST_CASE("offset-potential-hessian-fd", "[offset][potential]")
         {Vector2d(-1., 0.), Vector2d(0., 0.), Vector2d(0.3, 0.4), Vector2d(0.9, 0.1)});
 
     const double delta = 0.1;
-    const OffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     const std::vector<Vector2d> samples = segment_normal_samples(p, phi.dhat());
     REQUIRE(samples.size() >= 18);
@@ -350,7 +350,7 @@ TEST_CASE("offset-potential-straight-edge", "[offset][potential]")
     // edge, so a flat stretch of any input must put the level set at exactly delta.
     const double delta = 0.05;
     const Polyline p = open_polyline({Vector2d(-10., 3.), Vector2d(10., 3.)});
-    const OffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     // The closed form the calibration must agree with: one active Vertex2-Edge2P1 pair, so
     // Phi is exactly the normalized clamped-log barrier at the perpendicular distance.
@@ -385,7 +385,7 @@ TEST_CASE("offset-potential-isolated-point", "[offset][potential]")
     const double delta = 0.2;
     MatrixXd V(1, 2);
     V << 0.4, -0.7;
-    const OffsetPotential2D phi(V, MatrixXi(0, 2), MatrixXi(0, 3), {0}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi(V, MatrixXi(0, 2), MatrixXi(0, 3), {0}, delta, DHAT_FACTOR);
 
     const Vector2d o(0.4, -0.7);
     double max_err = 0.;
@@ -411,7 +411,7 @@ TEST_CASE("offset-potential-vs-euclidean-circle", "[offset][potential]")
     // the residual measured here is the polygonal discretisation, not the potential.
     const double R = 1.0;
     const double delta = 0.1;
-    const OffsetPotential2D phi(
+    const SmoothOffsetPotential2D phi(
         circle_polyline(R, 256).V,
         circle_polyline(R, 256).E,
         MatrixXi(0, 3),
@@ -452,7 +452,7 @@ TEST_CASE("offset-potential-vs-euclidean-square", "[offset][potential]")
     const double delta = 0.1;
     const Polyline p =
         closed_polyline({Vector2d(-h, -h), Vector2d(h, -h), Vector2d(h, h), Vector2d(-h, h)});
-    const OffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     // Along the flats: the level set must sit at exactly h + delta.
     double flat_err = 0.;
@@ -516,7 +516,7 @@ TEST_CASE("offset-potential-vs-euclidean-wedge", "[offset][potential]")
         {Vector2d(-arm * std::sin(half_angle), arm * std::cos(half_angle)),
          Vector2d(0., 0.),
          Vector2d(arm * std::sin(half_angle), arm * std::cos(half_angle))});
-    const OffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     // On the bisector, at height y, the Euclidean distance to the wedge is y*sin(half_angle).
     const double y_bisector =
@@ -546,7 +546,7 @@ TEST_CASE("offset-potential-support", "[offset][potential]")
 {
     const double delta = 0.1;
     const Polyline p = open_polyline({Vector2d(-5., 0.), Vector2d(5., 0.)});
-    const OffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     CHECK(phi.dhat() == Catch::Approx(DHAT_FACTOR * delta));
 
@@ -562,7 +562,7 @@ TEST_CASE("offset-potential-support", "[offset][potential]")
 
     // dhat_factor <= 1 puts the offset on (or outside) the support boundary, where the level
     // set does not exist. Refused rather than silently producing a zero field.
-    CHECK_THROWS(OffsetPotential2D(p.V, p.E, MatrixXi(0, 3), {}, delta, 1.0));
+    CHECK_THROWS(SmoothOffsetPotential2D(p.V, p.E, MatrixXi(0, 3), {}, delta, 1.0));
 }
 
 
@@ -572,7 +572,7 @@ TEST_CASE("offset-energy-derivatives", "[offset][potential]")
     const Polyline p = open_polyline(
         {Vector2d(-1., 0.), Vector2d(0., 0.), Vector2d(0.3, 0.4), Vector2d(0.9, 0.1)});
     const double delta = 0.1;
-    const auto phi = std::make_shared<const OffsetPotential2D>(
+    const auto phi = std::make_shared<const SmoothOffsetPotential2D>(
         p.V,
         p.E,
         MatrixXi(0, 3),
@@ -619,7 +619,7 @@ TEST_CASE("offset-energy-lands-on-the-level-set", "[offset][potential]")
     const double delta = 0.25;
     MatrixXd V(1, 2);
     V << 0., 0.;
-    const auto phi = std::make_shared<const OffsetPotential2D>(
+    const auto phi = std::make_shared<const SmoothOffsetPotential2D>(
         V,
         MatrixXi(0, 2),
         MatrixXi(0, 3),
@@ -669,14 +669,14 @@ TEST_CASE("offset-potential-3d-calibration", "[offset][potential]")
     // same number a 2D run does, and both must be the closed form of the barrier.
     const double delta = 0.05;
     const Polyline seg = open_polyline({Vector2d(-10., 3.), Vector2d(10., 3.)});
-    const OffsetPotential2D phi2(seg.V, seg.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential2D phi2(seg.V, seg.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     const double L = 20.;
     MatrixXd V(3, 3);
     V << -L, -L, 3., L, -L, 3., 0., L, 3.;
     MatrixXi F(1, 3);
     F << 0, 1, 2;
-    const OffsetPotential3D phi3(V, edges_of(F), F, {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi3(V, edges_of(F), F, {}, delta, DHAT_FACTOR);
 
     const double t = delta / phi3.dhat();
     const double c_expected = -(t - 1.) * (t - 1.) * std::log(t);
@@ -705,7 +705,7 @@ TEST_CASE("offset-potential-3d-gradient-fd", "[offset][potential]")
 {
     const double delta = 0.1;
     const TriSoup s = cube(1.0);
-    const OffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
 
     const std::vector<Vector3d> samples = face_normal_samples(s, phi.dhat());
     REQUIRE(samples.size() == 72);
@@ -728,7 +728,7 @@ TEST_CASE("offset-potential-3d-hessian-fd", "[offset][potential]")
 {
     const double delta = 0.1;
     const TriSoup s = cube(1.0);
-    const OffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
 
     const std::vector<Vector3d> samples = face_normal_samples(s, phi.dhat());
 
@@ -765,7 +765,7 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
     const double h = 1.0;
     const double delta = 0.1;
     const TriSoup s = cube(h);
-    const OffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
 
     // FACES. Straight out of every triangle's centroid, which is interior by construction.
     double face_err = 0.;
@@ -846,7 +846,7 @@ TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
 
     const auto measure = [&](const int n_theta, const int n_phi) {
         const TriSoup s = uv_sphere(R, n_theta, n_phi);
-        const OffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
+        const SmoothOffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
         double max_err = 0., sum_err = 0.;
         int n = 0;
         for (int i = 1; i < 12; ++i) {
@@ -898,7 +898,7 @@ TEST_CASE("offset-potential-3d-wire", "[offset][potential]")
     V << -1., 0., 0., 1., 0., 0.;
     MatrixXi E(1, 2);
     E << 0, 1;
-    const OffsetPotential3D phi(V, E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi(V, E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
 
     // The cylindrical part: radially out from points along the segment.
     double cyl_err = 0.;
@@ -942,7 +942,7 @@ TEST_CASE("offset-potential-3d-isolated-point", "[offset][potential]")
     const double delta = 0.2;
     MatrixXd V(1, 3);
     V << 0.4, -0.7, 0.2;
-    const OffsetPotential3D phi(V, MatrixXi(0, 2), MatrixXi(0, 3), {0}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi(V, MatrixXi(0, 2), MatrixXi(0, 3), {0}, delta, DHAT_FACTOR);
 
     const Vector3d o(0.4, -0.7, 0.2);
     double max_err = 0.;
@@ -979,7 +979,7 @@ TEST_CASE("offset-potential-3d-vs-euclidean-reentrant", "[offset][potential]")
     MatrixXi F(4, 3);
     F << 0, 1, 2, 0, 2, 3, // the z = 0 quad
         0, 4, 5, 0, 5, 3; // the x = 0 quad, sharing edge 0-3
-    const OffsetPotential3D phi(V, edges_of(F), F, {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi(V, edges_of(F), F, {}, delta, DHAT_FACTOR);
 
     const Vector3d bis(1., 0., 1.);
     const double t =
@@ -1015,7 +1015,7 @@ TEST_CASE("offset-potential-3d-support", "[offset][potential]")
     V << -L, -L, 0., L, -L, 0., 0., L, 0.;
     MatrixXi F(1, 3);
     F << 0, 1, 2;
-    const OffsetPotential3D phi(V, edges_of(F), F, {}, delta, DHAT_FACTOR);
+    const SmoothOffsetPotential3D phi(V, edges_of(F), F, {}, delta, DHAT_FACTOR);
 
     CHECK(phi.within_support(Vector3d(0., 0., 0.5 * delta)));
     CHECK(phi.within_support(Vector3d(0., 0., 1.9 * delta)));
@@ -1026,10 +1026,10 @@ TEST_CASE("offset-potential-3d-support", "[offset][potential]")
     CHECK(phi.gradient(Vector3d(0., 0., 3. * delta)).norm() == 0.);
     CHECK(phi.hessian(Vector3d(0., 0., 3. * delta)).norm() == 0.);
 
-    CHECK_THROWS(OffsetPotential3D(V, edges_of(F), F, {}, delta, 1.0));
+    CHECK_THROWS(SmoothOffsetPotential3D(V, edges_of(F), F, {}, delta, 1.0));
     // An edge list that does not cover every triangle edge would silently widen every Voronoi
     // region, so it is refused rather than trusted.
-    CHECK_THROWS(OffsetPotential3D(V, MatrixXi(0, 2), F, {}, delta, DHAT_FACTOR));
+    CHECK_THROWS(SmoothOffsetPotential3D(V, MatrixXi(0, 2), F, {}, delta, DHAT_FACTOR));
 }
 
 
@@ -1042,7 +1042,7 @@ TEST_CASE("offset-energy-3d-lands-on-the-level-set", "[offset][potential]")
     const double delta = 0.25;
     MatrixXd V(1, 3);
     V << 0., 0., 0.;
-    const auto phi = std::make_shared<const OffsetPotential3D>(
+    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
         V,
         MatrixXi(0, 2),
         MatrixXi(0, 3),

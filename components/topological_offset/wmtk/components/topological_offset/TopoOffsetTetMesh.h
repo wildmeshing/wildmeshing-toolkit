@@ -223,6 +223,17 @@ public:
      */
     std::shared_ptr<OffsetPotential3D> m_offset_potential;
 
+    /**
+     * @brief The EXACT-kind envelope of the input complex, built only for offset_field
+     * "euclidean". Null otherwise.
+     *
+     * Not a containment envelope and never used as one: no operation tests against it. It exists
+     * because nearest_point_feature() -- the foot point plus the feature kind the exact distance
+     * derivatives are cased on -- is only answered by the exact path. Built from the same
+     * extraction as m_input_complex_bvh, so it describes the same geometry.
+     */
+    std::shared_ptr<SampleEnvelope> m_input_complex_envelope;
+
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // tag map stuff

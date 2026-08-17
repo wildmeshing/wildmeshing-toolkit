@@ -23,6 +23,7 @@
             "envelope_size_rel",
             "region_envelope_from_input",
             "relative_ball_threshold",
+            "offset_field",
             "offset_dhat_factor",
             "offset_residual_rel",
             "offset_residual_samples",
@@ -191,6 +192,16 @@
         "type": "float",
         "default": 0.1,
         "doc": "Float between 0 and 1, radius relative to target_distance to stop circle/sphere splitting in conservative distance approximation. Smaller means more accurate offset growth but longer run time."
+    },
+    {
+        "pointer": "/offset_field",
+        "type": "string",
+        "default": "smooth",
+        "options": [
+            "smooth",
+            "euclidean"
+        ],
+        "doc": "WHICH FIELD DEFINES THE OFFSET, and therefore what the boundary is placed on, what the criterion measures and what the sizing field refines by. `smooth` is the offset geometric contact potential Phi, with the boundary on the level set Phi = c: C^2, analytic derivatives, and a level set that BULGES OUTWARD at reentrant features, so it is a smoothed offset rather than the exact one. `euclidean` is the Euclidean distance d to the input complex, with the boundary on d = target_distance: the exact offset, with exact derivatives inside each closest-feature region, a gradient discontinuity across the medial axis, and a genuine crease at every reentrant feature that no refinement resolves. Two consequences of picking `euclidean`: the residual becomes EXACT (|d - delta|, with none of the reference-slope conversion the smooth field needs, which overstates wherever Phi's isolines are packed tighter than on a flat stretch), and offset_dhat_factor together with the outside-the-support guard become meaningless, because d has no compact support. `smooth` is the default and is what every measurement in this component was tuned against."
     },
     {
         "pointer": "/offset_dhat_factor",

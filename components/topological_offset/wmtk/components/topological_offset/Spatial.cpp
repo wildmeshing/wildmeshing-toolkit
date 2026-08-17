@@ -42,8 +42,11 @@ bool TopoOffsetTetMesh::tet_is_in_offset_conservative(const size_t t_id, const d
             // because the closest feature is always feasible, and b(delta) = c, so d + r < delta
             // implies Phi > c over the whole sphere. The two agree; this only replaces the
             // give-up branch.
-            if (m_offset_potential &&
-                m_offset_potential->value(sph.center()) >= m_offset_potential->target_level()) {
+            // ASKED, not compared. The two fields are monotone in OPPOSITE directions -- Phi
+            // decays away from the complex, d grows -- so a literal value >= target_level is
+            // right for one and silently inverted for the other, which would grow the band
+            // inside out. See OffsetPotential::is_inside_offset().
+            if (m_offset_potential && m_offset_potential->is_inside_offset(sph.center())) {
                 continue; // centre is inside the level set: treat this sphere as inside
             }
             return false;
@@ -360,8 +363,9 @@ bool TopoOffsetTriMesh::tri_is_in_offset_conservative(const size_t f_id, const d
             // wholesale and produce an offset that ignored target_distance. At this radius the
             // circle is smaller than the resolution the offset is being built at, so the point
             // test is the honest answer and it is unbiased.
-            if (m_offset_potential->value(circ.center().head<2>()) >
-                m_offset_potential->target_level()) {
+            // ASKED, not compared; see the 3D twin above for why the literal comparison
+            // cannot be written here.
+            if (m_offset_potential->is_inside_offset(circ.center().head<2>())) {
                 continue;
             }
             return false;

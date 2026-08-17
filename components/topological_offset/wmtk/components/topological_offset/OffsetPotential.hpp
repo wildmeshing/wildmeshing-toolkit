@@ -1,14 +1,108 @@
 #pragma once
 
 #include <wmtk/Types.hpp>
+#include <wmtk/envelope/Envelope.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 
 #include <polysolve/nonlinear/Problem.hpp>
 
+#include <cmath>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace wmtk::components::topological_offset {
+
+/**
+ * @brief WHAT DEFINES THE OFFSET: a scalar field on space and the level set the boundary sits on.
+ *
+ * Two implementations, chosen by the `offset_field` JSON option:
+ *
+ *   SmoothOffsetPotential   Phi = the offset geometric contact potential, level set Phi = c.
+ *                           A C^2 field with analytic derivatives, whose level set is a SMOOTHED
+ *                           offset -- it bulges outward at reentrant features. The default, and
+ *                           the field every measurement in this component was tuned against.
+ *
+ *   EuclideanOffsetPotential  Phi = the Euclidean distance d to the input complex, level set
+ *                           d = delta. The exact offset, with exact derivatives inside each
+ *                           closest-feature region and a gradient discontinuity across the medial
+ *                           axis, which is precisely what Phi was introduced to avoid.
+ *
+ * THE TWO RUN IN OPPOSITE DIRECTIONS and that is the one thing a caller must not get wrong. Phi is
+ * a BARRIER: it is huge on the complex and decays to 0 at dhat, so being inside the offset region
+ * means Phi >= c. The Euclidean distance INCREASES away from the complex, so inside means d <=
+ * delta. Nothing outside this file should compare value() against target_level() itself -- ask
+ * is_inside_offset(), which each implementation answers with its own sense.
+ *
+ * The rest of the interface is deliberately identical, so the optimization, the criterion, the
+ * sizing field and OffsetEnergy are written once against this base and neither knows which field
+ * it has.
+ */
+template <int DIM>
+class OffsetPotential
+{
+    static_assert(DIM == 2 || DIM == 3, "the offset potential exists in 2D and 3D only");
+
+public:
+    using VecD = Eigen::Matrix<double, DIM, 1>;
+    using MatD = Eigen::Matrix<double, DIM, DIM>;
+
+    virtual ~OffsetPotential() = default;
+
+    /// The level value the offset boundary is placed on.
+    double target_level() const { return m_c; }
+
+    /// The offset distance the field is calibrated to.
+    double delta() const { return m_delta; }
+
+    /// Support radius, beyond which the field and its derivatives vanish. Infinite for a field
+    /// with no compact support, which makes within_support() vacuously true.
+    double dhat() const { return m_dhat; }
+
+    virtual double value(const VecD& p) const = 0;
+    virtual VecD gradient(const VecD& p) const = 0;
+    virtual MatD hessian(const VecD& p) const = 0;
+
+    /**
+     * @brief Distance from `p` to the level set, in LENGTH units.
+     *
+     * What the convergence criterion measures, because it is comparable to target_distance while
+     * the field value need not be.
+     */
+    virtual double residual_length(const VecD& p) const = 0;
+
+    /// Whether `p` is somewhere the field can give a direction to the level set at all.
+    virtual bool within_support(const VecD& p) const = 0;
+
+    /**
+     * @brief Whether `p` lies inside the offset region -- on the complex's side of the level set.
+     *
+     * ASK THIS, never `value(p) >= target_level()`. See the class comment: the two fields are
+     * monotone in opposite directions, so the literal comparison is right for one and silently
+     * inverted for the other. Used by the conservative construction tests in Spatial.cpp, where
+     * getting it backwards would grow the band inside out.
+     */
+    virtual bool is_inside_offset(const VecD& p) const = 0;
+
+    /// DIAGNOSTIC: what the field is made of at `p`, one contribution per line.
+    virtual std::string describe_active(const VecD& p) const = 0;
+
+protected:
+    /// Subclasses set delta and the support here; m_c is theirs to fill in, because one
+    /// calibrates it and the other simply knows it.
+    OffsetPotential(const double delta, const double dhat)
+        : m_delta(delta)
+        , m_dhat(dhat)
+    {}
+
+    double m_delta = 0.;
+    double m_dhat = 0.;
+    double m_c = 0.;
+};
+
+using OffsetPotential2D = OffsetPotential<2>;
+using OffsetPotential3D = OffsetPotential<3>;
+
 
 /**
  * @brief The SMOOTH OFFSET POTENTIAL Phi, and the offset defined as its level set Phi = c.
@@ -72,13 +166,13 @@ namespace wmtk::components::topological_offset {
  * const and safe to call concurrently from the smoothing pass, which is what the offset does.
  */
 template <int DIM>
-class OffsetPotential
+class SmoothOffsetPotential : public OffsetPotential<DIM>
 {
     static_assert(DIM == 2 || DIM == 3, "the offset potential exists in 2D and 3D only");
 
 public:
-    using VecD = Eigen::Matrix<double, DIM, 1>;
-    using MatD = Eigen::Matrix<double, DIM, DIM>;
+    using VecD = typename OffsetPotential<DIM>::VecD;
+    using MatD = typename OffsetPotential<DIM>::MatD;
 
     /**
      * @brief Build the potential of a fixed complex.
@@ -100,7 +194,7 @@ public:
      * @param delta     the offset distance the level set is calibrated to.
      * @param dhat_factor  support radius as a multiple of delta. Must be > 1.
      */
-    OffsetPotential(
+    SmoothOffsetPotential(
         const MatrixXd& V,
         const MatrixXi& E,
         const MatrixXi& F,
@@ -108,21 +202,11 @@ public:
         double delta,
         double dhat_factor);
 
-    ~OffsetPotential();
+    ~SmoothOffsetPotential() override;
 
-    /// The level value the offset boundary is placed on: Phi at distance `delta` from one large
-    /// flat primitive, evaluated through this same code path at construction.
-    double target_level() const { return m_c; }
-
-    /// Support radius. Phi and all its derivatives vanish identically beyond this.
-    double dhat() const { return m_dhat; }
-
-    /// The offset distance the level set was calibrated to.
-    double delta() const { return m_delta; }
-
-    double value(const VecD& p) const;
-    VecD gradient(const VecD& p) const;
-    MatD hessian(const VecD& p) const;
+    double value(const VecD& p) const override;
+    VecD gradient(const VecD& p) const override;
+    MatD hessian(const VecD& p) const override;
 
     /**
      * @brief First-order distance from `p` to the level set Phi = c, in LENGTH units.
@@ -135,20 +219,28 @@ public:
      * the runaway guard turns that state into a hard error rather than letting this number
      * decide anything.
      */
-    double residual_length(const VecD& p) const;
+    double residual_length(const VecD& p) const override;
 
     /// Whether `p` is inside the support at all, i.e. Phi(p) > 0.
-    bool within_support(const VecD& p) const { return value(p) > 0.; }
+    bool within_support(const VecD& p) const override { return value(p) > 0.; }
+
+    /// Phi DECREASES with distance, so the offset region is where it is still above the level.
+    bool is_inside_offset(const VecD& p) const override { return value(p) >= m_c; }
 
     /// DIAGNOSTIC: the ACTIVE pairs at `p`, one per line -- what upstream's feasible-region rule
     /// decided claims this point, and each one's contribution. The only way to see why Phi has
     /// the value it has, which is what a discontinuity investigation needs.
-    std::string describe_active(const VecD& p) const;
+    std::string describe_active(const VecD& p) const override;
 
 private:
+    // Dependent base members: name them unqualified in the definitions below.
+    using OffsetPotential<DIM>::m_delta;
+    using OffsetPotential<DIM>::m_dhat;
+    using OffsetPotential<DIM>::m_c;
+
     /// Calibration constructor: builds the single-flat-primitive reference complex without
     /// recursing into calibration itself.
-    OffsetPotential(double delta, double dhat_factor, int /*calibration tag*/);
+    SmoothOffsetPotential(double delta, double dhat_factor, int /*calibration tag*/);
 
     void build(const MatrixXd& V, const MatrixXi& E, const MatrixXi& F, const std::vector<int>& P);
 
@@ -157,17 +249,98 @@ private:
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 
-    double m_delta = 0.;
-    double m_dhat = 0.;
-    double m_c = 0.;
     /// |dPhi/dd| at distance delta from one large flat primitive -- the slope of the potential at
     /// the level set on a flat stretch of input. Fixed at construction, and what turns a
     /// difference in Phi into a length. See residual_length().
     double m_grad_ref = 0.;
 };
 
-using OffsetPotential2D = OffsetPotential<2>;
-using OffsetPotential3D = OffsetPotential<3>;
+using SmoothOffsetPotential2D = SmoothOffsetPotential<2>;
+using SmoothOffsetPotential3D = SmoothOffsetPotential<3>;
+
+
+/**
+ * @brief THE EUCLIDEAN OFFSET: Phi = d(p, input complex), level set d = delta.
+ *
+ * The exact offset, in exchange for the smoothness Phi was introduced to buy. Within each
+ * closest-feature region the distance to a piecewise-linear complex is smooth and its derivatives
+ * are exact and cheap; ACROSS a region boundary -- the medial axis -- the gradient is
+ * discontinuous, and at a reentrant feature the offset has a genuine crease that no amount of
+ * refinement resolves. That is the trade being offered, not a defect of this class.
+ *
+ * DERIVATIVES, transcribed from wmtk::optimization::ExactDistanceEnergy2D/3D rather than derived
+ * here. That class gives the Hessian of d^2 by feature kind; this one needs the Hessian of d, and
+ * the two are related by grad^2(d^2) = 2 (grad d grad d^T + d grad^2 d), so with u = (p - n)/d:
+ *
+ *     feature            their grad^2(d^2) / 2      this class's grad^2 d
+ *     face interior      n n^T                      0                          (d is linear)
+ *     edge interior      I - t t^T                  (I - t t^T - u u^T) / d
+ *     vertex             I                          (I - u u^T) / d
+ *
+ * with the 2D cases being the same statement one dimension down (segment interior -> 0, corner ->
+ * (I - u u^T)/d). OffsetEnergy needs nothing else: it composes w (Phi - c)^2 from value, gradient
+ * and Hessian by the chain rule, so w (d - delta)^2 and its exact derivatives fall out unchanged.
+ *
+ * ISOLATED INPUT POINTS ARE A DEGENERATE SEGMENT, not a special primitive: SimplicialComplexBVH
+ * and the envelope both carry a point as the pseudo-edge (i, i). A query near one comes back as an
+ * edge-interior hit whose direction is undefined, and the edge formula above would divide by a
+ * meaningless t. Such a hit is demoted to the vertex case. topological_offset_2d_vertex_input is a
+ * point cloud and is entirely made of them.
+ *
+ * NO SUPPORT LIMIT. d is defined and informative everywhere, so within_support() is always true
+ * and the runaway guard that exists for Phi's compact support has nothing to catch. dhat() is
+ * reported as infinity to make that visible rather than implied.
+ */
+template <int DIM>
+class EuclideanOffsetPotential : public OffsetPotential<DIM>
+{
+    static_assert(DIM == 2 || DIM == 3, "the offset potential exists in 2D and 3D only");
+
+public:
+    using VecD = typename OffsetPotential<DIM>::VecD;
+    using MatD = typename OffsetPotential<DIM>::MatD;
+
+    /**
+     * @brief Build over an EXACT-kind envelope of the input complex.
+     *
+     * The envelope is the query engine, not a tolerance: nearest_point_feature() is what supplies
+     * the foot point and the feature kind the derivatives are cased on, and only the exact kind
+     * answers it. Its eps is irrelevant here and no containment test is ever run against it.
+     */
+    EuclideanOffsetPotential(const std::shared_ptr<SampleEnvelope>& envelope, double delta);
+
+    double value(const VecD& p) const override;
+    VecD gradient(const VecD& p) const override;
+    MatD hessian(const VecD& p) const override;
+
+    /// EXACT, not first-order: the level set is d = delta, so the distance to it IS |d - delta|.
+    /// No reference slope, hence none of the overstatement that the calibrated conversion carries
+    /// wherever Phi's isolines are packed tighter than on a flat stretch.
+    double residual_length(const VecD& p) const override { return std::abs(value(p) - m_c); }
+
+    /// Everywhere. d has no compact support.
+    bool within_support(const VecD& p) const override { return true; }
+
+    /// d INCREASES with distance, so the offset region is where it is still below the level --
+    /// the opposite sense to the smooth potential. See the base class.
+    bool is_inside_offset(const VecD& p) const override { return value(p) <= m_c; }
+
+    std::string describe_active(const VecD& p) const override;
+
+private:
+    /// The foot point, feature kind and direction at `p`, with the degenerate-segment demotion
+    /// already applied. dim is 2 (face interior), 1 (edge interior) or 0 (vertex).
+    void nearest_feature(const VecD& p, VecD& foot, int& dim, VecD& dir) const;
+
+    using OffsetPotential<DIM>::m_delta;
+    using OffsetPotential<DIM>::m_dhat;
+    using OffsetPotential<DIM>::m_c;
+
+    std::shared_ptr<SampleEnvelope> m_envelope;
+};
+
+using EuclideanOffsetPotential2D = EuclideanOffsetPotential<2>;
+using EuclideanOffsetPotential3D = EuclideanOffsetPotential<3>;
 
 
 /**

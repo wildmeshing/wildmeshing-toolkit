@@ -734,7 +734,59 @@ void TopoOffsetTetMesh::init_offset_potential()
     if (m_phi_V.rows() == 0) {
         log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
     }
-    m_offset_potential = std::make_shared<OffsetPotential3D>(
+    // WHICH FIELD DEFINES THE OFFSET; see OffsetPotential.hpp and the offset_field parameter.
+    // Both are built from the SAME extraction -- m_phi_V/E/F/P, which init_input_complex_bvh()
+    // produced -- so whichever is chosen measures the same geometry the diagnostics do.
+    if (m_offset_params.offset_field == "euclidean") {
+        // A QUERY ENGINE, not a tolerance: nearest_point_feature() supplies the foot point and
+        // the feature kind the exact derivatives are cased on, and only the exact kind answers
+        // it. eps is never read, since no containment test is run against this object.
+        //
+        // TRIANGLES WHERE THERE ARE ANY, segments otherwise. The exact envelope is one kind or
+        // the other and answers nearest_point_feature() for whichever it was built as; a complex
+        // with faces wants the face/edge/vertex cases, and a wire or point cloud has only the
+        // latter two.
+        std::vector<Eigen::Vector3d> verts(size_t(m_phi_V.rows()));
+        for (int i = 0; i < m_phi_V.rows(); ++i) {
+            verts[size_t(i)] = m_phi_V.row(i).head<3>();
+        }
+        m_input_complex_envelope = std::make_shared<SampleEnvelope>();
+        m_input_complex_envelope->use_exact = true;
+        if (m_phi_F.rows() > 0) {
+            std::vector<Eigen::Vector3i> tris(size_t(m_phi_F.rows()));
+            for (int i = 0; i < m_phi_F.rows(); ++i) {
+                tris[size_t(i)] = Eigen::Vector3i(m_phi_F(i, 0), m_phi_F(i, 1), m_phi_F(i, 2));
+            }
+            m_input_complex_envelope->init(verts, tris, m_offset_params.target_distance);
+            logger().info(
+                "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} triangles",
+                m_offset_params.target_distance,
+                tris.size());
+        } else {
+            std::vector<Eigen::Vector2i> segs;
+            segs.reserve(size_t(m_phi_E.rows()) + m_phi_P.size());
+            for (int i = 0; i < m_phi_E.rows(); ++i) {
+                segs.emplace_back(m_phi_E(i, 0), m_phi_E(i, 1));
+            }
+            // Isolated input points as the degenerate segment (i, i); nearest_feature() demotes
+            // a hit on one to the vertex case.
+            for (const int i : m_phi_P) {
+                segs.emplace_back(i, i);
+            }
+            m_input_complex_envelope->init(verts, segs, m_offset_params.target_distance);
+            logger().info(
+                "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} segments (no "
+                "triangles in the input complex)",
+                m_offset_params.target_distance,
+                segs.size());
+        }
+        m_offset_potential = std::make_shared<EuclideanOffsetPotential3D>(
+            m_input_complex_envelope,
+            m_offset_params.target_distance);
+        return;
+    }
+
+    m_offset_potential = std::make_shared<SmoothOffsetPotential3D>(
         m_phi_V,
         m_phi_E,
         m_phi_F,

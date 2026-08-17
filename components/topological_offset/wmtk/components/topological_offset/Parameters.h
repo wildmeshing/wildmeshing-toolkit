@@ -55,6 +55,7 @@ struct Parameters : public wmtk::OptimizerParameters
     // 2 by default -- the potential is active out to twice the offset distance, and a band vertex
     // that travels further than that is a hard error rather than a silently frozen vertex.
     double offset_dhat_factor;
+    std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
     // Convergence tolerance on the offset, as a fraction of target_distance. The quantity it
     // bounds is the Phi RESIDUAL expressed as a length -- the first-order distance from a band
     // vertex to the level set -- so 0.1 means "every offset vertex is within 10% of the offset
@@ -154,6 +155,7 @@ struct Parameters : public wmtk::OptimizerParameters
         region_envelope_from_input = json_params["region_envelope_from_input"];
         relative_ball_threshold = json_params["relative_ball_threshold"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
+        offset_field = json_params["offset_field"];
         offset_residual_rel = json_params["offset_residual_rel"];
         offset_residual_samples = json_params["offset_residual_samples"];
         if (relative_ball_threshold < 0.0 || relative_ball_threshold > 1.0) {

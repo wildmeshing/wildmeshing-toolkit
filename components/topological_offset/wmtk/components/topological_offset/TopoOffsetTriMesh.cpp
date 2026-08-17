@@ -445,7 +445,45 @@ void TopoOffsetTriMesh::init_offset_potential()
     if (m_phi_V.rows() == 0) {
         log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
     }
-    m_offset_potential = std::make_shared<OffsetPotential2D>(
+    // WHICH FIELD DEFINES THE OFFSET; see OffsetPotential.hpp and the offset_field parameter.
+    // Both are built from the SAME extraction -- m_phi_V/E/P, which init_input_complex_bvh()
+    // produced -- so whichever is chosen measures the same geometry the diagnostics do.
+    if (m_offset_params.offset_field == "euclidean") {
+        // The envelope here is a QUERY ENGINE, not a tolerance: nearest_point_feature() supplies
+        // the foot point and the feature kind the exact derivatives are cased on, and only the
+        // exact kind answers it. eps is never read -- no containment test is run against this
+        // object -- so it is set to target_distance purely to be a sane positive number.
+        std::vector<Eigen::Vector2d> verts(size_t(m_phi_V.rows()));
+        for (int i = 0; i < m_phi_V.rows(); ++i) {
+            verts[size_t(i)] = m_phi_V.row(i).head<2>();
+        }
+        std::vector<Eigen::Vector2i> segs;
+        segs.reserve(size_t(m_phi_E.rows()) + m_phi_P.size());
+        for (int i = 0; i < m_phi_E.rows(); ++i) {
+            segs.emplace_back(m_phi_E(i, 0), m_phi_E(i, 1));
+        }
+        // Isolated input points enter as the degenerate segment (i, i), exactly as
+        // SimplicialComplexBVH carries them. EuclideanOffsetPotential::nearest_feature() demotes
+        // a hit on one to the vertex case, which is what the geometry is.
+        for (const int i : m_phi_P) {
+            segs.emplace_back(i, i);
+        }
+        m_input_complex_envelope = std::make_shared<SampleEnvelope>();
+        m_input_complex_envelope->use_exact = true;
+        m_input_complex_envelope->init(verts, segs, m_offset_params.target_distance);
+        m_offset_potential = std::make_shared<EuclideanOffsetPotential2D>(
+            m_input_complex_envelope,
+            m_offset_params.target_distance);
+        logger().info(
+            "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} segments ({} of them "
+            "isolated points)",
+            m_offset_params.target_distance,
+            segs.size(),
+            m_phi_P.size());
+        return;
+    }
+
+    m_offset_potential = std::make_shared<SmoothOffsetPotential2D>(
         m_phi_V,
         m_phi_E,
         MatrixXi(0, 3), // no triangle primitive in 2D

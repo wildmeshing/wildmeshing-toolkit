@@ -9,6 +9,8 @@
 #include <ipc/high_order_contact/high_order_contact_parameters.hpp>
 #include <ipc/high_order_contact/quadrature_potential.hpp>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <map>
@@ -42,7 +44,7 @@ using VertexDict = ipc::HighOrderCollisionDict<ipc::PointType::VERTEX, DIM>;
  * last row and rebuilds the small collision set around it.
  */
 template <int DIM>
-struct OffsetPotential<DIM>::Impl
+struct SmoothOffsetPotential<DIM>::Impl
 {
     ipc::CollisionMesh mesh; ///< complex vertices + the query vertex
     ipc::HighOrderContactParameters params;
@@ -191,15 +193,14 @@ struct OffsetPotential<DIM>::Impl
 
 
 template <int DIM>
-OffsetPotential<DIM>::OffsetPotential(
+SmoothOffsetPotential<DIM>::SmoothOffsetPotential(
     const MatrixXd& V,
     const MatrixXi& E,
     const MatrixXi& F,
     const std::vector<int>& P,
     const double delta,
     const double dhat_factor)
-    : m_delta(delta)
-    , m_dhat(dhat_factor * delta)
+    : OffsetPotential<DIM>(delta, dhat_factor * delta)
 {
     if (!(delta > 0.)) {
         log_and_throw_error("OffsetPotential: target_distance must be positive, got {}", delta);
@@ -219,7 +220,7 @@ OffsetPotential<DIM>::OffsetPotential(
     // CALIBRATION, through this same code path rather than from a closed form. Phi at
     // perpendicular distance delta from one large flat primitive: one active pair, no feature
     // interaction, so this is the level the offset takes on any flat stretch of the input.
-    const OffsetPotential reference(delta, dhat_factor, 0);
+    const SmoothOffsetPotential reference(delta, dhat_factor, 0);
     VecD probe = VecD::Zero();
     probe[DIM - 1] = delta;
     m_c = reference.value(probe);
@@ -251,9 +252,8 @@ OffsetPotential<DIM>::OffsetPotential(
 
 
 template <int DIM>
-OffsetPotential<DIM>::OffsetPotential(const double delta, const double dhat_factor, int)
-    : m_delta(delta)
-    , m_dhat(dhat_factor * delta)
+SmoothOffsetPotential<DIM>::SmoothOffsetPotential(const double delta, const double dhat_factor, int)
+    : OffsetPotential<DIM>(delta, dhat_factor * delta)
 {
     // One primitive large enough that the probe at perpendicular distance delta projects into
     // its interior and every one of its boundary features is far outside the support, so exactly
@@ -281,11 +281,11 @@ OffsetPotential<DIM>::OffsetPotential(const double delta, const double dhat_fact
 
 
 template <int DIM>
-OffsetPotential<DIM>::~OffsetPotential() = default;
+SmoothOffsetPotential<DIM>::~SmoothOffsetPotential() = default;
 
 
 template <int DIM>
-void OffsetPotential<DIM>::build(
+void SmoothOffsetPotential<DIM>::build(
     const MatrixXd& V,
     const MatrixXi& E,
     const MatrixXi& F,
@@ -408,7 +408,7 @@ void OffsetPotential<DIM>::build(
 
 
 template <int DIM>
-double OffsetPotential<DIM>::value(const VecD& p) const
+double SmoothOffsetPotential<DIM>::value(const VecD& p) const
 {
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
@@ -432,7 +432,7 @@ double OffsetPotential<DIM>::value(const VecD& p) const
 
 
 template <int DIM>
-typename OffsetPotential<DIM>::VecD OffsetPotential<DIM>::gradient(const VecD& p) const
+typename SmoothOffsetPotential<DIM>::VecD SmoothOffsetPotential<DIM>::gradient(const VecD& p) const
 {
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
@@ -459,7 +459,7 @@ typename OffsetPotential<DIM>::VecD OffsetPotential<DIM>::gradient(const VecD& p
 
 
 template <int DIM>
-typename OffsetPotential<DIM>::MatD OffsetPotential<DIM>::hessian(const VecD& p) const
+typename SmoothOffsetPotential<DIM>::MatD SmoothOffsetPotential<DIM>::hessian(const VecD& p) const
 {
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
@@ -491,7 +491,7 @@ typename OffsetPotential<DIM>::MatD OffsetPotential<DIM>::hessian(const VecD& p)
 
 
 template <int DIM>
-std::string OffsetPotential<DIM>::describe_active(const VecD& p) const
+std::string SmoothOffsetPotential<DIM>::describe_active(const VecD& p) const
 {
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
@@ -510,7 +510,7 @@ std::string OffsetPotential<DIM>::describe_active(const VecD& p) const
 
 
 template <int DIM>
-double OffsetPotential<DIM>::residual_length(const VecD& p) const
+double SmoothOffsetPotential<DIM>::residual_length(const VecD& p) const
 {
     // |Phi(p) - c| divided by the REFERENCE gradient magnitude -- the slope of Phi at the level
     // set on a flat stretch of input -- rather than by the local |grad Phi(p)|.
@@ -577,8 +577,143 @@ void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 }
 
 
-template class OffsetPotential<2>;
-template class OffsetPotential<3>;
+// ---------------------------------------------------------------------------------------------
+// The Euclidean field.
+// ---------------------------------------------------------------------------------------------
+
+template <int DIM>
+EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
+    const std::shared_ptr<SampleEnvelope>& envelope,
+    const double delta)
+    // NO SUPPORT LIMIT. d is defined and informative everywhere, so the runaway guard that exists
+    // for Phi's compact support has nothing to catch here; infinity says so rather than implying
+    // it with a large finite number that something might later compare against.
+    : OffsetPotential<DIM>(delta, std::numeric_limits<double>::infinity())
+    , m_envelope(envelope)
+{
+    if (!(delta > 0.)) {
+        log_and_throw_error(
+            "EuclideanOffsetPotential: target_distance must be positive, got {}",
+            delta);
+    }
+    if (!m_envelope) {
+        log_and_throw_error("EuclideanOffsetPotential: needs an envelope to query");
+    }
+    // NO CALIBRATION. The level IS the offset distance -- that is the entire content of "the
+    // Euclidean offset" -- where the smooth potential has to discover its own level by evaluating
+    // Phi at distance delta from a flat reference.
+    m_c = delta;
+}
+
+template <int DIM>
+void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, int& dim, VecD& dir)
+    const
+{
+    if constexpr (DIM == 2) {
+        bool on_corner = false;
+        int feature_id = -1;
+        Eigen::Vector2d seg_normal;
+        m_envelope->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
+        // The 2D query reports the segment NORMAL; the Hessian below is cased on the direction
+        // ALONG the feature, so a segment interior is dim 1 with the tangent, obtained by
+        // rotating the normal a quarter turn.
+        dim = on_corner ? 0 : 1;
+        dir = on_corner ? VecD::Zero().eval() : VecD(-seg_normal.y(), seg_normal.x());
+    } else {
+        long long feature_id = -1;
+        m_envelope->nearest_point_feature(p, foot, dim, dir, feature_id);
+    }
+
+    // A DEGENERATE SEGMENT IS A POINT, not an edge. Both SimplicialComplexBVH and the envelope
+    // carry an isolated input vertex as the pseudo-edge (i, i), so a query near one comes back as
+    // an edge-interior hit whose direction is whatever normalising a zero vector produced. The
+    // edge Hessian would then subtract a meaningless t t^T. Demote it to the vertex case, which
+    // is what the geometry actually is. topological_offset_2d_vertex_input is a point cloud and
+    // is made entirely of these.
+    if (dim == 1 && !(dir.norm() > 0.5)) {
+        dim = 0;
+        dir = VecD::Zero();
+    }
+}
+
+template <int DIM>
+double EuclideanOffsetPotential<DIM>::value(const VecD& p) const
+{
+    return std::sqrt(m_envelope->squared_distance(p));
+}
+
+template <int DIM>
+typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::gradient(
+    const VecD& p) const
+{
+    VecD foot = VecD::Zero(), dir = VecD::Zero();
+    int dim = -1;
+    nearest_feature(p, foot, dim, dir);
+
+    const VecD r = p - foot;
+    const double d = r.norm();
+    // ON the complex the gradient of d does not exist -- every direction increases it equally.
+    // Zero is the honest answer and the one the smoother handles: it contributes no offset force,
+    // so the vertex is moved by the quality term alone. Such a vertex is excluded from the offset
+    // term anyway (smoothing_extra_energy refuses an input-complex vertex) and from the criterion
+    // (band_vertex_is_reachable books it as pinned), so this is a belt-and-braces case.
+    if (!(d > 1e-14)) {
+        return VecD::Zero();
+    }
+    return r / d;
+}
+
+template <int DIM>
+typename EuclideanOffsetPotential<DIM>::MatD EuclideanOffsetPotential<DIM>::hessian(
+    const VecD& p) const
+{
+    VecD foot = VecD::Zero(), dir = VecD::Zero();
+    int dim = -1;
+    nearest_feature(p, foot, dim, dir);
+
+    const VecD r = p - foot;
+    const double d = r.norm();
+    if (!(d > 1e-14)) {
+        return MatD::Zero();
+    }
+    const VecD u = r / d;
+
+    // grad^2 d, by feature kind. Transcribed from ExactDistanceEnergy2D/3D, which state the
+    // Hessian of d^2; grad^2(d^2) = 2 (grad d grad d^T + d grad^2 d) converts one to the other.
+    // See the class comment for the table.
+    if (dim == DIM - 1) {
+        // Face interior in 3D, segment interior in 2D: d is LINEAR in p there, so no curvature.
+        return MatD::Zero();
+    }
+    if (dim == 1) {
+        // 3D edge interior: free along the edge, curved around it.
+        return (MatD::Identity() - dir * dir.transpose() - u * u.transpose()) / d;
+    }
+    // Vertex: distance to a point, curved in every direction but radially.
+    return (MatD::Identity() - u * u.transpose()) / d;
+}
+
+template <int DIM>
+std::string EuclideanOffsetPotential<DIM>::describe_active(const VecD& p) const
+{
+    VecD foot = VecD::Zero(), dir = VecD::Zero();
+    int dim = -1;
+    nearest_feature(p, foot, dim, dir);
+    static constexpr std::array<const char*, 3> kinds = {{"vertex", "edge interior", "face"}};
+    return fmt::format(
+        "nearest feature: {} at ({}), d = {:.6g}, level = {:.6g}, residual = {:.6g}",
+        kinds[size_t(std::clamp(dim, 0, 2))],
+        fmt::join(std::vector<double>(foot.data(), foot.data() + DIM), ", "),
+        (p - foot).norm(),
+        m_c,
+        residual_length(p));
+}
+
+
+template class SmoothOffsetPotential<2>;
+template class SmoothOffsetPotential<3>;
+template class EuclideanOffsetPotential<2>;
+template class EuclideanOffsetPotential<3>;
 template class OffsetEnergy<2>;
 template class OffsetEnergy<3>;
 
