@@ -110,6 +110,55 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         return false;
     }
 
+    // BOTSCH-KOBBELT'S COLLAPSE GUARD: refuse a collapse that would CREATE an over-long
+    // edge. Bisection necessarily drops children into the collapse zone -- a just-over-4/3
+    // parent halves to just-over-2/3, below the 4/5 gate -- so without this rule,
+    // collapse-to-convergence unravels every freshly refined region: merging two children
+    // recreates the parent, and the cascade runs until the surface sits far past its own
+    // sizing target. Measured on specific_models/prism: without the guard the run pins at
+    // max_dist_err 0.162 (bit-stable over 30 iterations) with the offset at ~1100 faces
+    // and 96% of its edges over-gate; with it, refinement survives the collapse pass for
+    // the first time and the run converges once the sizing field is confined to the band
+    // (see refine_sizing_around_worst). B-K stabilises the same hysteresis the same way;
+    // an edge that was already over-long is exempt, so degenerate cleanup (v1 ~ v2) stays
+    // possible.
+    //
+    // VALENCE ESCAPE: the guard alone traps slivers -- splits keep pumping valence into
+    // vertices whose relieving collapses the guard refuses (measured: valence 240, 32
+    // vertices over the split threshold, 18x runtime from the retry grind). A collapse
+    // deletes the tets around edge (v1,v2) and so is the operation that RELIEVES valence;
+    // when any vertex it touches is past the engine's own high-valence threshold, that
+    // takes precedence and the guard stands down. Self-limiting: with the escape the
+    // global maximum sits exactly at the threshold and none over.
+    {
+        const auto thr = static_cast<size_t>(std::max(0, m_params.split_high_valence_threshold));
+        const auto valence = [&](size_t v) {
+            return get_one_ring_tids_for_vertex(tuple_from_vertex(v)).size();
+        };
+        bool relieve = thr > 0 && (valence(v1_id) > thr || valence(v2_id) > thr);
+        if (thr > 0 && !relieve) {
+            for (const size_t nb : get_one_ring_vids_for_vertex(v1_id)) {
+                if (valence(nb) > thr) {
+                    relieve = true;
+                    break;
+                }
+            }
+        }
+        if (!relieve) {
+            const Vector3d p1 = m_vertex_attribute[v1_id].m_posf;
+            const Vector3d p2 = m_vertex_attribute[v2_id].m_posf;
+            for (const size_t nb : get_one_ring_vids_for_vertex(v1_id)) {
+                if (nb == v1_id || nb == v2_id) continue;
+                const double after2 = (p2 - m_vertex_attribute[nb].m_posf).squaredNorm();
+                const double sbar = 0.5 * (m_vertex_attribute[v2_id].m_sizing_scalar +
+                                           m_vertex_attribute[nb].m_sizing_scalar);
+                if (after2 <= m_params.splitting_l2 * sbar * sbar) continue; // not over-long
+                const double before2 = (p1 - m_vertex_attribute[nb].m_posf).squaredNorm();
+                if (after2 > before2) return false; // creates or lengthens an over-long edge
+            }
+        }
+    }
+
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not
     // leave the particular surface it belongs to: an input-complex vertex carries input
     // geometry, and an offset-boundary vertex carries the offset.
