@@ -180,8 +180,16 @@ struct OptimizerParameters
      * the merged vertex, and only then a decision -- keep it if the worst cell in the region
      * touched is no worse than before, undo the whole block otherwise. Because every cell
      * outside that region is untouched, "no worse locally" is exactly "no worse globally".
+     *
+     * Off by default: it is expensive. Every candidate collapse runs
+     * coarsen_local_smoothing_passes sweeps over the coarsen_smooth_ring before it can be
+     * judged, and a rejected one has all of that undone, so the pass pays full smoothing cost
+     * for the collapses it does not keep as well as the ones it does -- and it repeats that for
+     * coarsen_max_rounds. That is worth it when element count is what matters, but it is a
+     * large addition to the wall time of an otherwise converged run, so it is opt-in rather
+     * than something every caller pays for without asking.
      */
-    bool coarsen_pass = true;
+    bool coarsen_pass = false;
     /**
      * Coarsen as far as the quality guarantee allows, instead of stopping at the target edge
      * length.
