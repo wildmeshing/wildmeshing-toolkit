@@ -1017,9 +1017,27 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
     std::vector<size_t> both;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
-        if (m_vertex_extra[vid].m_is_on_offset && m_vertex_extra[vid].m_is_on_input) {
-            both.push_back(vid);
+        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_extra[vid].m_is_on_input) {
+            continue;
         }
+        // THE GEOMETRY DECIDES, NOT THE FLAGS. m_is_on_input is over-broad: the split
+        // propagates it onto new vertices and the collapse ORs it onto survivors, so a
+        // vertex can carry it while sitting a full target_distance from the complex --
+        // which is to say sitting exactly where the offset wants it. Erroring on the flag
+        // pair alone failed topological_offset_3d and _3d_edge_input at CONSTRUCTION, on
+        // 134 and 119 vertices whose real distances were 0.11 to 0.20 against a
+        // target_distance of 0.2: the message asserted they were at distance 0 while
+        // printing distances that plainly were not.
+        //
+        // Unsatisfiable is a GEOMETRIC fact. smoothing_position_is_allowed() holds an
+        // input-complex vertex within envelope_size of the complex, and the offset asks it
+        // to reach target_distance; those two demands contradict each other only when the
+        // vertex really is on the complex.
+        if (m_input_complex_bvh.dist(VectorXd(m_vertex_attribute[vid].m_posf)) >
+            m_offset_params.envelope_size) {
+            continue;
+        }
+        both.push_back(vid);
     }
     if (both.empty()) {
         return;
