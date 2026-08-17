@@ -919,10 +919,23 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
     for (const auto& [_, vid] : worst) {
         seeds.push_back(vid);
     }
-    const auto region = wmtk::utils::grow_vertex_region(
-        seeds,
-        std::max(0, m_params.stuck_refine_rings),
-        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+    // BAND-ONLY: the reference keeps its length-driven hysteresis on the offset
+    // SURFACE child mesh and never lets its sizing leak into the embedding, whose target
+    // is separate and AMIPS-driven (OffsetOptimization.cpp:1921/1963 vs 1405/1481).
+    // Spreading the band's fine sizing into the volume is what manufactured the halo
+    // demand -- and with it the churn, the slot exhaustion and the split-queue
+    // starvation. So the region growth and the gradation below walk BAND vertices only;
+    // the background keeps its scalar, which also restores length_rel's meaning for the
+    // volume.
+    const auto band_ring = [&](size_t v) {
+        std::vector<size_t> out;
+        for (const size_t nb : get_one_ring_vids_for_vertex(v)) {
+            if (on_band[nb]) out.push_back(nb);
+        }
+        return out;
+    };
+    const auto region =
+        wmtk::utils::grow_vertex_region(seeds, std::max(0, m_params.stuck_refine_rings), band_ring);
 
     std::vector<size_t> refined = wmtk::utils::apply_sizing_refinement(
         region,
@@ -966,7 +979,7 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double)
         m_offset_params.sizing_gradation,
         refined,
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
-        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+        band_ring);
 
     logger().info(
         "[stuck-refine] worst {} band vertices (worst dist {:.4}x target), refined {} of {} "
