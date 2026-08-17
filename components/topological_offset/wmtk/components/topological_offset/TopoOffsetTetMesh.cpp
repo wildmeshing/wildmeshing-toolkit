@@ -1100,13 +1100,41 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
     for (size_t i = 0; i < n_worst; ++i) {
         for (const size_t v : stuck[i].second) seeds.push_back(v);
     }
+
+    // FORCE-SPLIT THE STUCK FACES' LONGEST EDGES, and this is not optional -- it is the half of
+    // TetWild's stall response that lowering a scalar cannot substitute for.
+    //
+    // Lowering a sizing scalar only PERMITS a split next pass; the length gate still has to agree,
+    // and once the scalar is at the floor it never will. Force-split MAKES the split, once, gate
+    // or no gate. Measured on topological_offset_3d_convex before this: the refinement decayed
+    // from 730 of 742 region vertices in round 1 to 2 of 675 by round 4 and 0 of 675 thereafter --
+    // a Phase B response that had become a literal no-op -- while the residual sat at 10.98,
+    // 10.99, 10.99, 10.99. That plateau was read as evidence of a re-triangulation ratchet in
+    // Phase A. It was not; it was a dead refinement path. 2D, which carries the same two defects
+    // ported from here, stalled between 2.0x and 2.7x for eight rounds and converged once both
+    // were fixed.
+    //
+    // THE LONGEST EDGE OF A FACE, not the face itself, because a face is not splittable and this
+    // is TetWild's own convention for the same situation. 2D queues its stuck simplex directly:
+    // there the offset IS a polyline, so the stuck thing already is an edge.
+    m_force_split_edges.clear();
+    if (m_params.stuck_refine_force_split) {
+        for (size_t i = 0; i < n_worst; ++i) {
+            m_force_split_edges.insert(
+                wmtk::utils::longest_edge(stuck[i].second, [this](size_t v) -> const Vector3d& {
+                    return m_vertex_attribute[v].m_posf;
+                }));
+        }
+    }
+
     const auto region = wmtk::utils::grow_vertex_region(
         seeds,
         std::max(0, m_params.stuck_refine_rings),
         [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
 
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
+    // THE FLOOR IS THE OPTIMIZATION'S, NOT THE CONSTRUCTION'S -- see the identical note in the
+    // Phase B branch of refine_sizing_around_worst().
+    const double s_floor = m_params.stuck_refine_min_scalar;
     const auto refined = wmtk::utils::apply_sizing_refinement(
         region,
         m_params.stuck_refine_factor,
@@ -1119,11 +1147,12 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
         [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
 
     logger().info(
-        "\t[phase B] {} of {} offset faces stuck over tolerance (worst {:.4}x), refined {} of {} "
-        "region vertices (floor {:.4})",
+        "\t[phase B] {} of {} offset faces stuck over tolerance (worst {:.4}x), {} force-split, "
+        "refined {} of {} region vertices (floor {:.4})",
         n_worst,
         stuck.size(),
         stuck.front().first,
+        m_force_split_edges.size(),
         refined.size(),
         region.size(),
         s_floor);
@@ -1367,9 +1396,18 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
     // floor unconditionally, gradation dragged the fine sizing into the surrounding volume, and
     // iteration 4 reached 2.8M edges. Stall-driven and worst-first, a crease that stops paying
     // for refinement stops being selected, and the ratchet stops with it.
-    const double l = std::max(m_params.l, 1e-16);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    // THE FLOOR IS THE OPTIMIZATION'S, NOT THE CONSTRUCTION'S. stuck_refine_min_scalar (1e-3) is
+    // what the Phase A branch above clamps against, and what every stall refinement in TetWild,
+    // TriWild and simwild clamps against.
+    //
+    // min_edge_length is a different quantity for a different phase: it is derived from
+    // min_edge_length_rel x target_distance and bounds how fine the BAND IS BUILT. As an
+    // optimization floor it caps every band triangle at roughly half the offset distance, and a
+    // triangle that coarse across a curved level set misses it by about the tolerance wherever
+    // its vertices sit. On topological_offset_3d_convex it works out to 0.1237 against
+    // stuck_refine_min_scalar's 0.001 -- 124x -- and the two phases of one loop were clamping
+    // against different floors, which is how the discrepancy survived.
+    const double s_floor = m_params.stuck_refine_min_scalar;
 
     // Worst offset-surface faces above the criterion (a face already inside tolerance is never a
     // reason to refine), capped at stuck_refine_num_worst.
