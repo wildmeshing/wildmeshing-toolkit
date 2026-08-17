@@ -719,22 +719,24 @@ void TetWildMesh::output_mesh(std::string file)
     msh.add_tet_attribute<1>("t energy", [&](size_t i) {
         return std::cbrt(m_tet_attribute[i].m_quality);
     });
+    // No cube root on any of these: only m_quality stores AMIPS^3, and the cbrt above is what
+    // turns it back into the energy the logs and the vtu report. A winding number and a
+    // flood-fill id are neither cubed nor continuous, so cube-rooting them just corrupts the
+    // value. write_vtu writes all four raw, and it is the one that was right.
     msh.add_tet_attribute<1>("winding_number_input", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_winding_number_input);
+        return m_tet_attribute[i].m_winding_number_input;
     });
     msh.add_tet_attribute<1>("winding_number_tracked", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].m_winding_number_tracked);
+        return m_tet_attribute[i].m_winding_number_tracked;
     });
-    msh.add_tet_attribute<1>("part", [&](size_t i) {
-        return std::cbrt(m_tet_attribute[i].part_id);
-    });
+    msh.add_tet_attribute<1>("part", [&](size_t i) { return double(m_tet_attribute[i].part_id); });
 
     // per input winding number
     if (!tets.empty()) {
         const size_t n = m_tet_attribute[tets[0].tid(*this)].m_winding_number_per_input.size();
         for (size_t j = 0; j < n; ++j) {
             msh.add_tet_attribute<1>(fmt::format("wn_{}", j), [&](size_t i) {
-                return std::cbrt(m_tet_attribute[i].m_winding_number_per_input[j]);
+                return m_tet_attribute[i].m_winding_number_per_input[j];
             });
         }
     }
