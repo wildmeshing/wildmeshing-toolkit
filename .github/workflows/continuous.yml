@@ -4,6 +4,20 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual runs, with an option to open an SSH session on the runner. A failure that
+  # reproduces only in CI -- a different CPU, a different libstdc++, a restored ccache -- cannot
+  # be chased from a laptop, and a bare signal with no stack trace is not enough to reason from.
+  # See the "Debug over SSH" step below.
+  workflow_dispatch:
+    inputs:
+      debug_ssh:
+        description: "Open a tmate SSH session on the runner when a step fails"
+        type: boolean
+        default: false
+      debug_ssh_always:
+        description: "Open the session even when everything passes (to poke at a green runner)"
+        type: boolean
+        default: false
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
@@ -69,6 +83,40 @@ jobs:
       - name: Tests
         run: cd build; ctest --verbose --output-on-failure
 
+      # A crash in CI otherwise reports a bare signal and nothing else: Catch2 prints
+      # "SIGILL - Illegal instruction signal" and the name of the test that was running, with no
+      # frame to work from. That cost a day of guessing at a failure that reproduced on no
+      # developer machine. gdb re-runs the one binary that died and prints where.
+      #
+      # Best-effort by design: `|| true` everywhere, and `if: failure()` so it costs a green run
+      # nothing. It re-runs the WHOLE binary rather than the single case, because a crash that
+      # only appears after earlier tests have run is exactly the kind this exists to catch.
+      - name: Backtrace a crashed test
+        if: failure()
+        run: |
+          sudo apt-get -o Acquire::Retries=3 install -y gdb || true
+          cd build
+          failed=$(ctest -N --show-only=human 2>/dev/null | awk '/Test *#/{print $3}')
+          for t in $failed; do
+            bin=$(find . -type f -perm -u+x -name "$t" 2>/dev/null | head -1)
+            [ -x "$bin" ] || continue
+            echo "::group::gdb $t"
+            gdb -batch -ex run -ex "thread apply all bt" --args "$bin" 2>&1 | tail -80 || true
+            echo "::endgroup::"
+          done
+
+      # Interactive access to the runner, manual runs only. Never triggers on a push or a PR:
+      # workflow_dispatch is the only event that defines these inputs, and they default to false.
+      - name: Debug over SSH (tmate)
+        if: >-
+          always() && github.event_name == 'workflow_dispatch' &&
+          (inputs.debug_ssh_always || (failure() && inputs.debug_ssh))
+        uses: mxschmitt/action-tmate@v3
+        with:
+          # Only the user who started the run can connect.
+          limit-access-to-actor: true
+        timeout-minutes: 30
+
   ####################
   # MacOS
   ####################
@@ -125,6 +173,40 @@ jobs:
 
       - name: Tests
         run: cd build; ctest --verbose --output-on-failure
+
+      # A crash in CI otherwise reports a bare signal and nothing else: Catch2 prints
+      # "SIGILL - Illegal instruction signal" and the name of the test that was running, with no
+      # frame to work from. That cost a day of guessing at a failure that reproduced on no
+      # developer machine. gdb re-runs the one binary that died and prints where.
+      #
+      # Best-effort by design: `|| true` everywhere, and `if: failure()` so it costs a green run
+      # nothing. It re-runs the WHOLE binary rather than the single case, because a crash that
+      # only appears after earlier tests have run is exactly the kind this exists to catch.
+      - name: Backtrace a crashed test
+        if: failure()
+        run: |
+          # lldb ships with the Xcode command line tools; nothing to install.
+          cd build
+          failed=$(ctest -N --show-only=human 2>/dev/null | awk '/Test *#/{print $3}')
+          for t in $failed; do
+            bin=$(find . -type f -perm -u+x -name "$t" 2>/dev/null | head -1)
+            [ -x "$bin" ] || continue
+            echo "::group::lldb $t"
+            lldb -b -o run -o "thread backtrace all" -- "$bin" 2>&1 | tail -80 || true
+            echo "::endgroup::"
+          done
+
+      # Interactive access to the runner, manual runs only. Never triggers on a push or a PR:
+      # workflow_dispatch is the only event that defines these inputs, and they default to false.
+      - name: Debug over SSH (tmate)
+        if: >-
+          always() && github.event_name == 'workflow_dispatch' &&
+          (inputs.debug_ssh_always || (failure() && inputs.debug_ssh))
+        uses: mxschmitt/action-tmate@v3
+        with:
+          # Only the user who started the run can connect.
+          limit-access-to-actor: true
+        timeout-minutes: 30
 
   ####################
   # Windows
