@@ -115,6 +115,45 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
     logger().info("Tested {} challenging models.", input_files.size());
 }
 
+/**
+ * The six topological_offset cases: three 2D, three 3D.
+ *
+ * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
+ *
+ *     ./wmtk_integration_tests "[offset]"
+ *
+ * They were in Integration_Tests until data2 c414d7f. Two of them threw at construction on a
+ * both-surfaces check that tested a flag pair rather than the geometry (fixed in 366c038e85);
+ * all six then became far more expensive when the offset moved to the alternating A/B
+ * optimization, which runs up to ab_max_rounds phases of a full mesh_improvement where the old
+ * loop ran one -- enough for topological_offset_3d alone to exceed the suite's 7200 s budget.
+ *
+ * THE 3D CASES ARE NOT EXPECTED TO CONVERGE. 3D plateaus around 9.6x the Phi tolerance because
+ * the offset band is in a one-for-one split/collapse stalemate and cannot be refined; only the
+ * dragon sets throw_on_nonconvergence, so the rest report and continue. What this group asserts
+ * is that they RUN -- which is exactly what the construction throw broke, invisibly, because
+ * Debug CI does not build the integration tests at all.
+ */
+TEST_CASE("topological-offset-models", tags_integration + "[offset][.]")
+{
+    namespace fs = std::filesystem;
+
+    nlohmann::json j;
+    REQUIRE_NOTHROW(j = load_json(integration_tests_dir / "topological_offset_models.json"));
+
+    std::vector<std::string> input_files;
+    REQUIRE_NOTHROW(input_files = j["integration_tests"]);
+    REQUIRE(!input_files.empty());
+
+    for (const auto& input_file : input_files) {
+        const path& f = integration_tests_dir / input_file;
+        logger().info(">>>>>>>>>> Topological offset: {} <<<<<<<<<<", f.filename().string());
+        CHECK(fs::exists(f));
+        CHECK_NOTHROW(wmtk_wrapper(f));
+    }
+    logger().info("Tested {} topological_offset models.", input_files.size());
+}
+
 TEST_CASE("TetWild", tags_integration + "[.]")
 {
     const path f = integration_tests_dir / "tetwild_octocat.json";
