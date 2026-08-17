@@ -29,6 +29,19 @@ jobs:
             config: Release
             integration_tests_flag: &integration_tests_on "-DWMTK_BUILD_INTEGRATION_TESTS=ON"
             name: Linux
+          # arm64 runners. Until these existed the matrix covered Linux only on x86-64 and
+          # arm64 only on macOS, so no job compiled the combination -- which is exactly where
+          # a `char` signedness bug in VolumeRemesher hid: `char` is signed on x86-64 and on
+          # Apple's arm64 ABI, but unsigned under AAPCS64, so a stored orient3d of -1 read
+          # back as 255 and every constraint was silently discarded.
+          - os: ubuntu-24.04-arm
+            config: Debug
+            integration_tests_flag: *integration_tests_off
+            name: Linux arm64
+          - os: ubuntu-24.04-arm
+            config: Release
+            integration_tests_flag: *integration_tests_on
+            name: Linux arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
