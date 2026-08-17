@@ -336,6 +336,12 @@ public:
      */
     size_t refine_sizing_around_worst(double) override;
 
+    /// min: a collapse must not un-refine the sizing field -- see the base declaration.
+    double collapse_merged_sizing(double removed, double survivor) const override
+    {
+        return std::min(removed, survivor);
+    }
+
     /**
      * @brief (max, avg) band-vertex distance error over convergence_target; the engine's stop
      * metric is therefore 1.0. Distance only -- the average-normal-deviation criterion is
