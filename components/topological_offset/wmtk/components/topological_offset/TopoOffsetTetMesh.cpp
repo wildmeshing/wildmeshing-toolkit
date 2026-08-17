@@ -1132,9 +1132,10 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
         std::max(0, m_params.stuck_refine_rings),
         [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
 
-    // THE FLOOR IS THE OPTIMIZATION'S, NOT THE CONSTRUCTION'S -- see the identical note in the
-    // Phase B branch of refine_sizing_around_worst().
-    const double s_floor = m_params.stuck_refine_min_scalar;
+    // THE BAND'S FLOOR, not stuck_refine_min_scalar -- see the note in the Phase B branch of
+    // refine_sizing_around_worst() for why 3D keeps it where 2D does not.
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
     const auto refined = wmtk::utils::apply_sizing_refinement(
         region,
         m_params.stuck_refine_factor,
@@ -1211,6 +1212,43 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
         // Released, so smoothing can actually move the surface. Phase A rebuilds it next round
         // around wherever this leaves it.
         m_offset_envelope = nullptr;
+
+        // RECLAIM THE SLOT POOL, or the next Phase A cannot split anything at all.
+        //
+        // The pool is preallocated at preallocation_factor x the live count AT THE LAST
+        // CONSOLIDATE, and slots consumed by operations are only returned by a consolidate --
+        // not by the collapses that removed the elements. mesh_improvement() does consolidate
+        // each iteration, but at TetOptimizerMesh.cpp:97, AFTER the stop test that breaks out at
+        // line 89. So a Phase A that meets stop_energy on its first iteration exits without ever
+        // consolidating, and every later round inherits whatever the pool was left in.
+        //
+        // That is not a corner case here, it is the steady state. Measured on
+        // topological_offset_3d_convex: Phase A takes the mesh to 25273 vertices by splitting
+        // and its collapse pass returns it to 1481, so the excursion spends slots for 25k
+        // elements and frees none of them. From round 4 the split pass then reads
+        //
+        //     executed: 9745 | success / fail: 0 / 9745
+        //     [slots] 9343 operations aborted with the preallocated slot pool exhausted
+        //     #V = 1481, #T = 8131 after split
+        //
+        // -- EVERY split dropped, on a 1481-vertex mesh, with the sizing field asking for more
+        // refinement each round and none of it possible. Quality is already under stop_energy, so
+        // Phase A declares convergence after one iteration having changed nothing, Phase B smooths
+        // a mesh it cannot improve, and the round repeats identically: phi bit-identical at 11.25
+        // for four rounds, element quality at 40.10. The A/B loop was dead and reporting progress.
+        //
+        // HERE rather than at the top of Phase A, because refine_sizing_where_phi_is_stuck()
+        // queues m_force_split_edges BY VERTEX ID at the end of this phase and Phase A consumes
+        // them. Consolidating renumbers, so a consolidate between the queue and its consumer
+        // would feed the split pass identifiers for other vertices.
+        const size_t vcap_before = vert_capacity(), tcap_before = tet_capacity();
+        consolidate_mesh();
+        logger().info(
+            "\t[phase B] consolidated: slot capacity #V {} -> {}, #T {} -> {}",
+            vcap_before,
+            vert_capacity(),
+            tcap_before,
+            tet_capacity());
 
         const size_t passes = phase_b_smooth();
 
@@ -1396,18 +1434,26 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
     // floor unconditionally, gradation dragged the fine sizing into the surrounding volume, and
     // iteration 4 reached 2.8M edges. Stall-driven and worst-first, a crease that stops paying
     // for refinement stops being selected, and the ratchet stops with it.
-    // THE FLOOR IS THE OPTIMIZATION'S, NOT THE CONSTRUCTION'S. stuck_refine_min_scalar (1e-3) is
-    // what the Phase A branch above clamps against, and what every stall refinement in TetWild,
-    // TriWild and simwild clamps against.
+    // THE FLOOR IS THE BAND'S, DELIBERATELY, and 3D differs from 2D here on measurement rather
+    // than on principle.
     //
-    // min_edge_length is a different quantity for a different phase: it is derived from
-    // min_edge_length_rel x target_distance and bounds how fine the BAND IS BUILT. As an
-    // optimization floor it caps every band triangle at roughly half the offset distance, and a
-    // triangle that coarse across a curved level set misses it by about the tolerance wherever
-    // its vertices sit. On topological_offset_3d_convex it works out to 0.1237 against
-    // stuck_refine_min_scalar's 0.001 -- 124x -- and the two phases of one loop were clamping
-    // against different floors, which is how the discrepancy survived.
-    const double s_floor = m_params.stuck_refine_min_scalar;
+    // This is min_edge_length_rel x target_distance over l -- a CONSTRUCTION quantity, bounding
+    // how fine the band is built -- where the Phase A branch above, and every stall refinement in
+    // TetWild, TriWild and simwild, clamps against stuck_refine_min_scalar (1e-3). 2D had the
+    // identical arrangement and fixing it there is what made topological_offset_2d converge, so
+    // the same change was made here (fde51e7365) and then reverted, because in 3D it is not
+    // justified:
+    //
+    //   band edges average 2.05, chord accuracy needs h < sqrt(8 R tol) = 0.89 (scalar 0.214),
+    //   and this floor already permits 0.518. stuck_refine_min_scalar permits 0.0042 -- a 475x
+    //   refinement nothing asked for, which drove the split pass to 43k vertices and tripled the
+    //   operations dropped to slot exhaustion, 284k against 145k, for a worse final residual.
+    //
+    // The floor does still bind, by round 4 (refined 2 of 623, then 0 of 606, 0 of 577). It is
+    // simply not what is holding 3D back -- see the note in optimize_offset_alternating() about
+    // the split/collapse cycle, which is.
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
 
     // Worst offset-surface faces above the criterion (a face already inside tolerance is never a
     // reason to refine), capped at stuck_refine_num_worst.
