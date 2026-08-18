@@ -274,3 +274,199 @@ TEST_CASE("vertex_order", "[tetwild]")
 
     CHECK(nvo3 == vo3_count);
 }
+// ---------------------------------------------------------------------------
+// Feature edges and points through the insertion, checked in exact arithmetic.
+//
+// The contract (VolumeRemesher commit e09a229): each input edge is represented
+// by output tet edges that tile it -- collinear with it, contiguous, and
+// running endpoint to endpoint -- and each input point by an output vertex
+// exactly equal to it. These checks are the wmtk-side counterpart of the
+// remesher's own verify_tracking, run on the COMPACTED ids the caller gets.
+// ---------------------------------------------------------------------------
+namespace {
+
+// Exact check that `tiling` tiles segment AB: every tiling vertex on the line
+// through AB with parameter t in [0,1], and the pieces cover [0,1] with no gap.
+void require_exact_tiling(
+    const std::vector<std::array<size_t, 2>>& tiling,
+    const std::vector<Vector3r>& v_rational,
+    const Vector3d& seg_a,
+    const Vector3d& seg_b)
+{
+    REQUIRE(!tiling.empty());
+    const Vector3r a{Rational(seg_a[0]), Rational(seg_a[1]), Rational(seg_a[2])};
+    const Vector3r d{Rational(seg_b[0] - seg_a[0]), Rational(seg_b[1] - seg_a[1]), Rational(seg_b[2] - seg_a[2])};
+    const Rational dd = d.dot(d);
+
+    // Parameter of a vertex along AB, after requiring it exactly on the line.
+    const auto param = [&](size_t vid) -> Rational {
+        const Vector3r p = v_rational.at(vid) - a;
+        const Vector3r c = p.cross(d);
+        REQUIRE(c[0] == Rational(0));
+        REQUIRE(c[1] == Rational(0));
+        REQUIRE(c[2] == Rational(0));
+        return p.dot(d) / dd;
+    };
+
+    std::vector<std::pair<Rational, Rational>> intervals;
+    intervals.reserve(tiling.size());
+    for (const auto& e : tiling) {
+        Rational t0 = param(e[0]);
+        Rational t1 = param(e[1]);
+        if (t1 < t0) {
+            std::swap(t0, t1);
+        }
+        REQUIRE(t0 >= Rational(0));
+        REQUIRE(t1 <= Rational(1));
+        REQUIRE(t0 < t1); // no degenerate pieces
+        intervals.emplace_back(t0, t1);
+    }
+    std::sort(intervals.begin(), intervals.end(), [](const auto& x, const auto& y) {
+        return x.first < y.first;
+    });
+    REQUIRE(intervals.front().first == Rational(0));
+    for (size_t i = 1; i < intervals.size(); ++i) {
+        REQUIRE(intervals[i].first == intervals[i - 1].second); // contiguous, no overlap
+    }
+    REQUIRE(intervals.back().second == Rational(1));
+}
+
+} // namespace
+
+TEST_CASE("insertion-feature-edges-and-points", "[tetwild_operation][features]")
+{
+    // A cube [0,2]^3, with features interior to it, on its surface, and touching a corner.
+    MatrixXd V(8, 3);
+    V << 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 2, 0, //
+        0, 0, 2, 2, 0, 2, 2, 2, 2, 0, 2, 2;
+    MatrixXi F(12, 3);
+    F << 0, 2, 1, 0, 3, 2, // z = 0
+        4, 5, 6, 4, 6, 7, // z = 2
+        0, 1, 5, 0, 5, 4, // y = 0
+        2, 3, 7, 2, 7, 6, // y = 2
+        1, 2, 6, 1, 6, 5, // x = 2
+        0, 4, 7, 0, 7, 3; // x = 0
+
+    std::vector<Vector3d> vertices;
+    std::vector<std::array<size_t, 3>> faces;
+    VF_to_vectors(V, F, vertices, faces);
+
+    Parameters params;
+    params.init(vertices, faces);
+
+    components::shortest_edge_collapse::ShortestEdgeCollapse surf_mesh(vertices, 0);
+    {
+        std::vector<size_t> frozen_verts;
+        surf_mesh.create_mesh(vertices.size(), faces, frozen_verts, 0.1);
+    }
+    const std::shared_ptr<SampleEnvelope> env(&surf_mesh.m_envelope, [](SampleEnvelope*) {});
+
+    // Features: an interior diagonal edge chain (two edges sharing a vertex), an edge lying
+    // ON the y = 0 face, an interior point, a point on the surface, and a point exactly at a
+    // cube corner (already a background vertex -- the dedup case).
+    const std::vector<Vector3d> fe_verts = {
+        {0.5, 0.5, 0.5},
+        {1.0, 1.0, 1.0},
+        {1.5, 1.0, 1.5}, // interior chain 0-1, 1-2
+        {0.5, 0.0, 0.5},
+        {1.5, 0.0, 1.5}, // on-surface edge 3-4
+    };
+    const std::vector<std::array<size_t, 2>> fe = {{{0, 1}}, {{1, 2}}, {{3, 4}}};
+    const std::vector<Vector3d> fp = {
+        {1.0, 0.5, 1.5}, // interior
+        {2.0, 1.0, 1.0}, // on the x = 2 face
+        {0.0, 0.0, 0.0}, // exactly a cube corner
+    };
+
+    std::vector<Vector3r> v_rational;
+    std::vector<std::array<size_t, 3>> facets;
+    std::vector<bool> is_v_on_input;
+    std::vector<std::array<size_t, 4>> tets;
+    std::vector<bool> tet_face_on_input_surface;
+    utils::EmbedFeaturesResult features_out;
+    {
+        TetWildMesh mesh_insertion(params, env, 0);
+        mesh_insertion.insertion_by_volumeremesher(
+            vertices,
+            faces,
+            v_rational,
+            facets,
+            is_v_on_input,
+            tets,
+            tet_face_on_input_surface,
+            fe_verts,
+            fe,
+            fp,
+            &features_out);
+    }
+
+    // Every feature edge is tiled exactly, endpoint to endpoint.
+    REQUIRE(features_out.edge_tiling.size() == fe.size());
+    for (size_t e = 0; e < fe.size(); ++e) {
+        require_exact_tiling(
+            features_out.edge_tiling[e],
+            v_rational,
+            fe_verts[fe[e][0]],
+            fe_verts[fe[e][1]]);
+    }
+
+    // Every feature point is an output vertex, exactly.
+    REQUIRE(features_out.point_vertex.size() == fp.size());
+    for (size_t p = 0; p < fp.size(); ++p) {
+        const int64_t vid = features_out.point_vertex[p];
+        REQUIRE(vid >= 0);
+        for (int k = 0; k < 3; ++k) {
+            CHECK(v_rational[size_t(vid)][k] == Rational(fp[p][k]));
+        }
+    }
+
+    // And the tiling edges are real tet edges of the output connectivity.
+    std::set<std::pair<size_t, size_t>> tet_edges;
+    for (const auto& t : tets) {
+        for (int i = 0; i < 4; ++i) {
+            for (int j = i + 1; j < 4; ++j) {
+                tet_edges.emplace(std::min(t[i], t[j]), std::max(t[i], t[j]));
+            }
+        }
+    }
+    for (const auto& tiling : features_out.edge_tiling) {
+        for (const auto& e : tiling) {
+            CHECK(tet_edges.count({std::min(e[0], e[1]), std::max(e[0], e[1])}) == 1);
+        }
+    }
+
+    // Init the mesh with the features and check the tags landed: every tiling edge's slot
+    // is tagged and its endpoints are flagged.
+    TetWildMesh mesh(params, env, 0);
+    mesh.init_from_Volumeremesher(
+        v_rational,
+        facets,
+        is_v_on_input,
+        tets,
+        tet_face_on_input_surface,
+        &features_out);
+
+    for (size_t ie = 0; ie < features_out.edge_tiling.size(); ++ie) {
+        for (const auto& e : features_out.edge_tiling[ie]) {
+            const auto t = mesh.tuple_from_edge({{e[0], e[1]}});
+            REQUIRE(t.is_valid(mesh));
+            CHECK(mesh.m_feature_edge_attribute[t.eid(mesh)].m_is_feature_edge);
+            CHECK(mesh.m_vertex_extra[e[0]].m_is_on_feature_curve);
+            CHECK(mesh.m_vertex_extra[e[1]].m_is_on_feature_curve);
+        }
+    }
+    // A vertex NOT on any feature curve is not flagged: count flagged vertices and compare
+    // with the union of tiling vertices.
+    std::set<size_t> tiling_verts;
+    for (const auto& tiling : features_out.edge_tiling) {
+        for (const auto& e : tiling) {
+            tiling_verts.insert(e[0]);
+            tiling_verts.insert(e[1]);
+        }
+    }
+    size_t flagged = 0;
+    for (size_t v = 0; v < mesh.vert_capacity(); ++v) {
+        flagged += mesh.m_vertex_extra[v].m_is_on_feature_curve ? 1 : 0;
+    }
+    CHECK(flagged == tiling_verts.size());
+}

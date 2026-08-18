@@ -10,6 +10,7 @@ add_component_test(${COMPONENT_NAME})
 set(SRC_FILES
     test_file_write.cpp
     test_insertion.cpp
+    test_feature_tags.cpp
     test_operation_smooth.cpp
     test_operations.cpp
     test_surface_swap.cpp
