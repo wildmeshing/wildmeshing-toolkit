@@ -23,10 +23,10 @@
 
 #include <igl/remove_unreferenced.h>
 #include <memory>
-#include <wmtk/utils/EmbedTriangles.hpp>
 #include <set>
 #include <unordered_set>
 #include <utility>
+#include <wmtk/utils/EmbedTriangles.hpp>
 #include <wmtk/utils/SurfaceTopology.hpp>
 #include <wmtk/utils/partition_utils.hpp>
 

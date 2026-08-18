@@ -257,8 +257,9 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
                 if (p[0] == p[1]) {
                     continue; // the collapsed edge itself; it disappears
                 }
-                if (m_feature_envelope->is_outside(std::array<Eigen::Vector3d, 2>{
-                        {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
+                if (m_feature_envelope->is_outside(
+                        std::array<Eigen::Vector3d, 2>{
+                            {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
                     return false;
                 }
             }

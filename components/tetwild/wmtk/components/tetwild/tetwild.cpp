@@ -276,7 +276,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             MatrixXd Ve;
             MatrixXi Ee;
             io::read_edge_mesh(path, Ve, Ee);
-            logger().info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
+            logger()
+                .info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
             const size_t base = feature_edge_vertices.size();
             for (int i = 0; i < Ve.rows(); ++i) {
                 feature_edge_vertices.emplace_back(Ve.row(i));
@@ -772,8 +773,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             }
             hybrid_curve_segs.push_back(
                 {{mesh_new.m_vertex_attribute[e.vid(mesh_new)].m_posf,
-                  mesh_new.m_vertex_attribute[e.switch_vertex(mesh_new).vid(mesh_new)]
-                      .m_posf}});
+                  mesh_new.m_vertex_attribute[e.switch_vertex(mesh_new).vid(mesh_new)].m_posf}});
         }
         for (const auto& v : mesh_new.get_vertices()) {
             const size_t vid = v.vid(mesh_new);
@@ -1039,18 +1039,18 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         if (json_params["DEBUG_hausdorff"] && !feature_edges.empty()) {
             // Collected pre-filter: under a filter the mesh no longer carries them.
             const std::vector<std::array<Vector3d, 2>>& tagged = hybrid_curve_segs;
-            const auto point_to_segments =
-                [](const Vector3d& p, const std::vector<std::array<Vector3d, 2>>& segs) {
-                    double best = std::numeric_limits<double>::infinity();
-                    for (const auto& s : segs) {
-                        const Vector3d d = s[1] - s[0];
-                        const double dd = d.squaredNorm();
-                        double t = dd > 0 ? (p - s[0]).dot(d) / dd : 0.0;
-                        t = std::clamp(t, 0.0, 1.0);
-                        best = std::min(best, (p - (s[0] + t * d)).squaredNorm());
-                    }
-                    return best;
-                };
+            const auto point_to_segments = [](const Vector3d& p,
+                                              const std::vector<std::array<Vector3d, 2>>& segs) {
+                double best = std::numeric_limits<double>::infinity();
+                for (const auto& s : segs) {
+                    const Vector3d d = s[1] - s[0];
+                    const double dd = d.squaredNorm();
+                    double t = dd > 0 ? (p - s[0]).dot(d) / dd : 0.0;
+                    t = std::clamp(t, 0.0, 1.0);
+                    best = std::min(best, (p - (s[0] + t * d)).squaredNorm());
+                }
+                return best;
+            };
             std::vector<std::array<Vector3d, 2>> input_segs(feature_edges.size());
             for (size_t i = 0; i < feature_edges.size(); ++i) {
                 input_segs[i] = {
@@ -1070,11 +1070,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
                 return worst < 0 ? worst : std::sqrt(worst);
             };
             const double feat_containment = tagged.empty() ? -1 : sweep(tagged, input_segs);
-            const double feat_coverage = tagged.empty()
-                                             ? std::numeric_limits<double>::infinity()
-                                             : sweep(input_segs, tagged);
-            const double feat_eps =
-                params.epsr * params.diag_l * params.feature_envelope_ratio;
+            const double feat_coverage = tagged.empty() ? std::numeric_limits<double>::infinity()
+                                                        : sweep(input_segs, tagged);
+            const double feat_eps = params.epsr * params.diag_l * params.feature_envelope_ratio;
             logger().info(
                 "feature deviation: {} tagged edges | containment d(tagged->input) = {:.4} | "
                 "tube = {:.4}",

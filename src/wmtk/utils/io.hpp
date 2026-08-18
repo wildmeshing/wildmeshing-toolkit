@@ -442,9 +442,7 @@ private:
     template <int DIM, typename Fn>
     void add_simplex_elements(size_t num_elements, const Fn& get_element_cb)
     {
-        static_assert(
-            DIM >= 0 && DIM <= 3,
-            "Only 0,1,2,3D simplex elements are supported");
+        static_assert(DIM >= 0 && DIM <= 3, "Only 0,1,2,3D simplex elements are supported");
         if (num_elements == 0) return;
 
         if (m_spec.nodes.num_nodes == 0) {

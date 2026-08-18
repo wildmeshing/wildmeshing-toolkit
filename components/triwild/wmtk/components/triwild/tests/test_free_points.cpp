@@ -1,5 +1,5 @@
-#include <wmtk/Types.hpp>
 #include <wmtk/components/triwild/TriWildMesh.h>
+#include <wmtk/Types.hpp>
 #include <wmtk/utils/EmbedSegments.hpp>
 
 #include <catch2/catch_test_macros.hpp>

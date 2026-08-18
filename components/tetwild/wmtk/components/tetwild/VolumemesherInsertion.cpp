@@ -152,7 +152,10 @@ void TetWildMesh::insertion_by_volumeremesher(
         };
         vr_features.edge_vrt_coord.reserve(3 * feature_edge_vertices.size());
         for (const Vector3d& p : feature_edge_vertices) {
-            vr_features.edge_vrt_coord.insert(vr_features.edge_vrt_coord.end(), p.data(), p.data() + 3);
+            vr_features.edge_vrt_coord.insert(
+                vr_features.edge_vrt_coord.end(),
+                p.data(),
+                p.data() + 3);
         }
         vr_features.edge_indices.reserve(2 * feature_edges.size());
         for (const auto& e : feature_edges) {

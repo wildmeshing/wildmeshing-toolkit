@@ -743,9 +743,7 @@ void TetWildMesh::output_hybrid_mesh(
 
     if (!anchor_points.empty()) {
         msh.add_point_vertices(anchor_points.size(), [&](size_t k) { return anchor_points[k]; });
-        msh.add_points(anchor_points.size(), [&](size_t k) {
-            return std::array<size_t, 1>{{k}};
-        });
+        msh.add_points(anchor_points.size(), [&](size_t k) { return std::array<size_t, 1>{{k}}; });
     }
 
     msh.save(file, /*binary=*/true);

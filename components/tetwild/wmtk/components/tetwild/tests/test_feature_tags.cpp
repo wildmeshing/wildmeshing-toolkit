@@ -54,9 +54,8 @@ FeatureScene build_scene()
     VF_to_vectors(V, F, vertices, faces);
     sc.params.init(vertices, faces);
 
-    sc.surf = std::make_shared<components::shortest_edge_collapse::ShortestEdgeCollapse>(
-        vertices,
-        0);
+    sc.surf =
+        std::make_shared<components::shortest_edge_collapse::ShortestEdgeCollapse>(vertices, 0);
     {
         std::vector<size_t> frozen_verts;
         sc.surf->create_mesh(vertices.size(), faces, frozen_verts, 0.1);
@@ -130,11 +129,8 @@ std::vector<std::array<size_t, 2>> tagged_edges(TetWildMesh& m)
 }
 
 /// Exact parameter of vertex `vid` on segment (A,B), or nullopt if not exactly on it.
-std::optional<Rational> param_on_segment(
-    TetWildMesh& m,
-    const size_t vid,
-    const Vector3d& A,
-    const Vector3d& B)
+std::optional<Rational>
+param_on_segment(TetWildMesh& m, const size_t vid, const Vector3d& A, const Vector3d& B)
 {
     const Vector3r a{Rational(A[0]), Rational(A[1]), Rational(A[2])};
     const Vector3r d{Rational(B[0] - A[0]), Rational(B[1] - A[1]), Rational(B[2] - A[2])};
@@ -180,8 +176,9 @@ void require_tags_in_tube(FeatureScene& sc)
 {
     TetWildMesh& m = *sc.mesh;
     for (const auto& e : tagged_edges(m)) {
-        REQUIRE(!sc.mesh->m_feature_envelope->is_outside(std::array<Eigen::Vector3d, 2>{
-            {m.m_vertex_attribute[e[0]].m_posf, m.m_vertex_attribute[e[1]].m_posf}}));
+        REQUIRE(!sc.mesh->m_feature_envelope->is_outside(
+            std::array<Eigen::Vector3d, 2>{
+                {m.m_vertex_attribute[e[0]].m_posf, m.m_vertex_attribute[e[1]].m_posf}}));
         REQUIRE(m.m_vertex_extra[e[0]].m_is_on_feature_curve);
         REQUIRE(m.m_vertex_extra[e[1]].m_is_on_feature_curve);
     }

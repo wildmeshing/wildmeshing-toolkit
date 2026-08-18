@@ -186,8 +186,7 @@ bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
             tids.push_back(t.tid(*this));
         }
         feature_edges_cache(tids, cache.changed_edges);
-        cache.is_edge_on_feature =
-            m_feature_edge_attribute[loc0.eid(*this)].m_is_feature_edge;
+        cache.is_edge_on_feature = m_feature_edge_attribute[loc0.eid(*this)].m_is_feature_edge;
     }
 
     return split_before_cells(loc0, tets);

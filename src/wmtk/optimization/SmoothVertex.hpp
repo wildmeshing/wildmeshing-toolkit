@@ -230,8 +230,7 @@ bool smooth_vertex_3d(
     // the edge tags, so it cannot go stale.
     const bool on_feature_curve = m.m_track_feature_edges && m.vertex_has_feature_edge(vid);
     const std::shared_ptr<SampleEnvelope> pull_env =
-        (VA[vid].m_is_on_surface || on_feature_curve) ? m.smoothing_energy_envelope(vid)
-                                                      : nullptr;
+        (VA[vid].m_is_on_surface || on_feature_curve) ? m.smoothing_energy_envelope(vid) : nullptr;
 
     if (pull_env && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         // Smooth as if the vertex were interior, then walk back onto the input.

@@ -761,8 +761,9 @@ bool TetOptimizerMesh::feature_edges_at_vertex_inside(const size_t vid) const
         if (!e.is_valid(*this) || !m_feature_edge_attribute[e.eid(*this)].m_is_feature_edge) {
             continue;
         }
-        if (m_feature_envelope->is_outside(std::array<Eigen::Vector3d, 2>{
-                {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
+        if (m_feature_envelope->is_outside(
+                std::array<Eigen::Vector3d, 2>{
+                    {m_vertex_attribute[vid].m_posf, m_vertex_attribute[u].m_posf}})) {
             return false;
         }
     }

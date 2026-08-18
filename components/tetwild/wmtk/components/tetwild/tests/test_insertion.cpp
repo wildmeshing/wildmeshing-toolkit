@@ -295,7 +295,10 @@ void require_exact_tiling(
 {
     REQUIRE(!tiling.empty());
     const Vector3r a{Rational(seg_a[0]), Rational(seg_a[1]), Rational(seg_a[2])};
-    const Vector3r d{Rational(seg_b[0] - seg_a[0]), Rational(seg_b[1] - seg_a[1]), Rational(seg_b[2] - seg_a[2])};
+    const Vector3r d{
+        Rational(seg_b[0] - seg_a[0]),
+        Rational(seg_b[1] - seg_a[1]),
+        Rational(seg_b[2] - seg_a[2])};
     const Rational dd = d.dot(d);
 
     // Parameter of a vertex along AB, after requiring it exactly on the line.

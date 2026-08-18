@@ -405,7 +405,8 @@ void embed_triangles_in_tets(
                 const int64_t b = v_map[seg[2]];
                 if (a < 0 || b < 0) {
                     log_and_throw_error(
-                        "Feature edge {}: an output edge vertex was compacted away", e);
+                        "Feature edge {}: an output edge vertex was compacted away",
+                        e);
                 }
                 tiling.push_back({{size_t(a), size_t(b)}});
             }

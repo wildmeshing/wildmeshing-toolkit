@@ -1224,9 +1224,8 @@ public:
                         auto common = set_intersection(
                             m_vertex_connectivity[vids[0]].m_conn_tets,
                             m_vertex_connectivity[vids[1]].m_conn_tets);
-                        common = set_intersection(
-                            common,
-                            m_vertex_connectivity[vids[2]].m_conn_tets);
+                        common =
+                            set_intersection(common, m_vertex_connectivity[vids[2]].m_conn_tets);
                         size_t other = std::numeric_limits<size_t>::max();
                         for (const size_t t : common) {
                             if (t != tid) {
