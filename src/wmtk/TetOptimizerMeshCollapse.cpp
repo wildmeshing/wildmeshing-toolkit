@@ -611,10 +611,60 @@ size_t TetOptimizerMesh::coarsen_mesh()
         m_coarsen_mode = false;
         total += accepted;
 
+        const double e_after_collapse = std::get<0>(optimization_quality_stats());
+
+        // THE PASS'S CONTRACT APPLIES TO ITS OWN SMOOTHING TOO.
+        //
+        // Every collapse above is kept only if the region it disturbed came out no worse
+        // (collapse_edge_after, coarsen branch). This smoothing has no such test, and with
+        // smooth_quality_veto off -- which is topological_offset's default -- smooth_vertex_3d
+        // accepts any move that neither inverts a cell nor leaves the envelope, however much it
+        // degrades one. So the pass could hand back a mesh worse than it was given, which is the
+        // one thing it promises not to do.
+        //
+        // Measured on specific_models/prism, per round, before this:
+        //   round 0  start 9.92987 -> collapses 9.86786 (-0.062) -> smooth_all 10.9986 (+1.131)
+        //   round 1  start 10.9986 -> collapses 9.89344 (-1.105) -> smooth_all 11.5366 (+1.643)
+        // The collapses IMPROVE the mesh on both rounds; this smoothing is the entire regression,
+        // and it crossed stop_energy 10, which made Phase A report a failure it had not had.
+        // round_all_vertices contributes exactly 0 -- round() sets the RATIONAL from the float,
+        // and quality is computed from the float, so rounding cannot move it.
+        //
+        // This matters MORE since coarsen_local_smoothing_passes defaulted to 0: the local
+        // composite that was covered by the accept test is off, so this global pass is now the
+        // only relaxation the coarsening does, and it was the only one with no test on it.
+        //
+        // The veto is off for a real reason and that reason is Phase B's: the offset boundary is
+        // placed by minimising a term whose minimum can be most of target_distance away, so
+        // nearly every solved position worsens some incident face and vetoing freezes the
+        // boundary. Coarsening is not placing anything -- it is banking element count against a
+        // result the loop already reached -- so the reason does not reach here. Forced on for
+        // this call only; smooth_after() rebuilds its options per vertex from this field, and no
+        // other pass is running.
+        const bool saved_veto = m_params.smooth_quality_veto;
+        m_params.smooth_quality_veto = true;
         smooth_all_vertices(size_t(m_params.coarsen_global_smoothing_passes));
+        m_params.smooth_quality_veto = saved_veto;
+        const double e_after_smooth = std::get<0>(optimization_quality_stats());
+
+        double e_after_round = e_after_smooth;
         if (m_params.coarsen_global_smoothing_passes > 0) {
             round_all_vertices();
+            e_after_round = std::get<0>(optimization_quality_stats());
         }
+
+        // DIAGNOSTIC: the round's own line below reports only the total, and three different
+        // things move it. This says which, so the contract above is observable rather than
+        // asserted -- it is what localised the regression to smooth_all in the first place.
+        logger().warn(
+            "[coarsen substeps round {}] collapses {:.6g} -> smooth_all {:.6g} ({:+.6g}) -> "
+            "round_all {:.6g} ({:+.6g})",
+            round,
+            e_after_collapse,
+            e_after_smooth,
+            e_after_smooth - e_after_collapse,
+            e_after_round,
+            e_after_round - e_after_smooth);
 
         const auto [max_metric, avg_metric] = optimization_quality_stats();
         logger().info(
