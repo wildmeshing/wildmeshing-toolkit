@@ -40,6 +40,7 @@ Per model:
     nonzero / timeout / OOM   -> move the run into  <OUT>/failure/<id>/  (with a reason)
 
 Configuration -- environment variables:
+    SIMWILD_ROOT          sweep root: build/ data/ runs/ live here
     SIMWILD_OUT           output directory            (default runs/full)
     SIMWILD_PARALLEL      models to run concurrently  (default 8)
     SIMWILD_THREADS       threads per model           (default 8)
@@ -73,9 +74,9 @@ from concurrent.futures import wait as futures_wait
 from pathlib import Path
 
 # --------------------------------------------------------------------------- #
-# Hardcoded configuration
+# Layout -- rooted at SIMWILD_ROOT, defaulting to the kirby path
 # --------------------------------------------------------------------------- #
-SWEEP_ROOT = Path("/u/3/daniele/simwild-thingi10k-sweep")
+SWEEP_ROOT = Path(os.environ.get("SIMWILD_ROOT", "/u/3/daniele/simwild-thingi10k-sweep"))
 WMTK_APP = SWEEP_ROOT / "build/app/wmtk_app"
 DATASET_DIR = SWEEP_ROOT / "data"
 OUT_DIR = Path(os.environ.get("SIMWILD_OUT", str(SWEEP_ROOT / "runs/full")))
@@ -112,9 +113,15 @@ PARAMS = {
 }
 
 # Which of a run's output files to keep. The .vtu files are large visualization
-# dumps; the .msh is the actual tet mesh. Keep the mesh, the surfaces, and all the
-# text (logs / report / config). Flip KEEP_GLOBS to ["*"] to keep everything.
-KEEP_GLOBS = ["*.msh", "*.obj", "*.log", "*.json", "status.txt"]
+# dumps; the .msh is the actual tet mesh. Flip KEEP_GLOBS to ["*"] to keep everything.
+#
+# Text only on this machine: the geometry does not fit. Measured on the 1000-model
+# tetwild run in wmtk-t10k/tetwild_outputs, the .msh averages 19 MB/model -- ~200 GB
+# over the full corpus, against 164 GB free on the largest volume here. Nothing in
+# the report reads the geometry: it is built from status.txt, report.json and out.log
+# alone, so dropping *.msh and *.obj costs no statistic. Restore them on a box with
+# the space if the meshes themselves are wanted.
+KEEP_GLOBS = ["*.log", "*.json", "status.txt"]
 
 SUCCESS_DIR = OUT_DIR / "success"
 FAILURE_DIR = OUT_DIR / "failure"
