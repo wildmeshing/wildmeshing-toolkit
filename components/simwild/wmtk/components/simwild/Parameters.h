@@ -105,6 +105,7 @@ struct Parameters : public wmtk::OptimizerParameters
         coarsen_max_rounds = json_params["coarsen_max_rounds"];
         coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
         collapse_quality_margin = json_params["collapse_quality_margin"];
+        debug_edge_length_match = json_params["debug_edge_length_match"];
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];

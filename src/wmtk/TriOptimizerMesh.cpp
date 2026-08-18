@@ -1,3 +1,4 @@
+#include <wmtk/utils/EdgeLengthMatch.hpp>
 #include <wmtk/TriOptimizerMesh.h>
 
 #include <wmtk/utils/AMIPS2D.h>
@@ -119,6 +120,10 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     // interleave: it trades vertices for nothing but the guarantee that the max energy does
     // not rise, which is only worth taking once the energy is where it is going to end up.
     coarsen_mesh();
+
+    if (m_params.debug_edge_length_match) {
+        log_edge_length_match_stats();
+    }
 }
 
 std::tuple<double, double> TriOptimizerMesh::local_operations(
@@ -361,6 +366,23 @@ void TriOptimizerMesh::partition_mesh_morton()
     for (size_t i = 0; i < partition_id.size(); i++) {
         m_vertex_attribute[i].partition_id = partition_id[i];
     }
+}
+
+void TriOptimizerMesh::log_edge_length_match_stats() const
+{
+    std::vector<double> ratios;
+    ratios.reserve(get_edges().size());
+    for (const Tuple& e : get_edges()) {
+        const size_t v1 = e.vid(*this);
+        const size_t v2 = e.switch_vertex(*this).vid(*this);
+        const double len = (m_vertex_attribute[v1].m_posf - m_vertex_attribute[v2].m_posf).norm();
+        // The same average the split and collapse length gates take.
+        const double s =
+            (m_vertex_attribute[v1].m_sizing_scalar + m_vertex_attribute[v2].m_sizing_scalar) / 2;
+        const double target = m_params.l * s;
+        if (target > 0.) ratios.push_back(len / target);
+    }
+    utils::log_edge_length_match(std::move(ratios), "tri");
 }
 
 double TriOptimizerMesh::get_length2(const Tuple& l) const

@@ -38,6 +38,7 @@
       "coarsen_max_rounds",
       "coarsen_max_inner_passes",
       "collapse_quality_margin",
+      "debug_edge_length_match",
       "preserve_topology",
       "preserve_feature_points",
       "allow_junction_cleanup",
@@ -441,6 +442,12 @@
     "type": "float",
     "default": 1.0,
     "doc": "How much better than its neighbourhood's worst cell a collapse must leave things: the admission test is quality <= ring_max * margin, where ring_max is the worst quality among the cells incident to the removed vertex and quality is AMIPS^dim (larger is worse). 1.0 is the historical 'no worse than what is already here', which for a short edge is the only thing limiting the collapse pass, since short edges are not gated on length. Below 1.0 the collapse must strictly improve the ring's worst by that factor, which stops the collapse pass from undoing the split pass while still admitting repairs (the ceiling is set by cells the collapse deletes). Not applied by the coarsening pass."
+  },
+  {
+    "pointer": "/debug_edge_length_match",
+    "type": "bool",
+    "default": false,
+    "doc": "Diagnostic. At the end of the optimization, log the distribution of each edge's length divided by its own target length (l times the sizing scalar averaged over its endpoints) -- the exact quantity the split and collapse length gates compare, where 1.0 is an edge exactly at target. Reports mean, sd, percentiles, and the fractions below, inside and above [4/5, 4/3], the interval the two gates bound. Costs one pass over the edges."
   },
   {
     "pointer": "/coarsen_unbounded",

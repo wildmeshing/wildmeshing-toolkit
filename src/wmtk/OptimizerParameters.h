@@ -332,6 +332,13 @@ struct OptimizerParameters
      */
     int coarsen_max_inner_passes = 1;
 
+    /**
+     * @brief Log how well the final edge lengths match `l * sizing_scalar`.
+     *
+     * Diagnostic only; costs one pass over the edges at the end of the optimization. See
+     * wmtk::utils::log_edge_length_match for what the reported quantities mean.
+     */
+    bool debug_edge_length_match = false;
     bool debug_output = false;
     bool perform_sanity_checks = false;
 

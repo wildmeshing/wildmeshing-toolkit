@@ -110,6 +110,7 @@ struct Parameters : public wmtk::OptimizerParameters
         coarsen_max_rounds = json_params["coarsen_max_rounds"];
         coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
         collapse_quality_margin = json_params["collapse_quality_margin"];
+        debug_edge_length_match = json_params["debug_edge_length_match"];
 
         // Stuck-element sizing refinement.
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];

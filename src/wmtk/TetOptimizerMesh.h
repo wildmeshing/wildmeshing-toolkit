@@ -212,6 +212,9 @@ public:
     }
 
     double get_length2(const Tuple& l) const;
+    /// Diagnostic: log the distribution of edge length / (l * sizing_scalar). Gated on
+    /// OptimizerParameters::debug_edge_length_match by the caller.
+    void log_edge_length_match_stats() const;
 
     bool is_inverted(const std::array<size_t, 4>& vs) const;
     bool is_inverted(const Tuple& loc) const;
