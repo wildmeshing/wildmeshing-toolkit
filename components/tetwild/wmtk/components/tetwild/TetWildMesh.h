@@ -483,9 +483,6 @@ public:
     }
     void optimization_sanity_checks_extra() override;
 
-    // initialize sizing field (for topology preservation)
-    void init_sizing_field();
-
 public:
     struct ExportStruct
     {
