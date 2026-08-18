@@ -619,7 +619,16 @@ private:
     /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
     bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);
 
-    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes = 0);
+    /// @param exact_ball_lock claim the full lock_ring ball via try_set_edge_mutex_n_ring,
+    /// bypassing make_locker's default-radius substitution of the partial two-ring helper
+    /// (which under-claims in 3D -- see "Ring lockers -- NOT balls" in TetMesh.h). Required
+    /// whenever the operation writes beyond the seed's one-ring, as the coarsening
+    /// composite's ring smoothing does.
+    size_t collapse_all_edges_impl(
+        bool is_limit_length,
+        int lock_ring,
+        size_t max_passes = 0,
+        bool exact_ball_lock = false);
 };
 
 } // namespace wmtk

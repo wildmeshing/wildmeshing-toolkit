@@ -21,8 +21,11 @@ void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
     collapse_all_edges_impl(is_limit_length, wmtk::default_ring(wmtk::PassLock::EdgeRing));
 }
 
-size_t
-TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes)
+size_t TetOptimizerMesh::collapse_all_edges_impl(
+    bool is_limit_length,
+    int lock_ring,
+    size_t max_passes,
+    bool exact_ball_lock)
 {
     m_collapse_limit_length = is_limit_length;
     igl::Timer timer;
@@ -48,6 +51,14 @@ TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
         lock_ring,
         "edge collapse operation",
         [&](auto& executor, auto& mesh) {
+            if (exact_ball_lock && NUM_THREADS > 0) {
+                // The pass's write set exceeds the seed's one-ring, so the partial two-ring
+                // locker run_pass installed is not enough; claim the honest ball. Parallel
+                // only, mirroring run_pass: serial has nothing to lock against.
+                executor.lock_vertices = [lock_ring](auto& m, const Tuple& e, int task_id) {
+                    return m.try_set_edge_mutex_n_ring(e, task_id, lock_ring);
+                };
+            }
             executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
                 std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
                 for (const Tuple& t : newts) {
@@ -605,11 +616,16 @@ size_t TetOptimizerMesh::coarsen_mesh()
         // what the writes reach (smoothing a vertex at distance r reads its one-ring and
         // writes the quality of its incident cells); with coarsen_local_smoothing_passes at 0
         // it is what the accept test READS, since a cell incident to a distance-r vertex has
-        // vertices at r+1. Either way the +1 is required.
+        // vertices at r+1. Either way the +1 is required -- and it must be the HONEST ball:
+        // at radius exactly 2 make_locker substitutes the partial two-ring helper, which in
+        // 3D leaves the survivor's distance-2 vertices unclaimed, precisely where the
+        // composite's smoothing writes cell qualities. Measured as a segfault (concurrent
+        // TetAttributes write during the rollback journal's copy) on prism at 10 threads.
         const size_t accepted = collapse_all_edges_impl(
             false,
             m_params.coarsen_smooth_ring + 1,
-            size_t(m_params.coarsen_max_inner_passes));
+            size_t(m_params.coarsen_max_inner_passes),
+            /*exact_ball_lock=*/true);
         m_coarsen_mode = false;
         total += accepted;
 
