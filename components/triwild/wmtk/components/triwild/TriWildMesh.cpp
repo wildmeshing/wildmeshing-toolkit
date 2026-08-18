@@ -373,9 +373,8 @@ void TriWildMesh::init_sizing_field()
     // OptimizerParameters::debug_edge_length_match for how to measure the result.
     const double min_refine_scalar =
         m_params.sizing_field_min_eps_ratio * m_params.l_min / m_params.l;
-    // Same 1.8 as tetwild: the radius the refinement is graded out over.
-    const double R = m_params.l * 1.8;
 
+    std::vector<size_t> seeds;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!m_vertex_attribute[vid].m_is_on_surface) continue;
@@ -419,32 +418,20 @@ void TriWildMesh::init_sizing_field()
 
         const double refine_scalar = std::max(min_dist / m_params.l, min_refine_scalar);
         double& own = m_vertex_attribute[vid].m_sizing_scalar;
-        own = std::min(refine_scalar, own);
-
-        // Grade it out to R so the interior does not jump from a refined boundary straight
-        // back to the global target. Monotone: only ever lowers.
-        std::vector<bool> visited(vert_capacity(), false);
-        visited[vid] = true;
-        std::queue<size_t> q;
-        for (const Tuple& u : get_one_ring_edges_for_vertex(v)) {
-            q.push(u.vid(*this));
-        }
-        while (!q.empty()) {
-            const size_t uid = q.front();
-            q.pop();
-            if (visited[uid]) continue;
-            visited[uid] = true;
-            const double dist = (m_vertex_attribute[uid].m_posf - p).norm();
-            if (dist > R) continue;
-            m_vertex_attribute[uid].m_sizing_scalar = std::min(
-                dist / R * (1 - refine_scalar) + refine_scalar,
-                m_vertex_attribute[uid].m_sizing_scalar);
-            for (const Tuple& n : get_one_ring_edges_for_vertex(uid)) {
-                const size_t nid = n.vid(*this);
-                if (!visited[nid]) q.push(nid);
-            }
+        if (refine_scalar < own) {
+            own = refine_scalar;
+            seeds.push_back(vid);
         }
     }
+
+    // Grade outward with the shared routine rather than a ball per seed. A ball of radius
+    // 1.8 * l, as tetwild's version used, covers most of a mesh that is far finer than `l`,
+    // and repeating it for every seed -- each allocating its own O(V) visited array -- is
+    // quadratic: on challenging_triwild_191874 that alone ran over four minutes without
+    // finishing, and the model went from 115s to 6514s end to end. This is one multi-source
+    // sweep, O(E) amortized, and it is what stuck-refine already uses, so both paths grade
+    // the field the same way.
+    gradation_smooth_sizing(m_params.stuck_refine_gradation, seeds);
 }
 
 size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
