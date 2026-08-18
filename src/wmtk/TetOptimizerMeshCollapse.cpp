@@ -229,6 +229,42 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
     }
 
+    // Feature-edge tags: cache every edge of every tet incident to v1 -- the tets that get
+    // rewired or deleted. This includes the deleted tets' link edges (la,lb), which contain
+    // neither endpoint and can live on in tets outside any region enumerable after the
+    // collapse; that is why the restore walks the cache, not a region.
+    if (m_track_feature_edges) {
+        feature_edges_cache(n1_locs, cache.changed_edges);
+
+        // The geometric guard: every tagged edge, as the collapse would leave it (v1 renamed
+        // to v2, which does not move), must stay inside the feature-curve tube. This is what
+        // lets a curve coarsen -- a collapse ALONG the curve keeps the merged edge in the
+        // tube and passes -- while a collapse that would drag the curve sideways, or weld
+        // two curves farther apart than the tube width, is refused. The exact counterpart of
+        // the surface-split's surface_triangle_is_outside check, and of the open-boundary
+        // collapse guard.
+        if (m_feature_envelope) {
+            for (const auto& [pair, tag] : cache.changed_edges) {
+                if (!tag) {
+                    continue;
+                }
+                std::array<size_t, 2> p = pair;
+                for (size_t& v : p) {
+                    if (v == v1_id) {
+                        v = v2_id;
+                    }
+                }
+                if (p[0] == p[1]) {
+                    continue; // the collapsed edge itself; it disappears
+                }
+                if (m_feature_envelope->is_outside(std::array<Eigen::Vector3d, 2>{
+                        {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
+                    return false;
+                }
+            }
+        }
+    }
+
     if (VA[v1_id].m_is_on_surface) {
         // this code must check if a face is tagged as surface face
         // only checking the vertices is not enough
@@ -429,6 +465,15 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
             return false; // the collapse removed the face this attribute was to land on
         }
         m_face_attribute[std::get<1>(found.value())] = f_attr;
+    }
+
+    // Feature-edge tags: cache-driven restore with v1 renamed to v2 (see the cache comment
+    // in collapse_edge_before). False means a tagged edge no longer exists -- abort, the
+    // rollback undoes everything.
+    if (m_track_feature_edges) {
+        if (!feature_edges_restore_remap(cache.changed_edges, v1_id, v2_id)) {
+            return false;
+        }
     }
 
     if (!m_coarsen_mode) {

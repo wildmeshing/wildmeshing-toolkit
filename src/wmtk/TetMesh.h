@@ -22,14 +22,17 @@
 namespace wmtk {
 class TetMesh
 {
-private:
+protected:
     /**
      * @brief local edges within a tet
      *
+     * Protected rather than private: TetOptimizerMesh's feature-edge tracker enumerates a
+     * tet's six edges by local id.
      */
     static constexpr std::array<std::array<int, 2>, 6> m_local_edges = {
         {{{0, 1}}, {{1, 2}}, {{0, 2}}, {{0, 3}}, {{1, 3}}, {{2, 3}}}};
 
+private:
     static constexpr std::array<int, 4> m_map_vertex2edge = {{0, 0, 1, 3}};
     static constexpr std::array<int, 4> m_map_vertex2oppo_face = {{3, 1, 2, 0}};
     static constexpr std::array<int, 6> m_map_edge2face = {{0, 0, 0, 1, 2, 1}};
@@ -1622,6 +1625,30 @@ public:
      * @param vids The vertex IDs of the edge
      */
     size_t get_order_of_edge(const std::array<size_t, 2>& vids) const;
+
+    /**
+     * @brief The orders substructure_link_condition consults, overridable so an application
+     * can widen the 1D substructure beyond what the surface complex derives.
+     *
+     * The paper's condition is written in terms of simplex orders; TetOptimizerMesh overrides
+     * these so an input FEATURE edge counts as order 2 (and its endpoints accordingly) without
+     * touching the meaning of get_order_of_* anywhere else -- the feature tags are
+     * deliberately not part of the order classification.
+     */
+    virtual size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const
+    {
+        return get_order_of_edge(vids);
+    }
+    virtual size_t substructure_order_of_vertex(const size_t vid) const
+    {
+        return get_order_of_vertex(vid);
+    }
+    /**
+     * @brief One-ring vertices x of `vid` where (vid, x) is 1D substructure NOT derivable
+     * from the surface complex (feature edges through the interior, for instance). The link
+     * condition's order-2 edge collection walks surface faces and would never see them.
+     */
+    virtual void substructure_feature_neighbors(size_t, std::vector<size_t>&) const {}
 
     /**
      * @brief Link condition that also considers substructures.
