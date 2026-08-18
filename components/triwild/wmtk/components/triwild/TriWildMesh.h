@@ -205,6 +205,15 @@ public:
      *
      * @return the number of vertices refined.
      */
+    /**
+     * @brief Seed the sizing field from the local feature size of the curve network.
+     *
+     * Called at the end of init_mesh. Without it the sizing scalar stays 1 until the
+     * optimizer stalls, so the target edge length is a flat `l` that detailed regions
+     * cannot reach. See the definition for how it differs from tetwild's namesake.
+     */
+    void init_sizing_field();
+
     size_t refine_sizing_around_worst(double max_energy) override;
 
     void write_msh_groups(std::string file, const bool write_envelope = true);

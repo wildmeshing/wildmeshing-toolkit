@@ -126,6 +126,8 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     params.coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
     params.collapse_quality_margin = json_params["collapse_quality_margin"];
     params.debug_edge_length_match = json_params["debug_edge_length_match"];
+    params.sizing_field_from_features = json_params["sizing_field_from_features"];
+    params.sizing_field_min_eps_ratio = json_params["sizing_field_min_eps_ratio"];
     params.w_amips = json_params["w_amips"];
     params.smoothing_mode = json_params["smoothing_mode"];
     params.project_line_search_steps = json_params["project_line_search_steps"];

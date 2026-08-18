@@ -47,6 +47,8 @@
       "coarsen_max_inner_passes",
       "collapse_quality_margin",
       "debug_edge_length_match",
+      "sizing_field_from_features",
+      "sizing_field_min_eps_ratio",
       "write_vtu",
       "write_envelope",
       "log_file",
@@ -651,6 +653,18 @@
     "type": "bool",
     "default": false,
     "doc": "Diagnostic. At the end of the optimization, log the distribution of each edge's length divided by its own target length (l times the sizing scalar averaged over its endpoints) -- the exact quantity the split and collapse length gates compare, where 1.0 is an edge exactly at target. Reports mean, sd, percentiles, and the fractions below, inside and above [4/5, 4/3], the interval the two gates bound. Costs one pass over the edges."
+  },
+  {
+    "pointer": "/sizing_field_from_features",
+    "type": "bool",
+    "default": false,
+    "doc": "Seed the sizing field from the local feature size of the input curve network before optimizing, instead of leaving the sizing scalar at 1 until the optimizer stalls. Without it the target edge length is a flat length_rel that detailed regions can never reach, because the envelope refuses collapses long before an edge grows to the target. triwild only for now."
+  },
+  {
+    "pointer": "/sizing_field_min_eps_ratio",
+    "type": "float",
+    "default": 5.0,
+    "doc": "Floor on the sizing scalar seeded by sizing_field_from_features, as a multiple of l_min / l. The natural floor of l_min (= eps) is far finer than the envelope actually requires, so raising it prevents the element count running away."
   },
   {
     "pointer": "/coarsen_unbounded",

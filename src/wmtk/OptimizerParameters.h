@@ -338,6 +338,39 @@ struct OptimizerParameters
      * Diagnostic only; costs one pass over the edges at the end of the optimization. See
      * wmtk::utils::log_edge_length_match for what the reported quantities mean.
      */
+    /**
+     * @brief Seed the sizing field from the local feature size of the input, before optimizing.
+     *
+     * With this off the sizing scalar is 1 everywhere until the optimizer stalls, so the
+     * target edge length is a flat `l`. In a detailed region that target is unreachable --
+     * the envelope refuses collapses long before an edge grows to `4/5 * l` -- and the length
+     * gates end up describing a size the mesh will never have. Measured on triwild's
+     * challenging set, only 21% of edges land inside [4/5, 4/3] of their nominal target, and
+     * on challenging_triwild_162463 the median edge is a ninth of it.
+     *
+     * On, the field is initialized from how finely the input is resolved at each feature
+     * vertex and how close another branch of the input passes, then graded outward, so the
+     * target the gates test is one the geometry actually permits.
+     *
+     * Currently implemented by triwild only (TriWildMesh::init_sizing_field); tetwild has a
+     * namesake that nothing calls and simwild has none, so the flag does nothing there.
+     */
+    bool sizing_field_from_features = false;
+
+    /**
+     * @brief Floor on the seeded sizing scalar, as a multiple of l_min / l.
+     *
+     * sizing_field_from_features sets a vertex's target to the distance to the nearest other
+     * branch of the input, floored at l_min (which both wild-meshing 2D apps set to eps). That
+     * floor is far below what the envelope actually permits: measured on
+     * challenging_triwild_162463 by sweeping eps_rel alone, the mesh settles at a median edge
+     * of about 5.7 * eps, so a target of 1 * eps demands a mesh several times finer than the
+     * geometry needs and the element count runs away: on that model a floor of 1 gives
+     * 7.7x the elements and leaves 70% of edges LONGER than target, while the default 5
+     * gives 1.5x the elements with 67% of edges in band, against 3% with the field off.
+     * Sweeping it there: 1 -> 30% in band, 3 -> 48%, 5 -> 67%, 8 -> 36%.
+     */
+    double sizing_field_min_eps_ratio = 5.0;
     bool debug_edge_length_match = false;
     bool debug_output = false;
     bool perform_sanity_checks = false;

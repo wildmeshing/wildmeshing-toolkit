@@ -1,4 +1,6 @@
 
+#include <queue>
+#include <algorithm>
 #include "TriWildMesh.h"
 
 #include <tuple>
@@ -329,8 +331,121 @@ void TriWildMesh::init_mesh(
     } else {
         logger().info("All rounded!", cnt_round, vert_capacity());
     }
+
+    // Last, because it reads positions and the surface tags set above.
+    if (m_params.sizing_field_from_features) {
+        init_sizing_field();
+    }
 }
 
+
+namespace {
+/// Distance from `p` to the segment `a`-`b`.
+double point_segment_distance(const Vector2d& p, const Vector2d& a, const Vector2d& b)
+{
+    const Vector2d ab = b - a;
+    const double l2 = ab.squaredNorm();
+    if (l2 <= 0.) return (p - a).norm();
+    const double t = std::clamp((p - a).dot(ab) / l2, 0., 1.);
+    return (p - (a + t * ab)).norm();
+}
+} // namespace
+
+void TriWildMesh::init_sizing_field()
+{
+    // The 2D counterpart of TetWildMesh::init_sizing_field. Two differences from that one,
+    // both deliberate:
+    //
+    //  * That function is dead code -- nothing calls it -- and its edge-distance half never
+    //    contributed anyway: `min_ev_dist` starts at 100000 and is only assigned when
+    //    `min_ev_dist < ev_dist`, so it takes a MAXIMUM and the value never moves off its
+    //    sentinel. Only the vertex-distance term ever reached `min_dist`. Here the edge term
+    //    is a real minimum, and it skips edges incident to the vertex -- whose distance is
+    //    zero by construction, which is presumably what the inverted test was hiding.
+    //
+    //  * It is actually called, from init_mesh, so the field carries geometry before the
+    //    first pass rather than staying at 1 until the optimizer stalls.
+    //
+    // What it measures is local feature size: how finely the curve network is resolved at a
+    // vertex, and how close another branch of it passes. Without this the sizing scalar is
+    // 1 everywhere, so the target length is a flat `l` that detailed regions can never reach
+    // -- the envelope refuses every collapse long before the length gate is satisfied. See
+    // OptimizerParameters::debug_edge_length_match for how to measure the result.
+    const double min_refine_scalar =
+        m_params.sizing_field_min_eps_ratio * m_params.l_min / m_params.l;
+    // Same 1.8 as tetwild: the radius the refinement is graded out over.
+    const double R = m_params.l * 1.8;
+
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!m_vertex_attribute[vid].m_is_on_surface) continue;
+        const Vector2d& p = m_vertex_attribute[vid].m_posf;
+
+        double min_dist = std::numeric_limits<double>::max();
+
+        // How close a DIFFERENT branch of the network passes, vertex-wise. A neighbour joined
+        // to v by a feature edge is the same branch, and its distance is only how finely the
+        // input happens to be sampled there -- seeding the field with that makes the output
+        // inherit the input's tessellation instead of its geometry. Measured on
+        // challenging_triwild_162463: including them grew the mesh 12x (16174 -> 198064
+        // elements) and left 52% of edges LONGER than target. Skip them.
+        for (const Tuple& u : get_one_ring_edges_for_vertex(v)) {
+            const size_t uid = u.vid(*this);
+            if (uid == vid || !m_vertex_attribute[uid].m_is_on_surface) continue;
+            if (m_edge_attribute[u.eid(*this)].m_is_surface_fs) continue; // same branch
+            min_dist = std::min(min_dist, (p - m_vertex_attribute[uid].m_posf).norm());
+        }
+
+        // How close another branch of the network comes: distance to the feature edges of the
+        // incident triangles that do not touch v.
+        for (const Tuple& f : get_one_ring_tris_for_vertex(v)) {
+            const std::array<Tuple, 3> fvs = oriented_tri_vertices(f);
+            for (int i = 0; i < 3; ++i) {
+                const Tuple e = fvs[i];
+                if (!m_edge_attribute[e.eid(*this)].m_is_surface_fs) continue;
+                const size_t a = e.vid(*this);
+                const size_t b = e.switch_vertex(*this).vid(*this);
+                if (a == vid || b == vid) continue; // distance zero, says nothing
+                min_dist = std::min(
+                    min_dist,
+                    point_segment_distance(
+                        p,
+                        m_vertex_attribute[a].m_posf,
+                        m_vertex_attribute[b].m_posf));
+            }
+        }
+
+        if (min_dist == std::numeric_limits<double>::max()) continue;
+
+        const double refine_scalar = std::max(min_dist / m_params.l, min_refine_scalar);
+        double& own = m_vertex_attribute[vid].m_sizing_scalar;
+        own = std::min(refine_scalar, own);
+
+        // Grade it out to R so the interior does not jump from a refined boundary straight
+        // back to the global target. Monotone: only ever lowers.
+        std::vector<bool> visited(vert_capacity(), false);
+        visited[vid] = true;
+        std::queue<size_t> q;
+        for (const Tuple& u : get_one_ring_edges_for_vertex(v)) {
+            q.push(u.vid(*this));
+        }
+        while (!q.empty()) {
+            const size_t uid = q.front();
+            q.pop();
+            if (visited[uid]) continue;
+            visited[uid] = true;
+            const double dist = (m_vertex_attribute[uid].m_posf - p).norm();
+            if (dist > R) continue;
+            m_vertex_attribute[uid].m_sizing_scalar = std::min(
+                dist / R * (1 - refine_scalar) + refine_scalar,
+                m_vertex_attribute[uid].m_sizing_scalar);
+            for (const Tuple& n : get_one_ring_edges_for_vertex(uid)) {
+                const size_t nid = n.vid(*this);
+                if (!visited[nid]) q.push(nid);
+            }
+        }
+    }
+}
 
 size_t TriWildMesh::refine_sizing_around_worst(double max_energy)
 {

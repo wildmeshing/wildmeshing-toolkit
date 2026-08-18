@@ -111,6 +111,8 @@ struct Parameters : public wmtk::OptimizerParameters
         coarsen_max_inner_passes = json_params["coarsen_max_inner_passes"];
         collapse_quality_margin = json_params["collapse_quality_margin"];
         debug_edge_length_match = json_params["debug_edge_length_match"];
+        sizing_field_from_features = json_params["sizing_field_from_features"];
+        sizing_field_min_eps_ratio = json_params["sizing_field_min_eps_ratio"];
 
         // Stuck-element sizing refinement.
         stuck_refine_stall_eps = json_params["stuck_refine_stall_eps"];
