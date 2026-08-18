@@ -1,7 +1,7 @@
 
-#include <queue>
-#include <algorithm>
 #include "TriWildMesh.h"
+#include <algorithm>
+#include <queue>
 
 #include <tuple>
 
