@@ -41,7 +41,7 @@ bool SimWildMesh::collapse_after_connectivity(
     return true;
 }
 
-void SimWildMesh::collapse_after_vertex(size_t, size_t v2)
+void SimWildMesh::collapse_after_vertex(size_t v1, size_t v2)
 {
     // A SimWild surface is not inherited geometry: it is precisely the interface between
     // unlike cell tags. Re-derive the affected faces after connectivity and tag data settle;
@@ -83,16 +83,22 @@ void SimWildMesh::collapse_after_vertex(size_t, size_t v2)
         }
         m_vertex_attribute[vid].m_is_on_surface = on_interface;
     }
-    for (const size_t vid : affected_vertices) {
-        m_vertex_attribute[vid].m_order =
-            m_vertex_attribute[vid].m_is_on_surface ? compute_vertex_order(vid) : 0;
-    }
+    //// Order is set inside `collapse_after_connectivity`
+    // for (const size_t vid : affected_vertices) {
+    //     m_vertex_attribute[vid].m_order =
+    //         m_vertex_attribute[vid].m_is_on_surface ? compute_vertex_order(vid) : 0;
+    // }
+
+    m_vertex_attribute[v2].m_sizing_scalar =
+        std::min(m_vertex_attribute[v1].m_sizing_scalar, m_vertex_attribute[v2].m_sizing_scalar);
 }
 
 void SimWildMesh::simplify()
 {
     compute_vertex_partition_morton();
-    if (m_params.debug_output) write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
     logger().info("===== Simplify =====");
 
     m_envelope->use_exact = false;
@@ -100,7 +106,9 @@ void SimWildMesh::simplify()
 
     m_collapse_check_quality = false;
     collapse_all_edges();
-    if (m_params.debug_output) write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    if (m_params.debug_output) {
+        write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
+    }
     m_collapse_check_quality = true;
 
     logger().warn("Update envelope");
@@ -108,7 +116,9 @@ void SimWildMesh::simplify()
     V.setZero();
     for (size_t i = 0; i < vert_capacity(); ++i) {
         const Tuple v = tuple_from_vertex(i);
-        if (v.is_valid(*this)) V.row(i) = m_vertex_attribute.at(v.vid(*this)).m_posf;
+        if (v.is_valid(*this)) {
+            V.row(i) = m_vertex_attribute.at(v.vid(*this)).m_posf;
+        }
     }
 
     const auto surf_faces = get_faces_by_condition([](auto& f) { return f.m_is_surface_fs; });
