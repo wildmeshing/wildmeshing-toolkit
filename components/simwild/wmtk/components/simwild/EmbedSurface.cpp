@@ -603,8 +603,10 @@ bool EmbedSurface::embed_surface(const bool flood_fill, const bool tag_from_wind
         log_and_throw_error("No input surface to embed");
     }
     if (tag_from_winding_number) {
+        logger().info("Tag tets from winding number");
         this->tag_from_winding_number();
     } else {
+        logger().info("Tag tets from provenance");
         tag_from_provenance();
     }
     if (m_perform_sanity_checks) {
