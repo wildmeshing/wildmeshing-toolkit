@@ -1,5 +1,5 @@
-#include <wmtk/utils/EdgeLengthMatch.hpp>
 #include <wmtk/TetOptimizerMesh.h>
+#include <wmtk/utils/EdgeLengthMatch.hpp>
 
 #include <wmtk/utils/AMIPS.h>
 #include <wmtk/utils/GeoUtils.h>

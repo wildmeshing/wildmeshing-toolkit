@@ -1,5 +1,5 @@
-#include <wmtk/utils/EdgeLengthMatch.hpp>
 #include <wmtk/TriOptimizerMesh.h>
+#include <wmtk/utils/EdgeLengthMatch.hpp>
 
 #include <wmtk/utils/AMIPS2D.h>
 #include <wmtk/utils/PartitionMesh.h>
