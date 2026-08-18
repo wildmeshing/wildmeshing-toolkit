@@ -897,6 +897,12 @@ public:
     }
     void collapse_after_vertex(size_t v1, size_t v2) override;
 
+    /// min: a collapse must not un-refine the sizing field -- see the base declaration.
+    double collapse_merged_sizing(double removed, double survivor) const override
+    {
+        return std::min(removed, survivor);
+    }
+
     /**
      * @brief Split policy that is the offset's own.
      *

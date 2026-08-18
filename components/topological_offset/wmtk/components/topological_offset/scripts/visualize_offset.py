@@ -106,7 +106,16 @@ def read_groups(path):
     # block is commented out, so this is empty for tets.)
     env = [c.data for c in m.cells if c.type == "line"]
     env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
-    return m.points, ncol - 1, groups, env
+    return m.points, ncol - 1, groups, env, point_scalar(m, "sizing")
+
+
+def point_scalar(m, name):
+    """A per-vertex scalar from the file, flattened; None where the writer did not emit it.
+    write_vtu() carries `sizing` (m_sizing_scalar per vertex) on every debug/phase frame; the
+    .msh result files do not, so the sizing layer simply is not offered for them."""
+    if name not in getattr(m, "point_data", {}):
+        return None
+    return np.asarray(m.point_data[name]).reshape(-1)
 
 
 def read_groups_vtu(path):
@@ -131,7 +140,7 @@ def read_groups_vtu(path):
             groups[name] = sel
     env = [c.data for c in m.cells if c.type == "line"]
     env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
-    return m.points, ncol - 1, groups, env
+    return m.points, ncol - 1, groups, env, point_scalar(m, "sizing")
 
 
 def read_any(path):
@@ -310,9 +319,19 @@ def resolve(args):
         # 3D started writing them -- 37 frames read as 111, two thirds of them companions. The
         # `_edge` companion is a wire mesh with no tets, so it has no tagged cells at all and
         # meshio cannot even read it as a volume mesh; the series died on the second frame.
+        # THE PER-PHASE SERIES FIRST: the A/B driver writes `<name>phase_<round><A|B>.vtu`
+        # after each phase, which is the timeline of states the phases hand each other --
+        # 4 frames for a 2-round run instead of ~150 per-pass ones. The per-pass debug
+        # frames remain the fallback for runs made before the phase naming existed (and
+        # frame_key orders both: the round is the stem's last number, the A/B tie breaks
+        # lexically).
         frames = sorted(
-            (f for f in d.glob("*debug_*.vtu") if re.fullmatch(r".*debug_\d+", f.stem)),
+            (f for f in d.glob("*phase_*.vtu") if re.fullmatch(r".*phase_\d+[AB]", f.stem)),
             key=frame_key)
+        if not frames:
+            frames = sorted(
+                (f for f in d.glob("*debug_*.vtu") if re.fullmatch(r".*debug_\d+", f.stem)),
+                key=frame_key)
         if frames:
             meshes = frames
         else:
@@ -356,7 +375,7 @@ def resolve(args):
 
 def load(msh, cfg):
     """Everything main() draws, as plain arrays -- no polyscope."""
-    points, dim, groups, envelope = read_any(msh)
+    points, dim, groups, envelope, sizing = read_any(msh)
     # `offset_tag` is the .vtu frames' label-based band marker and is preferred where
     # present; .msh files name the band by its output tag instead.
     offset_tags = {"offset_tag"} & set(groups)
@@ -474,7 +493,7 @@ def load(msh, cfg):
         err = (op, oc, dist, np.abs(dist - delta) / delta)
 
     mesh = (mesh_cells, mesh_class, mesh_tags)
-    return points, dim, groups, surf, delta, prov, err, mesh
+    return points, dim, groups, surf, delta, prov, err, mesh, sizing
 
 
 LAYERS = [
@@ -487,10 +506,21 @@ LAYERS = [
 ]
 
 
-def register_frame(prefix, points, dim, surf, err, mesh):
-    """Register one frame's layers, all disabled. Returns {layer label: structure}."""
+def register_frame(prefix, points, dim, surf, err, mesh, sizing=None):
+    """Register one frame's layers, all disabled.
+
+    Returns ({layer label: structure}, extras) where extras holds what the sizing toggle needs
+    to re-add quantities with the desired enabled state: `off` = (offset-surface structure,
+    its compacted sizing rows, (err values, err max) or None) and `bg` = (background structure,
+    sizing, class values, defined_on). Re-adding rather than handles, because this polyscope's
+    add_scalar_quantity returns None -- and re-adding under the same name is the API's setter.
+    The displaced quantity must be restored on untoggle: polyscope keeps one active scalar per
+    structure, so enabling one silently disables the other and unchecking would otherwise leave
+    the structure colorless.
+    """
     mesh_cells, mesh_class, mesh_tags = mesh
     out = {}
+    extras = {}
 
     def curve_or_surface(name, facets, color, radius):
         if len(facets) == 0:
@@ -516,6 +546,12 @@ def register_frame(prefix, points, dim, surf, err, mesh):
                               defined_on=where, cmap="spectral", vminmax=(0.0, 2.0), enabled=True)
         for g, v in mesh_tags.items():
             m.add_scalar_quantity(g, v, defined_on=where, cmap="blues", vminmax=(0.0, 1.0))
+        if sizing is not None:
+            # The sizing scalar is RELATIVE (a fraction of the target edge length, floored by
+            # min_sizing_scalar), so a fixed 0..1 range keeps the colors comparable across
+            # frames -- which is the point of showing it on a timeline.
+            m.add_scalar_quantity("sizing", sizing, cmap="viridis", vminmax=(0.0, 1.0))
+            extras["bg"] = (m, sizing, mesh_class, where)
         m.set_enabled(False)
         out["background mesh (tags as cell layers)"] = m
 
@@ -533,7 +569,15 @@ def register_frame(prefix, points, dim, surf, err, mesh):
         m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
                               vminmax=(0.0, float(rel.max())), enabled=True)
         m.add_scalar_quantity("distance to input", dist, cmap="viridis")
-    return {k: v for k, v in out.items() if v is not None}
+    if sizing is not None and out.get("offset surface") is not None:
+        # The same compaction the surface itself was registered with: its vertices are
+        # points[unique(facets)] in unique() order, so the sizing rows follow that order.
+        m = (ps.get_surface_mesh if dim == 3 else ps.get_curve_network)(prefix + "offset surface")
+        s_off = sizing[np.unique(surf["offset"])]
+        m.add_scalar_quantity("sizing", s_off, cmap="viridis", vminmax=(0.0, 1.0))
+        rel_info = (err[3], float(err[3].max())) if err is not None else None
+        extras["off"] = (m, s_off, rel_info)
+    return {k: v for k, v in out.items() if v is not None}, extras
 
 
 def load_phi_grid(meshes):
@@ -584,14 +628,14 @@ def main():
 
     frames = []
     for k, path in enumerate(meshes):
-        points, dim, groups, surf, delta, prov, err, mesh = load(path, cfg)
+        points, dim, groups, surf, delta, prov, err, mesh, sizing = load(path, cfg)
         if phi_grid is not None and len(surf["offset"]):
             op, oc = compact(points, surf["offset"])
             d = sample_regular_grid(
                 phi_grid[1], np.asarray(phi_grid[3]["euclidean_distance"]).ravel(), op[:, :2])
             if d is not None:
                 err = (op, oc, d, np.abs(d - delta) / delta)
-        frames.append((path, points, dim, groups, surf, delta, prov, err, mesh))
+        frames.append((path, points, dim, groups, surf, delta, prov, err, mesh, sizing))
         if k == 0 or not series:
             print("mesh   %s  (%s)" % (path, "tets" if dim == 3 else "triangles"))
             print("delta  %g  (%s)" % (delta, prov))
@@ -626,9 +670,13 @@ def main():
     ps.set_ground_plane_mode("none")
 
     registered = []
-    for k, (path, points, d, groups, surf, delta, prov, err, mesh) in enumerate(frames):
+    extra_qs = [] # per frame: quantity handles the sizing toggle flips, see register_frame
+    for k, (path, points, d, groups, surf, delta, prov, err, mesh, sizing) in enumerate(frames):
         prefix = ("f%04d " % k) if series else ""
-        registered.append(register_frame(prefix, points, d, surf, err, mesh))
+        layers, extras = register_frame(prefix, points, d, surf, err, mesh, sizing)
+        registered.append(layers)
+        extra_qs.append(extras)
+    has_sizing = any(("off" in ex or "bg" in ex) for ex in extra_qs)
 
     # The potential, ONE structure for the whole series: the input complex never moves, so
     # neither does phi, and re-registering it per frame would only cost memory.
@@ -687,6 +735,7 @@ def main():
     state["region boundaries (green)"] = len(frames[0][4]["input"]) == 0
     state["envelope curves (orange)"] = True
     state["smooth offset potential"] = False
+    state["sizing field"] = False
     state["frame"] = 0
     state["play"] = False
     state["tick"] = 0
@@ -698,6 +747,27 @@ def main():
                 s.set_enabled(k == cur and state[label])
         if phi_struct is not None:
             phi_struct.set_enabled(state["smooth offset potential"])
+        # The sizing toggle swaps which scalar the visible structures are colored by --
+        # set on EVERY frame, not just the current one, so scrubbing keeps the choice.
+        # Re-adding under the same name is this polyscope's setter; see register_frame.
+        on = state["sizing field"]
+        for ex in extra_qs:
+            if "off" in ex:
+                m, s_off, rel_info = ex["off"]
+                m.add_scalar_quantity("sizing", s_off, cmap="viridis", vminmax=(0.0, 1.0),
+                                      enabled=on)
+                if not on and rel_info is not None:
+                    rel, rmax = rel_info
+                    m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
+                                          vminmax=(0.0, rmax), enabled=True)
+            if "bg" in ex:
+                m, s, cls, where = ex["bg"]
+                m.add_scalar_quantity("sizing", s, cmap="viridis", vminmax=(0.0, 1.0),
+                                      enabled=on)
+                if not on:
+                    m.add_scalar_quantity("class (0 ambient, 1 input, 2 offset)", cls,
+                                          defined_on=where, cmap="spectral",
+                                          vminmax=(0.0, 2.0), enabled=True)
 
     apply_visibility()
 
@@ -735,6 +805,11 @@ def main():
         if phi_struct is not None:
             changed, state["smooth offset potential"] = psim.Checkbox(
                 "smooth offset potential (phi)", state["smooth offset potential"])
+            if changed:
+                apply_visibility()
+        if has_sizing:
+            changed, state["sizing field"] = psim.Checkbox(
+                "sizing field (viridis, 0-1)", state["sizing field"])
             if changed:
                 apply_visibility()
 

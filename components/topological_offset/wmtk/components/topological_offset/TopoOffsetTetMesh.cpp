@@ -1452,7 +1452,11 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
         const double amips = std::get<0>(optimization_quality_stats());
         const double bar = optimization_stop_metric();
         if (m_params.debug_output) {
-            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            // NAMED BY PHASE, not by the debug counter: these two driver writes are the
+            // per-phase timeline (the state each phase hands to the next), and the viewer globs
+            // `*phase_*.vtu` to show exactly that series without fishing it out of the engine's
+            // per-pass debug_{N} frames.
+            write_optimization_debug_output(fmt::format("phase_{}A", round + 1));
         }
 
         // PHASE A HAS TO CONVERGE. It is TetWild on a mesh TetWild can improve, with the offset
@@ -1530,7 +1534,8 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
             passes,
             phi);
         if (m_params.debug_output) {
-            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            // See the phase A twin above: the per-phase series the viewer globs.
+            write_optimization_debug_output(fmt::format("phase_{}B", round + 1));
         }
 
         if (phi <= 1.0) {
