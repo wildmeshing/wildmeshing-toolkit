@@ -30,8 +30,15 @@ void embed_triangles_in_tets(
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface,
     const EmbedTrianglesOptions& opts,
-    EmbedTrianglesProvenance* provenance)
+    EmbedTrianglesProvenance* provenance,
+    const EmbedFeaturesInput* features,
+    EmbedFeaturesResult* features_out)
 {
+    if (features != nullptr && features_out == nullptr) {
+        log_and_throw_error(
+            "embed_triangles_in_tets: features passed without features_out; forcing features "
+            "in and dropping where they went would leave them untaggable");
+    }
     // Remesher outputs. The tet-based ones are what this consumes: out_tets (the
     // remesher's tetrahedra), final_tets_parent (parent polyhedral cell of each
     // tet), cells_with_faces_on_input (per-cell flag) and final_tets_parent_faces
@@ -79,8 +86,11 @@ void embed_triangles_in_tets(
 
     // Step 3: run the exact arrangement.
     // volumeremesher embed
-    std::vector<double> vr_edge_coords, vr_point_coords;
-    std::vector<uint32_t> vr_edge_indexes;
+    static const std::vector<double> no_coords;
+    static const std::vector<uint32_t> no_indices;
+    const std::vector<double>& vr_edge_coords = features ? features->edge_vrt_coord : no_coords;
+    const std::vector<uint32_t>& vr_edge_indexes = features ? features->edge_indices : no_indices;
+    const std::vector<double>& vr_point_coords = features ? features->point_coord : no_coords;
     std::vector<std::vector<std::array<uint32_t, 4>>> vr_tri_provenance;
     std::vector<uint32_t> vr_tri_group;
     std::vector<std::vector<std::array<uint32_t, 3>>> vr_edge_provenance;
@@ -378,6 +388,38 @@ void embed_triangles_in_tets(
         for (int i = 0; i < 3; ++i) {
             assert(v_map[t[i]] >= 0);
             t[i] = v_map[t[i]];
+        }
+    }
+
+    // Feature provenance, into the compacted numbering. Every vertex on a forced edge or
+    // point is a vertex of some output tet -- that is what "forced into the output" means --
+    // so v_map cannot be -1 for any of them; the throw is a remesher-contract check, not a
+    // reachable branch.
+    if (features_out != nullptr) {
+        features_out->edge_tiling.assign(vr_edge_provenance.size(), {});
+        for (size_t e = 0; e < vr_edge_provenance.size(); ++e) {
+            auto& tiling = features_out->edge_tiling[e];
+            tiling.reserve(vr_edge_provenance[e].size());
+            for (const auto& seg : vr_edge_provenance[e]) { // {tet, v0, v1}
+                const int64_t a = v_map[seg[1]];
+                const int64_t b = v_map[seg[2]];
+                if (a < 0 || b < 0) {
+                    log_and_throw_error(
+                        "Feature edge {}: an output edge vertex was compacted away", e);
+                }
+                tiling.push_back({{size_t(a), size_t(b)}});
+            }
+        }
+        features_out->point_vertex.assign(vr_point_provenance.size(), -1);
+        for (size_t p = 0; p < vr_point_provenance.size(); ++p) {
+            const uint32_t v = vr_point_provenance[p][1];
+            if (v == UINT32_MAX) {
+                continue;
+            }
+            if (v_map[v] < 0) {
+                log_and_throw_error("Feature point {}: its output vertex was compacted away", p);
+            }
+            features_out->point_vertex[p] = v_map[v];
         }
     }
     logger().info("done");
