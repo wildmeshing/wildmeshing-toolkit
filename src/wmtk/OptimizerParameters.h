@@ -146,6 +146,42 @@ struct OptimizerParameters
     double stop_energy = 100;
 
     /**
+     * @brief How much better than the neighbourhood's worst cell a collapse must leave things.
+     *
+     * The admission test for a collapse is `quality <= ring_max * collapse_quality_margin`,
+     * where `ring_max` is the worst quality among the cells incident to the vertex being
+     * removed and `quality` is that of each cell the collapse would create. Quality is
+     * AMIPS^dim, so larger is worse and the margin scales the ceiling the new cells must come
+     * in under; because the ceiling is set by how bad the neighbourhood ALREADY is, the test
+     * is strict in a healthy region and lax around a defect.
+     *
+     * At the default 1.0 the rule is merely "no worse than what is already here", which is
+     * permissive: it asks nothing about whether the collapse is useful. Edge length does not
+     * enter into it -- an edge shorter than the collapse length threshold is not gated on
+     * length at all -- so for short edges this is the ONLY thing standing between the collapse
+     * pass and the elements the split pass just created. Measured on tetwild's octocat at
+     * stop_energy 10, 72% of what each split pass adds is removed by the collapse pass that
+     * follows it.
+     *
+     * Below 1.0 the collapse must strictly improve the ring's worst by that factor. The
+     * useful range is well under 1: the effect on the energy you read is the dim'th root, so
+     * 0.999 demands a 0.03% improvement and changes nothing, while 0.5 demands ~21% in 3D and
+     * takes that 72% churn to 22% at an unchanged iteration count, max energy and wall time,
+     * for a 56% denser mesh.
+     *
+     * Lowering it does not cost the pass its essential job. Collapse is the only operation
+     * that can remove a shape defect -- AMIPS is scale-invariant, so refining a sliver leaves
+     * it a sliver -- and `ring_max` is measured over every cell incident to the removed
+     * vertex, INCLUDING the ones the collapse deletes. When the worst cell in the ring is the
+     * one being removed, the ceiling is set by a cell that will not exist afterwards and the
+     * repair is admitted regardless of the margin.
+     *
+     * Not applied by the coarsening pass, which deliberately replaces this test with a
+     * regional one taken after re-smoothing.
+     */
+    double collapse_quality_margin = 1.0;
+
+    /**
      * Relative weight of the AMIPS (quality) term against the envelope (stay-on-surface)
      * term during smoothing. w_envelope is derived as 1 - w_amips in each mesh's
      * constructor, so the small default means the envelope dominates and AMIPS acts as a

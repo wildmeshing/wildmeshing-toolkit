@@ -37,6 +37,7 @@
       "coarsen_global_smoothing_passes",
       "coarsen_max_rounds",
       "coarsen_max_inner_passes",
+      "collapse_quality_margin",
       "preserve_topology",
       "preserve_feature_points",
       "allow_junction_cleanup",
@@ -434,6 +435,12 @@
     "type": "int",
     "default": 1,
     "doc": "Cap on the collapse pass's own dirty-epoch retry loop within one coarsening round; 0 is uncapped. Distinct from coarsen_max_rounds, which counts collapse+global-smoothing alternations. This counts the passes the retry loop makes inside a single collapse pass, re-offering failures whose neighbourhood a successful collapse disturbed. That filter asks only whether the neighbourhood MOVED, not whether it moved helpfully, so a productive first pass re-offers most of the mesh. 1 by default, i.e. one pass per round and no retry within it: on octocat the first pass found 5110 collapses in 135.8s and the three that followed found 27 in 38.4s. Rounds still repeat the pass, and those do pay off, because the global smoothing between them moves the fixed point in a way this filter cannot see."
+  },
+  {
+    "pointer": "/collapse_quality_margin",
+    "type": "float",
+    "default": 1.0,
+    "doc": "How much better than its neighbourhood's worst cell a collapse must leave things: the admission test is quality <= ring_max * margin, where ring_max is the worst quality among the cells incident to the removed vertex and quality is AMIPS^dim (larger is worse). 1.0 is the historical 'no worse than what is already here', which for a short edge is the only thing limiting the collapse pass, since short edges are not gated on length. Below 1.0 the collapse must strictly improve the ring's worst by that factor, which stops the collapse pass from undoing the split pass while still admitting repairs (the ceiling is set by cells the collapse deletes). Not applied by the coarsening pass."
   },
   {
     "pointer": "/coarsen_unbounded",

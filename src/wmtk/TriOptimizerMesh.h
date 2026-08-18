@@ -334,7 +334,7 @@ protected:
     virtual bool collapse_quality_allowed(size_t v1, size_t, double q, double ring_max) const
     {
         return !m_vertex_attribute.at(v1).m_is_rounded || q <= m_params.stop_energy ||
-               q <= ring_max;
+               q <= ring_max * m_params.collapse_quality_margin;
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
 

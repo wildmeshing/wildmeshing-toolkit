@@ -449,7 +449,8 @@ protected:
     virtual bool collapse_before_vertex(size_t, size_t, double) { return true; }
     virtual bool collapse_quality_allowed(size_t v1, double quality, double ring_max) const
     {
-        return !m_vertex_attribute.at(v1).m_is_rounded || quality <= ring_max;
+        return !m_vertex_attribute.at(v1).m_is_rounded ||
+               quality <= ring_max * m_params.collapse_quality_margin;
     }
     virtual bool collapse_is_order_2_edge(const std::array<size_t, 2>&) { return false; }
     virtual bool
