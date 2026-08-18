@@ -591,7 +591,7 @@ private:
     /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
     bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);
 
-    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring);
+    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes = 0);
 };
 
 } // namespace wmtk

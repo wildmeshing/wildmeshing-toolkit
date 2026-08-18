@@ -22,16 +22,23 @@ message(STATUS "Third-party: creating target 'VolumeRemesher::VolumeRemesher'")
 # is exact: the built-in bigrational::get_str() emits the fraction in base 2, the base
 # init_from_bin parses.
 #
-# Pinned at main. The previous pin (ba8a7329) is this one's first parent; the only change
-# between them is VolumeRemesher PR #24, which adds an output to embed_tri_in_poly_mesh --
-# out_triangle_group, mapping each input triangle to its coplanar group, i.e. to its index
-# into out_triangle_provenance. Nothing existing changes behaviour, but the signature grows,
-# so every caller of that function must be updated in the same commit.
+# Pinned at main. The previous pin (64c52aa5) is this one's first parent; the only change
+# between them is VolumeRemesher PR #25, which stores cached orient3D results in a
+# `signed char` rather than a `char`. That is a correctness fix for Linux on arm64, where
+# `char` is unsigned (AAPCS64) and a cached -1 read back as 255: every constraint was then
+# judged not to split its cell and the input surface was silently never embedded. It has no
+# effect on x86-64 or on macOS, where `char` is already signed.
+#
+# Before that (ba8a7329 -> 64c52aa5) came PR #24, which added an output to
+# embed_tri_in_poly_mesh -- out_triangle_group, mapping each input triangle to its coplanar
+# group, i.e. to its index into out_triangle_provenance. Nothing existing changed behaviour,
+# but the signature grew, so every caller of that function had to be updated in the same
+# commit.
 include(CPM)
 CPMAddPackage(
     NAME VolumeRemesher
     GITHUB_REPOSITORY wildmeshing/VolumeRemesher
-    GIT_TAG 64c52aa54d39a5ed821c6cd3b120a55fad2790f7
+    GIT_TAG 609e32c43a52336f087c608ce5f1bd73b41e5845
     OPTIONS
     "VOLUMEREMESHER_BUILD_TESTS OFF"
 )

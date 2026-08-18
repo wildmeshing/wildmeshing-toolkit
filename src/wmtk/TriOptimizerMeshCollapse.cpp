@@ -20,7 +20,8 @@ void TriOptimizerMesh::collapse_all_edges(bool is_limit_length)
     collapse_all_edges_impl(is_limit_length, wmtk::default_ring(wmtk::PassLock::EdgeRing));
 }
 
-size_t TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring)
+size_t
+TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes)
 {
     m_collapse_limit_length = is_limit_length;
     collapse_pass_begin();
@@ -78,7 +79,7 @@ size_t TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_
             // list from get_edges() after every pass and re-ran the expensive geometric
             // pre-checks on every failure, even where nothing could have changed.
             const size_t total_success =
-                wmtk::run_localized_to_convergence(mesh, executor, all_ops);
+                wmtk::run_localized_to_convergence(mesh, executor, all_ops, max_passes);
             logger().info("collapse success: {}", total_success);
             collapse_pass_end(total_success);
             accepted = total_success;
@@ -525,9 +526,15 @@ size_t TriOptimizerMesh::coarsen_mesh()
     size_t total = 0;
     for (int round = 0; round < m_params.coarsen_max_rounds; ++round) {
         m_coarsen_mode = true;
-        // The lock claims one ring more than the smoothing reaches: smoothing a vertex at
-        // distance r reads its one-ring and writes the quality of its incident faces.
-        const size_t accepted = collapse_all_edges_impl(false, m_params.coarsen_smooth_ring + 1);
+        // The lock claims one ring more than coarsen_smooth_ring. With smoothing on that is
+        // what the writes reach (smoothing a vertex at distance r reads its one-ring and
+        // writes the quality of its incident faces); with coarsen_local_smoothing_passes at 0
+        // it is what the accept test READS, since a face incident to a distance-r vertex has
+        // vertices at r+1. Either way the +1 is required.
+        const size_t accepted = collapse_all_edges_impl(
+            false,
+            m_params.coarsen_smooth_ring + 1,
+            size_t(m_params.coarsen_max_inner_passes));
         m_coarsen_mode = false;
         total += accepted;
 

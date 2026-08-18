@@ -185,8 +185,14 @@ struct OptimizerParameters
      * the merged vertex, and only then a decision -- keep it if the worst cell in the region
      * touched is no worse than before, undo the whole block otherwise. Because every cell
      * outside that region is untouched, "no worse locally" is exactly "no worse globally".
+     *
+     * Off by default. It is much cheaper than it used to be -- see
+     * coarsen_local_smoothing_passes, whose default is now 0 -- but it still costs a full
+     * collapse sweep over every edge, which on tetwild's models is several seconds on top of an
+     * otherwise converged run. That is worth paying when element count is what matters, and not
+     * worth paying silently for every caller, so it stays opt-in.
      */
-    bool coarsen_pass = true;
+    bool coarsen_pass = false;
     /**
      * Coarsen as far as the quality guarantee allows, instead of stopping at the target edge
      * length.
@@ -211,11 +217,40 @@ struct OptimizerParameters
      * are larger than length_rel nominally asked for. Turn it off to hold the target size.
      */
     bool coarsen_unbounded = true;
-    /// Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
-    int coarsen_local_smoothing_passes = 2;
-    /// Radius smoothed inside the collapse. The lock claims one more ring than this, because
-    /// smoothing a vertex reads its one-ring and writes the quality of its incident cells.
-    int coarsen_smooth_ring = 2;
+    /**
+     * Smoothing sweeps over the ring, inside each candidate collapse, before judging it.
+     *
+     * 0 by default, which means the pass judges the collapse on its raw post-collapse geometry
+     * and never smooths inside the operation. That sounds like it gives up the pass's whole
+     * premise, and at the level of a single candidate it does: without the smoothing the
+     * composite's reject rate rises from 25% to 39%. It does not cost coarsening, because the
+     * pass runs to a fixed point -- a candidate the smoothing would have rescued is simply
+     * replaced by another the pass finds instead, and the relaxation the mesh actually needs
+     * comes from the ordinary global smoothing between rounds (coarsen_global_smoothing_passes).
+     *
+     * What it does cost is time, and enormously. The smoothed ball averaged 98 vertices on
+     * tetwild's octocat, so at the old default of 2 sweeps a single candidate ran ~200 nonlinear
+     * smoothing solves, and the pass ran 1.4 million of them to accept 5173 collapses. Measured
+     * over seven tetwild models, dropping this to 0 (with coarsen_max_inner_passes 1) made the
+     * pass 9.7x to 31.9x faster for about 1 percentage point of cell reduction.
+     */
+    int coarsen_local_smoothing_passes = 0;
+    /**
+     * Radius smoothed inside the collapse, and the radius the accept test measures over. The
+     * lock claims one more ring than this, because smoothing a vertex reads its one-ring and
+     * writes the quality of its incident cells.
+     *
+     * With coarsen_local_smoothing_passes at 0 nothing is smoothed, so this only sets how wide a
+     * region the accept test compares. A wider region is a more permissive test -- it admits
+     * untouched cells to both the before and after maxima, which is still sound, since an
+     * untouched cell holds the global max up on both sides of the comparison -- so ring 2
+     * coarsens slightly more. It also makes the pass lock 3 rings per operation where the
+     * ordinary collapse locks 2, which is the single worst thing for its parallel scaling.
+     *
+     * 1 by default: on octocat that is 2.3x faster than ring 2 for 1.5 percentage points of
+     * cell reduction, and it puts the pass's lock footprint back in line with every other pass.
+     */
+    int coarsen_smooth_ring = 1;
     /**
      * Ordinary whole-mesh smoothing passes between coarsening rounds.
      *
@@ -247,6 +282,24 @@ struct OptimizerParameters
      * worth 9.5% for 60% of the pass's budget.
      */
     int coarsen_max_rounds = 2;
+    /**
+     * Cap on the collapse pass's own dirty-epoch retry loop inside one round; 0 is uncapped.
+     *
+     * Distinct from coarsen_max_rounds, which counts collapse+global-smoothing alternations.
+     * This counts the passes run_localized_to_convergence makes within a single collapse pass,
+     * re-offering failures whose neighbourhood a successful collapse disturbed. That filter
+     * asks only whether the neighbourhood MOVED, not whether it moved helpfully, so a
+     * productive first pass re-offers most of the mesh -- and here every re-offer that clears
+     * the cheap checks pays the whole collapse pre-check chain before failing again.
+     *
+     * 1 by default, i.e. one pass per round and no retry within it. Measured on octocat, the
+     * first pass found 5110 collapses in 135.8s and the three that followed found 27 in 38.4s;
+     * the second round then found 36 more in 28s. Capping the inner loop keeps the first pass
+     * and drops the rest, which is worth 1.2x on its own and more once the composite is cheap.
+     * Rounds still repeat the pass (coarsen_max_rounds), and those DO pay off, because the
+     * global smoothing between them moves the fixed point in a way this retry filter cannot see.
+     */
+    int coarsen_max_inner_passes = 1;
 
     bool debug_output = false;
     bool perform_sanity_checks = false;
