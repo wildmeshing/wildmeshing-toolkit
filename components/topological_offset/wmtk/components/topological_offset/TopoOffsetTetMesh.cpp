@@ -107,16 +107,32 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
     logger().info("F = {}", faces.size());
 
     // tag surface faces and vertices
+    //
+    // THE DOMAIN WALL IS A REGION BOUNDARY. A face with no opposite tetrahedron is the outer
+    // boundary of the mesh -- the bounding box -- and it used to be skipped here, on the implicit
+    // grounds that a boundary between two tags needs two tags. But it IS one: the boundary
+    // between the ambient region and the space outside the domain, and the only reason it had no
+    // second tag to compare against is that the outside is not meshed.
+    //
+    // Skipping it left the box held by a different mechanism entirely -- the on_bbox_faces
+    // attribute, which freezes those vertices against smoothing outright and refuses to split
+    // any edge lying in the wall. Measured on specific_models/prism, that combination is what
+    // manufactured the AMIPS spike: a tet resting on the wall has its longest edge (the wall
+    // diagonal, 13.6034) unsplittable and its three wall vertices unmovable, so every legal
+    // operation left the worst dimension untouched while halving the volume. The coordinate
+    // sequence the splits produced reads -4.77666, -4.77899, -4.78015, -4.78074, -4.78103,
+    // -4.78117 against a wall at -4.78132: an exact bisection cascade onto the plane, AMIPS
+    // 230 -> 5243 within one pass and 6.9e21 over the run.
+    //
+    // Held in the region envelope instead, the wall may be refined and its vertices may move
+    // within eps of where they started, which is the same contract every other region boundary
+    // gets and leaves the degenerate element repairable.
     std::vector<Eigen::Vector3i> tempF;
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
 
         const auto t_opp = ff.switch_tetrahedron();
-        if (!t_opp) {
-            continue;
-        }
-
-        {
+        if (t_opp) {
             const auto& tag0 = m_tet_attribute[ff.tid()].tag;
             const auto& tag1 = m_tet_attribute[t_opp.value().tid()].tag;
             if (tag0 == tag1) {
@@ -129,9 +145,14 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         const size_t v1 = ff.vid();
         const size_t v2 = ff.switch_vertex().vid();
         const size_t v3 = ff.switch_edge().switch_vertex().vid();
-        m_vertex_extra[v1].m_is_on_input = true;
-        m_vertex_extra[v2].m_is_on_input = true;
-        m_vertex_extra[v3].m_is_on_input = true;
+        // Every face reaching here bounds a region; only the ones with a tet on both sides are
+        // input-complex geometry. The domain wall is the former and not the latter, and it needs
+        // no flag of its own: vertex_is_on_region() reads it off on_bbox_faces, which the split
+        // and collapse paths already maintain (set_intersection of the endpoints for a split,
+        // and a wall vertex may only collapse into one at least as constrained).
+        if (t_opp) {
+            for (const size_t v : {v1, v2, v3}) m_vertex_extra[v].m_is_on_input = true;
+        }
         // The base's own flag, which is a DIFFERENT field from the two above: those say which of
         // the offset's two tracked surfaces a vertex belongs to, this says that it belongs to one
         // at all. Every surface-aware path in the shared engine gates on it -- see
@@ -153,9 +174,35 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_F_envelope = tempF;
+        // FROM THE PARAMETERS, as the 2D twin already did -- see
+        // TopoOffsetTriMesh::init_region_boundary_envelope_from_input(), which is the same line.
+        // Without it m_envelope_eps kept its -1 sentinel and the exact envelope was built with a
+        // NEGATIVE half-width, so is_outside() answered true for every triangle, including the
+        // 310 the envelope had just been constructed from. Everything that consults it for an
+        // input-complex face -- split, collapse, swap and smoothing alike -- was therefore
+        // refused unconditionally, which froze the input complex solid and contradicted the
+        // design this class documents (see smoothing_energy_envelope(): the input complex "is
+        // now smoothed like any TetWild surface vertex rather than frozen").
+        //
+        // params.init() runs in topological_offset() before init_from_image(), so envelope_size
+        // is already resolved from envelope_size_rel x the bbox diagonal by the time we read it.
+        m_envelope_eps = m_offset_params.envelope_size;
         m_envelope = std::make_shared<SampleEnvelope>();
         m_envelope->use_exact = true;
         m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+        // The offset envelope logs its own eps (see rebuild_offset_envelope); this one never
+        // did, which is how a nonsensical value survived here unnoticed.
+        // "Region", not "input-complex", which is what this said until the input complex got
+        // envelopes of its own. This one is built from the MESH's region-boundary faces -- every
+        // tag boundary plus the domain wall -- as they stand after marching tets and simplicial
+        // embedding. The input complex as LOADED is m_input_tri_env/m_input_seg_env, built from
+        // m_phi_* in init_input_complex_envelopes(), and the two counts differing is the point:
+        // on prism this is 578 faces against Phi's 310, the balance being the wall.
+        logger().info(
+            "\tRegion-boundary envelope: {} faces (tag boundaries + domain wall), {} (eps {:.6g})",
+            m_F_envelope.size(),
+            m_envelope->use_exact ? "EXACT" : "sampled",
+            m_envelope_eps);
     }
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which callers
@@ -726,6 +773,110 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     m_phi_E = E_phi;
     m_phi_F = F_phi;
     m_phi_P = P_phi;
+
+    // The containment envelopes come from the SAME extraction, in the same call, for the same
+    // reason the BVH and the potential do: three descriptions of the input complex that can never
+    // disagree about where it is. E.rows() and P.rows() are the ISOLATED counts specifically --
+    // the loops above admit an edge only when it is in no face's or tet's closure, and a vertex
+    // only when it is in no closure at all -- which is exactly the lower-strata question.
+    init_input_complex_envelopes(int(E.rows()), int(P.rows()));
+}
+
+
+void TopoOffsetTetMesh::init_input_complex_envelopes(
+    const int n_isolated_edges,
+    const int n_isolated_points)
+{
+    m_input_has_lower_strata = (n_isolated_edges > 0) || (n_isolated_points > 0);
+
+    // Same tolerance as the region envelope: this is the distance the input surface is permitted
+    // to drift, which is one quantity and should not have two knobs. params.init() has already
+    // resolved it from envelope_size_rel x the bbox diagonal by the time any caller gets here.
+    m_input_envelope_eps = m_offset_params.envelope_size;
+    if (!(m_input_envelope_eps > 0)) {
+        // An exact envelope has no meaning at a non-positive half-width -- is_outside() would
+        // answer true for every query, including the geometry it was built from, and every
+        // operation touching the input complex would be refused unconditionally. That is not
+        // hypothetical: it is exactly what the -1 sentinel did to m_envelope before
+        // init_surfaces_and_boundaries() started reading envelope_size. The edge overload of
+        // SampleEnvelope::init throws on it; the triangle overload does not, so check here.
+        log_and_throw_error(
+            "Input-complex envelope needs a positive envelope_size, got {}.",
+            m_input_envelope_eps);
+    }
+
+    std::vector<Eigen::Vector3d> verts(size_t(m_phi_V.rows()));
+    for (int i = 0; i < m_phi_V.rows(); ++i) {
+        verts[size_t(i)] = m_phi_V.row(i).head<3>();
+    }
+
+    if (m_phi_F.rows() > 0) {
+        std::vector<Eigen::Vector3i> tris(size_t(m_phi_F.rows()));
+        for (int i = 0; i < m_phi_F.rows(); ++i) {
+            tris[size_t(i)] = Eigen::Vector3i(m_phi_F(i, 0), m_phi_F(i, 1), m_phi_F(i, 2));
+        }
+        m_input_tri_env = std::make_shared<SampleEnvelope>();
+        m_input_tri_env->use_exact = true;
+        m_input_tri_env->init(verts, tris, m_input_envelope_eps);
+    }
+
+    // ISOLATED POINTS RIDE AS THE DEGENERATE SEGMENT (i, i), and this is supported rather than
+    // tolerated. fast-envelope's halfspace_generation() for edges tests AB == 0 explicitly and
+    // emits an axis-aligned cube of half-width eps/sqrt(3) centred on the point -- the same
+    // half-width the hexahedron around a real segment gets, so a point's envelope has the same
+    // relationship to eps that a segment's does. SimpleBVH::point_segment_squared_distance guards
+    // l2 == 0 and returns the endpoint, and SampleEnvelope::nearest_point_feature's Edges3d branch
+    // guards len2 <= 0 and reports the vertex case, so the sampled path and the foot-point query
+    // agree with the exact one. Nothing here is a special case of ours.
+    if (m_phi_E.rows() > 0 || !m_phi_P.empty()) {
+        std::vector<Eigen::Vector2i> segs;
+        segs.reserve(size_t(m_phi_E.rows()) + m_phi_P.size());
+        for (int i = 0; i < m_phi_E.rows(); ++i) {
+            segs.emplace_back(m_phi_E(i, 0), m_phi_E(i, 1));
+        }
+        for (const int i : m_phi_P) {
+            segs.emplace_back(i, i);
+        }
+        m_input_seg_env = std::make_shared<SampleEnvelope>();
+        m_input_seg_env->use_exact = true;
+        m_input_seg_env->init(verts, segs, m_input_envelope_eps);
+    }
+
+    logger().info(
+        "\tInput-complex envelopes: {} triangles, {} segments ({} of them isolated points), "
+        "EXACT (eps {:.6g}); lower strata {} ({} isolated wires, {} isolated points)",
+        m_phi_F.rows(),
+        m_input_seg_env ? m_phi_E.rows() + int(m_phi_P.size()) : 0,
+        m_phi_P.size(),
+        m_input_envelope_eps,
+        m_input_has_lower_strata ? "PRESENT" : "none",
+        n_isolated_edges,
+        n_isolated_points);
+}
+
+
+bool TopoOffsetTetMesh::vertex_has_tracked_input_face(const size_t vid) const
+{
+    for (const simplex::Face& f : get_surface_faces_for_vertex(vid).faces()) {
+        const auto& vs = f.vertices();
+        if (vertex_is_input_geometry(vs[0]) && vertex_is_input_geometry(vs[1]) &&
+            vertex_is_input_geometry(vs[2])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+void TopoOffsetTetMesh::log_input_envelope_trace(const char* when) const
+{
+    logger().info(
+        "\t[input envelope {}] triangle-envelope answers {}, segment-envelope answers {}, "
+        "point-containment refusals {}",
+        when,
+        m_input_env_tri_hits.exchange(0),
+        m_input_env_seg_hits.exchange(0),
+        m_input_env_point_refusals.exchange(0));
 }
 
 
@@ -854,7 +1005,20 @@ bool TopoOffsetTetMesh::is_order_2_edge(const std::array<size_t, 2>& e) const
 
 bool TopoOffsetTetMesh::vertex_is_on_surface(const size_t vid) const
 {
-    return m_vertex_extra.at(vid).m_is_on_input || m_vertex_extra.at(vid).m_is_on_offset;
+    // THE DOMAIN WALL COUNTS, and leaving it out is what let the wall drift once it stopped
+    // being frozen. get_surface_faces_for_vertex() returns nothing at all for a vertex this
+    // answers false for -- it is the first line of that function -- and the containment check
+    // in the smoother walks exactly that collection, so a wall vertex was tested against an
+    // empty set of faces and every move passed. Measured: all 2409 accepted smoothing moves on
+    // a wall vertex had zero tracked faces at them, and the 402 of those that pushed the vertex
+    // off its plane took it up to 4.12 in a single step against an envelope half-width of
+    // 0.0837.
+    //
+    // Note this is a DIFFERENT predicate from m_vertex_attribute[].m_is_on_surface, which was
+    // set correctly for wall vertices all along -- the worst offender reported
+    // "m_is_on_surface true, on_input false, on_offset false", the base attribute and this
+    // override disagreeing. The override is what the substructure walk consults.
+    return vertex_is_on_region(vid) || m_vertex_extra.at(vid).m_is_on_offset;
 }
 
 bool TopoOffsetTetMesh::face_is_on_surface(const size_t fid) const
@@ -1125,11 +1289,34 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
         }
         // Relative to the target edge length, so the test means the same thing at any scale.
         const double tol = m_offset_params.ab_smooth_tol * std::max(m_params.l, 1e-16);
+
+        // THE RESIDUAL PER PASS, not just once at the end of the phase.
+        //
+        // refine_sizing_where_phi_is_stuck() rests on "Phase B has just run to a fixed point, so
+        // an offset face still over tolerance is under-resolved rather than badly placed". That
+        // is only true if this loop EXITS ON disp <= tol. Measured on specific_models/prism it
+        // never did: both rounds ran the full ab_smooth_max_passes (20) with displacement still
+        // 33-90x tol, so the refinement was being handed faces that smoothing had not finished
+        // placing. This line is what tells the two apart -- a residual still falling at the cap
+        // means the cap is the binding constraint, a residual flat while displacement continues
+        // means the surface is genuinely stuck and refinement is the right answer.
+        //
+        // max_at_vertex vs max_in_face says WHICH remedy: the surface in the wrong PLACE (wants
+        // more smoothing) or too COARSE to be in the right place (wants refinement). See
+        // DistanceSplit.
+        const DistanceSplit rp = residual_split();
+        const double rtol = offset_residual_tolerance();
         logger().info(
-            "\t[phase B] pass {}: max vertex displacement {:.6g} (tol {:.6g})",
+            "\t[phase B] pass {}: max vertex displacement {:.6g} (tol {:.6g}) | residual {:.4}x "
+            "(at-vertex {:.4}x, in-face {:.4}x) | reachable {} pinned {}",
             pass + 1,
             disp,
-            tol);
+            tol,
+            rp.max_reachable / rtol,
+            rp.max_at_vertex / rtol,
+            rp.max_in_face / rtol,
+            rp.n_reachable,
+            rp.n_pinned);
         if (disp <= tol) {
             ++pass;
             break;
@@ -1149,8 +1336,15 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
     // of whether Phi needed resolution.
     const double tol = offset_residual_tolerance();
     std::vector<std::pair<double, std::array<size_t, 3>>> stuck;
+    // The DENOMINATOR the log reports. Counted rather than inferred, because the line used to
+    // print "n_worst of stuck.size()" -- both counts of faces that ARE over tolerance -- while
+    // reading as "n of the N offset faces". "5934 of 5934" then looked like the whole surface
+    // failing when it only ever said "everything over tolerance is being acted on", and the
+    // surface's actual size appeared nowhere.
+    size_t n_offset_faces = 0;
     for (const Tuple& f : get_faces()) {
         if (!face_is_offset_surface_live(f)) continue;
+        ++n_offset_faces;
         const double score = face_criterion_rel(f);
         if (score <= 1.0) continue;
         stuck.emplace_back(score, get_face_vids(f));
@@ -1200,7 +1394,7 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
     const auto region = wmtk::utils::grow_vertex_region(
         seeds,
         std::max(0, m_params.stuck_refine_rings),
-        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+        [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
 
     // THE BAND'S FLOOR, not stuck_refine_min_scalar -- see the note in the Phase B branch of
     // refine_sizing_around_worst() for why 3D keeps it where 2D does not.
@@ -1211,18 +1405,15 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
         m_params.stuck_refine_factor,
         s_floor,
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
-    wmtk::utils::gradation_smooth_sizing(
-        m_offset_params.sizing_gradation,
-        refined,
-        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
-        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+    gradation_smooth_sizing(m_offset_params.sizing_gradation, refined);
 
     logger().info(
-        "\t[phase B] {} of {} offset faces stuck over tolerance (worst {:.4}x), {} force-split, "
-        "refined {} of {} region vertices (floor {:.4})",
-        n_worst,
+        "\t[phase B] {} of {} offset faces over tolerance (worst {:.4}x) | refining the worst {}, "
+        "{} edges force-split, {} of {} region vertices lowered (floor {:.4})",
         stuck.size(),
+        n_offset_faces,
         stuck.front().first,
+        n_worst,
         m_force_split_edges.size(),
         refined.size(),
         region.size(),
@@ -1269,6 +1460,8 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
         // when the loop gives up, something is wrong that iterating further will not fix, and
         // continuing into Phase B would optimize the offset on a mesh that cannot carry it.
         if (amips > bar) {
+            // WHICH element, before saying only how bad. See log_worst_tet().
+            log_worst_tet("phase A gave up");
             log_and_throw_error(
                 "Phase A did not converge within {} iterations: max element quality {:.6} against "
                 "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
@@ -1490,6 +1683,9 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
             filter_energy,
             refined.size(),
             region.size());
+        // Every stall, so the trajectory is visible: the same tid recurring means one element is
+        // pinned, a changing tid means the stall is moving around the mesh.
+        log_worst_tet("phase A stall");
         return refined.size();
     }
 
@@ -1558,10 +1754,35 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
     for (size_t i = 0; i < n_worst; ++i) {
         for (const size_t v : scored[i].second) seeds.push_back(v);
     }
+    // BAND-ONLY: the region growth here and the gradation below walk offset-surface vertices
+    // only, instead of the full one-ring.
+    //
+    // The reference implementation runs its length-driven hysteresis (the todo_larger /
+    // todo_smaller invariants) on the offset SURFACE child mesh, and gives the tet embedding a
+    // SEPARATE, AMIPS-driven per-edge target (OffsetOptimization.cpp:1921/1963 versus
+    // 1405/1481): the surface's fine sizing never touches the volume. This port shares one
+    // per-vertex scalar between the two, so growing the band's refinement outward through the
+    // one-ring graded it into the surrounding volume and manufactured a halo of demand nothing
+    // asked for -- and with it the split/collapse churn, the slot-pool exhaustion, and the
+    // starvation of the offset's own edges at the tail of the longest-first split queue.
+    //
+    // Measured on specific_models/prism before this, at preallocation_factor 6: every one of 80
+    // Phase A iterations exhausted the slot pool (3.2M operations dropped, mean 40k/iteration),
+    // element quality froze bit-stable at 166.375 against stop_energy 10 from iteration 4
+    // onward, and Phase A threw without Phase B ever running. Raising preallocation_factor to
+    // 50 made it worse rather than better -- the pool had been an accidental brake, and with it
+    // lifted the split pass inflated 1800 -> 55000 vertices for the collapse pass to delete
+    // again, net +7 vertices over 9 iterations at 7.5x the runtime.
+    //
+    // The volume keeps its own scalar, which also restores length_rel's meaning for it, and
+    // still refines exactly as much as conformity to the band's splits forces. NOTE the Phase A
+    // branch above is deliberately NOT confined: that is TetWild's own quality-driven stall
+    // response over volume elements, which is the separate AMIPS-driven target the reference
+    // gives the embedding, not the band's sizing leaking outward.
     const auto region = wmtk::utils::grow_vertex_region(
         seeds,
         std::max(0, m_params.stuck_refine_rings),
-        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+        [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
 
     std::vector<size_t> refined = wmtk::utils::apply_sizing_refinement(
         region,
@@ -1575,11 +1796,7 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(double max_metric)
     // optimization on the shared engine for longer, carries no growth either. Monotone-down in
     // both dimensions is one fewer difference to reason about, and growth is the only direction
     // that can un-resolve a band that the criterion has just paid to resolve.
-    wmtk::utils::gradation_smooth_sizing(
-        m_offset_params.sizing_gradation,
-        refined,
-        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; },
-        [this](size_t v) { return get_one_ring_vids_for_vertex(v); });
+    gradation_smooth_sizing(m_offset_params.sizing_gradation, refined);
 
     logger().info(
         "[stuck-refine] worst {} of {} offset faces over tolerance (worst {:.4}x), refined {} of "
@@ -1934,7 +2151,24 @@ void TopoOffsetTetMesh::report_outside_support(const char* when, const DistanceS
 
 double TopoOffsetTetMesh::cell_quality_rel(const size_t tid) const
 {
-    return cell_quality(tid) / std::max(m_params.stop_energy, 1e-16);
+    // THE CUBE ROOT IS NOT OPTIONAL: cell_quality stores AMIPS^3, and stop_energy is a bar on
+    // AMIPS. Without it this returned AMIPS^3 / stop_energy, so the "fails its target" test
+    // score > 1 fired at AMIPS > cbrt(10) = 2.154 instead of at AMIPS > 10.
+    //
+    // Everything else in both dimensions already takes it: TetOptimizerMesh::quality_rel() is
+    // cbrt(cell_quality(tid)) / stop_energy, get_max_avg_energy() returns cbrt(max) as the
+    // reported "max energy", and 2D's TriOptimizerMesh::quality_rel() needs none because 2D
+    // stores AMIPS directly. This function exists to be the 3D twin of that 2D one -- see the
+    // header -- and dropping the cube root is exactly what stopped it being one.
+    //
+    // Measured on specific_models/prism, where Phase A converges at max AMIPS 8.5 and mean 4.0:
+    // the mean face scored 4^3/10 = 6.4 and the worst 8.5^3/10 = 61, so every element of a
+    // CONVERGED mesh read as failing. Since face_criterion_rel() returns the max of this and the
+    // Phi residual ratio (~3.8 at worst), this term dominated and the Phi signal it is supposed
+    // to sit beside never decided anything: refine_sizing_where_phi_is_stuck() flagged every
+    // offset face every round, force-splitting ~4300 of them and taking the mesh from 117k to
+    // 402k tets between rounds, while the residual crawled 5.35x -> 3.84x over five rounds.
+    return std::cbrt(cell_quality(tid)) / std::max(m_params.stop_energy, 1e-16);
 }
 
 double TopoOffsetTetMesh::amips_rel_at_face(const Tuple& f) const
@@ -2002,6 +2236,324 @@ void TopoOffsetTetMesh::warn_if_offset_reaches_domain_boundary() const
         n_faces,
         n_verts,
         m_offset_params.target_distance);
+}
+
+double TopoOffsetTetMesh::wall_offplane_deviation(const size_t vid) const
+{
+    if (m_offset_params.box_min.size() < 3 || m_offset_params.box_max.size() < 3) return 0.;
+    double dev = 0.;
+    for (const int f : m_vertex_attribute[vid].on_bbox_faces) {
+        const int k = f / 2;
+        const double want = (f % 2 == 0) ? m_offset_params.box_min[k] : m_offset_params.box_max[k];
+        dev = std::max(dev, std::abs(m_vertex_attribute[vid].m_posf[k] - want));
+    }
+    return dev;
+}
+
+void TopoOffsetTetMesh::log_vertex_movement(const char* when) const
+{
+    // MECHANISM (1) OR (2)? See WallMoveStats. added-deviation moves with no tracked face at the
+    // vertex are the vacuous-containment path; an invariant violation with none of them means
+    // the flags are stale rather than the check being blind.
+    logger().warn(
+        "[wall-moves {}] accepted {} (zero-tracked {}) | added off-plane deviation {} (of those "
+        "zero-tracked {}) | largest single step {:.6g}",
+        when,
+        m_wall_moves.accepted.load(),
+        m_wall_moves.accepted_zero_tracked.load(),
+        m_wall_moves.added_deviation.load(),
+        m_wall_moves.added_dev_zero_tracked.load(),
+        m_wall_moves.max_single_step.load());
+
+    // Live census, so "attempted" can be read against how many vertices of each class exist.
+    std::array<int, size_t(VClass::Count)> live{};
+    for (const Tuple& v : get_vertices()) {
+        ++live[size_t(vertex_class(v.vid(*this)))];
+    }
+
+    for (size_t c = 0; c < size_t(VClass::Count); ++c) {
+        const auto& s = m_move_stats[c];
+        const int acc = s.accepted.load();
+        logger().warn(
+            "[move {}] {:<8} live {:5} | attempted {:8} refused-before {:8} accepted {:8} | "
+            "displacement sum {:.6g} max {:.6g} mean {:.6g}",
+            when,
+            vclass_name(VClass(c)),
+            live[c],
+            s.attempted.load(),
+            s.refused_before.load(),
+            acc,
+            s.sum_disp.load(),
+            s.max_disp.load(),
+            acc > 0 ? s.sum_disp.load() / acc : 0.);
+    }
+
+    // IS THE WALL STILL TRACKED? A face is containment-checked only if it carries
+    // m_is_surface_fs -- get_surface_faces_for_vertex() filters on it -- so if the children of a
+    // split wall face do not inherit the flag, the check has nothing to test and passes for a
+    // vertex that has drifted anywhere at all. Counted rather than reasoned about: at init the
+    // envelope holds 578 faces of which 268 are wall, and if the wall count fails to grow with
+    // the mesh while the wall vertex count does, propagation is the gap.
+    {
+        // A COMMON wall face, not merely three vertices that each touch the box. Near a box edge
+        // or corner the three vertices can sit on different walls while the triangle spans the
+        // interior, and such a face is correctly untracked; only a face whose three vertices
+        // SHARE a wall index actually lies in that wall and must be contained.
+        size_t n_tracked = 0, n_in_wall = 0, n_in_wall_untracked = 0;
+        for (const Tuple& f : get_faces()) {
+            const auto vs = get_face_vids(f);
+            const auto shared = wmtk::set_intersection(
+                wmtk::set_intersection(
+                    m_vertex_attribute[vs[0]].on_bbox_faces,
+                    m_vertex_attribute[vs[1]].on_bbox_faces),
+                m_vertex_attribute[vs[2]].on_bbox_faces);
+            const bool tracked = m_face_attribute[f.fid(*this)].m_is_surface_fs;
+            if (tracked) ++n_tracked;
+            if (!shared.empty()) {
+                ++n_in_wall;
+                if (!tracked) ++n_in_wall_untracked;
+            }
+        }
+        logger().warn(
+            "[move {}] tracked faces {} | faces lying IN a wall {}, of those NOT tracked {}{}",
+            when,
+            n_tracked,
+            n_in_wall,
+            n_in_wall_untracked,
+            n_in_wall_untracked > 0 ? "  <-- UNCONTAINED" : "");
+    }
+
+    // THE BOUNDING BOX, CHECKED POSITIONALLY rather than inferred from the accept counter.
+    //
+    // on_bbox_faces holds face indices k*2 (the min side of axis k) and k*2+1 (the max side),
+    // and a vertex on such a face was placed by exact equality against box_min[k]/box_max[k].
+    // So the invariant is exact: coordinate k must still equal that bound, bit for bit. This
+    // needs no snapshot and survives consolidation, which is why it is the check rather than a
+    // remembered set of positions.
+    if (m_offset_params.box_min.size() < 3 || m_offset_params.box_max.size() < 3) {
+        logger().warn("[move {}] bbox invariant: not checked (box_min/box_max unset)", when);
+        return;
+    }
+    double worst_dev = 0.;
+    size_t n_bbox_v = 0, n_moved = 0, worst_vid = size_t(-1);
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const auto& faces = m_vertex_attribute[vid].on_bbox_faces;
+        if (faces.empty()) continue;
+        ++n_bbox_v;
+        bool moved = false;
+        for (const int f : faces) {
+            const int k = f / 2;
+            const double want =
+                (f % 2 == 0) ? m_offset_params.box_min[k] : m_offset_params.box_max[k];
+            const double dev = std::abs(m_vertex_attribute[vid].m_posf[k] - want);
+            if (dev > 0.) moved = true;
+            if (dev > worst_dev) {
+                worst_dev = dev;
+                worst_vid = vid;
+            }
+        }
+        if (moved) ++n_moved;
+    }
+    // WHICH vertex, and what the containment check sees when it looks at it. If it carries no
+    // tracked faces the check has nothing to test; if it does, and they are inside, then the
+    // envelope is not the constraint I think it is.
+    if (worst_vid != size_t(-1)) {
+        size_t n_f = 0, n_out = 0;
+        for (const simplex::Face& f : get_surface_faces_for_vertex(worst_vid).faces()) {
+            ++n_f;
+            const auto& vs = f.vertices();
+            if (surface_triangle_is_outside(vs[0], vs[1], vs[2])) ++n_out;
+        }
+        const auto& bf = m_vertex_attribute[worst_vid].on_bbox_faces;
+        logger().warn(
+            "[move {}] worst wall vertex {} at ({:.6g}, {:.6g}, {:.6g}) | on_bbox_faces {} | "
+            "m_is_on_surface {} on_input {} on_offset {} | tracked faces at it {} of which "
+            "OUTSIDE the envelope {}",
+            when,
+            worst_vid,
+            m_vertex_attribute[worst_vid].m_posf[0],
+            m_vertex_attribute[worst_vid].m_posf[1],
+            m_vertex_attribute[worst_vid].m_posf[2],
+            bf.size(),
+            m_vertex_attribute[worst_vid].m_is_on_surface,
+            m_vertex_extra[worst_vid].m_is_on_input,
+            m_vertex_extra[worst_vid].m_is_on_offset,
+            n_f,
+            n_out);
+    }
+    // THE BAR IS THE ENVELOPE, NOT ZERO. This check was written while the wall was frozen, when
+    // any deviation at all was a defect. The wall is now contained rather than pinned, so
+    // drifting within eps is the design and only exceeding it is a violation.
+    logger().warn(
+        "[move {}] bbox invariant: {} vertices on the box, {} off their face, worst deviation "
+        "{:.6g} (envelope eps {:.6g}){}",
+        when,
+        n_bbox_v,
+        n_moved,
+        worst_dev,
+        m_envelope_eps,
+        worst_dev > m_envelope_eps ? "  <-- VIOLATED: outside the envelope" : "");
+}
+
+void TopoOffsetTetMesh::log_quality_spike(size_t tid, double before, double after, const char* kind)
+    const
+{
+    const int n = (std::string_view(kind) == "genesis") ? ++m_spike_genesis : m_spike_count.load();
+    if (m_spike_dumps.load() >= m_spike_dump_budget) return;
+    ++m_spike_dumps;
+
+    const auto vids = oriented_tet_vids(tid);
+    std::array<Vector3d, 4> p;
+    for (int i = 0; i < 4; ++i) p[i] = m_vertex_attribute[vids[i]].m_posf;
+    const double vol = (p[1] - p[0]).cross(p[2] - p[0]).dot(p[3] - p[0]) / 6.;
+
+    // The scale the volume has to be judged against: a tet of edge L has volume ~L^3/8.5, so
+    // vol/L_max^3 near zero is a sliver and a sane ratio with an absurd AMIPS means the blow-up
+    // is in the coordinates, not the shape.
+    double l_max = 0., l_min = std::numeric_limits<double>::max();
+    static constexpr int E[6][2] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
+    for (const auto& e : E) {
+        const double l = (p[e[0]] - p[e[1]]).norm();
+        l_max = std::max(l_max, l);
+        l_min = std::min(l_min, l);
+    }
+
+    int n_unrounded = 0;
+    for (int i = 0; i < 4; ++i) n_unrounded += m_vertex_attribute[vids[i]].m_is_rounded ? 0 : 1;
+
+    logger().warn(
+        "[spike {} #{}] tid {} | AMIPS {:.6g} -> {:.6g} | volume {:.6e} | l_min {:.6g} l_max "
+        "{:.6g} (l_min/l_max {:.3e}, vol/l_max^3 {:.3e}) | {} of 4 vertices UNROUNDED | label {}",
+        kind,
+        n,
+        tid,
+        std::isfinite(before) ? std::cbrt(before) : before,
+        std::isfinite(after) ? std::cbrt(after) : after,
+        vol,
+        l_min,
+        l_max,
+        l_max > 0 ? l_min / l_max : 0.,
+        l_max > 0 ? vol / (l_max * l_max * l_max) : 0.,
+        n_unrounded,
+        m_tet_attribute[tid].label);
+    for (int i = 0; i < 4; ++i) {
+        const size_t v = vids[i];
+        logger().warn(
+            "\t  v{} id {} ({:.6g}, {:.6g}, {:.6g}) | rounded {} | on_input {} on_offset {} | "
+            "sizing {:.6g}",
+            i,
+            v,
+            p[i][0],
+            p[i][1],
+            p[i][2],
+            m_vertex_attribute[v].m_is_rounded,
+            m_vertex_extra[v].m_is_on_input,
+            m_vertex_extra[v].m_is_on_offset,
+            m_vertex_attribute[v].m_sizing_scalar);
+    }
+}
+
+void TopoOffsetTetMesh::log_worst_tet(const char* when) const
+{
+    // Cumulative spike count, so each stall line says how many tets crossed into absurd since the
+    // run began. See log_quality_spike().
+    logger().warn(
+        "[spikes {}] {} quality writes above AMIPS {:.6g} | {} GENESIS events (ordinary <{:.6g} "
+        "ruined by one operation) | record AMIPS {:.6g} | {} dumped",
+        when,
+        m_spike_count.load(),
+        m_spike_threshold,
+        m_spike_genesis.load(),
+        m_spike_ordinary,
+        m_spike_record,
+        m_spike_dumps.load());
+
+    log_vertex_movement(when);
+    log_input_envelope_trace(when);
+
+    size_t worst = static_cast<size_t>(-1);
+    double worst_q = -1.;
+    size_t n_over_stop = 0, n_live = 0;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        const double q = std::cbrt(cell_quality(tid));
+        ++n_live;
+        if (q > m_params.stop_energy) ++n_over_stop;
+        if (q > worst_q) {
+            worst_q = q;
+            worst = tid;
+        }
+    }
+    if (worst == static_cast<size_t>(-1)) return;
+
+    const auto vids = oriented_tet_vids(worst);
+    std::array<Vector3d, 4> p;
+    for (int i = 0; i < 4; ++i) p[i] = m_vertex_attribute[vids[i]].m_posf;
+    const double vol = (p[1] - p[0]).cross(p[2] - p[0]).dot(p[3] - p[0]) / 6.;
+
+    // How many of the four the optimizer is allowed to touch at all. If this is 0 the tet is
+    // unfixable by construction and no amount of iterating will change it.
+    int n_frozen = 0;
+    for (int i = 0; i < 4; ++i) n_frozen += vertex_is_frozen(vids[i]) ? 1 : 0;
+
+    logger().warn(
+        "[worst-tet {}] tid {} | cbrt(quality) {:.6} vs stop_energy {} | {} of {} tets over stop "
+        "| volume {:.6e}{} | label {} | {} of 4 vertices frozen",
+        when,
+        worst,
+        worst_q,
+        m_params.stop_energy,
+        n_over_stop,
+        n_live,
+        vol,
+        is_inverted(tuple_from_tet(worst)) ? " INVERTED" : "",
+        m_tet_attribute[worst].label,
+        n_frozen);
+
+    for (int i = 0; i < 4; ++i) {
+        const size_t v = vids[i];
+        const auto& va = m_vertex_attribute[v];
+        const auto& ve = m_vertex_extra[v];
+        logger().warn(
+            "\t  v{} id {} ({:.4}, {:.4}, {:.4}) | on_input {} on_offset {} on_bbox {} rounded {} "
+            "| order {} sizing {:.4} | FROZEN {} | valence {}",
+            i,
+            v,
+            p[i][0],
+            p[i][1],
+            p[i][2],
+            ve.m_is_on_input,
+            ve.m_is_on_offset,
+            va.on_bbox_faces.size(),
+            va.m_is_rounded,
+            va.m_order,
+            va.m_sizing_scalar,
+            vertex_is_frozen(v),
+            get_one_ring_tids_for_vertex(tuple_from_vertex(v)).size());
+    }
+
+    // The six edges against the two length gates. `split?` yes means the split pass would take
+    // this edge as a candidate; `coarsen-gate` yes means the bounded coarsening pass would still
+    // consider it (it refuses len^2 > collapsing_l2 when coarsen_unbounded is off).
+    static constexpr int E[6][2] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
+    for (const auto& e : E) {
+        const size_t a = vids[e[0]], b = vids[e[1]];
+        const double len2 = (p[e[0]] - p[e[1]]).squaredNorm();
+        const double sbar =
+            0.5 * (m_vertex_attribute[a].m_sizing_scalar + m_vertex_attribute[b].m_sizing_scalar);
+        logger().warn(
+            "\t  e({},{}) len {:.5} | split? {} (needs >= {:.5}) | coarsen-gate? {} (needs <= "
+            "{:.5}) | both-frozen {}",
+            e[0],
+            e[1],
+            std::sqrt(len2),
+            len2 >= m_params.splitting_l2 * sbar * sbar,
+            std::sqrt(m_params.splitting_l2) * sbar,
+            len2 <= m_params.collapsing_l2,
+            std::sqrt(m_params.collapsing_l2),
+            vertex_is_frozen(a) && vertex_is_frozen(b));
+    }
 }
 
 void TopoOffsetTetMesh::log_worst_dist_vertex() const

@@ -18,20 +18,30 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         const bool dbg_on_offset = is_edge_on_offset(t);
         if (dbg_on_offset) ++iter_cnt_split_offset_before;
-        // ONLY THE BOUNDING BOX IS FROZEN AGAINST SPLITS. The input complex used to be too, on
-        // the grounds that splitting one of its edges changes the simplex set and puts the
-        // midpoint off a curved surface. Refining it is not moving it: the midpoint is checked
-        // against m_envelope like any other input-complex geometry (surface_envelope_for_face
-        // returns it for a face all of whose vertices are on the input), so a split that would
-        // take the surface off itself is refused there rather than forbidden here -- while the
-        // refinement the offset needs near the complex is allowed through.
+        // NOTHING IS FROZEN AGAINST SPLITS ANY MORE. The input complex stopped being, on the
+        // grounds that refining a surface is not moving it: the midpoint is checked against
+        // m_envelope like any other tracked geometry (surface_envelope_for_face returns it for a
+        // face all of whose vertices are on a region boundary), so a split that would take the
+        // surface off itself is refused there rather than forbidden here.
+        //
+        // THE BOUNDING BOX now goes the same way, and for the same reason. It was refused here,
+        // and the argument against that is measured: a tet resting on the wall has its longest
+        // edge IN the wall, so refusing to split that edge left every legal operation working on
+        // the other five -- each of which halves the volume while leaving the worst dimension
+        // exactly as it was. On specific_models/prism the splits produced midpoints at
+        // -4.77666, -4.77899, -4.78015, -4.78074, -4.78103, -4.78117 against a wall at
+        // -4.78132: each one half the distance of the last, an unbounded bisection cascade onto
+        // the plane, taking AMIPS from 230 to 5243 inside a single pass and to 6.9e21 over the
+        // run. The wall being unsplittable is what made the cascade the only thing available.
+        //
+        // The wall is now a region boundary like any other (init_surfaces_and_boundaries no
+        // longer skips the faces with no opposite tet), so the envelope is what holds it, and
+        // the midpoint of a wall edge stays a wall vertex: split_edge_after intersects the two
+        // endpoints' on_bbox_faces, and for two vertices on the same wall face that intersection
+        // is that face.
         //
         // Only the Optimization mode is guarded at all: the marching path below is how the
         // offset is CONSTRUCTED, and it has to be able to cut through anything.
-        if (is_edge_on_bbox(t)) {
-            if (dbg_on_offset) ++iter_cnt_split_offset_frozen;
-            return false;
-        }
         if (!TetOptimizerMesh::split_edge_before(t)) {
             if (dbg_on_offset) ++iter_cnt_split_offset_base_reject;
             return false;
@@ -205,6 +215,21 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         m_vertex_attribute[v1_id].on_bbox_faces,
         m_vertex_attribute[v2_id].on_bbox_faces);
+    // ON_BBOX_FACES IS WRITTEN AFTER the base set m_is_on_surface from cache.is_edge_on_surface,
+    // so a midpoint landing on the domain wall can arrive here unflagged. Re-derive it once both
+    // halves of vertex_is_on_region() are known: every containment check is gated on this flag.
+    //
+    // NECESSARY BUT NOT SUFFICIENT, and measured as such -- adding this line changed nothing at
+    // all (13708 faces outside, 100 of 429 wall vertices off their face, worst deviation 5.885
+    // against an envelope half-width of 0.0837, bit-identical before and after). The containment
+    // check walks get_surface_faces_for_vertex(), which returns only faces carrying
+    // m_is_surface_fs, and the wall faces a split creates do not inherit it -- so there is
+    // nothing for the check to test and it passes vacuously. Propagating m_is_surface_fs to the
+    // children of a split wall face is the remaining half; see the note in
+    // init_surfaces_and_boundaries().
+    if (vertex_is_on_region(v_id)) {
+        m_vertex_attribute[v_id].m_is_on_surface = true;
+    }
 
     // split edges attribute
     size_t split_e1_id = tuple_from_edge({{v1_id, v_id}}).eid(*this);

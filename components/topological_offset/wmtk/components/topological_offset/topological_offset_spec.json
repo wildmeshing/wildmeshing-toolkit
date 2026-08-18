@@ -357,8 +357,8 @@
     {
         "pointer": "/coarsen_pass",
         "type": "bool",
-        "default": true,
-        "doc": "Run the post-optimization coarsening pass, as TriWild and TetWild do. It trades elements for nothing but the guarantee that the result is still good, so topological_offset holds it to an ABSOLUTE bar -- both AMIPS and the offset residual must be inside tolerance after each collapse -- rather than the non-degrading bar the main loop uses."
+        "default": false,
+        "doc": "Run the post-optimization coarsening pass, as TriWild and TetWild do. It trades elements for nothing but the guarantee that the result is still good, so topological_offset holds it to an ABSOLUTE bar -- both AMIPS and the offset residual must be inside tolerance after each collapse -- rather than the non-degrading bar the main loop uses. OFF by default, matching wmtk::OptimizerParameters: the pass was measured at 86-96% of total runtime across seven tetwild models, and for the offset it is the last thing to run before Phase A checks its own convergence, so anything it degrades is reported as a Phase A failure rather than as a coarsening one. Turn it on per model when the element count is worth the time."
     },
     {
         "pointer": "/coarsen_unbounded",
@@ -387,8 +387,8 @@
     {
         "pointer": "/coarsen_local_smoothing_passes",
         "type": "int",
-        "default": 2,
-        "doc": "Smoothing sweeps over the ring inside each candidate coarsening collapse, before its max energy is measured. This is what gives the collapse a chance to be judged on a relaxed neighbourhood rather than on the configuration it lands in."
+        "default": 0,
+        "doc": "Smoothing sweeps over the ring inside each candidate coarsening collapse, before its max energy is measured. This is what gives the collapse a chance to be judged on a relaxed neighbourhood rather than on the configuration it lands in. 0 by default, matching wmtk::OptimizerParameters: measured upstream, the ball averaged 98 vertices, so at two sweeps one candidate ran ~200 nonlinear solves and the pass ran 1.4 million of them to accept 5173 collapses -- and turning it off cost 0.2pp of cell reduction, inside the run-to-run spread, because the pass runs to a fixed point and finds another candidate instead. Note that with this at 0 the ONLY relaxation the pass does is the global smoothing between rounds, which has no per-operation accept test of its own -- see the forced quality veto in TetOptimizerMesh::coarsen_mesh()."
     },
     {
         "pointer": "/stuck_refine_stall_eps",

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include <wmtk/TetMesh.h>
 #include <wmtk/TetOptimizerMesh.h>
 #include <wmtk/envelope/Envelope.hpp>
@@ -234,6 +236,67 @@ public:
      */
     std::shared_ptr<SampleEnvelope> m_input_complex_envelope;
 
+    /**
+     * @brief The input complex's OWN containment envelopes, one per stratum. Both phases.
+     *
+     * TWO of them because a SampleEnvelope is one kind or the other and never both: init() with
+     * triangles builds Kind::Triangles3d, init() with segments builds Kind::Edges3d, and
+     * is_outside(triangle) throws against the wrong one (require_exact_kind). The input complex is
+     * an arbitrary closed simplicial complex, so it has geometry in both dimensions at once and
+     * one envelope cannot hold it. Hence the pair, dispatched per simplex.
+     *
+     *   m_input_tri_env  Phi's triangles (m_phi_F): the boundary faces of the complex's tet
+     *                    region plus its isolated triangles. Null when the complex has none --
+     *                    a wire or a point cloud -- and every triangle query then falls through.
+     *   m_input_seg_env  Phi's edges (m_phi_E) AND its isolated points (m_phi_P), the latter as
+     *                    the degenerate segment (i, i). fast-envelope handles that explicitly:
+     *                    halfspace_generation() tests AB == 0 and emits an axis-aligned cube of
+     *                    half-width eps/sqrt(3) centred on the point instead of a hexahedron
+     *                    around a direction it cannot normalise. SimpleBVH's
+     *                    point_segment_squared_distance guards l2 == 0 the same way, so the
+     *                    sampled path and nearest_point() agree with it.
+     *
+     * WHY THESE ARE NOT m_envelope. m_envelope is built from the mesh's region-boundary faces as
+     * they stand AT CONSTRUCTION -- after marching tets and simplicial embedding have
+     * re-triangulated the input. These are built from m_phi_*, the input AS LOADED, which is the
+     * geometry m_input_complex_bvh and m_offset_potential measure against. Containing the input
+     * complex within a tube around the input itself is the constraint the algorithm actually
+     * needs; containing it within a tube around its own current mesh representation is not.
+     *
+     * INTERIOR VERTICES OF THE COMPLEX ARE NOT HELD BY THESE. Phi is the complex's BOUNDARY --
+     * a face interior to the complex's tet region has two incident complex tets and is dropped by
+     * the boundary_count filter in init_input_complex_bvh(). A tet-filled complex's interior
+     * vertices are therefore unconstrained, which is what lets the mesh inside it be optimised.
+     */
+    std::shared_ptr<SampleEnvelope> m_input_tri_env;
+    std::shared_ptr<SampleEnvelope> m_input_seg_env;
+
+    /// Half-width of both envelopes above. Same knob as m_envelope_eps: the tolerance the input
+    /// surface may drift within, which is what TetWild gives its own input surface.
+    double m_input_envelope_eps = -1;
+
+    /**
+     * @brief Whether Phi has geometry BELOW its triangles -- isolated wires or isolated points.
+     *
+     * The discriminator for whether a per-vertex stratum test is needed at all. When Phi's only
+     * edges are the edges of its triangles, every complex vertex is on the 2-stratum and
+     * m_input_tri_env is the right answer for all of them; asking which stratum a vertex is on
+     * would cost a one-ring walk per smoothing attempt to always get the same answer. A complex
+     * WITH wires or points has vertices the triangle envelope would pull to the wrong place, and
+     * vertices no tracked triangle covers at all, so there the walk earns its cost.
+     *
+     * Set from the extraction's own isolated-edge and isolated-vertex counts, which
+     * init_input_complex_bvh() computes exactly (an edge is isolated iff it is in no face's or
+     * tet's closure).
+     */
+    bool m_input_has_lower_strata = false;
+
+    /// DIAGNOSTIC: how many times each envelope answered, and how many input-complex containment
+    /// checks refused a move. Logged per phase; see log_input_envelope_trace().
+    mutable std::atomic<size_t> m_input_env_tri_hits{0};
+    mutable std::atomic<size_t> m_input_env_seg_hits{0};
+    mutable std::atomic<size_t> m_input_env_point_refusals{0};
+
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
     // tag map stuff
@@ -367,8 +430,71 @@ public:
     double cell_quality(const size_t tid) const override { return m_tet_attribute[tid].m_quality; }
     void set_cell_quality(const size_t tid, const double q) override
     {
+        // SPIKE TRACKER. Every operation that writes a quality comes through here -- split, the
+        // two collapse paths, all four swap paths, and smoothing -- so this is the one place that
+        // sees a tet cross from ordinary into absurd. The passes log their own "==splitting 0=="
+        // banners, so the spike's POSITION in the log names the operation with no plumbing.
+        //
+        // What it exists to explain: on specific_models/prism the max AMIPS jumps to ~1e16 during
+        // the split pass and then to ~1e21 during the smoothing that follows, every iteration,
+        // while the collapse pass afterwards returns it to ~1e3. avg goes to 5.7e12, so it is
+        // thousands of tets, not one. Only the crossing is reported (was below, now above), and
+        // only the first few in full, or the flood would be the whole log.
+        if (m_spike_track) {
+            const double before = m_tet_attribute[tid].m_quality;
+            const double a = spike_amips(q), b = spike_amips(before);
+            // TWO EVENTS, because the first cut at this logged neither of the ones that matter.
+            //
+            // Logging every crossing of a fixed bar spent the whole budget on the MILDEST tets --
+            // measured, ten dumps all with `before` already at 7e4-1e5 while the pass max was
+            // 4.6e16, so the extremes were never seen and nothing said where they came from.
+            //
+            // GENESIS: an ordinary tet ruined by ONE operation. This is the causal event.
+            // RECORD:  a new global maximum, so the sequence of dumps ends at the true worst
+            //          and the output stays bounded (records only increase).
+            if (b < m_spike_ordinary && a > m_spike_threshold) {
+                log_quality_spike(tid, before, q, "genesis");
+            }
+            if (a > m_spike_record) {
+                m_spike_record = a;
+                log_quality_spike(tid, before, q, "record");
+            }
+            if (a > m_spike_threshold) ++m_spike_count;
+        }
         m_tet_attribute[tid].m_quality = q;
     }
+
+    /// cell_quality is AMIPS^3; everything else reports its cube root, so convert once here.
+    /// A non-finite quality is worse than any finite one, not silently zero.
+    static double spike_amips(const double q)
+    {
+        return std::isfinite(q) ? std::cbrt(q) : std::numeric_limits<double>::infinity();
+    }
+
+    /**
+     * @brief Report one tet crossing into absurd quality: its geometry, and why it is degenerate.
+     *
+     * Prints the four vertices with the two things that distinguish the plausible causes -- a
+     * rounded/unrounded split (an unrounded vertex is exact-rational, and its float image can
+     * make a perfectly valid tet look degenerate in doubles, which is why is_inverted_f and
+     * is_inverted are separate predicates) and the tet's float volume against its edge lengths,
+     * which separates a genuine sliver from a coordinate blow-up.
+     */
+    void log_quality_spike(size_t tid, double before, double after, const char* kind) const;
+
+    /// Diagnostic: whether set_cell_quality reports tets crossing into absurd quality.
+    bool m_spike_track = true;
+    /// AMIPS above which a tet counts as absurd rather than merely bad.
+    double m_spike_threshold = 1e5;
+    /// AMIPS below which a tet counts as ORDINARY, so ordinary -> absurd is one operation's doing.
+    /// stop_energy is 10 and the mesh average sits at 11-14, so 100 is comfortably "fine".
+    double m_spike_ordinary = 100.;
+    /// Largest AMIPS seen so far; a new maximum is logged, which bounds the output.
+    mutable double m_spike_record = 0.;
+    mutable std::atomic<int> m_spike_dumps{0};
+    mutable std::atomic<int> m_spike_count{0};
+    mutable std::atomic<int> m_spike_genesis{0};
+    int m_spike_dump_budget = 24;
 
     /**
      * @brief Only the input complex is envelope-constrained.
@@ -379,17 +505,66 @@ public:
      * from the vertices rather than the face's own class because the shared operations ask
      * about triangles they are creating, whose attributes are not written yet.
      */
+    /**
+     * @brief Is this vertex on a region boundary -- a tag boundary, or the domain wall.
+     *
+     * DERIVED, not stored. The two halves are already maintained exactly by the existing
+     * machinery: m_is_on_input by is_edge_on_input() at each split and an OR at each collapse,
+     * on_bbox_faces by set_intersection of the split endpoints and by the collapse rule that a
+     * wall vertex may only merge into one at least as constrained. A stored third flag would be
+     * a fourth thing to keep in step with those, for no information they do not already carry.
+     */
+    bool vertex_is_on_region(const size_t vid) const
+    {
+        return m_vertex_extra[vid].m_is_on_input || !m_vertex_attribute[vid].on_bbox_faces.empty();
+    }
+
+    /**
+     * @brief Is this vertex INPUT-COMPLEX geometry, as opposed to merely region geometry.
+     *
+     * m_is_on_input is the live flag for it: init_surfaces_and_boundaries() sets it on every
+     * two-sided region boundary, is_edge_on_input() propagates it at each split and collapse ORs
+     * it onto the survivor. On a model whose complex bounds a tag region -- prism -- that set and
+     * the region-boundary set coincide exactly; they part company on a complex with isolated
+     * triangles, wires or points, which bound no region at all.
+     *
+     * NOT on the wall. A vertex on the bounding box is region geometry whatever else it carries,
+     * and routing it to an input envelope it is nowhere near would refuse every operation on it --
+     * which is precisely the degeneracy trap that freezing the wall used to manufacture. The flag
+     * is documented as over-broad (see check_no_vertex_on_both_surfaces: a split propagates it and
+     * a collapse ORs it, so a vertex can carry it while sitting a full target_distance away), and
+     * this is the cheap half of guarding against that -- no BVH query, just the wall test the
+     * dispatch already has to make.
+     */
+    bool vertex_is_input_geometry(const size_t vid) const
+    {
+        return m_vertex_extra[vid].m_is_on_input && m_vertex_attribute[vid].on_bbox_faces.empty();
+    }
+
     std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const override
     {
-        bool all_input = true, all_offset = true;
+        bool all_region = true, all_offset = true, all_input = true;
         for (const size_t v : vids) {
-            all_input = all_input && m_vertex_extra[v].m_is_on_input;
+            all_region = all_region && vertex_is_on_region(v);
             all_offset = all_offset && m_vertex_extra[v].m_is_on_offset;
+            all_input = all_input && vertex_is_input_geometry(v);
         }
-        // The input complex first: a face on BOTH surfaces carries input geometry, which may not
-        // drift at all, so its envelope wins over the offset's looser one.
-        if (all_input) return m_envelope;
+        // THE INPUT COMPLEX FIRST, in BOTH phases, because its envelope is the tighter statement
+        // of the same constraint. m_envelope is a tube around the region boundary AS THE MESH
+        // CONSTRUCTED IT; m_input_tri_env is a tube around the input as loaded, which is the
+        // geometry m_offset_potential measures the offset against. Where the two coincide -- a
+        // complex that bounds a tag region -- this moves the check from the second to the first,
+        // and the difference is whatever marching tets and simplicial embedding did to the input.
+        if (all_input && m_input_tri_env) {
+            ++m_input_env_tri_hits;
+            return m_input_tri_env;
+        }
+        // Region boundaries next, in BOTH phases: a face on both this and the offset carries
+        // region geometry, which may not drift, so its envelope wins over the offset's looser
+        // one. m_envelope holds every tag boundary AND the domain wall -- one envelope for the
+        // whole partition, which is what makes the wall refinable instead of frozen.
+        if (all_region) return m_envelope;
         // Phase A holds the offset where Phase B left it; Phase B is what moves it, so it is
         // unconstrained there. Null when there is no offset envelope yet -- the construction
         // phase runs before the first one is built.
@@ -422,11 +597,45 @@ public:
      */
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
     {
-        if (m_vertex_extra[vid].m_is_on_offset && !m_vertex_extra[vid].m_is_on_input) {
+        if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return nullptr;
         }
+        if (const auto env = input_complex_envelope_for_vertex(vid)) return env;
         return m_envelope;
     }
+
+    /**
+     * @brief Which of the input complex's two envelopes holds THIS vertex, or null.
+     *
+     * The per-simplex dispatch, for the PULL. nearest_point() is a BVH query and answers against
+     * either kind, so the choice here is not about what the envelope can do -- it is about which
+     * stratum of Phi the vertex actually belongs to. Pulling a wire vertex onto the nearest
+     * TRIANGLE would drag it off its wire and toward geometry it was never on; pulling a
+     * triangle-interior vertex onto the nearest SEGMENT would drag it to the triangle's rim,
+     * since Phi is closed and every triangle edge is in m_phi_E.
+     *
+     * The stratum test costs a one-ring walk, so it only runs when Phi HAS a lower stratum for
+     * the vertex to be on. With no wires and no isolated points every complex vertex is on a
+     * triangle and the walk would always return the same answer -- see m_input_has_lower_strata.
+     */
+    std::shared_ptr<SampleEnvelope> input_complex_envelope_for_vertex(const size_t vid) const
+    {
+        if (!vertex_is_input_geometry(vid)) return nullptr;
+        if (!m_input_has_lower_strata) {
+            if (m_input_tri_env) ++m_input_env_tri_hits;
+            return m_input_tri_env;
+        }
+        if (m_input_tri_env && vertex_has_tracked_input_face(vid)) {
+            ++m_input_env_tri_hits;
+            return m_input_tri_env;
+        }
+        if (m_input_seg_env) ++m_input_env_seg_hits;
+        return m_input_seg_env;
+    }
+
+    /// Whether any tracked surface face at `vid` is input-complex geometry, i.e. whether this
+    /// vertex is on Phi's 2-stratum. Defined out of line: it needs get_surface_faces_for_vertex().
+    bool vertex_has_tracked_input_face(const size_t vid) const;
 
     /**
      * @brief ... and it is not CONTAINED by one either.
@@ -435,9 +644,16 @@ public:
      * set on, and here that flag covers both tracked surfaces. m_envelope is built from the
      * INPUT complex's boundary, so answering it for an offset-surface vertex would require the
      * offset to stay within eps of the input -- a tube of the wrong radius around the wrong
-     * surface, which would refuse every move the offset term asks for. The input complex keeps
-     * the envelope (its vertices are frozen anyway, so this only ever answers for a vertex on
-     * both surfaces at once).
+     * surface, which would refuse every move the offset term asks for.
+     *
+     * The INPUT COMPLEX falls through to the base and is contained by m_envelope, in every
+     * phase. That is the whole constraint on it: it is smoothed like any other TetWild surface
+     * vertex (see smooth_before()) and this tube is the tolerance it may drift within. An
+     * earlier version of this comment said its vertices were "frozen anyway, so this only ever
+     * answers for a vertex on both surfaces at once" -- both halves are now wrong. Freezing was
+     * the pre-refactor behaviour and is gone, so this answers for EVERY input-complex vertex;
+     * and a vertex on both surfaces at once is a construction defect that
+     * check_no_vertex_on_both_surfaces() throws on, so that is the one case it never answers for.
      *
      * ... except in PHASE A, where it is contained by m_offset_envelope like any other tracked
      * surface. Phase A is TetWild and its smoothing minimises AMIPS alone; without a container
@@ -447,10 +663,21 @@ public:
      */
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
     {
-        if (m_vertex_extra[vid].m_is_on_offset && !m_vertex_extra[vid].m_is_on_input) {
+        if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return m_phase == OptPhase::A ? m_offset_envelope : nullptr;
         }
-        return wmtk::TetOptimizerMesh::smoothing_containment_envelope(vid);
+        // THE INPUT COMPLEX IS CONTAINED IN ITS OWN ENVELOPE, in both phases, for the same reason
+        // it is in surface_envelope_for_face(): the tube that matters is the one around the input
+        // as loaded. m_input_tri_env and not the pair, because what the caller does with this is
+        // is_outside(triangle) over the vertex's tracked faces, and only a Triangles3d envelope
+        // answers that -- a segment envelope throws (require_exact_kind). The 1- and 0-strata are
+        // held instead by the POINT query in smooth_after(), which both kinds answer; a vertex on
+        // a wire has no tracked triangle for this loop to test anyway.
+        if (vertex_is_input_geometry(vid) && m_input_tri_env) return m_input_tri_env;
+        // Region boundaries, the domain wall among them, are contained in BOTH phases: Phase B
+        // frees the offset surface because that is the surface it exists to move, and the
+        // partition is not it.
+        return m_envelope;
     }
 
     /**
@@ -756,11 +983,24 @@ public:
      * itself, while 3D tracks the box on FACES, so the edge test goes through the base's
      * is_edge_on_bbox(), which walks the edge's incident faces. Both are therefore non-const.
      */
-    bool vertex_is_frozen(const size_t vid) const
-    {
-        return m_vertex_extra[vid].m_is_on_input || !m_vertex_attribute[vid].on_bbox_faces.empty();
-    }
-    bool edge_is_frozen(const Tuple& loc) { return is_edge_on_input(loc) || is_edge_on_bbox(loc); }
+    /**
+     * THE DOMAIN WALL IS NO LONGER PART OF THIS. It is a region boundary now, held in m_envelope
+     * with every other one, and containment is the whole constraint on it -- the same contract
+     * the input complex gets from the shared engine, which the paragraph above already describes
+     * as a tolerance rather than a prohibition.
+     *
+     * Freezing it was the third leg of the degeneracy trap measured on prism (the other two,
+     * both lifted: no split of a wall edge, no smoothing of a wall vertex). With collapse
+     * refused as well, a wafer tet resting on the wall had NO legal repair at all -- every
+     * remaining operation halved its volume while leaving its longest edge, which lies in the
+     * wall, exactly as it was.
+     *
+     * The wall does not thereby become collapsible to nothing: TetOptimizerMeshCollapse still
+     * requires a wall vertex to merge into one carrying at least as many bbox faces, so a corner
+     * cannot dissolve into a face and the box keeps its shape.
+     */
+    bool vertex_is_frozen(const size_t vid) const { return m_vertex_extra[vid].m_is_on_input; }
+    bool edge_is_frozen(const Tuple& loc) { return is_edge_on_input(loc); }
 
     /**
      * @brief check that the ambient tag does not overlap with any other tags
@@ -803,6 +1043,19 @@ public:
     MatrixXi m_phi_E;
     MatrixXi m_phi_F;
     std::vector<int> m_phi_P;
+
+    /**
+     * @brief Build m_input_tri_env and m_input_seg_env from the extraction above.
+     *
+     * Called at the end of init_input_complex_bvh(), from the same m_phi_* it has just filled, so
+     * the containment envelopes describe the same geometry as the distance field and the
+     * potential. `n_isolated_edges` and `n_isolated_points` come from that extraction's own
+     * counts and set m_input_has_lower_strata.
+     */
+    void init_input_complex_envelopes(int n_isolated_edges, int n_isolated_points);
+
+    /// Log the per-phase input-envelope counters and reset them. See m_input_env_tri_hits.
+    void log_input_envelope_trace(const char* when) const;
 
 
     /**
@@ -888,6 +1141,116 @@ public:
 
     void log_smooth_trace() const;
 
+    /**
+     * @brief Which of four DISJOINT classes a vertex is accounted to when measuring movement.
+     *
+     * Bbox first, deliberately: a vertex may be on the bounding box AND on a tracked surface
+     * (the offset region can reach the domain wall), and the bbox freeze in smooth_before()
+     * overrides everything else, so for "does it actually move" it is the bbox that decides.
+     * Offset before input for the same reason -- a vertex on both is a construction defect
+     * check_no_vertex_on_both_surfaces() throws on, so the order there is academic.
+     */
+    enum class VClass { Bbox = 0, Offset = 1, Input = 2, Interior = 3, Count = 4 };
+
+    VClass vertex_class(const size_t vid) const
+    {
+        if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return VClass::Bbox;
+        if (m_vertex_extra[vid].m_is_on_offset) return VClass::Offset;
+        if (m_vertex_extra[vid].m_is_on_input) return VClass::Input;
+        return VClass::Interior;
+    }
+
+    static const char* vclass_name(VClass c)
+    {
+        switch (c) {
+        case VClass::Bbox: return "bbox";
+        case VClass::Offset: return "offset";
+        case VClass::Input: return "input";
+        default: return "interior";
+        }
+    }
+
+    /**
+     * @brief How far each class of vertex actually gets during smoothing.
+     *
+     * Attempts and refusals alone cannot answer "is this surface making progress": a class can
+     * be attempted constantly, accepted often, and still be going nowhere in tiny steps, which
+     * reads identically to healthy movement in the accept counters. So displacement is summed
+     * and maximised over ACCEPTED moves only -- the moves that survived every gate and left the
+     * vertex somewhere new. A rejected move is either restored in place (the projected path) or
+     * rolled back by the operation framework, so counting its displacement would measure an
+     * intermediate the mesh never kept.
+     *
+     * Smoothing is the ONLY operation that moves an existing vertex: split inserts new ones,
+     * collapse merges v1 into v2 at v2's position, and swaps only rewire. So `accepted == 0`
+     * for a class is the same statement as "no vertex of this class ever moved".
+     */
+    struct MoveStats
+    {
+        std::atomic<int> attempted{0};
+        std::atomic<int> refused_before{0};
+        std::atomic<int> accepted{0};
+        std::atomic<double> sum_disp{0.};
+        std::atomic<double> max_disp{0.};
+
+        void add(double d)
+        {
+            ++accepted;
+            for (double cur = sum_disp.load(); !sum_disp.compare_exchange_weak(cur, cur + d);) {
+            }
+            for (double cur = max_disp.load();
+                 d > cur && !max_disp.compare_exchange_weak(cur, d);) {
+            }
+        }
+    };
+    mutable std::array<MoveStats, size_t(VClass::Count)> m_move_stats;
+
+    /**
+     * @brief Which of two mechanisms lets a wall vertex end up off its wall.
+     *
+     * (1) STALE FLAGS: on_bbox_faces is inherited or kept by an operation for a vertex that is
+     *     not on that wall -- collapse explicitly does not maintain it, which was safe only
+     *     while wall vertices could not move.
+     * (2) VACUOUS CONTAINMENT: the vertex really is on the wall and smoothing really does move
+     *     it off, because the containment check found no tracked faces at it and so tested
+     *     nothing.
+     *
+     * These are distinguished at the moment of an ACCEPTED smoothing move: record how many
+     * tracked faces the vertex had, and how much off-plane deviation that one move introduced.
+     * Moves that add deviation while the vertex had zero tracked faces are (2); an invariant
+     * violation with no such moves at all is (1).
+     */
+    struct WallMoveStats
+    {
+        std::atomic<int> accepted{0}; ///< accepted smoothing moves on a vertex with wall flags
+        std::atomic<int> accepted_zero_tracked{0}; ///< ... of those, with NO tracked face at it
+        std::atomic<int> added_deviation{0}; ///< ... that increased off-plane deviation
+        std::atomic<int> added_dev_zero_tracked{0}; ///< ... and had no tracked face: mechanism (2)
+        std::atomic<double> max_single_step{0.}; ///< largest off-plane deviation one move added
+
+        void note(bool zero_tracked, double dev_before, double dev_after)
+        {
+            ++accepted;
+            if (zero_tracked) ++accepted_zero_tracked;
+            const double d = dev_after - dev_before;
+            if (d > 0.) {
+                ++added_deviation;
+                if (zero_tracked) ++added_dev_zero_tracked;
+                for (double cur = max_single_step.load();
+                     d > cur && !max_single_step.compare_exchange_weak(cur, d);) {
+                }
+            }
+        }
+    };
+    mutable WallMoveStats m_wall_moves;
+
+    /// How far vid sits from every bounding-box plane it claims membership of. Zero when it is
+    /// where its on_bbox_faces say it is; empty membership gives zero.
+    double wall_offplane_deviation(const size_t vid) const;
+
+    /// Per-class smoothing movement, plus the direct bounding-box invariant check.
+    void log_vertex_movement(const char* when) const;
+
 
     //// smoothing
 
@@ -953,6 +1316,23 @@ public:
     mutable size_t m_worst_dist_vid = static_cast<size_t>(-1);
     void log_worst_dist_vertex() const;
 
+    /**
+     * @brief DIAGNOSTIC: dump the single worst-quality tet and everything that could be pinning
+     * it, so a Phase A that will not converge says WHICH element and WHY rather than only a max.
+     *
+     * Reports, for the max-cbrt(cell_quality) tet: its volume and inversion state, its region
+     * label, and per vertex the flags that decide whether any operation may touch it -- on the
+     * input complex, on the offset surface, on the bounding box, rounded, order, sizing scalar,
+     * and vertex_is_frozen() (which is what collapse_before_vertex() refuses on). Then each of
+     * the six edges against the two length gates, so it is visible whether split or collapse
+     * would even consider them: split needs len^2 >= splitting_l2 * sbar^2, and the coarsening
+     * pass stops at len^2 <= collapsing_l2 unless coarsen_unbounded.
+     *
+     * The point is to separate "no operation is being attempted here" from "operations are
+     * attempted and refused" -- which the aggregate counters cannot distinguish.
+     */
+    void log_worst_tet(const char* when) const;
+
     /// {max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev} per optimization iteration.
     std::vector<std::array<double, 4>> optimization_metrics;
     /// {splits, collapses, swaps} per optimization iteration, mirroring optimization_metrics.
@@ -976,6 +1356,7 @@ public:
     std::atomic<int> iter_cnt_split_offset_tried{0};
     std::atomic<int> iter_cnt_split_offset{0};
     std::atomic<int> iter_cnt_split_offset_reject{0};
+
 
     //// collapse
 

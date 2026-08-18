@@ -9,16 +9,27 @@ namespace wmtk::components::topological_offset {
 bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
 {
     ++m_smooth_trace.attempted;
-    // Read before the base call: the base folds "on the bounding box" and "could not be
-    // rounded to doubles" into one false, and those mean completely different things.
-    const bool on_bbox = !m_vertex_attribute[t.vid(*this)].on_bbox_faces.empty();
-    // rounds the vertex and refuses the bounding box
-    if (!TetOptimizerMesh::smooth_before(t)) {
-        if (on_bbox) {
-            ++m_smooth_trace.before_bbox;
-        } else {
-            ++m_smooth_trace.before_unrounded;
-        }
+    const size_t vid = t.vid(*this);
+    ++m_move_stats[size_t(vertex_class(vid))].attempted;
+
+    // THE BASE'S smooth_before MINUS ITS BOUNDING-BOX REFUSAL, which is why this does not call
+    // it. The base rounds the vertex and then refuses outright any vertex with a non-empty
+    // on_bbox_faces, i.e. it FREEZES the domain wall. That is a stronger constraint than any
+    // envelope and it is the second half of what made the wall a degeneracy trap: a tet resting
+    // on it had its longest edge unsplittable (EdgeSplittingTet.cpp, now lifted) AND its three
+    // wall vertices unmovable, so nothing could relieve the sliver from either side.
+    //
+    // Here the wall is a region boundary held in m_envelope like every other one, so its
+    // vertices are smoothed and the containment check decides whether the move survives --
+    // exactly the contract the input complex already gets. What keeps the wall a wall is that
+    // check, not immobility.
+    //
+    // Rounding still has to happen, and its failure still refuses the move; the two outcomes the
+    // base folded into one false are separated here because they mean different things.
+    const bool rounded_now = round(t);
+    if (!m_vertex_attribute[vid].m_is_rounded && !rounded_now) {
+        ++m_move_stats[size_t(vertex_class(vid))].refused_before;
+        ++m_smooth_trace.before_unrounded;
         return false;
     }
     // AN INPUT-COMPLEX VERTEX IS SMOOTHED, exactly as TetWild smooths a surface vertex.
@@ -59,12 +70,60 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
  */
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
 {
-    if (m_vertex_extra[t.vid(*this)].m_is_on_offset) {
+    const size_t vid = t.vid(*this);
+    if (m_vertex_extra[vid].m_is_on_offset) {
         ++m_smooth_trace.offset_attempted;
     } else {
         ++m_smooth_trace.interior_attempted;
     }
-    return TetOptimizerMesh::smooth_after(t);
+    // HOW FAR IT ACTUALLY GOT. Captured around the base call because that is what runs the
+    // solver, the projection and every accept gate; on any refusal the base leaves the vertex
+    // where it started, so a false answer contributes nothing. See MoveStats.
+    const Vector3d before = m_vertex_attribute[vid].m_posf;
+    // Both halves of the discriminator have to be read BEFORE the move: how many tracked faces
+    // the containment check will have to work with, and where the vertex started relative to the
+    // walls it claims. See WallMoveStats.
+    const bool on_wall = !m_vertex_attribute[vid].on_bbox_faces.empty();
+    const bool zero_tracked = on_wall && get_surface_faces_for_vertex(vid).faces().empty();
+    const double dev_before = on_wall ? wall_offplane_deviation(vid) : 0.;
+
+    const bool ok = TetOptimizerMesh::smooth_after(t);
+    if (!ok) {
+        return false;
+    }
+
+    // THE INPUT COMPLEX'S LOWER STRATA, which nothing above can hold.
+    //
+    // The base's containment check walks the vertex's tracked FACES and tests each triangle. A
+    // vertex on one of Phi's wires, or an isolated point of Phi, has no tracked face carrying that
+    // geometry -- so that loop iterates nothing and passes vacuously, which is the same shape of
+    // hole the domain wall had before vertex_is_on_surface() was corrected. The remedy is the one
+    // query a segment envelope can answer for a vertex: is_outside(point), which
+    // SampleEnvelope::require_exact_3d accepts against Edges3d and Triangles3d alike.
+    //
+    // Skipped entirely when Phi has no wires and no isolated points, because then every complex
+    // vertex is on a triangle and the tracked-face loop already covered it -- see
+    // m_input_has_lower_strata. Reverting on failure restores the position AND the qualities the
+    // base wrote for the accepted move, so a refusal here leaves exactly the state a refusal
+    // inside the base would have.
+    if (m_input_has_lower_strata && m_input_seg_env && vertex_is_input_geometry(vid) &&
+        !vertex_has_tracked_input_face(vid)) {
+        if (m_input_seg_env->is_outside(m_vertex_attribute[vid].m_posf)) {
+            ++m_input_env_point_refusals;
+            m_vertex_attribute[vid].m_posf = before;
+            m_vertex_attribute[vid].m_pos = to_rational(before);
+            for (const Tuple& loc : get_one_ring_tets_for_vertex(t)) {
+                set_cell_quality(loc.tid(*this), get_quality(loc));
+            }
+            return false;
+        }
+    }
+
+    m_move_stats[size_t(vertex_class(vid))].add((m_vertex_attribute[vid].m_posf - before).norm());
+    if (on_wall) {
+        m_wall_moves.note(zero_tracked, dev_before, wall_offplane_deviation(vid));
+    }
+    return true;
 }
 
 void TopoOffsetTetMesh::log_smooth_trace() const
