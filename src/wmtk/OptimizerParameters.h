@@ -352,8 +352,8 @@ struct OptimizerParameters
      * vertex and how close another branch of the input passes, then graded outward, so the
      * target the gates test is one the geometry actually permits.
      *
-     * Currently implemented by triwild only (TriWildMesh::init_sizing_field); tetwild has a
-     * namesake that nothing calls and simwild has none, so the flag does nothing there.
+     * Currently implemented by triwild only (TriWildMesh::init_sizing_field), so the flag
+     * does nothing in tetwild or simwild.
      */
     bool sizing_field_from_features = false;
 
