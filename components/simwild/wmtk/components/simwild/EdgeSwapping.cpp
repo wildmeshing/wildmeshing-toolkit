@@ -58,7 +58,13 @@ bool SimWildMesh::swap_after_cells(const std::vector<size_t>& tids, const bool i
         for (const size_t v : oriented_tet_vids(tid)) {
             const auto it = cache.ring_tags.find(v);
             if (it == cache.ring_tags.end()) continue;
-            if (tag != nullptr && *tag != it->second) return false;
+            if (tag != nullptr && *tag != it->second) {
+                log_and_throw_error(
+                    "swap_after_cells: tag disagreement near surface after swapping. tags: {} != "
+                    "{}",
+                    *tag,
+                    it->second);
+            }
             tag = &it->second;
         }
         if (tag == nullptr) return false;
