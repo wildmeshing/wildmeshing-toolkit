@@ -145,6 +145,20 @@ public:
     /// Which phase is running. Read by every hook that differs between them; see OptPhase.
     OptPhase m_phase = OptPhase::A;
 
+    /// max_reachable from the residual_split() taken after the most recent Phase B -- the
+    /// trust-region radius rebuild_offset_envelope() scales from. Seeded at driver entry from
+    /// the mesh as constructed, so round 1's envelope reflects the construction's actual error.
+    double m_phase_b_last_max_residual = -1.;
+
+    /// HOW the most recent phase_b_smooth() exited: true iff placement finished -- the
+    /// gradient criterion fired, the phase entered already at the fixed point, or the
+    /// gradient plateaued for 10 passes (the achievable fixed point, sitting above an
+    /// entry-relative bar it cannot pass). False only on the pass-cap exit, where the
+    /// gradient was still falling. Gates the proportional sizing step in
+    /// refine_sizing_where_phi_is_stuck(): the chord law reads the in-face residual as pure
+    /// resolution error, which it only is once nothing more was coming from smoothing.
+    bool m_phase_b_placement_converged = false;
+
     /// DIAGNOSTIC: set by the driver after the first round when
     /// ab_no_collapse_after_first_round is on, and read by collapse_edge_before().
     bool m_ab_collapses_disabled = false;
@@ -180,8 +194,23 @@ public:
     /// displacement in a pass falls below ab_smooth_tol x l, or at ab_smooth_max_passes.
     size_t phase_b_smooth();
 
+    /**
+     * @brief L-inf over offset vertices of the gradient of each vertex's own placement
+     * objective -- the same energy phase B's Newton solves minimize (w_amips * AMIPS over the
+     * one-ring plus w_envelope * (Phi - c)^2). Exactly 0 at the Gauss-Seidel fixed point,
+     * whatever the residual, so it distinguishes "placement finished" from "placement blocked"
+     * -- a vertex whose move is refused contributes zero DISPLACEMENT but full gradient.
+     * Vertices with a float-inverted or unrounded incident tet are skipped, as the smoother
+     * skips them.
+     */
+    double phase_b_band_gradient_linf();
+
     /// Refine the shared sizing field around the offset faces that are still over tolerance
-    /// after Phase B converged. Returns the number of vertices whose scalar was lowered.
+    /// after Phase B. When Phase B exited on its gradient criterion the step is PROPORTIONAL:
+    /// each face's edge-length target is its measured longest edge scaled by
+    /// 1/sqrt(stuck_refine_margin x in-face residual ratio), per the chord law. When Phase B
+    /// exited blocked, the fixed stuck_refine_factor ratchet is used instead. Returns the
+    /// number of vertices whose scalar was lowered.
     size_t refine_sizing_where_phi_is_stuck();
 
     /**

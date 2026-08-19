@@ -46,7 +46,9 @@
             "ab_phase_a_iterations",
             "ab_smooth_max_passes",
             "ab_smooth_tol",
+            "ab_smooth_grad_tol_rel",
             "ab_offset_envelope_rel",
+            "ab_envelope_residual_rel",
             "length_rel",
             "length",
             "stop_energy",
@@ -68,6 +70,7 @@
             "stuck_refine_num_worst",
             "stuck_refine_rings",
             "stuck_refine_factor",
+            "stuck_refine_margin",
             "stuck_refine_min_scalar",
             "stuck_refine_gradation",
             "stuck_refine_force_split",
@@ -335,7 +338,7 @@
         "pointer": "/ab_smooth_max_passes",
         "type": "int",
         "default": 20,
-        "doc": "3D only. Cap on Phase B's smoothing passes. Phase B runs smoothing to a fixed point rather than for a fixed count, because the stuck check that follows is only meaningful once nothing moves: a face still over tolerance when smoothing has converged is one smoothing genuinely cannot place, which is a resolution problem and therefore the sizing field's business."
+        "doc": "Cap on Phase B's smoothing passes per round. Negative means UNCAPPED: the phase runs until the gradient criterion (ab_smooth_grad_tol_rel) fires, guarded only by a no-progress check that stops the phase with a warning if the placement gradient fails to decrease over 10 consecutive passes."
     },
     {
         "pointer": "/ab_smooth_tol",
@@ -344,10 +347,22 @@
         "doc": "3D only. Phase B stops when the largest vertex displacement in a pass falls below this fraction of the target edge length l. Relative rather than absolute so the test means the same thing at any model scale."
     },
     {
+        "pointer": "/ab_smooth_grad_tol_rel",
+        "type": "float",
+        "default": 0.01,
+        "doc": "Phase B's convergence criterion. Each pass measures the largest per-vertex gradient of the placement objective (the AMIPS + offset energy its Newton solves minimize) over offset vertices; the phase stops when it falls to this fraction of its value at phase entry. The gradient is exactly zero at the Gauss-Seidel fixed point whatever the residual, so unlike the previous displacement test it cannot read converged when moves are merely blocked. ab_smooth_max_passes remains the hard cap; displacement is still logged."
+    },
+    {
         "pointer": "/ab_offset_envelope_rel",
         "type": "float",
-        "default": 1.0,
-        "doc": "3D only. Size of the envelope Phase A holds the offset surface inside, in units of the Phi tolerance (offset_residual_rel x target_distance). Rebuilt at the start of every Phase A from the surface as Phase B left it, which is what lets the surface still travel across rounds while being pinned within any one Phase A. 1.0 means Phase A may move it by exactly as much as the convergence test is willing to ignore: tighter and Phase A cannot improve the elements straddling the surface at all, looser and it can undo a residual Phase B had already brought inside tolerance."
+        "default": 0.25,
+        "doc": "FLOOR of Phase A's offset envelope, as a multiple of the Phi tolerance -- the width the envelope settles to once the residual approaches tolerance. The per-round width is ab_envelope_residual_rel x the previous Phase B's max residual, clamped below by this and above by 0.25 x target_distance. Cannot be 0: refinement moves the surface by about the local chord error when a split lands, and an envelope tighter than that refuses Phase A's operations outright. Also feeds the derived sizing floor when min_edge_length_rel is negative."
+    },
+    {
+        "pointer": "/ab_envelope_residual_rel",
+        "type": "float",
+        "default": 0.5,
+        "doc": "Trust-region scale of Phase A's offset envelope: each round's envelope eps is this fraction of the max Phi residual measured after the previous Phase B (seeded from the mesh as constructed for round 1), clamped between ab_offset_envelope_rel x tolerance and 0.25 x target_distance. Phase A may spend at most this fraction of the error budget the surface currently has: wide early, when topological rearrangement needs room, shrinking as placement converges so A's re-perturbation is proportional to remaining error instead of a fixed noise floor."
     },
     {
         "pointer": "/interleaved_smoothing",
@@ -426,6 +441,12 @@
         "type": "float",
         "default": 0.5,
         "doc": "Multiplicative reduction of the per-vertex sizing scalar per refinement."
+    },
+    {
+        "pointer": "/stuck_refine_margin",
+        "type": "float",
+        "default": 1.5,
+        "doc": "Safety margin of the proportional stuck-refine sizing step. When Phase B exits on its gradient criterion (placement converged), a face whose in-face residual measures sigma tolerances has its edge-length target scaled by 1/sqrt(margin x sigma): the chord law (residual ~ h^2) then lands it at 1/margin of the tolerance rather than exactly at it, giving headroom against the next Phase A's re-perturbation. 1 means aim exactly at tolerance. When Phase B exits blocked instead, the fixed stuck_refine_factor ratchet is used and this is ignored."
     },
     {
         "pointer": "/stuck_refine_min_scalar",

@@ -93,8 +93,29 @@ struct Parameters : public wmtk::OptimizerParameters
     bool ab_no_collapse_after_first_round; ///< DIAGNOSTIC: refuse all collapses from round 2
     int ab_phase_a_iterations; ///< iterations of TetWild's loop inside one Phase A
     int ab_smooth_max_passes; ///< cap on Phase B smoothing passes
-    double ab_smooth_tol; ///< "nothing moves any more", as a fraction of the target length l
-    double ab_offset_envelope_rel; ///< Phase A's offset envelope eps, in Phi tolerances
+    double ab_smooth_tol;
+    /// Phase B's convergence criterion: stop when the largest per-vertex placement gradient
+    /// falls to this fraction of its value at phase entry. See phase_b_band_gradient_linf().
+    double
+        ab_smooth_grad_tol_rel; ///< "nothing moves any more", as a fraction of the target length l
+    /// The FLOOR of Phase A's offset envelope, in Phi tolerances -- the width the envelope
+    /// settles to once the residual approaches tolerance. The working width each round is
+    /// ab_envelope_residual_rel x the previous Phase B's max residual, clamped between this
+    /// floor and a hard geometric cap; see rebuild_offset_envelope(). Also feeds the derived
+    /// sizing floor (min_edge_length_rel < 0), which keys off this converged-state width.
+    double ab_offset_envelope_rel;
+    /// Trust-region scale of Phase A's envelope: eps = this x the max residual after the last
+    /// Phase B. Wide while the surface is far from the level set (topological rearrangement
+    /// needs room; pinning A to a wrong surface preserves its errors), shrinking in lockstep
+    /// with progress so A's re-perturbation stops being a fixed noise floor -- measured before
+    /// this: a constant 1-tolerance envelope held the loop hovering at 1.2-1.3x tolerance.
+    double ab_envelope_residual_rel;
+    /// Safety margin of the PROPORTIONAL stuck-refine step (Phase B exited on the gradient
+    /// criterion, so the in-face residual is pure resolution error): a face measuring sigma
+    /// tolerances gets its edge-length target scaled by 1/sqrt(margin x sigma), landing it at
+    /// 1/margin of the tolerance by the chord law (residual ~ h^2). See
+    /// TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck().
+    double stuck_refine_margin;
 
     // l_min from the paper: the shortest edge the sizing field may ask for. Tied to the OFFSET
     // DISTANCE rather than to the bounding box, because that is the scale the offset actually
@@ -182,7 +203,10 @@ struct Parameters : public wmtk::OptimizerParameters
         ab_phase_a_iterations = json_params["ab_phase_a_iterations"];
         ab_smooth_max_passes = json_params["ab_smooth_max_passes"];
         ab_smooth_tol = json_params["ab_smooth_tol"];
+        ab_smooth_grad_tol_rel = json_params["ab_smooth_grad_tol_rel"];
         ab_offset_envelope_rel = json_params["ab_offset_envelope_rel"];
+        ab_envelope_residual_rel = json_params["ab_envelope_residual_rel"];
+        stuck_refine_margin = json_params["stuck_refine_margin"];
 
         min_edge_length = json_params["min_edge_length"];
         min_edge_length_rel = json_params["min_edge_length_rel"];
