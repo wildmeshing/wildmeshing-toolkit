@@ -72,13 +72,13 @@ $(function() {
   <div class="headertitle"><div class="title">topological_offset viewing tools</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md37"></a> Two small dependency-light scripts for looking at 2D offset results.</p>
-<h1><a class="anchor" id="autotoc_md38"></a>
+<div class="textblock"><p><a class="anchor" id="autotoc_md44"></a> Two small dependency-light scripts for looking at 2D offset results.</p>
+<h1><a class="anchor" id="autotoc_md45"></a>
 Setup</h1>
 <p>Polyscope and numpy only, and nothing else in the repo needs them:</p>
 <div class="fragment"><div class="line">python3 -m venv .venv</div>
 <div class="line">.venv/bin/pip install polyscope numpy</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md39"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md46"></a>
 &lt;tt&gt;view_offset.py&lt;/tt&gt; — inspect results in polyscope</h1>
 <div class="fragment"><div class="line">.venv/bin/python view_offset.py &lt;outdir&gt; [&lt;outdir&gt; ...]</div>
 </div><!-- fragment --><p>Each <code>&lt;outdir&gt;</code> is scanned for <code>*/out.vtu</code>, so point it at a directory of runs. Pass two directories to compare them in one window &ndash; construction against optimized, say:</p>
@@ -96,13 +96,13 @@ Setup</h1>
 </table>
 <p>Nothing about which tag means what is hardcoded: <code>offset_tag</code> is written by the offset itself and names the band, and every other <code>tag_*</code> cell array becomes its own input layer. It reads the <code>.vtu</code> directly (VTK inline-base64), so <code>save_vtu: true</code> is the only requirement.</p>
 <p>The view is orthographic along z with planar navigation, since the meshes are 2D at z=0.</p>
-<h1><a class="anchor" id="autotoc_md40"></a>
+<h1><a class="anchor" id="autotoc_md47"></a>
 &lt;tt&gt;make_disk2d.py&lt;/tt&gt; — the simplest possible test input</h1>
 <div class="fragment"><div class="line">python3 make_disk2d.py [rings] [R_inner] [R_domain] [out.msh]</div>
 <div class="line">python3 make_disk2d.py 300 0.20 0.28 disk.msh</div>
 </div><!-- fragment --><p>Writes a MSH 4.1 ASCII disk domain with a concentric disk tagged <code>tag_0</code>. Everything is radially symmetric, so the offset is exactly an annulus and the closed region has area <code>pi*(R_inner + d)^2</code> &ndash; which makes it easy to check a result rather than eyeball it. Use it with <code>offset_selection: "tag_0"</code>.</p>
 <p>Note the mesh has to resolve the offset: at <code>rings=300</code> over <code>R_domain=0.28</code> the spacing is ~9.3e-4, so an offset of 2e-3 is about two cells wide. Ask for less and the result is dominated by discretization.</p>
-<h1><a class="anchor" id="autotoc_md41"></a>
+<h1><a class="anchor" id="autotoc_md48"></a>
 Worked example: offsetting a disk</h1>
 <p>End to end, from nothing to a picture. Run it from this directory.</p>
 <div class="fragment"><div class="line"># 1. the input: a disk domain of radius 0.28 with a concentric disk of radius 0.20 tagged tag_0</div>
@@ -115,10 +115,10 @@ Worked example: offsetting a disk</h1>
 <div class="line">mkdir -p runs/d10 &amp;&amp; mv disk_offset.vtu runs/d10/out.vtu</div>
 <div class="line">.venv/bin/python view_offset.py runs</div>
 </div><!-- fragment --><p><code>disk_offset_example.json</code> is the config; edit <code>target_distance</code> for other widths. To compare several, give each its own <code>runs/&lt;name&gt;/out.vtu</code> and pass <code>runs</code> once &ndash; every run becomes its own toggleable layer.</p>
-<h2><a class="anchor" id="autotoc_md42"></a>
+<h2><a class="anchor" id="autotoc_md49"></a>
 Checking the answer</h2>
 <p>The exact result is an annulus, so the closed region (input disk plus offset band) has area <code>pi*(R+d)^2</code>. For <code>R=0.20, d=0.02</code> that is <code>0.152053</code>. Measuring the tagged faces in the output gives an effective outer radius of 0.21956 against the exact 0.22 &ndash; 0.4% low, which is discretization and nothing else.</p>
-<h2><a class="anchor" id="autotoc_md43"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 Two things that will bite you</h2>
 <p>**<code>relative_ball_threshold</code> defaults to 0.1, which is far too large.** The conservative growth then rejects nearly every candidate and the offset stops after a single cell layer, returning the same result no matter how large a <code>target_distance</code> you ask for &ndash; measured, <code>d=0.14</code> and <code>d=0.21</code> produced byte-identical output, both ~60-73% short. <code>0.01</code> is correct to under 1% across a sweep from 1% to 25% of the radius. The warning the run prints does say to decrease it, but it also fires on runs that are perfectly fine, so it is not a reliable signal.</p>
 <p><b>The mesh has to resolve the offset.</b> At <code>rings=300</code> over <code>R_domain=0.28</code> the spacing is ~9.3e-4, so <code>target_distance</code> below ~2e-3 is only a couple of cells wide and the result is dominated by discretization. Raise <code>rings</code> for thinner offsets; cost grows quadratically. </p>

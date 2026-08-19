@@ -28,6 +28,6 @@ var searchData=
   ['round_5fand_5fcheck_5fall_5frounded_25',['round_and_check_all_rounded',['../classwmtk_1_1_rational_positions.html#a8a66355e7ed81acdace2d133b2af432a',1,'wmtk::RationalPositions']]],
   ['round_5fvertex_26',['round_vertex',['../classwmtk_1_1_rational_positions.html#aa4aed3708274a6c2c3335cde89cd2d06',1,'wmtk::RationalPositions::round_vertex()'],['../classwmtk_1_1_tet_optimizer_mesh.html#a8a9acf13f8f9e14d0f5599e28f078772',1,'wmtk::TetOptimizerMesh::round_vertex()'],['../classwmtk_1_1_tri_optimizer_mesh.html#ab890484bc9585accbf72eaab0a3b87b1',1,'wmtk::TriOptimizerMesh::round_vertex()']]],
   ['run_27',['run',['../namespacesimwild_1_1polyfem__ops_1_1laplacian__smoothing.html#a5e636acba9d6efd78e917315cc44f2ab',1,'simwild.polyfem_ops.laplacian_smoothing.run()'],['../namespacesimwild_1_1polyfem__ops_1_1minimum__separation.html#a9317614c9d1d6384c6ba379a47d6e008',1,'simwild.polyfem_ops.minimum_separation.run()']]],
-  ['run_5fone_28',['run_one',['../namespacerun__tetwild__sweep.html#ab4178a6b62d60f7d0c01113f48f678c9',1,'run_tetwild_sweep']]],
+  ['run_5fone_28',['run_one',['../namespacerun__simwild__sweep.html#a81fa4207e39ee376d7307e3bfe3e89cd',1,'run_simwild_sweep.run_one()'],['../namespacerun__tetwild__sweep.html#ab4178a6b62d60f7d0c01113f48f678c9',1,'run_tetwild_sweep.run_one()']]],
   ['run_5fstreaming_29',['run_streaming',['../namespacesimwild_1_1polyfem__ops_1_1polyfem__utils.html#a55dd2ffa42fb15c2e6556e79a9015d99',1,'simwild::polyfem_ops::polyfem_utils']]]
 ];

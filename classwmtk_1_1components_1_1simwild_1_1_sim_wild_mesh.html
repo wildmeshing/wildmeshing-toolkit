@@ -178,6 +178,12 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>quality_rel</b> (co
 <tr class="memitem:ad444a9f5171db005d3e92cdc315fb224" id="r_ad444a9f5171db005d3e92cdc315fb224"><td class="memItemLeft" align="right" valign="top"><a id="ad444a9f5171db005d3e92cdc315fb224" name="ad444a9f5171db005d3e92cdc315fb224"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_mesh_quality</b> (double &amp;max_rel_quality, const bool verbose=false) const</td></tr>
 <tr class="separator:ad444a9f5171db005d3e92cdc315fb224"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a614786ebe290b0d742d91898fced3ed8" id="r_a614786ebe290b0d742d91898fced3ed8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a614786ebe290b0d742d91898fced3ed8">check_interface_faces_tagged</a> (const bool verbose=false) const</td></tr>
+<tr class="memdesc:a614786ebe290b0d742d91898fced3ed8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Verify that every interface between unlike tags carries a surface face.  <br /></td></tr>
+<tr class="separator:a614786ebe290b0d742d91898fced3ed8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6ffd03cc2c06bb56c85c29c8f089deb" id="r_ad6ffd03cc2c06bb56c85c29c8f089deb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad6ffd03cc2c06bb56c85c29c8f089deb">update_attributes</a> () override</td></tr>
+<tr class="memdesc:ad6ffd03cc2c06bb56c85c29c8f089deb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the attributes of the mesh after an iteration of operations.  <br /></td></tr>
+<tr class="separator:ad6ffd03cc2c06bb56c85c29c8f089deb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae104385cb6726c486390cf48272b0800" id="r_ae104385cb6726c486390cf48272b0800"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae104385cb6726c486390cf48272b0800">active_vertices</a> () const override</td></tr>
 <tr class="separator:ae104385cb6726c486390cf48272b0800"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9afadf871f21606b57e2b799ae667a9d" id="r_a9afadf871f21606b57e2b799ae667a9d"><td class="memItemLeft" align="right" valign="top"><a id="a9afadf871f21606b57e2b799ae667a9d" name="a9afadf871f21606b57e2b799ae667a9d"></a>
@@ -1138,6 +1144,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="a614786ebe290b0d742d91898fced3ed8" name="a614786ebe290b0d742d91898fced3ed8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a614786ebe290b0d742d91898fced3ed8">&#9670;&#160;</a></span>check_interface_faces_tagged()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::SimWildMesh::check_interface_faces_tagged </td>
+          <td>(</td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>verbose</em> = <code>false</code></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Verify that every interface between unlike tags carries a surface face. </p>
+<p>A SimWild surface IS the interface between unlike cell tags, so for any two adjacent tets whose <code>tags</code> differ, the face they share must be marked <code>m_is_surface_fs</code>. The operations re-derive that flag as they go (see SimWildMesh::collapse_after_vertex), and this is the post-condition they are meant to maintain.</p>
+<p>Checks that direction only: an interface face that is not tagged is a violation, while a tagged face between like-tagged tets is not reported here.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">verbose</td><td>Log a summary line, and the first few offending faces. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if every interface face is tagged. </dd></dl>
+
+</div>
+</div>
 <a id="a7f9131ea3e5ce2098bdd65d8326b66a2" name="a7f9131ea3e5ce2098bdd65d8326b66a2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7f9131ea3e5ce2098bdd65d8326b66a2">&#9670;&#160;</a></span>check_surface_topology()</h2>
 
@@ -2049,6 +2084,37 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="ad6ffd03cc2c06bb56c85c29c8f089deb" name="ad6ffd03cc2c06bb56c85c29c8f089deb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6ffd03cc2c06bb56c85c29c8f089deb">&#9670;&#160;</a></span>update_attributes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::update_attributes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Update the attributes of the mesh after an iteration of operations. </p>
+<p>Re-derives the surface from the tet tags over the whole mesh: a face is a surface face exactly when it separates two differently tagged tets, and a vertex is on the surface exactly when it belongs to such a face. This is the global form of what the operations used to attempt incrementally; doing it here, between passes and single-threaded, avoids both the stale flags that OR-merging leaves behind and the neighbourhood reads that are unsafe inside a parallel operation.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a614786ebe290b0d742d91898fced3ed8" title="Verify that every interface between unlike tags carries a surface face.">check_interface_faces_tagged</a>, which verifies the post-condition in both directions. </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a37d8e2f8dc1fa0e283ed3a0378ca660f">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>

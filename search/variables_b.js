@@ -1,21 +1,4 @@
 var searchData=
 [
-  ['offset_5fattempted_0',['offset_attempted',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a2135cdeca923a30e24ffe3c094de39af',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fclamp_5fenv_1',['offset_clamp_env',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a0b84ef4357d1c0b84fcb059a9f531f15',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fclamp_5finv_2',['offset_clamp_inv',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a75b52dcf58d484f666fa50a3aa315282',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fclamped_3',['offset_clamped',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a3680dc21f16088751e0c6f25e80586e4',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fenvelope_4',['offset_envelope',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a2dbd075abb7bbebcfd17cbaf800fe060',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5ferr_5fbefore_5fnano_5',['offset_err_before_nano',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a0872b6bdf7158fd05ecd7a49e525b6c9',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5finverted_6',['offset_inverted',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#afd025cd04691a6e72cf45fea93d9e1f0',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fno_5fneighbours_7',['offset_no_neighbours',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a0a71a38f21c1aa6fd2df13c4c0629a86',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fon_5fcomplex_8',['offset_on_complex',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a8b524d679a16cab4c01b80c0503863ad',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fslid_9',['offset_slid',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#ad63469b8269668b32a209fd19d46f9d2',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]],
-  ['offset_5fsurface_5fclass_10',['OFFSET_SURFACE_CLASS',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a92c9452be0c76f59e64c8a543dff86ad',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['on_5ffail_11',['on_fail',['../structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937',1,'wmtk::ExecutePass']]],
-  ['on_5ffixed_5fvertex_12',['on_fixed_vertex',['../classwmtk_1_1components_1_1tetwild_1_1orig_1_1_tet_vertex.html#a1cffaee94b7cbdb831c469eafb9b3f03',1,'wmtk::components::tetwild::orig::TetVertex']]],
-  ['op_5fcounts_13',['op_counts',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad99150d428dfe23d7b47a2897000cac7',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
-  ['optimization_5fmetrics_14',['optimization_metrics',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#afc8f54442feddbad0b4743468f981251',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
-  ['optimize_5fenvelope_5faround_5fsimplified_15',['optimize_envelope_around_simplified',['../structwmtk_1_1_optimizer_parameters.html#a34a7ae8497a0194dbd52399cbba57a59',1,'wmtk::OptimizerParameters']]],
-  ['order2_5fenvelope_5fratio_16',['order2_envelope_ratio',['../structwmtk_1_1components_1_1simwild_1_1_parameters.html#a974a89306c43ec0d98fb654467863911',1,'wmtk::components::simwild::Parameters::order2_envelope_ratio'],['../structwmtk_1_1components_1_1tetwild_1_1_parameters.html#af7ed2109c7f32cc4fa9a0a548fda50e1',1,'wmtk::components::tetwild::Parameters::order2_envelope_ratio']]],
-  ['overflowed_17',['overflowed',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c',1,'wmtk::ExecutePass::PassStats']]]
+  ['num_5fsmoothing_5fpasses_0',['num_smoothing_passes',['../structwmtk_1_1_optimizer_parameters.html#af94f54e1f48f13d77c5ff0afba9f05a2',1,'wmtk::OptimizerParameters']]]
 ];

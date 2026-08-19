@@ -146,6 +146,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>stop_at_float</b> = f
 <tr class="memitem:ad0a60fc17188816bc84ef1569e9ec8de" id="r_ad0a60fc17188816bc84ef1569e9ec8de"><td class="memItemLeft" align="right" valign="top"><a id="ad0a60fc17188816bc84ef1569e9ec8de" name="ad0a60fc17188816bc84ef1569e9ec8de"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>operation</b> = &quot;remeshing&quot;</td></tr>
 <tr class="separator:ad0a60fc17188816bc84ef1569e9ec8de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4e07d636f18f85be3bd7f0f238bfc96" id="r_ab4e07d636f18f85be3bd7f0f238bfc96"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1simwild_1_1_parameters.html#ab4e07d636f18f85be3bd7f0f238bfc96">verbose_quality_stats</a> = true</td></tr>
+<tr class="separator:ab4e07d636f18f85be3bd7f0f238bfc96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6043762a1975ebf715cb26d4fed8a55" id="r_af6043762a1975ebf715cb26d4fed8a55"><td class="memItemLeft" align="right" valign="top"><a id="af6043762a1975ebf715cb26d4fed8a55" name="af6043762a1975ebf715cb26d4fed8a55"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>skip_simplify</b> = false</td></tr>
 <tr class="separator:af6043762a1975ebf715cb26d4fed8a55"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -332,6 +334,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>Order-2 (open boundary / non-manifold edge) envelope thickness, as a fraction of the surface envelope's. Deliberately below 1 where the surface envelope uses the full eps; see the doc on /order2_envelope_ratio in the spec for the measurement behind 0.5. </p>
+
+</div>
+</div>
+<a id="ab4e07d636f18f85be3bd7f0f238bfc96" name="ab4e07d636f18f85be3bd7f0f238bfc96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4e07d636f18f85be3bd7f0f238bfc96">&#9670;&#160;</a></span>verbose_quality_stats</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::Parameters::verbose_quality_stats = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Log the per-tag quality breakdown after every optimization iteration, on top of the mesh-wide max/avg. One extra line per quality-field entry per iteration; the figures themselves are gathered in the sweep that computes the mesh-wide numbers anyway, so the flag governs the logging rather than the work. </p>
 
 </div>
 </div>

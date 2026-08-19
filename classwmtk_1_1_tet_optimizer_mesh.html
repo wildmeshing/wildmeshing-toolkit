@@ -194,6 +194,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>get_quality</b> (co
 <tr class="memitem:adf242c81db0676eef559a2110cbc0bd1" id="r_adf242c81db0676eef559a2110cbc0bd1"><td class="memItemLeft" align="right" valign="top"><a id="adf242c81db0676eef559a2110cbc0bd1" name="adf242c81db0676eef559a2110cbc0bd1"></a>
 std::tuple&lt; double, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_max_avg_energy</b> ()</td></tr>
 <tr class="separator:adf242c81db0676eef559a2110cbc0bd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37d8e2f8dc1fa0e283ed3a0378ca660f" id="r_a37d8e2f8dc1fa0e283ed3a0378ca660f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a37d8e2f8dc1fa0e283ed3a0378ca660f">update_attributes</a> ()</td></tr>
+<tr class="memdesc:a37d8e2f8dc1fa0e283ed3a0378ca660f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the attributes of the mesh after an iteration of operations.  <br /></td></tr>
+<tr class="separator:a37d8e2f8dc1fa0e283ed3a0378ca660f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a825eaf49ff21a7d435bf6584f6d77eba" id="r_a825eaf49ff21a7d435bf6584f6d77eba"><td class="memItemLeft" align="right" valign="top"><a id="a825eaf49ff21a7d435bf6584f6d77eba" name="a825eaf49ff21a7d435bf6584f6d77eba"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_improvement</b> (int max_its=80)</td></tr>
 <tr class="separator:a825eaf49ff21a7d435bf6584f6d77eba"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2586,6 +2589,36 @@ Private Attributes</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#aa9fcc7dad32cfe8edc21ce8ebf912e99">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="a37d8e2f8dc1fa0e283ed3a0378ca660f" name="a37d8e2f8dc1fa0e283ed3a0378ca660f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37d8e2f8dc1fa0e283ed3a0378ca660f">&#9670;&#160;</a></span>update_attributes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void wmtk::TetOptimizerMesh::update_attributes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Update the attributes of the mesh after an iteration of operations. </p>
+<p>This is necessary in SimWild to update the surface flags of faces and vertices as operations might have collapsed away regions that are now no longer on the surface. In TetWild, this is a no-op. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ad6ffd03cc2c06bb56c85c29c8f089deb">wmtk::components::simwild::SimWildMesh</a>.</p>
 
 </div>
 </div>
