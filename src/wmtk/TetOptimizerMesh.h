@@ -171,6 +171,13 @@ public:
     /// position already written into the vertex attribute.
     bool feature_edges_at_vertex_inside(size_t vid) const;
 
+    /// The derived-boundary counterpart: are all OPEN-BOUNDARY edges at `vid` inside the
+    /// order-2 tube, at the current positions? Default true; tetwild overrides with its
+    /// open-boundary flags and envelope. Membership is decided by flags + the topological
+    /// face count, NOT by the tube itself -- a tube-based membership test self-disables the
+    /// moment geometry leaves the tube, which is this defect's signature.
+    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
+
     /// Per-vertex positional constraint, on top of the envelopes -- the 3D counterpart of
     /// TriOptimizerMesh's hook of the same name. An application uses this to pin a vertex to
     /// a 0-dimensional feature it stands for, within a ball. Default: no constraint.

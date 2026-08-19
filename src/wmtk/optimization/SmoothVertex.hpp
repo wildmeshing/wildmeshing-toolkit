@@ -342,6 +342,16 @@ bool smooth_vertex_3d(
         return false;
     }
 
+    // Open-boundary containment, the same test for the DERIVED order-2 curves: every open
+    // boundary edge at this vertex must stay inside the order-2 tube. Without it smoothing
+    // walks boundary vertices along the boundary -- each step legal for the vertex, no check
+    // on the edges -- and the coarsening composite's mass smoothing contracts an open sheet
+    // boundary far past its tube (measured: a corner walked 0.5, 14% of the sheet gone).
+    if (!m.boundary_edges_at_vertex_inside(vid)) {
+        if (counters) ++counters->envelope;
+        return false;
+    }
+
     // Containment: every surface triangle at this vertex must still be inside. Checked
     // against the containment envelope, which is not necessarily the one it was pulled to.
     const std::shared_ptr<SampleEnvelope> check_env =
