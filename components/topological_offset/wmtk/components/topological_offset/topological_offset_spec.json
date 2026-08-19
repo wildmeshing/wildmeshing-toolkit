@@ -32,6 +32,7 @@
             "save_vtu",
             "phi_grid_resolution",
             "DEBUG_output",
+            "DEBUG_output_per_pass",
             "log_file",
             "report",
             "preallocation_factor",
@@ -249,7 +250,13 @@
         "pointer": "/DEBUG_output",
         "type": "bool",
         "default": false,
-        "doc": "Write the tet mesh as out_{}.vtu after every operation."
+        "doc": "Write debug VTU frames of the evolving mesh. By default only the per-phase timeline is written: one frame after every phase A and every phase B (<output>_phase_{round}{A|B}.vtu), which is what the viewer shows. See DEBUG_output_per_pass for the full per-pass series."
+    },
+    {
+        "pointer": "/DEBUG_output_per_pass",
+        "type": "bool",
+        "default": false,
+        "doc": "Only read when DEBUG_output is true: additionally write a frame after every single operation pass (<output>_debug_{N}.vtu). This is the old DEBUG_output behaviour; on a converged prism run it wrote 800 frames / 4 GB and cost a quarter of the wall time, so it is opt-in."
     },
     {
         "pointer": "/log_file",

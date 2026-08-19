@@ -56,6 +56,9 @@ struct Parameters : public wmtk::OptimizerParameters
     // that travels further than that is a hard error rather than a silently frozen vertex.
     double offset_dhat_factor;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
+    /// Only read when debug_output is set: also write the engine's per-pass debug_{N}
+    /// frames, not just the per-phase timeline. See the spec doc.
+    bool debug_output_per_pass;
     // Convergence tolerance on the offset, as a fraction of target_distance. The quantity it
     // bounds is the Phi RESIDUAL expressed as a length -- the first-order distance from a band
     // vertex to the level set -- so 0.1 means "every offset vertex is within 10% of the offset
@@ -191,6 +194,7 @@ struct Parameters : public wmtk::OptimizerParameters
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
+        debug_output_per_pass = json_params["DEBUG_output_per_pass"];
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];

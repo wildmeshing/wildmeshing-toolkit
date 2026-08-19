@@ -718,6 +718,12 @@ public:
     /// globs `*debug_*.vtu` in the output directory and orders them by the counter.
     void write_optimization_debug_output(const std::string& path) override
     {
+        // The per-pass debug_{N} series is opt-in: the driver's phase_{round}{A|B} frames are
+        // the timeline the viewer shows, and the per-pass frames cost more than the rest of
+        // the run put together (measured on prism: 801 frames, 3.95 GB, ~54s of 227s).
+        if (!m_offset_params.debug_output_per_pass && path.rfind("debug_", 0) == 0) {
+            return;
+        }
         write_vtu(m_offset_params.output_path + "_" + path);
     }
 
