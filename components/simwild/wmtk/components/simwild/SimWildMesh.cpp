@@ -181,6 +181,11 @@ std::tuple<double, double> SimWildMesh::optimization_quality_stats()
     return {max_quality, avg_quality};
 }
 
+void SimWildMesh::update_attributes() const
+{
+    // check_interface_faces_tagged(true);
+}
+
 std::vector<size_t> SimWildMesh::active_vertices() const
 {
     // SimWild's quality target is per tag. Normalize each cell by its own target before
@@ -223,6 +228,98 @@ bool SimWildMesh::check_mesh_quality(double& max_rel_quality, const bool verbose
             max_rel_quality);
     }
     return all_good;
+}
+
+
+bool SimWildMesh::check_interface_faces_tagged(const bool verbose) const
+{
+    size_t num_interface = 0; // faces between unlike tags
+    size_t num_surface = 0; // faces marked m_is_surface_fs
+    size_t num_missing = 0; // unlike tags, not marked
+    size_t num_spurious = 0; // marked, but tags are equal
+    size_t num_hull = 0; // marked, but only one incident tet
+    // Only the first few are worth naming; a systematic failure would otherwise flood the log.
+    constexpr size_t max_reported = 10;
+
+    for (const Tuple& face : get_faces()) {
+        const size_t tid = face.tid(*this);
+        const size_t fid = face.fid(*this);
+        const bool marked = m_face_attribute[fid].m_is_surface_fs;
+        const auto opposite = face.switch_tetrahedron(*this);
+
+        if (!opposite.has_value()) {
+            // Hull face: it has no second tag to differ from, so it cannot be an
+            // interface. Counted apart from the interior faces below -- whether the hull
+            // ought to carry the flag is a convention, not a corruption.
+            if (marked) {
+                num_surface++;
+                num_hull++;
+                if (verbose && num_hull <= max_reported) {
+                    logger().warn("Surface face {} on hull, incident to tet {} only", fid, tid);
+                }
+            }
+            continue;
+        }
+        const size_t other = opposite->tid(*this);
+
+        if (marked) {
+            num_surface++;
+        }
+
+        if (m_tet_attribute[tid].tags != m_tet_attribute[other].tags) {
+            num_interface++;
+            if (!marked) {
+                num_missing++;
+                if (verbose && num_missing <= max_reported) {
+                    logger().error(
+                        "Untagged interface face {} between tets {} and {}",
+                        fid,
+                        tid,
+                        other);
+                }
+            }
+        } else if (marked) {
+            num_spurious++;
+            if (verbose && num_spurious <= max_reported) {
+                logger()
+                    .error("Surface face {} between like-tagged tets {} and {}", fid, tid, other);
+            }
+        }
+    }
+
+    if (verbose) {
+        const auto elided = [](size_t n) {
+            if (n > max_reported) {
+                logger().error("({} further offending faces not listed)", n - max_reported);
+            }
+        };
+        if (num_missing == 0 && num_spurious == 0) {
+            logger().info(
+                "Interface faces: {} of {} tagged, {} surface faces, all between unlike tags",
+                num_interface,
+                num_interface,
+                num_surface);
+        } else {
+            if (num_missing > 0) {
+                logger().error(
+                    "Interface faces: {} of {} NOT tagged as surface",
+                    num_missing,
+                    num_interface);
+                elided(num_missing);
+            }
+            if (num_spurious > 0) {
+                logger().error(
+                    "Surface faces: {} of {} between LIKE-tagged tets",
+                    num_spurious,
+                    num_surface);
+                elided(num_spurious);
+            }
+        }
+        if (num_hull > 0) {
+            logger().warn("{} surface faces lie on the hull (not counted as violations)", num_hull);
+        }
+    }
+    return num_missing == 0 && num_spurious == 0;
 }
 
 
@@ -520,6 +617,8 @@ void SimWildMesh::write_vtu(const std::string& path)
     // expected here and nowhere else.
     VectorXd v_is_rounded(vert_capacity());
     v_is_rounded.setZero();
+    VectorXd v_is_false_surface(vert_capacity());
+    v_is_false_surface.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tet_capacity(), 1));
     VectorXd amips(tet_capacity());
@@ -546,6 +645,20 @@ void SimWildMesh::write_vtu(const std::string& path)
     for (size_t i = 0; i < faces.size(); ++i) {
         for (size_t j = 0; j < 3; ++j) {
             F(i, j) = faces[i][j];
+        }
+
+        const auto [t, fid] = tuple_from_face(faces[i]);
+        const size_t tid = t.tid(*this);
+        const auto opp = t.switch_tetrahedron(*this);
+        if (!opp) {
+            continue;
+        }
+        const size_t other = opp->tid(*this);
+        if (m_tet_attribute[tid].tags == m_tet_attribute[other].tags) {
+            // mark vertices
+            for (size_t j = 0; j < 3; ++j) {
+                v_is_false_surface[faces[i][j]] = 1;
+            }
         }
     }
 
@@ -578,6 +691,7 @@ void SimWildMesh::write_vtu(const std::string& path)
     writer.add_field("sizing_field", v_sizing_field);
     writer.add_field("vid", v_id);
     writer.add_field("is_rounded", v_is_rounded);
+    writer.add_field("is_false_surface", v_is_false_surface);
     writer.write_mesh(out_path, V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -587,6 +701,7 @@ void SimWildMesh::write_vtu(const std::string& path)
         surf_writer.add_field("sizing_field", v_sizing_field);
         surf_writer.add_field("order", v_order);
         surf_writer.add_field("vid", v_id);
+        surf_writer.add_field("is_false_surface", v_is_false_surface);
 
         logger().info("Write {}", surf_out_path);
         surf_writer.write_mesh(surf_out_path, V, F, paraviewo::CellType::Triangle);
