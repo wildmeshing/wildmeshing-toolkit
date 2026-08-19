@@ -52,6 +52,7 @@
       "DEBUG_envelope_sanity_check",
       "allow_surface_swap",
       "check_surface_topology",
+      "verbose_quality_stats",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -408,6 +409,12 @@
     "type": "bool",
     "default": false,
     "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/verbose_quality_stats",
+    "type": "bool",
+    "default": true,
+    "doc": "Log the per-tag quality breakdown after every optimization iteration: for each entry of /quality_field, and for the cells no entry matches, the number of cells, their max and average absolute quality, the target applied to them, and the max quality relative to that target. Groups are listed worst-relative-first, so the top line names the region holding the optimization back. Off by default: it adds one log line per quality-field entry per iteration, which is noise unless a particular tagged region is failing to converge. The figures are collected in the sweep that computes the mesh-wide max/avg anyway, so enabling this costs logging, not computation."
   },
   {
     "pointer": "/stuck_refine_stall_eps",

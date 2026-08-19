@@ -1,6 +1,8 @@
 
 #include "SimWildMesh.h"
 
+#include "QualityStats.hpp"
+
 #include "wmtk/utils/Rational.hpp"
 
 #include <wmtk/utils/AMIPS.h>
@@ -167,18 +169,20 @@ double SimWildMesh::quality_rel(const Tuple& t) const
 
 std::tuple<double, double> SimWildMesh::optimization_quality_stats()
 {
-    double max_quality = -1.;
-    double avg_quality = 0.;
-    size_t count = 0;
-    for (size_t tid = 0; tid < tet_capacity(); ++tid) {
-        if (!tuple_from_tet(tid).is_valid(*this)) continue;
-        const double quality = quality_rel(tid);
-        max_quality = std::max(max_quality, quality);
-        avg_quality += quality;
-        ++count;
+    // m_quality is AMIPS cubed, so the cube root is what shares units with the targets.
+    const QualityBreakdown breakdown = collect_quality_breakdown(
+        tet_capacity(),
+        m_quality_field,
+        m_params.stop_energy,
+        [this](size_t tid) { return tuple_from_tet(tid).is_valid(*this); },
+        [this](size_t tid) -> const CellTag& { return m_tet_attribute[tid].tags; },
+        [this](size_t tid) { return std::cbrt(m_tet_attribute[tid].m_quality); });
+
+    if (m_sim_params.verbose_quality_stats) {
+        log_quality_breakdown(breakdown);
     }
-    if (count > 0) avg_quality /= count;
-    return {max_quality, avg_quality};
+
+    return {breakdown.max_relative, breakdown.avg_relative};
 }
 
 void SimWildMesh::update_attributes()
