@@ -99,13 +99,16 @@ struct Parameters : public wmtk::OptimizerParameters
     // derived from min_edge_length_rel in init() when negative. This is a floor on refinement,
     // so raising it makes the result COARSER (paper Fig. 18).
     //
-    // The paper writes l_min = 2 * delta * sin(sigma_max) and this used to derive it from
-    // max_normal_deviation_deg for that reason: an element subtending sigma_max on a circle of
-    // radius delta -- the shape the offset takes around a convex feature -- has that chord
-    // length. With the normal-deviation criterion gone the angle had no other reader, and
-    // keeping an angle parameter alive purely to be turned into a length made the one number
-    // that says "how fine may the offset get" the only one not stated as a length. The default
-    // reproduces the old sigma_max = 15 degrees exactly: 2*sin(15 deg) = 0.517638.
+    // TETWILD'S FLOOR, IN THE OFFSET'S UNITS, when not given (min_edge_length_rel < 0). The
+    // paper caps the sizing field below by the envelope epsilon ("to prevent unnecessary
+    // over-refinement in problematic regions", Sec 3.2): the surface is only pinned to within
+    // eps, so edges shorter than eps cannot buy fidelity. The offset's envelope is Phase A's,
+    // eps = ab_offset_envelope_rel * offset_residual_rel * target_distance, so that product is
+    // the derived floor. It is a pure runaway rail, well below the ~delta*sqrt(8*tau) chord any
+    // tolerance tau actually needs -- refinement stops at "cannot help" rather than at a fixed
+    // resolution. This replaced a fixed 2*sin(15 deg) inherited from the deleted
+    // normal-deviation criterion, which encoded tau ~ 3.3% forever regardless of the
+    // configured tolerance and made anything tighter unreachable by refinement.
     double min_edge_length;
     double min_edge_length_rel;
 
@@ -264,6 +267,9 @@ struct Parameters : public wmtk::OptimizerParameters
         // l_min, relative to the OFFSET DISTANCE rather than the bounding box: it is the offset
         // that has to be resolved, and its scale is delta. See the declaration for why this is
         // no longer derived from an angle.
+        if (min_edge_length_rel < 0) {
+            min_edge_length_rel = std::max(ab_offset_envelope_rel * offset_residual_rel, 1e-12);
+        }
         if (min_edge_length < 0) {
             min_edge_length = min_edge_length_rel * target_distance;
         } else {

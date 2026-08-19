@@ -447,8 +447,8 @@
     {
         "pointer": "/min_edge_length_rel",
         "type": "float",
-        "default": 0.5176380902050415,
-        "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. The default is the paper's 2*sin(sigma_max) at the sigma_max = 15 degrees this used to be derived from, to full double precision, so it reproduces the previous floor bit for bit."
+        "default": -1.0,
+        "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it as the offset envelope epsilon, ab_offset_envelope_rel * offset_residual_rel -- TetWild's own floor (cap the sizing below by the envelope eps, Sec 3.2) stated in the offset's units: the offset surface is only held to within eps, so edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs, unlike the previous fixed 0.5176 = 2*sin(15 deg) default, which encoded the deleted normal-deviation criterion's sigma_max = 15 deg and silently capped achievable tolerance at ~3.3%."
     },
     {
         "pointer": "/min_sizing_scalar",
