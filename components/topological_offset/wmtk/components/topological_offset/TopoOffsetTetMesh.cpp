@@ -2034,9 +2034,6 @@ TopoOffsetTetMesh::FaceSamples TopoOffsetTetMesh::offset_face_samples(const Tupl
     if (k <= 0) return s;
 
     const auto vs = get_face_vids(f);
-    for (const size_t v : vs) {
-        if (!band_vertex_is_reachable(v)) return s;
-    }
     const Vector3d p0 = m_vertex_attribute[vs[0]].m_posf;
     const Vector3d p1 = m_vertex_attribute[vs[1]].m_posf;
     const Vector3d p2 = m_vertex_attribute[vs[2]].m_posf;
@@ -2076,13 +2073,13 @@ std::vector<bool> TopoOffsetTetMesh::band_vertex_mask() const
 
 TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::residual_split() const
 {
-    // The band's Phi residual, split by whether the optimizer can do anything about it.
-    //
-    // REACHABLE: an offset-surface vertex free to be placed on the level set. PINNED: one that
-    // cannot be, whatever the optimizer does -- it lies on the input complex, where Phi diverges
-    // and the distance is 0 by definition, or on the domain boundary, where conservative growth
-    // ran out of room. Neither is an optimization failure and neither can be improved by
-    // refining around it, so only the reachable half drives the loop and the sizing field.
+    // The band's Phi residual. EVERY offset-surface vertex and every face sample counts toward
+    // the driving max -- including pinned vertices (on the input complex or the domain wall),
+    // which used to be excluded. A pinned vertex far from the level set is a real error in the
+    // offset the run returns, so hiding it reported convergence for a surface that was not at
+    // target distance. The reachable/pinned split is kept as ATTRIBUTION: when the max comes
+    // from a pinned vertex, the report says so, and the remedy is construction (domain size,
+    // growth room), not more optimization.
     const std::vector<bool> on_band = band_vertex_mask();
 
     DistanceSplit s;
@@ -2091,11 +2088,11 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::residual_split() const
         if (!on_band[vid]) continue;
         const Vector3d p = m_vertex_attribute[vid].m_posf;
         const double err = m_offset_potential->residual_length(p);
+        s.max_reachable = std::max(s.max_reachable, err);
+        s.max_at_vertex = std::max(s.max_at_vertex, err);
+        sum_reachable += err;
+        ++s.n_reachable;
         if (band_vertex_is_reachable(vid)) {
-            s.max_reachable = std::max(s.max_reachable, err);
-            s.max_at_vertex = std::max(s.max_at_vertex, err);
-            sum_reachable += err;
-            ++s.n_reachable;
             // THE RUNAWAY GUARD's measurement, taken here rather than in its own traversal:
             // this loop already visits exactly the vertices it cares about, and Phi is the
             // expensive part. check_offset_within_support() turns this into the error.
@@ -2108,6 +2105,8 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::residual_split() const
                 }
             }
         } else {
+            // Attribution only: the vertex already counted toward the max and the average
+            // above; this records that the count includes n_pinned vertices nothing can move.
             s.max_pinned = std::max(s.max_pinned, err);
             ++s.n_pinned;
         }
@@ -2117,7 +2116,7 @@ TopoOffsetTetMesh::DistanceSplit TopoOffsetTetMesh::residual_split() const
     for (const Tuple& f : get_faces()) {
         if (!face_is_offset_surface_live(f)) continue;
         const FaceSamples fs = offset_face_samples(f);
-        if (fs.n == 0) continue; // no samples asked for, or an unreachable corner
+        if (fs.n == 0) continue; // no samples asked for (offset_residual_samples <= 0)
         s.max_reachable = std::max(s.max_reachable, fs.max);
         s.max_in_face = std::max(s.max_in_face, fs.max);
         sum_reachable += fs.sum;
@@ -2200,7 +2199,6 @@ double TopoOffsetTetMesh::face_criterion_rel(const Tuple& f) const
     const double tol = offset_residual_tolerance();
     double score = amips_rel_at_face(f);
     for (const size_t vid : get_face_vids(f)) {
-        if (!band_vertex_is_reachable(vid)) continue;
         score = std::max(score, band_vertex_residual(vid) / tol);
     }
     // ACROSS the face as well, so a triangle too coarse to represent the offset is refined --

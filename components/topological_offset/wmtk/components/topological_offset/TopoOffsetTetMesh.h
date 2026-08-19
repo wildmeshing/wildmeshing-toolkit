@@ -784,7 +784,9 @@ public:
 
     /// Whether vid is an offset-surface vertex the optimizer could still place on the level set.
     /// A vertex on the input complex sits where Phi diverges; one on the domain boundary is
-    /// frozen there because conservative growth ran out of room. Neither is fixable.
+    /// frozen there because conservative growth ran out of room. Neither is fixable -- but both
+    /// still COUNT toward the residual (see residual_split()); this classifies, it no longer
+    /// excludes.
     bool band_vertex_is_reachable(const size_t vid) const
     {
         return !m_vertex_extra[vid].m_is_on_input && m_vertex_attribute[vid].on_bbox_faces.empty();
@@ -836,9 +838,11 @@ public:
     double amips_rel_at_face(const Tuple& f) const;
 
     /**
-     * @brief The offset surface's residual, split by whether the optimizer can do anything about
-     * it. See band_vertex_is_reachable(). Only the reachable half drives the loop and the sizing
-     * field; the pinned half is reported so a construction defect stays visible.
+     * @brief The offset surface's residual. Every band vertex and every face sample counts
+     * toward the max and the average -- pinned vertices included. The reachable/pinned split
+     * (see band_vertex_is_reachable()) is attribution: when the driving max comes from a
+     * pinned vertex, the report can say so, and the remedy is construction rather than more
+     * optimization.
      */
     struct DistanceSplit
     {
