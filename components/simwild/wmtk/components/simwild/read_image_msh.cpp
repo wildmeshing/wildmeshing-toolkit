@@ -604,10 +604,9 @@ int resolve_input_dimension(
         sniffed = has_f ? 3 : (has_l ? 2 : 3);
     } else {
         logger().warn(
-            "Input file {} has unrecognized extension {}. Assuming 3D surface.",
-            input_paths[0],
+            "Cannot determine dimension from file with extension {}. Assuming 3D surface.",
             extension);
-        return 3;
+        sniffed = 3;
     }
 
     const std::string d = json_params.value("dimension", std::string("auto"));
