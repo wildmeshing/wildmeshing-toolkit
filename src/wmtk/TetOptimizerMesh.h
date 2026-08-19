@@ -107,6 +107,83 @@ public:
     AttributeContainerGroup m_face_attr_group;
 
     /**
+     * @brief Per-edge feature tag: does this tet edge tile an input feature curve.
+     *
+     * A single union bool, deliberately, mirroring how the tracked surface is one
+     * m_is_surface_fs for every input file and sheet. Which curve an edge belongs to is not
+     * carried through the optimization anywhere in this codebase; identity questions are
+     * answered at the boundaries -- provenance at insertion, combinatorial and geometric
+     * audits at the end.
+     */
+    struct FeatureEdgeAttributes
+    {
+        bool m_is_feature_edge = false;
+    };
+    using EdgeAttCol = AttributeCollection<FeatureEdgeAttributes>;
+    /// Sized, protected and rolled back only once enable_feature_edge_tracking() ran.
+    EdgeAttCol m_feature_edge_attribute;
+
+    /**
+     * @brief Whether the shared operations maintain m_feature_edge_attribute.
+     *
+     * The operations are guarded by THIS flag, never by `p_edge_attrs != nullptr`:
+     * topological_offset also registers an edge collection there, with its own attribute
+     * type, and reinterpreting it as feature tags would corrupt it.
+     */
+    bool m_track_feature_edges = false;
+
+    /**
+     * @brief Envelope around the input feature curves: the tube a tagged edge must stay in.
+     *
+     * The collapse guard's veto (see collapse_edge_before). Kept SEPARATE from the surface
+     * envelope and the order-2 envelope: merging would let feature curves vouch for open
+     * boundaries (and vice versa) in guard decisions. Null => tagged edges are propagated
+     * but not geometrically constrained.
+     */
+    std::shared_ptr<SampleEnvelope> m_feature_envelope;
+
+    /// Turn on feature-edge tracking. Must run before init() so the connectivity init sizes
+    /// the collection; refuses to share p_edge_attrs with an application that already uses it.
+    void enable_feature_edge_tracking()
+    {
+        if (p_edge_attrs != nullptr && p_edge_attrs != &m_feature_edge_attribute) {
+            log_and_throw_error(
+                "enable_feature_edge_tracking: p_edge_attrs is already registered by the "
+                "application; feature tracking cannot share it");
+        }
+        p_edge_attrs = &m_feature_edge_attribute;
+        m_track_feature_edges = true;
+    }
+
+    /// Does any edge incident to `vid` carry the feature tag? Derived from the edge tags
+    /// rather than from a vertex flag, so it cannot go stale.
+    bool vertex_has_feature_edge(size_t vid) const;
+
+    // Substructure widening for the link condition (preserve_topology): a tagged feature
+    // edge is order-2 substructure, a vertex with two incident tagged edges is on a curve
+    // (order 2), with one or three-plus it is a curve endpoint or junction (order 3). The
+    // meaning of get_order_of_* is untouched.
+    size_t substructure_order_of_edge(const std::array<size_t, 2>& vids) const override;
+    size_t substructure_order_of_vertex(size_t vid) const override;
+    void substructure_feature_neighbors(size_t vid, std::vector<size_t>& out) const override;
+    /// Are all tagged edges at `vid` inside the feature tube, at the CURRENT positions?
+    /// True when tracking or the tube is off. Smoothing calls this with the candidate
+    /// position already written into the vertex attribute.
+    bool feature_edges_at_vertex_inside(size_t vid) const;
+
+    /// The derived-boundary counterpart: are all OPEN-BOUNDARY edges at `vid` inside the
+    /// order-2 tube, at the current positions? Default true; tetwild overrides with its
+    /// open-boundary flags and envelope. Membership is decided by flags + the topological
+    /// face count, NOT by the tube itself -- a tube-based membership test self-disables the
+    /// moment geometry leaves the tube, which is this defect's signature.
+    virtual bool boundary_edges_at_vertex_inside(size_t) const { return true; }
+
+    /// Per-vertex positional constraint, on top of the envelopes -- the 3D counterpart of
+    /// TriOptimizerMesh's hook of the same name. An application uses this to pin a vertex to
+    /// a 0-dimensional feature it stands for, within a ball. Default: no constraint.
+    virtual bool smoothing_position_is_allowed(size_t, const Vector3d&) const { return true; }
+
+    /**
      * @brief The sentinel get_quality returns for an element AMIPS cannot score.
      *
      * Not an energy: a positively oriented tet whose volume is too small for AMIPS, or one that
@@ -488,6 +565,8 @@ protected:
     {
         double max_energy;
         std::map<std::array<size_t, 3>, FaceAttributes> changed_faces;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
 
         bool is_surface_flip = false;
         size_t sf_a = 0, sf_b = 0, sf_c = 0, sf_d = 0;
@@ -501,9 +580,12 @@ protected:
         size_t v2_id = 0;
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
+        bool is_edge_on_feature = false;
         size_t edge_order = 0;
         double max_quality_before = 0.;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
 
@@ -518,11 +600,55 @@ protected:
         std::vector<std::array<size_t, 2>> boundary_edges;
         std::vector<size_t> changed_tids;
         std::vector<double> changed_energies;
+        /// Feature-edge tags of the affected tets, by sorted vid pair (m_track_feature_edges).
+        std::map<std::array<size_t, 2>, bool> changed_edges;
         /// Coarsening pass only: the worst relative quality in the region the composite may
         /// disturb, measured before the collapse. See collapse_edge_after.
         double region_max_rel_before = 0.;
     };
     wmtk::threading::enumerable_thread_specific<CollapseInfoCache> collapse_cache;
+
+    // ---- Feature-edge tag propagation (m_track_feature_edges) ----------------------------
+    //
+    // An edge attribute's slot is (lowest incident tet id) * 6 + local index, so it moves
+    // whenever that tet dies. Any edge whose slot can move is an edge of an affected tet
+    // (deleted tets are affected; created tets only affect their own six edges), so caching
+    // every edge of every affected tet before the operation and rewriting afterwards covers
+    // every slot that can move -- the same argument the face tags rely on.
+    //
+    // Restore comes in two forms because the operations differ in what they create:
+    //  * split and the swaps CREATE tets, whose slots may be reused and hold stale values;
+    //    restore_region walks every edge of every created tet and writes the cached value or
+    //    the default. The created region provably contains every surviving cached edge.
+    //  * collapse creates NO tets, and its link edges (la,lb) -- which contain neither
+    //    endpoint, a case a tet FACE cannot exhibit -- can live on in tets outside any
+    //    enumerable region. restore_remap walks the CACHE instead: remaps v1 -> v2, OR-merges
+    //    colliding pairs, and writes each surviving edge wherever its slot now is. Returns
+    //    false if a TAGGED cached edge no longer exists (the caller aborts, mirroring the
+    //    face path's try_tuple_from_face bailout).
+
+    /// Cache the feature tag of every edge of every tet in `tids`.
+    void feature_edges_cache(
+        const std::vector<size_t>& tids,
+        std::map<std::array<size_t, 2>, bool>& cache);
+    /// Write back tags over every edge of every tet in `tets` (created regions).
+    void feature_edges_restore_region(
+        const std::vector<Tuple>& tets,
+        const std::map<std::array<size_t, 2>, bool>& cache);
+    void feature_edges_restore_region(
+        const std::vector<size_t>& tids,
+        const std::map<std::array<size_t, 2>, bool>& cache);
+    /// Write back tags for every cached edge, with `v_old` renamed to `v_new` (collapse).
+    bool feature_edges_restore_remap(
+        const std::map<std::array<size_t, 2>, bool>& cache,
+        size_t v_old,
+        size_t v_new);
+
+    /// Hook: the split vertex was created on a feature edge (or not). Runs only when
+    /// m_track_feature_edges is set; the counterpart of split_after_vertex for the feature
+    /// flag, separate so existing overrides keep their signature.
+    virtual void split_after_vertex_feature(size_t, bool) {}
+
 
     /// Set for the duration of coarsen_mesh(); read-only while a pass is running.
     bool m_coarsen_mode = false;

@@ -49,6 +49,40 @@ struct EmbedTrianglesProvenance
 };
 
 /**
+ * @brief Extra 1D/0D features to force into the output mesh, exactly.
+ *
+ * The remesher pins each edge as the shared crease of two forcing triangles and each point
+ * as the apex of a corner of three, then tracks them through the arrangement like the
+ * surface. Flat arrays, same conventions as the surface inputs. Everything -- the features
+ * AND the forcing-triangle apexes, which stick out by up to 0.1x the edge length -- must lie
+ * inside the background tet mesh's domain.
+ */
+struct EmbedFeaturesInput
+{
+    /// feature-edge vertices, 3 doubles each, xyz-interleaved
+    std::vector<double> edge_vrt_coord;
+    /// feature edges, 2 vertex ids each, into edge_vrt_coord
+    std::vector<uint32_t> edge_indices;
+    /// feature points, 3 doubles each, xyz-interleaved
+    std::vector<double> point_coord;
+};
+
+/**
+ * @brief Where each feature ended up, in the COMPACTED output numbering (the same ids
+ * `tets_after` uses).
+ */
+struct EmbedFeaturesResult
+{
+    /// Per input edge: the output tet edges tiling it, as vertex pairs. Empty only if the
+    /// edge was degenerate.
+    std::vector<std::vector<std::array<size_t, 2>>> edge_tiling;
+    /// Per input point: the output vertex exactly equal to it, or -1 if it was dropped
+    /// (which the remesher does not do for a valid point -- the -1 exists so a caller can
+    /// assert that rather than assume it).
+    std::vector<int64_t> point_vertex;
+};
+
+/**
  * @brief Conformally insert a triangle soup into a background tet mesh, exactly.
  *
  * Wraps vol_rem::embed_tri_in_poly_mesh (the exact arrangement) and everything that has to
@@ -82,6 +116,11 @@ struct EmbedTrianglesProvenance
  * @param[out] tets_after    output tets
  * @param[out] tet_face_on_input_surface  4 flags per tet, in WMTK local face order
  * @param[out] provenance    optional: which input triangles each surface face came from
+ * @param features           optional: feature edges and points to force into the output
+ * @param[out] features_out  optional: where each feature ended up, in the compacted output
+ *                           numbering. Required when `features` is non-null -- forcing
+ *                           features in and dropping where they went would leave the caller
+ *                           unable to tag them.
  */
 void embed_triangles_in_tets(
     const std::vector<double>& tri_vrt_coord,
@@ -95,6 +134,8 @@ void embed_triangles_in_tets(
     std::vector<std::array<size_t, 4>>& tets_after,
     std::vector<bool>& tet_face_on_input_surface,
     const EmbedTrianglesOptions& opts = {},
-    EmbedTrianglesProvenance* provenance = nullptr);
+    EmbedTrianglesProvenance* provenance = nullptr,
+    const EmbedFeaturesInput* features = nullptr,
+    EmbedFeaturesResult* features_out = nullptr);
 
 } // namespace wmtk::utils

@@ -231,6 +231,43 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         cache.changed_faces.push_back(std::make_pair(f_attr, f_vids));
     }
 
+    // Feature-edge tags: cache every edge of every tet incident to v1 -- the tets that get
+    // rewired or deleted. This includes the deleted tets' link edges (la,lb), which contain
+    // neither endpoint and can live on in tets outside any region enumerable after the
+    // collapse; that is why the restore walks the cache, not a region.
+    if (m_track_feature_edges) {
+        feature_edges_cache(n1_locs, cache.changed_edges);
+
+        // The geometric guard: every tagged edge, as the collapse would leave it (v1 renamed
+        // to v2, which does not move), must stay inside the feature-curve tube. This is what
+        // lets a curve coarsen -- a collapse ALONG the curve keeps the merged edge in the
+        // tube and passes -- while a collapse that would drag the curve sideways, or weld
+        // two curves farther apart than the tube width, is refused. The exact counterpart of
+        // the surface-split's surface_triangle_is_outside check, and of the open-boundary
+        // collapse guard.
+        if (m_feature_envelope) {
+            for (const auto& [pair, tag] : cache.changed_edges) {
+                if (!tag) {
+                    continue;
+                }
+                std::array<size_t, 2> p = pair;
+                for (size_t& v : p) {
+                    if (v == v1_id) {
+                        v = v2_id;
+                    }
+                }
+                if (p[0] == p[1]) {
+                    continue; // the collapsed edge itself; it disappears
+                }
+                if (m_feature_envelope->is_outside(
+                        std::array<Eigen::Vector3d, 2>{
+                            {m_vertex_attribute[p[0]].m_posf, m_vertex_attribute[p[1]].m_posf}})) {
+                    return false;
+                }
+            }
+        }
+    }
+
     if (VA[v1_id].m_is_on_surface) {
         // this code must check if a face is tagged as surface face
         // only checking the vertices is not enough
@@ -391,24 +428,30 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
             //         return false;
             // }
         }
-        // for (const auto& vids : cache.boundary_edges) {
-        //     if (!is_open_boundary_edge(vids)) {
-        //        // edge was an open boundary before (that is why it got cached) but is not anymore
-        //        // after collapse
-        //        return false;
-        //    }
-        //}
+        // The order-2 chord gate: every cached order-2 edge (v1,x), remapped to (v2,x) at
+        // caching time, must still BE order-2 substructure -- flags and containment in the
+        // order-2 envelope included. Without it a sheet erodes IN-PLANE from its open
+        // boundary: boundary-to-boundary collapses cut corners with triangles lying exactly
+        // on the sheet's plane, invisible to the one-sided surface envelope (measured:
+        // 14% of a flat sheet's area gone, a corner receded 150x the order-2 tube). The
+        // check was live from the 2025-10-10 open-boundary fixes until the collapse
+        // refactoring (cb9b81a66c) parked it -- the shared base could not call tetwild's
+        // is_open_boundary_edge -- while giving its caching half the virtual below. This is
+        // that predicate, restored through the same virtual.
+        for (const auto& vids : cache.boundary_edges) {
+            if (!collapse_is_order_2_edge(vids)) {
+                // The edge was order-2 before the collapse (that is why it was cached) but
+                // is not anymore -- the collapse moved it off its curve.
+                return false;
+            }
+        }
     }
 
-    // Must run HERE, before the attribute updates below -- not at the end of the function.
-    // tetwild's override asks is_vertex_on_boundary(v2), which reads BOTH
-    // m_vertex_attribute[..].m_is_on_surface and m_face_attribute[..].m_is_surface_fs
-    // (TetWildMesh.cpp), and the two blocks below overwrite exactly those: the vertex flag is
-    // OR-ed from v1 just after round(), and the cached face attributes are written onto the
-    // post-collapse faces. Asking afterwards is asking a different question, and it changes
-    // which vertices keep their open-boundary flag -- and therefore which later collapses are
-    // allowed.
-    collapse_after_vertex(v1_id, v2_id);
+    // (collapse_after_vertex moved below: its is_vertex_on_boundary(v2) test must see the
+    // POST-collapse face tags, which the loops below are what write. Reading the
+    // half-updated state cleared open-boundary flags on genuine sheet corners -- measured
+    // on feature_demo4: three corners lost their flags, every boundary guard went blind to
+    // them, and the coarsening pass collapsed them away, 0.5 deep.)
 
     //// update attrs
     // tet attr
@@ -432,6 +475,19 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
         }
         m_face_attribute[std::get<1>(found.value())] = f_attr;
     }
+
+    // Feature-edge tags: cache-driven restore with v1 renamed to v2 (see the cache comment
+    // in collapse_edge_before). False means a tagged edge no longer exists -- abort, the
+    // rollback undoes everything.
+    if (m_track_feature_edges) {
+        if (!feature_edges_restore_remap(cache.changed_edges, v1_id, v2_id)) {
+            return false;
+        }
+    }
+
+    // Now that the vertex flag OR (above) and the face tags (the loop above) are the
+    // post-collapse truth, decide whether the survivor keeps its open-boundary flag.
+    collapse_after_vertex(v1_id, v2_id);
 
     if (!m_coarsen_mode) {
         return true;
