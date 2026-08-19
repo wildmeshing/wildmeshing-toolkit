@@ -19,10 +19,10 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
         const bool dbg_on_offset = is_edge_on_offset(t);
         if (dbg_on_offset) ++iter_cnt_split_offset_before;
         // NOTHING IS FROZEN AGAINST SPLITS ANY MORE. The input complex stopped being, on the
-        // grounds that refining a surface is not moving it: the midpoint is checked against
-        // m_envelope like any other tracked geometry (surface_envelope_for_face returns it for a
-        // face all of whose vertices are on a region boundary), so a split that would take the
-        // surface off itself is refused there rather than forbidden here.
+        // grounds that refining a surface is not moving it: the midpoint is checked against its
+        // tags' boundary envelopes like any other tracked geometry (surface_envelope_for_face
+        // dispatches on the face's boundary mask), so a split that would take the surface off
+        // itself is refused there rather than forbidden here.
         //
         // THE BOUNDING BOX now goes the same way, and for the same reason. It was refused here,
         // and the argument against that is measured: a tet resting on the wall has its longest
@@ -107,6 +107,9 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     cache.new_v_pos = p_new;
     cache.new_v_extra = VertexExtra();
     cache.new_v_extra.label = m_edge_attribute[e_id].label;
+    // On both boundaries only if the whole edge was: the midpoint's mask is the AND.
+    cache.new_v_extra.m_boundary_mask =
+        m_vertex_extra[cache.v1_id].m_boundary_mask & m_vertex_extra[cache.v2_id].m_boundary_mask;
 
     // split edge
     cache.split_e = m_edge_attribute[e_id];
@@ -382,6 +385,11 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
             3);
     m_vertex_extra[v_id].label = cache.splitf_label;
+    // Interior to the split face, so on exactly the boundaries the WHOLE face is on: the AND
+    // of its corners. Assigned -- the slot may be recycled.
+    m_vertex_extra[v_id].m_boundary_mask = m_vertex_extra[v1_id].m_boundary_mask &
+                                           m_vertex_extra[v2_id].m_boundary_mask &
+                                           m_vertex_extra[v3_id].m_boundary_mask;
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
@@ -498,6 +506,8 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
             4);
     m_vertex_extra[v_id].label = tet_label;
+    // Strictly interior to a tet: on no boundary at all. Assigned -- the slot may be recycled.
+    m_vertex_extra[v_id].m_boundary_mask = 0;
 
     // iterate over new tets (retained faces, new tets, new edge (opposite tet) )
     for (int i = 0; i < 4; i++) {
@@ -585,6 +595,12 @@ bool TopoOffsetTetMesh::split_after_cells(
     if (m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset) {
         ++iter_cnt_split_offset_endpoints;
     }
+    // The boundary mask follows the same AND rule, and for the same reason: the midpoint is on
+    // a tag boundary only if the whole edge was. ASSIGNED, not OR'd -- v_id may be a recycled
+    // slot carrying a dead vertex's bits. This runs before the shared split's containment
+    // check, which reads the mask through face_mask() on the two child triangles.
+    m_vertex_extra[v_id].m_boundary_mask =
+        m_vertex_extra[v1_id].m_boundary_mask & m_vertex_extra[v2_id].m_boundary_mask;
 
     const auto& cache = m_opt_split_cache.local();
     for (const size_t v_end : {v1_id, v2_id}) {

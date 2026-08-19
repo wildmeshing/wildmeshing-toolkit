@@ -44,10 +44,11 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     // vertices could never reach stop_energy.
     //
     // TetWild's mechanism is the right one and it is already here: the vertex is smoothed by the
-    // shared solver and held inside m_envelope, which smoothing_containment_envelope() answers
-    // for it, with the projection step smoothing_mode = "projected" performs. That is a
-    // tolerance the input surface may drift within, which is exactly what TetWild's own input
-    // surface gets -- not a licence to move anywhere.
+    // shared solver and held inside its tags' boundary envelopes -- the intersection of them at
+    // a junction -- which smoothing_containment_envelope() answers for it, with the projection
+    // step smoothing_mode = "projected" performs. That is a tolerance the input surface may
+    // drift within, which is exactly what TetWild's own input surface gets -- not a licence to
+    // move anywhere.
     //
     // Measured before this change: 14758 of 229276 smoothing attempts refused here.
     return true;
@@ -92,33 +93,13 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
         return false;
     }
 
-    // THE INPUT COMPLEX'S LOWER STRATA, which nothing above can hold.
-    //
-    // The base's containment check walks the vertex's tracked FACES and tests each triangle. A
-    // vertex on one of Phi's wires, or an isolated point of Phi, has no tracked face carrying that
-    // geometry -- so that loop iterates nothing and passes vacuously, which is the same shape of
-    // hole the domain wall had before vertex_is_on_surface() was corrected. The remedy is the one
-    // query a segment envelope can answer for a vertex: is_outside(point), which
-    // SampleEnvelope::require_exact_3d accepts against Edges3d and Triangles3d alike.
-    //
-    // Skipped entirely when Phi has no wires and no isolated points, because then every complex
-    // vertex is on a triangle and the tracked-face loop already covered it -- see
-    // m_input_has_lower_strata. Reverting on failure restores the position AND the qualities the
-    // base wrote for the accepted move, so a refusal here leaves exactly the state a refusal
-    // inside the base would have.
-    if (m_input_has_lower_strata && m_input_seg_env && vertex_is_input_geometry(vid) &&
-        !vertex_has_tracked_input_face(vid)) {
-        if (m_input_seg_env->is_outside(m_vertex_attribute[vid].m_posf)) {
-            ++m_input_env_point_refusals;
-            m_vertex_attribute[vid].m_posf = before;
-            m_vertex_attribute[vid].m_pos = to_rational(before);
-            for (const Tuple& loc : get_one_ring_tets_for_vertex(t)) {
-                set_cell_quality(loc.tid(*this), get_quality(loc));
-            }
-            return false;
-        }
-    }
-
+    // Phi's lower strata -- wires and isolated points -- used to need a dedicated point check
+    // here, because the base's containment walks tracked FACES and a wire vertex has none
+    // carrying its geometry. The per-tag envelopes closed that hole structurally: a wire or
+    // isolated point only arises where two or more selected tags meet, so its vertex carries
+    // several boundary-mask bits and smoothing_containment_envelope() hands the base an
+    // IntersectionEnvelope whose is_outside(face) test -- and, before that, the pull toward the
+    // most-violated member tube -- holds it at the junction.
     m_move_stats[size_t(vertex_class(vid))].add((m_vertex_attribute[vid].m_posf - before).norm());
     if (on_wall) {
         m_wall_moves.note(zero_tracked, dev_before, wall_offplane_deviation(vid));

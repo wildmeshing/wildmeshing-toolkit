@@ -92,6 +92,14 @@ bool TopoOffsetTetMesh::swap_before_surface(
     if (m_face_attribute[fid_abc].m_surface_class != m_face_attribute[fid_abd].m_surface_class) {
         return false;
     }
+    // A flip across a JUNCTION would detach the new diagonal from one of the boundaries the
+    // old faces lay on: refuse when the two faces' boundary masks differ. Currently unreachable
+    // for region faces -- non-offset flips are refused categorically below -- so this is
+    // defense-in-depth there, but it also catches an offset-class flip whose corners straddle
+    // a junction curve.
+    if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
+        return false;
+    }
 
     if (m_face_attribute[fid_abc].m_surface_class != OFFSET_SURFACE_CLASS) {
         // Input-complex flip. Refused: re-triangulating a non-planar quad of the input complex

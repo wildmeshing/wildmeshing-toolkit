@@ -8,6 +8,7 @@
 #include <wmtk/utils/TetraQualityUtils.hpp>
 #include <wmtk/utils/io.hpp>
 #include <wmtk/utils/partition_utils.hpp>
+#include "TagEnvelopes.hpp"
 
 // clang-format off
 #include <wmtk/utils/DisableWarnings.hpp>
@@ -79,6 +80,22 @@ void TopoOffsetTetMesh::init_from_image(
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
+    // One mask bit per input tag, ambient included, in id order. Assigned HERE, once the maps
+    // are complete and before init_surfaces_and_boundaries() seeds the vertex masks from the
+    // boundary faces. Tags introduced later (the band's offset tag) get no bit -- boundary
+    // membership is a property of the INPUT partition, which is also why the masks are
+    // propagated rather than ever recomputed from current tet tags.
+    if (m_tag_id_to_name.size() > 64) {
+        log_and_throw_error(
+            "Per-tag boundary envelopes support at most 64 input tags, got {}",
+            m_tag_id_to_name.size());
+    }
+    m_tag_bit.clear();
+    for (const auto& [tag_id, name] : m_tag_id_to_name) {
+        const int bit = int(m_tag_bit.size());
+        m_tag_bit[tag_id] = bit;
+    }
+
     // propagate labels to tets
     const auto& tets = get_tets();
     for (const Tuple& t : tets) {
@@ -132,9 +149,15 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
     // within eps of where they started, which is the same contract every other region boundary
     // gets and leaves the degenerate element repairable.
     std::vector<Eigen::Vector3i> tempF;
+    std::map<int64_t, std::vector<Eigen::Vector3i>> tag_faces; // per-tag boundary buckets
     for (const Tuple& f : faces) {
         SmartTuple ff(*this, f);
 
+        // WHOSE boundary this face is. Interior face: every tag on exactly one side (the
+        // symmetric difference -- multi-tag tets exist, and a tag present on both sides has no
+        // boundary here). Wall face: every tag of its single tet, the boundary against the
+        // unmeshed outside -- which is how ambient's envelope comes to hold the wall.
+        CellTag face_tags;
         const auto t_opp = ff.switch_tetrahedron();
         if (t_opp) {
             const auto& tag0 = m_tet_attribute[ff.tid()].tag;
@@ -142,6 +165,14 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
             if (tag0 == tag1) {
                 continue;
             }
+            std::set_symmetric_difference(
+                tag0.begin(),
+                tag0.end(),
+                tag1.begin(),
+                tag1.end(),
+                std::inserter(face_tags, face_tags.begin()));
+        } else {
+            face_tags = m_tet_attribute[ff.tid()].tag;
         }
 
         m_face_attribute[ff.fid()].m_is_surface_fs = true;
@@ -149,6 +180,15 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         const size_t v1 = ff.vid();
         const size_t v2 = ff.switch_vertex().vid();
         const size_t v3 = ff.switch_edge().switch_vertex().vid();
+
+        // Seed the per-vertex boundary masks and the per-tag face buckets from the same
+        // classification, so the dispatch (a face is constrained by the AND of its corners'
+        // masks) and the envelopes it dispatches to can never disagree about what is where.
+        const uint64_t bits = tag_bits(face_tags);
+        for (const size_t v : {v1, v2, v3}) m_vertex_extra[v].m_boundary_mask |= bits;
+        for (const int64_t t : face_tags) {
+            tag_faces[t].emplace_back(int(v1), int(v2), int(v3));
+        }
         // Every face reaching here bounds a region; only the ones with a tet on both sides are
         // input-complex geometry. The domain wall is the former and not the latter, and it needs
         // no flag of its own: vertex_is_on_region() reads it off on_bbox_faces, which the split
@@ -169,7 +209,7 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
     }
 
     if (!m_envelope && !tempF.empty()) {
-        logger().info("Init envelope from tet tags");
+        logger().info("Init per-tag envelopes from tet tags");
         // build envelopes
         std::vector<Eigen::Vector3d> tempV(vert_capacity());
         for (int i = 0; i < vert_capacity(); i++) {
@@ -180,33 +220,50 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         m_F_envelope = tempF;
         // FROM THE PARAMETERS, as the 2D twin already did -- see
         // TopoOffsetTriMesh::init_region_boundary_envelope_from_input(), which is the same line.
-        // Without it m_envelope_eps kept its -1 sentinel and the exact envelope was built with a
-        // NEGATIVE half-width, so is_outside() answered true for every triangle, including the
-        // 310 the envelope had just been constructed from. Everything that consults it for an
-        // input-complex face -- split, collapse, swap and smoothing alike -- was therefore
-        // refused unconditionally, which froze the input complex solid and contradicted the
-        // design this class documents (see smoothing_energy_envelope(): the input complex "is
-        // now smoothed like any TetWild surface vertex rather than frozen").
+        // Without it m_envelope_eps kept its -1 sentinel and the exact envelopes were built with
+        // a NEGATIVE half-width, so is_outside() answered true for every triangle, including the
+        // ones they had just been constructed from -- freezing every boundary solid.
         //
         // params.init() runs in topological_offset() before init_from_image(), so envelope_size
         // is already resolved from envelope_size_rel x the bbox diagonal by the time we read it.
+        // Unit tests construct without params.init(), which is why this whole block stays behind
+        // the non-throwing tempF guard rather than adopting a throw on a nonpositive eps.
         m_envelope_eps = m_offset_params.envelope_size;
-        m_envelope = std::make_shared<SampleEnvelope>();
-        m_envelope->use_exact = true;
-        m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
-        // The offset envelope logs its own eps (see rebuild_offset_envelope); this one never
-        // did, which is how a nonsensical value survived here unnoticed.
-        // "Region", not "input-complex", which is what this said until the input complex got
-        // envelopes of its own. This one is built from the MESH's region-boundary faces -- every
-        // tag boundary plus the domain wall -- as they stand after marching tets and simplicial
-        // embedding. The input complex as LOADED is m_input_tri_env/m_input_seg_env, built from
-        // m_phi_* in init_input_complex_envelopes(), and the two counts differing is the point:
-        // on prism this is 578 faces against Phi's 310, the balance being the wall.
+
+        // ONE EXACT ENVELOPE PER TAG, from that tag's boundary bucket -- the input partition as
+        // it stands BEFORE offset construction rewrites tags, which is what makes E_t the tube
+        // around the as-loaded geometry the offset potential also measures against. A boundary
+        // face between two regions enters both regions' envelopes; the wall enters its tets'
+        // tags' (ambient's, mostly). See the m_tag_envelopes doc in the header for the
+        // intersection semantics this feeds.
+        m_tag_envelopes.clear();
+        {
+            std::lock_guard<std::mutex> lock(m_isect_mutex);
+            m_isect_cache.clear();
+        }
+        std::vector<std::shared_ptr<SampleEnvelope>> members;
+        std::string per_tag_log;
+        for (const auto& [tag, bucket] : tag_faces) {
+            if (bucket.empty()) continue; // offset_output_tag ids with no tets yet
+            auto env = std::make_shared<SampleEnvelope>();
+            env->use_exact = true;
+            env->init(m_V_envelope, bucket, m_envelope_eps);
+            m_tag_envelopes[tag] = env;
+            members.push_back(env);
+            per_tag_log += fmt::format(" {}:{}", m_tag_id_to_name.at(tag), bucket.size());
+        }
+
+        // The base's pointer survives as the UNION of the members -- inside any tube -- because
+        // the one shared-engine site that still reads it directly (the collapse_edge_before
+        // point check) asks exactly that question. Everything else dispatches per simplex
+        // through envelope_for_mask().
+        m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
         logger().info(
-            "\tRegion-boundary envelope: {} faces (tag boundaries + domain wall), {} (eps {:.6g})",
+            "\tPer-tag boundary envelopes: {} faces total (tag boundaries + domain wall), "
+            "EXACT (eps {:.6g}) |{}",
             m_F_envelope.size(),
-            m_envelope->use_exact ? "EXACT" : "sampled",
-            m_envelope_eps);
+            m_envelope_eps,
+            per_tag_log);
     }
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which callers
@@ -778,109 +835,51 @@ void TopoOffsetTetMesh::init_input_complex_bvh()
     m_phi_F = F_phi;
     m_phi_P = P_phi;
 
-    // The containment envelopes come from the SAME extraction, in the same call, for the same
-    // reason the BVH and the potential do: three descriptions of the input complex that can never
-    // disagree about where it is. E.rows() and P.rows() are the ISOLATED counts specifically --
-    // the loops above admit an edge only when it is in no face's or tet's closure, and a vertex
-    // only when it is in no closure at all -- which is exactly the lower-strata question.
-    init_input_complex_envelopes(int(E.rows()), int(P.rows()));
+    // The input complex needs no containment envelopes of its own any more: every simplex of
+    // it lies on tag-region boundaries (see label_input_complex()), so the per-tag envelopes
+    // built in init_surfaces_and_boundaries() -- from the same input partition, before
+    // construction touches it -- already hold all of it, junctions included.
 }
 
 
-void TopoOffsetTetMesh::init_input_complex_envelopes(
-    const int n_isolated_edges,
-    const int n_isolated_points)
+std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::envelope_for_mask(uint64_t mask) const
 {
-    m_input_has_lower_strata = (n_isolated_edges > 0) || (n_isolated_points > 0);
-
-    // Same tolerance as the region envelope: this is the distance the input surface is permitted
-    // to drift, which is one quantity and should not have two knobs. params.init() has already
-    // resolved it from envelope_size_rel x the bbox diagonal by the time any caller gets here.
-    m_input_envelope_eps = m_offset_params.envelope_size;
-    if (!(m_input_envelope_eps > 0)) {
-        // An exact envelope has no meaning at a non-positive half-width -- is_outside() would
-        // answer true for every query, including the geometry it was built from, and every
-        // operation touching the input complex would be refused unconditionally. That is not
-        // hypothetical: it is exactly what the -1 sentinel did to m_envelope before
-        // init_surfaces_and_boundaries() started reading envelope_size. The edge overload of
-        // SampleEnvelope::init throws on it; the triangle overload does not, so check here.
-        log_and_throw_error(
-            "Input-complex envelope needs a positive envelope_size, got {}.",
-            m_input_envelope_eps);
-    }
-
-    std::vector<Eigen::Vector3d> verts(size_t(m_phi_V.rows()));
-    for (int i = 0; i < m_phi_V.rows(); ++i) {
-        verts[size_t(i)] = m_phi_V.row(i).head<3>();
-    }
-
-    if (m_phi_F.rows() > 0) {
-        std::vector<Eigen::Vector3i> tris(size_t(m_phi_F.rows()));
-        for (int i = 0; i < m_phi_F.rows(); ++i) {
-            tris[size_t(i)] = Eigen::Vector3i(m_phi_F(i, 0), m_phi_F(i, 1), m_phi_F(i, 2));
+    if (mask == 0) return nullptr;
+    if ((mask & (mask - 1)) == 0) {
+        // Single bit: the member envelope itself -- a real SampleEnvelope, safe on every path
+        // including the pull. Linear scan; the tag count is tiny.
+        for (const auto& [tag, env] : m_tag_envelopes) {
+            const auto it = m_tag_bit.find(tag);
+            if (it != m_tag_bit.end() && (mask >> it->second) == 1) return env;
         }
-        m_input_tri_env = std::make_shared<SampleEnvelope>();
-        m_input_tri_env->use_exact = true;
-        m_input_tri_env->init(verts, tris, m_input_envelope_eps);
+        return nullptr; // a bit whose tag never got an envelope (no boundary faces at init)
     }
-
-    // ISOLATED POINTS RIDE AS THE DEGENERATE SEGMENT (i, i), and this is supported rather than
-    // tolerated. fast-envelope's halfspace_generation() for edges tests AB == 0 explicitly and
-    // emits an axis-aligned cube of half-width eps/sqrt(3) centred on the point -- the same
-    // half-width the hexahedron around a real segment gets, so a point's envelope has the same
-    // relationship to eps that a segment's does. SimpleBVH::point_segment_squared_distance guards
-    // l2 == 0 and returns the endpoint, and SampleEnvelope::nearest_point_feature's Edges3d branch
-    // guards len2 <= 0 and reports the vertex case, so the sampled path and the foot-point query
-    // agree with the exact one. Nothing here is a special case of ours.
-    if (m_phi_E.rows() > 0 || !m_phi_P.empty()) {
-        std::vector<Eigen::Vector2i> segs;
-        segs.reserve(size_t(m_phi_E.rows()) + m_phi_P.size());
-        for (int i = 0; i < m_phi_E.rows(); ++i) {
-            segs.emplace_back(m_phi_E(i, 0), m_phi_E(i, 1));
-        }
-        for (const int i : m_phi_P) {
-            segs.emplace_back(i, i);
-        }
-        m_input_seg_env = std::make_shared<SampleEnvelope>();
-        m_input_seg_env->use_exact = true;
-        m_input_seg_env->init(verts, segs, m_input_envelope_eps);
+    // Several bits: the memoized intersection. Lazy and mutex-guarded because containment
+    // queries run concurrently under kPartition; creation is rare (a handful of junction
+    // masks per model), so the lock is uncontended in steady state.
+    {
+        std::lock_guard<std::mutex> lock(m_isect_mutex);
+        const auto it = m_isect_cache.find(mask);
+        if (it != m_isect_cache.end()) return it->second;
     }
-
-    logger().info(
-        "\tInput-complex envelopes: {} triangles, {} segments ({} of them isolated points), "
-        "EXACT (eps {:.6g}); lower strata {} ({} isolated wires, {} isolated points)",
-        m_phi_F.rows(),
-        m_input_seg_env ? m_phi_E.rows() + int(m_phi_P.size()) : 0,
-        m_phi_P.size(),
-        m_input_envelope_eps,
-        m_input_has_lower_strata ? "PRESENT" : "none",
-        n_isolated_edges,
-        n_isolated_points);
-}
-
-
-bool TopoOffsetTetMesh::vertex_has_tracked_input_face(const size_t vid) const
-{
-    for (const simplex::Face& f : get_surface_faces_for_vertex(vid).faces()) {
-        const auto& vs = f.vertices();
-        if (vertex_is_input_geometry(vs[0]) && vertex_is_input_geometry(vs[1]) &&
-            vertex_is_input_geometry(vs[2])) {
-            return true;
+    std::vector<std::shared_ptr<SampleEnvelope>> members;
+    for (const auto& [tag, env] : m_tag_envelopes) {
+        const auto it = m_tag_bit.find(tag);
+        if (it != m_tag_bit.end() && (mask & (uint64_t(1) << it->second))) {
+            members.push_back(env);
         }
     }
-    return false;
-}
-
-
-void TopoOffsetTetMesh::log_input_envelope_trace(const char* when) const
-{
-    logger().info(
-        "\t[input envelope {}] triangle-envelope answers {}, segment-envelope answers {}, "
-        "point-containment refusals {}",
-        when,
-        m_input_env_tri_hits.exchange(0),
-        m_input_env_seg_hits.exchange(0),
-        m_input_env_point_refusals.exchange(0));
+    std::shared_ptr<SampleEnvelope> isect;
+    if (members.empty()) {
+        isect = nullptr; // every bit dangled; nothing to contain in
+    } else if (members.size() == 1) {
+        isect = members.front(); // the other bits dangled; degrade to the one real tube
+    } else {
+        isect = std::make_shared<IntersectionEnvelope>(std::move(members));
+    }
+    std::lock_guard<std::mutex> lock(m_isect_mutex);
+    m_isect_cache.emplace(mask, isect);
+    return isect;
 }
 
 
@@ -2701,7 +2700,6 @@ void TopoOffsetTetMesh::log_worst_tet(const char* when) const
         m_spike_dumps.load());
 
     log_vertex_movement(when);
-    log_input_envelope_trace(when);
 
     size_t worst = static_cast<size_t>(-1);
     double worst_q = -1.;

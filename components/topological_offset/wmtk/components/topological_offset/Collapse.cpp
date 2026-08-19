@@ -141,6 +141,10 @@ void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v
         m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
     m_vertex_extra[v2_id].m_is_on_offset =
         m_vertex_extra.at(v1_id).m_is_on_offset || m_vertex_extra.at(v2_id).m_is_on_offset;
+    // Boundary-mask bits merge the same way the flags do: conservatively, onto the survivor.
+    // (The containment check in the shared collapse ran before this OR, against v2's own mask
+    // -- the same deliberate pre-OR staleness m_is_on_input has at that point.)
+    m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
 }
 
 } // namespace wmtk::components::topological_offset

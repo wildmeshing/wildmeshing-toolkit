@@ -1,6 +1,9 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
+#include <map>
+#include <mutex>
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/TetOptimizerMesh.h>
@@ -48,6 +51,20 @@ public:
     size_t component_id = 0;
     bool m_is_on_input = false; // is this vertex on the input complex
     bool m_is_on_offset = false; // is this vertex on the offset surface
+
+    /**
+     * WHICH tag-region boundaries this vertex lies on, one bit per input tag (m_tag_bit).
+     *
+     * Seeded at init from the boundary faces themselves and then propagated like
+     * m_is_on_input: a split midpoint takes the AND of its edge's endpoints (on both
+     * boundaries only if the whole edge was), a collapse survivor ORs in the removed
+     * vertex's bits (conservative, the same over-approximation the flags already accept).
+     * A face's constraint mask is the AND of its three corners' masks -- a face lies on a
+     * boundary only if all of it does -- which is what envelope_for_mask() dispatches on.
+     * Never recomputed from current tet tags, so the band's tag rewriting during offset
+     * construction cannot corrupt it.
+     */
+    uint64_t m_boundary_mask = 0;
 };
 
 
@@ -266,65 +283,37 @@ public:
     std::shared_ptr<SampleEnvelope> m_input_complex_envelope;
 
     /**
-     * @brief The input complex's OWN containment envelopes, one per stratum. Both phases.
+     * @brief ONE CONTAINMENT ENVELOPE PER INPUT TAG, ambient included. Both phases.
      *
-     * TWO of them because a SampleEnvelope is one kind or the other and never both: init() with
-     * triangles builds Kind::Triangles3d, init() with segments builds Kind::Edges3d, and
-     * is_outside(triangle) throws against the wrong one (require_exact_kind). The input complex is
-     * an arbitrary closed simplicial complex, so it has geometry in both dimensions at once and
-     * one envelope cannot hold it. Hence the pair, dispatched per simplex.
+     * E_t is a tube of half-width m_envelope_eps around the boundary faces of region t as the
+     * INPUT mesh carried them -- built in init_surfaces_and_boundaries(), before offset
+     * construction, so the band's later tag rewriting never enters them. A simplex on several
+     * boundaries is constrained by the INTERSECTION of its tags' tubes (envelope_for_mask()),
+     * which pins junction curves and points to the junction itself -- including the input
+     * complex's isolated wires and points, which only arise where two or more selected tags
+     * meet. That intersection is what replaced the dedicated input-complex envelopes
+     * (m_input_tri_env / m_input_seg_env) and their per-stratum dispatch: every simplex of the
+     * complex lies on tag boundaries (see label_input_complex()), so the per-tag tubes already
+     * hold all of it, and hold its junctions tighter than the old fused union-tube could.
      *
-     *   m_input_tri_env  Phi's triangles (m_phi_F): the boundary faces of the complex's tet
-     *                    region plus its isolated triangles. Null when the complex has none --
-     *                    a wire or a point cloud -- and every triangle query then falls through.
-     *   m_input_seg_env  Phi's edges (m_phi_E) AND its isolated points (m_phi_P), the latter as
-     *                    the degenerate segment (i, i). fast-envelope handles that explicitly:
-     *                    halfspace_generation() tests AB == 0 and emits an axis-aligned cube of
-     *                    half-width eps/sqrt(3) centred on the point instead of a hexahedron
-     *                    around a direction it cannot normalise. SimpleBVH's
-     *                    point_segment_squared_distance guards l2 == 0 the same way, so the
-     *                    sampled path and nearest_point() agree with it.
+     * m_envelope (the base's pointer) survives as a UnionEnvelope over these members, purely so
+     * the shared engine's one direct use -- the collapse_edge_before point check, union
+     * semantics -- keeps working unchanged.
      *
-     * WHY THESE ARE NOT m_envelope. m_envelope is built from the mesh's region-boundary faces as
-     * they stand AT CONSTRUCTION -- after marching tets and simplicial embedding have
-     * re-triangulated the input. These are built from m_phi_*, the input AS LOADED, which is the
-     * geometry m_input_complex_bvh and m_offset_potential measure against. Containing the input
-     * complex within a tube around the input itself is the constraint the algorithm actually
-     * needs; containing it within a tube around its own current mesh representation is not.
-     *
-     * INTERIOR VERTICES OF THE COMPLEX ARE NOT HELD BY THESE. Phi is the complex's BOUNDARY --
-     * a face interior to the complex's tet region has two incident complex tets and is dropped by
-     * the boundary_count filter in init_input_complex_bvh(). A tet-filled complex's interior
-     * vertices are therefore unconstrained, which is what lets the mesh inside it be optimised.
+     * INTERIOR VERTICES OF THE COMPLEX ARE NOT HELD BY THESE: a face interior to a region has
+     * identical tag sets on both sides and lands in no bucket, so a tet-filled complex's
+     * interior is free to optimise, exactly as before.
      */
-    std::shared_ptr<SampleEnvelope> m_input_tri_env;
-    std::shared_ptr<SampleEnvelope> m_input_seg_env;
+    std::map<int64_t, std::shared_ptr<SampleEnvelope>> m_tag_envelopes;
 
-    /// Half-width of both envelopes above. Same knob as m_envelope_eps: the tolerance the input
-    /// surface may drift within, which is what TetWild gives its own input surface.
-    double m_input_envelope_eps = -1;
+    /// Input tag id -> bit position in VertexExtra::m_boundary_mask. Assigned in
+    /// init_from_image() once the tag maps are complete; at most 64 input tags.
+    std::map<int64_t, int> m_tag_bit;
 
-    /**
-     * @brief Whether Phi has geometry BELOW its triangles -- isolated wires or isolated points.
-     *
-     * The discriminator for whether a per-vertex stratum test is needed at all. When Phi's only
-     * edges are the edges of its triangles, every complex vertex is on the 2-stratum and
-     * m_input_tri_env is the right answer for all of them; asking which stratum a vertex is on
-     * would cost a one-ring walk per smoothing attempt to always get the same answer. A complex
-     * WITH wires or points has vertices the triangle envelope would pull to the wrong place, and
-     * vertices no tracked triangle covers at all, so there the walk earns its cost.
-     *
-     * Set from the extraction's own isolated-edge and isolated-vertex counts, which
-     * init_input_complex_bvh() computes exactly (an edge is isolated iff it is in no face's or
-     * tet's closure).
-     */
-    bool m_input_has_lower_strata = false;
-
-    /// DIAGNOSTIC: how many times each envelope answered, and how many input-complex containment
-    /// checks refused a move. Logged per phase; see log_input_envelope_trace().
-    mutable std::atomic<size_t> m_input_env_tri_hits{0};
-    mutable std::atomic<size_t> m_input_env_seg_hits{0};
-    mutable std::atomic<size_t> m_input_env_point_refusals{0};
+    /// Memoized IntersectionEnvelope per multi-bit mask. Lazily built under the mutex because
+    /// the queries that need them run concurrently under kPartition.
+    mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_isect_cache;
+    mutable std::mutex m_isect_mutex;
 
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -548,55 +537,80 @@ public:
         return m_vertex_extra[vid].m_is_on_input || !m_vertex_attribute[vid].on_bbox_faces.empty();
     }
 
-    /**
-     * @brief Is this vertex INPUT-COMPLEX geometry, as opposed to merely region geometry.
-     *
-     * m_is_on_input is the live flag for it: init_surfaces_and_boundaries() sets it on every
-     * two-sided region boundary, is_edge_on_input() propagates it at each split and collapse ORs
-     * it onto the survivor. On a model whose complex bounds a tag region -- prism -- that set and
-     * the region-boundary set coincide exactly; they part company on a complex with isolated
-     * triangles, wires or points, which bound no region at all.
-     *
-     * NOT on the wall. A vertex on the bounding box is region geometry whatever else it carries,
-     * and routing it to an input envelope it is nowhere near would refuse every operation on it --
-     * which is precisely the degeneracy trap that freezing the wall used to manufacture. The flag
-     * is documented as over-broad (see check_no_vertex_on_both_surfaces: a split propagates it and
-     * a collapse ORs it, so a vertex can carry it while sitting a full target_distance away), and
-     * this is the cheap half of guarding against that -- no BVH query, just the wall test the
-     * dispatch already has to make.
-     */
-    bool vertex_is_input_geometry(const size_t vid) const
+    /// The three helpers of the per-tag envelope dispatch. tag_bits() and face_mask() are
+    /// trivial; envelope_for_mask() is out of line (it builds IntersectionEnvelopes lazily).
+    uint64_t tag_bits(const CellTag& tags) const
     {
-        return m_vertex_extra[vid].m_is_on_input && m_vertex_attribute[vid].on_bbox_faces.empty();
+        uint64_t bits = 0;
+        for (const int64_t t : tags) {
+            const auto it = m_tag_bit.find(t);
+            if (it != m_tag_bit.end()) bits |= (uint64_t(1) << it->second);
+        }
+        return bits;
     }
+
+    /**
+     * @brief The tag boundaries this vertex lies on -- the raw mask GATED on the vertex still
+     * being region geometry at all.
+     *
+     * THE GATE IS NOT REDUNDANT, it is what keeps the mask honest. m_boundary_mask propagates
+     * by a bare AND of a split's endpoints, which over-claims in exactly the way the flags do
+     * not: an edge whose two ends happen to share a bit hands that bit to its midpoint even
+     * when the edge itself is a chord through the interior, and the offset front is built by
+     * splitting precisely such edges. Measured on prism before this gate: all 506 faces the
+     * containment sweep called outside were offset faces carrying the ambient bit that way,
+     * routed into a tube they sit a full target_distance from.
+     *
+     * vertex_is_on_region() is the predicate that does NOT over-claim -- m_is_on_input moves
+     * across a split only through is_edge_on_input(), which demands a real incident input
+     * face, and on_bbox_faces through the endpoints' intersection. So the mask says WHICH
+     * boundaries, and this says whether the vertex is on one at all; the mask only ever
+     * narrows an answer the flags already allow.
+     */
+    uint64_t vertex_boundary_mask(const size_t vid) const
+    {
+        return vertex_is_on_region(vid) ? m_vertex_extra[vid].m_boundary_mask : uint64_t(0);
+    }
+
+    /// A face lies on a boundary only if ALL of it does: the AND of its corners' masks. The
+    /// same all-three shape the flag-based dispatch always had.
+    uint64_t face_mask(const std::array<size_t, 3>& vids) const
+    {
+        return vertex_boundary_mask(vids[0]) & vertex_boundary_mask(vids[1]) &
+               vertex_boundary_mask(vids[2]);
+    }
+
+    /**
+     * @brief The envelope a simplex with this boundary mask is contained in, or null.
+     *
+     * Zero bits: no boundary, no container. One bit: that tag's own envelope. Several bits: a
+     * memoized IntersectionEnvelope over the members -- inside means inside EVERY tube, which
+     * pins junction geometry to the junction. CONTAINMENT-ONLY for the multi-bit case: the
+     * composite implements just the virtual is_outside queries, so it must never be returned
+     * from smoothing_energy_envelope() (the pull calls non-virtual nearest_point).
+     */
+    std::shared_ptr<SampleEnvelope> envelope_for_mask(uint64_t mask) const;
 
     std::shared_ptr<SampleEnvelope> surface_envelope_for_face(
         const std::array<size_t, 3>& vids) const override
     {
-        bool all_region = true, all_offset = true, all_input = true;
-        for (const size_t v : vids) {
-            all_region = all_region && vertex_is_on_region(v);
-            all_offset = all_offset && m_vertex_extra[v].m_is_on_offset;
-            all_input = all_input && vertex_is_input_geometry(v);
+        // BOUNDARY GEOMETRY FIRST, in BOTH phases: a face on any tag-region boundary may not
+        // drift out of that boundary's tube, and a face on several boundaries -- a junction
+        // sliver -- is held in their intersection. The mask carries the input complex too:
+        // every complex simplex lies on tag boundaries (label_input_complex() can only label
+        // an isolated simplex whose tet star is tag-heterogeneous), so the per-tag tubes
+        // subsume the deleted input-complex envelopes, as-loaded geometry and all -- E_t is
+        // built from the INPUT mesh before construction touches it.
+        if (const uint64_t mask = face_mask(vids)) {
+            return envelope_for_mask(mask);
         }
-        // THE INPUT COMPLEX FIRST, in BOTH phases, because its envelope is the tighter statement
-        // of the same constraint. m_envelope is a tube around the region boundary AS THE MESH
-        // CONSTRUCTED IT; m_input_tri_env is a tube around the input as loaded, which is the
-        // geometry m_offset_potential measures the offset against. Where the two coincide -- a
-        // complex that bounds a tag region -- this moves the check from the second to the first,
-        // and the difference is whatever marching tets and simplicial embedding did to the input.
-        if (all_input && m_input_tri_env) {
-            ++m_input_env_tri_hits;
-            return m_input_tri_env;
-        }
-        // Region boundaries next, in BOTH phases: a face on both this and the offset carries
-        // region geometry, which may not drift, so its envelope wins over the offset's looser
-        // one. m_envelope holds every tag boundary AND the domain wall -- one envelope for the
-        // whole partition, which is what makes the wall refinable instead of frozen.
-        if (all_region) return m_envelope;
         // Phase A holds the offset where Phase B left it; Phase B is what moves it, so it is
         // unconstrained there. Null when there is no offset envelope yet -- the construction
         // phase runs before the first one is built.
+        bool all_offset = true;
+        for (const size_t v : vids) {
+            all_offset = all_offset && m_vertex_extra[v].m_is_on_offset;
+        }
         if (all_offset && m_phase == OptPhase::A) return m_offset_envelope;
         return nullptr;
     }
@@ -618,53 +632,45 @@ public:
      * The 2D twin returns the base's answer for every other vertex because 2D tracks
      * region-boundary curves as well; 3D tracks only these two.
      *
-     * The INPUT complex is the other tracked surface and gets TetWild's answer -- m_envelope, in
-     * both roles -- because it is now smoothed like any TetWild surface vertex rather than
-     * frozen. See smooth_before(): what pins the input geometry is that m_input_complex_bvh and
-     * m_offset_potential are built once from the input as loaded, not that the mesh elements
-     * representing it are immovable.
+     * THE PULL MUST BE A REAL ENVELOPE, NEVER A COMPOSITE. This hook's consumers call the
+     * NON-virtual SampleEnvelope queries -- nearest_point (projected smoothing) and the
+     * ExactDistanceEnergy3D trio (squared_distance / nearest_point / nearest_point_feature) --
+     * which on a composite would bind to the base's null BVH. So a junction vertex (several
+     * mask bits) is pulled toward its MOST-VIOLATED member tube instead: one real envelope per
+     * smoothing attempt, alternating projections toward the junction across passes, while the
+     * containment intersection (smoothing_containment_envelope) enforces the full constraint.
      */
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
     {
         if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return nullptr;
         }
-        if (const auto env = input_complex_envelope_for_vertex(vid)) return env;
-        return m_envelope;
-    }
-
-    /**
-     * @brief Which of the input complex's two envelopes holds THIS vertex, or null.
-     *
-     * The per-simplex dispatch, for the PULL. nearest_point() is a BVH query and answers against
-     * either kind, so the choice here is not about what the envelope can do -- it is about which
-     * stratum of Phi the vertex actually belongs to. Pulling a wire vertex onto the nearest
-     * TRIANGLE would drag it off its wire and toward geometry it was never on; pulling a
-     * triangle-interior vertex onto the nearest SEGMENT would drag it to the triangle's rim,
-     * since Phi is closed and every triangle edge is in m_phi_E.
-     *
-     * The stratum test costs a one-ring walk, so it only runs when Phi HAS a lower stratum for
-     * the vertex to be on. With no wires and no isolated points every complex vertex is on a
-     * triangle and the walk would always return the same answer -- see m_input_has_lower_strata.
-     */
-    std::shared_ptr<SampleEnvelope> input_complex_envelope_for_vertex(const size_t vid) const
-    {
-        if (!vertex_is_input_geometry(vid)) return nullptr;
-        if (!m_input_has_lower_strata) {
-            if (m_input_tri_env) ++m_input_env_tri_hits;
-            return m_input_tri_env;
+        const uint64_t mask = vertex_boundary_mask(vid);
+        if (mask == 0) {
+            // Reachable only for a construction artefact (a wall-chord midpoint flagged
+            // on-surface with disjoint endpoint masks); its containment is vacuous too, so no
+            // pull is behavior-neutral. Not an error.
+            return nullptr;
         }
-        if (m_input_tri_env && vertex_has_tracked_input_face(vid)) {
-            ++m_input_env_tri_hits;
-            return m_input_tri_env;
+        std::shared_ptr<SampleEnvelope> best;
+        double worst_d2 = -1.;
+        for (const auto& [tag, env] : m_tag_envelopes) {
+            const auto it = m_tag_bit.find(tag);
+            if (it == m_tag_bit.end() || !(mask & (uint64_t(1) << it->second))) continue;
+            if (!best) {
+                best = env;
+                if ((mask & (mask - 1)) == 0) break; // single bit: no violation contest to run
+                worst_d2 = env->squared_distance(m_vertex_attribute[vid].m_posf);
+                continue;
+            }
+            const double d2 = env->squared_distance(m_vertex_attribute[vid].m_posf);
+            if (d2 > worst_d2) {
+                worst_d2 = d2;
+                best = env;
+            }
         }
-        if (m_input_seg_env) ++m_input_env_seg_hits;
-        return m_input_seg_env;
+        return best;
     }
-
-    /// Whether any tracked surface face at `vid` is input-complex geometry, i.e. whether this
-    /// vertex is on Phi's 2-stratum. Defined out of line: it needs get_surface_faces_for_vertex().
-    bool vertex_has_tracked_input_face(const size_t vid) const;
 
     /**
      * @brief ... and it is not CONTAINED by one either.
@@ -695,18 +701,12 @@ public:
         if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return m_phase == OptPhase::A ? m_offset_envelope : nullptr;
         }
-        // THE INPUT COMPLEX IS CONTAINED IN ITS OWN ENVELOPE, in both phases, for the same reason
-        // it is in surface_envelope_for_face(): the tube that matters is the one around the input
-        // as loaded. m_input_tri_env and not the pair, because what the caller does with this is
-        // is_outside(triangle) over the vertex's tracked faces, and only a Triangles3d envelope
-        // answers that -- a segment envelope throws (require_exact_kind). The 1- and 0-strata are
-        // held instead by the POINT query in smooth_after(), which both kinds answer; a vertex on
-        // a wire has no tracked triangle for this loop to test anyway.
-        if (vertex_is_input_geometry(vid) && m_input_tri_env) return m_input_tri_env;
-        // Region boundaries, the domain wall among them, are contained in BOTH phases: Phase B
-        // frees the offset surface because that is the surface it exists to move, and the
-        // partition is not it.
-        return m_envelope;
+        // Boundary geometry is contained in the intersection of its tags' tubes, in BOTH
+        // phases -- the caller only asks is_outside(triangle), which composites answer, so
+        // unlike the pull this side may hand out an IntersectionEnvelope. Vertices with no
+        // boundary bits (offset handled above; construction artefacts) have nothing to be
+        // contained in.
+        return envelope_for_mask(vertex_boundary_mask(vid));
     }
 
     /**
@@ -1088,19 +1088,6 @@ public:
     MatrixXi m_phi_E;
     MatrixXi m_phi_F;
     std::vector<int> m_phi_P;
-
-    /**
-     * @brief Build m_input_tri_env and m_input_seg_env from the extraction above.
-     *
-     * Called at the end of init_input_complex_bvh(), from the same m_phi_* it has just filled, so
-     * the containment envelopes describe the same geometry as the distance field and the
-     * potential. `n_isolated_edges` and `n_isolated_points` come from that extraction's own
-     * counts and set m_input_has_lower_strata.
-     */
-    void init_input_complex_envelopes(int n_isolated_edges, int n_isolated_points);
-
-    /// Log the per-phase input-envelope counters and reset them. See m_input_env_tri_hits.
-    void log_input_envelope_trace(const char* when) const;
 
 
     /**
