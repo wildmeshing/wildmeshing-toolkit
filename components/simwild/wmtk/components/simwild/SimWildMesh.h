@@ -181,8 +181,17 @@ public:
 
     /**
      * @brief Update the attributes of the mesh after an iteration of operations.
+     *
+     * Re-derives the surface from the tet tags over the whole mesh: a face is a surface face
+     * exactly when it separates two differently tagged tets, and a vertex is on the surface
+     * exactly when it belongs to such a face. This is the global form of what the operations
+     * used to attempt incrementally; doing it here, between passes and single-threaded, avoids
+     * both the stale flags that OR-merging leaves behind and the neighbourhood reads that are
+     * unsafe inside a parallel operation.
+     *
+     * @see check_interface_faces_tagged, which verifies the post-condition in both directions.
      */
-    void update_attributes() const override;
+    void update_attributes() override;
 
     std::vector<size_t> active_vertices() const override;
 

@@ -43,52 +43,6 @@ bool SimWildMesh::collapse_after_connectivity(
 
 void SimWildMesh::collapse_after_vertex(size_t v1, size_t v2)
 {
-    // // A SimWild surface is not inherited geometry: it is precisely the interface between
-    // // unlike cell tags. Re-derive the affected faces after connectivity and tag data settle;
-    // // OR-merging the two old face flags can leave a homogeneous face marked as an interface.
-    // std::set<size_t> affected_vertices;
-    // affected_vertices.insert(v2);
-
-    // const auto tids = get_one_ring_tids_for_vertex(v2);
-    // for (const size_t tid : tids) {
-    //     if (!tuple_from_tet(tid).is_valid(*this)) continue;
-    //     for (int j = 0; j < 4; ++j) {
-    //         const Tuple face = tuple_from_face(tid, j);
-    //         const size_t fid = face.fid(*this);
-    //         const auto opposite = face.switch_tetrahedron(*this);
-    //         const bool is_interface =
-    //             opposite.has_value() &&
-    //             m_tet_attribute[tid].tags != m_tet_attribute[opposite->tid(*this)].tags;
-    //         m_face_attribute[fid].m_is_surface_fs = is_interface;
-    //         const auto fvs = get_face_vids(face);
-    //         affected_vertices.insert(fvs.begin(), fvs.end());
-    //     }
-    // }
-
-    // for (const size_t vid : affected_vertices) {
-    //     bool on_interface = false;
-    //     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-    //         if (!tuple_from_tet(tid).is_valid(*this)) continue;
-    //         const auto tet = oriented_tet_vids(tid);
-    //         for (int j = 0; j < 4; ++j) {
-    //             const Tuple face = tuple_from_face(tid, j);
-    //             const auto fvs = get_face_vids(face);
-    //             if (std::find(fvs.begin(), fvs.end(), vid) == fvs.end()) continue;
-    //             if (m_face_attribute[face.fid(*this)].m_is_surface_fs) {
-    //                 on_interface = true;
-    //                 break;
-    //             }
-    //         }
-    //         if (on_interface) break;
-    //     }
-    //     m_vertex_attribute[vid].m_is_on_surface = on_interface;
-    // }
-    //// Order is set inside `collapse_after_connectivity`
-    // for (const size_t vid : affected_vertices) {
-    //     m_vertex_attribute[vid].m_order =
-    //         m_vertex_attribute[vid].m_is_on_surface ? compute_vertex_order(vid) : 0;
-    // }
-
     m_vertex_attribute[v2].m_sizing_scalar =
         std::min(m_vertex_attribute[v1].m_sizing_scalar, m_vertex_attribute[v2].m_sizing_scalar);
 }

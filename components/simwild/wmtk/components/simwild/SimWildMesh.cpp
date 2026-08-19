@@ -181,9 +181,55 @@ std::tuple<double, double> SimWildMesh::optimization_quality_stats()
     return {max_quality, avg_quality};
 }
 
-void SimWildMesh::update_attributes() const
+void SimWildMesh::update_attributes()
 {
-    // check_interface_faces_tagged(true);
+    if (m_params.preserve_topology) {
+        // If we are preserving topology, we don't need to update the attributes.
+        return;
+    }
+
+    // Vertices are accumulated from the faces below, so clear first and OR in afterwards --
+    // a vertex is on the surface iff at least one incident face is.
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!tuple_from_vertex(vid).is_valid(*this)) {
+            continue;
+        }
+        m_vertex_attribute[vid].m_is_on_surface = false;
+    }
+
+    for (size_t tid = 0; tid < tet_capacity(); ++tid) {
+        if (!tuple_from_tet(tid).is_valid(*this)) {
+            continue;
+        }
+        for (int j = 0; j < 4; ++j) {
+            const Tuple face = tuple_from_face(tid, j);
+            const size_t fid = face.fid(*this);
+            if (!m_face_attribute[fid].m_is_surface_fs) {
+                // only surface faces are of interest
+                continue;
+            }
+            const auto opposite = face.switch_tetrahedron(*this);
+
+            // A hull face has no second tag to differ from, so it is not an interface.
+            const bool is_interface =
+                opposite.has_value() &&
+                m_tet_attribute[tid].tags != m_tet_attribute[opposite->tid(*this)].tags;
+
+            if (is_interface) {
+                for (const size_t vid : get_face_vids(face)) {
+                    m_vertex_attribute[vid].m_is_on_surface = true;
+                }
+                continue;
+            }
+
+            // This face no longer is on the surface
+            m_face_attribute[face.fid(*this)].m_is_surface_fs = false;
+        }
+    }
+
+    if (m_params.perform_sanity_checks) {
+        check_interface_faces_tagged(true);
+    }
 }
 
 std::vector<size_t> SimWildMesh::active_vertices() const
