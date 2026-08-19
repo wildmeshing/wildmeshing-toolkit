@@ -3,12 +3,10 @@
     "doc": "[README](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/simwild/README.md)",
     "pointer": "/",
     "type": "object",
-    "required": [
-      "application",
-      "input"
-    ],
+    "required": ["application", "input"],
     "optional": [
       "operation",
+      "dimension",
       "output",
       "input_names",
       "input_transform",
@@ -80,9 +78,7 @@
   {
     "pointer": "/application",
     "type": "string",
-    "options": [
-      "simwild"
-    ],
+    "options": ["simwild"],
     "doc": "Application name must be simwild."
   },
   {
@@ -100,11 +96,7 @@
     "pointer": "/dimension",
     "type": "string",
     "default": "auto",
-    "options": [
-      "auto",
-      "2",
-      "3"
-    ],
+    "options": ["auto", "2", "3"],
     "doc": "Whether the input is 2D or 3D, as a string. 'auto' looks at the first input: a .msh decides from its own content, an OBJ with 'f' records is a 3D surface, an OBJ with 'l' records and no 'f' is a 2D curve network. A curve network and a surface are both .obj, so the extension alone cannot separate them. Setting \"2\" or \"3\" forces the route and errors if the file disagrees, rather than failing later with a confusing parse error."
   },
   {
@@ -254,13 +246,8 @@
   {
     "pointer": "/sizing_field/*",
     "type": "object",
-    "required": [
-      "tags"
-    ],
-    "optional": [
-      "length",
-      "length_rel"
-    ],
+    "required": ["tags"],
+    "optional": ["length", "length_rel"],
     "doc": "A region and its target length."
   },
   {
@@ -289,10 +276,7 @@
   {
     "pointer": "/quality_field/*",
     "type": "object",
-    "required": [
-      "tags",
-      "quality"
-    ],
+    "required": ["tags", "quality"],
     "doc": "A region and its target quality."
   },
   {
@@ -329,21 +313,21 @@
     "type": "int",
     "default": 12,
     "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
-},
-{
+  },
+  {
     "pointer": "/project_line_search_nested_steps",
     "type": "int",
     "default": 0,
     "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
-},
-{
+  },
+  {
     "pointer": "/smoothing_mode",
     "type": "string",
     "default": "projected",
     "options": ["projected", "exact"],
     "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
-},
-{
+  },
+  {
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,

@@ -13,7 +13,10 @@ bool SimWildMesh::swap_before_interior(const std::vector<size_t>& tids)
         if (m_tet_attribute[tid].tags != cache.tet_tags) {
             // No surface face means one tag-homogeneous region. Disagreement here says the
             // tag/surface invariant was already broken, so refuse instead of moving material.
-            return false;
+            log_and_throw_error(
+                "swap_before_interior: tag disagreement in supposedly interior tets {} vs {}",
+                tid,
+                tids.front());
         }
     }
     return true;
