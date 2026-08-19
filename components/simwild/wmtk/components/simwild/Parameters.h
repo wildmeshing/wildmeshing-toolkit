@@ -58,6 +58,14 @@ struct Parameters : public wmtk::OptimizerParameters
 
     std::string operation = "remeshing";
 
+    /**
+     * Log the per-tag quality breakdown after every optimization iteration, on top of the
+     * mesh-wide max/avg. One extra line per quality-field entry per iteration; the figures
+     * themselves are gathered in the sweep that computes the mesh-wide numbers anyway, so the
+     * flag governs the logging rather than the work.
+     */
+    bool verbose_quality_stats = true;
+
     bool skip_simplify = false;
     bool use_sample_envelope = false;
     int NUM_THREADS = 0;
@@ -108,6 +116,8 @@ struct Parameters : public wmtk::OptimizerParameters
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
         check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];
+
+        verbose_quality_stats = json_params["verbose_quality_stats"];
 
         allow_surface_swap = json_params["allow_surface_swap"];
         check_surface_topology = json_params["check_surface_topology"];
