@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <string>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 
@@ -322,6 +323,8 @@ struct OptimizerParameters
         } else {
             eps = epsr * diag_l;
         }
+
+        logger().info("PARAMS: eps = {}, l = {}", eps, l);
     }
 };
 
