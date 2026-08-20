@@ -96,16 +96,22 @@ SEED = int(os.environ.get("SIMWILD_SEED", "0"))
 REPORT_ONLY = bool(os.environ.get("SIMWILD_REPORT_ONLY"))
 
 # simwild parameters requested for this sweep. Everything not named here comes from
-# the spec defaults of whatever branch build/ was built from -- which is the point of
-# the sweep: it tests the defaults, not a private configuration. eps_rel below happens
+# the spec defaults of whatever branch build/ was built from. eps_rel below happens
 # to equal the current spec default; it is pinned so the sweep keeps meaning the same
-# thing if that default ever moves. Unlike tetwild, there is no `filter` knob to pin:
-# a single-input run is tagged inside/outside by winding number (tag_from_winding_number
-# defaults to true), not by a post-insertion outside-removal pass.
+# thing if that default ever moves. preserve_topology is the one deliberate departure
+# from the defaults, so this sweep is not a pure defaults run -- results from it are
+# not comparable with a run made before it was pinned. Unlike tetwild, there is no
+# `filter` knob to pin: a single-input run is tagged inside/outside by winding number
+# (tag_from_winding_number defaults to true), not by a post-insertion outside-removal
+# pass.
 PARAMS = {
     "application": "simwild",
     "eps_rel": 2e-3,
     "num_threads": THREADS,
+    # Deliberately *not* the spec default (which is true). Requested for this sweep:
+    # with preserve_topology off, simplification runs pre-insertion and is allowed to
+    # change input topology, which is the configuration under test here.
+    "preserve_topology": False,
     # The .msh is the real output and the .vtu is a visualization dump that _prune
     # deletes immediately afterwards, so writing it costs time and disk on every model
     # for nothing. The 2D sweep has always forced this off.
