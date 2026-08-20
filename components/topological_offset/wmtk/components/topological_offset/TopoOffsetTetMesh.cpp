@@ -1169,7 +1169,7 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
     // the input complex, where Phi diverges, and is simultaneously required to sit on the level
     // set at distance target_distance. No placement satisfies both, so no amount of smoothing or
     // refinement can fix it -- which is why the rest of the component quietly steps around it:
-    // smoothing_extra_energy() gives it no offset term, band_vertex_is_reachable() drops it from
+    // smooth_before() refuses it in Phase B, band_vertex_is_reachable() drops it from
     // the metric, and residual_split() books it under max_pinned. Stepping around it is right for
     // the measurement and wrong as a response: it means a construction defect can sit in the mesh
     // contributing nothing but a surface that cannot be placed, and never say so.
@@ -1250,91 +1250,179 @@ void TopoOffsetTetMesh::rebuild_offset_envelope()
         return;
     }
 
-    // A TRUST REGION, scaled from where the surface actually is. Phase A may move the offset
-    // surface by at most ab_envelope_residual_rel of the max residual the previous Phase B
-    // left (round 1: the residual of the mesh as constructed) -- wide while the surface is far
-    // from the level set, where topological rearrangement needs the room and pinning A to a
-    // wrong surface would preserve its errors, and shrinking in lockstep with progress so A's
-    // re-perturbation stops being a fixed noise source. A constant one-tolerance envelope was
-    // measured holding the loop in a 1.2-1.3x hover: B recovered to ~1.2x, A spent a full
-    // tolerance, every round.
+    // ONE WIDTH, EVERY ROUND: eps = ab_offset_envelope_rel x the Phi tolerance. Phase A is
+    // pinned to the same tube whether the surface is far from the level set or nearly on it.
     //
-    // Clamped below by ab_offset_envelope_rel tolerances (refinement moves the surface by
-    // about the local chord error when a split lands; an envelope tighter than that refuses
-    // Phase A's operations outright) and above by a hard geometric cap, so a huge early
-    // residual can never license A to drag the surface into the input complex.
-    constexpr double kEnvelopeCapRel = 0.25; // of target_distance
+    // This replaces a trust region that scaled eps from the previous Phase B's max residual.
+    // The trust region's premise was that a far-from-converged surface needs room for
+    // topological rearrangement; the cost is that Phase A then undoes Phase B's placement.
+    // Measured on prism over a 16-run factorial (tau = 0.05, sequential): the trust region
+    // handed round 1 an envelope of 5x tolerance, shrinking 5 -> 4.1 -> 2.8 -> 1.4 -> 0.62x,
+    // against this formula's flat 0.25x -- up to 20x looser. Runs carrying it averaged 120k
+    // vertices against 76k, and both of the sweep's runaway-refinement timeouts were on that
+    // side. Wide early buys rearrangement freedom the loop does not need and pays for it in
+    // re-placement work every round.
+    //
+    // Cannot be 0: refinement moves the surface by about the local chord error when a split
+    // lands, and an envelope tighter than that refuses Phase A's operations outright.
     const double tol = offset_residual_tolerance();
-    const double eps_floor = std::max(m_offset_params.ab_offset_envelope_rel * tol, 1e-12);
-    const double eps_cap = kEnvelopeCapRel * m_offset_params.target_distance;
-    double eps = eps_floor;
-    if (m_phase_b_last_max_residual > 0.) {
-        eps = std::clamp(
-            m_offset_params.ab_envelope_residual_rel * m_phase_b_last_max_residual,
-            eps_floor,
-            std::max(eps_floor, eps_cap));
-    }
+    const double eps = std::max(m_offset_params.ab_offset_envelope_rel * tol, 1e-12);
 
     m_offset_envelope = std::make_shared<SampleEnvelope>();
     m_offset_envelope->use_exact = true;
     m_offset_envelope->init(V, F, eps);
     logger().info(
-        "\t[phase A] offset envelope rebuilt: {} faces, eps {:.6g} ({:.4}x tolerance | {:.4}x "
-        "the last Phase B residual {:.6g}, floor {:.6g}, cap {:.6g})",
+        "\t[phase A] offset envelope rebuilt: {} faces, eps {:.6g} ({:.4}x tolerance)",
         F.size(),
         eps,
-        eps / tol,
-        m_phase_b_last_max_residual > 0. ? eps / m_phase_b_last_max_residual : 0.,
-        m_phase_b_last_max_residual,
-        eps_floor,
-        eps_cap);
+        eps / tol);
+}
+
+TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
+    const bool include_face_samples) const
+{
+    // THE CONVERGENCE CRITERION: |grad (Phi(x) - c)^2| over the offset surface -- at every band
+    // vertex, and at interior samples of every band face.
+    //
+    // The gradient of the SAME objective Phase B's sweeps minimize for these vertices -- the
+    // offset term, and nothing else. Any drift between the two would measure a different fixed
+    // point than the one the sweeps converge to, which is exactly what happened while an AMIPS
+    // term was carried in the criterion and not in the sweep.
+    //
+    // WEIGHT 1, deliberately, where the Phase B stop test used m_params.w_envelope. That test is
+    // a RATIO against its own value at phase entry, so any positive constant cancels and the
+    // weight was free; this one is an ABSOLUTE bound in length units, so the weight would scale
+    // the bar. w_envelope is 1 - w_amips and so within 1e-4 of 1 in practice, but "within 1e-4"
+    // is not a reason to let a tuning knob move a convergence threshold.
+    const std::vector<bool> on_band = band_vertex_mask();
+    // Non-const because polysolve's Problem::gradient is non-const; a local's constness is
+    // independent of this method's, so no cast is needed.
+    OffsetEnergy3D offset_energy(m_offset_potential, 1.0);
+
+    GradientSplit s;
+    double sum_reachable = 0.;
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!on_band[vid]) continue;
+        const auto& ve = m_vertex_extra[vid];
+        if (!ve.m_is_on_offset) continue;
+
+        // SKIPPED, not measured: a vertex the smoother declines to place this pass has a
+        // gradient that is not part of the fixed point. Counted so a run cannot report
+        // convergence over a band it never fully measured -- see the log line in the driver.
+        if (!m_vertex_attribute[vid].m_is_rounded) {
+            ++s.n_skipped_unrounded;
+            continue;
+        }
+        const auto locs = get_one_ring_tets_for_vertex(tuple_from_vertex(vid));
+        if (locs.empty()) continue;
+        bool inverted = false;
+        for (const Tuple& loc : locs) {
+            if (is_inverted_f(loc)) {
+                inverted = true;
+                break;
+            }
+        }
+        if (inverted) {
+            ++s.n_skipped_inverted;
+            continue;
+        }
+
+        Eigen::VectorXd g(3);
+        const Eigen::VectorXd x = m_vertex_attribute[vid].m_posf;
+        offset_energy.gradient(x, g);
+        const double gn = g.norm();
+
+        // PINNED VERTICES ARE REPORTED, NOT GATED -- and this is the one place the gradient
+        // criterion deliberately parts company with residual_split(), which counts a pinned
+        // vertex toward its driving max.
+        //
+        // The reason is what the two numbers mean. A residual is a statement about the SURFACE:
+        // a pinned vertex sitting off the level set is a real error in the offset the run
+        // returns, so it belongs in the bound. A gradient is a statement about the ITERATION: it
+        // asks whether the vertices the optimizer can move have stopped moving. smooth_before()
+        // refuses every input-complex vertex in Phase B, so no amount of further iteration can
+        // lower its gradient, and folding it into the bound would make convergence unreachable
+        // by construction rather than by anything the loop did wrong. It is surfaced through
+        // max_pinned instead, where the remedy is construction, not more rounds.
+        if (ve.m_is_on_input) {
+            s.max_pinned = std::max(s.max_pinned, gn);
+            ++s.n_pinned;
+            continue;
+        }
+
+        if (gn > s.max_reachable) {
+            s.max_reachable = gn;
+            s.worst_vid = vid;
+        }
+        s.max_at_vertex = std::max(s.max_at_vertex, gn);
+        sum_reachable += gn;
+        ++s.n_reachable;
+    }
+
+    // ... AND ACROSS THE BAND'S FACES, on the same lattice the residual is sampled on.
+    //
+    // A VERTEX CRITERION IS NOT A SURFACE CRITERION. Every vertex can sit exactly on the level
+    // set while the triangles between them chord across it, and a vertex-only gradient reads
+    // that as converged -- the same gap offset_face_samples() exists to close for the residual.
+    // E = (Phi(x) - c)^2 is a field: it has a gradient at every point of space, so evaluating it
+    // at a face's interior is the same computation as at a corner, not an approximation of one.
+    //
+    // The remedy differs, which is why the split is kept and reported. An at-vertex max is the
+    // surface in the wrong PLACE and wants smoothing; an in-face max is a surface too COARSE to
+    // be in the right place and wants refinement, which is Phase A's job through
+    // face_criterion_rel(). Both are errors in the returned offset, so both gate.
+    if (include_face_samples) {
+        double sum_faces = 0.;
+        for (const Tuple& f : get_faces()) {
+            if (!face_is_offset_surface_live(f)) continue;
+            // A face with a pinned corner is pinned: no placement of the vertices the optimizer
+            // owns can carry its interior to the level set. Booked where a pinned vertex is
+            // booked, for the same reason -- see the carve-out above.
+            bool pinned = false;
+            for (const size_t vid : get_face_vids(f)) {
+                if (m_vertex_extra[vid].m_is_on_input) {
+                    pinned = true;
+                    break;
+                }
+            }
+            for_each_offset_face_sample(f, [&](const Vector3d& q) {
+                Eigen::VectorXd g(3);
+                offset_energy.gradient(Eigen::VectorXd(q), g);
+                const double gn = g.norm();
+                if (pinned) {
+                    s.max_pinned = std::max(s.max_pinned, gn);
+                    return;
+                }
+                s.max_reachable = std::max(s.max_reachable, gn);
+                s.max_in_face = std::max(s.max_in_face, gn);
+                sum_faces += gn;
+                ++s.n_face_samples;
+            });
+        }
+        sum_reachable += sum_faces;
+        s.n_reachable += s.n_face_samples;
+    }
+
+    s.avg_reachable = (s.n_reachable > 0) ? sum_reachable / s.n_reachable : 0.;
+    return s;
 }
 
 double TopoOffsetTetMesh::phase_b_band_gradient_linf()
 {
-    // The gradient of the SAME objective smooth_vertex_3d hands its solver for these vertices:
-    // the one-ring AMIPS assembly with the same weight expression, plus the offset term at
-    // w_envelope. Any drift between the two would make this criterion measure a different
-    // fixed point than the one the sweeps converge to.
-    const std::vector<bool> on_band = band_vertex_mask();
-    const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
-    double linf = 0.;
-    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
-        if (!on_band[vid]) continue;
-        const auto& ve = m_vertex_extra[vid];
-        // Only the vertices that carry the offset energy -- the same set
-        // smoothing_extra_energy() serves. The others are envelope-projected, not solved.
-        if (!ve.m_is_on_offset || ve.m_is_on_input) continue;
-        if (!m_vertex_attribute[vid].m_is_rounded) continue;
-
-        const Tuple t = tuple_from_vertex(vid);
-        const auto locs = get_one_ring_tets_for_vertex(t);
-        bool skip = locs.empty();
-        std::vector<std::array<double, 12>> assembles(locs.size());
-        for (size_t i = 0; i < locs.size() && !skip; ++i) {
-            if (is_inverted_f(locs[i])) {
-                skip = true; // AMIPS is at its pole; the smoother skips this vertex too
-                break;
-            }
-            std::array<size_t, 4> vs = oriented_tet_vids(locs[i].tid(*this));
-            vs = wmtk::orient_preserve_tet_reorder(vs, vid);
-            for (int k = 0; k < 4; k++) {
-                for (int j = 0; j < 3; j++) {
-                    assembles[i][size_t(k * 3 + j)] = m_vertex_attribute[vs[size_t(k)]].m_posf[j];
-                }
-            }
-        }
-        if (skip) continue;
-
-        optimization::AMIPSEnergy3D amips(assembles, amips_w);
-        OffsetEnergy3D offset(m_offset_potential, m_params.w_envelope);
-        const Eigen::VectorXd x = m_vertex_attribute[vid].m_posf;
-        Eigen::VectorXd g_amips(3), g_offset(3);
-        amips.gradient(x, g_amips);
-        offset.gradient(x, g_offset);
-        linf = std::max(linf, (g_amips + g_offset).norm());
-    }
-    return linf;
+    // One measurement, one definition. This used to carry its own copy of the traversal; the
+    // Phase B stop test and the convergence test reading the same function is the whole point,
+    // since a phase that stops on one number while the run is judged by another can sit at a
+    // fixed point of neither.
+    //
+    // VERTICES ONLY, and that is not a drift from the convergence test -- it is the same
+    // function restricted to the variables this phase owns. Phase B moves vertices and performs
+    // no topological operation, so the in-face term is CONSTANT under everything it can do: a
+    // chording triangle still chords after any placement of its three corners. Folding it in
+    // would leave the stop test pinned at a value the sweeps cannot lower, so the phase would
+    // burn ab_smooth_max_passes every round without the extra passes changing anything, and the
+    // "is the cap the binding constraint?" question the pass log exists to answer would always
+    // read yes. The in-face term is Phase A's to fix, through refinement.
+    return gradient_split(/*include_face_samples=*/false).max_at_vertex;
 }
 
 size_t TopoOffsetTetMesh::phase_b_smooth()
@@ -1352,15 +1440,21 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
     // going while sweeps still lower the energy. Entry-relative makes it scale-free across
     // rounds whose Phase A left very different amounts of work.
     const double g_entry = phase_b_band_gradient_linf();
-    const double g_stop = m_offset_params.ab_smooth_grad_tol_rel * g_entry;
-    m_phase_b_placement_converged = false; // until the gradient criterion says otherwise
+    // TWO BARS, WHICHEVER COMES FIRST. The entry-relative one asks "has this phase finished the
+    // work it was handed"; the ABSOLUTE one is the run's own convergence bar, and once the band
+    // is under it there is nothing left for another round to do. Without the second, a phase
+    // handed a large entry gradient keeps sweeping long after the run would have been declared
+    // converged, because 1% of a large number is still over the bar.
+    const double g_abs = offset_gradient_tolerance();
+    const double g_stop = std::max(m_offset_params.ab_smooth_grad_tol_rel * g_entry, g_abs);
     logger().info(
-        "\t[phase B] placement gradient at entry {:.6g}; stopping at {:.6g} ({} x)",
+        "\t[phase B] placement gradient at entry {:.6g}; stopping at {:.6g} = max({} x entry, "
+        "{:.6g} convergence bar)",
         g_entry,
         g_stop,
-        m_offset_params.ab_smooth_grad_tol_rel);
+        m_offset_params.ab_smooth_grad_tol_rel,
+        g_abs);
     if (g_entry <= 0.) {
-        m_phase_b_placement_converged = true;
         return 0; // already at the fixed point; nothing to smooth
     }
 
@@ -1419,27 +1513,31 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
             rp.n_pinned);
         const double g = phase_b_band_gradient_linf();
         logger().info(
-            "\t[phase B] pass {}: placement gradient {:.6g} ({:.4g}x entry, stop at {:.4g}x)",
+            "\t[phase B] pass {}: placement gradient {:.6g} ({:.4g}x entry, {:.4g}x the "
+            "convergence bar; stop at {:.6g})",
             pass + 1,
             g,
             g_entry > 0. ? g / g_entry : 0.,
-            m_offset_params.ab_smooth_grad_tol_rel);
+            g / g_abs,
+            g_stop);
         if (g <= g_stop) {
-            m_phase_b_placement_converged = true;
             ++pass;
             break;
         }
-        no_progress = g < g_prev ? 0 : no_progress + 1;
+        // A NON-FINITE GRADIENT IS NOT PROGRESS. Written as `g < g_prev` alone, an alternating
+        // inf -> finite -> inf sequence reads as a decrease on every other pass (finite < inf is
+        // true), resets this counter, and the plateau exit can never fire -- with
+        // ab_smooth_max_passes < 0 that is an unbounded Phase B. Measured before this guard:
+        // 772 passes at a frozen 9.477x residual, and a 362-pass run that timed out at 1800s
+        // while its residual was still descending healthily.
+        no_progress = (std::isfinite(g) && g < g_prev) ? 0 : no_progress + 1;
         g_prev = g;
         if (no_progress >= 10) {
-            // THE PLATEAU IS THE ACHIEVABLE FIXED POINT, so it counts as placement finished.
-            // Measured the round this gate was first split: the gradient fell 60-80x from entry
-            // and then sat flat for 10 passes at 1.19x and 1.69x of an entry-relative stop --
-            // the fixed point sitting a hair above the bar, not a configuration fighting the
-            // inversion guard. Nothing more was coming from smoothing, so the residual measured
-            // here is exactly what refinement must answer; classifying it as blocked sent the
-            // stuck refinement down the uncalibrated fixed-factor path instead.
-            m_phase_b_placement_converged = true;
+            // THE PLATEAU IS THE ACHIEVABLE FIXED POINT. Measured: the gradient falls 60-80x
+            // from entry and then sits flat for 10 passes at 1.19x and 1.69x of an
+            // entry-relative stop -- the fixed point sitting a hair above the bar, not a
+            // configuration fighting the inversion guard. Nothing more is coming from
+            // smoothing, so stop and let the stuck refinement answer the residual.
             logger().warn(
                 "\t[phase B] placement gradient has not decreased for {} passes (at {:.6g}, "
                 "{:.4g}x entry, stop at {:.4g}x); treating the plateau as the phase's fixed "
@@ -1465,35 +1563,98 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
     // refined whenever the combined metric stalled, which was nearly every iteration regardless
     // of whether Phi needed resolution.
     const double tol = offset_residual_tolerance();
-    struct StuckFace
-    {
-        double score; // face_criterion_rel: flags and ranks (AMIPS, vertex residual, in-face)
-        double in_face; // in-face samples / tol: the one component that speaks the chord law
-        std::array<size_t, 3> vids;
-    };
-    std::vector<StuckFace> stuck;
+    std::vector<std::pair<double, std::array<size_t, 3>>> stuck;
     // The DENOMINATOR the log reports. Counted rather than inferred, because the line used to
     // print "n_worst of stuck.size()" -- both counts of faces that ARE over tolerance -- while
     // reading as "n of the N offset faces". "5934 of 5934" then looked like the whole surface
     // failing when it only ever said "everything over tolerance is being acted on", and the
     // surface's actual size appeared nowhere.
     size_t n_offset_faces = 0;
+    // ===================== TEMPORARY: CHORD-ONLY REFINEMENT TRIGGER =====================
+    // EXPERIMENT. Flip kChordOnlyTrigger back to false (or delete this block and restore the
+    // face_criterion_rel() > 1 test below it) to get the shipped behaviour back.
+    //
+    // A face is refined only when its three vertices are ALL inside tolerance and one or more
+    // of its interior samples is not -- i.e. the surface passes through the right places and
+    // the triangle between them still cuts the level set. That is pure resolution error, the
+    // one thing lowering the sizing field can actually fix.
+    //
+    // What this deliberately stops refining, all of which the shipped max-of-three trigger
+    // catches: a face whose VERTEX is off the level set (that is misplacement -- smoothing's
+    // job, and refining around it just grows the mesh where Phase B has not finished), a face
+    // touching a PINNED vertex (nothing can move it, so refinement there is unbounded and
+    // futile), and a face flagged only for bad AMIPS (element quality, which Phase A's own
+    // refine_sizing_around_worst() answers).
+    //
+    // NOT a change to face_criterion_rel(): that is also the acceptance gate for collapse and
+    // swap (Collapse.cpp:71/124, Swap.cpp:118/167), where the max-of-three is the right
+    // question. This is only which faces the stuck refinement acts on.
+    static const bool kChordOnlyTrigger =
+        offset_experiment_flag("WMTK_OFFSET_CHORD_ONLY_TRIGGER", false);
+    size_t n_skipped_vertex_over = 0, n_skipped_amips_only = 0;
     for (const Tuple& f : get_faces()) {
         if (!face_is_offset_surface_live(f)) continue;
         ++n_offset_faces;
+        if (kChordOnlyTrigger) {
+            double v_max = 0.;
+            for (const size_t vid : get_face_vids(f)) {
+                v_max = std::max(v_max, band_vertex_residual(vid) / tol);
+            }
+            const double in_face = offset_face_samples(f).max / tol;
+            if (in_face <= 1.0) {
+                // Nothing across the face to resolve. Count the two reasons the shipped
+                // trigger would still have fired here, so the log can say what was skipped.
+                if (v_max > 1.0) {
+                    ++n_skipped_vertex_over;
+                } else if (face_criterion_rel(f) > 1.0) {
+                    ++n_skipped_amips_only;
+                }
+                continue;
+            }
+            if (v_max > 1.0) {
+                ++n_skipped_vertex_over; // in-face is over too, but a vertex is misplaced
+                continue;
+            }
+            // Ranked by the in-face excess, the quantity that actually drove the selection.
+            stuck.emplace_back(in_face, get_face_vids(f));
+            continue;
+        }
         const double score = face_criterion_rel(f);
         if (score <= 1.0) continue;
-        stuck.push_back({score, offset_face_samples(f).max / tol, get_face_vids(f)});
+        stuck.emplace_back(score, get_face_vids(f));
     }
+    if (kChordOnlyTrigger) {
+        logger().info(
+            "\t[phase B] chord-only trigger: {} of {} offset faces refinable (vertices inside "
+            "tolerance, samples over) | skipped {} with a vertex over tolerance, {} flagged on "
+            "AMIPS alone",
+            stuck.size(),
+            n_offset_faces,
+            n_skipped_vertex_over,
+            n_skipped_amips_only);
+    }
+    // =================== END TEMPORARY: CHORD-ONLY REFINEMENT TRIGGER ===================
     if (stuck.empty()) {
+        // Cleared HERE and not only in the force-split block below, which this return skips.
+        // The shipped trigger could not reach this line (the driver calls us only when the
+        // residual is over tolerance, and the max-of-three then always flags some face), but
+        // the chord-only trigger can: every remaining excess may sit at a vertex. Leaving the
+        // previous round's edges in place would force-split them again for nothing.
+        m_force_split_edges.clear();
         return 0;
     }
     std::sort(stuck.begin(), stuck.end(), [](const auto& a, const auto& b) {
-        return a.score > b.score;
+        return a.first > b.first;
     });
     const size_t n_worst = (m_params.stuck_refine_num_worst > 0)
                                ? std::min<size_t>(stuck.size(), m_params.stuck_refine_num_worst)
                                : stuck.size();
+
+    std::vector<size_t> seeds;
+    seeds.reserve(3 * n_worst);
+    for (size_t i = 0; i < n_worst; ++i) {
+        for (const size_t v : stuck[i].second) seeds.push_back(v);
+    }
 
     // FORCE-SPLIT THE STUCK FACES' LONGEST EDGES, and this is not optional -- it is the half of
     // TetWild's stall response that lowering a scalar cannot substitute for.
@@ -1515,109 +1676,22 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
     if (m_params.stuck_refine_force_split) {
         for (size_t i = 0; i < n_worst; ++i) {
             m_force_split_edges.insert(
-                wmtk::utils::longest_edge(stuck[i].vids, [this](size_t v) -> const Vector3d& {
+                wmtk::utils::longest_edge(stuck[i].second, [this](size_t v) -> const Vector3d& {
                     return m_vertex_attribute[v].m_posf;
                 }));
         }
     }
 
-    // THE BAND'S FLOOR, not stuck_refine_min_scalar -- see the note in the Phase B branch of
-    // refine_sizing_around_worst() for why 3D keeps it where 2D does not.
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
-
-    std::vector<size_t> refined;
-    if (m_phase_b_placement_converged) {
-        // PROPORTIONAL, FROM THE CHORD LAW, because placement is finished: the residual of a
-        // face whose vertices the energy has already placed is chord error, and chord error
-        // scales as h^2 (sagitta ~ h^2/(8 delta)). A face measuring sigma tolerances therefore
-        // needs its edge length scaled by 1/sqrt(margin x sigma) to land at 1/margin of the
-        // tolerance -- in ONE round, sized by the measurement. The fixed-factor ratchet this
-        // replaces walked 0.5x per round regardless of the excess: too slow when sigma enters
-        // at ~40 (tolerance 1%), and unbounded DOWNWARD when a round could not realize the
-        // sizing it asked for -- each re-flagged round halved again from the already-lowered
-        // scalar, which is how a 1% run floored 10419 of 10585 band vertices and hit 9M tets.
-        //
-        // Two anchors keep it honest:
-        //  - the target is the face's MEASURED longest edge times the factor, not the current
-        //    scalar times the factor, so re-flagging a face whose splits have not landed yet
-        //    reproduces the same target instead of compounding;
-        //  - only the IN-FACE component sizes the drop. A face flagged for a vertex residual
-        //    or an AMIPS failure still gets its force-split (the stall response above), but
-        //    those excesses do not follow the chord law and must not be fed to it.
-        const double margin = std::max(1.0, m_offset_params.stuck_refine_margin);
-        std::unordered_map<size_t, double> target; // vid -> edge-length target, as a scalar
-        size_t n_sized = 0;
-        double min_factor = 1.;
-        for (size_t i = 0; i < n_worst; ++i) {
-            const StuckFace& sf = stuck[i];
-            if (sf.in_face <= 1.0) continue;
-            ++n_sized;
-            const double factor = 1. / std::sqrt(margin * sf.in_face);
-            min_factor = std::min(min_factor, factor);
-            double h = 0.;
-            for (int a = 0; a < 3; ++a) {
-                for (int b = a + 1; b < 3; ++b) {
-                    h = std::max(
-                        h,
-                        (m_vertex_attribute[sf.vids[a]].m_posf -
-                         m_vertex_attribute[sf.vids[b]].m_posf)
-                            .norm());
-                }
-            }
-            const double s_t = std::max(s_floor, h * factor / std::max(m_params.l, 1e-16));
-            const std::vector<size_t> face_seeds(sf.vids.begin(), sf.vids.end());
-            const auto region = wmtk::utils::grow_vertex_region(
-                face_seeds,
-                std::max(0, m_params.stuck_refine_rings),
-                [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
-            for (const size_t v : region) {
-                const auto [it, inserted] = target.emplace(v, s_t);
-                if (!inserted) it->second = std::min(it->second, s_t);
-            }
-        }
-        for (const auto& [v, s_t] : target) {
-            double& sv = m_vertex_attribute[v].m_sizing_scalar;
-            if (s_t < sv) {
-                sv = s_t;
-                refined.push_back(v);
-            }
-        }
-        gradation_smooth_sizing(m_offset_params.sizing_gradation, refined);
-
-        logger().info(
-            "\t[phase B] {} of {} offset faces over tolerance (worst {:.4}x) | proportional "
-            "refine (margin {}): {} of the worst {} size the field, min factor {:.4}, {} edges "
-            "force-split, {} of {} region vertices lowered (floor {:.4})",
-            stuck.size(),
-            n_offset_faces,
-            stuck.front().score,
-            margin,
-            n_sized,
-            n_worst,
-            min_factor,
-            m_force_split_edges.size(),
-            refined.size(),
-            target.size(),
-            s_floor);
-        return refined.size();
-    }
-
-    // FIXED-FACTOR FALLBACK: Phase B exited on the pass cap (ab_smooth_max_passes >= 0) with
-    // the gradient still falling, so the residual still contains unfinished placement and the
-    // chord law would over-read it. Ratchet the neighbourhood the old way -- refinement is
-    // still a right response, just not a calibrated one. The gradient-criterion and plateau
-    // exits both take the proportional branch above.
-    std::vector<size_t> seeds;
-    seeds.reserve(3 * n_worst);
-    for (size_t i = 0; i < n_worst; ++i) {
-        for (const size_t v : stuck[i].vids) seeds.push_back(v);
-    }
     const auto region = wmtk::utils::grow_vertex_region(
         seeds,
         std::max(0, m_params.stuck_refine_rings),
         [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
-    refined = wmtk::utils::apply_sizing_refinement(
+
+    // THE BAND'S FLOOR, not stuck_refine_min_scalar -- see the note in the Phase B branch of
+    // refine_sizing_around_worst() for why 3D keeps it where 2D does not.
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
+    const auto refined = wmtk::utils::apply_sizing_refinement(
         region,
         m_params.stuck_refine_factor,
         s_floor,
@@ -1625,12 +1699,11 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
     gradation_smooth_sizing(m_offset_params.sizing_gradation, refined);
 
     logger().info(
-        "\t[phase B] {} of {} offset faces over tolerance (worst {:.4}x) | phase B exited ON "
-        "THE PASS CAP, fixed-factor refine of the worst {} | {} edges force-split, {} of {} "
-        "region vertices lowered (floor {:.4})",
+        "\t[phase B] {} of {} offset faces over tolerance (worst {:.4}x) | refining the worst {}, "
+        "{} edges force-split, {} of {} region vertices lowered (floor {:.4})",
         stuck.size(),
         n_offset_faces,
-        stuck.front().score,
+        stuck.front().first,
         n_worst,
         m_force_split_edges.size(),
         refined.size(),
@@ -1638,6 +1711,7 @@ size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
         s_floor);
     return refined.size();
 }
+
 
 void TopoOffsetTetMesh::optimize_offset_alternating()
 {
@@ -1648,13 +1722,46 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
     // later as a residual that will not converge.
     check_no_vertex_on_both_surfaces("construction");
 
-    // Seed the envelope's trust region from the mesh as constructed: round 1's Phase A gets
-    // the freedom the construction's actual error deserves, not a width chosen for the end.
-    m_phase_b_last_max_residual = residual_split().max_reachable;
+    // Where the mesh as constructed stands, before the loop touches it. A diagnostic: it is
+    // the baseline every later round's residual is read against.
+    const double construction_residual = residual_split().max_reachable;
     logger().info(
-        "\tconstruction residual (trust-region seed): {:.6g} ({:.4}x tolerance)",
-        m_phase_b_last_max_residual,
-        m_phase_b_last_max_residual / offset_residual_tolerance());
+        "\tconstruction residual: {:.6g} ({:.4}x tolerance)",
+        construction_residual,
+        construction_residual / offset_residual_tolerance());
+    const GradientSplit construction_grad = gradient_split();
+    logger().info(
+        "\tconstruction placement gradient: {:.6g} ({:.4}x tolerance) | {} reachable, {} pinned, "
+        "{} skipped",
+        construction_grad.max_reachable,
+        construction_grad.max_reachable / offset_gradient_tolerance(),
+        construction_grad.n_reachable,
+        construction_grad.n_pinned,
+        construction_grad.n_skipped_unrounded + construction_grad.n_skipped_inverted);
+
+    // TEMPORARY, for the switch-isolation sweep: every run states its own switch settings, so
+    // a log is self-describing and the analysis never has to trust external bookkeeping.
+    logger().info(
+        "[experiment switches] chord_only_trigger {} | collapse_length_gate {} | "
+        "created_edge_guard {} | w_amips {:g} (Phase A only)",
+        offset_experiment_flag("WMTK_OFFSET_CHORD_ONLY_TRIGGER", false),
+        offset_experiment_flag("WMTK_OFFSET_COLLAPSE_LENGTH_GATE", false),
+        offset_experiment_flag("WMTK_OFFSET_CREATED_EDGE_GUARD", false),
+        m_params.w_amips);
+
+    // PER-ROUND OPERATION COUNTS. iter_cnt_* are cumulative from their reset at the top of
+    // optimize_offset(), so each round's contribution is the delta against the previous round's
+    // totals. Phase B performs no topological operations, so a round's counts are exactly what
+    // its Phase A did.
+    int prev_split = iter_cnt_split.load();
+    int prev_collapse = iter_cnt_collapse.load();
+    int prev_swap = iter_cnt_swap.load();
+    int prev_born = iter_cnt_split_born.load();
+    int prev_recol = iter_cnt_recollapsed.load();
+    int prev_recol_same = iter_cnt_recollapsed_same_pass.load();
+    int prev_len_gate = iter_cnt_collapse_length_gate.load();
+    int prev_created_gate = iter_cnt_collapse_created_edge_gate.load();
+    int prev_val_escape = iter_cnt_collapse_valence_escape.load();
 
     for (int round = 0; round < rounds; ++round) {
         // ---- PHASE A: TetWild, with the offset held inside its envelope ----
@@ -1754,12 +1861,99 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
 
         const DistanceSplit r = residual_split();
         report_outside_support("A/B round", r);
-        m_phase_b_last_max_residual = r.max_reachable; // next round's trust-region radius
-        const double phi = r.max_reachable / offset_residual_tolerance();
+        // THE LOOP'S CONVERGENCE TEST IS THE GRADIENT. The Phi residual and the Euclidean
+        // distance error are both still measured every round and both still logged, because they
+        // answer questions this one cannot -- the residual carries the chord term that ranks the
+        // sizing field, the Euclidean error says how far the smoothed offset ended up from the
+        // exact one -- but neither gates the run. See offset_gradient_tolerance().
+        const GradientSplit g = gradient_split();
+        const double phi = g.max_reachable / offset_gradient_tolerance();
         logger().info(
-            "\t[phase B] {} smoothing passes, max Phi residual {:.4}x tolerance",
+            "\t[phase B] {} smoothing passes, max placement gradient {:.6g} = {:.4}x tolerance "
+            "(at-vertex {:.4}x, in-face {:.4}x) | phi residual {:.4}x its own bar | {} reachable, "
+            "{} pinned (max {:.6g}), {} skipped ({} unrounded, {} inverted ring)",
             passes,
-            phi);
+            g.max_reachable,
+            phi,
+            g.max_at_vertex / offset_gradient_tolerance(),
+            g.max_in_face / offset_gradient_tolerance(),
+            r.max_reachable / offset_residual_tolerance(),
+            g.n_reachable,
+            g.n_pinned,
+            g.max_pinned,
+            g.n_skipped_unrounded + g.n_skipped_inverted,
+            g.n_skipped_unrounded,
+            g.n_skipped_inverted);
+
+        // BEFORE the convergence check below, so the round that converges is recorded like every
+        // other one rather than dropped by the early return.
+        {
+            const int s = iter_cnt_split.load();
+            const int c = iter_cnt_collapse.load();
+            const int w = iter_cnt_swap.load();
+            op_counts.push_back({{s - prev_split, c - prev_collapse, w - prev_swap}});
+            logger().info(
+                "\t[A/B round {}] operations: {} splits, {} collapses, {} swaps "
+                "(cumulative {} / {} / {})",
+                round + 1,
+                s - prev_split,
+                c - prev_collapse,
+                w - prev_swap,
+                s,
+                c,
+                w);
+            prev_split = s;
+            prev_collapse = c;
+            prev_swap = w;
+
+            // CHURN, in the same per-round shape. "recollapsed" counts split-born vertices a
+            // collapse removed; "same pass" is the subset the very next collapse pass took out.
+            const int b = iter_cnt_split_born.load();
+            const int rc = iter_cnt_recollapsed.load();
+            const int rs = iter_cnt_recollapsed_same_pass.load();
+            const int db = b - prev_born, drc = rc - prev_recol, drs = rs - prev_recol_same;
+            churn_counts.push_back({{db, drc, drs}});
+            logger().info(
+                "\t[A/B round {}] split churn: {} of {} split-born vertices recollapsed "
+                "({:.1f}%), {} of them in the collapse pass right after their own split "
+                "({:.1f}% of born)",
+                round + 1,
+                drc,
+                db,
+                db > 0 ? 100.0 * drc / db : 0.0,
+                drs,
+                db > 0 ? 100.0 * drs / db : 0.0);
+            // GATE LEDGER, same per-round shape: what each optional collapse guard refused, and
+            // how often the created-edge guard stood down to let a collapse relieve valence.
+            const int lg = iter_cnt_collapse_length_gate.load();
+            const int cg = iter_cnt_collapse_created_edge_gate.load();
+            const int ve = iter_cnt_collapse_valence_escape.load();
+            const int dlg = lg - prev_len_gate, dcg = cg - prev_created_gate,
+                      dve = ve - prev_val_escape;
+            gate_counts.push_back({{dlg, dcg, dve}});
+            if (dlg != 0) {
+                logger().info(
+                    "\t[A/B round {}] length gate: {} collapse candidates refused for being "
+                    "longer than 4/5 x l x sizing",
+                    round + 1,
+                    dlg);
+            }
+            if (dcg != 0 || dve != 0) {
+                logger().info(
+                    "\t[A/B round {}] created-edge guard: {} collapses refused for creating an "
+                    "edge over 4/3 x l x sizing; {} stood down for relieving valence",
+                    round + 1,
+                    dcg,
+                    dve);
+            }
+            prev_len_gate = lg;
+            prev_created_gate = cg;
+            prev_val_escape = ve;
+            prev_born = b;
+            prev_recol = rc;
+            prev_recol_same = rs;
+        }
+
         if (m_params.debug_output) {
             // See the phase A twin above: the per-phase series the viewer globs.
             write_optimization_debug_output(fmt::format("phase_{}B", round + 1));
@@ -2256,35 +2450,15 @@ double TopoOffsetTetMesh::band_vertex_residual(const size_t vid) const
 
 TopoOffsetTetMesh::FaceSamples TopoOffsetTetMesh::offset_face_samples(const Tuple& f) const
 {
+    // The lattice lives in for_each_offset_face_sample() so the gradient criterion measures the
+    // same points -- see gradient_split()'s face loop.
     FaceSamples s;
-    const int k = m_offset_params.offset_residual_samples;
-    if (k <= 0) return s;
-
-    const auto vs = get_face_vids(f);
-    const Vector3d p0 = m_vertex_attribute[vs[0]].m_posf;
-    const Vector3d p1 = m_vertex_attribute[vs[1]].m_posf;
-    const Vector3d p2 = m_vertex_attribute[vs[2]].m_posf;
-
-    // Interior lattice points of the barycentric subdivision at denominator n = k + 2: every
-    // (i, j, l) with i + j + l = n and each >= 1, so nothing lands on an edge or a vertex (those
-    // are measured separately, and a sample ON a vertex would double-count it).
-    //
-    // n = k + 2 rather than 2D's k + 1 because a triangle has no interior lattice point at
-    // denominator 2. The counts are 1, 3, 6, 10 for k = 1, 2, 3, 4, so k keeps its meaning as
-    // "sampling density" and k = 1 is the centroid -- which is the sample that matters most,
-    // since a triangle inscribed in the offset is furthest from it at its centroid.
-    const int n = k + 2;
-    for (int i = 1; i < n; ++i) {
-        for (int j = 1; j < n - i; ++j) {
-            const int l = n - i - j;
-            if (l < 1) continue;
-            const Vector3d q = (double(i) * p0 + double(j) * p1 + double(l) * p2) / double(n);
-            const double r = m_offset_potential->residual_length(q);
-            s.max = std::max(s.max, r);
-            s.sum += r;
-            ++s.n;
-        }
-    }
+    for_each_offset_face_sample(f, [&](const Vector3d& q) {
+        const double r = m_offset_potential->residual_length(q);
+        s.max = std::max(s.max, r);
+        s.sum += r;
+        ++s.n;
+    });
     return s;
 }
 
@@ -2969,11 +3143,14 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     check_offset_within_support("Offset as constructed");
 
     logger().info(
-        "\tOffset criterion: Phi residual <= {} = offset_residual_rel {} x target_distance {} "
-        "| level c {:.6}, dhat {:.6}, {} interior samples per offset face",
+        "\tOffset criterion: |grad (Phi - c)^2| <= {} = offset_gradient_rel {} x target_distance "
+        "{} | diagnostic Phi residual bar {} = offset_residual_rel {} | level c {:.6}, dhat "
+        "{:.6}, {} interior samples per offset face",
+        offset_gradient_tolerance(),
+        m_offset_params.offset_gradient_rel,
+        m_offset_params.target_distance,
         offset_residual_tolerance(),
         m_offset_params.offset_residual_rel,
-        m_offset_params.target_distance,
         m_offset_potential->target_level(),
         m_offset_potential->dhat(),
         m_offset_params.offset_residual_samples);
@@ -3027,6 +3204,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // run can therefore exit converged-on-distance and still be reported unconverged below.
     // Deliberate, recorded, and to be revisited once distance convergence is routine.
     iter_cnt_split = 0;
+    iter_cnt_split_born = 0;
+    iter_cnt_collapse_length_gate = 0;
+    iter_cnt_collapse_created_edge_gate = 0;
+    iter_cnt_collapse_valence_escape = 0;
+    iter_cnt_recollapsed = 0;
+    iter_cnt_recollapsed_same_pass = 0;
     iter_cnt_collapse = 0;
     iter_cnt_collapse_offset_removed = 0;
     iter_cnt_swap = 0;
@@ -3066,7 +3249,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    op_counts.push_back({{iter_cnt_split.load(), iter_cnt_collapse.load(), iter_cnt_swap.load()}});
+    // NO push_back HERE. op_counts is a per-A/B-round series now, recorded inside the driver
+    // loop; appending the run totals as a final element would make the last entry mean something
+    // different from every other one. The run total is the sum of the series.
 
     // Final metrics and the convergence verdict. One entry, for the whole run: the engine loop
     // owns the iterations now, so optimization_metrics is a summary rather than a history.
@@ -3089,11 +3274,35 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     diag_offset_bands("final");
     const auto [max_dist, avg_dist] = compute_distance_deviation();
     const DistanceSplit r = residual_split();
+    const GradientSplit g = gradient_split();
     const double tol = offset_residual_tolerance();
+    const double gtol = offset_gradient_tolerance();
     logger().info(
-        "phi residual: max {} (avg {}) vs tolerance {} = {} x target_distance | at vertices {}, "
-        "inside faces {} | {} reachable samples, {} pinned vertices || euclid dist err: max {} | "
-        "avg {}",
+        "placement gradient: max {} (avg {}) vs tolerance {} = {} x target_distance | at "
+        "vertices {}, inside faces {} ({} face samples) | {} "
+        "reachable, {} pinned (max {}), {} skipped ({} unrounded, {} inverted ring)",
+        g.max_reachable,
+        g.avg_reachable,
+        gtol,
+        m_offset_params.offset_gradient_rel,
+        g.max_at_vertex,
+        g.max_in_face,
+        g.n_face_samples,
+        g.n_reachable,
+        g.n_pinned,
+        g.max_pinned,
+        g.n_skipped_unrounded + g.n_skipped_inverted,
+        g.n_skipped_unrounded,
+        g.n_skipped_inverted);
+    // BOTH DIAGNOSTICS, neither a criterion. The Phi residual is the criterion's own quantity
+    // in length units -- same vertices, same face lattice -- so it says in metres what the
+    // gradient says in gradient units; the Euclidean error says how far the smoothed offset
+    // ended up from the exact one, which is the quantity the design trades away at reentrant
+    // features on purpose.
+    logger().info(
+        "phi residual (diagnostic): max {} (avg {}) vs its own bar {} = {} x target_distance | at "
+        "vertices {}, inside faces {} | {} samples, {} pinned vertices || euclid dist err: max {} "
+        "| avg {}",
         r.max_reachable,
         r.avg_reachable,
         tol,
@@ -3104,23 +3313,76 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         r.n_pinned,
         max_dist,
         avg_dist);
-    optimization_metrics.push_back({{max_dist, avg_dist, r.max_reachable, r.avg_reachable}});
+    optimization_metrics.push_back(
+        {{max_dist,
+          avg_dist,
+          r.max_reachable,
+          r.avg_reachable,
+          g.max_reachable,
+          g.avg_reachable,
+          g.max_at_vertex,
+          g.max_in_face}});
     log_worst_dist_vertex();
 
-    m_converged = r.max_reachable <= tol;
+    m_converged = g.max_reachable <= gtol;
     if (m_converged) {
         logger().info(
-            "Converged ([max phi residual] {} <= {} [offset_residual_rel x target_distance])",
-            r.max_reachable,
-            tol);
+            "Converged ([max placement gradient] {} <= {} [offset_gradient_rel x "
+            "target_distance]); worst term {} (at-vertex {}, in-face {})",
+            g.max_reachable,
+            gtol,
+            g.max_in_face > g.max_at_vertex ? "in-face" : "at-vertex",
+            g.max_at_vertex,
+            g.max_in_face);
+        // A band with unmeasured vertices is not a fully measured band, and the criterion is a
+        // max: saying so at the moment of the verdict is the only place it cannot be missed.
+        if (const size_t skipped = g.n_skipped_unrounded + g.n_skipped_inverted; skipped > 0) {
+            logger().warn(
+                "Converged with {} band vertices NOT measured ({} unrounded, {} with an inverted "
+                "ring). The smoother refuses to place these, so their gradient is not part of the "
+                "fixed point -- but the verdict above is a max over the rest.",
+                skipped,
+                g.n_skipped_unrounded,
+                g.n_skipped_inverted);
+        }
+        if (g.n_pinned > 0 && g.max_pinned > gtol) {
+            logger().warn(
+                "{} pinned band vertices are over the gradient tolerance (max {} > {}). These are "
+                "on the input complex, so Phase B never moves them and no further round can lower "
+                "this -- it is a construction defect, not a convergence one.",
+                g.n_pinned,
+                g.max_pinned,
+                gtol);
+        }
     }
 
     if (!m_converged) {
-        logger().warn(
-            "Optimization did not converge ([max phi residual] {} > {} [offset_residual_rel x "
-            "target_distance])",
-            r.max_reachable,
-            tol);
+        // WHICH TERM FAILED IS THE FIRST THING TO ACT ON, and naming a vertex when the max came
+        // from a face interior points at the wrong remedy: an in-face max is a surface too coarse
+        // to represent the level set, which wants refinement, and there is no vertex to blame for
+        // it. at-vertex is the surface in the wrong place, which wants smoothing -- and only that
+        // case has a worst_vid.
+        if (g.max_in_face > g.max_at_vertex) {
+            logger().warn(
+                "Optimization did not converge ([max placement gradient] {} > {} "
+                "[offset_gradient_rel x target_distance]); worst term is IN-FACE ({} vs {} at "
+                "vertices) -- the band is too coarse to represent the level set, which wants "
+                "refinement rather than smoothing",
+                g.max_reachable,
+                gtol,
+                g.max_in_face,
+                g.max_at_vertex);
+        } else {
+            logger().warn(
+                "Optimization did not converge ([max placement gradient] {} > {} "
+                "[offset_gradient_rel x target_distance]); worst term is AT-VERTEX, at vertex {} "
+                "({} vs {} inside faces)",
+                g.max_reachable,
+                gtol,
+                g.worst_vid,
+                g.max_at_vertex,
+                g.max_in_face);
+        }
 
         // Is topological preservation holding the offset back, as opposed to a handful of
         // over-constrained vertices? See TOPOLOGY_BLOCK_AVG_FRAC for why the average is the

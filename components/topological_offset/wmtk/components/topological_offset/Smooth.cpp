@@ -1,6 +1,10 @@
 
 #include "TopoOffsetTetMesh.h"
 
+#include <wmtk/optimization/solver.hpp>
+#include <wmtk/utils/TetraQualityUtils.hpp>
+
+#include <cmath>
 #include <set>
 #include <vector>
 
@@ -51,6 +55,26 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     // move anywhere.
     //
     // Measured before this change: 14758 of 229276 smoothing attempts refused here.
+
+    // PHASE B PLACES THE OFFSET SURFACE AND MOVES NOTHING ELSE.
+    //
+    // Phase B's objective is the offset potential, which only offset-only vertices carry. Every
+    // other vertex used to be smoothed here by AMIPS plus an envelope pull -- that is quality
+    // work, and quality work belongs to Phase A, which runs every round with the full TetWild
+    // pass set. Doing it again in B bought nothing the next A would not redo, and it did it
+    // against a mesh B was mid-way through re-placing.
+    //
+    // Dropping AMIPS but keeping those vertices smoothed is NOT the alternative: with only an
+    // envelope pull and no shape term their solve is ill-posed the same way the rank-1
+    // distance-only offset solve was, so they are refused outright instead.
+    if (m_phase == OptPhase::B) {
+        const auto& ve = m_vertex_extra[vid];
+        if (!ve.m_is_on_offset || ve.m_is_on_input || !m_offset_potential) {
+            ++m_move_stats[size_t(vertex_class(vid))].refused_before;
+            ++m_smooth_trace.before_phase_b_not_offset;
+            return false;
+        }
+    }
     return true;
 }
 
@@ -66,8 +90,8 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
  * smoother's line search, its exact inversion test and its accept checks.
  *
  * The smooth offset potential removes the reason: the offset is now the term
- * smoothing_extra_energy() adds to this vertex's objective, so it is minimised by the same
- * solver as AMIPS and defended by the same checks. See OffsetPotential.
+ * smooth_offset_vertex_backtracking() drives to zero directly, by a 1-D root find rather than
+ * a blended minimisation. See OffsetPotential.
  */
 bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
 {
@@ -88,7 +112,22 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     const bool zero_tracked = on_wall && get_surface_faces_for_vertex(vid).faces().empty();
     const double dev_before = on_wall ? wall_offplane_deviation(vid) : 0.;
 
-    const bool ok = TetOptimizerMesh::smooth_after(t);
+    // TWO PHASES, TWO SMOOTHERS, NO AMIPS IN B.
+    //
+    // Phase B places offset-only vertices with the offset potential alone: a 1-D Newton root
+    // find on Phi(x) = target along the gradient, backtracked into the element by bisection if
+    // the root would invert the ring. smooth_before() has already refused every other vertex in
+    // this phase, so the branch below is exhaustive.
+    //
+    // WHY NOT THE SHARED SOLVE. Blending w_amips * AMIPS into this vertex's objective leaves it
+    // resting a w_amips-proportional distance off the level set (the header on
+    // smooth_offset_vertex_backtracking has the measurement) -- the at-vertex wall. And AMIPS
+    // alone cannot be dropped from the shared solve either: the offset energy's Hessian is
+    // 2*w*g*g^T, rank 1, with a 2-D nullspace in the level set's tangent plane, so a 3-D
+    // minimize of it is ill-posed. The 1-D root find sidesteps both -- it solves the only
+    // direction the potential determines, and asks nothing of the two it does not.
+    const bool ok = (m_phase == OptPhase::B) ? smooth_offset_vertex_backtracking(t)
+                                             : TetOptimizerMesh::smooth_after(t);
     if (!ok) {
         return false;
     }
@@ -107,16 +146,149 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     return true;
 }
 
+bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
+{
+    const size_t vid = t.vid(*this);
+    const auto locs = get_one_ring_tets_for_vertex(t);
+    if (locs.empty()) {
+        return false;
+    }
+
+    // Same entry guard the shared smoother applies: a one-ring already inverted in floats has
+    // no valid segment to search, and the exact predicate below would reject every candidate.
+    for (const Tuple& loc : locs) {
+        if (is_inverted_f(loc)) {
+            ++m_smooth_rejects.already_inverted;
+            return false;
+        }
+    }
+
+    const Vector3d x_orig = m_vertex_attribute[vid].m_posf;
+
+    // ALONG THE NORMAL, ONTO THE LEVEL SET -- a 1-D root find on Phi(x) = c, NOT a 3-D
+    // minimisation of the offset energy.
+    //
+    // The distinction is the whole point. OffsetEnergy's Gauss-Newton Hessian is
+    // 2 * w * g * g^T with g = grad Phi: RANK ONE. It constrains the normal direction and
+    // leaves a two-dimensional nullspace in the level set's tangent plane, so minimising it
+    // alone does not determine where the vertex goes -- it fixes one of three degrees of
+    // freedom and lets the other two drift. Measured on prism at 5% with AMIPS removed and the
+    // full 3-D solve kept: round 1 came out at 19.31x tolerance against 8.6-9.0x with AMIPS
+    // present, 1772 faces carrying an over-tolerance vertex against 0, and envelope refusals up
+    // an order of magnitude -- vertices sliding along the surface, exactly the nullspace.
+    //
+    // What the offset term actually says is "move along the normal until Phi = c", and that is
+    // well posed on its own. Each iteration takes the Newton step for the scalar equation,
+    // -(Phi - c) / |grad Phi|^2 * grad Phi, which IS the normal direction; the tangential
+    // components never enter, so there is no nullspace to regularise and no AMIPS needed. Phi
+    // is nonlinear, so a few iterations are taken and the last one is kept.
+    constexpr int kRootFindIters = 8;
+    Vector3d x = x_orig;
+    for (int it = 0; it < kRootFindIters; ++it) {
+        const double r = m_offset_potential->value(x) - m_offset_potential->target_level();
+        const Vector3d g = m_offset_potential->gradient(x);
+        const double g2 = g.squaredNorm();
+        if (!(g2 > 0.) || !std::isfinite(r)) {
+            break; // no usable normal here; keep the best point so far
+        }
+        const Vector3d step = -(r / g2) * g;
+        if (!step.allFinite()) {
+            break;
+        }
+        x += step;
+        // Converged when the step is negligible against the offset distance itself.
+        if (step.norm() <= 1e-12 * std::max(m_offset_params.target_distance, 1e-16)) {
+            break;
+        }
+    }
+    const Vector3d x_new = x;
+    if (!x_new.allFinite()) {
+        set_vertex_position(vid, x_orig);
+        ++m_smooth_rejects.inverted;
+        return false;
+    }
+
+    // Place a candidate and report whether any incident tet inverted. Exact, on the rational
+    // position, exactly as the shared smoother's accept test is.
+    const auto inverts = [&](const Vector3d& p) {
+        set_vertex_position(vid, p);
+        for (const Tuple& loc : locs) {
+            if (is_inverted(loc)) return true;
+        }
+        return false;
+    };
+
+    if (inverts(x_new)) {
+        // BISECT THE SEGMENT, keeping the invariant lo = valid, hi = invalid. s = 1 is known
+        // invalid (just tested) and s = 0 is known valid (the entry guard), so this converges
+        // UP to the constraint from below rather than capping at the midpoint -- the vertex
+        // gets as close to the level set as the one-ring allows.
+        //
+        // The step count is OURS and not project_line_search_nested_steps, which defaults to 0
+        // -- a max(1, that) gave a single probe at s = 0.5 and discarded the move whenever that
+        // one point inverted, which is not a line search at all (measured: 893 inversion
+        // refusals per pass). 30 halvings take s below 1e-9 of the segment, so a refusal here
+        // means no admissible motion exists rather than that the search gave up.
+        constexpr int kBisectionSteps = 30;
+        double lo = 0., hi = 1.;
+        Vector3d best = x_orig;
+        bool found = false;
+        for (int j = 0; j < kBisectionSteps; ++j) {
+            const double mid = 0.5 * (lo + hi);
+            const Vector3d cand = x_orig + mid * (x_new - x_orig);
+            if (inverts(cand)) {
+                hi = mid;
+            } else {
+                lo = mid;
+                best = cand;
+                found = true;
+            }
+        }
+        if (!found) {
+            // Not even the smallest step is admissible: leave the vertex where it started.
+            set_vertex_position(vid, x_orig);
+            ++m_smooth_rejects.inverted;
+            return false;
+        }
+        // A SAFETY MARGIN, but ONLY on this path. `best` sits at s = lo, which after 30
+        // halvings is within ~1e-9 of the first inverting point -- valid by the orientation
+        // test and numerically degenerate in every other sense, which is what fed near-zero
+        // volume tets to Phase A and (while the criterion still assembled AMIPS) produced the
+        // inf gradients that hung Phase B.
+        //
+        // The margin is deliberately NOT applied when the root is reachable: that case never
+        // enters this branch at all, so a vertex whose true minimum lies inside its one-ring
+        // still lands exactly on the level set. Backing off is a concession to the constraint,
+        // and it is only owed where the constraint actually bound.
+        //
+        // The valid set along the segment need not be a single interval -- tet orientation is
+        // a cubic in s -- so the retreated point is re-tested rather than assumed, and falls
+        // back to `best` if it somehow inverts.
+        constexpr double kBacktrackMargin = 0.8;
+        const Vector3d retreated = x_orig + kBacktrackMargin * lo * (x_new - x_orig);
+        // Either way set the position explicitly rather than relying on where inverts() left it.
+        set_vertex_position(vid, inverts(retreated) ? best : retreated);
+    }
+
+    // The one-ring's stored qualities are now stale; the split/collapse/swap passes read them.
+    for (const Tuple& loc : locs) {
+        set_cell_quality(loc.tid(*this), get_quality(loc));
+    }
+    ++m_smooth_rejects.accepted;
+    return true;
+}
+
 void TopoOffsetTetMesh::log_smooth_trace() const
 {
     const auto& s = m_smooth_trace;
     logger().info(
-        "\tsmooth trace: attempted {} | before: bbox {}, unrounded {}, on-input {} | "
-        "offset-surface vertices {}, interior {} ({})",
+        "\tsmooth trace: attempted {} | before: bbox {}, unrounded {}, on-input {}, "
+        "phase-B non-offset {} | offset-surface vertices {}, interior {} ({})",
         s.attempted.load(),
         s.before_bbox.load(),
         s.before_unrounded.load(),
         s.before_on_input.load(),
+        s.before_phase_b_not_offset.load(),
         s.offset_attempted.load(),
         s.interior_attempted.load(),
         m_smooth_rejects.to_string());

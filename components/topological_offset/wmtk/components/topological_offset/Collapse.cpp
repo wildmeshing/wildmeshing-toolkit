@@ -19,6 +19,44 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     if (m_ab_collapses_disabled) {
         return false;
     }
+
+    // THE 4/5 LENGTH GATE, IN THE SPLIT'S UNITS. Toggleable while it is being evaluated.
+    //
+    // The base applies its length gate only in m_coarsen_mode, and unscaled -- there
+    // collapsing_l2 is the USER's target length, deliberately not the sizing field (see
+    // OptimizerParameters, coarsen_unbounded). That is the right question for a coarsening pass
+    // and the wrong one here: an offset run drives m_sizing_scalar toward min_sizing_scalar, so
+    // in exactly the refined regions where the churn lives every edge is far below an unscaled
+    // 0.8*l and the gate would never fire.
+    //
+    // So this mirrors the SPLIT gate instead, term for term, and inverts the comparison:
+    //
+    //     split    refuses  length2 <  splitting_l2  * sizing_ratio^2   (l * 4/3 * s)
+    //     collapse refuses  length2 >  collapsing_l2 * sizing_ratio^2   (l * 4/5 * s)
+    //
+    // with sizing_ratio the mean of the endpoints' scalars, as there. The band between them is
+    // the length the optimizer is asking for at this location, and an edge inside it is left
+    // alone by both passes.
+    //
+    // WHAT THIS DOES NOT FIX: 4/3 and 4/5 do not compose. An edge split at exactly its
+    // threshold yields children of 2/3 * l * s, which is below 4/5 -- inside the collapse band
+    // the moment they are created. Only a parent longer than 8/5 * l * s produces children the
+    // gate protects. Getting the rest into the band is the interleaved smoothing pass's job.
+    // Measured before this gate: 68.4% of all splits were undone by the collapse pass that ran
+    // immediately after the split pass that created them.
+    static const bool kCollapseLengthGate =
+        offset_experiment_flag("WMTK_OFFSET_COLLAPSE_LENGTH_GATE", false);
+    if (kCollapseLengthGate) {
+        const size_t v1 = t.vid(*this);
+        const size_t v2 = t.switch_vertex(*this).vid(*this);
+        const double sizing_ratio =
+            (m_vertex_attribute[v1].m_sizing_scalar + m_vertex_attribute[v2].m_sizing_scalar) / 2;
+        if (get_length2(t) > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+            ++iter_cnt_collapse_length_gate;
+            return false;
+        }
+    }
+
     if (!TetOptimizerMesh::collapse_edge_before(t)) {
         return false;
     }
@@ -44,6 +82,71 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     // whatever m_envelope tolerates.
     if (vertex_is_frozen(v1_id)) {
         return false;
+    }
+
+    // BOTSCH-KOBBELT'S OTHER LEG: refuse a collapse that would CREATE an over-long edge.
+    // Toggleable while it is being evaluated, like the 4/5 gate in collapse_edge_before.
+    //
+    // The 4/5 gate asks whether the edge being REMOVED is short enough to deserve removing.
+    // That question cannot see the churn the measurement actually found, because 4/3 and 4/5 do
+    // not compose: an edge split at exactly its threshold yields children at 2/3 * l * s, which
+    // are already inside the collapse band the instant they are born, and the gate waves them
+    // through. Only a parent past 8/5 * l * s makes children the gate protects. Botsch-Kobbelt,
+    // whose hysteresis constants 4/3 and 4/5 are, is stable because its collapse asks the OTHER
+    // question too -- would the merge produce an edge over 4/3? -- and merging two children
+    // recreates exactly the parent that was just split, so that is the question that catches
+    // this. The port never had this leg.
+    //
+    // Same units as the split gate, term for term: the created edge (v2,nb) is over-long when
+    // its length2 exceeds splitting_l2 * sbar^2 with sbar the mean of the two endpoints'
+    // sizing scalars -- so an edge this refuses to create is exactly an edge the split pass
+    // would immediately split back.
+    //
+    // AN EDGE THAT WAS ALREADY OVER-LONG IS EXEMPT (the `after2 > before2` test, not a flat
+    // refusal): the collapse may leave a bad edge no worse than it found it. That is what keeps
+    // degenerate cleanup possible -- when v1 ~ v2 the two lengths are equal and nothing is
+    // refused -- and it means the guard only ever blocks a genuine lengthening.
+    //
+    // VALENCE ESCAPE, and it is load-bearing. Uday measured the guard alone trapping slivers:
+    // splits keep pumping valence into vertices whose relieving collapses the guard refuses,
+    // reaching valence 240 with 32 vertices over the split threshold and an 18x runtime hit
+    // from the retry grind. A collapse deletes the tets around (v1,v2) and is precisely the
+    // operation that relieves valence, so relief takes precedence and the guard stands down.
+    // Self-limiting rather than unbounded: with the escape the global max sits exactly at the
+    // threshold, none over.
+    static const bool kCreatedEdgeGuard =
+        offset_experiment_flag("WMTK_OFFSET_CREATED_EDGE_GUARD", false);
+    if (kCreatedEdgeGuard) {
+        const auto thr = static_cast<size_t>(std::max(0, m_params.split_high_valence_threshold));
+        const auto valence = [&](const size_t v) { return get_one_ring_tids_for_vertex(v).size(); };
+        const auto ring = get_one_ring_vids_for_vertex(v1_id);
+        bool relieve = thr > 0 && (valence(v1_id) > thr || valence(v2_id) > thr);
+        if (thr > 0 && !relieve) {
+            for (const size_t nb : ring) {
+                if (valence(nb) > thr) {
+                    relieve = true;
+                    break;
+                }
+            }
+        }
+        if (relieve) {
+            ++iter_cnt_collapse_valence_escape;
+        } else {
+            const Vector3d p1 = m_vertex_attribute[v1_id].m_posf;
+            const Vector3d p2 = m_vertex_attribute[v2_id].m_posf;
+            for (const size_t nb : ring) {
+                if (nb == v1_id || nb == v2_id) continue;
+                const double after2 = (p2 - m_vertex_attribute[nb].m_posf).squaredNorm();
+                const double sbar = 0.5 * (m_vertex_attribute[v2_id].m_sizing_scalar +
+                                           m_vertex_attribute[nb].m_sizing_scalar);
+                if (after2 <= m_params.splitting_l2 * sbar * sbar) continue; // not over-long
+                const double before2 = (p1 - m_vertex_attribute[nb].m_posf).squaredNorm();
+                if (after2 > before2) { // creates or lengthens an over-long edge
+                    ++iter_cnt_collapse_created_edge_gate;
+                    return false;
+                }
+            }
+        }
     }
 
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not
@@ -136,6 +239,17 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
 void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v2_id)
 {
     if (m_vertex_extra.at(v1_id).m_is_on_offset) ++iter_cnt_collapse_offset_removed;
+    // CHURN: v1 is the vertex being REMOVED. If a split created it, this collapse is undoing
+    // that split. Same epoch means the collapse pass that immediately follows its own split
+    // pass took it straight back out -- work the mesh never got to keep. A larger age means it
+    // survived at least one further iteration before something decided against it.
+    {
+        const uint32_t born = m_vertex_extra.at(v1_id).m_born_epoch;
+        if (born != 0) {
+            ++iter_cnt_recollapsed;
+            if (m_op_epoch == born) ++iter_cnt_recollapsed_same_pass;
+        }
+    }
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
     m_vertex_extra[v2_id].m_is_on_input =
         m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;

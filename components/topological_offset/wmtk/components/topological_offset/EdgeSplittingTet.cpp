@@ -592,6 +592,10 @@ bool TopoOffsetTetMesh::split_after_cells(
     // nothing to fall back on.
     m_vertex_extra[v_id].m_is_on_offset =
         m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
+    // CHURN INSTRUMENTATION, read only by collapse_after_vertex(). Assigned, never OR'd: v_id
+    // may be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
+    m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
+    if (m_op_epoch != 0) ++iter_cnt_split_born;
     if (m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset) {
         ++iter_cnt_split_offset_endpoints;
     }

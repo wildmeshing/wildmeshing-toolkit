@@ -26,6 +26,7 @@
             "offset_field",
             "offset_dhat_factor",
             "offset_residual_rel",
+            "offset_gradient_rel",
             "offset_residual_samples",
             "sorted_marching",
             "check_manifoldness",
@@ -48,7 +49,6 @@
             "ab_smooth_tol",
             "ab_smooth_grad_tol_rel",
             "ab_offset_envelope_rel",
-            "ab_envelope_residual_rel",
             "length_rel",
             "length",
             "stop_energy",
@@ -70,7 +70,6 @@
             "stuck_refine_num_worst",
             "stuck_refine_rings",
             "stuck_refine_factor",
-            "stuck_refine_margin",
             "stuck_refine_min_scalar",
             "stuck_refine_gradation",
             "stuck_refine_force_split",
@@ -217,7 +216,13 @@
         "pointer": "/offset_residual_rel",
         "default": 0.1,
         "type": "float",
-        "doc": "Convergence tolerance on the offset, as a fraction of target_distance, applied to the potential residual expressed as a length."
+        "doc": "3D: a DIAGNOSTIC, no longer the convergence criterion -- see offset_gradient_rel. Still the bar face_criterion_rel() ranks the sizing field against, and still what the reported phi residual is normalized by. 2D: unchanged, this is TriWild's convergence tolerance. As a fraction of target_distance, applied to the potential residual expressed as a length."
+    },
+    {
+        "pointer": "/offset_gradient_rel",
+        "default": 0.2,
+        "type": "float",
+        "doc": "3D only. THE CONVERGENCE CRITERION: a bound on the max of |grad (Phi(x) - c)^2| over the reachable offset surface, as a fraction of target_distance. The gradient is the stationarity condition of the objective Phase B minimises, so unlike the residual it means the same thing for any potential -- exact Euclidean, the OGC rule, or ESP -- without that potential first having to convert its field value into a length. Since grad E = 2 (Phi - c) grad Phi, on a distance-like field (|grad Phi| = 1 near the level set) this bound is |Phi - c| <= offset_gradient_rel/2 x target_distance, which is why the default is twice offset_residual_rel's. Measured BOTH at band vertices and at interior samples of band faces (offset_residual_samples sets the density), so a surface whose vertices sit on the level set while its triangles chord across it does not read as converged; the report splits the two as max_grad_at_vertex and max_grad_in_face, which say whether a failing run wants smoothing or refinement."
     },
     {
         "pointer": "/offset_residual_samples",
@@ -356,13 +361,7 @@
         "pointer": "/ab_offset_envelope_rel",
         "type": "float",
         "default": 0.25,
-        "doc": "FLOOR of Phase A's offset envelope, as a multiple of the Phi tolerance -- the width the envelope settles to once the residual approaches tolerance. The per-round width is ab_envelope_residual_rel x the previous Phase B's max residual, clamped below by this and above by 0.25 x target_distance. Cannot be 0: refinement moves the surface by about the local chord error when a split lands, and an envelope tighter than that refuses Phase A's operations outright. Also feeds the derived sizing floor when min_edge_length_rel is negative."
-    },
-    {
-        "pointer": "/ab_envelope_residual_rel",
-        "type": "float",
-        "default": 0.5,
-        "doc": "Trust-region scale of Phase A's offset envelope: each round's envelope eps is this fraction of the max Phi residual measured after the previous Phase B (seeded from the mesh as constructed for round 1), clamped between ab_offset_envelope_rel x tolerance and 0.25 x target_distance. Phase A may spend at most this fraction of the error budget the surface currently has: wide early, when topological rearrangement needs room, shrinking as placement converges so A's re-perturbation is proportional to remaining error instead of a fixed noise floor."
+        "doc": "Phase A's offset envelope width, as a multiple of the Phi tolerance -- the same tube every round, whatever the current residual. Cannot be 0: refinement moves the surface by about the local chord error when a split lands, and an envelope tighter than that refuses Phase A's operations outright. Also feeds the derived sizing floor when min_edge_length_rel is negative."
     },
     {
         "pointer": "/interleaved_smoothing",
@@ -441,12 +440,6 @@
         "type": "float",
         "default": 0.5,
         "doc": "Multiplicative reduction of the per-vertex sizing scalar per refinement."
-    },
-    {
-        "pointer": "/stuck_refine_margin",
-        "type": "float",
-        "default": 1.5,
-        "doc": "Safety margin of the proportional stuck-refine sizing step. When Phase B exits on its gradient criterion (placement converged), a face whose in-face residual measures sigma tolerances has its edge-length target scaled by 1/sqrt(margin x sigma): the chord law (residual ~ h^2) then lands it at 1/margin of the tolerance rather than exactly at it, giving headroom against the next Phase A's re-perturbation. 1 means aim exactly at tolerance. When Phase B exits blocked instead, the fixed stuck_refine_factor ratchet is used and this is ignored."
     },
     {
         "pointer": "/stuck_refine_min_scalar",

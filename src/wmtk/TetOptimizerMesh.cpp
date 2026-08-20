@@ -165,6 +165,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
+                ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 logger().info("==splitting {}==", n);
                 split_all_edges();
                 logger().info(

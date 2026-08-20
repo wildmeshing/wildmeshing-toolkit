@@ -64,6 +64,33 @@ struct Parameters : public wmtk::OptimizerParameters
     // vertex to the level set -- so 0.1 means "every offset vertex is within 10% of the offset
     // distance of where the potential says it belongs".
     double offset_residual_rel;
+    // CONVERGENCE, 3D. The bound on the max over reachable band vertices of the gradient of the
+    // offset energy E = (Phi(x) - c)^2 with respect to the vertex position, as a fraction of
+    // target_distance.
+    //
+    // WHY THE GRADIENT AND NOT THE RESIDUAL. The residual is a statement about one particular
+    // Phi: it is comparable to target_distance only because residual_length() converts the field
+    // value into a length, and every potential has to supply that conversion for the bound to
+    // mean the same thing. The gradient is the stationarity condition of the objective Phase B
+    // actually minimises, so it is the same statement for ANY Phi -- exact Euclidean, the OGC
+    // rule, or ESP -- without the potential having to agree on a length scale first. That is what
+    // makes this the criterion to carry into a smooth potential on reentrant geometry.
+    //
+    // THE SCALE. grad E = 2 (Phi - c) grad Phi, so for a distance-like field (|grad Phi| = 1 near
+    // the level set, which is exactly the convex case) the bound |grad E| <= g is |Phi - c| <=
+    // g/2. The default is therefore 2 x offset_residual_rel's default, so a run that used to pass
+    // the residual bound passes this one on such a field. Away from that case the two are
+    // genuinely different tests and neither implies the other.
+    //
+    // MEASURED OVER THE SURFACE, NOT JUST AT ITS VERTICES. E is a field, so it has a gradient
+    // at every point of space, and it is evaluated at interior samples of every band face on the
+    // same lattice the residual uses (offset_residual_samples). Both terms gate: a triangle whose
+    // corners sit on the level set while its interior chords across it fails this bound, which a
+    // vertex-only test reads as converged. Measured on prism at tau = 0.01: the vertex term was
+    // under tolerance from round 4, while the in-face term needed four more rounds and was still
+    // 10.7x larger at convergence. The two are reported separately because they call for
+    // different remedies -- at-vertex wants smoothing, in-face wants refinement.
+    double offset_gradient_rel;
     // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;
     // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to
     // a band whose vertices sit on the level set while its edges cut across it.
@@ -98,24 +125,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// falls to this fraction of its value at phase entry. See phase_b_band_gradient_linf().
     double
         ab_smooth_grad_tol_rel; ///< "nothing moves any more", as a fraction of the target length l
-    /// The FLOOR of Phase A's offset envelope, in Phi tolerances -- the width the envelope
-    /// settles to once the residual approaches tolerance. The working width each round is
-    /// ab_envelope_residual_rel x the previous Phase B's max residual, clamped between this
-    /// floor and a hard geometric cap; see rebuild_offset_envelope(). Also feeds the derived
-    /// sizing floor (min_edge_length_rel < 0), which keys off this converged-state width.
+    /// Phase A's offset envelope width, in Phi tolerances -- the same tube every round; see
+    /// rebuild_offset_envelope(). Also feeds the derived sizing floor (min_edge_length_rel < 0).
     double ab_offset_envelope_rel;
-    /// Trust-region scale of Phase A's envelope: eps = this x the max residual after the last
-    /// Phase B. Wide while the surface is far from the level set (topological rearrangement
-    /// needs room; pinning A to a wrong surface preserves its errors), shrinking in lockstep
-    /// with progress so A's re-perturbation stops being a fixed noise floor -- measured before
-    /// this: a constant 1-tolerance envelope held the loop hovering at 1.2-1.3x tolerance.
-    double ab_envelope_residual_rel;
-    /// Safety margin of the PROPORTIONAL stuck-refine step (Phase B exited on the gradient
-    /// criterion, so the in-face residual is pure resolution error): a face measuring sigma
-    /// tolerances gets its edge-length target scaled by 1/sqrt(margin x sigma), landing it at
-    /// 1/margin of the tolerance by the chord law (residual ~ h^2). See
-    /// TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck().
-    double stuck_refine_margin;
 
     // l_min from the paper: the shortest edge the sizing field may ask for. Tied to the OFFSET
     // DISTANCE rather than to the bounding box, because that is the scale the offset actually
@@ -184,6 +196,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
         offset_residual_rel = json_params["offset_residual_rel"];
+        offset_gradient_rel = json_params["offset_gradient_rel"];
         offset_residual_samples = json_params["offset_residual_samples"];
         if (relative_ball_threshold < 0.0 || relative_ball_threshold > 1.0) {
             log_and_throw_error(
@@ -205,8 +218,6 @@ struct Parameters : public wmtk::OptimizerParameters
         ab_smooth_tol = json_params["ab_smooth_tol"];
         ab_smooth_grad_tol_rel = json_params["ab_smooth_grad_tol_rel"];
         ab_offset_envelope_rel = json_params["ab_offset_envelope_rel"];
-        ab_envelope_residual_rel = json_params["ab_envelope_residual_rel"];
-        stuck_refine_margin = json_params["stuck_refine_margin"];
 
         min_edge_length = json_params["min_edge_length"];
         min_edge_length_rel = json_params["min_edge_length_rel"];

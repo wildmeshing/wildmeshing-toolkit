@@ -36,7 +36,7 @@ include(CPM)
 CPMAddPackage(
     NAME ipc_toolkit
     GITHUB_REPOSITORY wildmeshing/ipc-toolkit
-    GIT_TAG 67bb3d7a0e1486578bf321ee688d04a873bff06f
+    GIT_TAG 8028b77930925948448085646b973b411c17a7dc
     OPTIONS
     "IPC_TOOLKIT_BUILD_TESTS OFF"
     "IPC_TOOLKIT_BUILD_PYTHON OFF"
@@ -45,7 +45,7 @@ CPMAddPackage(
 
 # ipc-toolkit's SIMD branch ends with
 #
-#     target_compile_definitions(ipc_toolkit PUBLIC EIGEN_DONT_VECTORIZE=1)
+# target_compile_definitions(ipc_toolkit PUBLIC EIGEN_DONT_VECTORIZE=1)
 #
 # -- PUBLIC, with a comment saying the author does not know why making it private crashes. It
 # is not optional for us either: high_order_contact, the subtree wmtk actually uses, carries a
@@ -63,6 +63,7 @@ CPMAddPackage(
 # That pin is load-bearing, and the symptom if it is lost is an alignment abort in tests that
 # have nothing to do with either the offset or ipc. Check it here, next to the cause.
 get_target_property(WMTK_EIGEN_DEFS Eigen3_Eigen INTERFACE_COMPILE_DEFINITIONS)
+
 if(NOT WMTK_EIGEN_DEFS MATCHES "EIGEN_MAX_STATIC_ALIGN_BYTES")
     message(FATAL_ERROR
         "Eigen3::Eigen is missing the EIGEN_MAX_STATIC_ALIGN_BYTES pin from "

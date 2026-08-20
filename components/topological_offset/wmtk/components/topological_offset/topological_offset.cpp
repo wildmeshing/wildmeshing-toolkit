@@ -429,20 +429,34 @@ void topological_offset(nlohmann::json json_params)
             report["threads"] = NUM_THREADS;
             report["time"] = time;
             if (!mesh.optimization_metrics.empty()) {
-                // The Euclidean distance error is a DIAGNOSTIC now -- the offset is the level set
-                // of the smooth potential, so what the run converged on is the Phi residual. Both
-                // are reported, and the two agree away from reentrant features of the input.
-                std::vector<double> max_dist_err, avg_dist_err, max_residual, avg_residual;
+                // THREE MEASURES, ONE CRITERION. What the run converged on is max_grad -- the
+                // placement gradient |grad (Phi - c)^2| over the offset surface, at band vertices
+                // AND at interior samples of band faces, which is the same test for any
+                // potential. max_grad_at_vertex / max_grad_in_face split it by where the max was
+                // measured, which is what says whether a failing run wants smoothing or
+                // refinement. The other two series are diagnostics: the Phi residual is the same
+                // quantity in length units, and the Euclidean error says how far the smoothed
+                // offset ended up from the exact one.
+                std::vector<double> max_dist_err, avg_dist_err, max_residual, avg_residual,
+                    max_grad, avg_grad, max_grad_at_vertex, max_grad_in_face;
                 for (const auto& m : mesh.optimization_metrics) {
                     max_dist_err.push_back(m[0]);
                     avg_dist_err.push_back(m[1]);
                     max_residual.push_back(m[2]);
                     avg_residual.push_back(m[3]);
+                    max_grad.push_back(m[4]);
+                    avg_grad.push_back(m[5]);
+                    max_grad_at_vertex.push_back(m[6]);
+                    max_grad_in_face.push_back(m[7]);
                 }
                 report["optimization_metrics"]["max_dist_err"] = max_dist_err;
                 report["optimization_metrics"]["avg_dist_err"] = avg_dist_err;
                 report["optimization_metrics"]["max_phi_residual"] = max_residual;
                 report["optimization_metrics"]["avg_phi_residual"] = avg_residual;
+                report["optimization_metrics"]["max_grad"] = max_grad;
+                report["optimization_metrics"]["avg_grad"] = avg_grad;
+                report["optimization_metrics"]["max_grad_at_vertex"] = max_grad_at_vertex;
+                report["optimization_metrics"]["max_grad_in_face"] = max_grad_in_face;
 
                 std::vector<int> splits, collapses, swaps;
                 for (const auto& c : mesh.op_counts) {
@@ -453,10 +467,33 @@ void topological_offset(nlohmann::json json_params)
                 report["op_counts"]["splits"] = splits;
                 report["op_counts"]["collapses"] = collapses;
                 report["op_counts"]["swaps"] = swaps;
+
+                std::vector<int> born, recollapsed, recollapsed_same_pass;
+                for (const auto& c : mesh.churn_counts) {
+                    born.push_back(c[0]);
+                    recollapsed.push_back(c[1]);
+                    recollapsed_same_pass.push_back(c[2]);
+                }
+                report["churn"]["split_born"] = born;
+                report["churn"]["recollapsed"] = recollapsed;
+                report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
+
+                std::vector<int> len_gate, created_gate, valence_escape;
+                for (const auto& c : mesh.gate_counts) {
+                    len_gate.push_back(c[0]);
+                    created_gate.push_back(c[1]);
+                    valence_escape.push_back(c[2]);
+                }
+                report["collapse_gates"]["length_gate"] = len_gate;
+                report["collapse_gates"]["created_edge_guard"] = created_gate;
+                report["collapse_gates"]["valence_escape"] = valence_escape;
                 // Read from the run rather than recomputed from the arrays as the 2D block does:
                 // optimize_offset() breaks out of the loop the moment it converges, so its own
                 // verdict is the authority and cannot drift from the criterion it applied.
                 report["converged"] = mesh.m_converged;
+                // Both bars: the one the verdict used, and the one the diagnostic residual is
+                // normalized by. A consumer plotting either series needs the matching bar.
+                report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
                 report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();

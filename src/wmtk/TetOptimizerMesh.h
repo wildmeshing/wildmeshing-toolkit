@@ -485,6 +485,12 @@ protected:
     virtual bool optimization_bare_coarsen_passes() const { return true; }
     virtual void write_optimization_debug_output(const std::string& path) = 0;
     virtual void optimization_sanity_checks_extra() {}
+
+    /// CHURN INSTRUMENTATION. Bumped at the start of every split pass in local_operations(), so
+    /// the pass a vertex was born in can be compared against the pass a collapse removes it in.
+    /// Zero until the first split pass runs, which is what lets a construction-era vertex be
+    /// told apart from an optimization-split one. Never reset -- only differences mean anything.
+    uint32_t m_op_epoch = 0;
     virtual bool optimization_stop_at_float() const { return false; }
 
     /// Non-const: an override may cache what it measured before the collapse so its `after`

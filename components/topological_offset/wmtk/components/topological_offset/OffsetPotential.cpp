@@ -655,7 +655,7 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
     // ON the complex the gradient of d does not exist -- every direction increases it equally.
     // Zero is the honest answer and the one the smoother handles: it contributes no offset force,
     // so the vertex is moved by the quality term alone. Such a vertex is excluded from the offset
-    // term anyway (smoothing_extra_energy refuses an input-complex vertex) and from the criterion
+    // term anyway (smooth_before refuses an input-complex vertex in Phase B) and from the criterion
     // (band_vertex_is_reachable books it as pinned), so this is a belt-and-braces case.
     if (!(d > 1e-14)) {
         return VecD::Zero();

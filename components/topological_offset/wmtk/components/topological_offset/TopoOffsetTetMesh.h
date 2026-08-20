@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <mutex>
 
@@ -24,6 +25,17 @@ using CellTag = std::set<int64_t>;
 
 
 namespace wmtk::components::topological_offset {
+
+/// TEMPORARY, for the switch-isolation sweep. Reads one of the experiment switches from the
+/// environment so all factors can be varied without a rebuild. `def` is ALWAYS the behavior the
+/// branch had BEFORE the experiment, so an unset environment reproduces the original exactly and
+/// nothing here changes the default build. Accepts 0/1, true/false, yes/no.
+inline bool offset_experiment_flag(const char* name, const bool def)
+{
+    const char* v = std::getenv(name);
+    if (v == nullptr || v[0] == '\0') return def;
+    return !(v[0] == '0' || v[0] == 'f' || v[0] == 'F' || v[0] == 'n' || v[0] == 'N');
+}
 
 
 const int64_t TEMP_OFFSET_TET_TAG = -1;
@@ -65,6 +77,21 @@ public:
      * construction cannot corrupt it.
      */
     uint64_t m_boundary_mask = 0;
+
+    /**
+     * WHICH SPLIT PASS CREATED THIS VERTEX, or 0 if no optimization split did.
+     *
+     * Churn instrumentation only -- nothing reads it to make a decision. Written by
+     * split_after_cells() from TetOptimizerMesh::m_op_epoch and read by collapse_after_vertex()
+     * on the vertex being REMOVED, so a split whose vertex is collapsed away again can be
+     * counted, and counted separately by how long it survived. ASSIGNED rather than OR'd or
+     * left alone, for the same reason m_boundary_mask is: v_id may be a recycled slot still
+     * carrying a dead vertex's epoch, which would otherwise read as a very old birth.
+     *
+     * Zero means "not born of an optimization split": construction-era vertices are created
+     * before any split pass has run, so m_op_epoch is still 0 for all of them.
+     */
+    uint32_t m_born_epoch = 0;
 };
 
 
@@ -162,19 +189,6 @@ public:
     /// Which phase is running. Read by every hook that differs between them; see OptPhase.
     OptPhase m_phase = OptPhase::A;
 
-    /// max_reachable from the residual_split() taken after the most recent Phase B -- the
-    /// trust-region radius rebuild_offset_envelope() scales from. Seeded at driver entry from
-    /// the mesh as constructed, so round 1's envelope reflects the construction's actual error.
-    double m_phase_b_last_max_residual = -1.;
-
-    /// HOW the most recent phase_b_smooth() exited: true iff placement finished -- the
-    /// gradient criterion fired, the phase entered already at the fixed point, or the
-    /// gradient plateaued for 10 passes (the achievable fixed point, sitting above an
-    /// entry-relative bar it cannot pass). False only on the pass-cap exit, where the
-    /// gradient was still falling. Gates the proportional sizing step in
-    /// refine_sizing_where_phi_is_stuck(): the chord law reads the in-face residual as pure
-    /// resolution error, which it only is once nothing more was coming from smoothing.
-    bool m_phase_b_placement_converged = false;
 
     /// DIAGNOSTIC: set by the driver after the first round when
     /// ab_no_collapse_after_first_round is on, and read by collapse_edge_before().
@@ -223,11 +237,8 @@ public:
     double phase_b_band_gradient_linf();
 
     /// Refine the shared sizing field around the offset faces that are still over tolerance
-    /// after Phase B. When Phase B exited on its gradient criterion the step is PROPORTIONAL:
-    /// each face's edge-length target is its measured longest edge scaled by
-    /// 1/sqrt(stuck_refine_margin x in-face residual ratio), per the chord law. When Phase B
-    /// exited blocked, the fixed stuck_refine_factor ratchet is used instead. Returns the
-    /// number of vertices whose scalar was lowered.
+    /// after Phase B converged: the worst faces' one-rings have their sizing scalar scaled by
+    /// stuck_refine_factor. Returns the number of vertices whose scalar was lowered.
     size_t refine_sizing_where_phi_is_stuck();
 
     /**
@@ -722,24 +733,15 @@ public:
      * asking it to leave the geometry the offset is measured from. (It never gets here anyway --
      * smooth_before() refuses it -- but the exclusion is stated where the reason lives.)
      */
-    std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
-        const size_t vid) const override
-    {
-        // PHASE A CARRIES NO OFFSET TERM AT ALL. It is TetWild, and TetWild's smoothing
-        // minimises AMIPS; the offset surface is held by m_offset_envelope there, not by an
-        // energy. Phase B is the only pass that places it.
-        if (m_phase != OptPhase::B) {
-            return nullptr;
-        }
-        const auto& ve = m_vertex_extra[vid];
-        if (!ve.m_is_on_offset || ve.m_is_on_input || !m_offset_potential) {
-            return nullptr;
-        }
-        // Same weight the envelope term carries in the applications that have one, and for the
-        // same reason: with w_amips at its default 1e-4 the placement dominates and AMIPS is a
-        // light shape preference on top.
-        return std::make_shared<OffsetEnergy3D>(m_offset_potential, m_params.w_envelope);
-    }
+    // NO smoothing_extra_energy OVERRIDE. The base's nullptr is correct for both phases now.
+    //
+    // This used to hand Phase B an OffsetEnergy3D so the offset term was minimised by the shared
+    // AMIPS solver. Phase B no longer uses that solver at all: offset-only vertices go through
+    // smooth_offset_vertex_backtracking()'s 1-D root find, and smooth_before() refuses every
+    // other vertex in the phase. Phase A carries no offset term either -- it is TetWild, and the
+    // offset surface is held there by m_offset_envelope, not by an energy. So the hook has no
+    // caller left in either phase. OffsetEnergy3D itself survives; phase_b_band_gradient_linf()
+    // still builds one to measure the placement gradient.
 
     /// The driver hands a bare `debug_N`; put the frames beside the run's own output instead of
     /// in whatever directory it happened to be launched from. Same as 2D's
@@ -795,6 +797,32 @@ public:
     }
 
     /**
+     * @brief THE CONVERGENCE TOLERANCE: the bound on |grad (Phi - c)^2| at a band vertex.
+     *
+     * A fraction of target_distance, which is the right unit: grad E = 2 (Phi - c) grad Phi, and
+     * grad Phi is dimensionless for a field whose value is a length, so grad E is a length.
+     *
+     * WHY THIS REPLACED THE RESIDUAL BOUND. The residual is only comparable to target_distance
+     * because residual_length() converts Phi's value into a length -- a conversion each potential
+     * has to supply, and one that is only unambiguous where the level set is smooth and the
+     * closest feature unique. The gradient needs no such conversion: it is the stationarity
+     * condition of the objective Phase B minimises, so it is the same test for the exact
+     * Euclidean field, for the OGC rule the smooth potential actually implements, and for ESP.
+     * That is what lets a concave input be judged by the same number as a convex one.
+     *
+     * Not a restatement of the old bound. On a distance-like field the two coincide up to the
+     * factor 2 (see offset_gradient_rel's default), but where |grad Phi| departs from 1 -- near a
+     * medial axis, at a sharp feature, anywhere ESP's several active primitives compete -- they
+     * are different tests and neither implies the other.
+     */
+    double offset_gradient_tolerance() const
+    {
+        return std::max(
+            m_offset_params.offset_gradient_rel * m_offset_params.target_distance,
+            1e-16);
+    }
+
+    /**
      * @brief Stop the run if any reachable offset-surface vertex has left the potential's support.
      *
      * Beyond dhat, Phi is identically zero WITH a zero gradient: the vertex is given no direction
@@ -825,13 +853,53 @@ public:
     /// on what "the band" is.
     std::vector<bool> band_vertex_mask() const;
 
-    /// The residual sampled at points INSIDE an offset-surface face -- see offset_face_samples().
+    /// A quantity sampled at points INSIDE an offset-surface face -- see offset_face_samples()
+    /// for the residual and gradient_split() for the gradient.
     struct FaceSamples
     {
         double max = 0.;
         double sum = 0.;
         size_t n = 0;
     };
+
+    /**
+     * @brief The interior lattice a face is sampled on, handed to `visit` one point at a time.
+     *
+     * ONE DEFINITION OF "INSIDE THIS FACE", because two things are now measured across a face:
+     * the Phi residual (the diagnostic) and the placement gradient (the criterion). Sampling
+     * them on different lattices would make them incomparable -- the log prints one as a
+     * multiple of the other's bar, and a run that fails the criterion in a face has to be
+     * explicable by the residual measured at the same points.
+     *
+     * Interior lattice points of the barycentric subdivision at denominator n = k + 2: every
+     * (i, j, l) with i + j + l = n and each >= 1, so nothing lands on an edge or a vertex (those
+     * are measured separately, and a sample ON a vertex would double-count it).
+     *
+     * n = k + 2 rather than 2D's k + 1 because a triangle has no interior lattice point at
+     * denominator 2. The counts are 1, 3, 6, 10 for k = 1, 2, 3, 4, so k keeps its meaning as
+     * "sampling density" and k = 1 is the centroid -- which is the sample that matters most,
+     * since a triangle inscribed in the offset is furthest from it at its centroid.
+     */
+    template <typename Visit>
+    void for_each_offset_face_sample(const Tuple& f, Visit&& visit) const
+    {
+        const int k = m_offset_params.offset_residual_samples;
+        if (k <= 0) return;
+
+        const auto vs = get_face_vids(f);
+        const Vector3d p0 = m_vertex_attribute[vs[0]].m_posf;
+        const Vector3d p1 = m_vertex_attribute[vs[1]].m_posf;
+        const Vector3d p2 = m_vertex_attribute[vs[2]].m_posf;
+
+        const int n = k + 2;
+        for (int i = 1; i < n; ++i) {
+            for (int j = 1; j < n - i; ++j) {
+                const int l = n - i - j;
+                if (l < 1) continue;
+                visit(Vector3d((double(i) * p0 + double(j) * p1 + double(l) * p2) / double(n)));
+            }
+        }
+    }
 
     /**
      * @brief The Phi residual at `offset_residual_samples` interior points of offset face `f`.
@@ -890,6 +958,53 @@ public:
         double worst_outside_dist = 0.;
     };
     DistanceSplit residual_split() const;
+
+    /**
+     * @brief The band's placement gradient: |grad (Phi(x) - c)^2| over the offset surface --
+     * at every band vertex AND at interior samples of every band face.
+     *
+     * The convergence criterion. Structured like DistanceSplit, and split the same three ways,
+     * because the questions a non-converging run asks are the same ones:
+     *
+     *  - reachable vs pinned -- only the reachable half gates the run; a pinned vertex with a
+     *    large gradient is a construction defect and is reported rather than iterated on.
+     *  - measured vs SKIPPED -- a vertex whose ring is already inverted, or which is not
+     *    rounded, is one the smoother refuses to place, so its gradient is not part of the
+     *    fixed point. Counted and logged rather than silently dropped: a run that "converges"
+     *    with vertices it never measured is not a converged run.
+     *
+     *  - at-vertex vs IN-FACE. E = (Phi(x) - c)^2 is a field, not a mesh quantity: it has a
+     *    gradient at every point of space, so it can be evaluated at points INSIDE a face just
+     *    as the residual is. Both count toward max_reachable, so a triangle whose corners sit on
+     *    the level set while its interior chords across it fails the criterion -- which is the
+     *    whole reason the residual samples faces, and there is no reason the criterion should be
+     *    the weaker of the two measurements. The split is kept because the two call for
+     *    different remedies: at-vertex wants smoothing, in-face wants refinement.
+     *
+     * The in-face term is what an optimization step cannot directly reduce -- a face sample is
+     * not a variable -- so it is the CONVERGENCE test that carries it and the Phase B stop test
+     * that does not. See phase_b_band_gradient_linf().
+     */
+    struct GradientSplit
+    {
+        double max_reachable = 0., avg_reachable = 0.;
+        double max_pinned = 0.;
+        size_t n_reachable = 0, n_pinned = 0;
+        /// max_reachable, split by where it was measured -- see the class comment.
+        double max_at_vertex = 0., max_in_face = 0.;
+        /// How many of n_reachable came from face interiors rather than vertices.
+        size_t n_face_samples = 0;
+        /// Band vertices the smoother would refuse to place, so their gradient is not part of
+        /// the fixed point this measures. See smooth_offset_vertex_backtracking()'s entry guard.
+        size_t n_skipped_inverted = 0, n_skipped_unrounded = 0;
+        /// Where the driving max came from, for the log. worst_vid is set only when the max is
+        /// an at-vertex one; an in-face max has no vertex to name.
+        size_t worst_vid = static_cast<size_t>(-1);
+    };
+    /// @param include_face_samples false measures VERTICES ONLY -- what Phase B's stop test
+    /// wants, since a face sample is not a variable its sweeps can move. The convergence test
+    /// always passes true. See phase_b_band_gradient_linf().
+    GradientSplit gradient_split(bool include_face_samples = true) const;
     /// Turn a residual_split()'s outside-support tally into the hard error. Separate from
     /// check_offset_within_support() so the per-iteration check can reuse a split it already has.
     void report_outside_support(const char* when, const DistanceSplit& s) const;
@@ -1110,10 +1225,43 @@ public:
     bool split_tet_before(const Tuple& t) override;
     bool split_tet_after(const Tuple& t) override;
     bool invariants(const std::vector<Tuple>& tets) override;
-    /// The base rounds and refuses bbox vertices; this additionally freezes the input
-    /// complex, and routes offset-surface vertices to the quadrics step below.
+    /// The base rounds and refuses bbox vertices; this drops the bbox refusal (the wall is a
+    /// region boundary held in an envelope, not frozen) and, in Phase B, refuses every vertex
+    /// that is not offset-only -- that phase places the offset surface and moves nothing else.
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
+
+    /**
+     * @brief Phase B's placement of an offset-surface vertex: the offset energy ALONE, then
+     * backtrack into the one-ring if the solved point inverts something.
+     *
+     * This is the ONLY smoothing Phase B does: smooth_before() refuses every other vertex in
+     * that phase, so no AMIPS term is assembled anywhere in it.
+     *
+     * WHY THIS IS NOT THE SHARED SMOOTHER. There the objective is w_amips * AMIPS + the offset
+     * term, and the vertex comes to rest where those two gradients cancel, which is not on the
+     * level set: the header of SmoothVertexOptions says so outright ("the vertex rests a
+     * w_amips-proportional distance off the input"). AMIPS is dimensionless, so its positional
+     * gradient scales as 1/h -- refining the mesh makes the resting point WORSE, which is the
+     * at-vertex wall this component kept hitting (measured on prism at 5%: the residual bottomed
+     * at 1.75x and then climbed back to 2.05x as refinement continued, with ~380 faces carrying
+     * an over-tolerance vertex).
+     *
+     * So the placement here is the offset condition only, and element shape is left entirely to
+     * the split/collapse/swap passes, which is where this component already puts it (see
+     * smooth_quality_veto, off by default for the same reason). It is a 1-D ROOT FIND along the
+     * normal -- Phi(x) = c -- and NOT a 3-D minimisation of the offset energy: that energy's
+     * Hessian is rank one, so minimising it leaves the level set's tangent plane unconstrained
+     * and the vertex slides (measured with AMIPS removed and the 3-D solve kept: 19.31x
+     * tolerance at round 1 against 8.6-9.0x with AMIPS, 1772 over-tolerance vertices against 0).
+     * The one thing the placement must still respect is that no incident tet may invert, and
+     * that is a constraint on the SEGMENT to the target rather than a reason to discard it:
+     * bisect for the furthest point along it that keeps every tet valid.
+     *
+     * Nothing is lost by not calling the base for these vertices: smoothing_containment_envelope()
+     * returns null for an offset-only vertex in Phase B, and the quality veto is already off.
+     */
+    bool smooth_offset_vertex_backtracking(const Tuple& t);
     //// overriden splits/invariants
 
     /**
@@ -1153,6 +1301,7 @@ public:
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
         std::atomic<int> before_on_input{0}; ///< input complex, frozen
+        std::atomic<int> before_phase_b_not_offset{0}; ///< Phase B: not an offset-only vertex
         std::atomic<int> offset_attempted{0}; ///< reached the smoother carrying the offset term
         std::atomic<int> interior_attempted{0}; ///< reached it as an ordinary interior vertex
 
@@ -1163,6 +1312,7 @@ public:
                   &before_bbox,
                   &before_unrounded,
                   &before_on_input,
+                  &before_phase_b_not_offset,
                   &offset_attempted,
                   &interior_attempted}) {
                 c->store(0);
@@ -1366,13 +1516,39 @@ public:
     void log_worst_tet(const char* when) const;
 
     /// {max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev} per optimization iteration.
-    std::vector<std::array<double, 4>> optimization_metrics;
-    /// {splits, collapses, swaps} per optimization iteration, mirroring optimization_metrics.
+    /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad}.
+    /// Only the last pair is the convergence criterion; the first four are diagnostics kept
+    /// because they answer different questions -- the Euclidean error says how far the smoothed
+    /// offset ended up from the exact one, and the Phi residual still ranks the sizing field.
+    std::vector<std::array<double, 8>> optimization_metrics;
+    /// {split-born vertices, recollapsed, recollapsed in the immediately following collapse
+    /// pass} per A/B round, in step with op_counts. See VertexExtra::m_born_epoch.
+    std::vector<std::array<int, 3>> churn_counts;
+    /// {4/5 length-gate refusals, created-edge-guard refusals, valence stand-downs} per A/B
+    /// round, in step with op_counts. All zero unless the matching switch is on.
+    std::vector<std::array<int, 3>> gate_counts;
+
+    /// {splits, collapses, swaps} per A/B ROUND -- one entry per round the driver runs,
+    /// including the round that converges, as deltas rather than running totals. Phase B does no
+    /// topological work, so a round's entry is exactly what its Phase A did. NOTE this does NOT
+    /// mirror optimization_metrics, which is still a single whole-run summary.
     std::vector<std::array<int, 3>> op_counts;
     /// Whether the optimization met both convergence criteria before the iteration cap.
     bool m_converged = false;
 
     /// Per-iteration operation counters, reset before each iteration's operation passes.
+    /// CHURN: split-born vertices that a collapse later removed, and the subset removed in the
+    /// same pass-pair that created them (born in split pass N, gone in the collapse pass that
+    /// immediately follows it). The rest survived at least into a later iteration.
+    /// Collapses refused by the optional 4/5 length gate (WMTK_OFFSET_COLLAPSE_LENGTH_GATE).
+    std::atomic<int> iter_cnt_collapse_length_gate{0};
+    /// Collapses refused by the optional created-edge guard (WMTK_OFFSET_CREATED_EDGE_GUARD),
+    /// and the times that guard stood down because the collapse was relieving high valence.
+    std::atomic<int> iter_cnt_collapse_created_edge_gate{0};
+    std::atomic<int> iter_cnt_collapse_valence_escape{0};
+    std::atomic<int> iter_cnt_split_born{0};
+    std::atomic<int> iter_cnt_recollapsed{0};
+    std::atomic<int> iter_cnt_recollapsed_same_pass{0};
     std::atomic<int> iter_cnt_split{0};
     std::atomic<int> iter_cnt_collapse{0};
     std::atomic<int> iter_cnt_swap{0};
