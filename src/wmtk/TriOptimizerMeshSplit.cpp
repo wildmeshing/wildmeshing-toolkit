@@ -27,6 +27,7 @@ void TriOptimizerMesh::split_all_edges()
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }
     m_high_valence_rejects = 0;
+    reset_slot_exhausted();
 
     timer.start();
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
@@ -93,6 +94,21 @@ void TriOptimizerMesh::split_all_edges()
             "triangles",
             n,
             m_params.split_high_valence_threshold);
+    }
+    // See the identical report in TetOptimizerMesh::split_all_edges(). A split that ran out of
+    // preallocated slots did not happen and left no other trace, so a pass that delivered a
+    // fraction of the refinement it was asked for is otherwise indistinguishable from one that
+    // had nothing to do. 2D has not been observed to hit this -- its offset loop never
+    // consolidates, so the pool is still sized from a high-water mark reached during
+    // construction and stays generous -- but that margin is incidental, not designed, and it
+    // would vanish the moment a consolidate were added to the loop as 3D has.
+    if (const size_t n = slot_exhausted(); n > 0) {
+        wmtk::logger().warn(
+            "[slots] {} operations aborted with the preallocated slot pool exhausted (capacity is "
+            "{}x the live count at the last consolidate). They are NOT refusals: the work was "
+            "dropped. Consolidate and repeat the pass, or raise the preallocation factor.",
+            n,
+            preallocation_factor());
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();

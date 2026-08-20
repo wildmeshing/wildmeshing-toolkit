@@ -33,6 +33,7 @@ void TetOptimizerMesh::split_all_edges()
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }
     m_high_valence_rejects = 0;
+    reset_slot_exhausted();
 
     timer.start();
     auto collect_all_ops = wmtk::parallel_collect_edge_ops(
@@ -84,6 +85,23 @@ void TetOptimizerMesh::split_all_edges()
             "[high-valence] {} splits refused to avoid growing a vertex past {} incident tets",
             n,
             m_params.split_high_valence_threshold);
+    }
+    // A split that ran out of preallocated slots did not happen and left no other trace: the
+    // abort is inside the connectivity update, before split_edge_after(), so no application hook
+    // sees it and no rejection is counted anywhere. Say so, or a pass that delivered a fraction
+    // of the refinement it was asked for is indistinguishable from one that had nothing to do.
+    //
+    // mesh_improvement() consolidates every iteration and the queue is re-collected, so there
+    // the work is merely deferred. A caller that runs split_all_edges() once -- as the offset
+    // optimization does -- loses it. Measured on specific_models/prism: 31445 splits per
+    // iteration, against 2638 that succeeded.
+    if (const size_t n = slot_exhausted(); n > 0) {
+        wmtk::logger().warn(
+            "[slots] {} operations aborted with the preallocated slot pool exhausted (capacity is "
+            "{}x the live count at the last consolidate). They are NOT refusals: the work was "
+            "dropped. Consolidate and repeat the pass, or raise the preallocation factor.",
+            n,
+            preallocation_factor());
     }
     // Consumed: the queued force-split edges no longer exist after this pass.
     m_force_split_edges.clear();

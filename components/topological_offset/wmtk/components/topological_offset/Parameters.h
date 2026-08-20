@@ -52,16 +52,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // 2D only; the 3D path never builds this envelope.
     bool region_envelope_from_input;
     double relative_ball_threshold;
-    // Termination length for the distance-field root finds in EdgeSplittingTet.cpp
-    // (edge_split_binary_search, edge_split_log_root_find, edge_split_sphere_tracing).
-    // 3D ONLY. The 2D path has no consumer: its sphere-tracing split was removed along with the
-    // distance-field marching pass that selected it, because placing the offset boundary is the
-    // optimization phase's job, not the insertion's. Delete this field and its spec entry when
-    // 3D drops those modes too -- see the note in .claude/CLAUDE.md.
-    double edge_search_term_len;
     bool sorted_marching;
     std::string output_path; // no extension
-    bool optimize; // whether to run optimization on the offset
     bool save_vtu;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
@@ -145,10 +137,8 @@ struct Parameters : public wmtk::OptimizerParameters
                 relative_ball_threshold);
         }
 
-        edge_search_term_len = json_params["edge_search_termination_len"];
         sorted_marching = json_params["sorted_marching"];
         output_path = json_params["output"];
-        optimize = json_params["optimize"];
         save_vtu = json_params["save_vtu"];
 
         num_threads = json_params["num_threads"];
@@ -196,6 +186,16 @@ struct Parameters : public wmtk::OptimizerParameters
         // flag; tetwild and simwild leave the flag off, which is why it is set here and not
         // changed in wmtk.
         preserve_topology = true;
+
+        // The engine's stall-driven sizing refinement is the offset's PRIMARY refinement
+        // mechanism, not an escape hatch, so it must be on: num_worst defaults to 0 in
+        // OptimizerParameters, which disables it. The values are starting points, not tuned.
+        // force_split is off because the offset's refine_sizing_around_worst() selects worst
+        // VERTICES of the band rather than worst tets, so there is no worst cell whose longest
+        // edge the engine's force-split contract refers to.
+        stuck_refine_num_worst = 100;
+        stuck_refine_rings = 2;
+        stuck_refine_force_split = false;
 
         // Fills diag_l, l/lr and splitting_l2 / collapsing_l2 -- the same 16/9 and 16/25
         // factors this used to spell out itself. It also derives eps from epsr, which the

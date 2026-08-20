@@ -418,6 +418,8 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // vertex attr
     round(loc);
     VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
+    VA[v2_id].m_sizing_scalar =
+        collapse_merged_sizing(VA.at(v1_id).m_sizing_scalar, VA.at(v2_id).m_sizing_scalar);
     VA[v2_id].m_order = std::max(VA.at(v1_id).m_order, VA.at(v2_id).m_order);
 
     // no need to update on_bbox_faces

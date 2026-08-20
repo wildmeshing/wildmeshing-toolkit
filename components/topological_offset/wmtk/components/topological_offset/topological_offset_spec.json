@@ -26,10 +26,8 @@
             "envelope_size_rel",
             "region_envelope_from_input",
             "relative_ball_threshold",
-            "edge_search_termination_len",
             "sorted_marching",
             "check_manifoldness",
-            "optimize",
             "save_vtu",
             "DEBUG_output",
             "log_file",
@@ -193,12 +191,6 @@
         "doc": "Float between 0 and 1, radius relative to target_distance to stop circle/sphere splitting in conservative distance approximation. Smaller means more accurate offset growth but longer run time."
     },
     {
-        "pointer": "/edge_search_termination_len",
-        "type": "float",
-        "default": 0.001,
-        "doc": "Length below which binary search will be terminated for function-guided edge splitting"
-    },
-    {
         "pointer": "/sorted_marching",
         "type": "bool",
         "default": false,
@@ -209,12 +201,6 @@
         "type": "bool",
         "default": true,
         "doc": "After performing offset, check if offset region is manifold"
-    },
-    {
-        "pointer": "/optimize",
-        "type": "bool",
-        "default": false,
-        "doc": "Run optimization on the offset."
     },
     {
         "pointer": "/save_vtu",

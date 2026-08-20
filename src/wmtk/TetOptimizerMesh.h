@@ -468,6 +468,21 @@ protected:
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
 
+    /**
+     * @brief The survivor's sizing scalar after a collapse merges `removed` into it.
+     *
+     * The default keeps the survivor's own value -- today's behaviour, byte-identical for
+     * every existing application. The offset overrides it to min: its stall-driven
+     * refinement lowers scalars on band vertices, and a collapse that discards the removed
+     * vertex's finer value onto a coarser survivor un-refines the FIELD by topology, so
+     * each round re-lowers from scratch and the band never actually gets finer. min is
+     * the field's established convention (update_sizing_field writes with min).
+     */
+    virtual double collapse_merged_sizing(double /*removed*/, double survivor) const
+    {
+        return survivor;
+    }
+
     /// Cache application cell data before a split. TetWild needs none; SimWild caches tags.
     virtual bool split_before_cells(const Tuple&, const std::vector<Tuple>&) { return true; }
     /// Restore application cell data on the children made by a split.
