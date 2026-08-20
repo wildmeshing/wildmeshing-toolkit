@@ -273,6 +273,13 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
         logger().error("Not all vertices rounded!");
     }
 
+    // A SimWild surface is exactly the interface between unlike tags, so every face between two
+    // differently tagged tets must be marked as surface. The operations maintain this
+    // incrementally; check it once at the end rather than trusting that they did.
+    if (!mesh.check_interface_faces_tagged(/*verbose=*/true)) {
+        logger().error("Interface faces are not consistently tagged as surface!");
+    }
+
     /////////output
     auto [max_energy, avg_energy] = mesh.get_max_avg_energy();
     const std::string report_file = json_params["report"];
