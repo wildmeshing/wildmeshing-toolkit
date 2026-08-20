@@ -66,10 +66,9 @@ TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
                 if (m_collapse_limit_length) {
                     const size_t v1_id = tup.vid(*this);
                     const size_t v2_id = tup.switch_vertex(*this).vid(*this);
-                    const double sizing_ratio =
-                        (m_vertex_attribute[v1_id].m_sizing_scalar +
-                         m_vertex_attribute[v2_id].m_sizing_scalar) /
-                        2;
+                    const double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                                 m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                                2;
                     if (length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
                         return false;
                     }
