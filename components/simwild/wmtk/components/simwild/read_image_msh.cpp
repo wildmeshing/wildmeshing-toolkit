@@ -578,7 +578,9 @@ int resolve_input_dimension(
     const std::string extension = std::filesystem::path(input_paths[0]).extension().string();
 
     int sniffed = 0;
-    if (extension != ".msh") {
+    if (extension == ".msh") {
+        sniffed = 0; // let the msh reader decide
+    } else if (extension == ".obj") {
         // A curve network and a surface are both OBJ, so the extension cannot separate them.
         // 'f' records mean a surface; 'l' records with no 'f' mean a curve network.
         bool has_f = false, has_l = false;
@@ -600,6 +602,11 @@ int resolve_input_dimension(
             }
         }
         sniffed = has_f ? 3 : (has_l ? 2 : 3);
+    } else {
+        logger().warn(
+            "Cannot determine dimension from file with extension {}. Assuming 3D surface.",
+            extension);
+        sniffed = 3;
     }
 
     const std::string d = json_params.value("dimension", std::string("auto"));

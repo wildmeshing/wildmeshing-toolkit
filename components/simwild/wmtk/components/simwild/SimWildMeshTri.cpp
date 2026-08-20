@@ -1,5 +1,7 @@
 #include "SimWildMeshTri.hpp"
 
+#include "QualityStats.hpp"
+
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
@@ -453,18 +455,20 @@ double SimWildMeshTri::quality_rel(const Tuple& t) const
 
 std::tuple<double, double> SimWildMeshTri::optimization_quality_stats()
 {
-    double max_quality = -1.;
-    double avg_quality = 0.;
-    size_t count = 0;
-    for (size_t fid = 0; fid < tri_capacity(); ++fid) {
-        if (!tuple_from_tri(fid).is_valid(*this)) continue;
-        const double quality = quality_rel(fid);
-        max_quality = std::max(max_quality, quality);
-        avg_quality += quality;
-        ++count;
+    // Unlike the 3D mesh, m_quality is already in the targets' units -- no cube root here.
+    const QualityBreakdown breakdown = collect_quality_breakdown(
+        tri_capacity(),
+        m_quality_field,
+        m_params.stop_energy,
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) -> const CellTag& { return m_face_attribute[fid].tags; },
+        [this](size_t fid) { return m_face_attribute[fid].m_quality; });
+
+    if (m_sim_params.verbose_quality_stats) {
+        log_quality_breakdown(breakdown);
     }
-    if (count > 0) avg_quality /= count;
-    return {max_quality, avg_quality};
+
+    return {breakdown.max_relative, breakdown.avg_relative};
 }
 
 std::vector<size_t> SimWildMeshTri::active_vertices() const

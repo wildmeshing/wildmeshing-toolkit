@@ -163,6 +163,36 @@ public:
     double quality_rel(const size_t tid) const override;
     double quality_rel(const Tuple& t) const;
     bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+    /**
+     * @brief Verify that every interface between unlike tags carries a surface face.
+     *
+     * A SimWild surface IS the interface between unlike cell tags, so for any two adjacent tets
+     * whose `tags` differ, the face they share must be marked `m_is_surface_fs`. The operations
+     * re-derive that flag as they go (see SimWildMesh::collapse_after_vertex), and this is the
+     * post-condition they are meant to maintain.
+     *
+     * Checks that direction only: an interface face that is not tagged is a violation, while a
+     * tagged face between like-tagged tets is not reported here.
+     *
+     * @param verbose Log a summary line, and the first few offending faces.
+     * @return true if every interface face is tagged.
+     */
+    bool check_interface_faces_tagged(const bool verbose = false) const;
+
+    /**
+     * @brief Update the attributes of the mesh after an iteration of operations.
+     *
+     * Re-derives the surface from the tet tags over the whole mesh: a face is a surface face
+     * exactly when it separates two differently tagged tets, and a vertex is on the surface
+     * exactly when it belongs to such a face. This is the global form of what the operations
+     * used to attempt incrementally; doing it here, between passes and single-threaded, avoids
+     * both the stale flags that OR-merging leaves behind and the neighbourhood reads that are
+     * unsafe inside a parallel operation.
+     *
+     * @see check_interface_faces_tagged, which verifies the post-condition in both directions.
+     */
+    void update_attributes() override;
+
     std::vector<size_t> active_vertices() const override;
 
 
