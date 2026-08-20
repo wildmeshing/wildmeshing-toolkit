@@ -433,7 +433,6 @@ protected:
     {
         size_t v1_id = 0;
         size_t v2_id = 0;
-        double max_quality_before = 0.;
         EdgeAttributes old_e_attrs;
         std::map<simplex::Edge, EdgeAttributes> changed_edges;
         std::map<size_t, FaceAttributes> faces;

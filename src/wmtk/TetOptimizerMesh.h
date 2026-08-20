@@ -511,7 +511,6 @@ protected:
         bool is_edge_on_surface = false;
         bool is_edge_open_boundary = false;
         size_t edge_order = 0;
-        double max_quality_before = 0.;
         std::vector<std::pair<FaceAttributes, std::array<size_t, 3>>> changed_faces;
     };
     wmtk::threading::enumerable_thread_specific<SplitInfoCache> split_cache;
