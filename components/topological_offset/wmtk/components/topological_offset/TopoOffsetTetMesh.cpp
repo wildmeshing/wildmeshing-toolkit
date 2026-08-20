@@ -1553,6 +1553,91 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
     return pass;
 }
 
+size_t TopoOffsetTetMesh::update_band_sizing_from_tolerance()
+{
+    // See the header for the rule. Three passes so each quantity is computed once: Phi's
+    // gradient is the expensive part and the face samples dominate it.
+    const double gtol = offset_gradient_tolerance();
+    const std::vector<bool> on_band = band_vertex_mask();
+    OffsetEnergy3D energy(m_offset_potential, 1.0);
+    const auto grad_at = [&](const Vector3d& p) {
+        Eigen::VectorXd g(3);
+        energy.gradient(Eigen::VectorXd(p), g);
+        return g.norm();
+    };
+
+    // 1. Every band vertex against the criterion. Non-band vertices are left `true` so they
+    //    never veto a neighbour's halving -- the rule is about the SURFACE one-ring.
+    std::vector<char> in_tol(vert_capacity(), 1), is_band(vert_capacity(), 0);
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!on_band[vid] || !m_vertex_extra[vid].m_is_on_offset) continue;
+        if (!m_vertex_attribute[vid].m_is_rounded) continue; // not placeable, not this rule's
+        is_band[vid] = 1;
+        in_tol[vid] = grad_at(m_vertex_attribute[vid].m_posf) <= gtol ? 1 : 0;
+    }
+
+    // 2. One sweep of the band's faces gives both the surface one-ring and, per vertex,
+    //    whether any incident face carries an out-of-tolerance interior sample.
+    std::vector<char> ring_in_tol(vert_capacity(), 1), has_bad_face(vert_capacity(), 0);
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const auto vs = get_face_vids(f);
+        bool face_bad = false;
+        for_each_offset_face_sample(f, [&](const Vector3d& q) {
+            if (!face_bad && grad_at(q) > gtol) face_bad = true;
+        });
+        for (int i = 0; i < 3; ++i) {
+            if (face_bad) has_bad_face[vs[i]] = 1;
+            for (int j = 0; j < 3; ++j) {
+                if (i != j && !in_tol[vs[j]]) ring_in_tol[vs[i]] = 0;
+            }
+        }
+    }
+
+    // 3. Apply. The floor is the BAND's, as in refine_sizing_where_phi_is_stuck().
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
+    std::vector<size_t> changed;
+    size_t n_halved = 0, n_misplaced = 0, n_ring_blocked = 0, n_at_floor = 0;
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!is_band[vid]) continue;
+        // MISPLACED, not under-resolved: leave it to Phase B. Counted so the two reasons a
+        // vertex goes unrefined stay distinguishable in the log -- they are opposite diagnoses.
+        if (!in_tol[vid]) {
+            ++n_misplaced;
+            continue;
+        }
+        if (!has_bad_face[vid]) continue; // nothing wrong here at all
+        if (!ring_in_tol[vid]) {
+            ++n_ring_blocked;
+            continue;
+        }
+        double& s = m_vertex_attribute[vid].m_sizing_scalar;
+        const double ns = std::max(s_floor, s * 0.5);
+        if (ns < s) {
+            s = ns;
+            ++n_halved;
+            changed.push_back(vid);
+        } else {
+            ++n_at_floor; // wanted refining and cannot -- the floor is binding here
+        }
+    }
+    if (!changed.empty()) gradation_smooth_sizing(m_offset_params.sizing_gradation, changed);
+    const size_t n_band = size_t(std::count(is_band.begin(), is_band.end(), char(1)));
+    logger().info(
+        "\t[phase B] band sizing: {} of {} halved | not refined: {} misplaced (vertex out of "
+        "tolerance), {} ring-blocked (a neighbour is), {} at the floor, {} nothing wrong | "
+        "floor {:.6g}",
+        n_halved,
+        n_band,
+        n_misplaced,
+        n_ring_blocked,
+        n_at_floor,
+        n_band - n_halved - n_misplaced - n_ring_blocked - n_at_floor,
+        s_floor);
+    return changed.size();
+}
+
 size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
 {
     // WHAT SMOOTHING COULD NOT PLACE. Phase B has just run to a fixed point, so an offset face
@@ -1741,13 +1826,10 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
 
     // TEMPORARY, for the switch-isolation sweep: every run states its own switch settings, so
     // a log is self-describing and the analysis never has to trust external bookkeeping.
-    logger().info(
-        "[experiment switches] chord_only_trigger {} | collapse_length_gate {} | "
-        "created_edge_guard {} | w_amips {:g} (Phase A only)",
-        offset_experiment_flag("WMTK_OFFSET_CHORD_ONLY_TRIGGER", false),
-        offset_experiment_flag("WMTK_OFFSET_COLLAPSE_LENGTH_GATE", false),
-        offset_experiment_flag("WMTK_OFFSET_CREATED_EDGE_GUARD", false),
-        m_params.w_amips);
+    // WMTK_OFFSET_CHORD_ONLY_TRIGGER is deliberately NOT here: the only thing that reads it is
+    // refine_sizing_where_phi_is_stuck(), which this loop no longer calls, so reporting it
+    // would advertise a switch that cannot affect the run.
+    logger().info("[experiment switches] w_amips {:g} (Phase A only)", m_params.w_amips);
 
     // PER-ROUND OPERATION COUNTS. iter_cnt_* are cumulative from their reset at the top of
     // optimize_offset(), so each round's contribution is the delta against the previous round's
@@ -1759,9 +1841,6 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
     int prev_born = iter_cnt_split_born.load();
     int prev_recol = iter_cnt_recollapsed.load();
     int prev_recol_same = iter_cnt_recollapsed_same_pass.load();
-    int prev_len_gate = iter_cnt_collapse_length_gate.load();
-    int prev_created_gate = iter_cnt_collapse_created_edge_gate.load();
-    int prev_val_escape = iter_cnt_collapse_valence_escape.load();
 
     for (int round = 0; round < rounds; ++round) {
         // ---- PHASE A: TetWild, with the offset held inside its envelope ----
@@ -1923,32 +2002,6 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
                 db > 0 ? 100.0 * drc / db : 0.0,
                 drs,
                 db > 0 ? 100.0 * drs / db : 0.0);
-            // GATE LEDGER, same per-round shape: what each optional collapse guard refused, and
-            // how often the created-edge guard stood down to let a collapse relieve valence.
-            const int lg = iter_cnt_collapse_length_gate.load();
-            const int cg = iter_cnt_collapse_created_edge_gate.load();
-            const int ve = iter_cnt_collapse_valence_escape.load();
-            const int dlg = lg - prev_len_gate, dcg = cg - prev_created_gate,
-                      dve = ve - prev_val_escape;
-            gate_counts.push_back({{dlg, dcg, dve}});
-            if (dlg != 0) {
-                logger().info(
-                    "\t[A/B round {}] length gate: {} collapse candidates refused for being "
-                    "longer than 4/5 x l x sizing",
-                    round + 1,
-                    dlg);
-            }
-            if (dcg != 0 || dve != 0) {
-                logger().info(
-                    "\t[A/B round {}] created-edge guard: {} collapses refused for creating an "
-                    "edge over 4/3 x l x sizing; {} stood down for relieving valence",
-                    round + 1,
-                    dcg,
-                    dve);
-            }
-            prev_len_gate = lg;
-            prev_created_gate = cg;
-            prev_val_escape = ve;
             prev_born = b;
             prev_recol = rc;
             prev_recol_same = rs;
@@ -1968,9 +2021,15 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
             return;
         }
 
-        // Not converged: refine where smoothing could not place the surface, and let the next
-        // Phase A rebuild the mesh at that resolution.
-        refine_sizing_where_phi_is_stuck();
+        // Not converged: re-size the band per vertex against the convergence criterion, and let
+        // the next Phase A rebuild the mesh at that resolution.
+        //
+        // THIS REPLACES refine_sizing_where_phi_is_stuck() RATHER THAN JOINING IT. Both only
+        // ever lower a scalar, but they disagree on WHICH vertices: the old routine refines
+        // around any face over tolerance, including one whose own vertex is misplaced rather
+        // than under-resolved. Running both would reintroduce exactly the refinement this rule
+        // withholds. The old routine is kept for now, unused by this loop.
+        update_band_sizing_from_tolerance();
     }
 
     logger().warn(
@@ -3205,9 +3264,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // Deliberate, recorded, and to be revisited once distance convergence is routine.
     iter_cnt_split = 0;
     iter_cnt_split_born = 0;
-    iter_cnt_collapse_length_gate = 0;
-    iter_cnt_collapse_created_edge_gate = 0;
-    iter_cnt_collapse_valence_escape = 0;
     iter_cnt_recollapsed = 0;
     iter_cnt_recollapsed_same_pass = 0;
     iter_cnt_collapse = 0;
@@ -3935,7 +3991,18 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
 {
     logger().info("Write {}.vtu (tag for offset is included)", path);
 
-    consolidate_mesh();
+    // WRITING DEBUG OUTPUT MUST NOT CHANGE THE MESH. This used to call consolidate_mesh()
+    // first, which compacts the slot arrays and RENUMBERS every vertex and cell. That makes
+    // debug output non-observational: turning DEBUG_output on changes the run it is supposed to
+    // be showing you. The renumbering is not cosmetic either -- under kPartition threading
+    // get_partition_id() is keyed on vertex id, so which thread owns which vertex changes, and
+    // with it the order operations are applied in.
+    //
+    // Nothing here needs the mesh compacted; it only needed the OUTPUT compacted, which is done
+    // locally below instead. Point arrays stay CAPACITY-sized and slot-indexed, so
+    // every vid in T/F/E stays valid and dead slots are simply unreferenced points, which VTU
+    // permits. Only the cell arrays have to be packed, since a dead tid would otherwise emit a
+    // (0,0,0,0) tet.
     const auto& vs = get_vertices();
     const auto& tets = get_tets();
     const auto faces_in = get_faces_by_condition(
@@ -3951,7 +4018,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     }
 
     MatrixXd V(vert_capacity(), 3);
-    MatrixXi T(tet_capacity(), 4);
+    MatrixXi T(tets.size(), 4);
     MatrixXi F_in(faces_in.size(), 3);
     MatrixXi F_off(faces_off.size(), 3);
     MatrixXi E(edges.size(), 2);
@@ -3963,7 +4030,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     E.setZero();
 
     // last matrix is offset
-    std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tet_capacity(), 1));
+    std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tets.size(), 1));
     VectorXd labels(vert_capacity());
     labels.setZero();
     VectorXd v_order(vert_capacity());
@@ -3973,14 +4040,14 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     VectorXd v_sizing(vert_capacity());
     v_sizing.setZero();
 
-    for (const Tuple& t : tets) {
-        size_t t_id = t.tid(*this);
+    for (size_t k = 0; k < tets.size(); ++k) {
+        const size_t t_id = tets[k].tid(*this);
 
-        // set tet tags
+        // set tet tags -- row k, the PACKED index, not the slot
         for (int i = 0; i < m_tags_count; i++) {
-            tags[i](t_id, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
+            tags[i](k, 0) = (m_tet_attribute[t_id].tag.count(i) == 1) ? 1 : 0;
         }
-        tags[m_tags_count](t_id, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
+        tags[m_tags_count](k, 0) = (m_tet_attribute[t_id].label == 2) ? 1 : 0;
     }
 
     for (size_t i = 0; i < faces_in.size(); ++i) {
@@ -4008,12 +4075,11 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         v_sizing[vid] = m_vertex_attribute[vid].m_sizing_scalar;
     }
 
-    // set tet verts
-    for (const Tuple& t : tets) {
-        // set tet verts
-        const auto& loc_vs = oriented_tet_vertices(t);
+    // set tet verts -- row k as above; the ENTRIES stay vids, matching capacity-sized V
+    for (size_t k = 0; k < tets.size(); ++k) {
+        const auto& loc_vs = oriented_tet_vertices(tets[k]);
         for (int j = 0; j < 4; j++) {
-            T(t.tid(*this), j) = loc_vs[j].vid(*this);
+            T(k, j) = loc_vs[j].vid(*this);
         }
     }
 
@@ -4084,6 +4150,18 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
     msh.add_tet_vertices(verts.size(), [&](size_t k) {
         auto i = verts[k].vid(*this);
         return m_vertex_attribute[i].m_posf;
+    });
+
+    // THE SIZING FIELD, as node data, so the result file carries what the run was asking for
+    // and not only what it produced. The debug .vtu frames have always had it; the .msh had
+    // not, which meant the one artifact that survives a run was the one you could not inspect
+    // the field on. scripts/visualize_offset.py picks it up by this name.
+    //
+    // IMMEDIATELY AFTER THE VERTEX BLOCK, and it has to stay there: MshData binds an attribute
+    // to entity_blocks.back(), and the per-tag loop below appends an EMPTY vertex block for
+    // every group. Added after those, this would attach to an empty block.
+    msh.add_tet_vertex_attribute<1>("sizing", [&](size_t k) {
+        return m_vertex_attribute[verts[k].vid(*this)].m_sizing_scalar;
     });
 
     auto msh_add_tets = [&]() {

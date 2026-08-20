@@ -910,18 +910,6 @@ public:
      */
     bool optimization_stalled(double prev, double cur) override;
 
-    /**
-     * @brief Consolidate at every pass boundary, whether or not a debug frame is written.
-     *
-     * write_vtu() consolidates, which renumbers, which changes the order every later pass
-     * enumerates operations in -- so with the write gated on debug_output, turning the flag on
-     * silently produced a different run. It was measured on the dragon rectangle as
-     * converged-in-7 against not-converged-in-10. 3D settled this by consolidating whether or
-     * not anything is written; this is the same remedy at the pass boundary, which is where the
-     * shared driver writes its frames.
-     */
-    void optimization_debug_checkpoint() override;
-
     /// Re-derive the tracked surfaces from the face labels, and log where each of the two
     /// criteria stands. See the base's declaration for why this needs a hook at all.
     void optimization_iteration_begin() override;

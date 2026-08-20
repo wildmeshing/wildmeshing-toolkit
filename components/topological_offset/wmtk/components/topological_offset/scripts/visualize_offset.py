@@ -111,8 +111,9 @@ def read_groups(path):
 
 def point_scalar(m, name):
     """A per-vertex scalar from the file, flattened; None where the writer did not emit it.
-    write_vtu() carries `sizing` (m_sizing_scalar per vertex) on every debug/phase frame; the
-    .msh result files do not, so the sizing layer simply is not offered for them."""
+    Both write_vtu() debug/phase frames and .msh result files carry `sizing` (m_sizing_scalar
+    per vertex); older .msh files written before write_msh_groups() emitted it do not, and for
+    those the sizing layer simply is not offered."""
     if name not in getattr(m, "point_data", {}):
         return None
     return np.asarray(m.point_data[name]).reshape(-1)

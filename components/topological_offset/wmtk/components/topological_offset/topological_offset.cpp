@@ -478,15 +478,6 @@ void topological_offset(nlohmann::json json_params)
                 report["churn"]["recollapsed"] = recollapsed;
                 report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
 
-                std::vector<int> len_gate, created_gate, valence_escape;
-                for (const auto& c : mesh.gate_counts) {
-                    len_gate.push_back(c[0]);
-                    created_gate.push_back(c[1]);
-                    valence_escape.push_back(c[2]);
-                }
-                report["collapse_gates"]["length_gate"] = len_gate;
-                report["collapse_gates"]["created_edge_guard"] = created_gate;
-                report["collapse_gates"]["valence_escape"] = valence_escape;
                 // Read from the run rather than recomputed from the arrays as the 2D block does:
                 // optimize_offset() breaks out of the loop the moment it converges, so its own
                 // verdict is the authority and cannot drift from the criterion it applied.

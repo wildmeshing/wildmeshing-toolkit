@@ -952,9 +952,22 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 {
     logger().info("Write {}.vtu (tag for offset is included)", path);
 
-    consolidate_mesh();
+    // WRITING DEBUG OUTPUT MUST NOT CHANGE THE MESH. This used to call consolidate_mesh()
+    // first, which compacts the slot arrays and RENUMBERS every vertex and cell. That makes
+    // debug output non-observational: turning DEBUG_output on changes the run it is supposed to
+    // be showing you. The renumbering is not cosmetic either -- under kPartition threading
+    // get_partition_id() is keyed on vertex id, so which thread owns which vertex changes, and
+    // with it the order operations are applied in.
+    //
+    // Nothing here needs the mesh compacted; it only needed the OUTPUT compacted, which is done
+    // locally below instead. 2D sized its arrays by the LIVE count while
+    // indexing them by slot id, which is only equivalent after a consolidate -- so it needs a
+    // slot -> packed remap rather than 3D's capacity-sized point arrays.
     const auto& vs = get_vertices();
     const auto& tris = get_faces();
+
+    std::vector<int> packed(vert_capacity(), -1);
+    for (size_t k = 0; k < vs.size(); ++k) packed[vs[k].vid(*this)] = int(k);
 
     Eigen::MatrixXd V(vs.size(), 2);
     Eigen::MatrixXi F(tris.size(), 3);
@@ -965,27 +978,26 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // last matrix is for offset
     std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tris.size(), 1));
 
-    for (const Tuple& f : tris) {
-        size_t f_id = f.fid(*this);
+    for (size_t k = 0; k < tris.size(); ++k) {
+        const size_t f_id = tris[k].fid(*this);
 
-        // set tri tags
+        // set tri tags -- row k, the PACKED index, not the slot
         for (int j = 0; j < m_tags_count; j++) {
-            tags[j](f_id, 0) = (m_face_attribute[f_id].tags.count(j) == 1) ? 1 : 0;
+            tags[j](k, 0) = (m_face_attribute[f_id].tags.count(j) == 1) ? 1 : 0;
         }
-        tags[m_tags_count](f_id, 0) = (m_face_extra[f_id].label == 2) ? 1 : 0;
+        tags[m_tags_count](k, 0) = (m_face_extra[f_id].label == 2) ? 1 : 0;
     }
 
-    for (const Tuple& f : tris) {
-        // set tri verts
-        const auto& loc_vs = oriented_tri_vertices(f);
+    for (size_t k = 0; k < tris.size(); ++k) {
+        // set tri verts, remapped through `packed`
+        const auto& loc_vs = oriented_tri_vertices(tris[k]);
         for (int j = 0; j < 3; j++) {
-            F(f.fid(*this), j) = loc_vs[j].vid(*this);
+            F(k, j) = packed[loc_vs[j].vid(*this)];
         }
     }
 
-    for (const Tuple& v : vs) {
-        const size_t v_id = v.vid(*this);
-        V.row(v_id) = m_vertex_attribute[v_id].m_posf;
+    for (size_t k = 0; k < vs.size(); ++k) {
+        V.row(k) = m_vertex_attribute[vs[k].vid(*this)].m_posf;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;

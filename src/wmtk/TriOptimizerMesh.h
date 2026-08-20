@@ -425,10 +425,17 @@ protected:
      * @brief Called at every pass boundary, whether or not debug output is on.
      *
      * The default writes a debug frame when m_params.debug_output is set and does nothing
-     * otherwise. An application whose writer MUTATES the mesh -- topological_offset's
-     * write_vtu() consolidates, which renumbers, which changes the order every later pass
-     * enumerates operations in -- overrides this to do that mutation unconditionally, so that
-     * turning debug output on does not silently change the run it is supposed to be observing.
+     * otherwise, and NOTHING AN OVERRIDE DOES HERE MAY CHANGE THE MESH. Debug output has to be
+     * observational: if writing a frame renumbers or compacts anything, then turning
+     * DEBUG_output on changes the run it is supposed to be showing you, and under kPartition it
+     * changes it substantively, since get_partition_id() is keyed on vertex id and renumbering
+     * moves vertices between threads.
+     *
+     * topological_offset used to override this to call consolidate_mesh() unconditionally --
+     * paying that cost on every pass whether or not debug output was on -- because its
+     * write_vtu() consolidated. write_vtu() now packs its output locally instead and mutates
+     * nothing, so the override is gone. If a writer ever needs the mesh compacted, compact it
+     * in the optimization itself, not on the way to a file.
      */
     virtual void optimization_debug_checkpoint()
     {

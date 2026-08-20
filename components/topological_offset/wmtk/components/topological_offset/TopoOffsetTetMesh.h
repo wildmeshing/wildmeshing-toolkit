@@ -242,6 +242,34 @@ public:
     size_t refine_sizing_where_phi_is_stuck();
 
     /**
+     * @brief Per-vertex band sizing update, run after Phase B. Returns the number changed.
+     *
+     * REFINE-ONLY, AND ONLY ON PURE CHORD ERROR. "In tolerance" is the CONVERGENCE CRITERION
+     * itself -- |grad (Phi - c)^2| <= offset_gradient_tolerance() -- measured at band vertices
+     * and at face-interior samples on the one lattice for_each_offset_face_sample() defines, so
+     * this responds to exactly the quantity that decides the run rather than to a proxy for it.
+     *
+     *  - HALVE when the vertex and every surface one-ring neighbour are in tolerance but some
+     *    sample inside an incident surface face is not. The surface passes through the right
+     *    places and the triangle between them still cuts the level set: pure resolution error,
+     *    the one thing a finer sizing field can actually fix.
+     *  - Otherwise leave it alone. In particular a vertex that is itself out of tolerance is
+     *    MISPLACED, not under-resolved, and refining around it just grows the mesh where Phase B
+     *    has not finished; and a vertex in tolerance with an out-of-tolerance neighbour is that
+     *    neighbour's problem to fix, not this one's.
+     *
+     * This is the chord-only trigger of refine_sizing_where_phi_is_stuck(), moved from a
+     * per-FACE test with a 3-vertex condition to a per-VERTEX one with a surface one-ring
+     * condition -- so a face is only refined when the whole neighbourhood around it is placed,
+     * not merely its own corners.
+     *
+     * Clamped below by max(min_sizing_scalar, min_edge_length / l) -- the same band floor
+     * refine_sizing_where_phi_is_stuck() uses -- and the changed vertices seed
+     * gradation_smooth_sizing(), so a re-sized patch does not sit against an untouched one.
+     */
+    size_t update_band_sizing_from_tolerance();
+
+    /**
      * @brief AVERAGE distance error, as a fraction of target_distance, above which a
      * non-converged run with respect_all_topologies is reported as topologically blocked.
      *
@@ -1524,10 +1552,6 @@ public:
     /// {split-born vertices, recollapsed, recollapsed in the immediately following collapse
     /// pass} per A/B round, in step with op_counts. See VertexExtra::m_born_epoch.
     std::vector<std::array<int, 3>> churn_counts;
-    /// {4/5 length-gate refusals, created-edge-guard refusals, valence stand-downs} per A/B
-    /// round, in step with op_counts. All zero unless the matching switch is on.
-    std::vector<std::array<int, 3>> gate_counts;
-
     /// {splits, collapses, swaps} per A/B ROUND -- one entry per round the driver runs,
     /// including the round that converges, as deltas rather than running totals. Phase B does no
     /// topological work, so a round's entry is exactly what its Phase A did. NOTE this does NOT
@@ -1540,12 +1564,6 @@ public:
     /// CHURN: split-born vertices that a collapse later removed, and the subset removed in the
     /// same pass-pair that created them (born in split pass N, gone in the collapse pass that
     /// immediately follows it). The rest survived at least into a later iteration.
-    /// Collapses refused by the optional 4/5 length gate (WMTK_OFFSET_COLLAPSE_LENGTH_GATE).
-    std::atomic<int> iter_cnt_collapse_length_gate{0};
-    /// Collapses refused by the optional created-edge guard (WMTK_OFFSET_CREATED_EDGE_GUARD),
-    /// and the times that guard stood down because the collapse was relieving high valence.
-    std::atomic<int> iter_cnt_collapse_created_edge_gate{0};
-    std::atomic<int> iter_cnt_collapse_valence_escape{0};
     std::atomic<int> iter_cnt_split_born{0};
     std::atomic<int> iter_cnt_recollapsed{0};
     std::atomic<int> iter_cnt_recollapsed_same_pass{0};

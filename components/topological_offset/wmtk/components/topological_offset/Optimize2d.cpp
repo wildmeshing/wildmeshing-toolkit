@@ -1044,12 +1044,6 @@ bool TopoOffsetTriMesh::optimization_stalled(double prev_metric, double cur_metr
     return all_stuck;
 }
 
-void TopoOffsetTriMesh::optimization_debug_checkpoint()
-{
-    consolidate_mesh();
-    TriOptimizerMesh::optimization_debug_checkpoint();
-}
-
 std::tuple<double, double> TopoOffsetTriMesh::optimization_quality_stats()
 {
     // PHASE A IS TRIWILD, so its metric is TriWild's: element quality alone, in ABSOLUTE AMIPS
