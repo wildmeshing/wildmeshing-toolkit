@@ -601,11 +601,15 @@ name:     filename order. Size is uncorrelated with the name, so the expensive
 <div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;application&quot;</span>: <span class="stringliteral">&quot;simwild&quot;</span>,</div>
 <div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;eps_rel&quot;</span>: 2e-3,</div>
 <div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;num_threads&quot;</span>: THREADS,</div>
-<div class="line"><span class="lineno">    5</span>    <span class="comment"># The .msh is the real output and the .vtu is a visualization dump that _prune</span></div>
-<div class="line"><span class="lineno">    6</span>    <span class="comment"># deletes immediately afterwards, so writing it costs time and disk on every model</span></div>
-<div class="line"><span class="lineno">    7</span>    <span class="comment"># for nothing. The 2D sweep has always forced this off.</span></div>
-<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;write_vtu&quot;</span>: <span class="keyword">False</span>,</div>
-<div class="line"><span class="lineno">    9</span>}</div>
+<div class="line"><span class="lineno">    5</span>    <span class="comment"># Deliberately *not* the spec default (which is true). Requested for this sweep:</span></div>
+<div class="line"><span class="lineno">    6</span>    <span class="comment"># with preserve_topology off, simplification runs pre-insertion and is allowed to</span></div>
+<div class="line"><span class="lineno">    7</span>    <span class="comment"># change input topology, which is the configuration under test here.</span></div>
+<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;preserve_topology&quot;</span>: <span class="keyword">False</span>,</div>
+<div class="line"><span class="lineno">    9</span>    <span class="comment"># The .msh is the real output and the .vtu is a visualization dump that _prune</span></div>
+<div class="line"><span class="lineno">   10</span>    <span class="comment"># deletes immediately afterwards, so writing it costs time and disk on every model</span></div>
+<div class="line"><span class="lineno">   11</span>    <span class="comment"># for nothing. The 2D sweep has always forced this off.</span></div>
+<div class="line"><span class="lineno">   12</span>    <span class="stringliteral">&quot;write_vtu&quot;</span>: <span class="keyword">False</span>,</div>
+<div class="line"><span class="lineno">   13</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
