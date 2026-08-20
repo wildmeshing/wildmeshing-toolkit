@@ -346,8 +346,8 @@
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 0,
-    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
+    "default": 1,
+    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field). 1 by default: refining every iteration can outrun the operations entirely -- on triwild20k 189017 at eps_rel 1e-4 the mesh runs away to 5.8M faces and never converges at 0, and converges at 9.9994 in 35 iterations at 1. Costs ~5% iterations across the challenging models at no wall-time cost."
   },
   {
     "pointer": "/stuck_refine_num_worst",

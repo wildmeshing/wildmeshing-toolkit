@@ -49,7 +49,6 @@
       "report",
       "DEBUG_output",
       "DEBUG_sanity_checks",
-      "DEBUG_envelope_sanity_check",
       "allow_surface_swap",
       "check_surface_topology",
       "verbose_quality_stats",
@@ -393,12 +392,6 @@
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
   },
   {
-    "pointer": "/DEBUG_envelope_sanity_check",
-    "type": "bool",
-    "default": false,
-    "doc": "Sanity Check: for the 2D remeshing path, verify at init that every surface edge already lies inside the envelope, and abort if one does not. Everything downstream assumes it -- an operation vetoed by the envelope only means something if the mesh started inside it -- but the check costs one sampled segment query per surface edge, serially, on every run. Measured in triwild's 2D sweep, where the same check cost 22s on a 3.5M-edge input and 5m07s on a 7.6M-edge one, the latter 8.5% of that model's entire budget. Off by default; turn it on when changing the input simplification or the envelope. Note the 3D path's superficially similar check is not governed by this flag: there the result selects whether to rebuild the envelope from the tet tags, so it is a decision rather than an assertion and always runs."
-  },
-  {
     "pointer": "/allow_surface_swap",
     "type": "bool",
     "default": true,
@@ -425,8 +418,8 @@
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 0,
-    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
+    "default": 1,
+    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field). 1 by default: refining every iteration can outrun the operations entirely -- on triwild20k 189017 at eps_rel 1e-4 the mesh runs away to 5.8M faces and never converges at 0, and converges at 9.9994 in 35 iterations at 1. Costs ~5% iterations across the challenging models at no wall-time cost."
   },
   {
     "pointer": "/stuck_refine_num_worst",

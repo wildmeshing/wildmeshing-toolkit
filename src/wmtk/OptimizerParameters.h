@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <string>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 
@@ -87,12 +88,28 @@ struct OptimizerParameters
     // refining again, so the operations get full passes to act on the new sizing
     // field before more refinement is added. 0 => may refine every iteration.
     //
-    // 0 by default: measured over 468 triwild20k models, a cooldown of 1 costs ~13% wall
-    // time for exactly the same mesh sizes (identical median and p90 vertex counts). The
-    // idea that the operations need an idle iteration to act on the new field does not
-    // survive contact with the data -- the trigger already declines to fire while the mesh
-    // is converging, so a separate cooldown only delays the next escape.
-    int stuck_refine_cooldown = 0;
+    // 1, because refining every iteration can outrun the operations entirely. On
+    // triwild20k 189017 at eps_rel 1e-4 the field ratchets down faster than split and
+    // collapse can act on it: the mesh sits at ~31k faces for a dozen iterations, then
+    // runs away 54k -> 96k -> 159k -> 5.8M and never converges, its max energy pinned at
+    // the inverted sentinel. At cooldown 1 the same run climbs deliberately to 181k and
+    // converges at 9.9994 in 35 iterations. Cooldown is the narrow instrument for this:
+    // it slows the refinement rather than licensing collapse to undo refinement.
+    //
+    // Cost, measured over the 31 challenging models at stop_energy 10, cooldown 0 -> 1:
+    //
+    //     tetwild   iterations 185 -> 196 (+5.9%)  elements -1.8%  wall -5.3%
+    //     triwild   iterations 166 -> 173 (+4.2%)  elements -0.1%  wall -6.2%
+    //
+    // A few percent more iterations, slightly fewer elements, and no wall-time cost -- the
+    // extra iterations are cheaper ones. 1 is the knee: 2 and 3 buy a further 2-4% element
+    // reduction in tetwild for +34% and +76% iterations.
+    //
+    // This supersedes an earlier reading of a 468-model triwild20k sweep, where cooldown 1
+    // cost ~13% wall for identical mesh sizes and was taken as evidence that a cooldown
+    // only delays the next escape. That holds where the escape hatch is not load-bearing;
+    // it does not hold on the models where it is.
+    int stuck_refine_cooldown = 1;
     // Number of worst cells (by energy) whose neighborhoods are refined.
     int stuck_refine_num_worst = 0;
     // Graph rings around each worst cell's vertices included in the refinement.
@@ -322,6 +339,8 @@ struct OptimizerParameters
         } else {
             eps = epsr * diag_l;
         }
+
+        logger().info("PARAMS: eps = {}, l = {}", eps, l);
     }
 };
 

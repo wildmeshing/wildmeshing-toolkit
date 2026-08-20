@@ -102,11 +102,6 @@ bool TetOptimizerMesh::split_edge_before(const Tuple& loc0)
     size_t v1_id = cache.v1_id;
     size_t v2_id = cache.v2_id;
 
-    cache.max_quality_before = 0.;
-    for (const size_t tid : get_incident_tids_for_edge(loc0)) {
-        cache.max_quality_before = std::max(cache.max_quality_before, cell_quality(tid));
-    }
-
     cache.is_edge_on_surface = is_edge_on_surface(loc0);
 
     if (cache.is_edge_on_surface) {
@@ -260,25 +255,9 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
 
     /// update quality
     //
-    // A split checks orientation, rounding and (above) the envelope, but never quality. That is
-    // right for a length-driven split of a long, well-behaved edge and wrong for the force-split of
-    // a stalled sliver's longest edge, where the midpoint can land essentially on the opposite
-    // edge. The result is a POSITIVELY ORIENTED tet whose volume is too small for AMIPS, so
-    // get_quality returns MAX_ENERGY, the reported max energy jumps to cbrt(1e50) = 4.6e16, and
-    // every control decision that divides by it -- filter_energy, the stall test, the average -- is
-    // meaningless from then on. On Thingi10K 101954 that is exactly how the run died: the
-    // first 4.6e16 appears on the split line immediately after "[force-split] 92 worst-tet longest
-    // edges force-split".
-    //
-    // Refuse to be the operation that creates one. A split that merely subdivides a region
-    // that was already degenerate is still allowed, so a stuck region can keep being refined.
-    double max_quality_after = 0.;
-    for (const Tuple& loc : locs) {
-        max_quality_after = std::max(max_quality_after, get_quality(loc));
-    }
-    if (max_quality_after >= MAX_ENERGY && cache.max_quality_before < MAX_ENERGY) {
-        return false;
-    }
+    // A split is never refused on quality. It checks orientation, rounding and (above) the
+    // envelope, and that is all: subdividing is the operation the optimizer reaches for when a
+    // region is stuck, so it has to be allowed to run even where the result scores badly.
     for (const Tuple& loc : locs) {
         set_cell_quality(loc.tid(*this), get_quality(loc));
     }

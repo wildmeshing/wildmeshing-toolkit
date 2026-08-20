@@ -61,9 +61,18 @@ TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
                 auto& [weight, op, tup] = ele;
                 auto length = m.get_length2(tup);
                 if (length != -weight) return false;
-                // Deliberately NOT filtered on length here. An over-length edge stays a
-                // candidate and collapse_edge_before decides it on quality instead: it is kept
-                // only if it STRICTLY improves the worst element of the ring. See there.
+                // Length gate, applied to the CANDIDATE LIST -- TetWild's placement. An edge
+                // at or above the collapse target is not offered to this pass at all.
+                if (m_collapse_limit_length) {
+                    const size_t v1_id = tup.vid(*this);
+                    const size_t v2_id = tup.switch_vertex(*this).vid(*this);
+                    const double sizing_ratio = (m_vertex_attribute[v1_id].m_sizing_scalar +
+                                                 m_vertex_attribute[v2_id].m_sizing_scalar) /
+                                                2;
+                    if (length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+                        return false;
+                    }
+                }
                 return true;
             };
             // Retry a failed collapse only where the mesh actually changed this round
@@ -174,42 +183,6 @@ bool TetOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
         cache.changed_energies.emplace_back(q);
     }
     assert(cache.changed_energies.size() == cache.changed_tids.size());
-
-    // Length gate, applied here rather than when the candidate list is built.
-    //
-    // Coarsening a well-shaped mesh is what the length limit exists to prevent, so a short
-    // edge keeps the old behaviour. But applying it to the CANDIDATE LIST made any element
-    // whose edges are all longer than 0.8 * l invisible to this pass: it was never offered,
-    // so it produced no rejection record anywhere and looked untouched rather than refused.
-    //
-    // Measured in triwild on triwild20k 189017 at eps_rel 1e-4, where a collinear triangle
-    // with edges 55 / 165 / 220 against a gate of 38.7 survived every pass while stuck-refine
-    // split it -- halving its short edge and DOUBLING its energy each round, 6.7e16 -> 1.5e17
-    // -> 3.1e17 -> inverted -- and the mesh grew from 17k to 6.6M elements in ten iterations.
-    // Refinement cannot repair a shape defect (AMIPS is scale-invariant, so splitting a
-    // collinear element leaves it collinear); collapse is the only operation that can remove
-    // one, so it has to be allowed to see it. With this, that model converges in 21
-    // iterations, and the eps_rel 1e-3 run it already handled is unchanged at 12.
-    //
-    // The condition is strict improvement of the ring's worst element, which needs no
-    // threshold and is self-limiting: in a healthy mesh almost no long-edge collapse strictly
-    // improves anything. Note changed_tids excludes the tets the collapse deletes, so when
-    // the ring's worst is one of those the test passes by construction -- the rule admits
-    // precisely the collapses that remove a bad element.
-    if (m_collapse_limit_length && VA[v1_id].m_is_rounded) {
-        const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-        const double len2 = cache.edge_length * cache.edge_length;
-        if (len2 > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
-            double max_after = 0.;
-            for (const double q : cache.changed_energies) {
-                max_after = std::max(max_after, q);
-            }
-            if (max_after >= cache.max_energy) {
-                return false;
-            }
-        }
-    }
-
 
     //
     const auto n12_locs = get_incident_tids_for_edge(loc); // todo: duplicated computation

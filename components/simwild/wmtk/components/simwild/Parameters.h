@@ -43,19 +43,6 @@ struct Parameters : public wmtk::OptimizerParameters
     VectorXd box_max;
     bool stop_at_float = false;
 
-    /**
-     * Verify at init that every surface edge starts inside the envelope (2D remeshing only).
-     *
-     * The same check triwild carries, and the same trade: the invariant is real, but it
-     * costs one sampled segment query per surface edge, serially, on every run. Measured in
-     * triwild's 2D sweep at 22s on a 3.5M-edge input and 5m07s on a 7.6M-edge one -- 8.5% of
-     * that model's entire budget, spent before the first iteration. Off by default.
-     *
-     * The 3D counterpart in VolumemesherInsertion is deliberately NOT gated by this: it is
-     * not a check but a decision, feeding the "rebuild the envelope from tet tags" branch.
-     */
-    bool check_envelope_at_init = false;
-
     std::string operation = "remeshing";
 
     /**
@@ -115,7 +102,6 @@ struct Parameters : public wmtk::OptimizerParameters
 
         debug_output = json_params["DEBUG_output"];
         perform_sanity_checks = json_params["DEBUG_sanity_checks"];
-        check_envelope_at_init = json_params["DEBUG_envelope_sanity_check"];
 
         verbose_quality_stats = json_params["verbose_quality_stats"];
 
