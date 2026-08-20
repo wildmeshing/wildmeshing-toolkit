@@ -3,12 +3,10 @@
     "doc": "[README](https://github.com/wildmeshing/wildmeshing-toolkit/blob/main/components/simwild/README.md)",
     "pointer": "/",
     "type": "object",
-    "required": [
-      "application",
-      "input"
-    ],
+    "required": ["application", "input"],
     "optional": [
       "operation",
+      "dimension",
       "output",
       "input_names",
       "input_transform",
@@ -51,9 +49,9 @@
       "report",
       "DEBUG_output",
       "DEBUG_sanity_checks",
-      "DEBUG_envelope_sanity_check",
       "allow_surface_swap",
       "check_surface_topology",
+      "verbose_quality_stats",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -80,9 +78,7 @@
   {
     "pointer": "/application",
     "type": "string",
-    "options": [
-      "simwild"
-    ],
+    "options": ["simwild"],
     "doc": "Application name must be simwild."
   },
   {
@@ -100,11 +96,7 @@
     "pointer": "/dimension",
     "type": "string",
     "default": "auto",
-    "options": [
-      "auto",
-      "2",
-      "3"
-    ],
+    "options": ["auto", "2", "3"],
     "doc": "Whether the input is 2D or 3D, as a string. 'auto' looks at the first input: a .msh decides from its own content, an OBJ with 'f' records is a 3D surface, an OBJ with 'l' records and no 'f' is a 2D curve network. A curve network and a surface are both .obj, so the extension alone cannot separate them. Setting \"2\" or \"3\" forces the route and errors if the file disagrees, rather than failing later with a confusing parse error."
   },
   {
@@ -254,13 +246,8 @@
   {
     "pointer": "/sizing_field/*",
     "type": "object",
-    "required": [
-      "tags"
-    ],
-    "optional": [
-      "length",
-      "length_rel"
-    ],
+    "required": ["tags"],
+    "optional": ["length", "length_rel"],
     "doc": "A region and its target length."
   },
   {
@@ -289,10 +276,7 @@
   {
     "pointer": "/quality_field/*",
     "type": "object",
-    "required": [
-      "tags",
-      "quality"
-    ],
+    "required": ["tags", "quality"],
     "doc": "A region and its target quality."
   },
   {
@@ -329,21 +313,21 @@
     "type": "int",
     "default": 12,
     "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
-},
-{
+  },
+  {
     "pointer": "/project_line_search_nested_steps",
     "type": "int",
     "default": 0,
     "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
-},
-{
+  },
+  {
     "pointer": "/smoothing_mode",
     "type": "string",
     "default": "projected",
     "options": ["projected", "exact"],
     "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
-},
-{
+  },
+  {
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,
@@ -408,12 +392,6 @@
     "doc": "Perform sanity checks after every operation. This can be very slow and should only be used for debugging."
   },
   {
-    "pointer": "/DEBUG_envelope_sanity_check",
-    "type": "bool",
-    "default": false,
-    "doc": "Sanity Check: for the 2D remeshing path, verify at init that every surface edge already lies inside the envelope, and abort if one does not. Everything downstream assumes it -- an operation vetoed by the envelope only means something if the mesh started inside it -- but the check costs one sampled segment query per surface edge, serially, on every run. Measured in triwild's 2D sweep, where the same check cost 22s on a 3.5M-edge input and 5m07s on a 7.6M-edge one, the latter 8.5% of that model's entire budget. Off by default; turn it on when changing the input simplification or the envelope. Note the 3D path's superficially similar check is not governed by this flag: there the result selects whether to rebuild the envelope from the tet tags, so it is a decision rather than an assertion and always runs."
-  },
-  {
     "pointer": "/allow_surface_swap",
     "type": "bool",
     "default": true,
@@ -426,6 +404,12 @@
     "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
   },
   {
+    "pointer": "/verbose_quality_stats",
+    "type": "bool",
+    "default": true,
+    "doc": "Log the per-tag quality breakdown after every optimization iteration: for each entry of /quality_field, and for the cells no entry matches, the number of cells, their max and average absolute quality, the target applied to them, and the max quality relative to that target. Groups are listed worst-relative-first, so the top line names the region holding the optimization back. Off by default: it adds one log line per quality-field entry per iteration, which is noise unless a particular tagged region is failing to converge. The figures are collected in the sweep that computes the mesh-wide max/avg anyway, so enabling this costs logging, not computation."
+  },
+  {
     "pointer": "/stuck_refine_stall_eps",
     "type": "float",
     "default": 0.1,
@@ -434,8 +418,8 @@
   {
     "pointer": "/stuck_refine_cooldown",
     "type": "int",
-    "default": 0,
-    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field)."
+    "default": 1,
+    "doc": "After a refinement, skip this many improvement iterations before refining again (let the operations act on the new sizing field). 1 by default: refining every iteration can outrun the operations entirely -- on triwild20k 189017 at eps_rel 1e-4 the mesh runs away to 5.8M faces and never converges at 0, and converges at 9.9994 in 35 iterations at 1. Costs ~5% iterations across the challenging models at no wall-time cost."
   },
   {
     "pointer": "/stuck_refine_num_worst",

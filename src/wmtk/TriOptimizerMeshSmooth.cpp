@@ -63,6 +63,7 @@ void TriOptimizerMesh::set_smoothing_position(const size_t vid, const Vector2d& 
 void TriOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 {
     for (size_t i = 0; i < n_iters; ++i) {
+        logger().info("==smoothing {}==", i);
         igl::Timer timer;
         timer.start();
         m_smooth_rejects.reset();

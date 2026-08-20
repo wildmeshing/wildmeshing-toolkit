@@ -68,9 +68,17 @@ TriOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
                 if (length != -weight) {
                     return false;
                 }
-                // Deliberately NOT filtered on length here. An over-length edge stays a
-                // candidate and collapse_edge_before decides it on quality instead: it is kept
-                // only if it STRICTLY improves the worst element of the ring. See there.
+                // Length gate, applied to the CANDIDATE LIST -- TriWild's placement. An edge
+                // at or above the collapse target is not offered to this pass at all.
+                if (m_collapse_limit_length) {
+                    const size_t v1_id = tup.vid(m);
+                    const size_t v2_id = tup.switch_vertex(m).vid(m);
+                    const double sizing_ratio =
+                        (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
+                    if (length > m_params.collapsing_l2 * sizing_ratio * sizing_ratio) {
+                        return false;
+                    }
+                }
                 return true;
             };
 
@@ -200,44 +208,6 @@ bool TriOptimizerMesh::collapse_edge_before(const Tuple& loc) // input is an edg
     }
     assert(cache.changed_energies.size() == cache.changed_fids.size());
 
-    // Length gate, applied here rather than when the candidate list is built.
-    //
-    // Coarsening a well-shaped mesh is what the length limit exists to prevent, so a short
-    // edge keeps the old behaviour. But applying it to the CANDIDATE LIST made any element
-    // whose edges are all longer than 0.8 * l invisible to this pass: it was never offered,
-    // so it produced no rejection record anywhere and looked untouched rather than refused.
-    // A collinear triangle is exactly that -- measured on triwild20k 189017 at eps_rel 1e-4,
-    // one with edges 55 / 165 / 220 against a gate of 38.7 survived every pass while
-    // stuck-refine split it, halving its short edge and DOUBLING its energy each round
-    // (6.7e16 -> 1.5e17 -> 3.1e17 -> inverted) and growing the mesh from 17k to 6.6M faces.
-    //
-    // Refinement cannot repair a shape defect -- AMIPS is scale-invariant, so splitting a
-    // collinear triangle leaves it collinear -- and collapse is the only operation that can
-    // remove one. So an over-length edge is allowed, on the condition that it STRICTLY
-    // improves the worst element of the ring. That needs no threshold and is self-limiting:
-    // in a healthy mesh almost no long-edge collapse strictly improves anything.
-    //
-    // Note changed_fids excludes the faces the collapse deletes, so when the worst element
-    // in the ring is one of those, the test passes by construction -- the rule admits
-    // precisely the collapses that remove a bad element.
-    if (m_collapse_limit_length && VA[v1_id].m_is_rounded) {
-        const double sizing_ratio = (VA[v1_id].m_sizing_scalar + VA[v2_id].m_sizing_scalar) / 2;
-        const double len2 = cache.edge_length * cache.edge_length;
-        // UNCONDITIONAL, where this used to fire only for an edge longer than the collapse
-        // target. A collapse that makes the worst element in the ring worse is a bad collapse
-        // whatever the edge's length is; exempting short edges meant the overwhelming majority
-        // of collapses -- the ones a length-driven pass actually performs -- had no quality gate
-        // at all, and could freely degrade the mesh.
-        {
-            double max_after = 0.;
-            for (const double q : cache.changed_energies) {
-                max_after = std::max(max_after, q);
-            }
-            if (max_after >= cache.max_energy) {
-                return false;
-            }
-        }
-    }
 
     //
     const auto& n12_locs = get_incident_fids_for_edge(loc);

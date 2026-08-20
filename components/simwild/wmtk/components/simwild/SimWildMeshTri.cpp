@@ -1,5 +1,7 @@
 #include "SimWildMeshTri.hpp"
 
+#include "QualityStats.hpp"
+
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include <wmtk/threading/parallel_for.hpp>
@@ -224,7 +226,7 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
         tempE.emplace_back(v1, v2);
     }
 
-    if (!m_envelope) {
+    auto env_from_face_tags = [&]() {
         logger().info("Init envelope from face tags");
         // build envelopes
         std::vector<Vector2d> tempV(vert_capacity());
@@ -240,19 +242,33 @@ void SimWildMeshTri::init_surfaces_and_boundaries()
             "Envelope: {} (eps {:.6})",
             m_envelope->use_exact ? "EXACT" : "sampled",
             m_envelope_eps);
-    } else if (m_sim_params.operation == "remeshing" && m_sim_params.check_envelope_at_init) {
-        // All surface edges must be inside the envelope. Opt-in: see
-        // Parameters::check_envelope_at_init for why it is not worth its cost by default.
+    };
+
+    if (!m_envelope) {
+        env_from_face_tags();
+    } else if (m_sim_params.operation == "remeshing") {
+        // All surface edges must be inside the envelope. This check is NOT OPTIONAL. As the tracked
+        // surface is created from tags, the input surface might be a different one. In that case,
+        // the envelope must be rebuilt from the tags.
         logger().info("Envelope sanity check");
         const auto surf_edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
+        bool is_outside = false;
         for (const auto& verts : surf_edges) {
             std::array<Vector2d, 2> pp = {
                 {m_vertex_attribute[verts[0]].m_posf, m_vertex_attribute[verts[1]].m_posf}};
             if (m_envelope->is_outside(pp)) {
-                log_and_throw_error("Edge {} is outside!", verts);
+                is_outside = true;
+                break;
             }
         }
         logger().info("Envelope sanity check done");
+        if (!is_outside) {
+            logger().info("All surface faces are inside the envelope.");
+        } else {
+            logger().warn(
+                "Some surface edges are outside the envelope. Rebuilding envelope from face tags.");
+            env_from_face_tags();
+        }
     }
 
     // track bounding box
@@ -453,18 +469,20 @@ double SimWildMeshTri::quality_rel(const Tuple& t) const
 
 std::tuple<double, double> SimWildMeshTri::optimization_quality_stats()
 {
-    double max_quality = -1.;
-    double avg_quality = 0.;
-    size_t count = 0;
-    for (size_t fid = 0; fid < tri_capacity(); ++fid) {
-        if (!tuple_from_tri(fid).is_valid(*this)) continue;
-        const double quality = quality_rel(fid);
-        max_quality = std::max(max_quality, quality);
-        avg_quality += quality;
-        ++count;
+    // Unlike the 3D mesh, m_quality is already in the targets' units -- no cube root here.
+    const QualityBreakdown breakdown = collect_quality_breakdown(
+        tri_capacity(),
+        m_quality_field,
+        m_params.stop_energy,
+        [this](size_t fid) { return tuple_from_tri(fid).is_valid(*this); },
+        [this](size_t fid) -> const CellTag& { return m_face_attribute[fid].tags; },
+        [this](size_t fid) { return m_face_attribute[fid].m_quality; });
+
+    if (m_sim_params.verbose_quality_stats) {
+        log_quality_breakdown(breakdown);
     }
-    if (count > 0) avg_quality /= count;
-    return {max_quality, avg_quality};
+
+    return {breakdown.max_relative, breakdown.avg_relative};
 }
 
 std::vector<size_t> SimWildMeshTri::active_vertices() const
@@ -708,16 +726,18 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
     const auto& faces = get_faces();
     const auto edges = get_edges_by_condition([](auto& f) { return f.m_is_surface_fs; });
 
-    Eigen::MatrixXd V(vert_capacity(), 2);
-    Eigen::MatrixXi F(tri_capacity(), 3);
-    Eigen::MatrixXi E(edges.size(), 2);
+    MatrixXd V(vert_capacity(), 2);
+    MatrixXi F(tri_capacity(), 3);
+    MatrixXi E(edges.size(), 2);
 
     V.setZero();
     F.setZero();
     E.setZero();
 
-    Eigen::VectorXd v_sizing_field(vert_capacity());
+    VectorXd v_sizing_field(vert_capacity());
     v_sizing_field.setZero();
+    VectorXd v_rounded(vert_capacity());
+    v_rounded.setZero();
 
     std::vector<MatrixXd> tags(m_tags_count, MatrixXd(tri_capacity(), 1));
     VectorXd amips(tri_capacity());
@@ -750,6 +770,7 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
         const size_t vid = v.vid(*this);
         V.row(vid) = m_vertex_attribute[vid].m_posf;
         v_sizing_field[vid] = m_vertex_attribute[vid].m_sizing_scalar;
+        v_rounded[vid] = m_vertex_attribute[vid].m_is_rounded ? 1.0 : 0.0;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -762,6 +783,7 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
     writer->add_cell_field("quality_target", amips_target);
     writer->add_cell_field("quality_rel", amips_rel);
     writer->add_field("sizing_field", v_sizing_field);
+    writer->add_field("is_rounded", v_rounded);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface
@@ -770,6 +792,7 @@ void SimWildMeshTri::write_vtu(const std::string& path) const
         std::shared_ptr<paraviewo::ParaviewWriter> surf_writer;
         surf_writer = std::make_shared<paraviewo::VTUWriter>();
         surf_writer->add_field("sizing_field", v_sizing_field);
+        surf_writer->add_field("is_rounded", v_rounded);
 
         logger().info("Write {}", surf_out_path);
         surf_writer->write_mesh(surf_out_path, V, E, paraviewo::CellType::Line);
@@ -927,37 +950,183 @@ bool SimWildMeshTri::collapse_quality_allowed(
            quality <= ring_max;
 }
 
-void SimWildMeshTri::collapse_after_vertex(size_t, size_t v2)
+bool SimWildMeshTri::check_interface_edges_tagged(const bool verbose) const
 {
-    // SimWild's tracked edges are derived from neighboring cell tags. Rebuild the local
-    // interface instead of retaining an OR-merge of the two old edge flags.
-    std::set<size_t> affected_vertices;
-    affected_vertices.insert(v2);
+    size_t num_interface = 0; // edges between unlike tags
+    size_t num_surface = 0; // edges marked m_is_surface_fs
+    size_t num_missing = 0; // unlike tags, not marked
+    size_t num_spurious = 0; // marked, but tags are equal
+    size_t num_boundary = 0; // marked, but only one incident triangle
+    // Only the first few are worth naming; a systematic failure would otherwise flood the log.
+    constexpr size_t max_reported = 10;
 
-    for (const size_t fid : get_one_ring_fids_for_vertex(v2)) {
-        if (!tuple_from_tri(fid).is_valid(*this)) continue;
-        for (int j = 0; j < 3; ++j) {
-            const Tuple edge = tuple_from_edge(fid, j);
-            const auto opposite = edge.switch_face(*this);
-            const bool is_interface =
-                opposite.has_value() &&
-                m_face_attribute[fid].tags != m_face_attribute[opposite->fid(*this)].tags;
-            m_edge_attribute[edge.eid(*this)].m_is_surface_fs = is_interface;
-            const auto evs = get_edge_vids(edge);
-            affected_vertices.insert(evs.begin(), evs.end());
+    for (const Tuple& edge : get_edges()) {
+        const size_t fid = edge.fid(*this);
+        const size_t eid = edge.eid(*this);
+        const bool marked = m_edge_attribute[eid].m_is_surface_fs;
+        const auto opposite = edge.switch_face(*this);
+
+        if (!opposite.has_value()) {
+            // Boundary edge: it has no second tag to differ from, so it cannot be an
+            // interface. Counted apart from the interior edges below -- whether the domain
+            // boundary ought to carry the flag is a convention, not a corruption.
+            if (marked) {
+                num_surface++;
+                num_boundary++;
+                if (verbose && num_boundary <= max_reported) {
+                    logger().warn(
+                        "Surface edge {} on boundary, incident to triangle {} only",
+                        eid,
+                        fid);
+                }
+            }
+            continue;
         }
-    }
+        const size_t other = opposite->fid(*this);
 
-    for (const size_t vid : affected_vertices) {
-        bool on_interface = false;
-        for (const Tuple& edge : get_one_ring_edges_for_vertex(vid)) {
-            if (m_edge_attribute[edge.eid(*this)].m_is_surface_fs) {
-                on_interface = true;
-                break;
+        if (marked) {
+            num_surface++;
+        }
+
+        if (m_face_attribute[fid].tags != m_face_attribute[other].tags) {
+            num_interface++;
+            if (!marked) {
+                num_missing++;
+                if (verbose && num_missing <= max_reported) {
+                    logger().error(
+                        "Untagged interface edge {} between triangles {} and {}",
+                        eid,
+                        fid,
+                        other);
+                }
+            }
+        } else if (marked) {
+            num_spurious++;
+            if (verbose && num_spurious <= max_reported) {
+                logger().error(
+                    "Surface edge {} between like-tagged triangles {} and {}",
+                    eid,
+                    fid,
+                    other);
             }
         }
-        m_vertex_attribute[vid].m_is_on_surface = on_interface;
     }
+
+    if (verbose) {
+        const auto elided = [](size_t n) {
+            if (n > max_reported) {
+                logger().error("({} further offending edges not listed)", n - max_reported);
+            }
+        };
+        if (num_missing == 0 && num_spurious == 0) {
+            logger().info(
+                "Interface edges: {} of {} tagged, {} surface edges, all between unlike tags",
+                num_interface,
+                num_interface,
+                num_surface);
+        } else {
+            if (num_missing > 0) {
+                logger().error(
+                    "Interface edges: {} of {} NOT tagged as surface",
+                    num_missing,
+                    num_interface);
+                elided(num_missing);
+            }
+            if (num_spurious > 0) {
+                logger().error(
+                    "Surface edges: {} of {} between LIKE-tagged triangles",
+                    num_spurious,
+                    num_surface);
+                elided(num_spurious);
+            }
+        }
+        if (num_boundary > 0) {
+            logger().warn(
+                "{} surface edges lie on the domain boundary (not counted as violations)",
+                num_boundary);
+        }
+    }
+    return num_missing == 0 && num_spurious == 0;
+}
+
+void SimWildMeshTri::update_attributes()
+{
+    if (m_params.preserve_topology) {
+        // If we are preserving topology, we don't need to update the attributes.
+        return;
+    }
+
+    // Vertices are accumulated from the edges below, so clear first and OR in afterwards --
+    // a vertex is on the surface iff at least one incident edge is.
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!tuple_from_vertex(vid).is_valid(*this)) {
+            continue;
+        }
+        m_vertex_attribute[vid].m_is_on_surface = false;
+    }
+
+    for (const Tuple& edge : get_edges()) {
+        const size_t eid = edge.eid(*this);
+        if (!m_edge_attribute[eid].m_is_surface_fs) {
+            // only surface edges are of interest
+            continue;
+        }
+        const auto opposite = edge.switch_face(*this);
+
+        // A boundary edge has no second tag to differ from, so it is not an interface.
+        const bool is_interface =
+            opposite.has_value() &&
+            m_face_attribute[edge.fid(*this)].tags != m_face_attribute[opposite->fid(*this)].tags;
+
+        if (is_interface) {
+            for (const size_t vid : get_edge_vids(edge)) {
+                m_vertex_attribute[vid].m_is_on_surface = true;
+            }
+            continue;
+        }
+
+        // This edge no longer is on the surface
+        m_edge_attribute[eid].m_is_surface_fs = false;
+    }
+
+    if (m_params.perform_sanity_checks) {
+        check_interface_edges_tagged(true);
+    }
+}
+
+void SimWildMeshTri::collapse_after_vertex(size_t v1, size_t v2)
+{
+    // // SimWild's tracked edges are derived from neighboring cell tags. Rebuild the local
+    // // interface instead of retaining an OR-merge of the two old edge flags.
+    // std::set<size_t> affected_vertices;
+    // affected_vertices.insert(v2);
+
+    // for (const size_t fid : get_one_ring_fids_for_vertex(v2)) {
+    //     if (!tuple_from_tri(fid).is_valid(*this)) continue;
+    //     for (int j = 0; j < 3; ++j) {
+    //         const Tuple edge = tuple_from_edge(fid, j);
+    //         const auto opposite = edge.switch_face(*this);
+    //         const bool is_interface =
+    //             opposite.has_value() &&
+    //             m_face_attribute[fid].tags != m_face_attribute[opposite->fid(*this)].tags;
+    //         m_edge_attribute[edge.eid(*this)].m_is_surface_fs = is_interface;
+    //         const auto evs = get_edge_vids(edge);
+    //         affected_vertices.insert(evs.begin(), evs.end());
+    //     }
+    // }
+
+    // for (const size_t vid : affected_vertices) {
+    //     bool on_interface = false;
+    //     for (const Tuple& edge : get_one_ring_edges_for_vertex(vid)) {
+    //         if (m_edge_attribute[edge.eid(*this)].m_is_surface_fs) {
+    //             on_interface = true;
+    //             break;
+    //         }
+    //     }
+    //     m_vertex_attribute[vid].m_is_on_surface = on_interface;
+    // }
+    m_vertex_attribute[v2].m_sizing_scalar =
+        std::min(m_vertex_attribute[v1].m_sizing_scalar, m_vertex_attribute[v2].m_sizing_scalar);
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_envelope_energy(

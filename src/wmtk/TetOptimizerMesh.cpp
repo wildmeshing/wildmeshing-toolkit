@@ -161,6 +161,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     };
 
     sanity_checks();
+    update_attributes();
     for (int i = 0; i < int(ops.size()); ++i) {
         timer.start();
         if (i == 0) {
@@ -213,6 +214,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                 cnt_surface_swap_56.load());
         }
         sanity_checks();
+        update_attributes();
     }
 
     const auto stats = optimization_quality_stats();

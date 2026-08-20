@@ -127,6 +127,35 @@ public:
     double quality_rel(const size_t tid) const override;
     double quality_rel(const Tuple& t) const;
     bool check_mesh_quality(double& max_rel_quality, const bool verbose = false) const;
+
+    /**
+     * @brief Verify that every interface between unlike tags carries a surface edge.
+     *
+     * The 2D counterpart of SimWildMesh::check_interface_faces_tagged. A SimWild surface IS the
+     * interface between unlike cell tags, so for any two triangles sharing an edge whose `tags`
+     * differ, that edge must be marked `m_is_surface_fs` -- and, in the other direction, a
+     * marked edge must separate unlike tags.
+     *
+     * Boundary edges (one incident triangle) have no second tag to differ from; a marked one is
+     * counted and reported apart from the interior edges rather than as a violation.
+     *
+     * @param verbose Log a summary line, and the first few offending edges.
+     * @return true if every interface edge is tagged and no tagged edge sits between like tags.
+     */
+    bool check_interface_edges_tagged(const bool verbose = false) const;
+
+    /**
+     * @brief Update the attributes of the mesh after an iteration of operations.
+     *
+     * The 2D counterpart of SimWildMesh::update_attributes: walks the edges already marked as
+     * surface and clears the ones whose two triangles no longer disagree on their tags, then
+     * rebuilds `m_is_on_surface` from the edges that survive. Like the 3D version it only
+     * retires stale flags -- an edge that was never a surface edge does not become one here --
+     * and it runs between passes, single-threaded, where reading both sides of an edge is safe.
+     *
+     * @see check_interface_edges_tagged, which verifies the post-condition in both directions.
+     */
+    void update_attributes() override;
     std::vector<size_t> active_vertices() const override;
 
     /**

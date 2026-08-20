@@ -38,6 +38,11 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     }
 
     partition_mesh_morton();
+
+    if (m_params.debug_output) {
+        write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+    }
+
     if (optimization_bare_coarsen_passes()) {
         logger().info("========it pre========");
         local_operations({{0, 1, 0, 0}}, false);
@@ -136,6 +141,8 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
 {
     igl::Timer timer;
 
+    static constexpr std::array<const char*, 4> names = {{"split", "collapse", "swap", "smooth"}};
+
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) return;
         logger().info("Perform sanity checks...");
@@ -157,7 +164,8 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
     };
 
     sanity_checks();
-    for (int i = 0; i < int(ops.size()); ++i) {
+    update_attributes();
+    for (size_t i = 0; i < ops.size(); ++i) {
         timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
@@ -182,19 +190,22 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
                 logger().info("==swapping {}==", n);
                 if (swap_all_edges() == 0) break;
             }
-        } else {
-            logger().info("==smoothing ==");
+        } else if (i == 3) {
             smooth_all_vertices(size_t(ops[i]));
             if (ops[i] > 0) round_all_vertices();
         }
 
         optimization_debug_checkpoint();
-        const auto [max_metric, avg_metric] = optimization_quality_stats();
-        static constexpr std::array<const char*, 4> names = {
-            {"split", "collapse", "swap", "smooth"}};
-        logger()
-            .info("{} max energy = {:.6} avg = {:.6}", names[size_t(i)], max_metric, avg_metric);
-        sanity_checks();
+        if (ops[i] > 0) {
+            if (m_params.debug_output && i < 3) {
+                // no need to print debug output for smoothing, since it prints already internally
+                write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            }
+            const auto [max_metric, avg_metric] = optimization_quality_stats();
+            logger().info("{} max energy = {:.6} avg = {:.6}", names[i], max_metric, avg_metric);
+            sanity_checks();
+            update_attributes();
+        }
     }
 
     const auto stats = optimization_quality_stats();
