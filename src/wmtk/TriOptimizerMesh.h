@@ -204,6 +204,15 @@ public:
 
     std::tuple<double, double> get_max_avg_energy();
 
+    /**
+     * @brief Update the attributes of the mesh after an iteration of operations.
+     *
+     * This is necessary in SimWild to update the surface flags of edges and vertices as
+     * operations might have collapsed away regions that are now no longer on the surface. In
+     * TriWild, this is a no-op.
+     */
+    virtual void update_attributes() {}
+
     /// Shared TriWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
     void mesh_improvement(int max_its = 80);
