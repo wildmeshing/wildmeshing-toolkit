@@ -163,6 +163,12 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>quality_rel</b> (co
 <tr class="memitem:af3fd285eaf70ad24c37ee0ccb243b84c" id="r_af3fd285eaf70ad24c37ee0ccb243b84c"><td class="memItemLeft" align="right" valign="top"><a id="af3fd285eaf70ad24c37ee0ccb243b84c" name="af3fd285eaf70ad24c37ee0ccb243b84c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_mesh_quality</b> (double &amp;max_rel_quality, const bool verbose=false) const</td></tr>
 <tr class="separator:af3fd285eaf70ad24c37ee0ccb243b84c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00071bf4c7cd7bc23f10ff39cabe4599" id="r_a00071bf4c7cd7bc23f10ff39cabe4599"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a00071bf4c7cd7bc23f10ff39cabe4599">check_interface_edges_tagged</a> (const bool verbose=false) const</td></tr>
+<tr class="memdesc:a00071bf4c7cd7bc23f10ff39cabe4599"><td class="mdescLeft">&#160;</td><td class="mdescRight">Verify that every interface between unlike tags carries a surface edge.  <br /></td></tr>
+<tr class="separator:a00071bf4c7cd7bc23f10ff39cabe4599"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c2d3701be8243ce4c6ce16c6a723adc" id="r_a0c2d3701be8243ce4c6ce16c6a723adc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0c2d3701be8243ce4c6ce16c6a723adc">update_attributes</a> () override</td></tr>
+<tr class="memdesc:a0c2d3701be8243ce4c6ce16c6a723adc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the attributes of the mesh after an iteration of operations.  <br /></td></tr>
+<tr class="separator:a0c2d3701be8243ce4c6ce16c6a723adc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a55514800318857525d9940ba9332c3" id="r_a0a55514800318857525d9940ba9332c3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0a55514800318857525d9940ba9332c3">active_vertices</a> () const override</td></tr>
 <tr class="separator:a0a55514800318857525d9940ba9332c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e52d6aa49a6f5b0f34666df90ac4c93" id="r_a0e52d6aa49a6f5b0f34666df90ac4c93"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a0e52d6aa49a6f5b0f34666df90ac4c93">refine_sizing_around_worst</a> (double max_metric=0.) override</td></tr>
@@ -878,6 +884,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="a00071bf4c7cd7bc23f10ff39cabe4599" name="a00071bf4c7cd7bc23f10ff39cabe4599"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00071bf4c7cd7bc23f10ff39cabe4599">&#9670;&#160;</a></span>check_interface_edges_tagged()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::simwild::tri::SimWildMeshTri::check_interface_edges_tagged </td>
+          <td>(</td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>verbose</em> = <code>false</code></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Verify that every interface between unlike tags carries a surface edge. </p>
+<p>The 2D counterpart of <a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#a614786ebe290b0d742d91898fced3ed8" title="Verify that every interface between unlike tags carries a surface face.">SimWildMesh::check_interface_faces_tagged</a>. A SimWild surface IS the interface between unlike cell tags, so for any two triangles sharing an edge whose <code>tags</code> differ, that edge must be marked <code>m_is_surface_fs</code> &ndash; and, in the other direction, a marked edge must separate unlike tags.</p>
+<p>Boundary edges (one incident triangle) have no second tag to differ from; a marked one is counted and reported apart from the interior edges rather than as a violation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">verbose</td><td>Log a summary line, and the first few offending edges. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if every interface edge is tagged and no tagged edge sits between like tags. </dd></dl>
+
+</div>
+</div>
 <a id="a9a3f67d11af0235bea942401a007a063" name="a9a3f67d11af0235bea942401a007a063"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9a3f67d11af0235bea942401a007a063">&#9670;&#160;</a></span>collapse_after_vertex()</h2>
 
@@ -1446,6 +1481,37 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="a0c2d3701be8243ce4c6ce16c6a723adc" name="a0c2d3701be8243ce4c6ce16c6a723adc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c2d3701be8243ce4c6ce16c6a723adc">&#9670;&#160;</a></span>update_attributes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::tri::SimWildMeshTri::update_attributes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Update the attributes of the mesh after an iteration of operations. </p>
+<p>The 2D counterpart of SimWildMesh::update_attributes: walks the edges already marked as surface and clears the ones whose two triangles no longer disagree on their tags, then rebuilds <code>m_is_on_surface</code> from the edges that survive. Like the 3D version it only retires stale flags &ndash; an edge that was never a surface edge does not become one here &ndash; and it runs between passes, single-threaded, where reading both sides of an edge is safe.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a00071bf4c7cd7bc23f10ff39cabe4599" title="Verify that every interface between unlike tags carries a surface edge.">check_interface_edges_tagged</a>, which verifies the post-condition in both directions. </dd></dl>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af708f3e42232d74ffde9abf5b04b85a4">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>
