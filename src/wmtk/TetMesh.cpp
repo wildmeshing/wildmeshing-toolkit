@@ -13,59 +13,24 @@ namespace wmtk {
 // (rare) failure the counter is left advanced; those unusable slots are reclaimed at
 // the next consolidate_mesh(). This is the only place the tet counter grows during
 // operations, and it never resizes the storage (no more thread-safe growth).
-long TetMesh::request_tet_slots(size_t n)
+size_t TetMesh::request_tet_slots(size_t n)
 {
-    if (n == 0) return (long)current_tet_size.load();
-    const long cap = (long)m_tet_connectivity.size();
-    // CAS loop: only advance the counter when there is room, so a failed request
-    // never leaks slots (which would push current_tet_size past the storage size
-    // and make later iteration go out of bounds).
-    long first = current_tet_size.load(std::memory_order_relaxed);
-    do {
-        if (first + (long)n > cap) return -1;
-    } while (!current_tet_size.compare_exchange_weak(
-        first,
-        first + (long)n,
-        std::memory_order_acq_rel,
-        std::memory_order_relaxed));
-    // Reset the handed-out slots to a clean state. The old tbb::collector
-    // shrank on consolidate and regrew fresh slots, so allocations were always
-    // clean; the preallocated std::vector keeps stale data in the spare region, so
-    // we must clear it here. That leaves hash at 0, the same value consolidate_mesh
-    // assigns and the same one TriMesh::request_tri_slots leaves behind.
-    for (long i = first; i < first + (long)n; ++i) {
-        m_tet_connectivity[i] = TetrahedronConnectivity{};
-    }
-    return first;
+    return m_tet_connectivity.request(n);
 }
 
-long TetMesh::request_vert_slots(size_t n)
+size_t TetMesh::request_vert_slots(size_t n)
 {
-    if (n == 0) return (long)current_vert_size.load();
-    const long cap = (long)m_vertex_connectivity.size();
-    long first = current_vert_size.load(std::memory_order_relaxed);
-    do {
-        if (first + (long)n > cap) return -1;
-    } while (!current_vert_size.compare_exchange_weak(
-        first,
-        first + (long)n,
-        std::memory_order_acq_rel,
-        std::memory_order_relaxed));
-    // Reset the handed-out vertex slots to a clean state (see request_tet_slots).
-    for (long i = first; i < first + (long)n; ++i) {
-        m_vertex_connectivity[i] = VertexConnectivity{};
-    }
-    return first;
+    return m_vertex_connectivity.request(n);
 }
 
-int TetMesh::get_next_empty_slot_t()
+size_t TetMesh::get_next_empty_slot_t()
 {
-    return (int)request_tet_slots(1);
+    return request_tet_slots(1);
 }
 
-int TetMesh::get_next_empty_slot_v()
+size_t TetMesh::get_next_empty_slot_v()
 {
-    return (int)request_vert_slots(1);
+    return request_vert_slots(1);
 }
 
 TetMesh::TetMesh()
@@ -85,8 +50,8 @@ void TetMesh::init(size_t n_vertices, const std::vector<std::array<size_t, 4>>& 
     const size_t tcap = reserved_capacity(tets.size());
     m_vertex_connectivity.resize(vcap);
     m_tet_connectivity.resize(tcap);
-    current_vert_size = (long)n_vertices;
-    current_tet_size = (long)tets.size();
+    m_vertex_connectivity.set_live(n_vertices);
+    m_tet_connectivity.set_live(tets.size());
     for (int i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -123,8 +88,8 @@ void TetMesh::init_with_isolated_vertices(
     m_vertex_connectivity.resize(vcap);
     m_tet_connectivity.clear();
     m_tet_connectivity.resize(tcap);
-    current_vert_size = (long)n_vertices;
-    current_tet_size = (long)tets.size();
+    m_vertex_connectivity.set_live(n_vertices);
+    m_tet_connectivity.set_live(tets.size());
     for (size_t i = 0; i < tets.size(); i++) {
         m_tet_connectivity[i].m_indices = tets[i];
         for (int j = 0; j < 4; j++) {
@@ -969,8 +934,8 @@ void TetMesh::consolidate_mesh()
         t_cnt++;
     }
 
-    current_vert_size = v_cnt;
-    current_tet_size = t_cnt;
+    m_vertex_connectivity.set_live(v_cnt);
+    m_tet_connectivity.set_live(t_cnt);
 
     // Re-establish spare capacity for the next round of operations (only [0,live)
     // is live; the rest is preallocated headroom that operations consume).
@@ -1051,7 +1016,7 @@ bool TetMesh::lock_vertex_ball(
 
     stack.reserve(128);
 
-    const size_t cap = m_vertex_connectivity.size();
+    const size_t cap = m_vertex_connectivity.capacity();
     if (scr.stamp.size() < cap) {
         scr.stamp.resize(cap, 0);
     }

@@ -66,12 +66,12 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
 
     // Reserve the additional tet slots up-front so that, if the preallocated
     // capacity is exhausted, we abort *before* mutating any connectivity.
-    long reserved_first = -1;
+    size_t reserved_first = INVALID_SLOT;
     size_t add_size = 0;
     if (allocate_id.empty() && new_tet_conn.size() > remove_id.size()) {
         add_size = new_tet_conn.size() - remove_id.size();
         reserved_first = request_tet_slots(add_size);
-        if (reserved_first < 0) {
+        if (reserved_first == INVALID_SLOT) {
             ok = false; // out of preallocated space; nothing mutated yet
             return {};
         }
@@ -110,7 +110,7 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
 
             // consume the slots reserved above (contiguous block)
             for (size_t i = 0; i < add_size; i++) {
-                allocate_id[i + hole_size] = static_cast<size_t>(reserved_first + (long)i);
+                allocate_id[i + hole_size] = reserved_first + i;
             }
         }
     }

@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -370,10 +371,10 @@ public:
     double preallocation_factor() const { return m_preallocation_factor; }
 
     // Atomically reserve `n` contiguous fresh triangle/vertex slots. Returns the
-    // first index of the block, or -1 if that would exceed the preallocated
+    // first index of the block, or INVALID_SLOT if that would exceed the preallocated
     // capacity (the caller must then abort the operation before mutating).
-    long request_tri_slots(size_t n);
-    long request_vert_slots(size_t n);
+    size_t request_tri_slots(size_t n);
+    size_t request_vert_slots(size_t n);
 
 private:
     size_t reserved_capacity(size_t live_count) const
@@ -385,10 +386,8 @@ private:
         return capacity < floor ? floor : capacity;
     }
 
-    vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TriangleConnectivity> m_tri_connectivity;
-    std::atomic_long current_vert_size;
-    std::atomic_long current_tri_size;
+    SlotPool<VertexConnectivity> m_vertex_connectivity;
+    SlotPool<TriangleConnectivity> m_tri_connectivity;
     double m_preallocation_factor = 6.0;
     bool m_use_link_condition = true;
 
@@ -512,13 +511,13 @@ public:
      *
      * @return size_t
      */
-    size_t tri_capacity() const { return current_tri_size; }
+    size_t tri_capacity() const { return m_tri_connectivity.live(); }
     /**
      * @brief get the current largest global vid
      *
      * @return size_t
      */
-    size_t vert_capacity() const { return current_vert_size; }
+    size_t vert_capacity() const { return m_vertex_connectivity.live(); }
 
     /**
      * @name Dimension-generic cell accessors
@@ -884,7 +883,7 @@ public:
      */
     Tuple tuple_from_tri(size_t fid) const
     {
-        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed)
+        if (fid >= m_tri_connectivity.capacity() || m_tri_connectivity[fid].m_is_removed)
             return Tuple();
         auto vid = m_tri_connectivity[fid][0];
         return Tuple(vid, 1, fid, *this);
@@ -905,7 +904,7 @@ public:
      */
     Tuple tuple_from_vertex(size_t vid) const
     {
-        if (vid >= m_vertex_connectivity.size() || m_vertex_connectivity[vid].m_is_removed ||
+        if (vid >= m_vertex_connectivity.capacity() || m_vertex_connectivity[vid].m_is_removed ||
             m_vertex_connectivity[vid].m_conn_tris.empty()) {
             return Tuple();
         }

@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -358,13 +359,13 @@ public:
      *
      * @return size_t
      */
-    size_t vert_capacity() const { return current_vert_size; }
+    size_t vert_capacity() const { return m_vertex_connectivity.live(); }
     /**
      * @brief get the current largest global tid
      *
      * @return size_t
      */
-    size_t tet_capacity() const { return current_tet_size; }
+    size_t tet_capacity() const { return m_tet_connectivity.live(); }
 
     /**
      * @name Dimension-generic cell accessors
@@ -674,8 +675,8 @@ public:
     // Atomically reserve `n` contiguous fresh tet/vertex slots. Returns the first
     // index of the block, or -1 if that would exceed the preallocated capacity (the
     // caller must then abort the operation before mutating any connectivity).
-    long request_tet_slots(size_t n);
-    long request_vert_slots(size_t n);
+    size_t request_tet_slots(size_t n);
+    size_t request_vert_slots(size_t n);
 
     // Construction/insertion helpers (single-threaded ONLY): guarantee at least
     // `extra` free tet/vertex slots beyond the current used count, growing the
@@ -684,9 +685,9 @@ public:
     // the mesh is being built rather than edited by concurrent operations.
     void ensure_free_tet_capacity(size_t extra)
     {
-        const size_t need = static_cast<size_t>(current_tet_size.load()) + extra;
-        if (m_tet_connectivity.size() >= need) return;
-        const size_t newcap = std::max(need, m_tet_connectivity.size() * 2 + 1);
+        const size_t need = m_tet_connectivity.live() + extra;
+        if (m_tet_connectivity.capacity() >= need) return;
+        const size_t newcap = std::max(need, m_tet_connectivity.capacity() * 2 + 1);
         m_tet_connectivity.resize(newcap);
         if (p_tet_attrs) p_tet_attrs->resize(newcap);
         if (p_face_attrs) p_face_attrs->resize(4 * newcap);
@@ -694,9 +695,9 @@ public:
     }
     void ensure_free_vert_capacity(size_t extra)
     {
-        const size_t need = static_cast<size_t>(current_vert_size.load()) + extra;
-        if (m_vertex_connectivity.size() >= need) return;
-        const size_t newcap = std::max(need, m_vertex_connectivity.size() * 2 + 1);
+        const size_t need = m_vertex_connectivity.live() + extra;
+        if (m_vertex_connectivity.capacity() >= need) return;
+        const size_t newcap = std::max(need, m_vertex_connectivity.capacity() * 2 + 1);
         m_vertex_connectivity.resize(newcap);
         resize_vertex_mutex(newcap);
         if (p_vertex_attrs) p_vertex_attrs->resize(newcap);
@@ -714,16 +715,15 @@ private:
     }
 
     // Stores the connectivity of the mesh
-    vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TetrahedronConnectivity> m_tet_connectivity;
-    std::atomic_long current_vert_size;
-    std::atomic_long current_tet_size;
+    SlotPool<VertexConnectivity> m_vertex_connectivity;
+    SlotPool<TetrahedronConnectivity> m_tet_connectivity;
+
     double m_preallocation_factor = 6.0;
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;
-    int get_next_empty_slot_t();
-    int get_next_empty_slot_v();
+    size_t get_next_empty_slot_t();
+    size_t get_next_empty_slot_v();
 
     // TODO: subdivide_tets function should not be in the TetMesh API.
     void subdivide_tets(
@@ -1234,7 +1234,7 @@ private:
         std::vector<size_t>& allocate_id,
         bool& ok);
     static std::vector<TetrahedronConnectivity> record_old_tet_connectivity(
-        const TetMesh::vector<TetrahedronConnectivity>& conn,
+        const SlotPool<TetrahedronConnectivity>& conn,
         const std::vector<size_t>& tets)
     {
         std::vector<TetrahedronConnectivity> tet_conn;
