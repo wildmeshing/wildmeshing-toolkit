@@ -123,7 +123,7 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
         tet_conn[id].hash++;
         for (auto j = 0; j < 4; j++) {
             auto vid = new_tet_conn[i][j];
-            assert(vert_conn.size() > vid && "Sufficient number of verts");
+            assert(vert_conn.capacity() > vid && "Sufficient number of verts");
             wmtk::set_insert(vert_conn[vid].m_conn_tets, id);
         }
     }
