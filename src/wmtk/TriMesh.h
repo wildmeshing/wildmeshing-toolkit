@@ -373,6 +373,38 @@ public:
     // Atomically reserve `n` contiguous fresh triangle/vertex slots. Returns the
     // first index of the block, or INVALID_SLOT if that would exceed the preallocated
     // capacity (the caller must then abort the operation before mutating).
+
+    /**
+     * @brief True if any slot request has been refused since the last clear.
+     *
+     * The pass boundary uses this to decide whether to consolidate: a refusal means an
+     * operation was abandoned for want of storage, and consolidating reclaims the slots that
+     * removed elements still hold (the counter only ever advances during a pass) and re-derives
+     * the capacity from the real element count.
+     */
+    /**
+     * @name Storage capacity
+     *
+     * How many slots the storage holds, as opposed to tri_capacity()/vert_capacity(), which
+     * report the LIVE count -- the end of the handed-out region. Exhaustion is `live ==
+     * storage capacity`, and consolidate re-derives the latter as
+     * `reserved_capacity(real element count)`.
+     * @{
+     */
+    size_t tri_storage_capacity() const { return m_tri_connectivity.capacity(); }
+    size_t vert_storage_capacity() const { return m_vertex_connectivity.capacity(); }
+    /** @} */
+
+    bool slots_exhausted() const
+    {
+        return m_vertex_connectivity.refused() || m_tri_connectivity.refused();
+    }
+    void clear_slots_exhausted()
+    {
+        m_vertex_connectivity.clear_refused();
+        m_tri_connectivity.clear_refused();
+    }
+
     size_t request_tri_slots(size_t n);
     size_t request_vert_slots(size_t n);
 

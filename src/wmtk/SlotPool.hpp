@@ -66,6 +66,18 @@ public:
         set_live(0);
     }
 
+    /**
+     * @name Exhaustion flag
+     *
+     * Set by `request` when it refuses, cleared by the owner at a pass boundary. A plain flag
+     * rather than a count: the response to exhaustion is to consolidate, which re-derives the
+     * capacity from the real element count, so the size of the shortfall is not an input.
+     * @{
+     */
+    bool refused() const { return m_refused.load(std::memory_order_relaxed); }
+    void clear_refused() { m_refused.store(false, std::memory_order_relaxed); }
+    /** @} */
+
     T& operator[](size_t i) { return m_data[i]; }
     const T& operator[](size_t i) const { return m_data[i]; }
 
@@ -103,6 +115,7 @@ public:
             // Phrased as a subtraction rather than `first + n > cap` so that it cannot
             // overflow; `first <= cap` always holds, so `cap - first` is well defined.
             if (first > cap || n > cap - first) {
+                m_refused.store(true, std::memory_order_relaxed);
                 return INVALID_SLOT;
             }
         } while (!m_live.compare_exchange_weak(
@@ -123,6 +136,7 @@ public:
 private:
     std::vector<T> m_data;
     std::atomic<size_t> m_live{0};
+    std::atomic<bool> m_refused{false};
 };
 
 } // namespace wmtk
