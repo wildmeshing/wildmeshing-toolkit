@@ -2,9 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
-#include <wmtk/SlotPool.hpp>
 #include <wmtk/TetMesh.h>
 #include <wmtk/TriMesh.h>
+#include <wmtk/SlotPool.hpp>
 #include <wmtk/threading/task_group.hpp>
 
 #include <algorithm>
