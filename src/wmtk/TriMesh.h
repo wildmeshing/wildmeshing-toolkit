@@ -33,7 +33,7 @@ public:
         size_t m_vid = -1;
         size_t m_eid = -1;
         size_t m_fid = -1;
-        size_t m_hash = -1;
+        size_t m_hash = 0;
 
         void update_hash(const TriMesh& m);
 

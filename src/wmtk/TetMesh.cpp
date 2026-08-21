@@ -31,10 +31,10 @@ long TetMesh::request_tet_slots(size_t n)
     // Reset the handed-out slots to a clean state. The old tbb::collector
     // shrank on consolidate and regrew fresh slots, so allocations were always
     // clean; the preallocated std::vector keeps stale data in the spare region, so
-    // we must clear it here (matches old behaviour: default tet, hash = -1).
+    // we must clear it here. That leaves hash at 0, the same value consolidate_mesh
+    // assigns and the same one TriMesh::request_tri_slots leaves behind.
     for (long i = first; i < first + (long)n; ++i) {
         m_tet_connectivity[i] = TetrahedronConnectivity{};
-        m_tet_connectivity[i].hash = -1;
     }
     return first;
 }

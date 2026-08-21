@@ -52,7 +52,7 @@ public:
         size_t m_local_fid = std::numeric_limits<size_t>::max();
         size_t m_global_tid = std::numeric_limits<size_t>::max();
 
-        int m_hash = 0;
+        size_t m_hash = 0;
 
     private:
         /**
@@ -280,7 +280,13 @@ public:
         std::array<size_t, 4> m_indices;
         bool m_is_removed = false;
 
-        int hash = 0;
+        /**
+         * Bumped whenever an operation changes this tet, so a Tuple minted earlier can detect
+         * that it is stale. Only ever compared for equality against a Tuple's cached copy --
+         * no code reads the value itself, and the rollback path decrements it, which is why it
+         * is unsigned: the wrap at 0 is defined, where signed underflow would not be.
+         */
+        size_t hash = 0;
 
         size_t& operator[](size_t index)
         {
