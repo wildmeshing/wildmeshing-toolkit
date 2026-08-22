@@ -437,6 +437,25 @@ public:
     virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const;
     virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const = 0;
 
+    /**
+     * @brief An extra term the application adds to this vertex's smoothing objective, or null.
+     *
+     * The extension point that lets an application place a vertex by MINIMISING something
+     * rather than by computing a position and then defending it. topological_offset uses it for
+     * the offset surface: the term is w (Phi - c)^2, whose minimum is the offset itself, so an
+     * offset-surface vertex goes through this same smoother -- the same line search, the same
+     * exact inversion test, the same quality veto -- as every other vertex, instead of through
+     * the hand-rolled quadrics/Laplacian blend that bypassed all three.
+     *
+     * Null by default, so TetWild and SimWild compose exactly the energy they composed before.
+     * The 2D twin is TriOptimizerMesh::smoothing_extra_energy.
+     */
+    virtual std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t /*vid*/) const
+    {
+        return nullptr;
+    }
+
     bool smooth_before(const Tuple& t) override;
     bool smooth_after(const Tuple& t) override;
     void smooth_all_vertices(const size_t n_iters = 1);
@@ -449,8 +468,38 @@ protected:
     virtual std::tuple<double, double> optimization_quality_stats();
     virtual double optimization_stop_metric() const { return m_params.stop_energy; }
     virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+
+    /**
+     * @brief Whether the loop opens with an UNLIMITED-LENGTH collapse pass.
+     *
+     * mesh_improvement() begins with local_operations({{0,1,0,0}}, false) -- a collapse pass
+     * with collapse_limit_length FALSE, so no edge is too short to be collapsed and no edge is
+     * too long to be collapsed either. For TetWild and SimWild that is exactly right: it strips
+     * the redundancy left by insertion before the real work starts, and their tracked surface is
+     * held in place by an envelope throughout.
+     *
+     * It is wrong for an application whose tracked surface is what the optimization exists to
+     * PLACE, and which therefore has no envelope holding it. topological_offset's offset surface
+     * is such a surface: measured on topological_offset_3d_convex, the opening pass alone took it
+     * from 1172 faces to 326 -- a 72% decimation -- before the loop had run at all, and nothing
+     * downstream can undo that. The sizing field can ask for refinement afterwards; it cannot
+     * refuse a collapse.
+     *
+     * This governs the three BARE coarsening steps -- the opening pass, the closing pass, and
+     * coarsen_mesh() -- and not the collapse inside the loop, which is interleaved with splits
+     * and smoothing and answers to the criterion. Measured on the same model with only the
+     * closing pass left enabled: 1172 faces to 350, so gating the opening one alone is not
+     * enough.
+     */
+    virtual bool optimization_bare_coarsen_passes() const { return true; }
     virtual void write_optimization_debug_output(const std::string& path) = 0;
     virtual void optimization_sanity_checks_extra() {}
+
+    /// CHURN INSTRUMENTATION. Bumped at the start of every split pass in local_operations(), so
+    /// the pass a vertex was born in can be compared against the pass a collapse removes it in.
+    /// Zero until the first split pass runs, which is what lets a construction-era vertex be
+    /// told apart from an optimization-split one. Never reset -- only differences mean anything.
+    uint32_t m_op_epoch = 0;
     virtual bool optimization_stop_at_float() const { return false; }
 
     /// Non-const: an override may cache what it measured before the collapse so its `after`
@@ -467,6 +516,22 @@ protected:
         return true;
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
+
+    /**
+     * @brief The survivor's sizing scalar after a collapse merges `removed` into it.
+     *
+     * The default keeps the survivor's own value -- today's behaviour, byte-identical for
+     * every existing application. The offset overrides it to min: its stall-driven
+     * refinement lowers scalars on band vertices, and a collapse that discards the removed
+     * vertex's finer value onto a coarser survivor un-refines the FIELD by topology, so
+     * each round re-lowers from scratch and the band never actually gets finer. min is
+     * the field's established convention (refinement and gradation smoothing only ever
+     * lower a scalar).
+     */
+    virtual double collapse_merged_sizing(double /*removed*/, double survivor) const
+    {
+        return survivor;
+    }
 
     /// Cache application cell data before a split. TetWild needs none; SimWild caches tags.
     virtual bool split_before_cells(const Tuple&, const std::vector<Tuple>&) { return true; }
@@ -568,7 +633,16 @@ private:
     /// One smoothing attempt on @p vid, restoring everything it wrote if it is rejected.
     bool smooth_vertex_reversible(size_t vid, CoarsenScratch& scr);
 
-    size_t collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes = 0);
+    /// @param exact_ball_lock claim the full lock_ring ball via try_set_edge_mutex_n_ring,
+    /// bypassing make_locker's default-radius substitution of the partial two-ring helper
+    /// (which under-claims in 3D -- see "Ring lockers -- NOT balls" in TetMesh.h). Required
+    /// whenever the operation writes beyond the seed's one-ring, as the coarsening
+    /// composite's ring smoothing does.
+    size_t collapse_all_edges_impl(
+        bool is_limit_length,
+        int lock_ring,
+        size_t max_passes = 0,
+        bool exact_ball_lock = false);
 };
 
 } // namespace wmtk

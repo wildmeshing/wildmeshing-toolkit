@@ -9,72 +9,40 @@
 
 namespace wmtk::components::topological_offset {
 
-double TopoOffsetTetMesh::face_normal_deviation(const Tuple& f) const
-{
-    const std::array<Tuple, 3> fv = get_face_vertices(f);
-    const Vector3d p_a = m_vertex_attribute[fv[0].vid(*this)].m_posf;
-    const Vector3d p_b = m_vertex_attribute[fv[1].vid(*this)].m_posf;
-    const Vector3d p_c = m_vertex_attribute[fv[2].vid(*this)].m_posf;
-
-    const Vector3d ab = p_b - p_a;
-    const Vector3d ac = p_c - p_a;
-    const Vector3d cross = ab.cross(ac);
-    const double cross_norm = cross.norm();
-    if (cross_norm < 1e-12) return 0.; // degenerate triangle, nothing to measure
-    const Vector3d face_normal = cross / cross_norm;
-
-    // max over all 4 samples, not just the centroid: a face straddling a feature has samples
-    // on both sides of it, and only the max catches the one that disagrees with the face's own
-    // (necessarily flat) normal -- averaging or using a single sample would miss it.
-    double max_dev = 0.;
-    for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
-        if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
-        // orientation independent: a triangle whose plane is parallel to the sample's implied
-        // plane counts as aligned regardless of which way get_face_vertices() winds it
-        const double c = std::clamp(face_normal.cross(s.normal).norm(), -1., 1.);
-        max_dev = std::max(max_dev, (180. / M_PI) * std::asin(c));
-    }
-    return max_dev;
-}
-
-double TopoOffsetTetMesh::max_offset_surface_normal_deviation_at_vertex(size_t vid) const
-{
-    double max_nd = 0.;
-    for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(vid))) {
-        max_nd = std::max(max_nd, face_normal_deviation(f));
-    }
-    return max_nd;
-}
-
-double TopoOffsetTetMesh::collapse_normal_deviation(
-    const size_t v_from,
-    const size_t v_to,
-    const size_t remove_vid) const
-{
-    const Vector3d p0 = m_vertex_attribute[v_from].m_posf;
-    const Vector3d p1 = m_vertex_attribute[v_to].m_posf;
-
-    const Vector3d e_dir = (p1 - p0).normalized();
-
-    double min_angle = std::numeric_limits<double>::max();
-    double max_angle = std::numeric_limits<double>::lowest();
-    for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(remove_vid))) {
-        for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
-            if (s.normal.squaredNorm() < 1e-20) continue; // degenerate: no normal direction
-            // orientation dependent (0-180): unlike face_normal_deviation, the edge direction
-            // has a genuine sign, so a sample pointing "with" vs "against" it are different
-            const double dot = std::clamp(e_dir.dot(s.normal), -1., 1.);
-            const double angle = (180. / M_PI) * std::acos(dot);
-            min_angle = std::min(min_angle, angle);
-            max_angle = std::max(max_angle, angle);
-        }
-    }
-    if (min_angle > max_angle) return 0.; // no samples found at all
-    return max_angle - min_angle;
-}
-
 bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
 {
+    // DIAGNOSTIC, off by default. See ab_no_collapse_after_first_round: the band is in a
+    // one-for-one stalemate -- split creates an on-offset vertex and collapse removes one, net
+    // -53 over six rounds -- so this switches the collapse half off from round 2 to establish
+    // whether that stalemate is what holds the residual up. It gives up everything coarsening
+    // provides and is not a fix.
+    if (m_ab_collapses_disabled) {
+        return false;
+    }
+
+    // THE 4/5 LENGTH GATE IS NOT HERE, AND MUST NOT BE RE-ADDED HERE.
+    //
+    // It lives in the shared collapse pass, applied to the CANDIDATE LIST -- an edge longer than
+    // collapsing_l2 * sizing_ratio^2 (l * 4/5 * s, the mean of the endpoints' sizing scalars) is
+    // filtered by is_weight_up_to_date and never offered to this function. That is TetWild's
+    // placement, restored in origin/main b2f216e3ba, and it is scaled by the sizing field, which
+    // is what an offset run needs: the sizing field is driven toward min_sizing_scalar, so an
+    // UNSCALED 0.8*l gate would never fire in exactly the refined regions where the churn lives.
+    //
+    // This file briefly carried its own copy behind WMTK_OFFSET_COLLAPSE_LENGTH_GATE while the
+    // placement was being evaluated. Removed once the shared gate landed: it is the same test on
+    // an already-filtered list, so it could never fire -- except in coarsen_mesh(), where the
+    // base clears m_collapse_limit_length on purpose and a length gate is exactly wrong. Doing
+    // the ring work only to refuse it is also the slower half of the same decision.
+    //
+    // WHAT THE GATE DOES NOT FIX, since it will be asked again: 4/3 and 4/5 do not compose. An
+    // edge split at exactly its threshold yields children of 2/3 * l * s, already inside the
+    // collapse band the moment they are created; only a parent longer than 8/5 * l * s produces
+    // children the gate protects. Measured before the gate, 68.4% of all splits were undone by
+    // the collapse pass that ran immediately after the split pass that created them; with it,
+    // prism tau=0.01 converged in the same 6 rounds with 32% fewer operations and 24% less wall.
+    // Getting the remainder into the band is the interleaved smoothing pass's job.
+
     if (!TetOptimizerMesh::collapse_edge_before(t)) {
         return false;
     }
@@ -82,7 +50,11 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // simplex. That rule is right for tetwild and simwild; here the offset region is a thin
     // shell, and a collapse with one endpoint in the interior can still pinch its two sides
     // together while every tracked surface survives intact.
-    return substructure_link_condition(t);
+    if (!substructure_link_condition(t)) {
+        ++m_offset_collapse_refusals.sublink;
+        return false;
+    }
+    return true;
 }
 
 bool TopoOffsetTetMesh::collapse_before_vertex(
@@ -92,37 +64,85 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
 {
     const auto& VE = m_vertex_extra;
 
+    // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position).
+    //
+    // THERE IS NO FREEZE HERE ANY MORE. This used to open with `if (vertex_is_frozen(v1_id))
+    // return false;` -- vertex_is_frozen being m_is_on_region -- so no input-complex vertex could
+    // ever be removed, "including the input-onto-input case the surface rule below would
+    // otherwise allow", on the grounds that it is what lets the shared engine decimate the input
+    // surface down to whatever the envelope tolerates.
+    //
+    // Decimating to what the envelope tolerates is the CONTRACT, not the leak. It is what
+    // TetWild does to its own input surface and what the per-tag envelopes were built to
+    // express, and the flag was never a good proxy for the thing being protected: splits
+    // propagate m_is_on_region and collapse_after_vertex() ORs it onto survivors, so it accretes
+    // onto vertices that are nowhere near the complex. Measured on the double_sphere lens, a
+    // survivor of an offset-into-input merge sat out on the offset surface carrying the flag and
+    // was frozen here, refused by Phase B and booked as pinned by the residual all at once --
+    // Phase A then stalled on 477 of 45546 tets built from those vertices and never recovered.
+    //
+    // What still constrains the collapse: the surface-class rules immediately below (a vertex
+    // may not leave the surface it belongs to), substructure_link_condition() in
+    // collapse_before(), the containment check the shared pass runs against this vertex's tag
+    // envelopes, and collapse_after_connectivity()'s offset criterion.
+
+    // THE INVARIANT: never both surfaces on one vertex. Conservative growth cannot construct
+    // such a vertex, and a collapse is the only thing that could manufacture one -- it merges
+    // v1 into v2 and collapse_after_vertex() ORs the flags, so an offset vertex merged into an
+    // input-complex one (or the reverse) would come out carrying both. Such a vertex sits at
+    // distance 0 from the complex and is asked to sit at target_distance from it at the same
+    // time; no placement satisfies that, so the offset surface through it can never converge.
+    //
+    // Refused here rather than repaired afterwards, and asserted independently by
+    // check_no_vertex_on_both_surfaces() after construction and after every Phase A.
+    {
+        const bool input = VE[v1_id].m_is_on_input_complex || VE[v2_id].m_is_on_input_complex;
+        const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
+        if (input && offset) {
+            ++m_offset_collapse_refusals.invariant;
+            return false;
+        }
+    }
+
+    // BOTSCH-KOBBELT'S OTHER LEG -- refusing a collapse that would CREATE an edge over
+    // 4/3 * l * s -- was ported here from uday-offset3d c82383e3d7 and REMOVED after measurement.
+    // Do not port it again without new evidence.
+    //
+    // On prism at tau = 0.01, a single convex model that converges in 6 rounds without it, the
+    // guard alone did not converge: 4 rounds, 358k operations, 4468s, and 57909 tets over
+    // stop_energy at once with the max energy RISING to 3.06e20 and the worst tet inverted. Run
+    // with the 4/5 gate as well it was worse -- it threw in round 3, with one trapped sliver
+    // (volume 1.45e-18, all four vertices on the offset surface at the sizing floor) whose six
+    // edges were each either too long for 4/5 or refused by this guard, so no exit existed.
+    // Rounds 1-4 looked like the best thing here -- 77k splits against the baseline's 271k at
+    // the same residual, same-pass churn 29.3% against 68.4% -- which is exactly why the
+    // measurement had to run to the end.
+    //
+    // Its cost is also not proportional to what it saves: 20.3M refusals over 4 rounds, each one
+    // a candidate whose ring work was done and thrown away, so round 4 cut operations ~70% and
+    // still spent MORE wall clock than the baseline.
+    //
+    // The 4/5 gate it was meant to complete is unconditional now and lives in the shared pass --
+    // see collapse_edge_before().
+
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not
     // leave the particular surface it belongs to: an input-complex vertex carries input
     // geometry, and an offset-boundary vertex carries the offset.
-    if (edge_length > 0 && VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
+    if (edge_length > 0 && VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
+        ++m_offset_collapse_refusals.class_region;
         return false;
     }
     if (edge_length > 0 && VE[v1_id].m_is_on_offset && !VE[v2_id].m_is_on_offset) {
+        ++m_offset_collapse_refusals.class_offset;
         return false;
     }
 
     // open boundary
     if (edge_length > 0 && m_vertex_attribute[v1_id].m_order == 2 &&
         m_vertex_attribute[v2_id].m_order < 2) {
+        ++m_offset_collapse_refusals.order2;
         return false;
     }
-
-    // OffsetCollapseBeforeInvariant analogue: don't collapse if the offset-target normal field
-    // sampled around the survivor disagrees with itself (relative to the collapse direction)
-    // by more than the threshold -- that disagreement is the signature of a feature edge
-    // nearby, and collapsing across it would flatten/cut through the feature.
-    if (collapse_normal_deviation(v1_id, v2_id, v1_id) >=
-        m_offset_params.max_normal_deviation_deg) {
-        return false;
-    }
-
-    // NormalDeviationAfterInvariant analogue setup: remember how bad the offset surface
-    // already was around this edge, so the `after` hook only blocks a collapse that makes a
-    // *good* patch worse, not one that was already over the threshold.
-    m_collapse_nd_before.local() = std::max(
-        max_offset_surface_normal_deviation_at_vertex(v1_id),
-        max_offset_surface_normal_deviation_at_vertex(v2_id));
 
     return true;
 }
@@ -132,25 +152,68 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     const size_t v2_id,
     const std::vector<std::array<size_t, 2>>&)
 {
-    // NormalDeviationAfterInvariant analogue: only reject a move that degrades an
-    // already-good offset surface patch -- if it was already over the threshold before, don't
-    // block a collapse from fixing (or merely not fixing) it.
-    if (m_collapse_nd_before.local() < m_offset_params.max_normal_deviation_deg) {
-        const double nd_after = max_offset_surface_normal_deviation_at_vertex(v2_id);
-        if (nd_after >= m_offset_params.max_normal_deviation_deg) {
+    // TETWILD PARITY: no offset-criterion acceptance test in the loop.
+    //
+    // This used to apply a non-degrading Phi gate to every collapse (refuse if the worst
+    // offset face at the survivor got worse), captured per-edge in collapse_before_vertex().
+    // That was load-bearing when the offset surface had NO envelope holding it -- the era the
+    // base's optimization_bare_coarsen_passes() doc measured, when one bare pass decimated the
+    // surface 1172 -> 326 faces with every surviving vertex sitting at 0.95% of delta.
+    //
+    // Phase A now holds the offset surface in m_offset_envelope (rebuilt each round, eps =
+    // ab_offset_envelope_rel x the residual tolerance), so containment is enforced by the
+    // shared pass's surface_triangle_is_outside() -- the same mechanism, with the same
+    // tolerance semantics, that TetWild's input surface gets. A second, tighter criterion on
+    // top of the envelope made Phase A stricter than TetWild in exactly the phase that is
+    // documented as "Phase A is TetWild"; it is gone. Phase B, which owns the Phi criterion,
+    // re-places the surface every round.
+    //
+    // COARSENING keeps an ABSOLUTE bar. It runs after the loop has finished and trades
+    // elements for nothing except the promise that the result is still good: a collapse that
+    // leaves any offset face over tolerance afterwards is not a saving, it is a regression
+    // with fewer elements. face_criterion_rel() is the max of both criteria (AMIPS and the
+    // offset residual), each normalized so 1.0 is its own tolerance.
+    if (m_coarsen_mode && m_offset_potential) {
+        double after = 0.;
+        for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v2_id))) {
+            after = std::max(after, face_criterion_rel(f));
+        }
+        if (after > 1.0) {
+            ++iter_cnt_collapse_offset_reject;
             return false;
         }
     }
+    ++iter_cnt_collapse;
     return true;
 }
 
 void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v2_id)
 {
+    if (m_vertex_extra.at(v1_id).m_is_on_offset) ++iter_cnt_collapse_offset_removed;
+    // CHURN: v1 is the vertex being REMOVED. If a split created it, this collapse is undoing
+    // that split. Same epoch means the collapse pass that immediately follows its own split
+    // pass took it straight back out -- work the mesh never got to keep. A larger age means it
+    // survived at least one further iteration before something decided against it.
+    {
+        const uint32_t born = m_vertex_extra.at(v1_id).m_born_epoch;
+        if (born != 0) {
+            ++iter_cnt_recollapsed;
+            if (m_op_epoch == born) ++iter_cnt_recollapsed_same_pass;
+        }
+    }
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
-    m_vertex_extra[v2_id].m_is_on_input =
-        m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
+    m_vertex_extra[v2_id].m_is_on_region =
+        m_vertex_extra.at(v1_id).m_is_on_region || m_vertex_extra.at(v2_id).m_is_on_region;
     m_vertex_extra[v2_id].m_is_on_offset =
         m_vertex_extra.at(v1_id).m_is_on_offset || m_vertex_extra.at(v2_id).m_is_on_offset;
+    // Cannot collide with m_is_on_offset above: collapse_before_vertex() refused the merge that
+    // would have put both on this vertex.
+    m_vertex_extra[v2_id].m_is_on_input_complex = m_vertex_extra.at(v1_id).m_is_on_input_complex ||
+                                                  m_vertex_extra.at(v2_id).m_is_on_input_complex;
+    // Boundary-mask bits merge the same way the flags do: conservatively, onto the survivor.
+    // (The containment check in the shared collapse ran before this OR, against v2's own mask
+    // -- the same deliberate pre-OR staleness m_is_on_region has at that point.)
+    m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
 }
 
 } // namespace wmtk::components::topological_offset

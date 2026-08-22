@@ -77,6 +77,7 @@ bool TetMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tets)
     constexpr size_t INVALID_SLOT = static_cast<size_t>(-1);
     if (new_vid == INVALID_SLOT || new_tid1 == INVALID_SLOT || new_tid2 == INVALID_SLOT ||
         (t_opp && (new_tid1_opp.value() == INVALID_SLOT || new_tid2_opp.value() == INVALID_SLOT))) {
+        note_slot_exhausted();
         if (new_vid != INVALID_SLOT) m_vertex_connectivity[new_vid].m_is_removed = true;
         if (new_tid1 != INVALID_SLOT) m_tet_connectivity[new_tid1].m_is_removed = true;
         if (new_tid2 != INVALID_SLOT) m_tet_connectivity[new_tid2].m_is_removed = true;

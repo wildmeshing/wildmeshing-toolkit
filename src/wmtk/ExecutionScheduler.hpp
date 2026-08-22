@@ -387,28 +387,44 @@ public:
         std::atomic<size_t> overflowed(0);
         std::vector<double> task_seconds(queues.size(), 0.);
 
-        auto run_single_queue = [&](auto& Q, int task_id) {
-            // Per-task tallies folded into the shared counters once, on the way out. The guard
-            // is RAII rather than a line at the bottom because the loop below has early
-            // returns.
-            struct CountFlusher
+        // Per-task tallies folded into the shared counters once, on the way out. The guard is
+        // RAII rather than a line at the bottom because run_single_queue has early returns.
+        //
+        // DECLARED HERE, NOT INSIDE THE LAMBDA, to work around an Apple clang 17 codegen bug.
+        // A local class declared inside a GENERIC lambda (one with an `auto` parameter, so its
+        // operator() is a template) gets its destructor emitted as an undefined reference and
+        // never defined, at every optimization level including -O0. The link then fails with
+        //     Undefined symbols: ... ::'lambda'(auto&, int)::operator()<...>
+        //                            ::CountFlusher::~CountFlusher()
+        // referenced from every translation unit that instantiates a pass -- 26 references
+        // across 6 archives, defined nowhere. Homebrew clang 22 compiles the same code
+        // correctly, which is why CI does not see this.
+        //
+        // Hoisting the class one scope out is enough: it is still local to operator(), which is
+        // itself a member of a class template, and that instantiates fine. Nothing else changes
+        // -- `counts` is still constructed per task inside the lambda, so the RAII flush and its
+        // ordering are identical.
+        struct CountFlusher
+        {
+            std::atomic_int& success_total;
+            std::atomic_int& fail_total;
+            std::atomic<size_t>& lock_failure_total;
+            std::atomic<size_t>& overflow_total;
+            int success = 0;
+            int fail = 0;
+            size_t lock_failure = 0;
+            size_t overflow = 0;
+            ~CountFlusher()
             {
-                std::atomic_int& success_total;
-                std::atomic_int& fail_total;
-                std::atomic<size_t>& lock_failure_total;
-                std::atomic<size_t>& overflow_total;
-                int success = 0;
-                int fail = 0;
-                size_t lock_failure = 0;
-                size_t overflow = 0;
-                ~CountFlusher()
-                {
-                    success_total.fetch_add(success, std::memory_order_relaxed);
-                    fail_total.fetch_add(fail, std::memory_order_relaxed);
-                    lock_failure_total.fetch_add(lock_failure, std::memory_order_relaxed);
-                    overflow_total.fetch_add(overflow, std::memory_order_relaxed);
-                }
-            } counts{cnt_success, cnt_fail, lock_failures, overflowed};
+                success_total.fetch_add(success, std::memory_order_relaxed);
+                fail_total.fetch_add(fail, std::memory_order_relaxed);
+                lock_failure_total.fetch_add(lock_failure, std::memory_order_relaxed);
+                overflow_total.fetch_add(overflow, std::memory_order_relaxed);
+            }
+        };
+
+        auto run_single_queue = [&](auto& Q, int task_id) {
+            CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};
 
             Elem ele_in_queue;
             // Operations that lost a race for their ring wait here rather than going straight

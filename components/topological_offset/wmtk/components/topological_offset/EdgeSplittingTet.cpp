@@ -10,122 +10,43 @@ namespace wmtk::components::topological_offset {
 
 //// TetMesh splitting
 
-// v1 must have label 0/1, v2 has label 0
-void TopoOffsetTetMesh::edge_split_binary_search(const size_t v1, const size_t v2, Vector3d& p_new)
-    const
-{
-    const Vector3d v1_pos = m_vertex_attribute[v1].m_posf;
-    const Vector3d v2_pos = m_vertex_attribute[v2].m_posf;
-    edge_split_binary_search(v1_pos, v2_pos, p_new);
-}
-void TopoOffsetTetMesh::edge_split_binary_search(
-    const Vector3d& v1_pos,
-    const Vector3d& v2_pos,
-    Vector3d& p_new) const
-{
-    const double eps = m_offset_params.edge_search_term_len;
-    Vector3d p1 = v1_pos;
-    Vector3d p2 = v2_pos;
-    while ((p2 - p1).norm() > eps) {
-        Vector3d p = (p1 + p2) / 2.0;
-        double dist = m_input_complex_bvh.dist(p);
-        if (dist < m_offset_params.target_distance) {
-            p1 = p;
-        } else {
-            p2 = p;
-        }
-    }
-    p_new = (p1 + p2) / 2.0;
-}
-
-
-void TopoOffsetTetMesh::edge_split_log_root_find(const size_t v1, const size_t v2, Vector3d& p_new)
-    const
-{
-    const double eps = m_offset_params.edge_search_term_len;
-    const Vector3d v1_pos = m_vertex_attribute[v1].m_posf;
-    const Vector3d v2_pos = m_vertex_attribute[v2].m_posf;
-    const Vector3d v_hat = (v2_pos - v1_pos).normalized();
-    const double l_max = (v2_pos - v1_pos).norm();
-    if (l_max < eps) {
-        logger().warn("near degenerate edge given to edge_split_root_find. splitting at midpoint");
-        p_new = (v1_pos + v2_pos) / 2.0;
-        return;
-    }
-
-    double l_curr = eps;
-    Vector3d p1 = v1_pos;
-    Vector3d p2 = v1_pos + (l_curr * v_hat);
-    double f2 = m_input_complex_bvh.dist(p2);
-    while (f2 < m_offset_params.target_distance) {
-        l_curr *= 2.0;
-        p2 = v1_pos + (l_curr * v_hat);
-        f2 = m_input_complex_bvh.dist(p2);
-        if (l_curr > l_max) {
-            if (f2 < m_offset_params.target_distance) { // entire edge is (likely) within offset.
-                logger().warn(
-                    "edge (likely) entirely in offset for root finding edge split. Splitting edge "
-                    "at 99\% of length");
-                p_new = v1_pos + (0.99 * l_max * v_hat);
-                return;
-            } else { // zero is (likely) between last two chunks. use binary search here
-                p1 = v1_pos + (0.5 * l_curr * v_hat);
-                p2 = v2_pos;
-                edge_split_binary_search(p1, p2, p_new);
-                return;
-            }
-        }
-    }
-    p1 = v1_pos + (0.5 * l_curr * v_hat);
-    edge_split_binary_search(p1, p2, p_new);
-}
-
-
-void TopoOffsetTetMesh::edge_split_sphere_tracing(const size_t v1, const size_t v2, Vector3d& p_new)
-    const
-{
-    const double eps = m_offset_params.edge_search_term_len;
-    const Vector3d v1_pos = m_vertex_attribute[v1].m_posf;
-    const Vector3d v2_pos = m_vertex_attribute[v2].m_posf;
-    const double L = (v2_pos - v1_pos).norm();
-    const Vector3d u_hat = (v2_pos - v1_pos) / L;
-    const double D = m_offset_params.target_distance;
-
-    // if near degenerate, fall to midpoint split
-    if (L < eps) {
-        p_new = (v1_pos + v2_pos) * 0.5;
-        return;
-    }
-
-    p_new = v1_pos;
-    double t = 0;
-    double dp = m_input_complex_bvh.dist(p_new);
-    while (D - dp > eps) { // note: guaranteed that D - dp > 0
-        t += D - dp;
-        if (t >= L) { // entire edge is in offset. return split at 0.99 edge length
-            p_new = v1_pos + (0.99 * L * u_hat);
-            return;
-        }
-        p_new = v1_pos + (t * u_hat);
-        dp = m_input_complex_bvh.dist(p_new);
-    }
-
-    // snap solution point away from v1 and v2 if too close
-    if ((p_new - v1_pos).norm() < (0.01 * L)) {
-        p_new = v1_pos + (0.01 * L * u_hat);
-    } else if ((p_new - v2_pos).norm() < (0.01 * L)) {
-        p_new = v1_pos + (0.99 * L * u_hat);
-    }
-}
-
-
 bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
 {
     // The optimization phase runs wmtk::TetOptimizerMesh's split; everything else here is the
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        return TetOptimizerMesh::split_edge_before(t);
+        const bool dbg_on_offset = is_edge_on_offset(t);
+        if (dbg_on_offset) ++iter_cnt_split_offset_before;
+        // NOTHING IS FROZEN AGAINST SPLITS ANY MORE. The input complex stopped being, on the
+        // grounds that refining a surface is not moving it: the midpoint is checked against its
+        // tags' boundary envelopes like any other tracked geometry (surface_envelope_for_face
+        // dispatches on the face's boundary mask), so a split that would take the surface off
+        // itself is refused there rather than forbidden here.
+        //
+        // THE BOUNDING BOX now goes the same way, and for the same reason. It was refused here,
+        // and the argument against that is measured: a tet resting on the wall has its longest
+        // edge IN the wall, so refusing to split that edge left every legal operation working on
+        // the other five -- each of which halves the volume while leaving the worst dimension
+        // exactly as it was. On specific_models/prism the splits produced midpoints at
+        // -4.77666, -4.77899, -4.78015, -4.78074, -4.78103, -4.78117 against a wall at
+        // -4.78132: each one half the distance of the last, an unbounded bisection cascade onto
+        // the plane, taking AMIPS from 230 to 5243 inside a single pass and to 6.9e21 over the
+        // run. The wall being unsplittable is what made the cascade the only thing available.
+        //
+        // The wall is now a region boundary like any other (init_surfaces_and_boundaries no
+        // longer skips the faces with no opposite tet), so the envelope is what holds it, and
+        // the midpoint of a wall edge stays a wall vertex: split_edge_after intersects the two
+        // endpoints' on_bbox_faces, and for two vertices on the same wall face that intersection
+        // is that face.
+        //
+        // Only the Optimization mode is guarded at all: the marching path below is how the
+        // offset is CONSTRUCTED, and it has to be able to cut through anything.
+        if (!TetOptimizerMesh::split_edge_before(t)) {
+            if (dbg_on_offset) ++iter_cnt_split_offset_base_reject;
+            return false;
+        }
+        return true;
     }
     return marching_split_edge_before(t);
 }
@@ -151,77 +72,28 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     cache.v1_id = t.vid(*this);
     cache.v2_id = switch_vertex(t).vid(*this);
 
-    cache.is_edge_on_input = is_edge_on_input(t);
+    cache.is_edge_on_region = is_edge_on_region(t);
     cache.is_edge_on_offset = is_edge_on_offset(t);
 
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
+    // MIDPOINT IS THE ONLY CONSTRUCTION PLACEMENT IN 3D. There was an ::Initial mode here that
+    // stepped target_distance/2 in from the background end of the edge, trying to put the offset
+    // near its target at insertion time. It is gone: no target_distance enters construction at
+    // all now, and carrying the surface out to the level set is entirely the optimization
+    // phase's job. (2D still has its own ::Initial; this is TopoOffsetTetMesh only.)
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
-    } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
-        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
-            edge_split_binary_search(cache.v2_id, cache.v1_id, p_new);
-        } else if (
-            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
-            edge_split_binary_search(cache.v1_id, cache.v2_id, p_new);
-        } else {
-            log_and_throw_error(
-                "Invalid edge [{}] for binary search split. Both vertices in/out of offset/input "
-                "complex.",
-                e_id);
-        }
-    } else if (m_edge_split_mode == EdgeSplitMode::Initial) {
-        // determine split distance
-        double edge_len = (p1 - p2).norm();
-        double split_dist = (edge_len / 2.0);
-        if (m_offset_params.target_distance < (edge_len / 2.0)) {
-            split_dist =
-                (m_offset_params.target_distance / 2.0); // hacky. will be split again later
-        }
-
-        // set split point
-        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label == 1)) {
-            p_new = ((p1 - p2) * (split_dist / edge_len)) + p2;
-        } else if (
-            (m_vertex_extra[cache.v1_id].label == 1) && (m_vertex_extra[cache.v2_id].label == 0)) {
-            p_new = ((p2 - p1) * (split_dist / edge_len)) + p1;
-        } else {
-            log_and_throw_error(
-                "Invalid edge [{}] for initial edge split. Both vertices in/out of input "
-                "complex.",
-                e_id);
-        }
-    } else if (m_edge_split_mode == EdgeSplitMode::LogRootFind) {
-        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
-            edge_split_log_root_find(cache.v2_id, cache.v1_id, p_new);
-        } else if (
-            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
-            edge_split_log_root_find(cache.v1_id, cache.v2_id, p_new);
-        } else {
-            log_and_throw_error(
-                "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
-                "offset/input complex.",
-                e_id);
-        }
-    } else if (m_edge_split_mode == EdgeSplitMode::SphereTracing) {
-        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label != 0)) {
-            edge_split_sphere_tracing(cache.v2_id, cache.v1_id, p_new);
-        } else if (
-            (m_vertex_extra[cache.v1_id].label != 0) && (m_vertex_extra[cache.v2_id].label == 0)) {
-            edge_split_sphere_tracing(cache.v1_id, cache.v2_id, p_new);
-        } else {
-            log_and_throw_error(
-                "Invalid edge [{}] for log root finding edge split. Both vertices in/out of "
-                "offset/input complex.",
-                e_id);
-        }
     } else {
         log_and_throw_error("Invalid edge split mode.");
     }
     cache.new_v_pos = p_new;
     cache.new_v_extra = VertexExtra();
     cache.new_v_extra.label = m_edge_attribute[e_id].label;
+    // On both boundaries only if the whole edge was: the midpoint's mask is the AND.
+    cache.new_v_extra.m_boundary_mask =
+        m_vertex_extra[cache.v1_id].m_boundary_mask & m_vertex_extra[cache.v2_id].m_boundary_mask;
 
     // split edge
     cache.split_e = m_edge_attribute[e_id];
@@ -274,8 +146,8 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
         // face maps
         cache.split_f[opp_vid] = face_snapshot(global_fid1);
         // if any incident face is on the surface, the new vertex is on the surface as well
-        if (face_is_input(global_fid1)) {
-            cache.new_v_extra.m_is_on_input = true;
+        if (face_is_region(global_fid1)) {
+            cache.new_v_extra.m_is_on_region = true;
         }
     }
 
@@ -286,7 +158,15 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        return TetOptimizerMesh::split_edge_after(t);
+        if (!TetOptimizerMesh::split_edge_after(t)) {
+            ++iter_cnt_split_offset_reject; // counts ALL refusals now; see the log line
+            return false;
+        }
+        ++iter_cnt_split;
+        // Measured on the RESULT, not on a cached flag: the new vertex is on the offset iff
+        // split_after_cells() derived it so from the endpoints.
+        if (m_vertex_extra[t.vid(*this)].m_is_on_offset) ++iter_cnt_split_offset;
+        return true;
     }
     return marching_split_edge_after(t);
 }
@@ -318,10 +198,46 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     // vertex attribute
     m_vertex_extra[v_id] = cache.new_v_extra;
     set_vertex_position(v_id, cache.new_v_pos);
-    m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_input;
+    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         m_vertex_attribute[v1_id].on_bbox_faces,
         m_vertex_attribute[v2_id].on_bbox_faces);
+    // ON_BBOX_FACES IS WRITTEN AFTER the base set m_is_on_surface from cache.is_edge_on_surface,
+    // so a midpoint landing on the domain wall can arrive here unflagged. Re-derive it once both
+    // halves of vertex_is_on_region() are known: every containment check is gated on this flag.
+    //
+    // NECESSARY BUT NOT SUFFICIENT, and measured as such -- adding this line changed nothing at
+    // all (13708 faces outside, 100 of 429 wall vertices off their face, worst deviation 5.885
+    // against an envelope half-width of 0.0837, bit-identical before and after).
+    //
+    // THE EXPLANATION THIS COMMENT USED TO GIVE FOR THAT IS WRONG. DO NOT ACT ON IT. It said the
+    // children of a split wall face do not inherit m_is_surface_fs, so the containment check has
+    // nothing to walk and passes vacuously, and that propagating the flag was "the remaining
+    // half". Both halves of that are false:
+    //
+    //   - MEASURED. log_vertex_movement() carries a counter written to test exactly this claim
+    //     -- "tracked faces N | faces lying IN a wall M, of those NOT tracked K", where a face
+    //     counts as in a wall only if its three vertices SHARE a wall index. Across four
+    //     double_sphere runs (2026-08-20) it printed 41 reports and K was 0 in every one, while
+    //     N grew with the mesh (6426 -> 190835 inside a single run). If propagation were
+    //     dropping the flag, K would be nonzero and N would stall.
+    //
+    //   - MECHANISM. TetOptimizerMeshSplit collects changed_faces UNFILTERED -- all four faces
+    //     of every tet incident to the split edge, each paired with its whole FaceAttributes --
+    //     and assigns that struct onto both children. m_is_surface_fs, m_surface_class and
+    //     m_is_bbox_fs all ride across. init_surfaces_and_boundaries() sets the flag on every
+    //     region-boundary face, the domain wall included, so there is nothing to lose.
+    //
+    // WHAT THAT LEAVES. The faces really are tracked, so surface_triangle_is_outside() really
+    // does run on them and "Face ... is outside!" is a genuine violation rather than a check
+    // firing on an empty set. The open question is therefore which operation's ACCEPT path let
+    // the geometry out -- the sanity check in TetOptimizerMesh::local_operations() only logs,
+    // it does not enforce -- and not how the flags propagate. That question got sharper when
+    // the collapse freeze on the input complex was removed: violations went from 1.50 to 241.65
+    // per sanity pass on double_sphere.
+    if (vertex_is_on_region(v_id)) {
+        m_vertex_attribute[v_id].m_is_on_surface = true;
+    }
 
     // split edges attribute
     size_t split_e1_id = tuple_from_edge({{v1_id, v_id}}).eid(*this);
@@ -474,6 +390,19 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
             3);
     m_vertex_extra[v_id].label = cache.splitf_label;
+    // Interior to the split face, so on exactly the boundaries the WHOLE face is on: the AND
+    // of its corners. Assigned -- the slot may be recycled.
+    //
+    // NO SURFACE FLAGS ARE DERIVED HERE, and that is not an omission. In 3D split_face() is
+    // called from exactly one place, simplicial_embedding(), which runs during CONSTRUCTION --
+    // before optimize_offset() marks the offset surface and before any optimization pass. The
+    // surfaces this vertex could be on do not exist yet, so there is nothing to propagate;
+    // m_is_on_offset is set wholesale in optimize_offset() afterwards, and m_is_on_region /
+    // m_is_on_surface come from init_surfaces_and_boundaries(), which has already run over the
+    // faces this split subdivides. Only the mask, which init DID set, has to be carried across.
+    m_vertex_extra[v_id].m_boundary_mask = m_vertex_extra[v1_id].m_boundary_mask &
+                                           m_vertex_extra[v2_id].m_boundary_mask &
+                                           m_vertex_extra[v3_id].m_boundary_mask;
 
     // new edges/faces on split face
     EdgeAttributes splitf_eattr;
@@ -590,6 +519,13 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
             4);
     m_vertex_extra[v_id].label = tet_label;
+    // Strictly interior to a tet: on no boundary at all. Assigned -- the slot may be recycled.
+    //
+    // As in split_face_after(), no surface flags are derived here and none need to be: in 3D
+    // split_tet() is only ever called from simplicial_embedding(), during CONSTRUCTION, so the
+    // offset surface does not exist yet and the optimization has not started. Nothing in the
+    // optimization creates a tet-interior vertex.
+    m_vertex_extra[v_id].m_boundary_mask = 0;
 
     // iterate over new tets (retained faces, new tets, new edge (opposite tet) )
     for (int i = 0; i < 4; i++) {
@@ -639,7 +575,7 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
 {
     auto& cache = m_opt_split_cache.local();
     cache.tets.clear();
-    cache.is_edge_on_input = is_edge_on_input(edge);
+    cache.is_edge_on_region = is_edge_on_region(edge);
     cache.is_edge_on_offset = is_edge_on_offset(edge);
 
     // Key each parent by the edge OPPOSITE the one being split: that edge survives the split
@@ -657,6 +593,45 @@ bool TopoOffsetTetMesh::split_after_cells(
     const size_t v_id,
     const std::vector<Tuple>&)
 {
+    // THE NEW VERTEX'S SURFACE MEMBERSHIP, DERIVED FROM ITS ENDPOINTS RATHER THAN FROM THE
+    // CACHE. A vertex placed on an edge lies on whichever tracked surfaces BOTH endpoints lie
+    // on -- that is what it means to be on the edge -- and v1_id and v2_id are right here, so
+    // there is nothing to carry and nothing to get out of step.
+    //
+    // The cache held is_edge_on_offset from split_before_cells(), and something on that path
+    // loses it: instrumented on topological_offset_3d_convex, 4258 offset edges reach
+    // split_edge_before per 3 iterations, 0 are frozen, 422 are refused by the base -- and only
+    // 41 arrived here with the flag set. The consequence is not a bad diagnostic, it is the
+    // offset surface failing to grow: an unmarked vertex is not an offset vertex, so the faces
+    // around it stop being offset faces, so the splits that DID happen bought nothing. 2D never
+    // showed this because it re-derives the whole offset boundary from the face labels every
+    // iteration (label_offset_boundary(), from optimization_iteration_begin()), which papers
+    // over exactly this class of loss; 3D marks m_is_on_offset once in optimize_offset() and has
+    // nothing to fall back on.
+    m_vertex_extra[v_id].m_is_on_offset =
+        m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
+    // THE INPUT COMPLEX, derived the same way and for the same reason: a midpoint is on the
+    // complex only if the whole edge was, so the AND. Written here rather than in
+    // split_after_vertex() because this is the hook that HAS the endpoints -- OptSplitCache
+    // carries no vertex ids -- and because the AND is what keeps the never-both invariant true
+    // across a split: an edge with one endpoint on the complex and one on the offset surface
+    // produces a midpoint on neither, which is what it geometrically is.
+    m_vertex_extra[v_id].m_is_on_input_complex =
+        m_vertex_extra[v1_id].m_is_on_input_complex && m_vertex_extra[v2_id].m_is_on_input_complex;
+    // CHURN INSTRUMENTATION, read only by collapse_after_vertex(). Assigned, never OR'd: v_id
+    // may be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
+    m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
+    if (m_op_epoch != 0) ++iter_cnt_split_born;
+    if (m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset) {
+        ++iter_cnt_split_offset_endpoints;
+    }
+    // The boundary mask follows the same AND rule, and for the same reason: the midpoint is on
+    // a tag boundary only if the whole edge was. ASSIGNED, not OR'd -- v_id may be a recycled
+    // slot carrying a dead vertex's bits. This runs before the shared split's containment
+    // check, which reads the mask through face_mask() on the two child triangles.
+    m_vertex_extra[v_id].m_boundary_mask =
+        m_vertex_extra[v1_id].m_boundary_mask & m_vertex_extra[v2_id].m_boundary_mask;
+
     const auto& cache = m_opt_split_cache.local();
     for (const size_t v_end : {v1_id, v2_id}) {
         const simplex::Edge half(v_end, v_id);
@@ -672,12 +647,42 @@ bool TopoOffsetTetMesh::split_after_cells(
     return true;
 }
 
+bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
+{
+    // The vertex's tracked-surface membership must be written BEFORE the shared split's own
+    // containment check, not after it. TetOptimizerMesh::split_edge_after() calls
+    // surface_triangle_is_outside() on the triangles the split creates, and the offset's
+    // surface_envelope_for_face() decides which envelope applies by reading
+    // m_vertex_extra[].m_is_on_region for all three vertices -- INCLUDING the new one. Written
+    // only in split_after_vertex(), which the base calls AFTER that check, the new vertex still
+    // holds whatever occupied its recycled slot.
+    //
+    // The failure is silent in the dangerous direction: an unrecognised triangle yields a null
+    // envelope, and the containment helpers return false for a null envelope, so the check is
+    // SKIPPED rather than failed. split_adjust_position() is the last hook the base offers
+    // before it, which is the only reason this bookkeeping lives in a positioning hook; the
+    // position itself is left entirely to the base and its verdict is returned unchanged.
+    //
+    // 2D solved this the same way, and for the same reason it did not instead move the base's
+    // split_after_vertex() call earlier: that hook is overridden by other applications on the
+    // same base, so re-timing it changes their operations to fix the offset's problem.
+    //
+    // Writing here is safe against a refused split because m_vertex_extra is registered with the
+    // base's vertex attribute group (so a rollback undoes it), and the write is idempotent with
+    // split_after_vertex()'s own below.
+    const auto& cache = m_opt_split_cache.local();
+    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
+    return true; // the position itself is the base's business, and it is happy with it
+}
+
 void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge_open_boundary)
 {
     const auto& cache = m_opt_split_cache.local();
-    // The base has already set m_is_on_surface, which is the union; these say which.
-    m_vertex_extra[v_id].m_is_on_input = cache.is_edge_on_input;
-    m_vertex_extra[v_id].m_is_on_offset = cache.is_edge_on_offset;
+    // The base has already set m_is_on_surface, which is the union; this says which. The offset
+    // half is NOT rewritten here -- split_after_cells() has already derived it from the two
+    // endpoints, which is the authority; taking the cache's answer again would put the loss it
+    // suffers back.
+    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     if (is_edge_open_boundary) {
         m_vertex_attribute[v_id].m_order = 2;
     }

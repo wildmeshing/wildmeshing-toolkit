@@ -43,8 +43,10 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
         write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
-    logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it pre========");
+        local_operations({{0, 1, 0, 0}}, false);
+    }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
@@ -53,6 +55,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     for (int it = 0; it < max_its; ++it) {
         m_iterations_used = it + 1;
         logger().info("\n========it {}========", it);
+        optimization_iteration_begin();
 
         double max_metric = 0.;
         double avg_metric = 0.;
@@ -107,8 +110,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_metric > optimization_stop_metric() &&
-            (pre_max_metric - max_metric) <=
-                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");
@@ -117,12 +119,19 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
         pre_max_metric = max_metric;
     }
 
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it post========");
+        local_operations({{0, 1, 0, 0}});
+    }
 
     // Removing what the mesh does not need is the last thing to do, not something to
-    // interleave: it trades vertices for nothing but the guarantee that the max energy does
-    // not rise, which is only worth taking once the energy is where it is going to end up.
+    // interleave: it trades vertices for nothing but the guarantee that the max energy does not
+    // rise, which is only worth taking once the energy is where it is going to end up.
+    //
+    // NOT gated with the bare passes above. Those are unguarded collapse sweeps; this one runs
+    // in m_coarsen_mode, which an application can use to demand more of an operation than the
+    // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
+    // afterwards, so coarsening can only ever trade elements for a result that is still good.
     coarsen_mesh();
 }
 
@@ -161,6 +170,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
                 logger().info("==splitting {}==", n);
+                ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 split_all_edges();
                 logger().info(
                     "#V = {}, #F = {} after split",
@@ -186,6 +196,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             if (ops[i] > 0) round_all_vertices();
         }
 
+        optimization_debug_checkpoint();
         if (ops[i] > 0) {
             if (m_params.debug_output && i < 3) {
                 // no need to print debug output for smoothing, since it prints already internally

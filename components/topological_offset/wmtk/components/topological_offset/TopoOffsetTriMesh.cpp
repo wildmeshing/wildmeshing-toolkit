@@ -68,6 +68,22 @@ void TopoOffsetTriMesh::init_from_image(
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
     }
 
+    // One mask bit per input tag, ambient included, in id order. Assigned HERE, once the maps
+    // are complete and before init_surfaces_and_boundaries() seeds the vertex masks from the
+    // boundary edges. Tags introduced later (the band's offset tag) get no bit -- boundary
+    // membership is a property of the INPUT partition, which is also why the masks are
+    // propagated rather than ever recomputed from current face tags.
+    if (m_tag_id_to_name.size() > 64) {
+        log_and_throw_error(
+            "Per-tag boundary envelopes support at most 64 input tags, got {}",
+            m_tag_id_to_name.size());
+    }
+    m_tag_bit.clear();
+    for (const auto& [tag_id, name] : m_tag_id_to_name) {
+        const int bit = int(m_tag_bit.size());
+        m_tag_bit[tag_id] = bit;
+    }
+
     // propagate tags to faces
     auto faces = get_faces();
     for (const Tuple& f : faces) {
@@ -97,6 +113,187 @@ void TopoOffsetTriMesh::init_from_image(
         size_t v_id = v.vid(*this);
         set_vertex_position(v_id, Vector2d(V.row(v_id)));
     }
+
+    init_surfaces_and_boundaries();
+}
+
+
+void TopoOffsetTriMesh::init_surfaces_and_boundaries()
+{
+    const auto edges = get_edges();
+    logger().info("E = {}", edges.size());
+
+    // THE DOMAIN WALL IS A REGION BOUNDARY. An edge with no opposite face is the outer boundary
+    // of the mesh -- the bounding box -- and it is the boundary between the ambient region and
+    // the space outside the domain; the only reason it has no second tag to compare against is
+    // that the outside is not meshed. Held in ambient's envelope, it may be refined and its
+    // vertices may move within eps of where they started, which is the same contract every other
+    // region boundary gets. See the 3D twin for the degeneracy this replaced.
+    size_t n_edges_tracked = 0;
+    std::map<int64_t, std::vector<Eigen::Vector2i>> tag_edges; // per-tag boundary buckets
+    for (const Tuple& e : edges) {
+        const size_t eid = e.eid(*this);
+
+        // WHOSE boundary this edge is. Interior edge: every tag on exactly one side (the
+        // symmetric difference -- multi-tag faces exist, and a tag present on both sides has no
+        // boundary here). Wall edge: every tag of its single face, the boundary against the
+        // unmeshed outside -- which is how ambient's envelope comes to hold the wall.
+        CellTag edge_tags;
+        const std::optional<Tuple> f_opp = e.switch_face(*this);
+        if (f_opp) {
+            const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
+            const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
+            if (tag0 == tag1) {
+                continue;
+            }
+            std::set_symmetric_difference(
+                tag0.begin(),
+                tag0.end(),
+                tag1.begin(),
+                tag1.end(),
+                std::inserter(edge_tags, edge_tags.begin()));
+        } else {
+            edge_tags = m_face_attribute[e.fid(*this)].tags;
+        }
+
+        m_edge_attribute[eid].m_is_surface_fs = true;
+        ++n_edges_tracked;
+
+        const size_t v1 = e.vid(*this);
+        const size_t v2 = e.switch_vertex(*this).vid(*this);
+
+        // Seed the per-vertex boundary masks and the per-tag edge buckets from the same
+        // classification, so the dispatch (a segment is constrained by the AND of its ends'
+        // masks) and the envelopes it dispatches to can never disagree about what is where.
+        const uint64_t bits = tag_bits(edge_tags);
+        for (const size_t v : {v1, v2}) m_vertex_extra[v].m_boundary_mask |= bits;
+        for (const int64_t t : edge_tags) {
+            tag_edges[t].emplace_back(int(v1), int(v2));
+        }
+        // The region flag, for interior boundaries only: the wall carries none because
+        // vertex_is_on_region() reads it off on_bbox_faces. Note this is NOT "on the input
+        // complex" -- label_input_complex() has not run yet and cannot; that is
+        // mark_input_complex_vertices()'s job, from the labels, once it has.
+        if (f_opp) {
+            for (const size_t v : {v1, v2}) m_vertex_extra[v].m_is_on_region = true;
+        }
+        // The base's own flag, a DIFFERENT field from the ones above: those say which tracked
+        // surface a vertex belongs to, this says that it belongs to one at all. Every
+        // surface-aware path in the shared engine gates on it.
+        m_vertex_attribute[v1].m_is_on_surface = true;
+        m_vertex_attribute[v2].m_is_on_surface = true;
+    }
+
+    if (!m_envelope && n_edges_tracked > 0) {
+        logger().info("Init per-tag envelopes from face tags");
+        std::vector<Eigen::Vector2d> tempV(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            tempV[i] = m_vertex_attribute[i].m_posf;
+        }
+
+        // FROM THE PARAMETERS. Without it m_envelope_eps keeps its -1 sentinel and the envelopes
+        // are built with a NEGATIVE half-width, so is_outside() answers true for every segment,
+        // including the ones they were just constructed from -- freezing every boundary solid.
+        //
+        // params.init() runs in topological_offset() before init_from_image(), so envelope_size
+        // is already resolved from envelope_size_rel x the bbox diagonal by the time we read it.
+        // Unit tests construct without params.init(), which is why this whole block stays behind
+        // the n_edges_tracked guard rather than throwing on a nonpositive eps.
+        m_envelope_eps = m_offset_params.envelope_size;
+
+        // ONE ENVELOPE PER TAG, from that tag's boundary bucket -- the input partition as it
+        // stands BEFORE offset construction rewrites tags, which is what makes E_t the tube
+        // around the as-loaded geometry the offset potential also measures against. A boundary
+        // edge between two regions enters both regions' envelopes; the wall enters its face's
+        // tags' (ambient's, mostly). See the m_tag_envelopes doc for the intersection semantics.
+        m_tag_envelopes.clear();
+        {
+            std::lock_guard<std::mutex> lock(m_isect_mutex);
+            m_isect_cache.clear();
+        }
+        std::vector<std::shared_ptr<SampleEnvelope>> members;
+        std::string per_tag_log;
+        for (const auto& [tag, bucket] : tag_edges) {
+            if (bucket.empty()) continue; // offset_output_tag ids with no faces yet
+            auto env = std::make_shared<SampleEnvelope>();
+            env->init(tempV, bucket, m_envelope_eps);
+            m_tag_envelopes[tag] = env;
+            members.push_back(env);
+            per_tag_log += fmt::format(" {}:{}", m_tag_id_to_name.at(tag), bucket.size());
+        }
+
+        // The base's pointer survives as the UNION of the members -- inside any tube -- because
+        // the shared engine's direct uses of it ask exactly that question. Everything else
+        // dispatches per simplex through envelope_for_mask().
+        m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
+        logger().info(
+            "\tPer-tag boundary envelopes: {} segments total (tag boundaries + domain wall), "
+            "eps {:.6g} |{}",
+            n_edges_tracked,
+            m_envelope_eps,
+            per_tag_log);
+    }
+
+    // track bounding box. box_min/box_max are only set by Parameters::init(), which callers that
+    // go through the full offset pipeline call before init_from_image() -- but plenty of unit
+    // tests construct a mesh from a default-constructed Parameters and never call it, leaving
+    // these as empty (size 0) VectorXd. Skip rather than index out of bounds.
+    //
+    // WHICH wall, not merely "a wall": on_bbox_faces carries the wall index (2k / 2k+1 for the
+    // min / max side of axis k), so the split's set_intersection of its endpoints can tell a
+    // corner vertex from an edge one, exactly as in 3D. It used to push a constant 0 for every
+    // boundary vertex, which made every wall the same wall.
+    if (m_offset_params.box_min.size() >= 2 && m_offset_params.box_max.size() >= 2) {
+        for (const Tuple& e : edges) {
+            if (e.switch_face(*this)) continue; // interior: not on the wall
+            const size_t v1 = e.vid(*this);
+            const size_t v2 = e.switch_vertex(*this).vid(*this);
+            int on_bbox = -1;
+            for (int k = 0; k < 2; ++k) {
+                if (m_vertex_attribute[v1].m_posf[k] == m_offset_params.box_min[k] &&
+                    m_vertex_attribute[v2].m_posf[k] == m_offset_params.box_min[k]) {
+                    on_bbox = k * 2;
+                    break;
+                }
+                if (m_vertex_attribute[v1].m_posf[k] == m_offset_params.box_max[k] &&
+                    m_vertex_attribute[v2].m_posf[k] == m_offset_params.box_max[k]) {
+                    on_bbox = k * 2 + 1;
+                    break;
+                }
+            }
+            if (on_bbox < 0) {
+                continue;
+            }
+            m_edge_attribute[e.eid(*this)].m_is_bbox_fs = on_bbox;
+            for (const size_t vid : {v1, v2}) {
+                m_vertex_attribute[vid].on_bbox_faces.push_back(on_bbox);
+            }
+        }
+        for (const Tuple& v : get_vertices()) {
+            wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces);
+        }
+    }
+}
+
+
+void TopoOffsetTriMesh::mark_input_complex_vertices()
+{
+    // THE ONLY PLACE THE INPUT COMPLEX IS KNOWN. This runs at the end of label_input_complex(),
+    // which has just evaluated the selection expression; init_surfaces_and_boundaries() runs
+    // earlier, out of init_from_image(), and can only see region boundaries -- which is exactly
+    // why m_is_on_region, set there, is not this.
+    //
+    // The label is the input complex at every dimension, so this covers a filled complex, a
+    // curve and an isolated point alike -- the sub-manifold cases have no input FACE to read the
+    // flag off, which is why this keys on the vertex label rather than on incident faces.
+    size_t n = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const bool on_input = m_vertex_extra[vid].label == 1;
+        m_vertex_extra[vid].m_is_on_input = on_input;
+        n += on_input ? 1 : 0;
+    }
+    logger().info("\tInput-complex vertices: {}", n);
 }
 
 
@@ -267,6 +464,8 @@ void TopoOffsetTriMesh::label_input_complex()
             }
         }
     }
+
+    mark_input_complex_vertices();
 }
 
 
@@ -388,6 +587,163 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     // set BVH
     m_input_complex_bvh.clear(); // in case resetting it now
     m_input_complex_bvh.init(V, T, F, E, P);
+
+    // THE SMOOTH OFFSET POTENTIAL, from the same extraction and in the same call, so the two
+    // descriptions of the input can never diverge.
+    //
+    // Phi's 2D primitives are segments and points; there is no 2D area primitive. A solid input
+    // region therefore enters as its BOUNDARY -- the edges of the complex's triangles that have
+    // exactly one incident complex triangle. Outside the region, which is the only place an
+    // offset exists, "distance to the region" and "distance to its boundary" are the same
+    // number, so nothing is lost. (Inside the region they differ, and Phi has a second, mirrored
+    // level set in there; it is unreachable, because the band is grown outward and the runaway
+    // guard would catch a vertex that crossed the complex.)
+    std::map<simplex::Edge, int> boundary_count;
+    for (const simplex::Face& f_simp : complex_faces) {
+        const auto vs = f_simp.vertices();
+        ++boundary_count[simplex::Edge(vs[0], vs[1])];
+        ++boundary_count[simplex::Edge(vs[1], vs[2])];
+        ++boundary_count[simplex::Edge(vs[0], vs[2])];
+    }
+
+    std::vector<Eigen::Vector2i> phi_segs;
+    for (const auto& [e_simp, count] : boundary_count) {
+        if (count != 1) continue; // interior to the complex: carries no boundary geometry
+        const auto vs = e_simp.vertices();
+        phi_segs.emplace_back(v_index_map[vs[0]], v_index_map[vs[1]]);
+    }
+    for (int i = 0; i < E.rows(); ++i) { // isolated edges of the complex
+        phi_segs.emplace_back(E(i, 0), E(i, 1));
+    }
+
+    MatrixXi E_phi(phi_segs.size(), 2);
+    for (size_t i = 0; i < phi_segs.size(); ++i) {
+        E_phi.row(i) = phi_segs[i];
+    }
+
+    // Isolated points: those of the complex, plus any vertex the boundary extraction left with
+    // no segment at all (a complex that is a single triangle contributes its three edges, so
+    // this only fires for genuinely isolated input vertices).
+    std::vector<int> P_phi;
+    for (int i = 0; i < P.rows(); ++i) {
+        P_phi.push_back(P(i, 0));
+    }
+
+    // KEPT, not built. The extraction is what must not diverge from the BVH's, so it is done
+    // here and once; the potential itself needs target_distance and offset_dhat_factor, which a
+    // caller that only wants the distance field (the unit tests build a TopoOffsetTriMesh from a
+    // default-constructed Parameters) has no reason to have set.
+    m_phi_V = V;
+    m_phi_E = E_phi;
+    m_phi_P = P_phi;
+}
+
+
+void TopoOffsetTriMesh::init_offset_potential()
+{
+    if (m_phi_V.rows() == 0) {
+        log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
+    }
+    // WHICH FIELD DEFINES THE OFFSET; see OffsetPotential.hpp and the offset_field parameter.
+    // Both are built from the SAME extraction -- m_phi_V/E/P, which init_input_complex_bvh()
+    // produced -- so whichever is chosen measures the same geometry the diagnostics do.
+    if (m_offset_params.offset_field == "euclidean") {
+        // The envelope here is a QUERY ENGINE, not a tolerance: nearest_point_feature() supplies
+        // the foot point and the feature kind the exact derivatives are cased on, and only the
+        // exact kind answers it. eps is never read -- no containment test is run against this
+        // object -- so it is set to target_distance purely to be a sane positive number.
+        std::vector<Eigen::Vector2d> verts(size_t(m_phi_V.rows()));
+        for (int i = 0; i < m_phi_V.rows(); ++i) {
+            verts[size_t(i)] = m_phi_V.row(i).head<2>();
+        }
+        std::vector<Eigen::Vector2i> segs;
+        segs.reserve(size_t(m_phi_E.rows()) + m_phi_P.size());
+        for (int i = 0; i < m_phi_E.rows(); ++i) {
+            segs.emplace_back(m_phi_E(i, 0), m_phi_E(i, 1));
+        }
+        // Isolated input points enter as the degenerate segment (i, i), exactly as
+        // SimplicialComplexBVH carries them. EuclideanOffsetPotential::nearest_feature() demotes
+        // a hit on one to the vertex case, which is what the geometry is.
+        for (const int i : m_phi_P) {
+            segs.emplace_back(i, i);
+        }
+        m_input_complex_envelope = std::make_shared<SampleEnvelope>();
+        m_input_complex_envelope->use_exact = true;
+        m_input_complex_envelope->init(verts, segs, m_offset_params.target_distance);
+        m_offset_potential = std::make_shared<EuclideanOffsetPotential2D>(
+            m_input_complex_envelope,
+            m_offset_params.target_distance);
+        logger().info(
+            "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} segments ({} of them "
+            "isolated points)",
+            m_offset_params.target_distance,
+            segs.size(),
+            m_phi_P.size());
+        return;
+    }
+
+    // DHAT IS SIZED TO THE OFFSET IT HAS TO HOLD, not to target_distance alone.
+    //
+    // Construction places the offset at the input triangulation's own cell boundaries -- midpoint
+    // marching, no target_distance in it at all -- so how far out it lands is an ABSOLUTE
+    // property of the input mesh, not a multiple of delta. A fixed factor x delta therefore fails
+    // exactly when delta is small relative to the background triangles. Measured on
+    // topo_annots_groups at target_distance 0.25 the moment the growth pass went: the constructed
+    // offset reached 2.83x delta and the factor-2 support rejected 436 vertices at construction.
+    //
+    // The floor keeps the configured factor authoritative whenever construction was good. That
+    // matters because dhat is NOT a neutral scaling: c = Phi at delta from flat input grows
+    // roughly as 1.14 ln(factor) - 0.74, so a purely data-driven dhat would give the same
+    // geometry a different offset near corners and gaps depending only on how the input was
+    // meshed. Same rule as 3D.
+    const double delta = m_offset_params.target_distance;
+    const double reach = max_band_vertex_distance();
+    const double dhat = std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
+    const double effective_factor = dhat / delta;
+    if (reach > 0.) {
+        logger().info(
+            "\tdhat sized from the constructed offset: furthest offset vertex {:.6g} = {:.4g}x "
+            "delta, so dhat = max({}x delta, 2x that) = {:.6g} = {:.4g}x delta",
+            reach,
+            reach / delta,
+            m_offset_params.offset_dhat_factor,
+            dhat,
+            effective_factor);
+    }
+    m_offset_potential = std::make_shared<SmoothOffsetPotential2D>(
+        m_phi_V,
+        m_phi_E,
+        MatrixXi(0, 3), // no triangle primitive in 2D
+        m_phi_P,
+        delta,
+        effective_factor);
+}
+
+
+double TopoOffsetTriMesh::max_band_vertex_distance() const
+{
+    // How far the offset boundary actually ended up from the input complex, as a LENGTH. Exact
+    // (BVH nearest point), not the straddle-edge upper bound: an input-to-offset edge can be long
+    // and nearly tangential, and dhat is not a free parameter to inflate -- it selects the level
+    // c, so an overestimate changes which curve the run solves for.
+    //
+    // Returns 0 when there is no offset boundary yet -- the band loop finds no edges and never
+    // touches the BVH -- which is the signal to fall back to the configured factor.
+    std::vector<bool> on_band(vert_capacity(), false);
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        on_band[e.vid(*this)] = true;
+        on_band[e.switch_vertex(*this).vid(*this)] = true;
+    }
+    double worst = 0.;
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!on_band[vid]) continue;
+        if (!m_vertex_attribute[vid].m_is_rounded) continue;
+        const Vector2d p = m_vertex_attribute[vid].m_posf;
+        const Vector3d near3 = m_input_complex_bvh.nearest_point(VectorXd(p));
+        worst = std::max(worst, (p - Vector2d(near3[0], near3[1])).norm());
+    }
+    return worst;
 }
 
 
@@ -406,41 +762,47 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
     }
 
 
-    // initializing offset
+    // initialize offset
     logger().info("Initializing offset...");
-    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Initial;
+    // The inserted vertex is the plain edge midpoint -- target_distance does not enter the
+    // placement at all. Carrying the boundary out to target_distance is the optimization phase's
+    // job; see the note above set_offset_tri_tags().
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     marching_tris();
     consolidate_mesh();
     if (m_offset_params.debug_output) {
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    // run BFS
-    grow_offset_conservative();
-    consolidate_mesh();
-    if (m_offset_params.debug_output) {
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    }
+    // NO GROWTH PASS. The band is exactly the one layer of background triangles marching_tris()
+    // labelled from the frontier one-rings, so the offset boundary sits on the input
+    // triangulation's own cell boundaries and nothing has widened it toward target_distance.
+    // Closing that gap is the optimization phase's job.
 
     // simplicially embed again, if needed
     m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     if (!is_simplicially_embedded()) {
         simplicial_embedding();
         bool dummy = is_simplicially_embedded();
-        consolidate_mesh();
     }
+    // Outside the branch above, and unconditional. write_vtu() consolidates, so leaving this
+    // inside the `if` meant that on a mesh already simplicially embedded the ONLY consolidate
+    // here was the debug one -- and consolidating renumbers, which changes the order later passes
+    // enumerate operations in, which changes the run. Same reason as the one before the
+    // optimization loop.
+    consolidate_mesh();
     if (m_offset_params.debug_output) {
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    // No edge splitting after conservative growth -- the offset boundary is left where growth put
-    // it, and reaching target_distance is entirely the optimization phase's job.
+    // The pass that used to run here root-found every band-boundary edge onto d(x) = delta, i.e.
+    // it did the optimizer's work with a mechanism that has no error feedback and no envelope or
+    // inversion guards. It is gone, as it is in 3D: the paper puts inserted vertices at the
+    // midpoint (Sec. 5.2) and leaves the distance to Step 3.
     //
-    // This is what the paper does. Sec. 5.2 inserts the offset with midpoint placement ("we do
-    // not perform an interpolation ... we just place the inserted vertices at the midpoint of the
-    // split edges") and leaves the distance to Step 3. The pass that used to run here instead
-    // root-found every band-boundary edge onto d(x) = delta, i.e. it did the optimizer's work
-    // with a mechanism that has no error feedback and no envelope or inversion guards.
+    // Consequence, and the reason optimize_offset() is unconditional: construction leaves the
+    // band boundary on BACKGROUND-CELL boundaries, so its distance to the input complex is only
+    // accurate to the local cell size until the optimization moves it.
     set_offset_tri_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) {
@@ -624,64 +986,6 @@ void TopoOffsetTriMesh::marching_tris()
 }
 
 
-void TopoOffsetTriMesh::grow_offset_conservative()
-{
-    std::queue<Tuple> tris_q;
-    auto all_tris = get_faces();
-
-    for (const Tuple& f : all_tris) {
-        size_t f_id = f.fid(*this);
-        if ((m_face_extra[f_id].label == 0) && (offset_tri_consistent_topology(f_id))) {
-            tris_q.push(f);
-        }
-    }
-    logger().info("\tInitial queue size {}", tris_q.size());
-
-    while (!tris_q.empty()) {
-        Tuple curr_tri = tris_q.front();
-        tris_q.pop();
-
-        size_t tri_id = curr_tri.fid(*this);
-        if (m_face_extra[tri_id].label != 0) { // already in offset
-            continue;
-        }
-
-        // ensure tri doesn't change topology
-        if ((m_face_extra[tri_id].label != 0) || (!offset_tri_consistent_topology(tri_id))) {
-            continue;
-        }
-
-        // if tri is within offset, include in front and for all edge adjacent tris, add to queue if
-        // adjacent to front via 2 or fewer edges
-        bool in_offset = tri_is_in_offset_conservative(
-            tri_id,
-            m_offset_params.relative_ball_threshold * m_offset_params.target_distance);
-        if (in_offset) {
-            m_face_extra[tri_id].label = 2;
-            auto vs = oriented_tri_vids(tri_id);
-            for (int i = 0; i < 3; i++) { // propagate labels to edges and verts
-                if (m_vertex_extra[vs[i]].label != 1) {
-                    m_vertex_extra[vs[i]].label = 2;
-                }
-                size_t e_id = tuple_from_edge(tri_id, i).eid(*this);
-                if (m_edge_extra[e_id].label != 1) {
-                    m_edge_extra[e_id].label = 2;
-                }
-            }
-
-            // collect edge adjacent faces, add to queue
-            auto adj_tris = get_edge_adjacent_faces(curr_tri);
-            for (const Tuple& f : adj_tris) {
-                if (m_face_extra[f.fid(*this)].label != 0) {
-                    continue;
-                }
-                tris_q.push(f);
-            }
-        }
-    }
-}
-
-
 void TopoOffsetTriMesh::set_offset_tri_tags()
 {
     auto faces = get_faces();
@@ -850,9 +1154,22 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 {
     logger().info("Write {}.vtu (tag for offset is included)", path);
 
-    consolidate_mesh();
+    // WRITING DEBUG OUTPUT MUST NOT CHANGE THE MESH. This used to call consolidate_mesh()
+    // first, which compacts the slot arrays and RENUMBERS every vertex and cell. That makes
+    // debug output non-observational: turning DEBUG_output on changes the run it is supposed to
+    // be showing you. The renumbering is not cosmetic either -- under kPartition threading
+    // get_partition_id() is keyed on vertex id, so which thread owns which vertex changes, and
+    // with it the order operations are applied in.
+    //
+    // Nothing here needs the mesh compacted; it only needed the OUTPUT compacted, which is done
+    // locally below instead. 2D sized its arrays by the LIVE count while
+    // indexing them by slot id, which is only equivalent after a consolidate -- so it needs a
+    // slot -> packed remap rather than 3D's capacity-sized point arrays.
     const auto& vs = get_vertices();
     const auto& tris = get_faces();
+
+    std::vector<int> packed(vert_capacity(), -1);
+    for (size_t k = 0; k < vs.size(); ++k) packed[vs[k].vid(*this)] = int(k);
 
     Eigen::MatrixXd V(vs.size(), 2);
     Eigen::MatrixXi F(tris.size(), 3);
@@ -863,27 +1180,26 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // last matrix is for offset
     std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tris.size(), 1));
 
-    for (const Tuple& f : tris) {
-        size_t f_id = f.fid(*this);
+    for (size_t k = 0; k < tris.size(); ++k) {
+        const size_t f_id = tris[k].fid(*this);
 
-        // set tri tags
+        // set tri tags -- row k, the PACKED index, not the slot
         for (int j = 0; j < m_tags_count; j++) {
-            tags[j](f_id, 0) = (m_face_attribute[f_id].tags.count(j) == 1) ? 1 : 0;
+            tags[j](k, 0) = (m_face_attribute[f_id].tags.count(j) == 1) ? 1 : 0;
         }
-        tags[m_tags_count](f_id, 0) = (m_face_extra[f_id].label == 2) ? 1 : 0;
+        tags[m_tags_count](k, 0) = (m_face_extra[f_id].label == 2) ? 1 : 0;
     }
 
-    for (const Tuple& f : tris) {
-        // set tri verts
-        const auto& loc_vs = oriented_tri_vertices(f);
+    for (size_t k = 0; k < tris.size(); ++k) {
+        // set tri verts, remapped through `packed`
+        const auto& loc_vs = oriented_tri_vertices(tris[k]);
         for (int j = 0; j < 3; j++) {
-            F(f.fid(*this), j) = loc_vs[j].vid(*this);
+            F(k, j) = packed[loc_vs[j].vid(*this)];
         }
     }
 
-    for (const Tuple& v : vs) {
-        const size_t v_id = v.vid(*this);
-        V.row(v_id) = m_vertex_attribute[v_id].m_posf;
+    for (size_t k = 0; k < vs.size(); ++k) {
+        V.row(k) = m_vertex_attribute[vs[k].vid(*this)].m_posf;
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -903,6 +1219,63 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         surf_writer
             ->write_mesh(out_surf_path, m_V_envelope, m_F_envelope, paraviewo::CellType::Line);
     }
+}
+
+
+void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) const
+{
+    // A dense triangulated grid over the bounding box carrying Phi as a VERTEX field, so that a
+    // viewer can draw the level set Phi = c as an isoline rather than a cloud of coloured dots.
+    // This is the only way to SEE what the optimization is actually minimising: the offset is a
+    // level set of a field that exists everywhere, and the mesh only ever samples it along one
+    // curve.
+    if (n < 2 || !m_offset_potential) return;
+
+    const Vector2d lo = m_offset_params.box_min.head<2>();
+    const Vector2d hi = m_offset_params.box_max.head<2>();
+
+    MatrixXd V(n * n, 2);
+    MatrixXi F(2 * (n - 1) * (n - 1), 3);
+    MatrixXd phi(n * n, 1), residual(n * n, 1), euclid(n * n, 1);
+
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            const int k = j * n + i;
+            const Vector2d p(
+                lo[0] + (hi[0] - lo[0]) * i / (n - 1),
+                lo[1] + (hi[1] - lo[1]) * j / (n - 1));
+            V.row(k) = p.transpose();
+            // Phi diverges on the input complex, which would flatten the colour map everywhere
+            // else; clamped to a few times the level value, which is the range that matters.
+            phi(k, 0) =
+                std::min(m_offset_potential->value(p), 8. * m_offset_potential->target_level());
+            residual(k, 0) = std::min(
+                m_offset_potential->residual_length(p),
+                8. * m_offset_params.target_distance);
+            euclid(k, 0) = m_input_complex_bvh.dist(VectorXd(p));
+        }
+    }
+    int f = 0;
+    for (int j = 0; j + 1 < n; ++j) {
+        for (int i = 0; i + 1 < n; ++i) {
+            const int a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+            F.row(f++) << a, b, d;
+            F.row(f++) << a, d, c;
+        }
+    }
+
+    logger().info(
+        "Write {}_phi.vtu ({}x{} samples of the smooth offset potential; the offset is the "
+        "isoline phi = {})",
+        path,
+        n,
+        n,
+        m_offset_potential->target_level());
+    auto writer = std::make_shared<paraviewo::VTUWriter>();
+    writer->add_field("phi", phi);
+    writer->add_field("phi_residual_length", residual);
+    writer->add_field("euclidean_distance", euclid);
+    writer->write_mesh(path + "_phi.vtu", V, F, paraviewo::CellType::Triangle);
 }
 
 

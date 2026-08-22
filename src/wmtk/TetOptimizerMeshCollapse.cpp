@@ -21,8 +21,11 @@ void TetOptimizerMesh::collapse_all_edges(bool is_limit_length)
     collapse_all_edges_impl(is_limit_length, wmtk::default_ring(wmtk::PassLock::EdgeRing));
 }
 
-size_t
-TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, size_t max_passes)
+size_t TetOptimizerMesh::collapse_all_edges_impl(
+    bool is_limit_length,
+    int lock_ring,
+    size_t max_passes,
+    bool exact_ball_lock)
 {
     m_collapse_limit_length = is_limit_length;
     igl::Timer timer;
@@ -48,6 +51,14 @@ TetOptimizerMesh::collapse_all_edges_impl(bool is_limit_length, int lock_ring, s
         lock_ring,
         "edge collapse operation",
         [&](auto& executor, auto& mesh) {
+            if (exact_ball_lock && NUM_THREADS > 0) {
+                // The pass's write set exceeds the seed's one-ring, so the partial two-ring
+                // locker run_pass installed is not enough; claim the honest ball. Parallel
+                // only, mirroring run_pass: serial has nothing to lock against.
+                executor.lock_vertices = [lock_ring](auto& m, const Tuple& e, int task_id) {
+                    return m.try_set_edge_mutex_n_ring(e, task_id, lock_ring);
+                };
+            }
             executor.renew_neighbor_tuples = [](const auto& m, auto op, const auto& newts) {
                 std::vector<std::pair<std::string, wmtk::TetMesh::Tuple>> op_tups;
                 for (const Tuple& t : newts) {
@@ -391,6 +402,8 @@ bool TetOptimizerMesh::collapse_edge_after(const Tuple& loc)
     // vertex attr
     round(loc);
     VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
+    VA[v2_id].m_sizing_scalar =
+        collapse_merged_sizing(VA.at(v1_id).m_sizing_scalar, VA.at(v2_id).m_sizing_scalar);
     VA[v2_id].m_order = std::max(VA.at(v1_id).m_order, VA.at(v2_id).m_order);
 
     // no need to update on_bbox_faces
@@ -571,18 +584,73 @@ size_t TetOptimizerMesh::coarsen_mesh()
         // what the writes reach (smoothing a vertex at distance r reads its one-ring and
         // writes the quality of its incident cells); with coarsen_local_smoothing_passes at 0
         // it is what the accept test READS, since a cell incident to a distance-r vertex has
-        // vertices at r+1. Either way the +1 is required.
+        // vertices at r+1. Either way the +1 is required -- and it must be the HONEST ball:
+        // at radius exactly 2 make_locker substitutes the partial two-ring helper, which in
+        // 3D leaves the survivor's distance-2 vertices unclaimed, precisely where the
+        // composite's smoothing writes cell qualities. Measured as a segfault (concurrent
+        // TetAttributes write during the rollback journal's copy) on prism at 10 threads.
         const size_t accepted = collapse_all_edges_impl(
             false,
             m_params.coarsen_smooth_ring + 1,
-            size_t(m_params.coarsen_max_inner_passes));
+            size_t(m_params.coarsen_max_inner_passes),
+            /*exact_ball_lock=*/true);
         m_coarsen_mode = false;
         total += accepted;
 
+        const double e_after_collapse = std::get<0>(optimization_quality_stats());
+
+        // THE PASS'S CONTRACT APPLIES TO ITS OWN SMOOTHING TOO.
+        //
+        // Every collapse above is kept only if the region it disturbed came out no worse
+        // (collapse_edge_after, coarsen branch). This smoothing has no such test, and with
+        // smooth_quality_veto off -- which is topological_offset's default -- smooth_vertex_3d
+        // accepts any move that neither inverts a cell nor leaves the envelope, however much it
+        // degrades one. So the pass could hand back a mesh worse than it was given, which is the
+        // one thing it promises not to do.
+        //
+        // Measured on specific_models/prism, per round, before this:
+        //   round 0  start 9.92987 -> collapses 9.86786 (-0.062) -> smooth_all 10.9986 (+1.131)
+        //   round 1  start 10.9986 -> collapses 9.89344 (-1.105) -> smooth_all 11.5366 (+1.643)
+        // The collapses IMPROVE the mesh on both rounds; this smoothing is the entire regression,
+        // and it crossed stop_energy 10, which made Phase A report a failure it had not had.
+        // round_all_vertices contributes exactly 0 -- round() sets the RATIONAL from the float,
+        // and quality is computed from the float, so rounding cannot move it.
+        //
+        // This matters MORE since coarsen_local_smoothing_passes defaulted to 0: the local
+        // composite that was covered by the accept test is off, so this global pass is now the
+        // only relaxation the coarsening does, and it was the only one with no test on it.
+        //
+        // The veto is off for a real reason and that reason is Phase B's: the offset boundary is
+        // placed by minimising a term whose minimum can be most of target_distance away, so
+        // nearly every solved position worsens some incident face and vetoing freezes the
+        // boundary. Coarsening is not placing anything -- it is banking element count against a
+        // result the loop already reached -- so the reason does not reach here. Forced on for
+        // this call only; smooth_after() rebuilds its options per vertex from this field, and no
+        // other pass is running.
+        const bool saved_veto = m_params.smooth_quality_veto;
+        m_params.smooth_quality_veto = true;
         smooth_all_vertices(size_t(m_params.coarsen_global_smoothing_passes));
+        m_params.smooth_quality_veto = saved_veto;
+        const double e_after_smooth = std::get<0>(optimization_quality_stats());
+
+        double e_after_round = e_after_smooth;
         if (m_params.coarsen_global_smoothing_passes > 0) {
             round_all_vertices();
+            e_after_round = std::get<0>(optimization_quality_stats());
         }
+
+        // DIAGNOSTIC: the round's own line below reports only the total, and three different
+        // things move it. This says which, so the contract above is observable rather than
+        // asserted -- it is what localised the regression to smooth_all in the first place.
+        logger().warn(
+            "[coarsen substeps round {}] collapses {:.6g} -> smooth_all {:.6g} ({:+.6g}) -> "
+            "round_all {:.6g} ({:+.6g})",
+            round,
+            e_after_collapse,
+            e_after_smooth,
+            e_after_smooth - e_after_collapse,
+            e_after_round,
+            e_after_round - e_after_smooth);
 
         const auto [max_metric, avg_metric] = optimization_quality_stats();
         logger().info(
