@@ -198,7 +198,7 @@ TEST_CASE("per_tag_envelopes_init", "[3d][envelope]")
 
     // THE GATE. vertex_boundary_mask() is the raw mask AND'd with "is this vertex region
     // geometry at all", and only the shared face is two-sided here, so only its vertices are
-    // m_is_on_input -- the apexes sit on wall faces the fixture never labels. Without the gate
+    // m_is_on_region -- the apexes sit on wall faces the fixture never labels. Without the gate
     // a raw mask survives onto geometry that has drifted off the boundary (measured on prism:
     // 506 offset faces carrying the ambient bit from a split's endpoint AND, each routed into
     // a tube a full target_distance away), so the two must not agree for the apexes.

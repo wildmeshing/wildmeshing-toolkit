@@ -64,6 +64,29 @@ public:
     /// with no compact support, which makes within_support() vacuously true.
     double dhat() const { return m_dhat; }
 
+    /**
+     * @brief |d(field)/d(distance)| at the level set on a flat stretch of input.
+     *
+     * THE FACTOR THAT TURNS A FIELD DIFFERENCE INTO A LENGTH, and the reason a criterion stated
+     * on the field's gradient is not automatically field-independent. The smoothing objective is
+     * E = (Phi - c)^2, so |grad E| = 2 |Phi - c| |grad Phi|; writing |Phi - c| as
+     * slope * residual_length and taking |grad Phi| ~ slope near the level set gives
+     *
+     *     |grad E| ~ 2 * slope^2 * residual_length
+     *
+     * so a bound on |grad E| is a bound on a LENGTH only after dividing by slope^2. It is 1 for a
+     * distance field, where the two coincide and this is a no-op; it is 1/delta-ish for a
+     * barrier, where ignoring it makes the bound tighter by that factor squared -- measured on
+     * the two spheres at delta 0.0216: slope 27.62, so 763x tighter than intended.
+     *
+     * NOTE the |grad Phi| ~ slope step is LOCAL to the level set on a flat stretch. It is exactly
+     * what the normalisation is calibrated for, and it is not an identity: see
+     * offset_gradient_tolerance() for what the criterion becomes where it does not hold.
+     *
+     * See TopoOffsetTetMesh::offset_gradient_tolerance(), which is the only consumer.
+     */
+    double level_set_slope() const { return m_grad_ref; }
+
     virtual double value(const VecD& p) const = 0;
     virtual VecD gradient(const VecD& p) const = 0;
     virtual MatD hessian(const VecD& p) const = 0;
@@ -103,6 +126,9 @@ protected:
     double m_delta = 0.;
     double m_dhat = 0.;
     double m_c = 0.;
+    /// 1 unless a subclass calibrates otherwise -- see level_set_slope(). A distance field leaves
+    /// it alone, which is what makes the gradient criterion mean the same thing on both.
+    double m_grad_ref = 1.;
 };
 
 using OffsetPotential2D = OffsetPotential<2>;
@@ -242,6 +268,7 @@ private:
     using OffsetPotential<DIM>::m_delta;
     using OffsetPotential<DIM>::m_dhat;
     using OffsetPotential<DIM>::m_c;
+    using OffsetPotential<DIM>::m_grad_ref;
 
     /// Calibration constructor: builds the single-flat-primitive reference complex without
     /// recursing into calibration itself.
@@ -253,11 +280,6 @@ private:
     /// translation unit in the component has to see it.
     struct Impl;
     std::unique_ptr<Impl> m_impl;
-
-    /// |dPhi/dd| at distance delta from one large flat primitive -- the slope of the potential at
-    /// the level set on a flat stretch of input. Fixed at construction, and what turns a
-    /// difference in Phi into a length. See residual_length().
-    double m_grad_ref = 0.;
 };
 
 using SmoothOffsetPotential2D = SmoothOffsetPotential<2>;

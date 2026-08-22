@@ -184,7 +184,7 @@ struct SmoothVertexOptions
  *   - is_inverted_f(Tuple), is_inverted(Tuple), get_quality(Tuple)
  *   - std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(size_t vid) const
  *     and smoothing_containment_envelope(size_t vid) const
- *     (null is allowed and means "no envelope term for this vertex")
+ *     (null is allowed and means "no envelope term for this vertex"; both dimensions)
  *   - std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(size_t vid) const
  *     (null is allowed and means "AMIPS plus the envelope, as before")
  *
@@ -524,10 +524,10 @@ bool smooth_vertex_2d(
         assert(!surf_neighbors.empty());
     }
 
-    // Per-vertex rather than the mesh's single m_envelope: see
-    // TriOptimizerMesh::smoothing_envelope. The default returns exactly the old expression, so
-    // TriWild and SimWild are unaffected.
-    const std::shared_ptr<SampleEnvelope> envelope = m.smoothing_envelope(vid);
+    // Per-vertex rather than the mesh's single m_envelope, and split into the PULL and the
+    // CONTAINER exactly as the 3D path above: see TriOptimizerMesh::smoothing_energy_envelope.
+    // The defaults return the old expression, so TriWild and SimWild are unaffected.
+    const std::shared_ptr<SampleEnvelope> envelope = m.smoothing_energy_envelope(vid);
 
     if (envelope && opts.smoothing_mode == SmoothVertexOptions::SmoothingMode::Projected) {
         const Vector2d x_orig = m.smoothing_position(vid);
@@ -633,12 +633,13 @@ bool smooth_vertex_2d(
         return false;
     }
 
-    // Containment, edge by edge rather than face by face as in 3D.
-    if (envelope) {
+    // Containment, edge by edge rather than face by face as in 3D -- and against the
+    // CONTAINMENT envelope, which is not necessarily the one the vertex was pulled to.
+    if (const std::shared_ptr<SampleEnvelope> hold_env = m.smoothing_containment_envelope(vid)) {
         const Vector2d p = m.smoothing_position(vid);
         for (const Vector2d& q : surf_neighbors) {
             const std::array<Eigen::Vector2d, 2> edge = {{p, q}};
-            if (envelope->is_outside(edge)) {
+            if (hold_env->is_outside(edge)) {
                 if (counters) ++counters->envelope;
                 return false;
             }

@@ -13,7 +13,6 @@
             "offset_selection",
             "offset_output_tags",
             "protected_tags",
-            "respect_all_topologies",
             "offset_in",
             "offset_out",
             "target_distance",
@@ -21,11 +20,8 @@
             "throw_on_nonconvergence",
             "envelope_size",
             "envelope_size_rel",
-            "region_envelope_from_input",
-            "relative_ball_threshold",
             "offset_field",
             "offset_dhat_factor",
-            "offset_residual_rel",
             "offset_gradient_rel",
             "offset_residual_samples",
             "sorted_marching",
@@ -47,7 +43,7 @@
             "ab_phase_a_iterations",
             "ab_smooth_max_passes",
             "ab_smooth_tol",
-            "ab_smooth_grad_tol_rel",
+            "ab_vertex_grad_tol_rel",
             "ab_offset_envelope_rel",
             "length_rel",
             "length",
@@ -149,12 +145,6 @@
         "doc": "Only relevant for single body mode. Whether to create offset outside body"
     },
     {
-        "pointer": "/respect_all_topologies",
-        "type": "bool",
-        "default": false,
-        "doc": "If true, the topology (after offset initialization) of every tag is respected as if the offset was to replace all tags. If false, only the topology of the offset is respected."
-    },
-    {
         "pointer": "/target_distance_rel",
         "type": "float",
         "default": 0.01,
@@ -170,13 +160,7 @@
         "pointer": "/throw_on_nonconvergence",
         "type": "bool",
         "default": false,
-        "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Set true in integration tests so a convergence regression fails the run rather than passing with a warning nobody reads. 2D only -- the 3D path does not read it."
-    },
-    {
-        "pointer": "/region_envelope_from_input",
-        "type": "bool",
-        "default": true,
-        "doc": "Build the region-boundary envelope from the INPUT mesh, before the offset is constructed, rather than from the mesh the offset construction leaves behind. The band's tags REPLACE a face's own rather than joining them, so a region the band grows through loses its tag there and its boundary curve is truncated at whatever contour conservative growth stopped on; an envelope built afterwards caps the triple junction where a region boundary meets the offset at a position that is an artefact of relative_ball_threshold. Building it from the input follows the region's original, untruncated curve, which relaxes the constraint only along the stretch the band later swallows. Set false for the older behaviour. 2D only."
+        "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Set true in integration tests so a convergence regression fails the run rather than passing with a warning nobody reads."
     },
     {
         "pointer": "/envelope_size_rel",
@@ -189,12 +173,6 @@
         "type": "float",
         "default": -1.0,
         "doc": "Absolute half-width of the tag-region boundary envelope. If < 0, computed from envelope_size_rel."
-    },
-    {
-        "pointer": "/relative_ball_threshold",
-        "type": "float",
-        "default": 0.1,
-        "doc": "Float between 0 and 1, radius relative to target_distance to stop circle/sphere splitting in conservative distance approximation. Smaller means more accurate offset growth but longer run time."
     },
     {
         "pointer": "/offset_field",
@@ -213,16 +191,10 @@
         "doc": "Support radius of the smooth offset potential, as a multiple of target_distance. Must be > 1. The offset level set lies strictly inside the support; a band vertex that leaves the support is a hard error."
     },
     {
-        "pointer": "/offset_residual_rel",
-        "default": 0.1,
-        "type": "float",
-        "doc": "3D: a DIAGNOSTIC, no longer the convergence criterion -- see offset_gradient_rel. Still the bar face_criterion_rel() ranks the sizing field against, and still what the reported phi residual is normalized by. 2D: unchanged, this is TriWild's convergence tolerance. As a fraction of target_distance, applied to the potential residual expressed as a length."
-    },
-    {
         "pointer": "/offset_gradient_rel",
         "default": 0.2,
         "type": "float",
-        "doc": "3D only. THE CONVERGENCE CRITERION: a bound on the max of |grad (Phi(x) - c)^2| over the reachable offset surface, as a fraction of target_distance. The gradient is the stationarity condition of the objective Phase B minimises, so unlike the residual it means the same thing for any potential -- exact Euclidean, the OGC rule, or ESP -- without that potential first having to convert its field value into a length. Since grad E = 2 (Phi - c) grad Phi, on a distance-like field (|grad Phi| = 1 near the level set) this bound is |Phi - c| <= offset_gradient_rel/2 x target_distance, which is why the default is twice offset_residual_rel's. Measured BOTH at band vertices and at interior samples of band faces (offset_residual_samples sets the density), so a surface whose vertices sit on the level set while its triangles chord across it does not read as converged; the report splits the two as max_grad_at_vertex and max_grad_in_face, which say whether a failing run wants smoothing or refinement."
+        "doc": "3D only. THE CONVERGENCE CRITERION: a bound on the max of |grad (Phi(x) - c)^2| over the reachable offset surface, as a fraction of target_distance, DIVIDED BY THE FIELD'S LEVEL-SET SLOPE SQUARED. The gradient is the stationarity condition of the objective Phase B minimises, and the slope normalisation is what makes it mean the same thing for any potential -- exact Euclidean, the OGC rule, or ESP. Since grad E = 2 (Phi - c) grad Phi and |Phi - c| is a field difference rather than a length, the bound without that normalisation is only 'a distance' when |grad Phi| = 1, which holds for `euclidean` and fails badly for `smooth`, where Phi is a barrier whose slope grows like 1/target_distance (measured: slope 27.6 at delta 0.0216, so the un-normalised bound was 763x tighter than it read). With it the bound reads 2 x residual_length x (|grad Phi| / slope) <= r x target_distance. WHERE THE FIELD HAS ITS REFERENCE SLOPE -- the level set on a flat stretch, which is what the calibration measures -- that ratio is 1 and r means exactly residual_length <= (r/2) x target_distance, so the default 0.2 means residual_length <= 0.1 x target_distance. THIS IS ALSO THE ONLY TOLERANCE: the Phase A offset envelope is ab_offset_envelope_rel x (r/2) x target_distance, and the reported Phi residual is a diagnostic in absolute model units against that same (r/2) x target_distance bar. The separate offset_residual_rel knob is gone -- it sized the envelope off a parameter that no longer gated anything, leaving Phase A holding the surface in a tube 40x tighter than the accuracy the run was judged by (measured on prism: eps 0.00209 against a permitted error of 0.0837). Elsewhere it is that bound relaxed by slope/|grad Phi|, which is deliberate: it is what lets the criterion be met at a STATIONARY POINT of Phi, where |grad Phi| -> 0 and no residual bound is achievable. Two bodies close enough that Phi has a local-minimum contour between them above c have no level set in the gap at all -- the residual is floored at (Phi_min - c)/slope forever -- and there r instead controls, linearly, how close the two offset sheets settle to that contour. A run in that regime reports converged with a PLATEAUED max_phi_residual, which is the geometry, not a failure. Measured BOTH at band vertices and at interior samples of band faces (offset_residual_samples sets the density), so a surface whose vertices sit on the level set while its triangles chord across it does not read as converged; the report splits the two as max_grad_at_vertex and max_grad_in_face, which say whether a failing run wants smoothing or refinement."
     },
     {
         "pointer": "/offset_residual_samples",
@@ -252,7 +224,7 @@
         "pointer": "/phi_grid_resolution",
         "type": "int",
         "default": 0,
-        "doc": "Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer. 0 disables it. 2D only."
+        "doc": "Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer. 0 disables it. In 2D the grid covers the whole domain; in 3D a volume is unaffordable, so it is the PLANE through the box centre normal to the box's shortest extent. Carries phi, phi_residual_length and euclidean_distance per vertex; warp by phi to see the field as a height surface."
     },
     {
         "pointer": "/DEBUG_output",
@@ -264,7 +236,7 @@
         "pointer": "/DEBUG_output_per_pass",
         "type": "bool",
         "default": false,
-        "doc": "Only read when DEBUG_output is true: additionally write a frame after every single operation pass (<output>_debug_{N}.vtu). This is the old DEBUG_output behaviour; on a converged prism run it wrote 800 frames / 4 GB and cost a quarter of the wall time, so it is opt-in."
+        "doc": "Also write a debug VTU frame after EVERY pass, not just the per-phase timeline: every phase A local-operations pass and every phase B smoothing pass, as <output>_debug_{N}.vtu on one shared counter so the two interleave in run order. Large -- measured on prism, 801 frames and 3.95 GB for phase A alone, and the two_spheres pinch ran 193 phase B passes on top of that. Observational: the frames do not consolidate and cannot change the run."
     },
     {
         "pointer": "/log_file",
@@ -312,8 +284,8 @@
     {
         "pointer": "/stop_energy",
         "type": "float",
-        "default": 10.0,
-        "doc": "Target AMIPS quality for tets. Edge collapse will not push an already-on-target region's quality back above this."
+        "default": 100.0,
+        "doc": "Target AMIPS quality for tets. Default 100, matching the tetwild component -- Phase A is TetWild and stops where TetWild stops. Measured on prism: 100 converges in minutes; 10 pushes Phase A past what its operation set can deliver and the split pass becomes an unbounded refiner. Edge collapse will not push an already-on-target region's quality back above this."
     },
     {
         "pointer": "/max_iterations",
@@ -342,8 +314,8 @@
     {
         "pointer": "/ab_smooth_max_passes",
         "type": "int",
-        "default": 20,
-        "doc": "Cap on Phase B's smoothing passes per round. Negative means UNCAPPED: the phase runs until the gradient criterion (ab_smooth_grad_tol_rel) fires, guarded only by a no-progress check that stops the phase with a warning if the placement gradient fails to decrease over 10 consecutive passes."
+        "default": -1,
+        "doc": "Cap on Phase B's smoothing passes per round; negative (the default) means UNCAPPED. Phase B now runs passes until one completes with NO offset vertex backtracked by its one-ring (every local minimum interior), which is its natural fixed point: the potential is a frozen field, so offset placements couple only through the ring constraint, and the interior AMIPS solves that run in the same passes are what open those rings. A no-progress guard stops the phase with a warning if neither the constrained count nor the placement gradient improves over 10 consecutive passes; the run's own convergence bar (offset_gradient_rel) also ends the phase early. Set a positive cap only as a diagnostic override. HISTORY: the previous default of 2 was the mitigation for the Phase A dead-band ratchet seeded by the OLD placement-only B's front-loaded displacement (5/5 vs 3/5 on prism raw-construction, 2026-08-20); that B moved only offset vertices and relied on Phase A to repair the background, which is the design this replaces. NOTE: the 2D pipeline reads this cap too (negative = uncapped there as well, exiting on its displacement test)."
     },
     {
         "pointer": "/ab_smooth_tol",
@@ -352,10 +324,10 @@
         "doc": "3D only. Phase B stops when the largest vertex displacement in a pass falls below this fraction of the target edge length l. Relative rather than absolute so the test means the same thing at any model scale."
     },
     {
-        "pointer": "/ab_smooth_grad_tol_rel",
+        "pointer": "/ab_vertex_grad_tol_rel",
         "type": "float",
         "default": 0.01,
-        "doc": "Phase B's convergence criterion. Each pass measures the largest per-vertex gradient of the placement objective (the AMIPS + offset energy its Newton solves minimize) over offset vertices; the phase stops when it falls to this fraction of its value at phase entry. The gradient is exactly zero at the Gauss-Seidel fixed point whatever the residual, so unlike the previous displacement test it cannot read converged when moves are merely blocked. ab_smooth_max_passes remains the hard cap; displacement is still logged."
+        "doc": "3D only. Phase B's PER-VERTEX solve tolerance, separate from the global convergence tolerance (offset_gradient_rel). Each visit in a Phase B pass runs its vertex's local solve to that vertex's own minimum -- an offset vertex fully minimizes the quadratic level-set error (Phi - c)^2 along grad Phi with one-ring backtracking, a background (interior) vertex runs Newton on its one-ring AMIPS energy -- stopping when the local gradient norm falls below this fraction of ITS OWN value at the start of the visit. The global criterion is still checked once per A/B round, after Phase B."
     },
     {
         "pointer": "/ab_offset_envelope_rel",
@@ -420,8 +392,8 @@
     {
         "pointer": "/stuck_refine_cooldown",
         "type": "int",
-        "default": 0,
-        "doc": "Iterations to skip after a sizing refinement before another may fire. 0 allows one every iteration."
+        "default": 1,
+        "doc": "Iterations to skip after a sizing refinement before another may fire. Default 1, matching the tetwild component: the refined sizing needs one split/collapse round to act before the stall detector can fairly judge it. 0 allows one every iteration."
     },
     {
         "pointer": "/stuck_refine_num_worst",
@@ -469,7 +441,7 @@
         "pointer": "/min_edge_length_rel",
         "type": "float",
         "default": -1.0,
-        "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it as the offset envelope epsilon, ab_offset_envelope_rel * offset_residual_rel -- TetWild's own floor (cap the sizing below by the envelope eps, Sec 3.2) stated in the offset's units: the offset surface is only held to within eps, so edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs, unlike the previous fixed 0.5176 = 2*sin(15 deg) default, which encoded the deleted normal-deviation criterion's sigma_max = 15 deg and silently capped achievable tolerance at ~3.3%."
+        "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it as the offset envelope epsilon, ab_offset_envelope_rel * (offset_gradient_rel / 2) -- TetWild's own floor (cap the sizing below by the envelope eps, Sec 3.2) stated in the offset's units: the offset surface is only held to within eps, so edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs, unlike the previous fixed 0.5176 = 2*sin(15 deg) default, which encoded the deleted normal-deviation criterion's sigma_max = 15 deg and silently capped achievable tolerance at ~3.3%."
     },
     {
         "pointer": "/min_sizing_scalar",
@@ -517,7 +489,7 @@
         "pointer": "/smooth_quality_veto",
         "type": "bool",
         "default": false,
-        "doc": "Whether smoothing refuses a move that raises the worst incident element's quality. True is TriWild's and SimWild's behaviour, and OFF here: the offset boundary is placed by minimising a term whose minimum can be most of target_distance away, so nearly every solved position worsens some incident face and the veto freezes the boundary (measured: 0 of 6117 offset-vertex moves accepted on the dragon over a whole run). Element shape is the split/collapse/swap passes' job and is one of the two convergence criteria, so it is not left unattended."
+        "doc": "Whether smoothing refuses a move that raises the worst incident element's quality. True is TriWild's and SimWild's behaviour, and OFF here: the offset boundary is placed by minimising a term whose minimum can be most of target_distance away, so nearly every solved position worsens some incident face and the veto freezes the boundary (measured: 0 of 6117 offset-vertex moves accepted on the dragon over a whole run). Element shape is the split/collapse/swap passes' job and is one of the two convergence criteria, so it is not left unattended. 3D IGNORES THIS KEY and forces true (TetWild's value): the freeze this default guards against was offset-boundary placement through the shared smoother, which 3D no longer does -- Phase B's root find never consults the flag, and Phase A is TetWild quality work. The key remains for the 2D pipeline, where the dragon measurement still applies."
     },
     {
         "pointer": "/smoothing_mode",

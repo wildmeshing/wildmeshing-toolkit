@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <map>
 #include <mutex>
+#include <string>
 
 #include <wmtk/TetMesh.h>
 #include <wmtk/TetOptimizerMesh.h>
@@ -26,18 +27,6 @@ using CellTag = std::set<int64_t>;
 
 namespace wmtk::components::topological_offset {
 
-/// TEMPORARY, for the switch-isolation sweep. Reads one of the experiment switches from the
-/// environment so all factors can be varied without a rebuild. `def` is ALWAYS the behavior the
-/// branch had BEFORE the experiment, so an unset environment reproduces the original exactly and
-/// nothing here changes the default build. Accepts 0/1, true/false, yes/no.
-inline bool offset_experiment_flag(const char* name, const bool def)
-{
-    const char* v = std::getenv(name);
-    if (v == nullptr || v[0] == '\0') return def;
-    return !(v[0] == '0' || v[0] == 'f' || v[0] == 'F' || v[0] == 'n' || v[0] == 'N');
-}
-
-
 const int64_t TEMP_OFFSET_TET_TAG = -1;
 const CellTag TEMP_OFFSET_TET_TAG_SET{TEMP_OFFSET_TET_TAG};
 
@@ -53,7 +42,7 @@ const CellTag TEMP_OFFSET_TET_TAG_SET{TEMP_OFFSET_TET_TAG};
  * Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled back
  * with the shared collection.
  *
- * Note m_is_on_input / m_is_on_offset versus the base's m_is_on_surface: the offset tracks TWO
+ * Note m_is_on_region / m_is_on_offset versus the base's m_is_on_surface: the offset tracks TWO
  * surfaces, and the base's flag is their union. These two say which.
  */
 class VertexExtra
@@ -61,14 +50,33 @@ class VertexExtra
 public:
     int label = 0;
     size_t component_id = 0;
-    bool m_is_on_input = false; // is this vertex on the input complex
+    /// ON A REGION BOUNDARY that is not the offset surface. MISNAMED, and the name has cost
+    /// real time: face_is_region() is `tracked && class != OFFSET`, so this whole *_on_input
+    /// family -- the flag, is_edge_on_region(), face_is_region() -- means "region boundary", and
+    /// 3D has no INPUT_SURFACE_CLASS to narrow it with the way 2D does. Renaming it to
+    /// m_is_on_region is worth doing and is not done here, because the rename touches every
+    /// operation and this change is about the invariant below.
+    bool m_is_on_region = false;
     bool m_is_on_offset = false; // is this vertex on the offset surface
+
+    /// ON THE INPUT COMPLEX ITSELF -- the simplices label_input_complex() selected, at every
+    /// dimension. This is the fact m_is_on_region was mistaken for.
+    ///
+    /// THE INVARIANT: a vertex is NEVER on the input complex and the offset surface at once.
+    /// Conservative growth places the band boundary strictly outside the complex, so the state
+    /// cannot be constructed; check_no_vertex_on_both_surfaces() asserts it after construction
+    /// and after every Phase A, and collapse_before_vertex() refuses the one operation that
+    /// could otherwise manufacture it by merging an offset vertex into a complex one.
+    ///
+    /// Propagated like the flags above: a split midpoint takes the AND of its edge's endpoints
+    /// (on the complex only if the whole edge was), a collapse ORs onto the survivor.
+    bool m_is_on_input_complex = false;
 
     /**
      * WHICH tag-region boundaries this vertex lies on, one bit per input tag (m_tag_bit).
      *
      * Seeded at init from the boundary faces themselves and then propagated like
-     * m_is_on_input: a split midpoint takes the AND of its edge's endpoints (on both
+     * m_is_on_region: a split midpoint takes the AND of its edge's endpoints (on both
      * boundaries only if the whole edge was), a collapse survivor ORs in the removed
      * vertex's bits (conservative, the same over-approximation the flags already accept).
      * A face's constraint mask is the AND of its three corners' masks -- a face lies on a
@@ -144,7 +152,7 @@ public:
  * m_envelope; the offset boundary is OFFSET_SURFACE_CLASS and is free to move, being defined by
  * the tet labels rather than by input geometry. The base's m_is_surface_fs / m_is_on_surface
  * are the UNION of the two -- that is what must not be torn by an operation -- and
- * VertexExtra::m_is_on_input / m_is_on_offset say which.
+ * VertexExtra::m_is_on_region / m_is_on_offset say which.
  */
 class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 {
@@ -189,6 +197,25 @@ public:
     /// Which phase is running. Read by every hook that differs between them; see OptPhase.
     OptPhase m_phase = OptPhase::A;
 
+    /**
+     * @brief Phase B's two sub-sweeps, run in this order within every smoothing pass.
+     *
+     * Offset: place every offset-surface vertex on the level set, by the 1-D minimization of
+     * (Phi - c)^2 along grad Phi, backtracked into the one-ring if the minimum lies outside it.
+     * Background: relax the interior by AMIPS, under the surface those placements just defined.
+     *
+     * SEPARATE SWEEPS, NOT ONE INTERLEAVED PASS. Relaxing the background against the PREVIOUS
+     * pass's surface spends the work on a configuration that is about to move, and interleaving
+     * makes each vertex's one-ring a moving target for its neighbours within the same sweep --
+     * so the backtracking a placement hits depends on the visit order rather than on the
+     * geometry. Ordering them makes the pass mean "place, then relieve what the placement cost".
+     *
+     * smooth_before() reads this and refuses the other class outright, so the two sweeps share
+     * all of the executor, counters and accept gates and differ only in who they admit.
+     */
+    enum class PhaseBSub { Offset, Background };
+    PhaseBSub m_phase_b_sub = PhaseBSub::Offset;
+
 
     /// DIAGNOSTIC: set by the driver after the first round when
     /// ab_no_collapse_after_first_round is on, and read by collapse_edge_before().
@@ -221,9 +248,33 @@ public:
     /// ab_max_rounds is reached. Replaces the single mesh_improvement() call.
     void optimize_offset_alternating();
 
-    /// Phase B's smoothing loop. Returns the number of passes run; stops when the largest vertex
-    /// displacement in a pass falls below ab_smooth_tol x l, or at ab_smooth_max_passes.
+    /// Phase B's smoothing loop. Each pass sweeps every vertex once: offset vertices are placed
+    /// on the level set by smooth_offset_vertex_backtracking(), background (interior) vertices
+    /// minimize their one-ring AMIPS by smooth_interior_vertex_phase_b() -- each visit runs its
+    /// vertex's local solve to ab_vertex_grad_tol_rel of that vertex's own entry gradient.
+    /// Returns the number of passes run; the natural exit is a pass in which NO offset vertex
+    /// was backtracked by its one-ring (m_phase_b_constrained == 0), i.e. every local minimum
+    /// is interior. See the definition for the other exits (the run's own convergence bar, the
+    /// no-progress guard, and an optional ab_smooth_max_passes cap).
     size_t phase_b_smooth();
+
+    /**
+     * @brief Phase B's placement of a background vertex: Newton on the one-ring AMIPS energy,
+     * to this vertex's own minimum.
+     *
+     * The counterpart of smooth_offset_vertex_backtracking() for the vertices that carry no
+     * surface: without it, Phase B moved the offset surface onto the level set and left the
+     * background mesh exactly as Phase A's last smoothing pass had it, so the placement relied
+     * on Phase A having guessed a background tet size the moved surface happens to fit. Solving
+     * the interior alongside the surface is what opens one-rings that would otherwise force the
+     * offset root find to backtrack -- which is the pass loop's exit criterion.
+     *
+     * Reuses the shared smoother (optimization::smooth_vertex_3d) -- pure AMIPS, no envelope
+     * terms (an interior vertex has none), exact inversion accept, quality veto -- but with
+     * Phase B's own solver, configured to stop at ab_vertex_grad_tol_rel of the visit's initial
+     * gradient (polysolve's rel_grad_norm_tol) instead of the base's fixed iteration budget.
+     */
+    bool smooth_interior_vertex_phase_b(const Tuple& t);
 
     /**
      * @brief L-inf over offset vertices of the gradient of each vertex's own placement
@@ -235,11 +286,6 @@ public:
      * skips them.
      */
     double phase_b_band_gradient_linf();
-
-    /// Refine the shared sizing field around the offset faces that are still over tolerance
-    /// after Phase B converged: the worst faces' one-rings have their sizing scalar scaled by
-    /// stuck_refine_factor. Returns the number of vertices whose scalar was lowered.
-    size_t refine_sizing_where_phi_is_stuck();
 
     /**
      * @brief Per-vertex band sizing update, run after Phase B. Returns the number changed.
@@ -258,39 +304,35 @@ public:
      *    has not finished; and a vertex in tolerance with an out-of-tolerance neighbour is that
      *    neighbour's problem to fix, not this one's.
      *
-     * This is the chord-only trigger of refine_sizing_where_phi_is_stuck(), moved from a
-     * per-FACE test with a 3-vertex condition to a per-VERTEX one with a surface one-ring
-     * condition -- so a face is only refined when the whole neighbourhood around it is placed,
-     * not merely its own corners.
+     * THIS IS THE ONLY THING THAT REFINES THE SIZING FIELD FOR THE OFFSET, and there is no
+     * switch to select another. It replaced a face-ranked routine that refined on a
+     * max-of-three score over the face's vertices AND its interior samples AND its AMIPS,
+     * force-split the worst faces' longest edges, and carried an environment switch to pick
+     * between that and the rule above; all of it is deleted. Phase A keeps TetWild's own
+     * quality-driven stall response (refine_sizing_around_worst), which ranks ELEMENTS by AMIPS
+     * and is a different question from this one -- the two write the same field and accumulate.
      *
-     * Clamped below by max(min_sizing_scalar, min_edge_length / l) -- the same band floor
-     * refine_sizing_where_phi_is_stuck() uses -- and the changed vertices seed
-     * gradation_smooth_sizing(), so a re-sized patch does not sit against an untouched one.
+     * Clamped below by max(min_sizing_scalar, min_edge_length / l) -- the band's floor, not
+     * stuck_refine_min_scalar -- and the changed vertices seed gradation_smooth_sizing(), so a
+     * re-sized patch does not sit against an untouched one.
      */
     size_t update_band_sizing_from_tolerance();
 
-    /**
-     * @brief AVERAGE distance error, as a fraction of target_distance, above which a
-     * non-converged run with respect_all_topologies is reported as topologically blocked.
-     *
-     * The discriminator is the AVERAGE, not the max and not max/avg. Topological blocking is
-     * WIDESPREAD -- whole stretches of offset cannot advance, so the average climbs toward the
-     * max. Every other failure mode is the opposite shape: a few over-constrained vertices pin
-     * the max while the rest lands correctly, leaving the average tiny. In 2D avg/delta separated
-     * the blocked runs from every other run by more than 150x.
-     *
-     * Class-scope rather than namespace-scope only because TopoOffsetTriMesh.h already defines a
-     * namespace-scope constant of this name and the two headers share a namespace.
-     */
-    static constexpr double TOPOLOGY_BLOCK_AVG_FRAC = 0.05;
-
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
-        Midpoint = 0, // used for simplicial embedding steps
-        Initial = 1, // this is used to initialize the complex. Its a little hacky
-
+        Midpoint = 0, // construction: simplicial embedding AND marching_tets
         Optimization = 5 // this is used in the optimization phase of the algorithm
     };
+
+    /**
+     * @brief Skip optimize_offset() entirely -- set WMTK_OFFSET_SKIP_OPTIMIZE=1.
+     *
+     * With this on, what gets written is the offset exactly as construction left it --
+     * simplicial embedding plus midpoint marching, nothing more -- optimization_metrics stays
+     * empty and the report omits that section. Read once from the environment, warns once.
+     */
+    static bool skip_optimization();
+
 
 public:
     int m_vtu_counter = 0;
@@ -453,7 +495,7 @@ public:
                m_face_attribute[fid].m_surface_class == OFFSET_SURFACE_CLASS;
     }
     /// Whether face `fid` carries input-complex geometry.
-    bool face_is_input(const size_t fid) const
+    bool face_is_region(const size_t fid) const
     {
         return m_face_attribute[fid].m_is_surface_fs &&
                m_face_attribute[fid].m_surface_class != OFFSET_SURFACE_CLASS;
@@ -476,6 +518,15 @@ public:
 
         m_collapse_check_link_condition = false;
         m_collapse_check_manifold = false;
+
+        // TETWILD PARITY, forced for 3D regardless of the config key. The spec default is
+        // false for the 2D pipeline, where offset-boundary placement still goes through the
+        // shared smoother and the veto measurably froze it (0 of 6117 offset-vertex moves
+        // accepted on the dragon). In 3D that conflict no longer exists: Phase B places the
+        // offset surface with its own root find, which never consults this flag, and Phase A's
+        // smoothing is pure TetWild quality work -- where TetWild runs with the veto ON (the
+        // base default it never overrides). See OptimizerParameters::smooth_quality_veto.
+        _m_offset_params.smooth_quality_veto = true;
 
         optimization::deactivate_opt_logger();
     }
@@ -549,6 +600,7 @@ public:
     /// Largest AMIPS seen so far; a new maximum is logged, which bounds the output.
     mutable double m_spike_record = 0.;
     mutable std::atomic<int> m_spike_dumps{0};
+    mutable std::atomic<int> m_spike_genesis_dumps{0};
     mutable std::atomic<int> m_spike_count{0};
     mutable std::atomic<int> m_spike_genesis{0};
     int m_spike_dump_budget = 24;
@@ -566,14 +618,14 @@ public:
      * @brief Is this vertex on a region boundary -- a tag boundary, or the domain wall.
      *
      * DERIVED, not stored. The two halves are already maintained exactly by the existing
-     * machinery: m_is_on_input by is_edge_on_input() at each split and an OR at each collapse,
+     * machinery: m_is_on_region by is_edge_on_region() at each split and an OR at each collapse,
      * on_bbox_faces by set_intersection of the split endpoints and by the collapse rule that a
      * wall vertex may only merge into one at least as constrained. A stored third flag would be
      * a fourth thing to keep in step with those, for no information they do not already carry.
      */
     bool vertex_is_on_region(const size_t vid) const
     {
-        return m_vertex_extra[vid].m_is_on_input || !m_vertex_attribute[vid].on_bbox_faces.empty();
+        return m_vertex_extra[vid].m_is_on_region || !m_vertex_attribute[vid].on_bbox_faces.empty();
     }
 
     /// The three helpers of the per-tag envelope dispatch. tag_bits() and face_mask() are
@@ -600,8 +652,8 @@ public:
      * containment sweep called outside were offset faces carrying the ambient bit that way,
      * routed into a tube they sit a full target_distance from.
      *
-     * vertex_is_on_region() is the predicate that does NOT over-claim -- m_is_on_input moves
-     * across a split only through is_edge_on_input(), which demands a real incident input
+     * vertex_is_on_region() is the predicate that does NOT over-claim -- m_is_on_region moves
+     * across a split only through is_edge_on_region(), which demands a real incident input
      * face, and on_bbox_faces through the endpoints' intersection. So the mask says WHICH
      * boundaries, and this says whether the vertex is on one at all; the mask only ever
      * narrows an answer the flags already allow.
@@ -787,18 +839,25 @@ public:
     }
 
     /**
-     * @brief The engine's stall-driven sizing refinement, driven by the offset's criterion.
+     * @brief Phase A's stall-driven sizing refinement -- TetWild's, on element quality.
      *
-     * mesh_improvement() fires this when optimization_quality_stats()'s max stalls; the
-     * override ratchets the sizing down around the worst-scoring offset-surface FACES only
-     * (TetWildMesh::refine_sizing_around_worst with face_criterion_rel() in place of AMIPS).
+     * mesh_improvement() fires this when optimization_quality_stats()'s max stalls, and
+     * mesh_improvement() only runs inside Phase A, so this only ever runs there. It ratchets
+     * the sizing down around the worst tets by AMIPS, exactly as TetWildMesh does.
+     *
+     * It does NOT refine for the offset. That is update_band_sizing_from_tolerance(), which is
+     * the only thing that does and runs after Phase B. Both write the same per-vertex scalar.
      */
     size_t refine_sizing_around_worst(double) override;
 
-    /// No. The offset surface is the thing being placed and has no envelope holding it, so a
-    /// bare collapse pass -- one not interleaved with splits and smoothing, and answering to no
-    /// criterion -- can only decimate it. See the base for the measurement.
-    bool optimization_bare_coarsen_passes() const override { return false; }
+    // optimization_bare_coarsen_passes() is NOT overridden: the base's true --
+    // TetWild's opening and closing unlimited-length collapse passes -- applies. The override
+    // returned false on the grounds that the offset surface "has no envelope holding it, so a
+    // bare collapse pass can only decimate it" (the base doc carries the 1172 -> 326 face
+    // measurement from that era). Phase A now rebuilds m_offset_envelope before every
+    // mesh_improvement() call, so the surface is held exactly the way TetWild's input surface
+    // is during ITS bare passes, and the premise is gone. Decimating to what the envelope
+    // tolerates is the contract, not the leak.
 
     /**
      * @brief (max, avg) Phi residual over the reachable offset surface, in units of its
@@ -815,12 +874,23 @@ public:
         return m_phase == OptPhase::A ? wmtk::TetOptimizerMesh::optimization_stop_metric() : 1.;
     }
 
-    /// The tolerance the Phi residual is measured against: a fraction of target_distance, so
-    /// "how close is close enough" is stated in units of the offset the run asked for.
+    /// The residual scale, DERIVED FROM THE CRITERION rather than configured beside it.
+    ///
+    /// grad E = 2 (Phi - c) grad Phi, so on a field with unit slope at the level set the gradient
+    /// bound |grad E| <= g is exactly |Phi - c| <= g/2. That is the whole definition: half the
+    /// gradient tolerance, in length units. There is no offset_residual_rel any more.
+    ///
+    /// WHY IT MATTERS BEYOND REPORTING: this feeds the Phase A offset envelope
+    /// (ab_offset_envelope_rel x this) and the derived min_edge_length floor. While it was its
+    /// own knob it kept its old value when a run loosened offset_gradient_rel, so Phase A held
+    /// the offset surface in a tube far tighter than the accuracy the run was judged by --
+    /// measured on prism at offset_gradient_rel 0.2: eps 0.00209 against a permitted error of
+    /// 0.0837, a factor of 40, and 1/2000th of the target edge length. Tying the two together
+    /// means loosening the criterion loosens the tube with it.
     double offset_residual_tolerance() const
     {
         return std::max(
-            m_offset_params.offset_residual_rel * m_offset_params.target_distance,
+            0.5 * m_offset_params.offset_gradient_rel * m_offset_params.target_distance,
             1e-16);
     }
 
@@ -845,8 +915,42 @@ public:
      */
     double offset_gradient_tolerance() const
     {
+        // NORMALIZED BY THE FIELD'S SLOPE, so offset_gradient_rel means the same thing whichever
+        // field is in use. |grad (Phi - c)^2| = 2 |Phi - c| |grad Phi|, and |Phi - c| is a field
+        // difference, not a length -- OffsetPotential::level_set_slope() is the conversion. With
+        // s that slope and r = |Phi - c| / s the residual as a LENGTH, the bound below is
+        //
+        //     2 * r * (|grad Phi| / s)  <=  rel * delta
+        //
+        // s == 1 for `euclidean`, where this is a no-op and the bound is what it always was. For
+        // `smooth` it is not remotely a no-op: Phi is a barrier, so s ~ 1/delta and grows as the
+        // offset gets finer. Measured on the two spheres at delta 0.0216, s = 27.62 and s^2 = 763
+        // -- without this factor rel 0.2 silently asked for 0.013% of delta, and the run reported
+        // 1.0e5x the bar on a surface the residual put at 20x.
+        //
+        // WHAT rel MEANS, AND WHERE THAT STOPS BEING A DISTANCE. Where the field has its
+        // reference slope (|grad Phi| ~ s -- the level set on a flat stretch, which is what the
+        // calibration measures), the ratio above is 1 and the bound reduces to
+        //
+        //     r <= (rel / 2) * delta
+        //
+        // so rel 0.2 is "within 10% of target_distance". Elsewhere it is that bound RELAXED by
+        // s / |grad Phi|, and this is deliberate, not slack: it is what lets the criterion be
+        // met at a stationary point of Phi, where |grad Phi| -> 0 and no bound on r is
+        // achievable at all.
+        //
+        // That case is real and is the reason the criterion is stated on the gradient. Two bodies
+        // close enough that Phi has a local-minimum contour between them whose value exceeds c
+        // have NO level set in the gap: the residual is floored at (Phi_min - c) / s and a bound
+        // on r is unsatisfiable for every tolerance. The gradient vanishes on that contour, so
+        // the sheets converge onto it, one from each side, and rel controls how close they get --
+        // linearly, since near the contour |grad E| ~ 2 (Phi_min - c) * kappa * |n| with kappa =
+        // Phi'' and n the normal offset, giving |n| <= rel * delta * s^2 / (2 kappa (Phi_min - c)).
+        // Expect `converged: true` alongside a PLATEAUED max_phi_residual there; that is this
+        // geometry being reported, not a placement failure.
+        const double s = m_offset_potential ? m_offset_potential->level_set_slope() : 1.;
         return std::max(
-            m_offset_params.offset_gradient_rel * m_offset_params.target_distance,
+            m_offset_params.offset_gradient_rel * m_offset_params.target_distance * s * s,
             1e-16);
     }
 
@@ -868,18 +972,33 @@ public:
     double band_vertex_residual(const size_t vid) const;
 
     /// Whether vid is an offset-surface vertex the optimizer could still place on the level set.
-    /// A vertex on the input complex sits where Phi diverges; one on the domain boundary is
-    /// frozen there because conservative growth ran out of room. Neither is fixable -- but both
-    /// still COUNT toward the residual (see residual_split()); this classifies, it no longer
-    /// excludes.
+    /// Only the domain boundary disqualifies one now: conservative growth ran out of room there,
+    /// so the vertex is on the box because the offset could not extend past it, and no placement
+    /// changes that.
+    ///
+    /// m_is_on_region USED TO DISQUALIFY IT TOO, and that was wrong once freezing went. The flag
+    /// is over-broad -- splits propagate it and collapses OR it onto survivors -- so a vertex
+    /// carrying it may sit a full target_distance from the complex, which is to say exactly
+    /// where the offset wants it. check_no_vertex_on_both_surfaces() already throws on the
+    /// genuinely contradictory case (on the offset surface AND within envelope_size of the
+    /// complex, where Phi diverges), so any vertex reaching here with the flag is placeable, and
+    /// booking it as pinned only hid it from the metric that decides convergence.
     bool band_vertex_is_reachable(const size_t vid) const
     {
-        return !m_vertex_extra[vid].m_is_on_input && m_vertex_attribute[vid].on_bbox_faces.empty();
+        return m_vertex_attribute[vid].on_bbox_faces.empty();
     }
 
     /// Which vertices lie on the offset surface. Shared by every measurement so they all agree
     /// on what "the band" is.
     std::vector<bool> band_vertex_mask() const;
+
+    /// The furthest any offset-surface vertex sits from the input complex, by BVH. 0 when no
+    /// offset exists yet. Sizes dhat in init_offset_potential().
+    double max_band_vertex_distance() const;
+
+    /// Sample the potential on the plane through the box centre normal to its shortest extent
+    /// and write it as <path>_phi.vtu, n x n samples. See phi_grid_resolution; 0 disables.
+    void write_phi_grid(const std::string& path, int n) const;
 
     /// A quantity sampled at points INSIDE an offset-surface face -- see offset_face_samples()
     /// for the residual and gradient_split() for the gradient.
@@ -953,8 +1072,10 @@ public:
      */
     FaceSamples offset_face_samples(const Tuple& f) const;
 
-    /// The per-face score refine_sizing_around_worst ranks by; >= 1 means the face fails the
-    /// criterion. Also the per-face form of optimization_quality_stats().
+    /// The per-face score the collapse and swap acceptance gates gate on (Collapse.cpp,
+    /// Swap.cpp); >= 1 means the face fails the criterion. Also the per-face form of
+    /// optimization_quality_stats(). It no longer ranks anything for refinement -- see
+    /// update_band_sizing_from_tolerance(), which measures the criterion directly.
     double face_criterion_rel(const Tuple& f) const;
     /// AMIPS of a cell over stop_energy -- the 3D twin of TriOptimizerMesh::quality_rel(), so
     /// both dimensions express "how bad is this element" on the same 1.0 scale.
@@ -1079,11 +1200,24 @@ public:
     }
     void collapse_after_vertex(size_t v1, size_t v2) override;
 
-    /// min: a collapse must not un-refine the sizing field -- see the base declaration.
-    double collapse_merged_sizing(double removed, double survivor) const override
+
+    /// The offset's own collapse refusals, splitting the base's before_vertex bucket by reason.
+    /// Same lifecycle as the base's CollapseRefusals: printed by the stall dumps, reset at each
+    /// Phase A entry.
+    struct OffsetCollapseRefusals
     {
-        return std::min(removed, survivor);
-    }
+        std::atomic<long> invariant{0}; ///< would put input-complex and offset on one vertex
+        std::atomic<long> class_region{0}; ///< region vertex may not leave its surface
+        std::atomic<long> class_offset{0}; ///< offset vertex may not leave its surface
+        std::atomic<long> order2{0}; ///< order-2 vertex into lower order
+        std::atomic<long> sublink{0}; ///< substructure_link_condition refusal
+        void reset() { invariant = class_region = class_offset = order2 = sublink = 0; }
+    };
+    mutable OffsetCollapseRefusals m_offset_collapse_refusals;
+    // The shared collapse merges the sizing scalar with min(removed, survivor) -- see
+    // TetOptimizerMeshCollapse.cpp. That makes every collapse a one-way refinement ratchet,
+    // which TetWild historically did not have; it is deliberate, so a collapse can never
+    // discard a finer request the field has already made.
 
     /**
      * @brief Split policy that is the offset's own.
@@ -1109,7 +1243,7 @@ private:
     /// tet, keyed by the edge opposite the split one, and which surfaces the edge was on.
     struct OptSplitCache
     {
-        bool is_edge_on_input = false;
+        bool is_edge_on_region = false;
         bool is_edge_on_offset = false;
         std::map<simplex::Edge, TetAttributes> tets;
     };
@@ -1151,44 +1285,42 @@ public:
 
     void init_surfaces_and_boundaries();
 
-    /// Whether edge `loc` lies on the INPUT complex. The base's is_edge_on_input() asks
+    /// Whether edge `loc` lies on the INPUT complex. The base's is_edge_on_region() asks
     /// about the union of the two tracked surfaces, and is_edge_on_bbox() is the base's.
-    bool is_edge_on_input(const Tuple& loc);
+    bool is_edge_on_region(const Tuple& loc);
     bool is_edge_on_offset(const Tuple& loc);
 
     /**
-     * @brief The two simplex sets the optimization may not touch at all.
+     * @brief NOTHING IS FROZEN. Containment is the whole constraint.
      *
-     * The input simplicial complex is the geometry the offset is measured against, and the
-     * domain boundary is the box the background mesh lives in. Neither is something to be
-     * improved: an operation that splits, collapses, flips or moves any of their simplices
-     * changes the reference the whole result is defined against. This is categorical, not a
-     * tolerance -- the shared engine holds the input surface inside m_envelope, which lets it
-     * drift by eps, and eps is not zero.
+     * There used to be a vertex_is_frozen()/edge_is_frozen() pair here declaring the input
+     * complex and the domain wall untouchable -- "categorical, not a tolerance". That doctrine
+     * is gone, and it went in three stages: splits stopped honouring it (EdgeSplittingTet.cpp),
+     * then smoothing did (Smooth.cpp), and now collapse does too, which was the last operation
+     * still refusing on it.
      *
-     * Same rule and same wording as TopoOffsetTriMesh::vertex_is_frozen()/edge_is_frozen(). The
-     * one difference the dimension forces: 2D reads an edge's bbox membership off the edge
-     * itself, while 3D tracks the box on FACES, so the edge test goes through the base's
-     * is_edge_on_bbox(), which walks the edge's incident faces. Both are therefore non-const.
+     * The rule that replaces it is the one the shared engine and TetWild already use, and the
+     * one the per-tag envelopes were built for: every simplex is held inside the envelopes of
+     * the tag boundaries it lies on -- their INTERSECTION where it lies on several -- and the
+     * offset surface is additionally held in m_offset_envelope during Phase A. A move, a
+     * collapse or a flip is legal exactly when the result stays inside those. That is a
+     * tolerance, deliberately: eps is not zero, and a reference the mesh may drift eps within is
+     * what lets an element touching the reference ever be improved.
+     *
+     * WHAT FREEZING COST, measured on the double_sphere lens (target_distance 0.1, delta 0.59 of
+     * the target edge length): collapse_after_vertex() ORs m_is_on_region onto the survivor when
+     * it merges an offset vertex into an input one, which at that band thickness happens
+     * constantly. The survivor then sat on the offset surface carrying the input flag, and was
+     * frozen against collapse, refused by Phase B, and booked as pinned by the residual --
+     * unplaceable, unmeasured and unremovable at once. Phase A stalled on 477 of 45546 tets
+     * whose corners were those vertices, at max quality 3.14e7 against stop_energy 10, and
+     * stuck-refine ground the mesh from 55k to 6.8M elements against them.
+     *
+     * The input surface does not thereby dissolve: collapse still refuses to let a vertex leave
+     * the surface class it belongs to (collapse_before_vertex()), the containment check still
+     * has to pass, and TetOptimizerMeshCollapse still requires a wall vertex to merge into one
+     * carrying at least as many bbox faces, so the box keeps its shape.
      */
-    /**
-     * THE DOMAIN WALL IS NO LONGER PART OF THIS. It is a region boundary now, held in m_envelope
-     * with every other one, and containment is the whole constraint on it -- the same contract
-     * the input complex gets from the shared engine, which the paragraph above already describes
-     * as a tolerance rather than a prohibition.
-     *
-     * Freezing it was the third leg of the degeneracy trap measured on prism (the other two,
-     * both lifted: no split of a wall edge, no smoothing of a wall vertex). With collapse
-     * refused as well, a wafer tet resting on the wall had NO legal repair at all -- every
-     * remaining operation halved its volume while leaving its longest edge, which lies in the
-     * wall, exactly as it was.
-     *
-     * The wall does not thereby become collapsible to nothing: TetOptimizerMeshCollapse still
-     * requires a wall vertex to merge into one carrying at least as many bbox faces, so a corner
-     * cannot dissolve into a face and the box keeps its shape.
-     */
-    bool vertex_is_frozen(const size_t vid) const { return m_vertex_extra[vid].m_is_on_input; }
-    bool edge_is_frozen(const Tuple& loc) { return is_edge_on_input(loc); }
 
     /**
      * @brief check that the ambient tag does not overlap with any other tags
@@ -1200,6 +1332,10 @@ public:
      * m_offset_params.offset_selection
      */
     void label_input_complex();
+
+    /// Set m_is_on_region from the input-complex labels. Called at the end of
+    /// label_input_complex(), which is the earliest point at which the complex is known.
+    void mark_input_complex_vertices();
 
     /**
      * @brief check if the input complex is empty. Only valid after calling init_from_image(...).
@@ -1328,8 +1464,10 @@ public:
         std::atomic<int> attempted{0}; ///< smooth_before() entered
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
-        std::atomic<int> before_on_input{0}; ///< input complex, frozen
-        std::atomic<int> before_phase_b_not_offset{0}; ///< Phase B: not an offset-only vertex
+        std::atomic<int> before_on_region{0}; ///< input complex, frozen
+        std::atomic<int> before_phase_b_not_offset{0}; ///< Phase B: wrong class for this sub-sweep
+        std::atomic<int> before_phase_b_enveloped_background{
+            0}; ///< Phase B: envelope-held, stencilled
         std::atomic<int> offset_attempted{0}; ///< reached the smoother carrying the offset term
         std::atomic<int> interior_attempted{0}; ///< reached it as an ordinary interior vertex
 
@@ -1339,8 +1477,9 @@ public:
                  {&attempted,
                   &before_bbox,
                   &before_unrounded,
-                  &before_on_input,
+                  &before_on_region,
                   &before_phase_b_not_offset,
+                  &before_phase_b_enveloped_background,
                   &offset_attempted,
                   &interior_attempted}) {
                 c->store(0);
@@ -1350,6 +1489,23 @@ public:
     mutable SmoothTrace m_smooth_trace;
 
     void log_smooth_trace() const;
+
+    /// Offset placements this Phase B pass that could NOT reach their unconstrained minimum:
+    /// the root find entered its one-ring bisection, was refused outright by inversion, or
+    /// found the ring already float-inverted on entry. Reset by phase_b_smooth() before each
+    /// pass; a pass that ends with this at zero is the loop's natural exit -- every offset
+    /// vertex's local minimum lies inside its one-ring, so with each visit solved to its own
+    /// tolerance and the potential a frozen field (placements couple only through the ring
+    /// constraint), there is nothing left for another pass to move.
+    mutable std::atomic<int> m_phase_b_constrained{0};
+
+    /// Per-thread Newton solver for Phase B's interior AMIPS solves. Separate from the base's
+    /// m_solver because it carries a different stopping rule: polysolve's rel_grad_norm_tol set
+    /// to ab_vertex_grad_tol_rel with a deep iteration budget, against the base's fixed shallow
+    /// budget with no tolerance. Created on first use.
+    mutable wmtk::threading::enumerable_thread_specific<
+        std::unique_ptr<polysolve::nonlinear::Solver>>
+        m_phase_b_solver;
 
     /**
      * @brief Which of four DISJOINT classes a vertex is accounted to when measuring movement.
@@ -1366,7 +1522,7 @@ public:
     {
         if (!m_vertex_attribute[vid].on_bbox_faces.empty()) return VClass::Bbox;
         if (m_vertex_extra[vid].m_is_on_offset) return VClass::Offset;
-        if (m_vertex_extra[vid].m_is_on_input) return VClass::Input;
+        if (m_vertex_extra[vid].m_is_on_region) return VClass::Input;
         return VClass::Interior;
     }
 
@@ -1532,8 +1688,9 @@ public:
      *
      * Reports, for the max-cbrt(cell_quality) tet: its volume and inversion state, its region
      * label, and per vertex the flags that decide whether any operation may touch it -- on the
-     * input complex, on the offset surface, on the bounding box, rounded, order, sizing scalar,
-     * and vertex_is_frozen() (which is what collapse_before_vertex() refuses on). Then each of
+     * input complex, on the offset surface, on the bounding box, rounded, order and sizing
+     * scalar. (It used to print vertex_is_frozen() as well; nothing is frozen any more, so the
+     * on-input flag it was an alias for is the only thing left to say.) Then each of
      * the six edges against the two length gates, so it is visible whether split or collapse
      * would even consider them: split needs len^2 >= splitting_l2 * sbar^2, and the coarsening
      * pass stops at len^2 <= collapsing_l2 unless coarsen_unbounded.
@@ -1577,7 +1734,6 @@ public:
     /// Splits of an OFFSET-surface edge: reached split_edge_after, accepted, refused there.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset_endpoints{0};
-    std::atomic<int> iter_cnt_split_offset_frozen{0};
     std::atomic<int> iter_cnt_split_offset_base_reject{0};
     std::atomic<int> iter_cnt_split_offset_tried{0};
     std::atomic<int> iter_cnt_split_offset{0};
@@ -1655,43 +1811,6 @@ public:
     void simplicial_embedding();
     //// simplicial embedding stuff
 
-    //// variable offset stuff
-    /**
-     * @brief check if removing the tet would change the topology of any label
-     */
-    bool tag_tet_consistent_topology(size_t t_id, int64_t tag) const;
-
-    /**
-     * @brief check if adding a tet to the offset region does not change the topology of the
-     * offset. Returns true if topology would not be changed
-     */
-    bool offset_tet_consistent_topology(const size_t t_id) const;
-
-    /**
-     * @brief check if a tet is inside the offset (implicitly defined via BVH distance field to
-     * input complex) via conservative sphere subdivision estimation
-     */
-    bool tet_is_in_offset_conservative(const size_t t_id, const double threshold_r) const;
-
-    /**
-     * @brief check if a tet is inside the offset (implicitly defined via BVH distance field to
-     * input complex) by check if all its vertices are inside the offset region.
-     */
-    bool tet_is_in_offset_aggressive(const size_t t_id) const;
-
-    /**
-     * @brief grow offset region conservatively using conservative checks while ensuring consistent
-     * topology
-     */
-    void grow_offset_conservative();
-
-    /**
-     * @brief Grow offset region aggressively. A tet is considered in the offset if all its vertices
-     * are in the offset.
-     */
-    void grow_offset_aggressive();
-    //// variable offset stuff
-
     /**
      * @brief update 'tags' data for tets in the offset region (tets labelled 2) based on
      * the given offset tag values in m_offset_params.offset_tag_value
@@ -1728,7 +1847,7 @@ private:
         Vector3d new_v_pos;
         VertexExtra new_v_extra;
 
-        bool is_edge_on_input = false;
+        bool is_edge_on_region = false;
         bool is_edge_on_offset = false;
         bool is_edge_open_boundary = false;
 

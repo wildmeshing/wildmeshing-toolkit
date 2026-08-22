@@ -301,19 +301,31 @@ public:
     virtual bool smoothing_position_is_allowed(size_t vid, const Vector2d& p) const = 0;
 
     /**
-     * @brief The envelope this vertex is both pulled toward and contained by while smoothing.
+     * @brief The envelope this vertex is PULLED TOWARD while smoothing, and the one it is
+     * CONTAINED BY afterwards. Split, as in wmtk::TetOptimizerMesh.
      *
      * Null means "no envelope for this vertex", which the smoother handles by minimising AMIPS
-     * (plus whatever smoothing_extra_energy() adds) with no containment check.
+     * (plus whatever smoothing_extra_energy() adds) with no pull and no containment check.
      *
-     * The default is what TriWild and SimWild both do -- one envelope, applied to every vertex
-     * on the tracked surface -- so overriding nothing leaves their behaviour untouched. An
-     * application tracking more than one surface overrides it: topological_offset returns null
-     * for a vertex that is ONLY on the offset boundary, because that is the surface the
+     * The default of both is what TriWild and SimWild do -- one envelope, applied to every
+     * vertex on the tracked surface -- so overriding nothing leaves their behaviour untouched.
+     * An application tracking more than one surface overrides them: topological_offset returns
+     * null for a vertex that is ONLY on the offset boundary, because that is the surface the
      * optimization exists to move, and a tube around its initial position caps how far it can
      * ever travel.
+     *
+     * WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual SampleEnvelope queries --
+     * nearest_point and the ExactDistanceEnergy2D trio -- so whatever it returns must be a real
+     * envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it
+     * may be answered by a composite over several envelopes (topological_offset holds a
+     * junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook
+     * would statically bind a composite's null BVH the moment a junction vertex was pulled.
      */
-    virtual std::shared_ptr<SampleEnvelope> smoothing_envelope(const size_t vid) const
+    virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const
+    {
+        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
+    }
+    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const
     {
         return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
     }
@@ -386,6 +398,12 @@ protected:
      * TetOptimizerMesh::optimization_bare_coarsen_passes, for the measurement that found it.
      */
     virtual bool optimization_bare_coarsen_passes() const { return true; }
+    /// CHURN INSTRUMENTATION. Bumped at the start of every split pass in local_operations(), so
+    /// the pass a vertex was born in can be compared against the pass a collapse removes it in.
+    /// Zero until the first split pass runs, which is what lets a construction-era vertex be
+    /// told apart from an optimization-split one. Never reset -- only differences mean anything.
+    /// The 3D twin is wmtk::TetOptimizerMesh::m_op_epoch.
+    uint32_t m_op_epoch = 0;
     virtual bool optimization_stop_at_float() const { return false; }
 
     /**

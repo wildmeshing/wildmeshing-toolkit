@@ -27,7 +27,6 @@ struct Parameters : public wmtk::OptimizerParameters
     ExpressionPtr offset_selection;
     std::set<std::string> offset_output_tag;
     std::set<std::string> protected_tags;
-    bool respect_all_topologies;
     bool offset_in;
     bool offset_out;
     double target_distance;
@@ -41,13 +40,6 @@ struct Parameters : public wmtk::OptimizerParameters
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
     double envelope_size_rel;
-    // Capture that envelope from the input mesh, before the offset truncates the region
-    // boundaries it grows through. See TopoOffsetTriMesh::init_region_boundary_envelope_from_input.
-    // 2D only; the 3D path never builds this envelope.
-    bool region_envelope_from_input;
-    // Subdivision floor for conservative offset growth, as a fraction of target_distance: a
-    // candidate circle/sphere smaller than this stops being subdivided and is decided outright.
-    double relative_ball_threshold;
 
     // ---- the smooth offset potential ----
     // Support radius of the potential, as a multiple of target_distance. Must be > 1: the offset
@@ -59,11 +51,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Only read when debug_output is set: also write the engine's per-pass debug_{N}
     /// frames, not just the per-phase timeline. See the spec doc.
     bool debug_output_per_pass;
-    // Convergence tolerance on the offset, as a fraction of target_distance. The quantity it
-    // bounds is the Phi RESIDUAL expressed as a length -- the first-order distance from a band
-    // vertex to the level set -- so 0.1 means "every offset vertex is within 10% of the offset
-    // distance of where the potential says it belongs".
-    double offset_residual_rel;
     // CONVERGENCE, 3D. The bound on the max over reachable band vertices of the gradient of the
     // offset energy E = (Phi(x) - c)^2 with respect to the vertex position, as a fraction of
     // target_distance.
@@ -78,9 +65,12 @@ struct Parameters : public wmtk::OptimizerParameters
     //
     // THE SCALE. grad E = 2 (Phi - c) grad Phi, so for a distance-like field (|grad Phi| = 1 near
     // the level set, which is exactly the convex case) the bound |grad E| <= g is |Phi - c| <=
-    // g/2. The default is therefore 2 x offset_residual_rel's default, so a run that used to pass
-    // the residual bound passes this one on such a field. Away from that case the two are
-    // genuinely different tests and neither implies the other.
+    // g/2. That half is now the ONLY residual scale in the component: offset_residual_tolerance()
+    // is g/2 * target_distance, and the Phase A offset envelope is ab_offset_envelope_rel times
+    // that. There used to be a separate offset_residual_rel knob supplying both, which meant the
+    // envelope was sized off a parameter that stopped gating anything when the criterion moved to
+    // the gradient -- measured on prism, Phase A held the surface in a tube of 0.00209 while the
+    // configured criterion permitted an error of 0.0837, a factor of 40. One knob, one scale.
     //
     // MEASURED OVER THE SURFACE, NOT JUST AT ITS VERTICES. E is a field, so it has a gradient
     // at every point of space, and it is evaluated at interior samples of every band face on the
@@ -119,12 +109,13 @@ struct Parameters : public wmtk::OptimizerParameters
     int ab_max_rounds; ///< cap on A/B rounds
     bool ab_no_collapse_after_first_round; ///< DIAGNOSTIC: refuse all collapses from round 2
     int ab_phase_a_iterations; ///< iterations of TetWild's loop inside one Phase A
-    int ab_smooth_max_passes; ///< cap on Phase B smoothing passes
+    int ab_smooth_max_passes; ///< cap on Phase B smoothing passes; negative = uncapped (default)
     double ab_smooth_tol;
-    /// Phase B's convergence criterion: stop when the largest per-vertex placement gradient
-    /// falls to this fraction of its value at phase entry. See phase_b_band_gradient_linf().
-    double
-        ab_smooth_grad_tol_rel; ///< "nothing moves any more", as a fraction of the target length l
+    /// Phase B's PER-VERTEX solve tolerance: each visit runs its vertex's local solve until the
+    /// local gradient norm falls below this fraction of its own value at the visit's start.
+    /// Separate from the global criterion (offset_gradient_rel), which is checked once per A/B
+    /// round. See smooth_offset_vertex_backtracking() and smooth_interior_vertex_phase_b().
+    double ab_vertex_grad_tol_rel;
     /// Phase A's offset envelope width, in Phi tolerances -- the same tube every round; see
     /// rebuild_offset_envelope(). Also feeds the derived sizing floor (min_edge_length_rel < 0).
     double ab_offset_envelope_rel;
@@ -139,7 +130,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // paper caps the sizing field below by the envelope epsilon ("to prevent unnecessary
     // over-refinement in problematic regions", Sec 3.2): the surface is only pinned to within
     // eps, so edges shorter than eps cannot buy fidelity. The offset's envelope is Phase A's,
-    // eps = ab_offset_envelope_rel * offset_residual_rel * target_distance, so that product is
+    // eps = ab_offset_envelope_rel * (offset_gradient_rel / 2) * target_distance, so that
+    // product is
     // the derived floor. It is a pure runaway rail, well below the ~delta*sqrt(8*tau) chord any
     // tolerance tau actually needs -- refinement stops at "cannot help" rather than at a fixed
     // resolution. This replaced a fixed 2*sin(15 deg) inherited from the deleted
@@ -183,7 +175,6 @@ struct Parameters : public wmtk::OptimizerParameters
             }
             protected_tags.insert(tag);
         }
-        respect_all_topologies = json_params["respect_all_topologies"];
         offset_in = json_params["offset_in"];
         offset_out = json_params["offset_out"];
         target_distance = json_params["target_distance"];
@@ -191,18 +182,10 @@ struct Parameters : public wmtk::OptimizerParameters
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
-        region_envelope_from_input = json_params["region_envelope_from_input"];
-        relative_ball_threshold = json_params["relative_ball_threshold"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
-        offset_residual_rel = json_params["offset_residual_rel"];
         offset_gradient_rel = json_params["offset_gradient_rel"];
         offset_residual_samples = json_params["offset_residual_samples"];
-        if (relative_ball_threshold < 0.0 || relative_ball_threshold > 1.0) {
-            log_and_throw_error(
-                "Invalid relative_ball_threshold [{}], must be between 0 and 1.",
-                relative_ball_threshold);
-        }
 
         sorted_marching = json_params["sorted_marching"];
         output_path = json_params["output"];
@@ -216,7 +199,7 @@ struct Parameters : public wmtk::OptimizerParameters
         ab_phase_a_iterations = json_params["ab_phase_a_iterations"];
         ab_smooth_max_passes = json_params["ab_smooth_max_passes"];
         ab_smooth_tol = json_params["ab_smooth_tol"];
-        ab_smooth_grad_tol_rel = json_params["ab_smooth_grad_tol_rel"];
+        ab_vertex_grad_tol_rel = json_params["ab_vertex_grad_tol_rel"];
         ab_offset_envelope_rel = json_params["ab_offset_envelope_rel"];
 
         min_edge_length = json_params["min_edge_length"];
@@ -307,7 +290,8 @@ struct Parameters : public wmtk::OptimizerParameters
         // that has to be resolved, and its scale is delta. See the declaration for why this is
         // no longer derived from an angle.
         if (min_edge_length_rel < 0) {
-            min_edge_length_rel = std::max(ab_offset_envelope_rel * offset_residual_rel, 1e-12);
+            min_edge_length_rel =
+                std::max(ab_offset_envelope_rel * 0.5 * offset_gradient_rel, 1e-12);
         }
         if (min_edge_length < 0) {
             min_edge_length = min_edge_length_rel * target_distance;

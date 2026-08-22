@@ -1,6 +1,7 @@
 
 #include "TopoOffsetTetMesh.h"
 
+#include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
@@ -56,22 +57,67 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     //
     // Measured before this change: 14758 of 229276 smoothing attempts refused here.
 
-    // PHASE B PLACES THE OFFSET SURFACE AND MOVES NOTHING ELSE.
+    // PHASE B RUNS IN TWO ORDERED SUB-SWEEPS; SEE PhaseBSub.
     //
-    // Phase B's objective is the offset potential, which only offset-only vertices carry. Every
-    // other vertex used to be smoothed here by AMIPS plus an envelope pull -- that is quality
-    // work, and quality work belongs to Phase A, which runs every round with the full TetWild
-    // pass set. Doing it again in B bought nothing the next A would not redo, and it did it
-    // against a mesh B was mid-way through re-placing.
+    // A pass places every offset-surface vertex first, then relaxes the background under the
+    // surface those placements just defined. The order is the point: relaxing the background
+    // against last pass's surface wastes the work, and interleaving the two makes each vertex's
+    // one-ring a moving target for its neighbours in the same sweep. This admission is what
+    // splits them -- each sub-sweep refuses the other's class outright.
     //
-    // Dropping AMIPS but keeping those vertices smoothed is NOT the alternative: with only an
-    // envelope pull and no shape term their solve is ill-posed the same way the rank-1
-    // distance-only offset solve was, so they are refused outright instead.
+    // ENVELOPES ARE THE OTHER AXIS, and the two classes answer differently. Phase B runs with
+    // the offset envelope RELEASED and takes no containment responsibility, so a vertex an
+    // envelope is supposed to hold has no one to hold it here:
+    //
+    //   - an OFFSET vertex that is also envelope-held is a case this scheme does not yet
+    //     handle, and it THROWS rather than being silently skipped -- a skipped one would sit
+    //     off the level set for the whole phase while the convergence counters reported the
+    //     surface placed. The models under test have no such vertex.
+    //   - a BACKGROUND vertex that is envelope-held is skipped for now. Its solve wants the
+    //     envelope's own pull and containment, which is stencilled at the end of
+    //     smooth_interior_vertex_phase_b() rather than written, so until then leaving it where
+    //     Phase A put it is the honest behaviour.
+    //
+    // ON THE OFFSET SURFACE admits regardless of the other flags. The admission used to refuse
+    // `ve.m_is_on_region` too, which was the last vertex freeze left in the phase: a vertex
+    // carrying both flags -- which collapse_after_vertex() creates every time it merges an
+    // offset vertex into an input one -- sat on the offset surface and was never placed on the
+    // level set. The flag does not mean "at distance 0 from the complex, where Phi diverges";
+    // it accretes through splits and collapses. The genuinely contradictory case is geometric
+    // and check_no_vertex_on_both_surfaces() already throws on it, so anything reaching here
+    // has a finite Phi and a usable normal.
     if (m_phase == OptPhase::B) {
-        const auto& ve = m_vertex_extra[vid];
-        if (!ve.m_is_on_offset || ve.m_is_on_input || !m_offset_potential) {
+        const bool is_offset = m_vertex_extra[vid].m_is_on_offset && m_offset_potential;
+        const bool enveloped = vertex_is_on_region(vid);
+
+        if (m_phase_b_sub == PhaseBSub::Offset) {
+            if (!is_offset) {
+                ++m_move_stats[size_t(vertex_class(vid))].refused_before;
+                ++m_smooth_trace.before_phase_b_not_offset;
+                return false;
+            }
+            if (enveloped) {
+                log_and_throw_error(
+                    "Phase B: offset-surface vertex {} is also held by an envelope (on a tag "
+                    "region boundary or the domain wall). Placing it needs the envelope's pull "
+                    "and containment, which this scheme does not implement yet; it is a hard "
+                    "error rather than a skip so the surface cannot silently be left off the "
+                    "level set. Test on an offset that lies inside no envelope.",
+                    vid);
+            }
+            return true;
+        }
+
+        // PhaseBSub::Background
+        if (is_offset || vertex_class(vid) != VClass::Interior) {
             ++m_move_stats[size_t(vertex_class(vid))].refused_before;
             ++m_smooth_trace.before_phase_b_not_offset;
+            return false;
+        }
+        if (enveloped) {
+            // See the stencil in smooth_interior_vertex_phase_b().
+            ++m_move_stats[size_t(vertex_class(vid))].refused_before;
+            ++m_smooth_trace.before_phase_b_enveloped_background;
             return false;
         }
     }
@@ -112,22 +158,26 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     const bool zero_tracked = on_wall && get_surface_faces_for_vertex(vid).faces().empty();
     const double dev_before = on_wall ? wall_offplane_deviation(vid) : 0.;
 
-    // TWO PHASES, TWO SMOOTHERS, NO AMIPS IN B.
+    // TWO PHASES; IN B, TWO SOLVES, AND NO AMIPS IN THE OFFSET PLACEMENT.
     //
     // Phase B places offset-only vertices with the offset potential alone: a 1-D Newton root
     // find on Phi(x) = target along the gradient, backtracked into the element by bisection if
-    // the root would invert the ring. smooth_before() has already refused every other vertex in
-    // this phase, so the branch below is exhaustive.
+    // the root would invert the ring. Its interior vertices minimize their one-ring AMIPS to
+    // their own minimum (smooth_interior_vertex_phase_b). smooth_before() has already refused
+    // everything else in this phase, so the branch below is exhaustive.
     //
-    // WHY NOT THE SHARED SOLVE. Blending w_amips * AMIPS into this vertex's objective leaves it
-    // resting a w_amips-proportional distance off the level set (the header on
-    // smooth_offset_vertex_backtracking has the measurement) -- the at-vertex wall. And AMIPS
-    // alone cannot be dropped from the shared solve either: the offset energy's Hessian is
-    // 2*w*g*g^T, rank 1, with a 2-D nullspace in the level set's tangent plane, so a 3-D
+    // WHY THE OFFSET SOLVE TAKES NO AMIPS. Blending w_amips * AMIPS into an offset vertex's
+    // objective leaves it resting a w_amips-proportional distance off the level set (the header
+    // on smooth_offset_vertex_backtracking has the measurement) -- the at-vertex wall. And
+    // AMIPS alone cannot be dropped from the shared solve either: the offset energy's Hessian
+    // is 2*w*g*g^T, rank 1, with a 2-D nullspace in the level set's tangent plane, so a 3-D
     // minimize of it is ill-posed. The 1-D root find sidesteps both -- it solves the only
-    // direction the potential determines, and asks nothing of the two it does not.
-    const bool ok = (m_phase == OptPhase::B) ? smooth_offset_vertex_backtracking(t)
-                                             : TetOptimizerMesh::smooth_after(t);
+    // direction the potential determines, and asks nothing of the two it does not. The interior
+    // solve has no such conflict: it carries no offset term at all.
+    const bool ok = (m_phase == OptPhase::B)
+                        ? (m_vertex_extra[vid].m_is_on_offset ? smooth_offset_vertex_backtracking(t)
+                                                              : smooth_interior_vertex_phase_b(t))
+                        : TetOptimizerMesh::smooth_after(t);
     if (!ok) {
         return false;
     }
@@ -159,6 +209,7 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     for (const Tuple& loc : locs) {
         if (is_inverted_f(loc)) {
             ++m_smooth_rejects.already_inverted;
+            ++m_phase_b_constrained; // cannot even attempt its minimum
             return false;
         }
     }
@@ -180,23 +231,85 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     // What the offset term actually says is "move along the normal until Phi = c", and that is
     // well posed on its own. Each iteration takes the Newton step for the scalar equation,
     // -(Phi - c) / |grad Phi|^2 * grad Phi, which IS the normal direction; the tangential
-    // components never enter, so there is no nullspace to regularise and no AMIPS needed. Phi
-    // is nonlinear, so a few iterations are taken and the last one is kept.
-    constexpr int kRootFindIters = 8;
+    // components never enter, so there is no nullspace to regularise and no AMIPS needed.
+    //
+    // TO THIS VERTEX'S OWN MINIMUM, not a fixed handful of steps. The visit ends when the
+    // gradient of the quadratic error E = (Phi - c)^2, |grad E| = 2 |Phi - c| |grad Phi|,
+    // falls below ab_vertex_grad_tol_rel of ITS OWN value at the visit's start -- the
+    // per-vertex tolerance, deliberately separate from the run's convergence bar, which is
+    // checked once per A/B round. The iteration cap is a guard against a cycling Newton, not
+    // the intended stop; the step floor below it is the numerical one.
+    // MINIMISE E = (Phi - c)^2. NOT a root find on Phi = c -- that distinction is the whole
+    // point of the damping below.
+    //
+    // Gauss-Newton on E gives the undamped step -(r/|g|^2) g, which is what this used to take.
+    // It is exact where a root exists and CATASTROPHIC where one does not: at a local minimum
+    // of E with r != 0, stationarity 2 r g = 0 forces g = ∇Phi = 0, so the step divides by a
+    // quantity going to zero exactly as it approaches the answer. That is not a corner case --
+    // it is every pinch. Two objects closer than 2 x target_distance have no level set between
+    // them, and the surface belongs on the ridge where the contributions cancel and ∇Phi
+    // vanishes by symmetry. Measured on two_spheres: 6 vertices ejected to 2.86x delta with the
+    // gap only 0.062 delta wider than 2 delta, and 44 to 8.84x delta from the far field, where
+    // |g| is small for the other reason (the barrier's decaying tail).
+    //
+    // Levenberg-Marquardt: solve (2 g g^T + lambda I) d = -2 r g, which along g is
+    //     d = -( r / (|g|^2 + mu) ) g,     mu = lambda / 2
+    // so |g| -> 0 sends the step to -(r/mu) g -> 0 instead of to infinity. mu carries units of
+    // |∇Phi|^2, so it is held relative to the potential's own level-set slope. Shrink it on a
+    // step that lowers E, grow it on one that does not: exact Gauss-Newton where a root exists
+    // (unchanged convergence on convex inputs), short damped steps where one does not.
+    constexpr int kRootFindIters = 50;
+    constexpr int kLmTries = 8; ///< damping increases per iteration before giving up
+    constexpr double kLmInit = 1e-8; ///< mu/s^2 at entry: effectively undamped Gauss-Newton
+    constexpr double kLmMin = 1e-12;
+    constexpr double kLmMax = 1e8;
+    const double vertex_tol_rel = m_offset_params.ab_vertex_grad_tol_rel;
+    const double s_ref = m_offset_potential->level_set_slope();
+    const double mu_scale = (s_ref > 0. && std::isfinite(s_ref)) ? s_ref * s_ref : 1.;
+    double mu_rel = kLmInit;
+    double e_grad_entry = -1.; // |grad E| at the visit's start; captured on the first iteration
     Vector3d x = x_orig;
     for (int it = 0; it < kRootFindIters; ++it) {
         const double r = m_offset_potential->value(x) - m_offset_potential->target_level();
         const Vector3d g = m_offset_potential->gradient(x);
         const double g2 = g.squaredNorm();
-        if (!(g2 > 0.) || !std::isfinite(r)) {
-            break; // no usable normal here; keep the best point so far
-        }
-        const Vector3d step = -(r / g2) * g;
-        if (!step.allFinite()) {
+        if (!std::isfinite(r)) break;
+        if (!(g2 > 0.)) {
+            // grad E = 2 r g = 0 with g = 0: a STATIONARY POINT of E, which under the damped
+            // step is a legitimate place to stop -- it is the pinch minimum. Under the old
+            // undamped step this branch was unreachable except by escaping the support.
             break;
         }
-        x += step;
-        // Converged when the step is negligible against the offset distance itself.
+        const double e_grad = 2. * std::abs(r) * std::sqrt(g2);
+        if (e_grad_entry < 0.) {
+            e_grad_entry = e_grad;
+            if (!(e_grad_entry > 0.)) break; // already at the minimum
+        }
+        if (e_grad <= vertex_tol_rel * e_grad_entry) {
+            break;
+        }
+        // Damped step, with mu raised until E actually decreases. |r| is monotone in E, so the
+        // acceptance test is on |r| directly.
+        bool advanced = false;
+        Vector3d step = Vector3d::Zero();
+        for (int t = 0; t < kLmTries; ++t) {
+            step = -(r / (g2 + mu_rel * mu_scale)) * g;
+            if (!step.allFinite()) break;
+            const Vector3d x_try = x + step;
+            const double r_try =
+                m_offset_potential->value(x_try) - m_offset_potential->target_level();
+            if (std::isfinite(r_try) && std::abs(r_try) < std::abs(r)) {
+                x = x_try;
+                mu_rel = std::max(mu_rel * 0.1, kLmMin);
+                advanced = true;
+                break;
+            }
+            mu_rel = std::min(mu_rel * 10., kLmMax);
+        }
+        if (!advanced) {
+            break; // no admissible damping lowers E from here
+        }
+        // A step this small cannot move the gradient test above; stop burning evaluations.
         if (step.norm() <= 1e-12 * std::max(m_offset_params.target_distance, 1e-16)) {
             break;
         }
@@ -205,6 +318,7 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     if (!x_new.allFinite()) {
         set_vertex_position(vid, x_orig);
         ++m_smooth_rejects.inverted;
+        ++m_phase_b_constrained; // no admissible motion toward its minimum
         return false;
     }
 
@@ -219,6 +333,9 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     };
 
     if (inverts(x_new)) {
+        // The minimum this visit solved for lies outside what the one-ring admits -- the
+        // count the pass loop's backtrack-free exit watches.
+        ++m_phase_b_constrained;
         // BISECT THE SEGMENT, keeping the invariant lo = valid, hi = invalid. s = 1 is known
         // invalid (just tested) and s = 0 is known valid (the entry guard), so this converges
         // UP to the constraint from below rather than capping at the midpoint -- the vertex
@@ -264,6 +381,43 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
         // The valid set along the segment need not be a single interval -- tet orientation is
         // a cubic in s -- so the retreated point is re-tested rather than assumed, and falls
         // back to `best` if it somehow inverts.
+        // A SAFETY MARGIN ON WHAT THE RING ALLOWS. `lo` after 30 halvings sits within ~1e-9 of
+        // the first inverting configuration -- valid by the orientation predicate and
+        // numerically degenerate in every other sense, which is what fed near-zero-volume tets
+        // to Phase A and (while the criterion still assembled AMIPS) produced the inf gradients
+        // that hung Phase B.
+        //
+        // IT IS A DAMAGE-VS-PROGRESS DIAL WITH A LOW CEILING, and 0.8 is measured to be a
+        // reasonable place on it rather than a tuned optimum. AMIPS is
+        // tr(J^T J)^{3/2} / (3 det J), so a backtracked placement blows up from both ends at
+        // once: the long displacement inflates the numerator while the near-inversion drives
+        // the denominator toward zero. Swept on prism d0.02 g0.2, raw construction:
+        //
+        //   0.9  3 rounds, 22s, 41594 T, err 7.9%  of delta, worst handoff 6.0e8 / avg 1.2e5
+        //   0.8  5 rounds, 49s, 45574 T, err 1.5%  of delta, worst handoff 7.5e8 / avg 4.2e4
+        //   0.5  4 rounds, 43s, 44928 T, err 9.3%  of delta, worst handoff 5.3e7 / avg 3.2e4
+        //
+        // The knob is NOT monotone in any of those columns, so read it as scatter and not as a
+        // trend: 0.8 costs two more rounds than 0.9 yet lands 5x more accurate, while its peak
+        // handoff damage is the worst of the three. All three stop at 0.994x the gradient bar,
+        // so they are equally converged BY THE RUN'S OWN CRITERION and the 6x spread in
+        // max_dist_err (0.026 to 0.156) is the criterion failing to pin the distance, not the
+        // margin steering it. DO NOT expect more from this knob: it only
+        // governs BACKTRACKED placements, which are ~3% of the work (18-21 constrained out of
+        // ~615 placed per pass). The other ~97% reach their minimum inside the ring, bypass
+        // this branch entirely, and move as far as they like -- round 1's first pass moves a
+        // vertex 2.96 units against a target edge length of 4.18 at EVERY margin setting,
+        // identically. The mesh damage is done by the placements this line never sees. Nor can
+        // it shrink the stuck set: "constrained" means the minimum lies outside the one-ring,
+        // a fact about the mesh rather than about how far one steps after discovering it (the
+        // plateau sat at 18 vertices at 0.9 and 21 at 0.5).
+        //
+        // ONLY ON THIS PATH. A vertex whose minimum is reachable inside its ring never enters
+        // this branch, so it still lands exactly on the level set; the margin is a concession
+        // to the constraint and is owed only where the constraint actually bound.
+        //
+        // The valid set along the segment need not be a single interval -- tet orientation is
+        // a cubic in s -- so the retreated point is re-tested rather than assumed.
         constexpr double kBacktrackMargin = 0.8;
         const Vector3d retreated = x_orig + kBacktrackMargin * lo * (x_new - x_orig);
         // Either way set the position explicitly rather than relying on where inverts() left it.
@@ -278,17 +432,84 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     return true;
 }
 
+bool TopoOffsetTetMesh::smooth_interior_vertex_phase_b(const Tuple& t)
+{
+    // Pure one-ring AMIPS, solved to this vertex's own minimum; see the declaration. AMIPS
+    // alone at unit weight -- Newton cancels any positive scale, so the value is irrelevant --
+    // and no envelope terms: an interior vertex carries no surface, so the shared smoother's
+    // pull and containment branches are bypassed and this is exactly `solve()` plus the exact
+    // inversion accept and the quality veto.
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = 1.0;
+    opts.w_envelope = 0.0;
+    opts.s_amips = 1.0;
+    opts.s_envelope = 0.0;
+    opts.two_stage = false;
+    // The veto the 3D pipeline runs everywhere: a Newton descent from the current position
+    // should not worsen the worst incident element, so this only refuses line-search accidents.
+    // It was once suspected of deadlocking cooperative repair on the mesh the offset placement
+    // mangles -- measured on prism d0.02 g0.2 and DISPROVED: dropping it took interior accepts
+    // from 2351 to 3710 per pass with zero quality refusals, and improved the handoff only ~2x
+    // against a four-orders-of-magnitude problem. Keep it on.
+    opts.quality_veto = m_params.smooth_quality_veto;
+
+    auto& solver = m_phase_b_solver.local();
+    if (!solver) {
+        // The base solver's twin, with the stopping rule this phase is about: polysolve's
+        // rel_grad_norm_tol is exactly gradNorm / initial_grad_norm, so the solve stops at
+        // ab_vertex_grad_tol_rel of the visit's initial gradient, and the iteration budget is
+        // deep enough that the tolerance is what actually fires (the base runs a fixed 10
+        // with no tolerance at all).
+        polysolve::json params = optimization::basic_nonlinear_solver_params;
+        params["max_iterations"] = 50;
+        params["rel_grad_norm_tol"] = m_offset_params.ab_vertex_grad_tol_rel;
+        solver = polysolve::nonlinear::Solver::create(
+            params,
+            optimization::basic_linear_solver_params,
+            1,
+            opt_logger());
+    }
+    return optimization::smooth_vertex_3d(*this, t, opts, solver, &m_smooth_rejects);
+
+    // ---------------------------------------------------------------------------------------
+    // STENCIL: the envelope-held background vertex, which smooth_before() currently refuses.
+    //
+    // Such a vertex sits on a tag-region boundary or the domain wall, so AMIPS alone is the
+    // wrong objective for it -- nothing in the solve above would keep the surface it carries
+    // where that surface belongs, and Phase B has released the offset envelope and takes no
+    // containment responsibility. What it needs is the treatment Phase A already gives it:
+    //
+    //     opts.w_amips        = m_params.w_amips;          // shape, lightly weighted
+    //     opts.w_envelope     = m_params.w_envelope;       // the tube it must stay in
+    //     opts.smoothing_mode = <as m_params.smoothing_mode>;
+    //     opts.project_line_search_steps        = m_params.project_line_search_steps;
+    //     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
+    //
+    // and then smooth_vertex_3d picks up smoothing_energy_envelope(vid) for the pull and
+    // smoothing_containment_envelope(vid) for the accept test, both of which already answer
+    // correctly for these vertices (the per-tag dispatch handles junctions by intersection).
+    //
+    // ORDER: these should run LAST in the pass, after the plain interior sweep, so they relax
+    // against a background that has already settled rather than dragging it.
+    //
+    // Not written yet because the models under test have no such vertex, and a half-constrained
+    // version would be worse than leaving them where Phase A put them.
+    // ---------------------------------------------------------------------------------------
+}
+
 void TopoOffsetTetMesh::log_smooth_trace() const
 {
     const auto& s = m_smooth_trace;
     logger().info(
         "\tsmooth trace: attempted {} | before: bbox {}, unrounded {}, on-input {}, "
-        "phase-B non-offset {} | offset-surface vertices {}, interior {} ({})",
+        "phase-B wrong-sub-sweep {}, phase-B enveloped background {} | offset-surface "
+        "vertices {}, interior {} ({})",
         s.attempted.load(),
         s.before_bbox.load(),
         s.before_unrounded.load(),
-        s.before_on_input.load(),
+        s.before_on_region.load(),
         s.before_phase_b_not_offset.load(),
+        s.before_phase_b_enveloped_background.load(),
         s.offset_attempted.load(),
         s.interior_attempted.load(),
         m_smooth_rejects.to_string());

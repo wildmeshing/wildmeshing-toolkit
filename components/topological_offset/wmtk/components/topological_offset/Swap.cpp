@@ -101,33 +101,28 @@ bool TopoOffsetTetMesh::swap_before_surface(
         return false;
     }
 
-    if (m_face_attribute[fid_abc].m_surface_class != OFFSET_SURFACE_CLASS) {
-        // Input-complex flip. Refused: re-triangulating a non-planar quad of the input complex
-        // MOVES that surface, and the input complex is frozen categorically. This used to
-        // return true and leave it to the shared operation's envelope check, but the envelope
-        // is a tolerance -- it permits drift up to eps -- and the input complex is the geometry
-        // the offset distance is measured against, so it may not drift at all.
-        return false;
-    }
-
-    // The bar swap_after_cells() compares against, captured before the flip.
-    if (m_offset_potential) {
-        double worst = 0.;
-        for (const size_t v : {a, b, c, d}) {
-            for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v))) {
-                worst = std::max(worst, face_criterion_rel(f));
-            }
-        }
-        m_swap_offset_rel_before.local() = worst;
-    }
-
-    // An OFFSET-surface flip is allowed unconditionally. It used to be gated on
-    // offset_swap_normal_deviation_ok(), which refused a flip whose new diagonal made the
-    // sampled field normals disagree more than the old one did -- a proxy for "this flip cuts
-    // across a feature", needed only because the loop's own criterion was blind to it. The
-    // face-sampled Phi residual sees it directly and refines instead. A flip does not move any
-    // vertex, so it cannot change where the offset surface passes through space except through
-    // the diagonal it picks, which is exactly what the criterion now measures.
+    // TETWILD PARITY: no categorical refusal of non-offset surface flips, and no
+    // offset-criterion capture for offset ones.
+    //
+    // The categorical refusal of input-complex/region flips rested, by its own comment, on "a
+    // gap, not a principle": unlike a split or a collapse, a flip had no criterion for whether
+    // the re-triangulated surface still represents the input. TetWild answers that with its
+    // envelope -- it re-triangulates its own input surface on nothing but the eps tube -- and
+    // the same answer now applies here: the shared swap checks both new triangles with
+    // surface_triangle_is_outside(), which dispatches through the face's boundary mask to the
+    // per-tag envelopes (or, for an all-offset face in Phase A, to the offset envelope). The
+    // class-match and mask-match refusals above keep a flip from moving a junction or trading
+    // geometry between tracked surfaces, which is the topology half of the contract.
+    //
+    // Note the reach of this is narrow for interior region boundaries: swap_capture_tag()
+    // refuses any ring spanning two tags, and an interior region-boundary face always has
+    // differently-tagged tets on its two sides, so those flips are structurally refused above
+    // regardless. What this admits is flips within one tag -- the domain wall, and the offset
+    // surface itself, held by their envelopes.
+    //
+    // The Phi-criterion swap acceptance (capture here, compare in swap_after_cells()) is gone
+    // with the collapse one -- see collapse_after_connectivity() for the argument. The envelope
+    // is the constraint; the criterion belongs to Phase B.
     return true;
 }
 
@@ -140,38 +135,12 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         m_tet_attribute[t].label = label;
     }
 
-    // A SWAP IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES -- see
-    // collapse_after_connectivity() for the argument, which is identical. A surface flip moves no
-    // vertex, so it cannot change where the offset passes through space except through the
-    // diagonal it picks; but that diagonal is exactly what decides whether the two triangles
-    // follow the level set or cut across it, and the criterion is what can tell.
-    //
-    // Only a surface flip is checked. An interior swap is within one label by construction (the
-    // ring would otherwise span a region boundary, which swap_capture_tag refuses), so it leaves
-    // the offset surface untouched and the check would be pure cost.
-    if (is_surface_flip && m_offset_potential) {
-        std::set<size_t> seen;
-        double after = 0.;
-        for (const size_t t : tids) {
-            const std::array<size_t, 4> vs = oriented_tet_vids(t);
-            for (int skip = 0; skip < 4; ++skip) {
-                std::array<size_t, 3> fv;
-                int k = 0;
-                for (int j = 0; j < 4; ++j) {
-                    if (j != skip) fv[k++] = vs[j];
-                }
-                const auto [f, unused_tid] = tuple_from_face(fv);
-                if (!f.is_valid(*this)) continue;
-                if (!seen.insert(f.fid(*this)).second) continue;
-                if (!face_is_offset_surface_live(f)) continue;
-                after = std::max(after, face_criterion_rel(f));
-            }
-        }
-        if (after > m_swap_offset_rel_before.local()) {
-            ++iter_cnt_swap_offset_reject;
-            return false;
-        }
-    }
+    // TETWILD PARITY: no offset-criterion acceptance for surface flips. The shared swap has
+    // already checked both new triangles against the face's envelope (see
+    // swap_before_surface()); a second criterion on top of that is what this used to be, and
+    // it is gone with the collapse one -- see collapse_after_connectivity(). `is_surface_flip`
+    // stays a parameter because the base reports it, but nothing here branches on it now.
+    (void)is_surface_flip;
     ++iter_cnt_swap;
     return true;
 }

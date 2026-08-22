@@ -170,6 +170,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
                 logger().info("==splitting {}==", n);
+                ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 split_all_edges();
                 logger().info(
                     "#V = {}, #F = {} after split",

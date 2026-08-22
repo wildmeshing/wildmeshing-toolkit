@@ -50,7 +50,11 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     // simplex. That rule is right for tetwild and simwild; here the offset region is a thin
     // shell, and a collapse with one endpoint in the interior can still pinch its two sides
     // together while every tracked surface survives intact.
-    return substructure_link_condition(t);
+    if (!substructure_link_condition(t)) {
+        ++m_offset_collapse_refusals.sublink;
+        return false;
+    }
+    return true;
 }
 
 bool TopoOffsetTetMesh::collapse_before_vertex(
@@ -60,14 +64,44 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
 {
     const auto& VE = m_vertex_extra;
 
-    // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position). If
-    // v1 belongs to the input complex or the domain boundary, removing it deletes a simplex of
-    // a set that must not change at all, so the collapse is refused outright -- including the
-    // input-onto-input case the surface rule below would otherwise allow. That case is not
-    // hypothetical: it is what lets the shared engine decimate the input surface down to
-    // whatever m_envelope tolerates.
-    if (vertex_is_frozen(v1_id)) {
-        return false;
+    // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position).
+    //
+    // THERE IS NO FREEZE HERE ANY MORE. This used to open with `if (vertex_is_frozen(v1_id))
+    // return false;` -- vertex_is_frozen being m_is_on_region -- so no input-complex vertex could
+    // ever be removed, "including the input-onto-input case the surface rule below would
+    // otherwise allow", on the grounds that it is what lets the shared engine decimate the input
+    // surface down to whatever the envelope tolerates.
+    //
+    // Decimating to what the envelope tolerates is the CONTRACT, not the leak. It is what
+    // TetWild does to its own input surface and what the per-tag envelopes were built to
+    // express, and the flag was never a good proxy for the thing being protected: splits
+    // propagate m_is_on_region and collapse_after_vertex() ORs it onto survivors, so it accretes
+    // onto vertices that are nowhere near the complex. Measured on the double_sphere lens, a
+    // survivor of an offset-into-input merge sat out on the offset surface carrying the flag and
+    // was frozen here, refused by Phase B and booked as pinned by the residual all at once --
+    // Phase A then stalled on 477 of 45546 tets built from those vertices and never recovered.
+    //
+    // What still constrains the collapse: the surface-class rules immediately below (a vertex
+    // may not leave the surface it belongs to), substructure_link_condition() in
+    // collapse_before(), the containment check the shared pass runs against this vertex's tag
+    // envelopes, and collapse_after_connectivity()'s offset criterion.
+
+    // THE INVARIANT: never both surfaces on one vertex. Conservative growth cannot construct
+    // such a vertex, and a collapse is the only thing that could manufacture one -- it merges
+    // v1 into v2 and collapse_after_vertex() ORs the flags, so an offset vertex merged into an
+    // input-complex one (or the reverse) would come out carrying both. Such a vertex sits at
+    // distance 0 from the complex and is asked to sit at target_distance from it at the same
+    // time; no placement satisfies that, so the offset surface through it can never converge.
+    //
+    // Refused here rather than repaired afterwards, and asserted independently by
+    // check_no_vertex_on_both_surfaces() after construction and after every Phase A.
+    {
+        const bool input = VE[v1_id].m_is_on_input_complex || VE[v2_id].m_is_on_input_complex;
+        const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
+        if (input && offset) {
+            ++m_offset_collapse_refusals.invariant;
+            return false;
+        }
     }
 
     // BOTSCH-KOBBELT'S OTHER LEG -- refusing a collapse that would CREATE an edge over
@@ -94,29 +128,20 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not
     // leave the particular surface it belongs to: an input-complex vertex carries input
     // geometry, and an offset-boundary vertex carries the offset.
-    if (edge_length > 0 && VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
+    if (edge_length > 0 && VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
+        ++m_offset_collapse_refusals.class_region;
         return false;
     }
     if (edge_length > 0 && VE[v1_id].m_is_on_offset && !VE[v2_id].m_is_on_offset) {
+        ++m_offset_collapse_refusals.class_offset;
         return false;
     }
 
     // open boundary
     if (edge_length > 0 && m_vertex_attribute[v1_id].m_order == 2 &&
         m_vertex_attribute[v2_id].m_order < 2) {
+        ++m_offset_collapse_refusals.order2;
         return false;
-    }
-
-    // The bar collapse_after_connectivity() compares against: how bad the offset surface around
-    // this edge already is. Captured here because the removed vertex's faces are gone afterwards.
-    if (m_offset_potential) {
-        double worst = 0.;
-        for (const size_t v : {v1_id, v2_id}) {
-            for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v))) {
-                worst = std::max(worst, face_criterion_rel(f));
-            }
-        }
-        m_collapse_offset_rel_before.local() = worst;
     }
 
     return true;
@@ -127,49 +152,33 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     const size_t v2_id,
     const std::vector<std::array<size_t, 2>>&)
 {
-    // A COLLAPSE IS ACCEPTED BY THE SAME CRITERION THE SMOOTHING MINIMISES.
+    // TETWILD PARITY: no offset-criterion acceptance test in the loop.
     //
-    // The smoother places an offset vertex by minimising w (Phi - c)^2 and the loop converges
-    // when the Phi residual is inside tolerance everywhere on the offset surface, vertices and
-    // face interiors alike. Every other operation has to answer to that same measure, or it can
-    // undo in one collapse what the smoother spent an iteration achieving -- and it did:
-    // measured on topological_offset_3d_convex, collapse alone took the offset surface from 1172
-    // faces to 326 while the vertices it left behind sat at 0.95% of delta, which is what a
-    // vertex-only view of the world calls perfect.
+    // This used to apply a non-degrading Phi gate to every collapse (refuse if the worst
+    // offset face at the survivor got worse), captured per-edge in collapse_before_vertex().
+    // That was load-bearing when the offset surface had NO envelope holding it -- the era the
+    // base's optimization_bare_coarsen_passes() doc measured, when one bare pass decimated the
+    // surface 1172 -> 326 faces with every surviving vertex sitting at 0.95% of delta.
     //
-    // Length gates cannot express this. They ask whether an edge is short relative to a sizing
-    // target, which is a statement about the MESH; the criterion asks whether the surface is
-    // still the offset, which is a statement about the GEOMETRY, and only the second one is what
-    // the run is for. So the guard is the criterion itself, flat: after the collapse, no offset
-    // face at the surviving vertex may be over tolerance.
+    // Phase A now holds the offset surface in m_offset_envelope (rebuilt each round, eps =
+    // ab_offset_envelope_rel x the residual tolerance), so containment is enforced by the
+    // shared pass's surface_triangle_is_outside() -- the same mechanism, with the same
+    // tolerance semantics, that TetWild's input surface gets. A second, tighter criterion on
+    // top of the envelope made Phase A stricter than TetWild in exactly the phase that is
+    // documented as "Phase A is TetWild"; it is gone. Phase B, which owns the Phi criterion,
+    // re-places the surface every round.
     //
-    // NON-DEGRADING, mirroring the AMIPS gate a few lines up rather than imposing an absolute
-    // bar. The first version of this WAS absolute -- refuse if any offset face at the survivor
-    // is over tolerance -- and that is a different rule from the one every other operation
-    // obeys: it refuses a collapse for the state the mesh is already IN rather than for the
-    // change the collapse makes. Early in a run most offset faces are over tolerance, so it
-    // froze them, and in 2D it made a degenerate face permanent -- collapse is what removes
-    // one, and its neighbour being over tolerance refused the removal forever, pinning AMIPS at
-    // MAX_ENERGY for the rest of the run.
-    // TWO BARS, because the coarsening pass is asking a different question from the main loop.
-    //
-    // In the LOOP the rule mirrors the AMIPS gate: refuse an operation that makes things worse.
-    // That is right there, because the loop is still working -- most of the mesh is over
-    // tolerance early on and an absolute bar would freeze it.
-    //
-    // COARSENING is not working, it is banking. It runs after the loop has finished and trades
-    // elements for nothing except the promise that the result is still good, so the bar is
-    // ABSOLUTE: both criteria -- AMIPS and the offset residual, which is what
-    // face_criterion_rel() returns the max of -- must be inside tolerance afterwards. A collapse
-    // that leaves anything over tolerance is not a saving, it is a regression with fewer
-    // elements.
-    if (m_offset_potential) {
+    // COARSENING keeps an ABSOLUTE bar. It runs after the loop has finished and trades
+    // elements for nothing except the promise that the result is still good: a collapse that
+    // leaves any offset face over tolerance afterwards is not a saving, it is a regression
+    // with fewer elements. face_criterion_rel() is the max of both criteria (AMIPS and the
+    // offset residual), each normalized so 1.0 is its own tolerance.
+    if (m_coarsen_mode && m_offset_potential) {
         double after = 0.;
         for (const Tuple& f : get_offset_surface_faces_for_vertex(tuple_from_vertex(v2_id))) {
             after = std::max(after, face_criterion_rel(f));
         }
-        const double bar = m_coarsen_mode ? 1.0 : m_collapse_offset_rel_before.local();
-        if (after > bar) {
+        if (after > 1.0) {
             ++iter_cnt_collapse_offset_reject;
             return false;
         }
@@ -193,13 +202,17 @@ void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v
         }
     }
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
-    m_vertex_extra[v2_id].m_is_on_input =
-        m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
+    m_vertex_extra[v2_id].m_is_on_region =
+        m_vertex_extra.at(v1_id).m_is_on_region || m_vertex_extra.at(v2_id).m_is_on_region;
     m_vertex_extra[v2_id].m_is_on_offset =
         m_vertex_extra.at(v1_id).m_is_on_offset || m_vertex_extra.at(v2_id).m_is_on_offset;
+    // Cannot collide with m_is_on_offset above: collapse_before_vertex() refused the merge that
+    // would have put both on this vertex.
+    m_vertex_extra[v2_id].m_is_on_input_complex = m_vertex_extra.at(v1_id).m_is_on_input_complex ||
+                                                  m_vertex_extra.at(v2_id).m_is_on_input_complex;
     // Boundary-mask bits merge the same way the flags do: conservatively, onto the survivor.
     // (The containment check in the shared collapse ran before this OR, against v2's own mask
-    // -- the same deliberate pre-OR staleness m_is_on_input has at that point.)
+    // -- the same deliberate pre-OR staleness m_is_on_region has at that point.)
     m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
 }
 

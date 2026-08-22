@@ -41,6 +41,9 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         auto& c = m_opt_split_cache.local();
         c.v1_id = t.vid(*this);
         c.v2_id = t.switch_vertex(*this).vid(*this);
+        // Captured HERE, while the edge still exists: split_after_vertex() runs after the split
+        // and cannot recover the parent's incident faces. See edge_boundary_bits().
+        c.edge_bits = edge_boundary_bits(t);
         const simplex::Edge edge(c.v1_id, c.v2_id);
         for (const size_t fid : get_incident_fids_for_edge(t)) {
             const size_t apex = simplex_from_face(fid).opposite_vertex(edge).id();
@@ -66,35 +69,29 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     Vector2d p1 = m_vertex_attribute[cache.v1_id].m_posf;
     Vector2d p2 = m_vertex_attribute[cache.v2_id].m_posf;
     Vector2d p_new;
+    // MIDPOINT IS THE ONLY CONSTRUCTION PLACEMENT. There was an ::Initial mode here that stepped
+    // target_distance/2 in from the background end of the edge, trying to put the offset near its
+    // target at insertion time. It is gone, as it is in 3D: no target_distance enters construction
+    // at all now, and carrying the boundary out to the level set is entirely the optimization
+    // phase's job.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
-    } else if (m_edge_split_mode == EdgeSplitMode::Initial) {
-        // determine split distance
-        double edge_len = (p1 - p2).norm();
-        double split_dist = (edge_len / 2.0);
-        if (m_offset_params.target_distance < (edge_len / 2.0)) {
-            split_dist =
-                (m_offset_params.target_distance / 2.0); // hacky. will be split again later
-        }
-
-        // set split point
-        if ((m_vertex_extra[cache.v1_id].label == 0) && (m_vertex_extra[cache.v2_id].label == 1)) {
-            p_new = ((p1 - p2) * (split_dist / edge_len)) + p2;
-        } else if (
-            (m_vertex_extra[cache.v1_id].label == 1) && (m_vertex_extra[cache.v2_id].label == 0)) {
-            p_new = ((p2 - p1) * (split_dist / edge_len)) + p1;
-        } else {
-            log_and_throw_error(
-                "Invalid edge [{}] for initial edge split. Both vertices in/out of input "
-                "complex.",
-                e_id);
-        }
     } else {
         log_and_throw_error("Invalid edge split mode.");
     }
     cache.new_v_pos = p_new;
     cache.new_v_extra = VertexExtra2d();
     cache.new_v_extra.label = m_edge_extra[e_id].label;
+    // THE FLAG AND THE MASK BOTH COME FROM THE EDGE ITSELF, not from an AND of the endpoints. A
+    // bare endpoint AND over-claims in exactly the way this gate exists to prevent: two vertices
+    // that happen to share a region can be joined by a CHORD through the interior, and marching
+    // splits precisely such chords. Measured on topo_annots_groups with the AND: 1229 band
+    // segments were called outside by the containment sweep, because they were being held to a
+    // tube they sit a full target_distance from. The 3D twin reads is_edge_on_region(), which
+    // likewise demands a real incident region face.
+    cache.new_v_extra.m_is_on_region = edge_is_region(e_id);
+    cache.new_v_extra.m_boundary_mask =
+        cache.new_v_extra.m_is_on_region ? edge_boundary_bits(t) : uint64_t(0);
 
     // split edge attribute
     cache.split_eattr = edge_snapshot(e_id);
@@ -215,6 +212,8 @@ bool TopoOffsetTriMesh::split_face_before(const Tuple& t)
     cache.new_v_pos = (p1 + p2 + p3) / 3;
     cache.new_v_extra = VertexExtra2d();
     cache.new_v_extra.label = cache.split_fattr.extra.label;
+    // A face's centroid is interior by construction, so it is on no region boundary and no
+    // boundary tube: both defaults are the answer.
 
     // existing edges
     simplex::Edge e1(cache.v1_id, cache.v2_id);

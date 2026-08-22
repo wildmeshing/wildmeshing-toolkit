@@ -9,13 +9,15 @@
 namespace wmtk::components::topological_offset {
 
 /**
- * CONTAINMENT-ONLY composites over per-tag boundary envelopes.
+ * CONTAINMENT-ONLY composites over per-tag boundary envelopes. BOTH DIMENSIONS.
  *
- * Both classes override exactly the two queries that are virtual on wmtk::Envelope --
- * is_outside(triangle) and is_outside(point) -- which are the only calls the containment
- * paths make: surface_triangle_is_outside() (TetOptimizerMesh.h) for every split/collapse/
- * swap check and the sanity sweep, smoothing_containment_envelope() consumers
- * (SmoothVertex.hpp), and the one hardcoded m_envelope point check in collapse_edge_before
+ * Both classes override exactly the four virtual queries -- is_outside(triangle3) and
+ * is_outside(point3), virtual on wmtk::Envelope, plus is_outside(segment2) and
+ * is_outside(point2), virtual on SampleEnvelope for this purpose -- which are the only calls
+ * the containment paths make: surface_triangle_is_outside() (TetOptimizerMesh.h) and
+ * surface_segment_is_outside() (TriOptimizerMesh.h) for every split/collapse/swap check and
+ * the sanity sweep, smoothing_containment_envelope() consumers (SmoothVertex.hpp, both
+ * dimensions), and the one hardcoded m_envelope point check in collapse_edge_before
  * (TetOptimizerMeshCollapse.cpp).
  *
  * THE INVARIANT THAT KEEPS THEM SAFE: a composite must never reach a caller of the
@@ -55,6 +57,22 @@ public:
         return false;
     }
 
+    bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const override
+    {
+        for (const auto& e : m_members) {
+            if (e->is_outside(edge)) return true;
+        }
+        return false;
+    }
+
+    bool is_outside(const Eigen::Vector2d& pts) const override
+    {
+        for (const auto& e : m_members) {
+            if (e->is_outside(pts)) return true;
+        }
+        return false;
+    }
+
     const std::vector<std::shared_ptr<SampleEnvelope>>& members() const { return m_members; }
 
 private:
@@ -81,6 +99,22 @@ public:
     }
 
     bool is_outside(const Eigen::Vector3d& pts) const override
+    {
+        for (const auto& e : m_members) {
+            if (!e->is_outside(pts)) return false;
+        }
+        return true;
+    }
+
+    bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const override
+    {
+        for (const auto& e : m_members) {
+            if (!e->is_outside(edge)) return false;
+        }
+        return true;
+    }
+
+    bool is_outside(const Eigen::Vector2d& pts) const override
     {
         for (const auto& e : m_members) {
             if (!e->is_outside(pts)) return false;

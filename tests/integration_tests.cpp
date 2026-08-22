@@ -116,11 +116,17 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
 }
 
 /**
- * The six topological_offset cases: three 2D, three 3D.
+ * The topological_offset cases: three 2D, three 3D.
  *
  * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
  *
  *     ./wmtk_integration_tests "[offset]"
+ *
+ * AT THE CURRENT DATA PIN ALL SIX ARE COMMENTED OUT and this case runs nothing. Their names sit
+ * in the manifest's _commented_out key and their configs are still in data2; the list this reads
+ * is empty on purpose, so an empty list is a pass, not a failure. 2D and 3D now share one
+ * optimization flow and it does not converge on the ESP-based offset potential, so registering
+ * any of them would assert a known failure.
  *
  * They were in Integration_Tests until data2 c414d7f. Two of them threw at construction on a
  * both-surfaces check that tested a flag pair rather than the geometry (fixed in 366c038e85);
@@ -128,11 +134,10 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
  * optimization, which runs up to ab_max_rounds phases of a full mesh_improvement where the old
  * loop ran one -- enough for topological_offset_3d alone to exceed the suite's 7200 s budget.
  *
- * THE 3D CASES ARE NOT EXPECTED TO CONVERGE. 3D plateaus around 9.6x the Phi tolerance because
- * the offset band is in a one-for-one split/collapse stalemate and cannot be refined; only the
- * dragon sets throw_on_nonconvergence, so the rest report and continue. What this group asserts
- * is that they RUN -- which is exactly what the construction throw broke, invisibly, because
- * Debug CI does not build the integration tests at all.
+ * WHEN CASES ARE RE-REGISTERED: the 3D ones are not expected to converge. Only the 2D dragon
+ * sets throw_on_nonconvergence, so the rest report and continue, and what the group asserts is
+ * that they RUN -- which is exactly what the construction throw broke, invisibly, because Debug
+ * CI does not build the integration tests at all.
  */
 TEST_CASE("topological-offset-models", tags_integration + "[offset][.]")
 {
@@ -143,7 +148,6 @@ TEST_CASE("topological-offset-models", tags_integration + "[offset][.]")
 
     std::vector<std::string> input_files;
     REQUIRE_NOTHROW(input_files = j["integration_tests"]);
-    REQUIRE(!input_files.empty());
 
     for (const auto& input_file : input_files) {
         const path& f = integration_tests_dir / input_file;

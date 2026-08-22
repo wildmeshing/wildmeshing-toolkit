@@ -24,6 +24,7 @@
 #include <paraviewo/VTUWriter.hpp>
 
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 #include <unordered_map>
 
@@ -189,13 +190,20 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         for (const int64_t t : face_tags) {
             tag_faces[t].emplace_back(int(v1), int(v2), int(v3));
         }
-        // Every face reaching here bounds a region; only the ones with a tet on both sides are
-        // input-complex geometry. The domain wall is the former and not the latter, and it needs
-        // no flag of its own: vertex_is_on_region() reads it off on_bbox_faces, which the split
-        // and collapse paths already maintain (set_intersection of the endpoints for a split,
-        // and a wall vertex may only collapse into one at least as constrained).
+        // THIS SETS THE REGION FLAG, and the name it is stored under is the reason a vertex on
+        // both surfaces looked possible.
+        //
+        // Every face reaching here bounds a region; the ones with a tet on both sides are
+        // interior boundaries and the rest are the domain wall, which carries no flag because
+        // vertex_is_on_region() reads it off on_bbox_faces. What the flag does NOT mean, despite
+        // its name, is "on the input complex": on the double_sphere lens the complex is 302
+        // faces and this loop walks 3050, so it lands on the sphere surfaces the offset is grown
+        // THROUGH. That is why 134 vertices came out of construction carrying it alongside
+        // m_is_on_offset, and why the both-surfaces check grew a geometric escape hatch to
+        // tolerate them. The complex itself is m_is_on_input_complex, set from the labels in
+        // mark_input_complex_vertices() once label_input_complex() has run.
         if (t_opp) {
-            for (const size_t v : {v1, v2, v3}) m_vertex_extra[v].m_is_on_input = true;
+            for (const size_t v : {v1, v2, v3}) m_vertex_extra[v].m_is_on_region = true;
         }
         // The base's own flag, which is a DIFFERENT field from the two above: those say which of
         // the offset's two tracked surfaces a vertex belongs to, this says that it belongs to one
@@ -307,12 +315,13 @@ void TopoOffsetTetMesh::init_surfaces_and_boundaries()
         [&](auto& v) { wmtk::vector_unique(m_vertex_attribute[v.vid(*this)].on_bbox_faces); });
 }
 
-bool TopoOffsetTetMesh::is_edge_on_input(const Tuple& loc)
+bool TopoOffsetTetMesh::is_edge_on_region(const Tuple& loc)
 {
     size_t v1_id = loc.vid(*this);
     auto loc1 = loc.switch_vertex(*this);
     size_t v2_id = loc1.vid(*this);
-    if (!m_vertex_extra[v1_id].m_is_on_input || !m_vertex_extra[v2_id].m_is_on_input) return false;
+    if (!m_vertex_extra[v1_id].m_is_on_region || !m_vertex_extra[v2_id].m_is_on_region)
+        return false;
 
     auto tets = get_incident_tets_for_edge(loc);
     std::vector<size_t> n_vids;
@@ -327,7 +336,7 @@ bool TopoOffsetTetMesh::is_edge_on_input(const Tuple& loc)
 
     for (size_t vid : n_vids) {
         auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
-        if (face_is_input(fid)) return true;
+        if (face_is_region(fid)) return true;
     }
 
     return false;
@@ -594,6 +603,34 @@ void TopoOffsetTetMesh::label_input_complex()
             }
         }
     }
+
+    mark_input_complex_vertices();
+}
+
+void TopoOffsetTetMesh::mark_input_complex_vertices()
+{
+    // THE ONLY PLACE THE INPUT COMPLEX IS KNOWN. This runs at the end of label_input_complex(),
+    // which has just evaluated the selection expression; init_surfaces_and_boundaries() runs
+    // earlier, out of init_from_image(), and can only see region boundaries -- which is exactly
+    // why m_is_on_region, set there, is not this.
+    //
+    // The label is the input complex at every dimension, so this covers a solid complex, a
+    // sheet, a wire and an isolated point alike -- the sub-manifold cases have no input FACE to
+    // read the flag off, which is why this keys on the vertex label rather than on incident
+    // faces. Interior vertices of a solid complex are included; they are inside the region the
+    // band wraps and the offset surface never reaches them, so the invariant is untouched.
+    //
+    // From here the operations maintain it: a split midpoint takes the AND of its endpoints and
+    // a collapse ORs onto the survivor, and collapse_before_vertex() refuses the merge that
+    // would put it on the same vertex as m_is_on_offset.
+    size_t n = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const bool on_input = m_vertex_extra[vid].label == 1;
+        m_vertex_extra[vid].m_is_on_input_complex = on_input;
+        n += on_input ? 1 : 0;
+    }
+    logger().info("\tInput-complex vertices: {}", n);
 }
 
 
@@ -940,13 +977,42 @@ void TopoOffsetTetMesh::init_offset_potential()
         return;
     }
 
+    // DHAT IS SIZED TO THE OFFSET IT HAS TO HOLD, not to target_distance alone.
+    //
+    // Construction places the offset at the input tetrahedralization's own cell boundaries --
+    // midpoint marching, no target_distance in it at all -- so how far out it lands is an
+    // ABSOLUTE property of the input mesh, not a multiple of delta. A fixed factor x delta
+    // therefore fails exactly when delta is small relative to the background tets: measured on
+    // two_spheres, the constructed offset reached 5.15x delta at target_distance_rel 0.005 and
+    // the factor-2 support rejected 2783 vertices at construction.
+    //
+    // The floor keeps the configured factor authoritative whenever construction was good. That
+    // matters because dhat is NOT a neutral scaling: c = Phi at delta from flat input grows
+    // roughly as 1.14 ln(factor) - 0.74, so a purely data-driven dhat would give the same
+    // geometry a different offset near edges, corners and gaps depending only on how the input
+    // was meshed. With the floor, well-constructed inputs all agree and the measurement only
+    // rescues the ones construction placed badly.
+    const double delta = m_offset_params.target_distance;
+    const double reach = max_band_vertex_distance();
+    const double dhat = std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
+    const double effective_factor = dhat / delta;
+    if (reach > 0.) {
+        logger().info(
+            "\tdhat sized from the constructed offset: furthest offset vertex {:.6g} = {:.4g}x "
+            "delta, so dhat = max({}x delta, 2x that) = {:.6g} = {:.4g}x delta",
+            reach,
+            reach / delta,
+            m_offset_params.offset_dhat_factor,
+            dhat,
+            effective_factor);
+    }
     m_offset_potential = std::make_shared<SmoothOffsetPotential3D>(
         m_phi_V,
         m_phi_E,
         m_phi_F,
         m_phi_P,
-        m_offset_params.target_distance,
-        m_offset_params.offset_dhat_factor);
+        delta,
+        effective_factor);
 }
 
 
@@ -1084,6 +1150,27 @@ std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::get_faces_by_condition(
 }
 
 
+bool TopoOffsetTetMesh::skip_optimization()
+{
+    static const bool on = [] {
+        const char* v = std::getenv("WMTK_OFFSET_SKIP_OPTIMIZE");
+        const bool enabled = (v != nullptr) && (std::string(v) == "1");
+        if (enabled) {
+            logger().warn(
+                "WMTK_OFFSET_SKIP_OPTIMIZE=1: optimize_offset() will NOT run. What gets written "
+                "is the offset exactly as construction left it -- simplicial embedding plus "
+                "midpoint marching_tets(), with no growth pass and no target_distance anywhere "
+                "in the placement -- so the offset surface sits on the input "
+                "tetrahedralization's own cell boundaries at whatever distance those happen to "
+                "be. optimization_metrics stays empty and the report omits that section. "
+                "DIAGNOSTIC ONLY; do not read the written distances as an offset.");
+        }
+        return enabled;
+    }();
+    return on;
+}
+
+
 void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 {
     // make embedding simplicial (split components per Alg 1)
@@ -1100,19 +1187,22 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 
     // initialize offset
     logger().info("Initializing offset...");
-    m_edge_split_mode = EdgeSplitMode::Initial;
+    // The inserted vertex is the plain edge midpoint -- target_distance does not enter the
+    // placement at all. Carrying the surface out to target_distance is the optimization phase's
+    // job; see the note above set_offset_tet_tags().
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
     marching_tets();
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    // run BFS
-    grow_offset_conservative();
-    consolidate_mesh();
-    if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    }
+    // NO GROWTH PASS. The band is exactly the one layer of background tets marching_tets()
+    // labelled from the frontier one-rings, so the offset boundary sits on the input
+    // tetrahedralization's own cell boundaries and nothing has widened it toward
+    // target_distance. Measured on prism, that leaves the offset surface between 0.24x and 5.54x
+    // target_distance from the input complex, against 0.07x-1.93x when a conservative growth
+    // pass ran here. Closing that gap is the optimization phase's job.
 
     // simplicially embed again, if needed
     m_edge_split_mode = EdgeSplitMode::Midpoint;
@@ -1184,7 +1274,7 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
     std::vector<size_t> both;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
-        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_extra[vid].m_is_on_input) {
+        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_extra[vid].m_is_on_input_complex) {
             continue;
         }
         // THE GEOMETRY DECIDES, NOT THE FLAGS. m_is_on_input is over-broad: the split
@@ -1344,7 +1434,7 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
         // lower its gradient, and folding it into the bound would make convergence unreachable
         // by construction rather than by anything the loop did wrong. It is surfaced through
         // max_pinned instead, where the remedy is construction, not more rounds.
-        if (ve.m_is_on_input) {
+        if (ve.m_is_on_input_complex) {
             s.max_pinned = std::max(s.max_pinned, gn);
             ++s.n_pinned;
             continue;
@@ -1380,7 +1470,7 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
             // booked, for the same reason -- see the carve-out above.
             bool pinned = false;
             for (const size_t vid : get_face_vids(f)) {
-                if (m_vertex_extra[vid].m_is_on_input) {
+                if (m_vertex_extra[vid].m_is_on_input_complex) {
                     pinned = true;
                     break;
                 }
@@ -1446,13 +1536,9 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
     // handed a large entry gradient keeps sweeping long after the run would have been declared
     // converged, because 1% of a large number is still over the bar.
     const double g_abs = offset_gradient_tolerance();
-    const double g_stop = std::max(m_offset_params.ab_smooth_grad_tol_rel * g_entry, g_abs);
     logger().info(
-        "\t[phase B] placement gradient at entry {:.6g}; stopping at {:.6g} = max({} x entry, "
-        "{:.6g} convergence bar)",
+        "\t[phase B] placement gradient at entry {:.6g}; the run's convergence bar is {:.6g}",
         g_entry,
-        g_stop,
-        m_offset_params.ab_smooth_grad_tol_rel,
         g_abs);
     if (g_entry <= 0.) {
         return 0; // already at the fixed point; nothing to smooth
@@ -1466,6 +1552,7 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
                            : size_t(std::max(1, m_offset_params.ab_smooth_max_passes));
     double g_prev = g_entry;
     int no_progress = 0;
+    int constrained_prev = std::numeric_limits<int>::max();
     size_t pass = 0;
     double disp = 0.;
     for (; pass < cap; ++pass) {
@@ -1473,7 +1560,22 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
             before[i] = m_vertex_attribute[i].m_posf;
         }
 
+        // TWO ORDERED SUB-SWEEPS. First place every offset-surface vertex on the level set,
+        // then let every free interior vertex relax against the mesh that placement just
+        // distorted. Ordered rather than interleaved so the background always relaxes against
+        // the offset's FINAL position for this pass.
+        m_phase_b_constrained = 0;
+        m_phase_b_sub = PhaseBSub::Offset;
         smooth_all_vertices(1);
+        // Captured between the sweeps: only the offset sub-sweep can constrain a placement, and
+        // smooth_all_vertices() resets the shared reject counters, so a before/after delta on
+        // `accepted` would wrap.
+        const int constrained = m_phase_b_constrained.load();
+        const size_t placed = m_smooth_rejects.accepted.load();
+
+        m_phase_b_sub = PhaseBSub::Background;
+        smooth_all_vertices(1);
+        const size_t relaxed = m_smooth_rejects.accepted.load();
 
         disp = 0.;
         for (const Tuple& v : get_vertices()) {
@@ -1514,13 +1616,41 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
         const double g = phase_b_band_gradient_linf();
         logger().info(
             "\t[phase B] pass {}: placement gradient {:.6g} ({:.4g}x entry, {:.4g}x the "
-            "convergence bar; stop at {:.6g})",
+            "convergence bar {:.6g})",
             pass + 1,
             g,
             g_entry > 0. ? g / g_entry : 0.,
             g / g_abs,
-            g_stop);
-        if (g <= g_stop) {
+            g_abs);
+        logger().info(
+            "\t[phase B] pass {}: placed {} constrained {} | background relaxed {}",
+            pass + 1,
+            placed,
+            constrained,
+            relaxed);
+        // ONE FRAME PER SMOOTHING PASS, same debug_{N} series and same counter as the Phase A
+        // passes in local_operations(), so a viewer globbing *debug_*.vtu gets both phases
+        // interleaved in the order they actually ran. Opt-in through DEBUG_output_per_pass --
+        // see write_optimization_debug_output(), which drops debug_ frames unless it is set --
+        // because the series is large: Phase B alone ran 193 passes on the two_spheres pinch.
+        // Safe to call here: write_vtu() is observational and does NOT consolidate, so the
+        // frames cannot change the run they are showing.
+        if (m_params.debug_output) {
+            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+        // THE NATURAL EXIT. Every offset vertex reached its unconstrained minimum inside its own
+        // one-ring, so nothing had to be backtracked -- the fixed point this scheme is defined to
+        // seek. Checked before the gradient bar because it is the stronger statement.
+        if (constrained == 0) {
+            logger().info(
+                "\t[phase B] no placement was constrained by its one-ring this pass; the offset "
+                "surface is at its achievable fixed point");
+            ++pass;
+            break;
+        }
+        // The run's own convergence bar: once the band is under it there is nothing another
+        // round could do with a better-placed surface.
+        if (g <= g_abs) {
             ++pass;
             break;
         }
@@ -1530,8 +1660,18 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
         // ab_smooth_max_passes < 0 that is an unbounded Phase B. Measured before this guard:
         // 772 passes at a frozen 9.477x residual, and a 362-pass run that timed out at 1800s
         // while its residual was still descending healthily.
-        no_progress = (std::isfinite(g) && g < g_prev) ? 0 : no_progress + 1;
+        // BOTH measures must stall. The gradient can sit flat while the constrained count is
+        // still falling -- vertices are still being freed from their one-rings even though the
+        // worst placement error has not moved -- and stopping on the gradient alone would cut
+        // that short. A non-finite gradient is never progress: written as `g < g_prev` alone an
+        // alternating inf -> finite sequence reads as a decrease every other pass, resets this
+        // counter, and with an uncapped Phase B never terminates (measured: 772 passes at a
+        // frozen 9.477x residual).
+        const bool g_better = std::isfinite(g) && g < g_prev;
+        const bool c_better = constrained < constrained_prev;
+        no_progress = (g_better || c_better) ? 0 : no_progress + 1;
         g_prev = g;
+        constrained_prev = std::min(constrained_prev, constrained);
         if (no_progress >= 10) {
             // THE PLATEAU IS THE ACHIEVABLE FIXED POINT. Measured: the gradient falls 60-80x
             // from entry and then sits flat for 10 passes at 1.19x and 1.69x of an
@@ -1539,13 +1679,13 @@ size_t TopoOffsetTetMesh::phase_b_smooth()
             // configuration fighting the inversion guard. Nothing more is coming from
             // smoothing, so stop and let the stuck refinement answer the residual.
             logger().warn(
-                "\t[phase B] placement gradient has not decreased for {} passes (at {:.6g}, "
-                "{:.4g}x entry, stop at {:.4g}x); treating the plateau as the phase's fixed "
-                "point and stopping",
+                "\t[phase B] neither the placement gradient nor the constrained count has "
+                "improved for {} passes (gradient {:.6g}, {:.4g}x entry, {} still constrained); "
+                "treating the plateau as the phase's fixed point and stopping",
                 no_progress,
                 g,
                 g_entry > 0. ? g / g_entry : 0.,
-                m_offset_params.ab_smooth_grad_tol_rel);
+                constrained);
             ++pass;
             break;
         }
@@ -1636,165 +1776,6 @@ size_t TopoOffsetTetMesh::update_band_sizing_from_tolerance()
         n_band - n_halved - n_misplaced - n_ring_blocked - n_at_floor,
         s_floor);
     return changed.size();
-}
-
-size_t TopoOffsetTetMesh::refine_sizing_where_phi_is_stuck()
-{
-    // WHAT SMOOTHING COULD NOT PLACE. Phase B has just run to a fixed point, so an offset face
-    // still over tolerance is not badly placed, it is under-resolved: the three vertices are
-    // where the energy wants them and the triangle between them still cuts across the level set.
-    // That is the one situation refinement actually answers, which is why this is the only place
-    // Phi is allowed to drive the sizing field -- unlike the joint loop, where the field was
-    // refined whenever the combined metric stalled, which was nearly every iteration regardless
-    // of whether Phi needed resolution.
-    const double tol = offset_residual_tolerance();
-    std::vector<std::pair<double, std::array<size_t, 3>>> stuck;
-    // The DENOMINATOR the log reports. Counted rather than inferred, because the line used to
-    // print "n_worst of stuck.size()" -- both counts of faces that ARE over tolerance -- while
-    // reading as "n of the N offset faces". "5934 of 5934" then looked like the whole surface
-    // failing when it only ever said "everything over tolerance is being acted on", and the
-    // surface's actual size appeared nowhere.
-    size_t n_offset_faces = 0;
-    // ===================== TEMPORARY: CHORD-ONLY REFINEMENT TRIGGER =====================
-    // EXPERIMENT. Flip kChordOnlyTrigger back to false (or delete this block and restore the
-    // face_criterion_rel() > 1 test below it) to get the shipped behaviour back.
-    //
-    // A face is refined only when its three vertices are ALL inside tolerance and one or more
-    // of its interior samples is not -- i.e. the surface passes through the right places and
-    // the triangle between them still cuts the level set. That is pure resolution error, the
-    // one thing lowering the sizing field can actually fix.
-    //
-    // What this deliberately stops refining, all of which the shipped max-of-three trigger
-    // catches: a face whose VERTEX is off the level set (that is misplacement -- smoothing's
-    // job, and refining around it just grows the mesh where Phase B has not finished), a face
-    // touching a PINNED vertex (nothing can move it, so refinement there is unbounded and
-    // futile), and a face flagged only for bad AMIPS (element quality, which Phase A's own
-    // refine_sizing_around_worst() answers).
-    //
-    // NOT a change to face_criterion_rel(): that is also the acceptance gate for collapse and
-    // swap (Collapse.cpp:71/124, Swap.cpp:118/167), where the max-of-three is the right
-    // question. This is only which faces the stuck refinement acts on.
-    static const bool kChordOnlyTrigger =
-        offset_experiment_flag("WMTK_OFFSET_CHORD_ONLY_TRIGGER", false);
-    size_t n_skipped_vertex_over = 0, n_skipped_amips_only = 0;
-    for (const Tuple& f : get_faces()) {
-        if (!face_is_offset_surface_live(f)) continue;
-        ++n_offset_faces;
-        if (kChordOnlyTrigger) {
-            double v_max = 0.;
-            for (const size_t vid : get_face_vids(f)) {
-                v_max = std::max(v_max, band_vertex_residual(vid) / tol);
-            }
-            const double in_face = offset_face_samples(f).max / tol;
-            if (in_face <= 1.0) {
-                // Nothing across the face to resolve. Count the two reasons the shipped
-                // trigger would still have fired here, so the log can say what was skipped.
-                if (v_max > 1.0) {
-                    ++n_skipped_vertex_over;
-                } else if (face_criterion_rel(f) > 1.0) {
-                    ++n_skipped_amips_only;
-                }
-                continue;
-            }
-            if (v_max > 1.0) {
-                ++n_skipped_vertex_over; // in-face is over too, but a vertex is misplaced
-                continue;
-            }
-            // Ranked by the in-face excess, the quantity that actually drove the selection.
-            stuck.emplace_back(in_face, get_face_vids(f));
-            continue;
-        }
-        const double score = face_criterion_rel(f);
-        if (score <= 1.0) continue;
-        stuck.emplace_back(score, get_face_vids(f));
-    }
-    if (kChordOnlyTrigger) {
-        logger().info(
-            "\t[phase B] chord-only trigger: {} of {} offset faces refinable (vertices inside "
-            "tolerance, samples over) | skipped {} with a vertex over tolerance, {} flagged on "
-            "AMIPS alone",
-            stuck.size(),
-            n_offset_faces,
-            n_skipped_vertex_over,
-            n_skipped_amips_only);
-    }
-    // =================== END TEMPORARY: CHORD-ONLY REFINEMENT TRIGGER ===================
-    if (stuck.empty()) {
-        // Cleared HERE and not only in the force-split block below, which this return skips.
-        // The shipped trigger could not reach this line (the driver calls us only when the
-        // residual is over tolerance, and the max-of-three then always flags some face), but
-        // the chord-only trigger can: every remaining excess may sit at a vertex. Leaving the
-        // previous round's edges in place would force-split them again for nothing.
-        m_force_split_edges.clear();
-        return 0;
-    }
-    std::sort(stuck.begin(), stuck.end(), [](const auto& a, const auto& b) {
-        return a.first > b.first;
-    });
-    const size_t n_worst = (m_params.stuck_refine_num_worst > 0)
-                               ? std::min<size_t>(stuck.size(), m_params.stuck_refine_num_worst)
-                               : stuck.size();
-
-    std::vector<size_t> seeds;
-    seeds.reserve(3 * n_worst);
-    for (size_t i = 0; i < n_worst; ++i) {
-        for (const size_t v : stuck[i].second) seeds.push_back(v);
-    }
-
-    // FORCE-SPLIT THE STUCK FACES' LONGEST EDGES, and this is not optional -- it is the half of
-    // TetWild's stall response that lowering a scalar cannot substitute for.
-    //
-    // Lowering a sizing scalar only PERMITS a split next pass; the length gate still has to agree,
-    // and once the scalar is at the floor it never will. Force-split MAKES the split, once, gate
-    // or no gate. Measured on topological_offset_3d_convex before this: the refinement decayed
-    // from 730 of 742 region vertices in round 1 to 2 of 675 by round 4 and 0 of 675 thereafter --
-    // a Phase B response that had become a literal no-op -- while the residual sat at 10.98,
-    // 10.99, 10.99, 10.99. That plateau was read as evidence of a re-triangulation ratchet in
-    // Phase A. It was not; it was a dead refinement path. 2D, which carries the same two defects
-    // ported from here, stalled between 2.0x and 2.7x for eight rounds and converged once both
-    // were fixed.
-    //
-    // THE LONGEST EDGE OF A FACE, not the face itself, because a face is not splittable and this
-    // is TetWild's own convention for the same situation. 2D queues its stuck simplex directly:
-    // there the offset IS a polyline, so the stuck thing already is an edge.
-    m_force_split_edges.clear();
-    if (m_params.stuck_refine_force_split) {
-        for (size_t i = 0; i < n_worst; ++i) {
-            m_force_split_edges.insert(
-                wmtk::utils::longest_edge(stuck[i].second, [this](size_t v) -> const Vector3d& {
-                    return m_vertex_attribute[v].m_posf;
-                }));
-        }
-    }
-
-    const auto region = wmtk::utils::grow_vertex_region(
-        seeds,
-        std::max(0, m_params.stuck_refine_rings),
-        [this](size_t v) { return get_one_ring_vids_for_vertex_adj(v); });
-
-    // THE BAND'S FLOOR, not stuck_refine_min_scalar -- see the note in the Phase B branch of
-    // refine_sizing_around_worst() for why 3D keeps it where 2D does not.
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / m_params.l);
-    const auto refined = wmtk::utils::apply_sizing_refinement(
-        region,
-        m_params.stuck_refine_factor,
-        s_floor,
-        [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
-    gradation_smooth_sizing(m_offset_params.sizing_gradation, refined);
-
-    logger().info(
-        "\t[phase B] {} of {} offset faces over tolerance (worst {:.4}x) | refining the worst {}, "
-        "{} edges force-split, {} of {} region vertices lowered (floor {:.4})",
-        stuck.size(),
-        n_offset_faces,
-        stuck.front().first,
-        n_worst,
-        m_force_split_edges.size(),
-        refined.size(),
-        region.size(),
-        s_floor);
-    return refined.size();
 }
 
 
@@ -2471,6 +2452,30 @@ void TopoOffsetTetMesh::diag_offset_bands(const char* tag) const
         gval_over);
 }
 
+double TopoOffsetTetMesh::max_band_vertex_distance() const
+{
+    // How far the offset surface actually ended up from the input complex, as a LENGTH. Exact
+    // (BVH nearest point), not the straddle-edge upper bound: an input-to-offset edge can be
+    // long and nearly tangential, and dhat is not a free parameter to inflate -- it selects the
+    // level c, so an overestimate changes which surface the run solves for.
+    //
+    // Returns 0 when there is no offset surface yet -- the band loop finds no faces and never
+    // touches the BVH -- which is the signal to fall back to the configured factor.
+    std::vector<bool> on_band(vert_capacity(), false);
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        for (const size_t vid : get_face_vids(f)) on_band[vid] = true;
+    }
+    double worst = 0.;
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!on_band[vid]) continue;
+        if (!m_vertex_attribute[vid].m_is_rounded) continue;
+        const Vector3d p = m_vertex_attribute[vid].m_posf;
+        worst = std::max(worst, (p - m_input_complex_bvh.nearest_point(p)).norm());
+    }
+    return worst;
+}
+
 std::pair<double, double> TopoOffsetTetMesh::compute_distance_deviation() const
 {
     // One entry per vertex, not per face-vertex: a vertex shared by several band-outer faces
@@ -2629,9 +2634,12 @@ double TopoOffsetTetMesh::cell_quality_rel(const size_t tid) const
     // the mean face scored 4^3/10 = 6.4 and the worst 8.5^3/10 = 61, so every element of a
     // CONVERGED mesh read as failing. Since face_criterion_rel() returns the max of this and the
     // Phi residual ratio (~3.8 at worst), this term dominated and the Phi signal it is supposed
-    // to sit beside never decided anything: refine_sizing_where_phi_is_stuck() flagged every
-    // offset face every round, force-splitting ~4300 of them and taking the mesh from 117k to
-    // 402k tets between rounds, while the residual crawled 5.35x -> 3.84x over five rounds.
+    // to sit beside never decided anything: the Phase B refinement of the time ranked faces by
+    // this score and so flagged every offset face every round, force-splitting ~4300 of them and
+    // taking the mesh from 117k to 402k tets between rounds, while the residual crawled
+    // 5.35x -> 3.84x over five rounds. (That routine is gone -- see
+    // update_band_sizing_from_tolerance() -- but face_criterion_rel() still gates collapse and
+    // swap, so the cube root still matters.)
     return std::cbrt(cell_quality(tid)) / std::max(m_params.stop_energy, 1e-16);
 }
 
@@ -2840,7 +2848,7 @@ void TopoOffsetTetMesh::log_vertex_movement(const char* when) const
             m_vertex_attribute[worst_vid].m_posf[2],
             bf.size(),
             m_vertex_attribute[worst_vid].m_is_on_surface,
-            m_vertex_extra[worst_vid].m_is_on_input,
+            m_vertex_extra[worst_vid].m_is_on_region,
             m_vertex_extra[worst_vid].m_is_on_offset,
             n_f,
             n_out);
@@ -2862,9 +2870,20 @@ void TopoOffsetTetMesh::log_vertex_movement(const char* when) const
 void TopoOffsetTetMesh::log_quality_spike(size_t tid, double before, double after, const char* kind)
     const
 {
-    const int n = (std::string_view(kind) == "genesis") ? ++m_spike_genesis : m_spike_count.load();
-    if (m_spike_dumps.load() >= m_spike_dump_budget) return;
-    ++m_spike_dumps;
+    // GENESIS events get their own dump lane. The shared budget exists to stop a flood of
+    // ordinary spike dumps, and on the round-5 explosion it was already exhausted by round-1
+    // noise -- so the five genesis events, the only dumps that name the operation that created
+    // an absurd tet, were never written. Genesis is rare (single digits per round), so it
+    // bypasses the shared budget under its own small cap.
+    const bool genesis = std::string_view(kind) == "genesis";
+    const int n = genesis ? ++m_spike_genesis : m_spike_count.load();
+    if (genesis) {
+        if (m_spike_genesis_dumps.load() >= 8) return;
+        ++m_spike_genesis_dumps;
+    } else {
+        if (m_spike_dumps.load() >= m_spike_dump_budget) return;
+        ++m_spike_dumps;
+    }
 
     const auto vids = oriented_tet_vids(tid);
     std::array<Vector3d, 4> p;
@@ -2911,7 +2930,7 @@ void TopoOffsetTetMesh::log_quality_spike(size_t tid, double before, double afte
             p[i][1],
             p[i][2],
             m_vertex_attribute[v].m_is_rounded,
-            m_vertex_extra[v].m_is_on_input,
+            m_vertex_extra[v].m_is_on_region,
             m_vertex_extra[v].m_is_on_offset,
             m_vertex_attribute[v].m_sizing_scalar);
     }
@@ -2919,6 +2938,22 @@ void TopoOffsetTetMesh::log_quality_spike(size_t tid, double before, double afte
 
 void TopoOffsetTetMesh::log_worst_tet(const char* when) const
 {
+    // WHY the OFFSET's own collapse gates died this round. The base's per-gate buckets that
+    // used to sit beside these are gone with the instrumentation that lived in
+    // TetOptimizerMesh; so is the sizing-coarsen tally, which cannot fire now that the shared
+    // collapse merges the sizing scalar with min(). Counters reset at each Phase A entry.
+    {
+        const auto& o = m_offset_collapse_refusals;
+        logger().warn(
+            "[collapse-refusals {}] offset: invariant {} class-region {} class-offset {} "
+            "order2 {} sublink {}",
+            when,
+            o.invariant.load(),
+            o.class_region.load(),
+            o.class_offset.load(),
+            o.order2.load(),
+            o.sublink.load());
+    }
     // Cumulative spike count, so each stall line says how many tets crossed into absurd since the
     // run began. See log_quality_spike().
     logger().warn(
@@ -2954,14 +2989,16 @@ void TopoOffsetTetMesh::log_worst_tet(const char* when) const
     for (int i = 0; i < 4; ++i) p[i] = m_vertex_attribute[vids[i]].m_posf;
     const double vol = (p[1] - p[0]).cross(p[2] - p[0]).dot(p[3] - p[0]) / 6.;
 
-    // How many of the four the optimizer is allowed to touch at all. If this is 0 the tet is
-    // unfixable by construction and no amount of iterating will change it.
-    int n_frozen = 0;
-    for (int i = 0; i < 4; ++i) n_frozen += vertex_is_frozen(vids[i]) ? 1 : 0;
+    // How many of the four carry m_is_on_region. This USED TO BE "how many the optimizer may not
+    // touch at all", back when the flag froze a vertex; it no longer constrains any operation,
+    // and is reported because it still says which vertices are held in the tighter envelope
+    // intersection -- a tet with several is constrained, but it is no longer unfixable.
+    int n_on_input = 0;
+    for (int i = 0; i < 4; ++i) n_on_input += m_vertex_extra[vids[i]].m_is_on_region ? 1 : 0;
 
     logger().warn(
         "[worst-tet {}] tid {} | cbrt(quality) {:.6} vs stop_energy {} | {} of {} tets over stop "
-        "| volume {:.6e}{} | label {} | {} of 4 vertices frozen",
+        "| volume {:.6e}{} | label {} | {} of 4 vertices on the input complex",
         when,
         worst,
         worst_q,
@@ -2971,7 +3008,7 @@ void TopoOffsetTetMesh::log_worst_tet(const char* when) const
         vol,
         is_inverted(tuple_from_tet(worst)) ? " INVERTED" : "",
         m_tet_attribute[worst].label,
-        n_frozen);
+        n_on_input);
 
     for (int i = 0; i < 4; ++i) {
         const size_t v = vids[i];
@@ -2979,42 +3016,50 @@ void TopoOffsetTetMesh::log_worst_tet(const char* when) const
         const auto& ve = m_vertex_extra[v];
         logger().warn(
             "\t  v{} id {} ({:.4}, {:.4}, {:.4}) | on_input {} on_offset {} on_bbox {} rounded {} "
-            "| order {} sizing {:.4} | FROZEN {} | valence {}",
+            "| order {} sizing {:.4} | valence {}",
             i,
             v,
             p[i][0],
             p[i][1],
             p[i][2],
-            ve.m_is_on_input,
+            ve.m_is_on_region,
             ve.m_is_on_offset,
             va.on_bbox_faces.size(),
             va.m_is_rounded,
             va.m_order,
             va.m_sizing_scalar,
-            vertex_is_frozen(v),
             get_one_ring_tids_for_vertex(tuple_from_vertex(v)).size());
     }
 
-    // The six edges against the two length gates. `split?` yes means the split pass would take
-    // this edge as a candidate; `coarsen-gate` yes means the bounded coarsening pass would still
-    // consider it (it refuses len^2 > collapsing_l2 when coarsen_unbounded is off).
+    // The six edges against the THREE length gates that decide this tet's fate. `split?` is the
+    // split pass's candidate test; `collapse-cand?` is the SIZING-SCALED filter
+    // is_weight_up_to_date applies to the collapse candidate list (4/5 l s-bar -- an edge above
+    // it is never offered to collapse at all); `coarsen-gate` is the bounded coarsening pass's
+    // UNSCALED bound, which is all the old line printed. Printing only the unscaled bound is
+    // what hid the dead band [4/5, 4/3] l s-bar through three autopsies: at the sizing floor
+    // every dump read "coarsen-gate? true (needs <= 3.3471)" while the actual candidate gate
+    // sat at 0.0033 and the sliver's long edges were silently outside it.
     static constexpr int E[6][2] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
     for (const auto& e : E) {
         const size_t a = vids[e[0]], b = vids[e[1]];
         const double len2 = (p[e[0]] - p[e[1]]).squaredNorm();
         const double sbar =
             0.5 * (m_vertex_attribute[a].m_sizing_scalar + m_vertex_attribute[b].m_sizing_scalar);
+        const bool splittable = len2 >= m_params.splitting_l2 * sbar * sbar;
+        const bool collapse_cand = len2 <= m_params.collapsing_l2 * sbar * sbar;
         logger().warn(
-            "\t  e({},{}) len {:.5} | split? {} (needs >= {:.5}) | coarsen-gate? {} (needs <= "
-            "{:.5}) | both-frozen {}",
+            "\t  e({},{}) len {:.5} | split? {} (needs >= {:.5}) | collapse-cand? {} (needs <= "
+            "{:.5}){} | coarsen-gate? {} (needs <= {:.5})",
             e[0],
             e[1],
             std::sqrt(len2),
-            len2 >= m_params.splitting_l2 * sbar * sbar,
+            splittable,
             std::sqrt(m_params.splitting_l2) * sbar,
+            collapse_cand,
+            std::sqrt(m_params.collapsing_l2) * sbar,
+            (!splittable && !collapse_cand) ? "  <-- DEAD BAND" : "",
             len2 <= m_params.collapsing_l2,
-            std::sqrt(m_params.collapsing_l2),
-            vertex_is_frozen(a) && vertex_is_frozen(b));
+            std::sqrt(m_params.collapsing_l2));
     }
 }
 
@@ -3043,7 +3088,7 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
             const auto [face_tuple, unused_tid] = tuple_from_face(face_vids);
             if (!seen_fids.insert(face_tuple.fid(*this)).second) continue;
             n_offset_f += face_is_offset_surface_live(face_tuple);
-            n_input_f += face_is_input(face_tuple.fid(*this));
+            n_input_f += face_is_region(face_tuple.fid(*this));
             n_bbox_f += !face_tuple.switch_tetrahedron(*this).has_value();
         }
     }
@@ -3133,7 +3178,7 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
         "\t  flags: on_offset {} on_input {} on_bbox {} rounded {} | incident faces: {} offset, "
         "{} input, {} bbox",
         ve.m_is_on_offset,
-        ve.m_is_on_input,
+        ve.m_is_on_region,
         !m_vertex_attribute[vid].on_bbox_faces.empty(),
         m_vertex_attribute[vid].m_is_rounded,
         n_offset_f,
@@ -3201,15 +3246,20 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // construction defect is reported as one.
     check_offset_within_support("Offset as constructed");
 
+    // Spelled out including the slope^2 factor, so the line reproduces its own number. Without it
+    // the criterion reads as rel x target_distance, which is only what it is on a distance field.
     logger().info(
         "\tOffset criterion: |grad (Phi - c)^2| <= {} = offset_gradient_rel {} x target_distance "
-        "{} | diagnostic Phi residual bar {} = offset_residual_rel {} | level c {:.6}, dhat "
+        "{} x level-set slope^2 {:.6} -- i.e. residual <= {} ({} x target_distance) | diagnostic "
+        "Phi residual bar {} (= half the gradient bound, in model units) | level c {:.6}, dhat "
         "{:.6}, {} interior samples per offset face",
         offset_gradient_tolerance(),
         m_offset_params.offset_gradient_rel,
         m_offset_params.target_distance,
+        m_offset_potential->level_set_slope() * m_offset_potential->level_set_slope(),
+        0.5 * m_offset_params.offset_gradient_rel * m_offset_params.target_distance,
+        0.5 * m_offset_params.offset_gradient_rel,
         offset_residual_tolerance(),
-        m_offset_params.offset_residual_rel,
         m_offset_potential->target_level(),
         m_offset_potential->dhat(),
         m_offset_params.offset_residual_samples);
@@ -3250,8 +3300,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     //     vertices, normalized by convergence_target;
     //   - optimization_stop_metric(): 1.0 -- the loop stops when the worst vertex is inside the
     //     target band;
-    //   - refine_sizing_around_worst(): ratchet the sizing down ONLY around the worst-placed
-    //     vertices, and only when the metric STALLS -- see the override for the details.
+    //   - refine_sizing_around_worst(): TetWild's own quality-driven ratchet, fired only when
+    //     the metric STALLS -- see the override for the details.
     // The engine consolidates every iteration and re-collects the operation queue, which is also
     // its own answer to the slot-pool exhaustion the previous hand-rolled retry loop existed
     // for: work dropped in one pass is retried in the next. The [slots] warning still reports
@@ -3287,7 +3337,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // per-iteration hook, and the per-pass numbers it logs itself carry the history.
     log_smooth_trace();
     logger().info(
-        "splits = {} (offset-edge: {} offered, {} frozen, {} refused by the base's before-gate; "
+        "splits = {} (offset-edge: {} offered, {} refused by the base's before-gate; "
         "{} reached after_cells with both endpoints on-offset; {} splits produced an "
         "on-offset vertex; {} splits refused in after)  |  "
         "collapses = {} ({} "
@@ -3295,7 +3345,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         "refused by the offset criterion)",
         iter_cnt_split.load(),
         iter_cnt_split_offset_before.load(),
-        iter_cnt_split_offset_frozen.load(),
         iter_cnt_split_offset_base_reject.load(),
         iter_cnt_split_offset_endpoints.load(),
         iter_cnt_split_offset.load(),
@@ -3356,13 +3405,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // ended up from the exact one, which is the quantity the design trades away at reentrant
     // features on purpose.
     logger().info(
-        "phi residual (diagnostic): max {} (avg {}) vs its own bar {} = {} x target_distance | at "
+        "phi residual (diagnostic, absolute model units): max {} (avg {}) vs bar {} | at "
         "vertices {}, inside faces {} | {} samples, {} pinned vertices || euclid dist err: max {} "
         "| avg {}",
         r.max_reachable,
         r.avg_reachable,
         tol,
-        m_offset_params.offset_residual_rel,
         r.max_at_vertex,
         r.max_in_face,
         r.n_reachable,
@@ -3440,28 +3488,13 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
                 g.max_in_face);
         }
 
-        // Is topological preservation holding the offset back, as opposed to a handful of
-        // over-constrained vertices? See TOPOLOGY_BLOCK_AVG_FRAC for why the average is the
-        // discriminator.
-        const double avg_dist = optimization_metrics.back()[1];
-        if (m_offset_params.respect_all_topologies &&
-            avg_dist > TOPOLOGY_BLOCK_AVG_FRAC * m_offset_params.target_distance) {
-            logger().warn(
-                "Offset growth appears to be BLOCKED BY TOPOLOGICAL PRESERVATION: "
-                "respect_all_topologies is true and the AVERAGE distance error is {:.1f}% of "
-                "target_distance ({} vs {}), against max {:.1f}%. Error that uniform means whole "
-                "regions of the offset never reached the target distance, not that a few vertices "
-                "are over-constrained; with respect_all_topologies every tag's topology is frozen "
-                "after offset initialization, so the operations that would let the offset advance "
-                "through a narrow region are refused and it stays where conservative growth left "
-                "it. Set respect_all_topologies false if only the offset's own topology matters, "
-                "or reduce target_distance so the offset does not need to pass through those "
-                "regions.",
-                100.0 * avg_dist / m_offset_params.target_distance,
-                avg_dist,
-                m_offset_params.target_distance,
-                100.0 * max_dist / m_offset_params.target_distance);
-        }
+        // The "blocked by topological preservation" warning that used to sit here is gone with
+        // the growth pass. respect_all_topologies gated offset_tet_consistent_topology(), which
+        // only grow_offset_conservative() ever called, so in 3D the flag now constrains nothing
+        // and advising the user to change it would send them after a knob that cannot help.
+        // (2D still honours it -- see TopoOffsetTriMesh.) If topological blocking needs a
+        // diagnostic again, it has to be written against the operations that actually refuse on
+        // topology now: the link conditions in split/collapse/swap.
     }
 
     // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log
@@ -3687,131 +3720,6 @@ void TopoOffsetTetMesh::marching_tets()
 }
 
 
-void TopoOffsetTetMesh::grow_offset_conservative()
-{
-    std::queue<Tuple> tets_q;
-    auto all_tets = get_tets();
-
-    for (const Tuple& t : all_tets) {
-        size_t t_id = t.tid(*this);
-        if ((m_tet_attribute[t_id].label == 0) && (offset_tet_consistent_topology(t_id))) {
-            tets_q.push(t);
-        }
-    }
-    logger().info("\tConservative grow: Initial queue size {}", tets_q.size());
-
-    while (!tets_q.empty()) {
-        Tuple curr_tet = tets_q.front();
-        tets_q.pop();
-
-        size_t tet_id = curr_tet.tid(*this);
-        if (m_tet_attribute[tet_id].label != 0) { // already in offset
-            continue;
-        }
-
-        // ensure tet wouldn't change topology
-        if ((m_tet_attribute[tet_id].label != 0) || (!offset_tet_consistent_topology(tet_id))) {
-            continue;
-        }
-
-        bool in_offset = tet_is_in_offset_conservative(
-            tet_id,
-            m_offset_params.relative_ball_threshold * m_offset_params.target_distance);
-        if (in_offset) {
-            m_tet_attribute[tet_id].label = 2;
-            for (int i = 0; i < 4; i++) { // propagate label to faces
-                size_t f_id = tuple_from_face(tet_id, i).fid(*this);
-                if (m_face_extra[f_id].label != 1) {
-                    m_face_extra[f_id].label = 2;
-                }
-            }
-            for (int i = 0; i < 6; i++) {
-                size_t e_id = tuple_from_edge(tet_id, i).eid(*this);
-                if (m_edge_attribute[e_id].label != 1) {
-                    m_edge_attribute[e_id].label = 2;
-                }
-            }
-            auto vs = oriented_tet_vids(tet_id);
-            for (const size_t& v_id : vs) {
-                if (m_vertex_extra[v_id].label != 1) {
-                    m_vertex_extra[v_id].label = 2;
-                }
-            }
-
-            // collect adjacent tets, add to queue
-            auto adj_tets = get_face_adjacent_tets(curr_tet);
-            for (const Tuple& t : adj_tets) {
-                if (m_tet_attribute[t.tid(*this)].label != 0) {
-                    continue;
-                }
-                tets_q.push(t);
-            }
-        }
-    }
-}
-
-void TopoOffsetTetMesh::grow_offset_aggressive()
-{
-    std::queue<Tuple> tets_q;
-    auto all_tets = get_tets();
-
-    for (const Tuple& t : all_tets) {
-        size_t t_id = t.tid(*this);
-        if ((m_tet_attribute[t_id].label == 0) && (offset_tet_consistent_topology(t_id))) {
-            tets_q.push(t);
-        }
-    }
-    logger().info("\tAggressive grow: Initial queue size {}", tets_q.size());
-
-    while (!tets_q.empty()) {
-        Tuple curr_tet = tets_q.front();
-        tets_q.pop();
-
-        size_t tet_id = curr_tet.tid(*this);
-        if (m_tet_attribute[tet_id].label != 0) { // already in offset
-            continue;
-        }
-
-        // ensure tet wouldn't change topology
-        if ((m_tet_attribute[tet_id].label != 0) || (!offset_tet_consistent_topology(tet_id))) {
-            continue;
-        }
-
-        bool in_offset = tet_is_in_offset_aggressive(tet_id);
-        if (in_offset) {
-            m_tet_attribute[tet_id].label = 2;
-            for (int i = 0; i < 4; i++) { // propagate label to faces
-                size_t f_id = tuple_from_face(tet_id, i).fid(*this);
-                if (m_face_extra[f_id].label != 1) {
-                    m_face_extra[f_id].label = 2;
-                }
-            }
-            for (int i = 0; i < 6; i++) {
-                size_t e_id = tuple_from_edge(tet_id, i).eid(*this);
-                if (m_edge_attribute[e_id].label != 1) {
-                    m_edge_attribute[e_id].label = 2;
-                }
-            }
-            auto vs = oriented_tet_vids(tet_id);
-            for (const size_t& v_id : vs) {
-                if (m_vertex_extra[v_id].label != 1) {
-                    m_vertex_extra[v_id].label = 2;
-                }
-            }
-
-            // collect adjacent tets, add to queue
-            auto adj_tets = get_face_adjacent_tets(curr_tet);
-            for (const Tuple& t : adj_tets) {
-                if (m_tet_attribute[t.tid(*this)].label != 0) {
-                    continue;
-                }
-                tets_q.push(t);
-            }
-        }
-    }
-}
-
-
 void TopoOffsetTetMesh::set_offset_tet_tags()
 {
     auto tets = get_tets();
@@ -3986,6 +3894,73 @@ void TopoOffsetTetMesh::write_input_complex(const std::string& path)
     writer.write_mesh(path + ".vtu", V, cells);
 }
 
+
+void TopoOffsetTetMesh::write_phi_grid(const std::string& path, const int n) const
+{
+    // A PLANE SLICE of the 3D potential, as a triangulated grid carrying Phi per vertex, so a
+    // viewer can warp it into a height field and see the surface the optimization is actually
+    // minimising against. 3D cannot write a dense volume the way 2D writes its whole domain --
+    // n^3 samples of a BVH-backed potential is not affordable -- so this takes the plane through
+    // the box centre with the SHORTEST extent removed, which for a model laid out along one axis
+    // is the plane containing the interesting structure.
+    if (n < 2 || !m_offset_potential) return;
+
+    const Vector3d lo = m_offset_params.box_min, hi = m_offset_params.box_max;
+    const Vector3d ext = hi - lo;
+    int normal = 0;
+    for (int d = 1; d < 3; ++d)
+        if (ext[d] < ext[normal]) normal = d;
+    const int a0 = (normal + 1) % 3, a1 = (normal + 2) % 3;
+    const double at = 0.5 * (lo[normal] + hi[normal]);
+
+    MatrixXd V(n * n, 3);
+    MatrixXi F(2 * (n - 1) * (n - 1), 3);
+    MatrixXd phi(n * n, 1), residual(n * n, 1), euclid(n * n, 1);
+    const double level = m_offset_potential->target_level();
+
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            const int k = j * n + i;
+            Vector3d p;
+            p[normal] = at;
+            p[a0] = lo[a0] + ext[a0] * i / (n - 1);
+            p[a1] = lo[a1] + ext[a1] * j / (n - 1);
+            V.row(k) = p.transpose();
+            // Phi diverges on the input complex, which would flatten the colour map everywhere
+            // else; clamped to a few times the level, which is the range that matters. Outside
+            // the support Phi is exactly 0, and that zero is meaningful -- it is the dead region
+            // the placement step cannot escape from -- so it is NOT clamped away.
+            phi(k, 0) = std::min(m_offset_potential->value(p), 8. * level);
+            residual(k, 0) = std::min(
+                m_offset_potential->residual_length(p),
+                8. * m_offset_params.target_distance);
+            euclid(k, 0) = (p - m_input_complex_bvh.nearest_point(p)).norm();
+        }
+    }
+    int f = 0;
+    for (int j = 0; j + 1 < n; ++j) {
+        for (int i = 0; i + 1 < n; ++i) {
+            const int a = j * n + i, b = a + 1, c = a + n, d = c + 1;
+            F.row(f++) << a, b, d;
+            F.row(f++) << a, d, c;
+        }
+    }
+    logger().info(
+        "Write {}_phi.vtu ({}x{} samples on the {} = {:.6g} plane; the offset is the isosurface "
+        "phi = {:.6g}, level-set slope {:.6g})",
+        path,
+        n,
+        n,
+        "xyz"[normal],
+        at,
+        level,
+        m_offset_potential->level_set_slope());
+    auto writer = std::make_shared<paraviewo::VTUWriter>();
+    writer->add_field("phi", phi);
+    writer->add_field("phi_residual_length", residual);
+    writer->add_field("euclidean_distance", euclid);
+    writer->write_mesh(path + "_phi.vtu", V, F, paraviewo::CellType::Triangle);
+}
 
 void TopoOffsetTetMesh::write_vtu(const std::string& path)
 {

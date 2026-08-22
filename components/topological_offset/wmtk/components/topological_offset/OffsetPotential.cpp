@@ -6,6 +6,7 @@
 
 #include <ipc/candidates/candidates.hpp>
 #include <ipc/collision_mesh.hpp>
+#include <ipc/high_order_contact/arbitrary_point_potential.hpp>
 #include <ipc/high_order_contact/high_order_contact_parameters.hpp>
 #include <ipc/high_order_contact/quadrature_potential.hpp>
 
@@ -27,6 +28,13 @@ constexpr int UNUSED_QUAD_ORDER = 2;
 /// dbar_factor, likewise unread by the vertex path (it feeds the near/far barrier split, which
 /// this does not use). 1.0 is upstream's default.
 constexpr double UNUSED_DBAR_FACTOR = 1.0;
+
+/// The query point in the row form ipc::ArbitraryPointPotential takes. 3D only -- ESP at an
+/// arbitrary point has no 2D counterpart upstream, which is why 2D keeps the OGC vertex builder.
+inline Eigen::RowVector3d esp_query(const Eigen::Vector3d& p)
+{
+    return p.transpose();
+}
 
 /// The dict type upstream hands back for a vertex query. In 3D DIM is the template's own
 /// default, so `<VERTEX, 3>` and `<VERTEX>` name the same type and the helpers below match.
@@ -69,6 +77,20 @@ struct SmoothOffsetPotential<DIM>::Impl
     bool has_points = false;
     std::vector<int> isolated; ///< complex vertex ids with no incident segment
 
+    /// 3D ONLY: the ESP evaluator, which subsumes everything above. It owns its own broad phase
+    /// and does its own feature classification, so on this path `mesh` is the ONLY thing built
+    /// -- no scratch, no candidate sets, and none of the four BVHs.
+    ///
+    /// `V_complex` is kept because every call takes the vertex configuration as an argument, and
+    /// it must contain the complex and NOTHING ELSE: ArbitraryPointBVH indexes every row of it as
+    /// a vertex primitive, so a padding row would be a real point of the complex sitting at
+    /// whatever coordinates it happened to hold.
+    /// The 2-manifold sub-complex, compacted and padded; NOT the same mesh as `mesh` above,
+    /// which the OGC part needs in the complex's own indexing.
+    ipc::CollisionMesh mesh_esp;
+    Eigen::MatrixXd V_complex;
+    std::unique_ptr<ipc::ArbitraryPointPotential> esp; ///< null when the complex has no triangles
+
     /// Per-thread evaluation state. The smoothing pass is parallel, so `value`, `gradient` and
     /// `hessian` must not share the query row or the candidate sets.
     struct Scratch
@@ -79,8 +101,11 @@ struct SmoothOffsetPotential<DIM>::Impl
     };
     mutable wmtk::threading::enumerable_thread_specific<Scratch> scratch;
 
+    /// ogc_collisions tracks which builder this dimension uses. Neither path actually READS it
+    /// -- 2D calls build_collisions_at_vertex_ogc_2d() by name, and ArbitraryPointPotential
+    /// never consults it -- so it is documentation that happens to be a field.
     Impl(const double dhat)
-        : params(dhat, UNUSED_DBAR_FACTOR, UNUSED_QUAD_ORDER, /*ogc_collisions=*/true)
+        : params(dhat, UNUSED_DBAR_FACTOR, UNUSED_QUAD_ORDER, /*ogc_collisions=*/DIM == 2)
     {}
 
     /// The collision set at `p`, or null when nothing is within the support. Writes the query
@@ -303,6 +328,102 @@ void SmoothOffsetPotential<DIM>::build(
     m_impl = std::make_unique<Impl>(m_dhat);
     m_impl->n_complex_v = static_cast<size_t>(V.rows());
 
+    // ---- 3D: ESP over the 2-MANIFOLD part of the complex ----
+    //
+    // ESP's alternating sum (Eq. 6: +faces -edges +vertices) is inclusion-exclusion over a CLOSED
+    // SURFACE. Every -1 edge term exists to cancel the +1 the incident faces contribute when the
+    // query's closest point on them lands on that shared edge; the net over a genuine surface is
+    // exactly one +b(d) at the true closest feature. A primitive with NO incident face has
+    // nothing to cancel against, so the sum inverts: measured on the wire fixture (one segment,
+    // no triangles), Phi = -b(d) exactly -- a barrier with the wrong sign, unbounded BELOW as the
+    // query approaches the segment.
+    //
+    // So the complex is split by what ESP is defined on. Triangles, their edges and their
+    // vertices go to ArbitraryPointPotential. Segments in no triangle (wires) and isolated points
+    // stay on the OGC vertex builder below, which weights every active primitive +1 and is
+    // therefore right for a sub-manifold piece. The two sums add, which is the same superposition
+    // the potential already applies wherever two features both claim a point.
+    if constexpr (DIM == 3) {
+        if (F.rows() > 0) {
+            std::map<std::pair<int, int>, int> edge_of;
+            for (int i = 0; i < E.rows(); ++i) {
+                edge_of[{std::min(E(i, 0), E(i, 1)), std::max(E(i, 0), E(i, 1))}] = i;
+            }
+            // COMPACTED to the face-incident vertices. ipc::LBVH indexes every row it is given as
+            // a vertex primitive, so carrying a wire or isolated vertex here would give it a +1
+            // term in the surface sum on top of the one the OGC part already gives it.
+            std::vector<int> to_surf(V.rows(), -1);
+            std::vector<int> surf_v;
+            const auto claim = [&](const int v) {
+                if (to_surf[v] < 0) {
+                    to_surf[v] = static_cast<int>(surf_v.size());
+                    surf_v.push_back(v);
+                }
+                return to_surf[v];
+            };
+            MatrixXi F_s(F.rows(), 3);
+            std::set<std::pair<int, int>> surf_e;
+            for (int f = 0; f < F.rows(); ++f) {
+                for (int j = 0; j < 3; ++j) F_s(f, j) = claim(F(f, j));
+                for (int j = 0; j < 3; ++j) {
+                    const int a0 = F(f, j), b0 = F(f, (j + 1) % 3);
+                    if (edge_of.find({std::min(a0, b0), std::max(a0, b0)}) == edge_of.end()) {
+                        // ipc would throw the same thing from construct_faces_to_edges, but with
+                        // no hint about which caller built the list.
+                        log_and_throw_error(
+                            "OffsetPotential<3>: edge ({}, {}) of triangle {} is missing from E. "
+                            "The edge list must contain every edge of every triangle.",
+                            a0,
+                            b0,
+                            f);
+                    }
+                    surf_e.insert(
+                        {std::min(to_surf[a0], to_surf[b0]), std::max(to_surf[a0], to_surf[b0])});
+                }
+            }
+
+            // A LONE PRIMITIVE IS COUNTED TWICE, so pad until no tree has exactly one leaf.
+            //
+            // ipc::LBVH sizes a tree as 2N-1 nodes, so with N == 1 the ROOT IS THE LEAF, while
+            // ArbitraryPointBVH::query_point() starts at node 0 asserting it is inner and reads
+            // node.left / node.right. A leaf's union puts primitive_id where `left` is and the
+            // (zero) inner-marker where `right` is, so for the single primitive -- whose id is
+            // necessarily 0 -- both children resolve to the node itself, both are leaves, both
+            // intersect, and it is pushed TWICE. insert_pair() then accumulates its weight to 2
+            // and the term enters doubled. Measured: the flat calibration reference, one
+            // triangle, gave c = 0.346574 = 2 x b(delta) instead of 0.173287.
+            //
+            // Three vertices, three segments and one triangle, far enough out that nothing within
+            // dhat of the real complex can see them, take all three trees to N >= 2.
+            const int n_sv = static_cast<int>(surf_v.size());
+            const Eigen::RowVector3d far = V.colwise().maxCoeff().array() + 8. * m_dhat + 1.;
+            MatrixXd V_s(n_sv + 3, 3);
+            for (int i = 0; i < n_sv; ++i) V_s.row(i) = V.row(surf_v[i]);
+            V_s.row(n_sv) = far;
+            V_s.row(n_sv + 1) = far + Eigen::RowVector3d(m_dhat, 0., 0.);
+            V_s.row(n_sv + 2) = far + Eigen::RowVector3d(0., m_dhat, 0.);
+
+            MatrixXi E_s(static_cast<int>(surf_e.size()) + 3, 2);
+            int k = 0;
+            for (const auto& [x, y] : surf_e) E_s.row(k++) << x, y;
+            E_s.row(k++) << n_sv, n_sv + 1;
+            E_s.row(k++) << n_sv + 1, n_sv + 2;
+            E_s.row(k++) << n_sv + 2, n_sv;
+
+            MatrixXi F_pad(F.rows() + 1, 3);
+            F_pad.topRows(F.rows()) = F_s;
+            F_pad.row(F.rows()) << n_sv, n_sv + 1, n_sv + 2;
+
+            m_impl->V_complex = V_s;
+            m_impl->mesh_esp = ipc::CollisionMesh(V_s, E_s, F_pad);
+            m_impl->esp =
+                std::make_unique<ipc::ArbitraryPointPotential>(m_impl->mesh_esp, m_impl->params);
+            // Once: the complex is fixed for this potential's lifetime.
+            m_impl->esp->update(m_impl->V_complex);
+        }
+    }
+
+    // ---- 2D: the OGC vertex builder, which needs a real mesh vertex to measure from ----
     // The collision mesh: the complex, plus one trailing row that every evaluation overwrites
     // with the query point. It belongs to no segment and no triangle, so it never appears as a
     // contact PRIMITIVE -- only as the point the primitives are measured from.
@@ -342,41 +463,28 @@ void SmoothOffsetPotential<DIM>::build(
     V3.setZero();
     V3.leftCols(DIM) = V;
 
-    if (F.rows() > 0) {
-        m_impl->face_bvh.init(V3, F, 1e-6);
-        m_impl->has_faces = true;
+    // 2D ONLY. In 3D the triangles (and their edges and vertices) belong to the ESP sum above,
+    // so seeding them as OGC candidates as well would count the surface twice.
+    if constexpr (DIM == 2) {
+        (void)V3;
+    } else {
+        // has_faces stays false: nothing here indexes F.
     }
 
-    // In 3D a triangle's own edges are reached through the triangle, so the edge tree only has
-    // to carry the segments that belong to no triangle -- the complex's wires. Indexing all of
-    // them would be correct but would seed the same candidates twice.
+    // WHAT THE OGC PART OWNS. In 2D that is every segment. In 3D it is only the segments in no
+    // triangle -- the complex's wires -- because the rest went to ESP above.
     std::vector<int> tree_edges;
     if constexpr (DIM == 3) {
-        std::vector<bool> in_face(E.rows(), false);
-        std::map<std::pair<int, int>, int> edge_of;
-        for (int i = 0; i < E.rows(); ++i) {
-            edge_of[{std::min(E(i, 0), E(i, 1)), std::max(E(i, 0), E(i, 1))}] = i;
-        }
+        std::set<std::pair<int, int>> in_face;
         for (int f = 0; f < F.rows(); ++f) {
             for (int j = 0; j < 3; ++j) {
-                const int a = F(f, j);
-                const int b = F(f, (j + 1) % 3);
-                const auto it = edge_of.find({std::min(a, b), std::max(a, b)});
-                if (it == edge_of.end()) {
-                    // ipc would throw the same thing from construct_faces_to_edges, but with no
-                    // hint about which caller built the list.
-                    log_and_throw_error(
-                        "OffsetPotential<3>: edge ({}, {}) of triangle {} is missing from E. The "
-                        "edge list must contain every edge of every triangle.",
-                        a,
-                        b,
-                        f);
-                }
-                in_face[it->second] = true;
+                const int a0 = F(f, j), b0 = F(f, (j + 1) % 3);
+                in_face.insert({std::min(a0, b0), std::max(a0, b0)});
             }
         }
         for (int i = 0; i < E.rows(); ++i) {
-            if (!in_face[i]) tree_edges.push_back(i);
+            const int a0 = E(i, 0), b0 = E(i, 1);
+            if (in_face.count({std::min(a0, b0), std::max(a0, b0)}) == 0) tree_edges.push_back(i);
         }
     } else {
         for (int i = 0; i < E.rows(); ++i) tree_edges.push_back(i);
@@ -406,38 +514,49 @@ void SmoothOffsetPotential<DIM>::build(
     }
 }
 
-
 template <int DIM>
 double SmoothOffsetPotential<DIM>::value(const VecD& p) const
 {
+    // THE TWO SUMS ADD: ESP over the triangles, the OGC vertex builder over the wires and
+    // isolated points. Either may be empty -- a closed surface uses only the first, a point
+    // cloud or a 2D complex only the second. See build() for why the complex is split.
+    double phi = 0.;
+    if constexpr (DIM == 3) {
+        if (m_impl->esp) phi += (*m_impl->esp)(m_impl->V_complex, esp_query(p));
+    }
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
     if (!dict) {
-        return 0.; // nothing within the support: Phi is identically zero out here
+        return phi; // nothing more within the support
     }
     if constexpr (DIM == 2) {
-        return ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
+        phi += ipc::PointPotentialHelper::evaluate_potential_at_vertex_2d(
             s.V,
             *dict,
             m_impl->params,
             nullptr);
     } else {
-        return ipc::PointPotentialHelper::evaluate_potential_at_vertex_with_cached_collisions(
+        phi += ipc::PointPotentialHelper::evaluate_potential_at_vertex_with_cached_collisions(
             s.V,
             *dict,
             m_impl->params,
             nullptr);
     }
+    return phi;
 }
 
 
 template <int DIM>
 typename SmoothOffsetPotential<DIM>::VecD SmoothOffsetPotential<DIM>::gradient(const VecD& p) const
 {
+    VecD g_total = VecD::Zero();
+    if constexpr (DIM == 3) {
+        if (m_impl->esp) g_total += m_impl->esp->gradient(m_impl->V_complex, esp_query(p));
+    }
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
     if (!dict) {
-        return VecD::Zero();
+        return g_total;
     }
     Eigen::VectorXd g;
     if constexpr (DIM == 2) {
@@ -454,21 +573,27 @@ typename SmoothOffsetPotential<DIM>::VecD SmoothOffsetPotential<DIM>::gradient(c
             nullptr);
     }
     const ipc::index_t li = m_impl->local_query_index(*dict);
-    return g.template segment<DIM>(DIM * li);
+    return g_total + g.template segment<DIM>(DIM * li);
 }
 
 
 template <int DIM>
 typename SmoothOffsetPotential<DIM>::MatD SmoothOffsetPotential<DIM>::hessian(const VecD& p) const
 {
+    // PSDProjectionMethod::NONE: the TRUE Hessian, projected (or not) by the caller. The
+    // smoothing energy squares the residual and takes its own Gauss-Newton approximation, which
+    // is a different and better-motivated way to reach a PSD matrix than clamping this one. ESP
+    // could not be projected per-term in any case -- its -1 weights make that invalid, which is
+    // why upstream's own projection block in quadrature_potential.cpp is commented out.
+    MatD H_total = MatD::Zero();
+    if constexpr (DIM == 3) {
+        if (m_impl->esp) H_total += m_impl->esp->hessian(m_impl->V_complex, esp_query(p));
+    }
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
     if (!dict) {
-        return MatD::Zero();
+        return H_total;
     }
-    // PSDProjectionMethod::NONE: the TRUE Hessian, projected (or not) by the caller. The
-    // smoothing energy squares the residual and takes its own Gauss-Newton approximation, which
-    // is a different and better-motivated way to reach a PSD matrix than clamping this one.
     Eigen::MatrixXd H;
     if constexpr (DIM == 2) {
         H = ipc::PointPotentialHelper::evaluate_potential_hessian_at_vertex_2d(
@@ -486,17 +611,33 @@ typename SmoothOffsetPotential<DIM>::MatD SmoothOffsetPotential<DIM>::hessian(co
             ipc::PSDProjectionMethod::NONE);
     }
     const ipc::index_t li = m_impl->local_query_index(*dict);
-    return H.template block<DIM, DIM>(DIM * li, DIM * li);
+    return H_total + H.template block<DIM, DIM>(DIM * li, DIM * li);
 }
 
 
 template <int DIM>
 std::string SmoothOffsetPotential<DIM>::describe_active(const VecD& p) const
 {
+    std::string out;
+    if constexpr (DIM == 3) {
+        // ESP builds its collision dict inside ArbitraryPointPotential and does not hand it
+        // back, so the per-pair breakdown the OGC part prints is not available for the surface.
+        // Report the field instead: what a discontinuity investigation reads off this is whether
+        // Phi or |grad Phi| jumps between neighbouring samples, and both are here.
+        if (m_impl->esp) {
+            const auto [v, g, h] = m_impl->esp->evaluate(m_impl->V_complex, esp_query(p));
+            out += fmt::format(
+                "[ESP surface Phi={:.6g} |grad|={:.6g} tr(H)={:.6g}] ",
+                v,
+                g.norm(),
+                h.trace());
+        }
+    }
     auto& s = m_impl->scratch.local();
     const auto dict = m_impl->collisions(p, s);
-    if (!dict) return "<nothing active>";
-    std::string out;
+    if (!dict) {
+        return out.empty() ? "<nothing active>" : out;
+    }
     for (int i = 0; i < dict->size(); ++i) {
         const auto& cc = (*dict)[i];
         std::string ids;
