@@ -3249,16 +3249,17 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // Spelled out including the slope^2 factor, so the line reproduces its own number. Without it
     // the criterion reads as rel x target_distance, which is only what it is on a distance field.
     logger().info(
-        "\tOffset criterion: |grad (Phi - c)^2| <= {} = offset_gradient_rel {} x target_distance "
+        "\tOffset criterion: |grad (Phi - c)^2| <= {} = convergence_gradient_norm_rel {} x "
+        "target_distance "
         "{} x level-set slope^2 {:.6} -- i.e. residual <= {} ({} x target_distance) | diagnostic "
         "Phi residual bar {} (= half the gradient bound, in model units) | level c {:.6}, dhat "
         "{:.6}, {} interior samples per offset face",
         offset_gradient_tolerance(),
-        m_offset_params.offset_gradient_rel,
+        m_offset_params.convergence_gradient_norm_rel,
         m_offset_params.target_distance,
         m_offset_potential->level_set_slope() * m_offset_potential->level_set_slope(),
-        0.5 * m_offset_params.offset_gradient_rel * m_offset_params.target_distance,
-        0.5 * m_offset_params.offset_gradient_rel,
+        0.5 * m_offset_params.convergence_gradient_norm_rel * m_offset_params.target_distance,
+        0.5 * m_offset_params.convergence_gradient_norm_rel,
         offset_residual_tolerance(),
         m_offset_potential->target_level(),
         m_offset_potential->dhat(),
@@ -3389,7 +3390,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         g.max_reachable,
         g.avg_reachable,
         gtol,
-        m_offset_params.offset_gradient_rel,
+        m_offset_params.convergence_gradient_norm_rel,
         g.max_at_vertex,
         g.max_in_face,
         g.n_face_samples,
@@ -3431,7 +3432,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     m_converged = g.max_reachable <= gtol;
     if (m_converged) {
         logger().info(
-            "Converged ([max placement gradient] {} <= {} [offset_gradient_rel x "
+            "Converged ([max placement gradient] {} <= {} [convergence_gradient_norm_rel x "
             "target_distance]); worst term {} (at-vertex {}, in-face {})",
             g.max_reachable,
             gtol,
@@ -3469,7 +3470,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         if (g.max_in_face > g.max_at_vertex) {
             logger().warn(
                 "Optimization did not converge ([max placement gradient] {} > {} "
-                "[offset_gradient_rel x target_distance]); worst term is IN-FACE ({} vs {} at "
+                "[convergence_gradient_norm_rel x target_distance]); worst term is IN-FACE ({} vs "
+                "{} at "
                 "vertices) -- the band is too coarse to represent the level set, which wants "
                 "refinement rather than smoothing",
                 g.max_reachable,
@@ -3479,7 +3481,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         } else {
             logger().warn(
                 "Optimization did not converge ([max placement gradient] {} > {} "
-                "[offset_gradient_rel x target_distance]); worst term is AT-VERTEX, at vertex {} "
+                "[convergence_gradient_norm_rel x target_distance]); worst term is AT-VERTEX, at "
+                "vertex {} "
                 "({} vs {} inside faces)",
                 g.max_reachable,
                 gtol,

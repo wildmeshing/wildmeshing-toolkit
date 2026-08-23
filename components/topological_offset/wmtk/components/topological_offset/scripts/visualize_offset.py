@@ -30,6 +30,13 @@ groups, and
                     on by default when the input-surface layer is empty
   envelope curves   the EnvelopeSurface line entity, 2D outputs only: the
                     region-boundary geometry the envelope was built from (orange)
+  bad quality       2D only, off by default: the background triangles whose AMIPS energy is
+                    above a threshold, drawn in red with their vertices as red points. The
+                    energy is wmtk::AMIPS2D_energy transcribed (2 = equilateral, MAX_ENERGY
+                    = 1e50 for inverted or degenerate), so it is the same number stop_energy
+                    is compared against -- the threshold starts AT the config's stop_energy
+                    and is adjustable on a log10 slider. The background mesh also carries it
+                    as a "quality (AMIPS)" cell scalar.
 
 The offset surface carries two scalar layers: distance to the input surface, and
 |distance - delta| / delta. delta comes from the config (`target_distance`, else
@@ -48,6 +55,7 @@ Two honesty notes on the error layer:
 """
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -61,6 +69,10 @@ C_INPUT = (0.910, 0.525, 0.165)  # orange/blue: separable under colour vision de
 C_OFFSET = (0.169, 0.498, 0.831)
 C_INNER = (0.55, 0.55, 0.58)
 C_OTHER = (0.55, 0.75, 0.55)
+C_BAD = (0.839, 0.153, 0.157)  # bad-quality highlight; red is reserved for this
+
+# The C++ sentinel for "degenerate, do not trust the number" -- wmtk::TriOptimizerMesh::MAX_ENERGY.
+MAX_ENERGY = 1e50
 
 
 def eval_selection(expr, names):
@@ -181,6 +193,51 @@ def interfaces(points, dim, groups):
     return {k: np.asarray(v) for k, v in out.items()}
 
 
+def amips2d_quality(points, tris):
+    """Per-triangle AMIPS energy, TRANSCRIBED FROM THE C++ so the numbers are the same ones.
+
+    This is wmtk::AMIPS2D_energy (src/wmtk/utils/AMIPS2D.cpp) vectorised, wrapped in the guard
+    from TriOptimizerMesh::get_quality: a non-finite energy, or one below 2 - 1e-3 (which an
+    inverted or degenerate triangle produces), is reported as MAX_ENERGY rather than as a
+    small number. Getting that guard wrong would paint inverted triangles as the BEST in the
+    mesh, which is the one error that would make this layer actively misleading.
+
+    Matching the C++ is the whole point: it means "bad" here is the same "bad" the optimizer's
+    stop_energy is compared against, so a triangle highlighted in the viewer is a triangle the
+    run itself is still working on. The energy of an equilateral triangle is 2.
+
+    -> (N,) float array, one entry per row of `tris`.
+    """
+    p = np.asarray(points, dtype=np.float64)[:, :2]
+    t = np.asarray(tris, dtype=np.int64)
+    if len(t) == 0:
+        return np.zeros(0, dtype=np.float64)
+    # The C++ names its temporaries by T index, where T = [x0, y0, x1, y1, x2, y2]; keeping the
+    # same letters makes the two readable side by side.
+    h1, h3 = p[t[:, 0], 0], p[t[:, 0], 1]   # x0, y0
+    h2, h4 = p[t[:, 1], 0], p[t[:, 1], 1]   # x1, y1
+    h6, h5 = p[t[:, 2], 0], p[t[:, 2], 1]   # x2, y2
+    h7 = 0.666666666666667 * h6
+    h8 = 0.666666666666667 * h5
+    num = -(
+        h1 * (-1.33333333333333 * h1 + 0.666666666666667 * h2 + h7)
+        + h2 * (0.666666666666667 * h1 - 1.33333333333333 * h2 + h7)
+        + h3 * (-1.33333333333333 * h3 + 0.666666666666667 * h4 + h8)
+        + h4 * (0.666666666666667 * h3 - 1.33333333333333 * h4 + h8)
+        + h5 * (0.666666666666667 * h3 + 0.666666666666667 * h4 - 1.33333333333333 * h5)
+        + h6 * (0.666666666666667 * h1 + 0.666666666666667 * h2 - 1.33333333333333 * h6)
+    )
+    den = (
+        (h1 - h2) * (0.577350269189626 * h3 + 0.577350269189626 * h4 - 1.15470053837925 * h5)
+        - (h3 - h4) * (0.577350269189626 * h1 + 0.577350269189626 * h2 - 1.15470053837925 * h6)
+    )
+    with np.errstate(divide="ignore", invalid="ignore"):
+        e = num / den
+    bad = ~np.isfinite(e) | (e < 2.0 - 1e-3)
+    e[bad] = MAX_ENERGY
+    return e
+
+
 def compact(points, cells):
     used = np.unique(cells)
     remap = np.full(len(points), -1, np.int64)
@@ -279,10 +336,36 @@ def dist_to_triangles(q, t0, t1, t2):
 
 FRAME_RE = __import__("re").compile(r"(\d+)(?=\D*$)")
 
+# The 2D offset's own timeline: <output>_step_<NNNNN>_r<round><A|B><pass>[_end].
+# See TopoOffsetTriMesh::write_smoothing_debug_output, which is what names these.
+STEP_RE = re.compile(r"step_(\d+)_r(\d+)([AB])(?:(\d+)|_end)$")
+
+
+def step_label(stem):
+    """`step_00007_r1A3` -> 'round 1  phase A3'; the _end frames -> 'round 1  phase A (end)'.
+
+    Returns None for a name that is not a step frame, so callers can fall back.
+    """
+    m = STEP_RE.search(stem)
+    if not m:
+        return None
+    _, rnd, ph, sub = m.groups()
+    if int(rnd) == 0:
+        return "construction"
+    return "round %s  phase %s%s" % (rnd, ph, sub if sub else " (end)")
+
 
 def frame_key(p):
     """Sort debug frames by the counter in their name, not lexically -- debug_9 precedes
-    debug_10, which a plain sort gets backwards."""
+    debug_10, which a plain sort gets backwards.
+
+    A `step_` frame sorts on its GLOBAL counter, which is run order across both phases by
+    construction. The trailing-number fallback would sort those on the pass index instead and
+    shuffle the phases together, so the step form is matched first.
+    """
+    m = STEP_RE.search(p.stem)
+    if m:
+        return (int(m.group(1)), p.stem)
     m = FRAME_RE.search(p.stem)
     return (int(m.group(1)) if m else -1, p.stem)
 
@@ -326,9 +409,17 @@ def resolve(args):
         # frames remain the fallback for runs made before the phase naming existed (and
         # frame_key orders both: the round is the stem's last number, the A/B tie breaks
         # lexically).
+        # THE STEP TIMELINE FIRST: one series covering every phase A and phase B sub-iteration
+        # in run order, each frame naming the round and pass it belongs to. That is what the
+        # slider scrubs. With DEBUG_output alone it holds just the `_end` frames (two per round);
+        # with DEBUG_output_per_pass it holds every pass as well.
         frames = sorted(
-            (f for f in d.glob("*phase_*.vtu") if re.fullmatch(r".*phase_\d+[AB]", f.stem)),
-            key=frame_key)
+            (f for f in d.glob("*step_*.vtu") if STEP_RE.search(f.stem)), key=frame_key)
+        # The older two-series naming, for runs made before the step naming existed.
+        if not frames:
+            frames = sorted(
+                (f for f in d.glob("*phase_*.vtu") if re.fullmatch(r".*phase_\d+[AB]", f.stem)),
+                key=frame_key)
         if not frames:
             frames = sorted(
                 (f for f in d.glob("*debug_*.vtu") if re.fullmatch(r".*debug_\d+", f.stem)),
@@ -553,6 +644,17 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None):
             # frames -- which is the point of showing it on a timeline.
             m.add_scalar_quantity("sizing", sizing, cmap="viridis", vminmax=(0.0, 1.0))
             extras["bg"] = (m, sizing, mesh_class, where)
+        if dim == 2:
+            # AMIPS per triangle, on the same scale stop_energy is stated in. Capped for the
+            # COLOUR RAMP only -- the values the highlight thresholds against are the uncapped
+            # ones -- because a single degenerate triangle at MAX_ENERGY would otherwise flatten
+            # the entire ramp to one colour.
+            q = amips2d_quality(points, mesh_cells)
+            finite = q[q < MAX_ENERGY]
+            top = float(finite.max()) if len(finite) else 2.0
+            m.add_scalar_quantity("quality (AMIPS, 2 = equilateral)", np.minimum(q, top),
+                                  defined_on=where, cmap="reds", vminmax=(2.0, max(top, 2.0 + 1e-9)))
+            extras["quality"] = (points, mesh_cells, q)
         m.set_enabled(False)
         out["background mesh (tags as cell layers)"] = m
 
@@ -740,12 +842,57 @@ def main():
     state["frame"] = 0
     state["play"] = False
     state["tick"] = 0
+    # THE THRESHOLD DEFAULTS TO THE RUN'S OWN BAR. stop_energy is what Phase A is trying to get
+    # every triangle under, so "bad" out of the box means "the run is not done with this one",
+    # not an arbitrary cutoff. The offset spec's default is 100; a config that set it wins.
+    state["bad quality (red)"] = False
+    state["bad threshold"] = float(cfg.get("stop_energy", 100.0))
+
+    has_quality = any("quality" in ex for ex in extra_qs)
+
+    # Handles to the highlight structures, kept rather than looked up by name: ps.has_*() is not
+    # in every polyscope release, and holding the handle needs no such query.
+    bad_structs = {}
+
+    def rebuild_bad():
+        """Re-register the highlight for the CURRENT frame and threshold.
+
+        Rebuilt rather than toggled, because the SET itself depends on the threshold slider --
+        there is no persistent structure to just show and hide. Registering under the same name
+        replaces the previous one, which is this polyscope's setter, the same idiom the sizing
+        toggle uses for scalars.
+        """
+        if not has_quality:
+            return
+        cur = state["frame"]
+        ex = extra_qs[cur] if cur < len(extra_qs) else {}
+        sel = None
+        if state["bad quality (red)"] and "quality" in ex:
+            pts, cells, q = ex["quality"]
+            sel = q > state["bad threshold"]
+        if sel is None or not sel.any():
+            for h in bad_structs.values():
+                h.set_enabled(False)
+            return
+        bad_cells = np.asarray(cells)[sel]
+        # Drawn on the FULL point array rather than a compacted one, so the highlight sits
+        # exactly on top of the background triangles it came from instead of being a separate
+        # object that has to be lined up by eye. Polyscope tolerates unreferenced vertices.
+        sm = ps.register_surface_mesh("bad quality tris", pts, bad_cells,
+                                      color=C_BAD, edge_width=1.0)
+        sm.set_enabled(True)
+        bad_structs["tris"] = sm
+        pc = ps.register_point_cloud("bad quality verts", pts[np.unique(bad_cells)])
+        pc.set_color(C_BAD)
+        pc.set_enabled(True)
+        bad_structs["verts"] = pc
 
     def apply_visibility():
         cur = state["frame"]
         for k, layers in enumerate(registered):
             for label, s in layers.items():
                 s.set_enabled(k == cur and state[label])
+        rebuild_bad()  # the highlight follows the frame, so it is rebuilt with it
         if phi_struct is not None:
             phi_struct.set_enabled(state["smooth offset potential"])
         # The sizing toggle swaps which scalar the visible structures are colored by --
@@ -774,7 +921,14 @@ def main():
 
     def callback():
         f = frames[state["frame"]]
-        psim.TextUnformatted("%s   delta %g" % (f[0].name, f[5]))
+        lbl = step_label(f[0].stem)
+        if lbl:
+            # THE SUB-ITERATION, not the file name: which A/B round and which pass inside which
+            # phase is the thing being scrubbed through, so it goes first and largest.
+            psim.TextUnformatted(lbl)
+            psim.TextUnformatted("%s   delta %g" % (f[0].name, f[5]))
+        else:
+            psim.TextUnformatted("%s   delta %g" % (f[0].name, f[5]))
         if series:
             psim.TextUnformatted(
                 "frame %d / %d   (stride %d)" % (state["frame"] + 1, len(frames), stride))
@@ -813,6 +967,29 @@ def main():
                 "sizing field (viridis, 0-1)", state["sizing field"])
             if changed:
                 apply_visibility()
+        if has_quality:
+            changed, state["bad quality (red)"] = psim.Checkbox(
+                "bad quality tris + their vertices (red)", state["bad quality (red)"])
+            if changed:
+                rebuild_bad()
+            if state["bad quality (red)"]:
+                # Log scale: AMIPS runs from 2 for an equilateral triangle to MAX_ENERGY (1e50)
+                # for an inverted one, so a linear slider would spend its whole travel in the
+                # first pixel. Powers of ten are also how stop_energy is actually chosen.
+                lo, hi = 0.301029995663981, 6.0  # log10(2) .. log10(1e6)
+                cur = max(lo, min(hi, math.log10(max(state["bad threshold"], 2.0))))
+                ch2, v = psim.SliderFloat("AMIPS threshold (log10)", cur, lo, hi)
+                if ch2:
+                    state["bad threshold"] = 10.0 ** v
+                    rebuild_bad()
+                ex = extra_qs[state["frame"]] if state["frame"] < len(extra_qs) else {}
+                if "quality" in ex:
+                    q = ex["quality"][2]
+                    n_bad = int((q > state["bad threshold"]).sum())
+                    n_deg = int((q >= MAX_ENERGY).sum())
+                    psim.TextUnformatted(
+                        "  threshold %.4g   ->  %d / %d tris bad (%d degenerate/inverted)"
+                        % (state["bad threshold"], n_bad, len(q), n_deg))
 
     ps.set_user_callback(callback)
     ps.show()

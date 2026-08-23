@@ -32,7 +32,7 @@ ExternalProject_Add(
     # explicitly, offset_field pinned to "smooth" now that the default means ESP, and the inert
     # max_iterations replaced by ab_max_rounds.
     #
-    GIT_TAG 5bc16e467069d258fc34fd8946b0a4c3f6dfcd06
+    GIT_TAG cb73d04f52982e11a85a322355a02f78e6ee40d9
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

@@ -22,7 +22,7 @@
             "envelope_size_rel",
             "offset_field",
             "offset_dhat_factor",
-            "offset_gradient_rel",
+            "convergence_gradient_norm_rel",
             "offset_residual_samples",
             "sorted_marching",
             "check_manifoldness",
@@ -41,6 +41,7 @@
             "ab_max_rounds",
             "ab_no_collapse_after_first_round",
             "ab_phase_a_iterations",
+            "ab_phase_b_iterations",
             "ab_smooth_max_passes",
             "ab_smooth_tol",
             "ab_vertex_grad_tol_rel",
@@ -69,6 +70,9 @@
             "stuck_refine_min_scalar",
             "stuck_refine_gradation",
             "stuck_refine_force_split",
+            "sizing_propagate_min",
+            "pre_optimize_sizing_from_edges",
+            "pre_optimize_input",
             "w_amips",
             "smoothing_mode",
             "project_line_search_steps",
@@ -191,10 +195,10 @@
         "doc": "Support radius of the smooth offset potential, as a multiple of target_distance. Must be > 1. The offset level set lies strictly inside the support; a band vertex that leaves the support is a hard error."
     },
     {
-        "pointer": "/offset_gradient_rel",
+        "pointer": "/convergence_gradient_norm_rel",
         "default": 0.2,
         "type": "float",
-        "doc": "3D only. THE CONVERGENCE CRITERION: a bound on the max of |grad (Phi(x) - c)^2| over the reachable offset surface, as a fraction of target_distance, DIVIDED BY THE FIELD'S LEVEL-SET SLOPE SQUARED. The gradient is the stationarity condition of the objective Phase B minimises, and the slope normalisation is what makes it mean the same thing for any potential -- exact Euclidean, the OGC rule, or ESP. Since grad E = 2 (Phi - c) grad Phi and |Phi - c| is a field difference rather than a length, the bound without that normalisation is only 'a distance' when |grad Phi| = 1, which holds for `euclidean` and fails badly for `smooth`, where Phi is a barrier whose slope grows like 1/target_distance (measured: slope 27.6 at delta 0.0216, so the un-normalised bound was 763x tighter than it read). With it the bound reads 2 x residual_length x (|grad Phi| / slope) <= r x target_distance. WHERE THE FIELD HAS ITS REFERENCE SLOPE -- the level set on a flat stretch, which is what the calibration measures -- that ratio is 1 and r means exactly residual_length <= (r/2) x target_distance, so the default 0.2 means residual_length <= 0.1 x target_distance. THIS IS ALSO THE ONLY TOLERANCE: the Phase A offset envelope is ab_offset_envelope_rel x (r/2) x target_distance, and the reported Phi residual is a diagnostic in absolute model units against that same (r/2) x target_distance bar. The separate offset_residual_rel knob is gone -- it sized the envelope off a parameter that no longer gated anything, leaving Phase A holding the surface in a tube 40x tighter than the accuracy the run was judged by (measured on prism: eps 0.00209 against a permitted error of 0.0837). Elsewhere it is that bound relaxed by slope/|grad Phi|, which is deliberate: it is what lets the criterion be met at a STATIONARY POINT of Phi, where |grad Phi| -> 0 and no residual bound is achievable. Two bodies close enough that Phi has a local-minimum contour between them above c have no level set in the gap at all -- the residual is floored at (Phi_min - c)/slope forever -- and there r instead controls, linearly, how close the two offset sheets settle to that contour. A run in that regime reports converged with a PLATEAUED max_phi_residual, which is the geometry, not a failure. Measured BOTH at band vertices and at interior samples of band faces (offset_residual_samples sets the density), so a surface whose vertices sit on the level set while its triangles chord across it does not read as converged; the report splits the two as max_grad_at_vertex and max_grad_in_face, which say whether a failing run wants smoothing or refinement."
+        "doc": "THE CONVERGENCE CRITERION, as a fraction of a MEASURED maximum. 2D: the reference is max |2 (Phi - c) grad Phi . n| over the INITIAL offset-surface vertices -- n the surface's own Voronoi-length-weighted normal (offset_surface_normal) -- measured once on the band as constructed and reported as the log's gradient reference. The run converges when max ||2 (Phi - c) grad Phi|| over the reachable offset vertices falls to this fraction of that reference, and each Phase B per-vertex placement solve terminates on exactly the same comparison at its own vertex -- the overall and local criteria are IDENTICAL, so the run is converged precisely when every visit stops immediately. Edge-interior samples (offset_residual_samples per edge) are still measured as a chord diagnostic (max_grad_in_edge in the report) but do not gate: a sample is not a variable, and refinement rather than placement is what lowers it. So 0.1 means 'reduce every vertex's placement gradient to a tenth of the worst initial normal-aligned misplacement'. 3D: UNCHANGED and NOT the same meaning -- there the bound is still the analytic convergence_gradient_norm_rel x target_distance x level_set_slope()^2 on the full gradient norm, measured at vertices AND at in-face samples, both gating. The two dimensions share this key and interpret it differently; 3D was left alone deliberately."
     },
     {
         "pointer": "/offset_residual_samples",
@@ -315,7 +319,13 @@
         "pointer": "/ab_smooth_max_passes",
         "type": "int",
         "default": -1,
-        "doc": "Cap on Phase B's smoothing passes per round; negative (the default) means UNCAPPED. Phase B now runs passes until one completes with NO offset vertex backtracked by its one-ring (every local minimum interior), which is its natural fixed point: the potential is a frozen field, so offset placements couple only through the ring constraint, and the interior AMIPS solves that run in the same passes are what open those rings. A no-progress guard stops the phase with a warning if neither the constrained count nor the placement gradient improves over 10 consecutive passes; the run's own convergence bar (offset_gradient_rel) also ends the phase early. Set a positive cap only as a diagnostic override. HISTORY: the previous default of 2 was the mitigation for the Phase A dead-band ratchet seeded by the OLD placement-only B's front-loaded displacement (5/5 vs 3/5 on prism raw-construction, 2026-08-20); that B moved only offset vertices and relied on Phase A to repair the background, which is the design this replaces. NOTE: the 2D pipeline reads this cap too (negative = uncapped there as well, exiting on its displacement test)."
+        "doc": "Cap on Phase B's smoothing passes per round; negative (the default) means UNCAPPED. Phase B now runs passes until one completes with NO offset vertex backtracked by its one-ring (every local minimum interior), which is its natural fixed point: the potential is a frozen field, so offset placements couple only through the ring constraint, and the interior AMIPS solves that run in the same passes are what open those rings. A no-progress guard stops the phase with a warning if neither the constrained count nor the placement gradient improves over 10 consecutive passes; the run's own convergence bar (convergence_gradient_norm_rel) also ends the phase early. Set a positive cap only as a diagnostic override. HISTORY: the previous default of 2 was the mitigation for the Phase A dead-band ratchet seeded by the OLD placement-only B's front-loaded displacement (5/5 vs 3/5 on prism raw-construction, 2026-08-20); that B moved only offset vertices and relied on Phase A to repair the background, which is the design this replaces. NOTE: the 2D pipeline reads this cap too (negative = uncapped there as well, exiting on its displacement test)."
+    },
+    {
+        "pointer": "/ab_phase_b_iterations",
+        "type": "int",
+        "default": 20,
+        "doc": "2D. Phase B's GAUSS-SEIDEL pass budget. Each pass gives every eligible vertex exactly ONE local iteration -- an offset-surface vertex takes one descent step on AMIPS + the offset error term, a background vertex one Newton step on its one-ring AMIPS -- sweeping in place so later vertices see earlier updates. The phase exits early ONLY on the run's own convergence criterion (the max placement gradient over offset vertices, convergence_gradient_norm_rel), otherwise it runs exactly this many passes. WHY: solving each vertex to its own minimum let a vertex race to a fixed point its neighbours had not yet seen, and where two offset fronts approach the same curve that crushed the elements between them into exactly-collinear zero-area triangles which no split or collapse can repair (measured on two_circles at delta 0.1). One step at a time advances the fronts together. The placement step is a damped Newton step with an Armijo line search, so its length comes from the local model rather than a constant; the pass count is therefore the only budget, and a vertex can cover real distance in one pass when the model says so."
     },
     {
         "pointer": "/ab_smooth_tol",
@@ -327,13 +337,13 @@
         "pointer": "/ab_vertex_grad_tol_rel",
         "type": "float",
         "default": 0.01,
-        "doc": "3D only. Phase B's PER-VERTEX solve tolerance, separate from the global convergence tolerance (offset_gradient_rel). Each visit in a Phase B pass runs its vertex's local solve to that vertex's own minimum -- an offset vertex fully minimizes the quadratic level-set error (Phi - c)^2 along grad Phi with one-ring backtracking, a background (interior) vertex runs Newton on its one-ring AMIPS energy -- stopping when the local gradient norm falls below this fraction of ITS OWN value at the start of the visit. The global criterion is still checked once per A/B round, after Phase B."
+        "doc": "Phase B's per-vertex solve tolerance for the INTERIOR (background AMIPS) Newton solves, in both dimensions: each visit stops when the local energy gradient falls below this fraction of its own value at the visit's start (polysolve rel_grad_norm_tol). The 2D OFFSET placement does NOT read it: its gradient descent stops when the normal placement gradient |2(Phi-c) grad Phi . n| is at or under the run's own convergence bar (convergence_gradient_norm_rel x the measured reference), so one parameter governs the local offset solves and the global criterion alike. An entry-relative rule there had no absolute floor and limit-cycled: a vertex far inside the run's bar still owed a further 100x reduction it could not resolve at the fixed step size, and burned its whole iteration budget standing still. 3D still uses this key for BOTH of its Phase B solves (offset LM placement and interior AMIPS); see .claude/CLAUDE.md for the 3D edit that would close the gap."
     },
     {
         "pointer": "/ab_offset_envelope_rel",
         "type": "float",
-        "default": 0.25,
-        "doc": "Phase A's offset envelope width, as a multiple of the Phi tolerance -- the same tube every round, whatever the current residual. Cannot be 0: refinement moves the surface by about the local chord error when a split lands, and an envelope tighter than that refuses Phase A's operations outright. Also feeds the derived sizing floor when min_edge_length_rel is negative."
+        "default": 0.025,
+        "doc": "Half-width of the Phase A offset envelope, AS A FRACTION OF target_distance. 2D: eps = ab_offset_envelope_rel * target_distance, a pure percentage -- the default 0.025 holds the offset boundary to within 2.5% of the offset distance while Phase A (TriWild: split, collapse, swap, smooth) runs, so at target_distance 1 the tube is 0.025 wide. Tighter over-constrains Phase A and starts refusing operations that were not straddling the boundary at all; looser lets Phase A undo placement Phase B had already brought inside tolerance. It is independent of the convergence criterion: that says when the run is done, this says how far Phase A may move the boundary while getting there. It was previously ab_offset_envelope_rel * offset_residual_tolerance() with a default of 0.25, which came to the same 0.025 * target_distance at the default convergence_gradient_norm_rel of 0.2 -- but chained the tube to the criterion, and so, once the criterion became a fraction of a MEASURED reference, to how badly construction happened to place the band. 3D: STILL the old form, ab_offset_envelope_rel * offset_residual_tolerance() (TopoOffsetTetMesh.cpp), so the new default makes the 3D tube 10x tighter than it was. 3D was left alone deliberately; see the note in .claude/CLAUDE.md."
     },
     {
         "pointer": "/interleaved_smoothing",
@@ -432,6 +442,24 @@
         "doc": "On a stall, also split each seeded face's longest edge once, bypassing the length gate and without touching the sizing field."
     },
     {
+        "pointer": "/sizing_propagate_min",
+        "default": false,
+        "type": "bool",
+        "doc": "How a split midpoint inherits its sizing scalar. false (TetWild's rule): the mean of the two endpoints, which dilutes refinement across the frontier of a refined region. true: the min of the two, so refinement propagates undiluted to split children and a refined region reaches its target length in one generation of splits. The collapse survivor keeps its own scalar either way. 2D only: the 3D split keeps the mean unconditionally."
+    },
+    {
+        "pointer": "/pre_optimize_sizing_from_edges",
+        "default": false,
+        "type": "bool",
+        "doc": "What sizing field pre_optimize_input runs against. false (default): seed target_distance / l on the INPUT-COMPLEX BOUNDARY -- an edge with exactly one incident label-1 face -- and grade outward, so the complex is resolved at the offset's own scale and the marching band comes out one delta-scale cell thick. true: seed every vertex from the mean of its own incident edge lengths instead, i.e. 'keep the resolution you have', with target_distance not entering the field at all. The second is the weaker request: it improves element quality without refining toward delta, so the constructed offset lands wherever the input mesh's own scale puts it and dhat is sized from that. Only read when pre_optimize_input is true."
+    },
+    {
+        "pointer": "/pre_optimize_input",
+        "default": false,
+        "type": "bool",
+        "doc": "Run TriWild over the INPUT mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same Phase A parameters (stop_energy, ab_phase_a_iterations) and held only by the per-tag region envelopes, which exist by then. The sizing field is seeded at target_distance / l on the INPUT-COMPLEX BOUNDARY only -- an edge with exactly one incident label-1 face -- and graded outward by gradation_smooth_sizing()'s ring BFS; the complex interior is reached only by that gradation, never seeded. Resolving the complex at the offset's own scale is what makes the marching band one delta-scale cell thick, which is what puts the constructed offset near delta and keeps dhat small. WHY: the marching places the offset on the background triangulation's own cell boundaries, so how far the constructed offset lands from the input complex is a property of the INPUT MESH, and dhat is then sized from that reach. A coarse cell touching the complex therefore inflates dhat, and a dhat several times target_distance merges the level sets of nearby features (measured on two_circles: at 14.76x delta the potential's level sets across a 0.2 gap merge entirely). 2D only. Off by default: it changes the mesh every later stage sees."
+    },
+    {
         "pointer": "/min_edge_length",
         "type": "float",
         "default": -1.0,
@@ -441,7 +469,7 @@
         "pointer": "/min_edge_length_rel",
         "type": "float",
         "default": -1.0,
-        "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it as the offset envelope epsilon, ab_offset_envelope_rel * (offset_gradient_rel / 2) -- TetWild's own floor (cap the sizing below by the envelope eps, Sec 3.2) stated in the offset's units: the offset surface is only held to within eps, so edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs, unlike the previous fixed 0.5176 = 2*sin(15 deg) default, which encoded the deleted normal-deviation criterion's sigma_max = 15 deg and silently capped achievable tolerance at ~3.3%."
+        "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it as the Phase A offset envelope epsilon, which is now just ab_offset_envelope_rel -- TetWild's own floor (cap the sizing below by the envelope eps, Sec 3.2) stated in the offset's units: the offset boundary is only held to within eps, so edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs, unlike the previous fixed 0.5176 = 2*sin(15 deg) default, which encoded the deleted normal-deviation criterion's sigma_max = 15 deg and silently capped achievable tolerance at ~3.3%."
     },
     {
         "pointer": "/min_sizing_scalar",

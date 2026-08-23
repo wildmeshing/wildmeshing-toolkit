@@ -2,6 +2,7 @@
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriOptimizerMesh.h>
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -115,8 +116,16 @@ public:
      * being frozen, rebuilding this from the live mesh would redefine the offset distance in
      * terms of a surface the optimizer had just moved, and the convergence criterion would then
      * be measuring the mesh against itself.
+     *
+     * THE ONLY STRUCTURE OVER THE INPUT COMPLEX. For offset_field "euclidean" the potential
+     * shares this very object as its query engine (value and nearest-feature both), which is
+     * why it is a shared_ptr. There used to be a second one -- an exact-kind SampleEnvelope
+     * over the same segments, built again inside init_offset_potential() -- duplicating the
+     * geometry for one consumer; deleted. Nothing ever needed it for CONTAINMENT either: the
+     * input complex is held in place by the per-tag region envelopes (m_tag_envelopes), like
+     * every other region boundary.
      */
-    SimplicialComplexBVH m_input_complex_bvh;
+    std::shared_ptr<SimplicialComplexBVH> m_input_complex_bvh;
 
     /**
      * @brief The SMOOTH OFFSET POTENTIAL, and with it the definition of the offset itself.
@@ -129,17 +138,6 @@ public:
      * shared_ptr because OffsetEnergy2D holds one per smoothing call.
      */
     std::shared_ptr<OffsetPotential2D> m_offset_potential;
-
-    /**
-     * @brief The EXACT-kind envelope of the input complex, built only for offset_field
-     * "euclidean". Null otherwise.
-     *
-     * Not a containment envelope and never used as one: no operation tests against it. It exists
-     * because nearest_point_feature() -- the foot point plus the feature kind the exact distance
-     * derivatives are cased on -- is only answered by the exact path. Built from the same
-     * extraction as m_input_complex_bvh, so it describes the same geometry.
-     */
-    std::shared_ptr<SampleEnvelope> m_input_complex_envelope;
 
     /**
      * @brief ONE CONTAINMENT ENVELOPE PER INPUT TAG, ambient included. Both phases.
@@ -266,7 +264,8 @@ public:
     /// Phase B's smoothing loop. Each pass sweeps every vertex once: offset vertices are placed
     /// on the level set by smooth_offset_vertex_backtracking(), background (interior) vertices
     /// minimize their one-ring AMIPS by smooth_interior_vertex_phase_b() -- each visit runs its
-    /// vertex's local solve to ab_vertex_grad_tol_rel of that vertex's own entry gradient.
+    /// vertex's local solve under the run's own gradient bar (offset placement) or to
+    /// ab_vertex_grad_tol_rel of its entry gradient (interior AMIPS).
     /// Returns the number of passes run; the natural exit is a pass in which NO offset vertex
     /// was backtracked by its one-ring (m_phase_b_constrained == 0). See the definition for the
     /// other exits (the run's own convergence bar, the no-progress guard, and an optional
@@ -303,19 +302,20 @@ public:
      * the residual, so it distinguishes "placement finished" from "placement blocked": a vertex
      * whose move is refused contributes zero DISPLACEMENT but full gradient.
      *
-     * VERTICES ONLY, which is the same function the convergence test uses restricted to the
-     * variables this phase owns -- Phase B performs no topological operation, so the in-edge
-     * term is constant under everything it can do. See gradient_split().
+     * VERTICES ONLY, exactly as the convergence test itself is: the criterion gates on the
+     * variables the optimizer owns, and the edge-interior samples are a resolution
+     * diagnostic. See gradient_split().
      */
     double phase_b_band_gradient_linf();
 
     /**
      * @brief Per-vertex band sizing update, run after Phase B. Returns the number changed.
      *
-     * REFINE-ONLY, AND ONLY ON PURE CHORD ERROR. "In tolerance" is the CONVERGENCE CRITERION
-     * itself -- |grad (Phi - c)^2| <= offset_gradient_tolerance() -- measured at band vertices
-     * and at edge-interior samples on the one lattice for_each_offset_edge_sample() defines, so
-     * this responds to exactly the quantity that decides the run rather than to a proxy for it.
+     * REFINE-ONLY, AND ONLY ON PURE CHORD ERROR. "In tolerance" is ||grad (Phi - c)^2|| <=
+     * offset_gradient_tolerance() -- at band vertices that IS the convergence criterion, and
+     * at edge-interior samples (the one lattice for_each_offset_edge_sample() defines) it is
+     * the same quantity continued into the chords: the diagnostic the criterion reports but
+     * does not gate on, and exactly what refinement can fix.
      *
      *  - HALVE when the vertex and every boundary one-ring neighbour are in tolerance but some
      *    sample inside an incident band edge is not. The boundary passes through the right
@@ -537,10 +537,12 @@ public:
     void init_offset_sizing_field();
 
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
-    /// max_grad_at_vertex, max_grad_in_edge}. Only the gradient pair is the convergence
-    /// criterion; the rest are diagnostics kept because they answer different questions -- the
-    /// Euclidean error says how far the smoothed offset ended up from the exact one, and the Phi
-    /// residual still ranks the sizing field. One entry for the whole run, as in 3D.
+    /// max_grad_at_vertex, max_grad_in_edge}. max_grad is the convergence criterion -- the
+    /// full placement-gradient norm at band vertices, so max_grad_at_vertex repeats it and
+    /// max_grad_in_edge is the chord diagnostic. The rest are diagnostics kept because they
+    /// answer different questions -- the Euclidean error says how far the smoothed offset
+    /// ended up from the exact one, and the Phi residual still ranks the sizing field. One
+    /// entry for the whole run, as in 3D.
     std::vector<std::array<double, 8>> optimization_metrics;
     /// {split-born vertices, recollapsed, recollapsed in the immediately following collapse
     /// pass} per A/B round, in step with op_counts. See VertexExtra2d::m_born_epoch.
@@ -551,6 +553,18 @@ public:
     /// mirror optimization_metrics, which is a single whole-run summary.
     std::vector<std::array<int, 3>> op_counts;
     /// Whether the optimization met the convergence criterion before the round cap.
+    /// The A/B round the run is in, 1-based; 0 before the loop starts. Read only by
+    /// write_smoothing_debug_output(), to tag each frame with the sub-iteration it belongs to.
+    int m_ab_round = 0;
+    /// Monotonic frame counter for the debug timeline. Mutable because the write hook is const.
+    mutable size_t m_debug_seq = 0;
+    /// Pass index within the current phase, and the (round, phase) it belongs to -- when those
+    /// change the index restarts. All three exist only to name frames.
+    mutable int m_debug_pass = 0;
+    mutable int m_debug_last_round = -1;
+    mutable char m_debug_last_phase = '?';
+    /// See offset_gradient_tolerance(). Set once by measure_gradient_reference().
+    double m_gradient_reference = 0.;
     bool m_converged = false;
 
     /// CHURN: split-born vertices that a collapse later removed, and the subset removed in the
@@ -579,9 +593,19 @@ public:
         std::map<size_t, int> face_label;
         size_t v1_id = 0;
         size_t v2_id = 0;
-        /// The parent edge's own boundary bits, captured while the edge still exists. See
-        /// edge_boundary_bits() for why this is not the endpoints' AND.
+        /// The endpoints' mask AND, captured before the split (3D's rule at both of its split
+        /// sites). Consumed by split_after_vertex() behind the parent edge's own class gate,
+        /// which is what keeps a chord's midpoint maskless -- so the AND cannot over-claim
+        /// through one. Never derived from the incident faces' current tags: the band retag
+        /// empties the live symmetric difference on every region edge it swallows.
         uint64_t edge_bits = 0;
+        /// Diagnostic: the two parent faces' AMIPS before the split, so split_after_vertex() can
+        /// say whether a needle child came from a healthy parent (the split MADE it) or from a
+        /// parent that was already unscoreable (the split only copied it).
+        double parent_q_max = -1.;
+        /// Same question in the scale-invariant measure, which keeps resolving after AMIPS has
+        /// saturated at MAX_ENERGY. MIN over the parents: the flattest thing the split inherited.
+        double parent_flatness = 1.;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
 
@@ -640,25 +664,26 @@ public:
     bool smooth_after(const Tuple& t) override;
 
     /**
-     * @brief The one simplex set the optimization may not touch at all.
+     * @brief IDENTIFICATION ONLY -- no operation refuses the domain wall through these.
      *
-     * The domain boundary is the box the background mesh lives in; there is nothing outside it
-     * for a vertex to move into and nothing the optimizer gains by re-triangulating it, so it is
-     * refused categorically.
+     * The wall is a tracked region boundary like every other one: init_surfaces_and_boundaries()
+     * tags its edges m_is_surface_fs, masks its vertices with ambient's bit, and puts its
+     * segments in ambient's envelope, so refinement, coarsening, flips and smoothing are all
+     * governed by the same envelope containment, per-class merge rules and link conditions that
+     * govern the input complex. The categorical refusals that used to sit in the split, swap
+     * and collapse hooks are gone (2026-08-22): they duplicated -- and where they differed,
+     * contradicted -- that accounting, and 3D's hooks never had them.
      *
-     * The INPUT COMPLEX used to be refused here too, and is not any more. It is the geometry the
-     * offset distance is measured against, but "measured against" is a statement about
-     * m_input_complex_bvh -- which holds the input as loaded and is never rebuilt -- not about
-     * the mesh elements that happen to represent it. Freezing those elements bought nothing and
-     * cost two things: the faces pinned between two frozen vertices could never reach
-     * stop_energy, and a band vertex sitting on the complex could never be moved off it, which
-     * pinned the loop's own convergence metric flat (measured in 3D: 119 of 544 band vertices,
-     * the metric identical to six significant figures at every iteration).
-     *
-     * The input complex is now tracked exactly as TriWild tracks its input surface: held inside
-     * m_envelope, re-projected onto it by the shared smoother, and topologically preserved by
-     * substructure_link_condition(), which collapse_edge_before() already applies
-     * unconditionally. See §2 of the design note in optimize_offset().
+     * What still reads these two:
+     *  - band_vertex_is_reachable(): a wall-clipped offset vertex is booked PINNED for the
+     *    convergence criterion, since Phase B's held-gate skips it and gating on it would
+     *    deadlock the run.
+     *  - the base's own wall rules, which stand apart from the component: the collapse
+     *    on_bbox_faces subset rule (wall vertices merge only along their own wall;
+     *    TriOptimizerMeshCollapse.cpp) and the smoothing wall freeze -- which the component's
+     *    smooth_before() deliberately BYPASSES in favour of envelope containment.
+     *  - diagnostics: the tracked-edge census, the mask-health class breakdown, and
+     *    warn_if_offset_reaches_domain_boundary().
      */
     bool vertex_is_on_domain_boundary(const size_t vid) const
     {
@@ -774,13 +799,201 @@ public:
         }
     };
     SmoothTrace m_smooth_trace;
+
+    /**
+     * @brief Why smoothing does not lift a sliver's apex off its opposite edge.
+     *
+     * Interleaved smoothing IS on (interleaved_smoothing defaults true), so every needle-adjacent
+     * vertex is visited after every topological pass. These counters say what happens when it is:
+     *
+     *  - offered   : smooth_before() entered with a needle already in the one-ring
+     *  - reached   : the solve produced a candidate and smooth_after() saw it
+     *  - fixed     : that candidate actually dropped the ring's worst below kNeedleQuality
+     *  - stationary: the candidate moved the vertex less than 1e-12 -- the solve found nothing
+     *
+     * `offered` minus `reached` is the search failing outright; `reached` minus `fixed` is a move
+     * being made that does not repair the sliver. The two have different causes and the fix for
+     * one is not the fix for the other, which is why they are counted separately.
+     */
+    mutable wmtk::threading::enumerable_thread_specific<std::pair<double, Vector2d>> m_needle_pre;
+    mutable std::atomic<size_t> m_needle_smooth_offered{0};
+    mutable std::atomic<size_t> m_needle_smooth_reached{0};
+    mutable std::atomic<size_t> m_needle_smooth_fixed{0};
+    mutable std::atomic<size_t> m_needle_smooth_stationary{0};
+    /// Worst-case record: the best (lowest) ring max any needle-adjacent smooth achieved.
+    mutable std::atomic<size_t> m_needle_smooth_reports{0};
+
+    /// Max AMIPS over the faces incident to `vid`. -1 if it has none.
+    double ring_max_quality(size_t vid) const;
+
+    /**
+     * @brief Scale-invariant flatness: 2*area / longest_edge^2.
+     *
+     * ~0.433 for an equilateral triangle, -> 0 as the three vertices become collinear, and
+     * independent of size -- which AMIPS is too, but AMIPS saturates at the MAX_ENERGY sentinel
+     * while this keeps resolving all the way down. It is the measure the genesis tracking needs:
+     * "this face got flatter" is a statement AMIPS cannot make once it is unscoreable.
+     */
+    double face_flatness(size_t fid) const;
+
+    /**
+     * @brief The full post-mortem on why nothing removes the flat faces.
+     *
+     * For the worst faces by flatness, enumerates all three edges and reports, per edge, every
+     * gate that decides whether an operation may touch it:
+     *   - length vs the COLLAPSE gate (4/5 l s-bar) -- above it, the edge never reaches the
+     *     candidate list, so collapse_edge_before is never called
+     *   - length vs the SPLIT gate (4/3 l s-bar), and whether it is force-split queued
+     *   - is_edge_on_surface -- swap_weight returns lowest() for a surface edge, so it is never
+     *     swapped at all
+     *   - swap_weight -- the pass needs > 1e-5, i.e. a strict improvement of the pair's worst
+     * Plus a scan for COINCIDENT VERTICES (pairs closer than 1e-9 * l), with whether each pair
+     * shares an edge: a pair that does not is geometry no local operation can reach.
+     */
+    void needle_forensics() const;
+
+    /// Genesis: flatness transitions recorded at the operation hooks. {op, parent, child}.
+    void record_flatness(const char* op, double parent_flat, size_t child_fid) const;
+    mutable std::atomic<size_t> m_flat_created_split{0};
+    mutable std::atomic<size_t> m_flat_created_collapse{0};
+    mutable std::atomic<size_t> m_flat_worsened_split{0};
+    mutable std::atomic<size_t> m_flat_genesis_reports{0};
+    static constexpr double kFlatThreshold = 1e-3;
+    /// The flattest face in the collapse's ring before it ran, for record_flatness().
+    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_parent_flatness;
     void log_smooth_trace() const;
+
+    /**
+     * @brief WHERE A PHASE B OFFSET PLACEMENT STOPPED, and therefore why the vertex did or did
+     *        not move.
+     *
+     * smooth_offset_vertex_backtracking() has a dozen exits and only three of them mean "this
+     * vertex is where it wants to be". The counters that existed before could not tell them apart:
+     * `constrained` lumps the two ring refusals together, and everything else -- including the
+     * paths that put the vertex back exactly where it started and return true -- was reported as
+     * `placed`. A vertex that never took a step looked identical in the log to one that walked
+     * onto the level set, which is exactly the question "some vertices are not moving" asks.
+     *
+     * The zero-entry-gradient cases are the ones worth separating. q = ||2 (Phi - c) grad
+     * Phi|| is zero when Phi == c (done) or when grad Phi == 0 (a pinch minimum, a legitimate
+     * stationary point of E), and negative where the field came back non-finite. Only the
+     * first is convergence.
+     */
+    enum class PlacementStop : int {
+        Moved = 0, ///< took >= 1 step and got under the run's own gradient bar
+        IterCap, ///< moved, but ran out of kMaxDescentIters (2 delta of travel)
+        RingBlocked, ///< the FIRST trial step inverted the one ring: displacement is exactly 0
+        LeftRing, ///< left the ring after >= 1 accepted step; kept the last inside position
+        MidStationary, ///< grad E hit zero part-way down the walk
+        MidNonFinite, ///< Phi or grad Phi went non-finite part-way down the walk
+        PreInverted, ///< a one-ring face was already inverted in floats on entry
+        NoRing, ///< empty one-ring
+        OnLevelSet, ///< q(entry) == 0 because Phi == c. Clean "nothing to do".
+        UnderBar, ///< q(entry) already <= the run's convergence bar; equally clean
+        Stationary, ///< q(entry) == 0 because grad Phi == 0 (pinch minimum)
+        NonFinite, ///< Phi, grad Phi, or the vertex position itself non-finite at entry
+        LeftOffset, ///< the step would have left the closed offset region {Phi >= c}; refused
+        COUNT
+    };
+    static const char* placement_stop_name(PlacementStop s);
+
+    struct PlacementTrace
+    {
+        static constexpr size_t N = size_t(PlacementStop::COUNT);
+
+        /// One vertex, kept per reason so a count can be turned into something to go and look
+        /// at. The one kept is the worst: largest |Phi - c|, i.e. the furthest off the level set.
+        struct Exemplar
+        {
+            size_t vid = size_t(-1);
+            double res = 0.; ///< Phi - c at entry; 0 where it was never measured
+            double gnorm = 0.; ///< |grad Phi| at entry
+            double cosn = 0.; ///< |grad Phi . n| / (|grad Phi| |n|) -- 0 is exactly tangent
+            double nnorm = 0.; ///< |n|; 0 means offset_surface_normal() found nothing
+            double disp = 0.; ///< how far the vertex actually moved this visit
+            int iters = 0; ///< accepted descent steps
+            double x = 0., y = 0.; ///< where it is, so it can be found in the viewer
+        };
+
+        std::array<std::atomic<int>, N> n{};
+        std::array<std::atomic<int>, N> n_reachable{}; ///< ... of which gate convergence
+        std::atomic<int> moved_one_step{0}; ///< Moved, but with exactly one step
+        std::mutex mtx;
+        std::array<Exemplar, N> worst{};
+
+        void reset()
+        {
+            for (size_t i = 0; i < N; ++i) {
+                n[i].store(0);
+                n_reachable[i].store(0);
+                worst[i] = Exemplar{};
+            }
+            moved_one_step.store(0);
+        }
+
+        void record(PlacementStop s, bool reachable, const Exemplar& e)
+        {
+            const size_t i = size_t(s);
+            ++n[i];
+            if (reachable) ++n_reachable[i];
+            // Racy pre-check, then the real one under the lock: this runs once per offset vertex
+            // per pass and the exemplar is a diagnostic, so the cost matters more than which of
+            // two equally bad vertices wins a tie. The empty test comes first so that every
+            // non-zero count is guaranteed an exemplar, including the reasons whose residual is
+            // never measured (an inverted ring is refused before Phi is ever evaluated).
+            const bool empty = worst[i].vid == size_t(-1);
+            if (!empty && std::abs(e.res) <= std::abs(worst[i].res)) return;
+            std::lock_guard<std::mutex> lock(mtx);
+            if (worst[i].vid == size_t(-1) || std::abs(e.res) > std::abs(worst[i].res)) {
+                worst[i] = e;
+            }
+        }
+    };
+    PlacementTrace m_placement_trace;
+    void log_placement_trace() const;
+
+    /**
+     * @brief AUDIT THE PHASE B CONTRACT: no offset-boundary vertex may be envelope-held there.
+     *
+     * Phase B releases the offset envelope and keeps the region envelopes, so a vertex that is
+     * ONLY on the offset is free and a vertex that is also on a region boundary is held -- and
+     * smooth_before() skips the held ones outright, because placing one needs the envelope's
+     * pull and containment together with the offset term. On a model whose offset never
+     * coincides with a region boundary that set must be EMPTY.
+     *
+     * The audit is not the same test as the dispatch: it re-derives "on a region boundary" from
+     * the vertex's own incident edges (edge_is_region), which is ground truth, and compares it
+     * against the stored m_is_on_region / on_bbox_faces the dispatch reads. A vertex held by the
+     * stored flag with no live region edge under it is a STALE flag -- the offset vertex is being
+     * frozen by bookkeeping rather than by geometry.
+     */
+    void audit_phase_b_offset_envelope_holds() const;
+
+    /**
+     * @brief Are the tracked region boundaries actually CONTAINED by anything?
+     *
+     * A class-0 edge is dispatched to an envelope by its boundary MASK, and the mask is the
+     * symmetric difference of its two faces' tags. An edge whose faces carry the SAME tags has an
+     * empty difference, so envelope_for_mask() gives it nullptr: it is tracked as a region
+     * boundary and held by nothing, in either phase. Construction cannot produce one -- it skips
+     * same-tag edges before it ever marks them -- so a non-zero count here is something that
+     * happened afterwards, and it is a hole in the containment the per-tag envelopes exist to
+     * provide. Called at construction and at each Phase B entry so the two can be compared.
+     */
+    void log_region_edge_mask_health(const std::string& when) const;
 
     /// How many offset placements this pass could not take to their own minimum -- the visit
     /// entered its one-ring bisection, was refused outright by inversion, or found the ring
     /// already float-inverted on entry. Reset by phase_b_smooth() before each pass; a pass that
     /// ends with this at zero is the loop's natural exit.
     mutable std::atomic<int> m_phase_b_constrained{0};
+
+    /// How many offset placements ran under the DEFAULT (normal-projected gradient) term but had
+    /// no usable n_i, so the term fell back to the plain quadratic error. Never reset -- it is a
+    /// run total, reported at the end of each Phase B. The invariant is 0; a nonzero count means
+    /// offset_vertex_normal() is returning the zero vector for real vertices, which is worth
+    /// knowing before reading the placement numbers.
+    mutable std::atomic<int> m_placement_no_normal{0};
 
     /// Per-thread Newton solver for Phase B's interior AMIPS solves. Separate from the base's
     /// m_solver because it carries a different stopping rule: polysolve's rel_grad_norm_tol set
@@ -841,16 +1054,19 @@ public:
     }
 
     /**
-     * @brief WHICH tag boundaries this edge itself lies on, read from the incident faces --
-     * exactly the classification init_surfaces_and_boundaries() bucketed the envelopes by.
+     * @brief DIAGNOSTIC ONLY: which tag boundaries the incident faces say this edge lies on,
+     * RIGHT NOW -- the same symmetric difference init_surfaces_and_boundaries() classified by.
      *
-     * The mask a split's new vertex inherits, and NOT the AND of the parent's endpoints. The AND
-     * names any tag the two ends happen to share, which need not be a tag the EDGE bounds at
-     * all: an endpoint on the tag_0/tag_1 curve joined to one on the tag_1/tag_2 curve yields the
-     * tag_1 bit for a chord that bounds neither. Measured on topo_annots_groups: 24 marching
-     * half-edges were then held to a tube they sit a full target_distance from, and the
-     * containment sweep called every one of them outside. The 3D twin gets away with the AND
-     * because its models have no such junction; the rule here is the one both want.
+     * Nothing dispatches or propagates from this any more. It is only trustworthy while the
+     * face tags are still the input's own: execute_offset() replaces the tags of every face the
+     * band grows through, after which this is empty across every region edge the band swallowed
+     * -- which is exactly how deriving split masks from it minted uncontained region vertices
+     * (see log_region_edge_mask_health, which counts the divergence between this and the stored
+     * masks). New vertices take the ENDPOINTS' mask AND behind the parent edge's class gate --
+     * 3D's rule at both of its split sites; the gate is what keeps the historical chord
+     * over-claim (24 marching half-edges held to a tube a full target_distance away, on
+     * topo_annots_groups) from returning, because a chord is not a region-class edge and never
+     * reaches the AND.
      */
     uint64_t edge_boundary_bits(const Tuple& e) const
     {
@@ -1039,7 +1255,7 @@ public:
      * target, so mesh_improvement() stops exactly when both are met:
      *
      *   - max face AMIPS over stop_energy -- TriWild's, via quality_rel()
-     *   - max Phi residual over (offset_gradient_rel / 2) * target_distance, over the REACHABLE band
+     *   - max Phi residual over (convergence_gradient_norm_rel / 2) * target_distance, over the REACHABLE band
      *
      * The average returned alongside it is the same expression over the two averages, so both
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
@@ -1079,9 +1295,13 @@ public:
     /// criterion loosens the tube with it. See the 3D twin for the measurement.
     double offset_residual_tolerance() const
     {
-        return std::max(
-            0.5 * m_offset_params.offset_gradient_rel * m_offset_params.target_distance,
-            1e-16);
+        // DERIVED FROM THE TOLERANCE, not from the knob. grad E . n = 2 (Phi - c) (grad Phi . n),
+        // so with |grad Phi| = s at the level set a bound g on the normal gradient is the length
+        // bound |Phi - c| <= g / (2 s^2). Reading the knob directly was only correct while the
+        // tolerance was itself rel x target_distance x s^2; it is now rel x a MEASURED maximum,
+        // and this has to follow it.
+        const double s = m_offset_potential ? m_offset_potential->level_set_slope() : 1.;
+        return std::max(0.5 * offset_gradient_tolerance() / (s * s), 1e-16);
     }
 
     /**
@@ -1104,14 +1324,30 @@ public:
      */
     double offset_gradient_tolerance() const
     {
-        // NORMALIZED BY THE FIELD'S SLOPE, so offset_gradient_rel means the same thing whichever
-        // field is in use. s == 1 for `euclidean`; for `smooth` Phi is a barrier, s ~ 1/delta,
-        // and without this factor rel 0.2 silently asks for a tiny fraction of delta.
-        const double s = m_offset_potential ? m_offset_potential->level_set_slope() : 1.;
+        // A FRACTION OF A MEASURED MAXIMUM, not of an analytic estimate.
+        //
+        // m_gradient_reference is max |2 (Phi - c) grad Phi . n| over the offset-surface
+        // VERTICES as CONSTRUCTED -- the normal-aligned placement gradient of the initial
+        // surface, taken once before the A/B loop starts. Everything this bar serves -- the
+        // convergence criterion and every Phase B local stop -- compares the FULL gradient
+        // norm at those same vertices against it. So the criterion reads "reduce every
+        // vertex's placement gradient to this fraction of the worst initial misplacement",
+        // and the two sides of the comparison come from one measurement pass.
+        //
+        // This replaces a normalization by target_distance x level_set_slope()^2, which stated
+        // the same intent through an analytic estimate of the field's steepness. The measured
+        // reference needs no such estimate and no per-field calibration.
+        //
+        // Zero until measure_gradient_reference() runs, which would make the bound 1e-16 and
+        // convergence unreachable rather than free -- see that function.
         return std::max(
-            m_offset_params.offset_gradient_rel * m_offset_params.target_distance * s * s,
+            m_offset_params.convergence_gradient_norm_rel * m_gradient_reference,
             1e-16);
     }
+
+    /// max |2 (Phi - c) grad Phi . n| over the initial offset-surface vertices; the scale
+    /// offset_gradient_tolerance() is a fraction of. Zero before measure_gradient_reference().
+    double gradient_reference() const { return m_gradient_reference; }
 
     /**
      * @brief Stop the run if any reachable band vertex has left the potential's support.
@@ -1243,8 +1479,9 @@ public:
     }
 
     /**
-     * @brief The convergence criterion's own split: |grad (Phi - c)^2| over the offset boundary,
-     * at band vertices and at interior samples of band edges.
+     * @brief The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices --
+     * the deciding measure -- plus the edge-interior chord diagnostic and the normal-aligned
+     * reference quantity.
      *
      * PINNED VERTICES ARE REPORTED, NOT GATED, which is where this deliberately parts company
      * with residual_split(). A residual is a statement about the BOUNDARY: a pinned vertex
@@ -1253,31 +1490,94 @@ public:
      * stopped moving, and folding in one it never moves would make convergence unreachable by
      * construction.
      *
-     * max_at_vertex vs max_in_edge says WHICH remedy: the boundary in the wrong PLACE (wants
-     * smoothing) or too COARSE to be in the right place (wants refinement). The in-edge term is
-     * what an optimization step cannot directly reduce -- a sample is not a variable -- so it is
-     * the CONVERGENCE test that carries it and the Phase B stop test that does not.
+     * THE DECIDING MEASURE IS THE FULL GRADIENT NORM AT VERTICES: max_reachable
+     * (== max_at_vertex) is max ||2 (Phi - c) grad Phi|| over reachable band vertices, the
+     * exact quantity every Phase B local solve stops on, so the run's verdict and the visits'
+     * stops are one test. max_in_edge is a DIAGNOSTIC -- the normal component at edge-interior
+     * samples, the chord error refinement answers -- and gates nothing: a sample is not a
+     * variable, and a criterion that carried it parked every vertex AT the bar while an edge
+     * interior held the verdict a few percent above it. max_normal_aligned is |grad E . n| at
+     * vertices over reachable AND pinned -- the quantity measure_gradient_reference() takes
+     * its max of.
      */
     struct GradientSplit
     {
         double max_reachable = 0., avg_reachable = 0.;
         double max_pinned = 0.;
         size_t n_reachable = 0, n_pinned = 0;
-        /// max_reachable, split by where it was measured -- see the class comment.
+        /// max_at_vertex repeats max_reachable (the criterion is vertex-only); max_in_edge is
+        /// the edge-interior chord DIAGNOSTIC -- reported, never gating. See the class comment.
         double max_at_vertex = 0., max_in_edge = 0.;
-        /// How many of n_reachable came from edge interiors rather than vertices.
+        /// max |2 (Phi - c) grad Phi . n| at band vertices, reachable AND pinned: the quantity
+        /// the reference is the max of. See measure_gradient_reference().
+        double max_normal_aligned = 0.;
+        /// Edge-interior samples measured into max_in_edge (not part of n_reachable).
         size_t n_edge_samples = 0;
         /// Band vertices the smoother would refuse to place, so their gradient is not part of
         /// the fixed point this measures.
         size_t n_skipped_inverted = 0, n_skipped_unrounded = 0;
-        /// Where the driving max came from, for the log. worst_vid is set only when the max is
-        /// an at-vertex one; an in-edge max has no vertex to name.
+        /// The vertex carrying max_reachable, for the log. size_t(-1) until a reachable
+        /// vertex is measured.
         size_t worst_vid = static_cast<size_t>(-1);
     };
-    /// @param include_edge_samples false measures VERTICES ONLY -- what Phase B's stop test
-    /// wants, since a sample is not a variable its sweeps can move. The convergence test always
-    /// passes true. See phase_b_band_gradient_linf().
+    /// @param include_edge_samples false skips the edge-interior DIAGNOSTIC (the expensive
+    /// half); the deciding vertex measures are identical either way. Verdict-time callers pass
+    /// true so max_in_edge is reported. See phase_b_band_gradient_linf().
     GradientSplit gradient_split(bool include_edge_samples = true) const;
+
+    /**
+     * @brief Unit normal of the OFFSET SURFACE at band vertex `vid`, Voronoi-length weighted.
+     *
+     * The 2D analogue of an area-weighted vertex normal: the offset boundary is a polyline, so
+     * each incident offset edge contributes its own unit normal weighted by HALF ITS LENGTH --
+     * the part of the edge whose nearest boundary vertex is this one, which is exactly the
+     * vertex's Voronoi cell along the curve. Normalised at the end, so only the weights' ratio
+     * matters.
+     *
+     * This is the DISCRETE SURFACE's own normal, and it is what the REFERENCE is measured
+     * along: measure_gradient_reference() takes max |2 (Phi - c) grad Phi . n| over the
+     * initial offset vertices with this n, and the convergence bar is a fraction of that. (The
+     * running tests -- the criterion and the Phase B local stops -- are the FULL gradient
+     * norm; the in-edge chord diagnostic projects onto the edge's own unit normal.) It
+     * replaced a projection back to the input complex, which measured against the INPUT's
+     * geometry rather than the surface's own -- and flips discontinuously across the medial
+     * axis where two offsets merge, exactly where this model family is interesting.
+     *
+     * Each edge normal is oriented OUTWARD -- away from the incident offset-band face -- so the
+     * two contributions at a vertex reinforce instead of cancelling. Returns the zero vector for
+     * a vertex with no live offset edge, or where the incident edges are degenerate.
+     */
+    Vector2d offset_surface_normal(const size_t vid) const;
+
+    /**
+     * @brief THE normal for an offset vertex. Every caller that needs one goes through here.
+     *
+     * There is exactly one definition of "the normal at an offset vertex" in the component, and
+     * this is it -- so switching the definition is a one-line edit here rather than a hunt
+     * through the call sites. Two implementations live in the body, selected at runtime by
+     * WMTK_OFFSET_NORMAL so one build can measure both.
+     *
+     *  - DEFAULT (unset): project to the INPUT COMPLEX. n is the unit vector from the nearest point
+     * on the complex to the vertex, i.e. the direction the offset grew along. It is a property of
+     * the input geometry alone, so it does not move as the offset mesh is re-triangulated, and it
+     * is defined for every band vertex whether or not it has live offset edges. Known weakness, and
+     * the reason it was removed once before: it flips discontinuously across the MEDIAL AXIS, i.e.
+     * exactly where two offset fronts approach each other -- which is where this model family is
+     * interesting.
+     *  - WMTK_OFFSET_NORMAL=surface: offset_surface_normal(), the Voronoi-length-weighted mean of
+     * the incident offset edges' outward normals. Continuous across the medial axis, but a property
+     * of the current triangulation rather than of the geometry, and it returns zero for a vertex
+     * with no live offset edge.
+     *
+     * @return unit vector, or the zero vector where neither definition can produce one.
+     */
+    Vector2d offset_vertex_normal(const size_t vid) const;
+
+    /// Measure m_gradient_reference -- max |2 (Phi - c) grad Phi . n| over the INITIAL
+    /// offset-surface vertices, reachable and pinned alike -- and return the split it was
+    /// measured from so the caller can report it without a second pass. Called once, before
+    /// the A/B loop; see offset_gradient_tolerance().
+    GradientSplit measure_gradient_reference();
 
     /// Turn a residual_split()'s outside-support tally into the hard error. Separate from
     /// check_offset_within_support() so the per-round check can reuse a split it already has.
@@ -1293,23 +1593,218 @@ public:
     /// hid it from the metric that decides convergence. Same change as 3D.
     bool band_vertex_is_reachable(const size_t vid) const
     {
+        // INTERFERENCE-PINNED vertices are the second disqualification, and unlike the domain
+        // wall it is MEASURED rather than structural: the vertex's own Gauss-Seidel step found
+        // no descent, and Phi around it says the level set it is chasing does not exist there
+        // (see pin_interference_stalled_vertices). Opt-in through WMTK_OFFSET_INTERFERENCE_PIN;
+        // the flag is only ever set when that is on, so this test costs nothing when it is off.
+        if (vid < m_interference_pinned.size() && m_interference_pinned[vid]) return false;
         return !vertex_is_on_domain_boundary(vid);
     }
 
     /**
-     * @brief TriWild's stall-driven sizing refinement, scored by this application's criterion.
+     * @brief Book offset vertices that stalled against ANOTHER offset front as unreachable.
+     *
+     * Called after every Phase B pass, and only when WMTK_OFFSET_INTERFERENCE_PIN is set.
+     *
+     * THE PROBLEM. Where two offset fronts approach the same curve, Phi in the corridor between
+     * them never falls to c -- on two_circles at delta 0.1 the gap midpoint sits at Phi = 2c --
+     * so there is no level set for those vertices to reach. They are not under-resolved and they
+     * are not badly placed; their target does not exist. Left in max_reachable they make
+     * convergence impossible by construction, and every round answers the residual by refining,
+     * which cannot help: Phi is a function of the INPUT COMPLEX, not of the mesh, so no amount
+     * of refinement moves the level set.
+     *
+     * THE TEST IS PURELY GEOMETRIC, and all three must hold. There WAS a fourth, first: that the
+     * vertex's own placement had reported PlacementStop::MidStationary. It never fired once --
+     * the damped Newton step's Armijo test (c1 = 1e-4) always admits some tiny length near a
+     * ridge, so the vertex crawls instead of reporting no-descent, and the whole rule was inert
+     * (measured on two_circles at delta 0.1: 231 of 231 visits `moved`, every pass, every round).
+     * It was redundant anyway -- conditions 1-3 below already say the level set is not there,
+     * whatever the solver reports -- and tying the rule to a stop reason tied it to a solver
+     * detail. If a measured stall is ever wanted as corroboration, use the ACCEPTED DISPLACEMENT
+     * against the local edge length, which no change of solver can invalidate.
+     *
+     *   1. Phi(x) > c. It is strictly inside the offset region, so it cannot be on the level set;
+     *      a vertex outside is a different situation and is left alone.
+     *   2. |grad Phi . n| <= kInterferenceTangentialRel * |grad Phi|. The field's gradient is
+     *      essentially TANGENTIAL to the offset direction, i.e. no progress is available along n.
+     *   3. n^T grad^2 Phi n > 0. Phi has a genuine local MINIMUM along n -- which is what makes
+     *      this an interference ridge rather than the flat far field (where grad Phi vanishes
+     *      identically and the second derivative with it) or an inflection.
+     *
+     * Condition 3 is the one that earns the design. Without it the test also matches the region
+     * beyond dhat, where Phi == 0 and grad Phi == 0 -- exactly the spurious minimum that the
+     * {Phi >= c} constraint was added to exclude from the placement.
+     *
+     * IT NEVER THROWS, by instruction. A large pinned count is reported loudly -- count, share of
+     * the surface, and the worst Phi/c excess -- because this lets a run converge by declaring
+     * part of the surface impossible. That is correct where the offset genuinely self-intersects
+     * and would mask a real failure where it does not, so the number has to be read, not trusted.
+     *
+     * @return how many vertices are pinned after this pass (recomputed from scratch each time --
+     *         a vertex that stalls in one pass may move in the next).
+     */
+    size_t pin_interference_stalled_vertices(size_t pass);
+
+    /// See pin_interference_stalled_vertices(). Indexed by vid; empty when the feature is off.
+    /// Cleared at the top of each round's Phase A so a stale flag never rides a recycled slot
+    /// through a topology change, and recomputed from scratch after every Phase B pass.
+    std::vector<char> m_interference_pinned;
+
+    /// Which offset vertices reported PlacementStop::MidStationary in the pass just finished.
+    /// Written once per vertex per pass by smooth_offset_vertex_backtracking(), so parallel
+    /// sweeps do not race on an index.
+    std::vector<char> m_placement_stalled;
+
+    /// |grad Phi . n| / |grad Phi| below which the field's gradient counts as TANGENTIAL to the
+    /// offset direction. Hard-coded rather than a spec key: it is a near-degeneracy test, not a
+    /// tuning knob, and the measured value is reported per vertex so a wrong choice is visible.
+    static constexpr double kInterferenceTangentialRel = 0.1;
+
+    /**
+     * @brief TriWild's stall-driven sizing refinement, verbatim.
      *
      * Structurally TriWildMesh::refine_sizing_around_worst, down to the shared helpers in
-     * wmtk/utils/SizingField.hpp and every stuck_refine_* parameter: rank faces, force-split the
-     * worst ones' longest edges, grow the region by rings, lower the per-vertex sizing scalar,
-     * grade it outward.
+     * wmtk/utils/SizingField.hpp and every stuck_refine_* parameter: rank faces by AMIPS,
+     * force-split the worst ones' longest edges, grow the region by rings, lower the
+     * per-vertex sizing scalar, grade it outward.
      *
-     * The one substitution is the per-face score. TriWild ranks a face by its AMIPS energy;
-     * here a face is ranked by the max of the same two normalized criteria the loop stops on,
-     * evaluated on that face. Ranking by AMIPS while the loop stalls on the offset would refine
-     * the wrong elements.
+     * PHASE A ONLY: mesh_improvement() is its one caller, and the alternating driver only runs
+     * that as Phase A. The Phase B branch that ranked by face_criterion_rel() was unreachable
+     * there and is deleted (2026-08-22); Phase B's refinement question belongs to
+     * update_band_sizing_from_tolerance().
      */
     size_t refine_sizing_around_worst(double max_metric) override;
+
+    /**
+     * @brief Why Phase A is stuck: a census of the faces stuck-refine is about to chase.
+     *
+     * Runs from refine_sizing_around_worst(), which only fires once max energy has stalled. The
+     * question it answers is not "how bad is the mesh" -- the log already says 1e50 -- but
+     * whether refinement is even the right response, and it separates four things the single
+     * MAX_ENERGY sentinel fuses:
+     *
+     *  - EXACTLY inverted (is_inverted) vs merely float-degenerate (is_inverted_f only). The
+     *    second kind is a valid triangle AMIPS2D cannot score because m_posf lost the area; it
+     *    is a rounding problem, not a geometry one, and splitting it makes two of them.
+     *  - carrying an UNROUNDED vertex, where m_posf is the wrong number outright.
+     *  - already BELOW the split gate, i.e. the longest edge is shorter than l * sbar * 4/3, so
+     *    the next pass cannot split them at all and lowering the sizing field is pure waste.
+     *  - at the sizing FLOOR, where apply_sizing_refinement has nothing left to give.
+     *
+     * Plus where they are: class distribution, connected clusters, and how much the set overlaps
+     * the previous call's (quantised on an l/10 grid, because fids are recycled and cannot be
+     * compared across passes). A high overlap with a low cluster count says the pass is chasing
+     * the same few spots forever; a scattered, changing set says something is manufacturing new
+     * degeneracies as fast as they are refined.
+     */
+    void log_stuck_refine_census(double max_metric, double filter_energy);
+
+    /**
+     * @brief For every element above `filter_energy`, WHY its edges cannot be split.
+     *
+     * log_stuck_refine_census() answers "what are the bad elements"; this answers "what is
+     * stopping the mesh from fixing them", which is a different question and the one that
+     * matters when phase A refines somewhere else instead.
+     *
+     * Attributes each of a bad face's three edges to the FIRST gate that refuses it, in the
+     * order the code applies them (TriOptimizerMeshSplit.cpp):
+     *
+     *   short     length^2 < splitting_l2 * mean(sizing)^2 -- never even offered to the queue.
+     *             The remedy is the SIZING FIELD, not the split.
+     *   valence   a link vertex is over split_high_valence_threshold. Reported as a ceiling:
+     *             the real gate is one such split per vertex per pass, which a static probe
+     *             cannot see, so this counts vertices that COULD be refused, not that were.
+     *   contain   the dispatched envelope refuses one of the two halves. This is the
+     *             "envelope too tight" hypothesis, and the column says WHICH envelope.
+     *   free      nothing blocks it -- so a face all of whose edges are `free` is not being
+     *             starved by any gate, and the stall is elsewhere (priority, valence budget,
+     *             or a shape no split can fix).
+     *
+     * Two shortcuts, both stated so the output is not over-read:
+     *
+     *  - THE MIDPOINT CANNOT INVERT A HEALTHY PARENT. Splitting (a,b) in face (a,b,c) makes
+     *    (a,m,c) and (m,b,c), each with exactly half the parent's signed area, so the base's
+     *    exact inversion check at TriOptimizerMeshSplit.cpp:250 can only fire on a parent that
+     *    is ALREADY inverted. The census reports the parent's own inversion instead of probing.
+     *  - THE ENVELOPE OF A CHILD SEGMENT IS THE PARENT'S. surface_envelope_for_edge dispatches
+     *    on edge_mask(), the AND of the endpoints' masks, and the midpoint's mask is itself the
+     *    AND of the parent's endpoints -- so mask(a,m) == mask(m,b) == mask(a,b) and one
+     *    dispatch serves both halves. This is the same reasoning split_adjust_position relies on.
+     *
+     * Each bad face is also located: centroid, distance to the input complex, and Phi/c there.
+     * That is what separates "the collided corridor between two fronts" from "somewhere random
+     * in the ambient background", which is the distinction the whole census exists to draw.
+     *
+     * Diagnostic only: reads the mesh, writes only the log.
+     */
+    void log_refine_block_census(const std::string& when, double filter_energy) const;
+
+    /**
+     * @brief Instrumentation only: which operation manufactures the MAX_ENERGY needles.
+     *
+     * The base leaves two doors open and this counts what goes through each.
+     *
+     *  - A SPLIT is never refused on quality (TriOptimizerMeshSplit.cpp: "A split is never
+     *    refused on quality" -- it checks orientation, rounding and containment only). Every
+     *    face incident to a freshly split midpoint is a face that split just created, so
+     *    needles counted there in split_after_vertex() were created by it.
+     *  - A COLLAPSE is admitted by collapse_quality_allowed() when `q <= ring_max`, and once a
+     *    single needle sits in the ring, ring_max IS MAX_ENERGY -- so the clause admits a
+     *    collapse that produces another needle. That is a contagion, and the three counters
+     *    below say which clause did the admitting.
+     */
+    bool collapse_quality_allowed(size_t v1, size_t v2, double q, double ring_max) const override;
+
+    mutable std::atomic<size_t> m_deg_split_created{0};
+    mutable std::atomic<size_t> m_deg_collapse_offered{0};
+    mutable std::atomic<size_t> m_deg_collapse_allowed{0};
+    mutable std::atomic<size_t> m_deg_collapse_by_ringmax{0};
+    mutable std::atomic<size_t> m_deg_collapse_by_stop{0};
+    mutable std::atomic<size_t> m_deg_collapse_by_unrounded{0};
+    /// Values at the previous census, so each census can report DELTAS rather than totals.
+    std::array<size_t, 6> m_deg_prev_counts{{0, 0, 0, 0, 0, 0}};
+
+    /**
+     * @brief Where the FIRST needles come from -- a tripwire, not a census.
+     *
+     * The census counts the population once it exists and the attribution counters say which
+     * operation touches them; neither says how the first one is born, and force-splitting only
+     * explains the doubling AFTER there is something to double. This logs the first
+     * kNeedleReports needle faces any operation hook sees, with everything needed to tell a
+     * creation from a copy: the operation, the parent quality where there is one, both the
+     * float and the exact orientation, full-precision coordinates, and each vertex's surface
+     * flags, birth epoch and rounding state.
+     *
+     * Deliberately capped -- once the force-split loop engages there are thousands per pass and
+     * the log stops being readable. It is the first few that carry the information.
+     */
+    void report_needle(const char* op, size_t fid, double parent_q) const;
+    static constexpr size_t kNeedleReports = 12;
+    /**
+     * @brief What counts as a needle for the tripwire -- deliberately far below MAX_ENERGY.
+     *
+     * The first pass of this instrumentation tested `>= MAX_ENERGY` and found the first such
+     * face already had a PARENT at AMIPS 3.45e14: catastrophically flat, entirely invisible to
+     * a 1e50 test, and the actual origin of the collinearity. A healthy triangle is O(2); 1e6
+     * is far outside anything the optimizer should tolerate and far below the sentinel, so the
+     * creation event is caught while its parent is still scoreable and can be quoted.
+     */
+    static constexpr double kNeedleQuality = 1e6;
+    mutable std::atomic<size_t> m_needle_reports{0};
+
+    /// Population scan at a named moment, for the points no operation hook covers -- after the
+    /// pre-pass, after construction, at each collapse pass. Reports the count and the worst few.
+    void needle_scan(const char* when) const;
+    /// Diagnostic only: the base offers no per-iteration hook except this one, so the needle
+    /// population scan rides on it. Calls nothing else -- the base default is empty.
+    void collapse_pass_begin() override;
+
+    /// Quantised centroids of the MAX_ENERGY faces at the previous stuck-refine, for the overlap
+    /// line above. Diagnostic only; nothing reads it but log_stuck_refine_census().
+    std::set<std::pair<long, long>> m_stuck_prev_cells;
+    size_t m_stuck_calls = 0;
 
     // optimization_bare_coarsen_passes() is NOT overridden: the base's true -- TriWild's opening
     // and closing unlimited-length collapse passes -- applies, as in 3D. The override returned
@@ -1332,14 +1827,53 @@ public:
      * for.
      */
     bool collapse_edge_after(const Tuple& t) override;
-    /// The per-face score refine_sizing_around_worst ranks by; >= 1 means the face fails at
-    /// least one of the two criteria. Also the per-face form of optimization_quality_stats().
+    /// Max of the two normalized criteria (AMIPS over stop, residual over tolerance) on this
+    /// face; >= 1 means it fails at least one. The coarsen-mode collapse accept reads it, and
+    /// it is the per-face form of optimization_quality_stats()'s Phase B max.
     double face_criterion_rel(const size_t fid) const;
-    /// The driver hands a bare `debug_N`; put the frames beside the run's own output instead of
-    /// in whatever directory it happened to be launched from.
+    /**
+     * @brief Put the frames beside the run's own output, and RENAME THEM INTO ONE TIMELINE.
+     *
+     * Every debug frame in 2D goes through here -- the per-pass ones the shared
+     * local_operations() driver writes during phase A, the per-pass ones phase_b_smooth()
+     * writes, and the two per-phase ones the A/B driver writes -- so this is the one place that
+     * can give them all a common order. The driver hands a bare `debug_N` or `phase_<r><A|B>`;
+     * both come out as
+     *
+     *     <output>_step_<NNNNN>_r<round><A|B><pass>.vtu      a pass inside a phase
+     *     <output>_step_<NNNNN>_r<round><A|B>_end.vtu         the frame the phase handed on
+     *
+     * NNNNN is a single monotonic counter across the whole run, so sorting on it is run order,
+     * full stop -- no interleaving two series by timestamp, no guessing whether a `debug_` frame
+     * came before or after a `phase_` one.
+     *
+     * <pass> counts passes WITHIN the current phase and restarts whenever the round or the
+     * phase changes, so `r1A3` reads directly as "round 1, phase A, third pass" -- which is what
+     * a viewer puts on a slider position. The restart is detected here rather than signalled by
+     * the driver, so no call site has to remember to reset anything.
+     *
+     * Round 0 is construction: the pre-loop frame is written before m_ab_round is set.
+     *
+     * Renaming HERE rather than at the call sites is what keeps this out of the shared driver:
+     * wmtk::TriOptimizerMesh writes phase A's per-pass frames and is also triwild's and
+     * simwild's, so its naming is not ours to change.
+     */
     void write_smoothing_debug_output(const std::string& path) const override
     {
-        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(m_offset_params.output_path + "_" + path);
+        std::string name = path;
+        const char ph = (m_phase == OptPhase::A) ? 'A' : 'B';
+        if (m_ab_round != m_debug_last_round || ph != m_debug_last_phase) {
+            m_debug_last_round = m_ab_round;
+            m_debug_last_phase = ph;
+            m_debug_pass = 0;
+        }
+        if (path.rfind("debug_", 0) == 0) {
+            name =
+                fmt::format("step_{:05d}_r{}{}{}", m_debug_seq++, m_ab_round, ph, ++m_debug_pass);
+        } else if (path.rfind("phase_", 0) == 0) {
+            name = fmt::format("step_{:05d}_r{}{}_end", m_debug_seq++, m_ab_round, ph);
+        }
+        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(m_offset_params.output_path + "_" + name);
     }
 
     /**
@@ -1410,6 +1944,33 @@ public:
     /**
      * @brief entry point for offset procedure
      */
+    /**
+     * @brief TriWild over the INPUT mesh, before any of the offset exists.
+     *
+     * Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point in
+     * the pipeline where the only tracked surfaces are the tag-region boundaries (the input
+     * complex and the domain wall among them) and the only containment is their per-tag
+     * envelopes -- built in init_surfaces_and_boundaries(), which has already run. There is no
+     * offset yet, so there is no offset envelope and no Phi term: this is TriWild, exactly.
+     *
+     * WHY IT IS WORTH A PASS. marching_tris() puts the offset boundary on the background
+     * triangulation's OWN cell boundaries, so the distance the constructed offset lands from the
+     * input complex is a property of the input mesh rather than of target_distance -- and
+     * init_offset_potential() then sizes dhat from that reach. One coarse cell touching the
+     * complex is enough to inflate dhat several-fold, and a large dhat merges the level sets of
+     * features that are close together, which no later stage can undo. Improving the mesh the
+     * marching runs on is the earliest place to attack that.
+     *
+     * THE SIZING FIELD IS SEEDED FIRST, to target_distance on the INPUT-COMPLEX BOUNDARY and
+     * graded outward from there. That is the point of the pass: a band built on cells of delta
+     * scale lands near delta from the complex, which is what keeps dhat small. Seeding is also
+     * not optional in the weaker sense -- the base field is 1 everywhere, a target of
+     * m_params.l, which is far coarser than the mesh around the complex (two_circles: l = 0.329
+     * against incident lengths of 0.078), so an unseeded pass would COARSEN the input and leave
+     * the marching a worse mesh than it started with.
+     */
+    void pre_optimize_input_mesh();
+
     void execute_offset(const std::filesystem::path& output_file);
 
     /**

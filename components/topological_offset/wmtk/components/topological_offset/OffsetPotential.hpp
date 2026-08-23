@@ -2,7 +2,9 @@
 
 #include <wmtk/Types.hpp>
 #include <wmtk/envelope/Envelope.hpp>
+
 #include <wmtk/threading/enumerable_thread_specific.hpp>
+#include "SimplicialComplexBVH.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
 
@@ -328,13 +330,28 @@ public:
     using MatD = typename OffsetPotential<DIM>::MatD;
 
     /**
-     * @brief Build over an EXACT-kind envelope of the input complex.
+     * @brief Build over an EXACT-kind envelope of the input complex. THE 3D PATH.
      *
      * The envelope is the query engine, not a tolerance: nearest_point_feature() is what supplies
      * the foot point and the feature kind the derivatives are cased on, and only the exact kind
      * answers it. Its eps is irrelevant here and no containment test is ever run against it.
+     * 2D stopped using this constructor: the mesh keeps exactly one structure over the input
+     * complex -- the BVH below -- and building an envelope beside it duplicated the geometry.
      */
     EuclideanOffsetPotential(const std::shared_ptr<SampleEnvelope>& envelope, double delta);
+
+    /**
+     * @brief Build over the input-complex BVH. THE 2D PATH, and 2D-only (checked at runtime --
+     * a static_assert would fire under the explicit template instantiation).
+     *
+     * The same query engine the rest of the pipeline already retains: built once when the mesh
+     * is initialized, never rebuilt, and now also serving value() and nearest_feature() here,
+     * both through the BVH's feature query -- the distance to the complex's CURVE (its edge
+     * set), which for a solid complex is the boundary, never the solid's own zero interior. The
+     * containment of the input complex is none of this object's business either way -- the per-tag
+     * region envelopes hold it.
+     */
+    EuclideanOffsetPotential(const std::shared_ptr<SimplicialComplexBVH>& bvh, double delta);
 
     double value(const VecD& p) const override;
     VecD gradient(const VecD& p) const override;
@@ -363,7 +380,10 @@ private:
     using OffsetPotential<DIM>::m_dhat;
     using OffsetPotential<DIM>::m_c;
 
+    /// Exactly one of these is set, by whichever constructor ran: the envelope by the 3D path,
+    /// the BVH by the 2D path. Every query branches on m_bvh.
     std::shared_ptr<SampleEnvelope> m_envelope;
+    std::shared_ptr<SimplicialComplexBVH> m_bvh;
 };
 
 using EuclideanOffsetPotential2D = EuclideanOffsetPotential<2>;

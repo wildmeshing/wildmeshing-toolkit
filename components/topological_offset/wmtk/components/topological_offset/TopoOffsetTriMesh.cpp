@@ -584,12 +584,7 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
         index++;
     }
 
-    // set BVH
-    m_input_complex_bvh.clear(); // in case resetting it now
-    m_input_complex_bvh.init(V, T, F, E, P);
-
-    // THE SMOOTH OFFSET POTENTIAL, from the same extraction and in the same call, so the two
-    // descriptions of the input can never diverge.
+    // THE BOUNDARY CURVE, derived before the BVH so the ONE retained structure can carry it.
     //
     // Phi's 2D primitives are segments and points; there is no 2D area primitive. A solid input
     // region therefore enters as its BOUNDARY -- the edges of the complex's triangles that have
@@ -629,6 +624,19 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
         P_phi.push_back(P(i, 0));
     }
 
+    // set BVH -- a fresh object rather than clear+reinit, so any potential still holding the
+    // old one (there should be none; this runs once, before construction) keeps a coherent view.
+    //
+    // THE EDGE SET IS THE CURVE, E_phi, NOT just the isolated edges E: the euclidean
+    // potential's feature query (nearest_point_feature) runs on the BVH's edges, and it must
+    // see the boundary of a solid complex, which the face set alone cannot answer -- measured
+    // the hard way: on two_circles the complex is the two solid disks, E was empty, and the
+    // first feature query walked an uninitialized tree. E_phi already contains the isolated
+    // edges, and every boundary segment lies ON a complex face, so squared_dist() -- the
+    // distance to the SOLID complex -- is unchanged by indexing them too.
+    m_input_complex_bvh = std::make_shared<SimplicialComplexBVH>();
+    m_input_complex_bvh->init(V, T, F, E_phi, P);
+
     // KEPT, not built. The extraction is what must not diverge from the BVH's, so it is done
     // here and once; the potential itself needs target_distance and offset_dhat_factor, which a
     // caller that only wants the distance field (the unit tests build a TopoOffsetTriMesh from a
@@ -641,43 +649,29 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
 
 void TopoOffsetTriMesh::init_offset_potential()
 {
-    if (m_phi_V.rows() == 0) {
+    if (m_phi_V.rows() == 0 || !m_input_complex_bvh) {
         log_and_throw_error("init_offset_potential() called before init_input_complex_bvh()");
     }
     // WHICH FIELD DEFINES THE OFFSET; see OffsetPotential.hpp and the offset_field parameter.
     // Both are built from the SAME extraction -- m_phi_V/E/P, which init_input_complex_bvh()
     // produced -- so whichever is chosen measures the same geometry the diagnostics do.
+    // NO SECOND STRUCTURE. The euclidean potential queries m_input_complex_bvh -- the one
+    // input-complex structure this mesh keeps, built when the object was initialized and
+    // retained through the whole run. An exact-kind SampleEnvelope used to be built here over
+    // the same segments as its private query engine; it duplicated the geometry, and its other
+    // consumer (the convergence criterion's projection normal) is gone. Containment of the
+    // complex was never this object's job either -- the per-tag region envelopes hold it.
+    const size_t n_input_segments = size_t(m_phi_E.rows()) + m_phi_P.size();
+
     if (m_offset_params.offset_field == "euclidean") {
-        // The envelope here is a QUERY ENGINE, not a tolerance: nearest_point_feature() supplies
-        // the foot point and the feature kind the exact derivatives are cased on, and only the
-        // exact kind answers it. eps is never read -- no containment test is run against this
-        // object -- so it is set to target_distance purely to be a sane positive number.
-        std::vector<Eigen::Vector2d> verts(size_t(m_phi_V.rows()));
-        for (int i = 0; i < m_phi_V.rows(); ++i) {
-            verts[size_t(i)] = m_phi_V.row(i).head<2>();
-        }
-        std::vector<Eigen::Vector2i> segs;
-        segs.reserve(size_t(m_phi_E.rows()) + m_phi_P.size());
-        for (int i = 0; i < m_phi_E.rows(); ++i) {
-            segs.emplace_back(m_phi_E(i, 0), m_phi_E(i, 1));
-        }
-        // Isolated input points enter as the degenerate segment (i, i), exactly as
-        // SimplicialComplexBVH carries them. EuclideanOffsetPotential::nearest_feature() demotes
-        // a hit on one to the vertex case, which is what the geometry is.
-        for (const int i : m_phi_P) {
-            segs.emplace_back(i, i);
-        }
-        m_input_complex_envelope = std::make_shared<SampleEnvelope>();
-        m_input_complex_envelope->use_exact = true;
-        m_input_complex_envelope->init(verts, segs, m_offset_params.target_distance);
         m_offset_potential = std::make_shared<EuclideanOffsetPotential2D>(
-            m_input_complex_envelope,
+            m_input_complex_bvh,
             m_offset_params.target_distance);
         logger().info(
             "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} segments ({} of them "
             "isolated points)",
             m_offset_params.target_distance,
-            segs.size(),
+            n_input_segments,
             m_phi_P.size());
         return;
     }
@@ -740,7 +734,7 @@ double TopoOffsetTriMesh::max_band_vertex_distance() const
         if (!on_band[vid]) continue;
         if (!m_vertex_attribute[vid].m_is_rounded) continue;
         const Vector2d p = m_vertex_attribute[vid].m_posf;
-        const Vector3d near3 = m_input_complex_bvh.nearest_point(VectorXd(p));
+        const Vector3d near3 = m_input_complex_bvh->nearest_point(VectorXd(p));
         worst = std::max(worst, (p - Vector2d(near3[0], near3[1])).norm());
     }
     return worst;
@@ -749,6 +743,17 @@ double TopoOffsetTriMesh::max_band_vertex_distance() const
 
 void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
 {
+    // BEFORE ANY OF THE CONSTRUCTION, optionally improve the mesh the construction runs on.
+    // The marching puts the offset on this triangulation's own cell boundaries, so its quality
+    // decides how far the constructed offset lands from the complex and therefore how large
+    // dhat has to be. See pre_optimize_input_mesh().
+    if (m_offset_params.pre_optimize_input) {
+        pre_optimize_input_mesh();
+        if (m_offset_params.debug_output) {
+            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        }
+    }
+
     // make embedding simplicial
     m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     logger().info("Creating simplicial embedding...");
@@ -1198,8 +1203,16 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         }
     }
 
+    // THE SIZING FIELD, as point data. It is what drives every split and collapse gate, it is
+    // the one thing the debug output could not show, and a discontinuity in it is invisible in
+    // the geometry until the elements it produces are already degenerate. Two forms: the raw
+    // scalar, and the TARGET EDGE LENGTH l * scalar it actually means, which is directly
+    // comparable to the edge lengths in the same picture.
+    Eigen::MatrixXd S(vs.size(), 1), Ltgt(vs.size(), 1);
     for (size_t k = 0; k < vs.size(); ++k) {
         V.row(k) = m_vertex_attribute[vs[k].vid(*this)].m_posf;
+        S(k, 0) = m_vertex_attribute[vs[k].vid(*this)].m_sizing_scalar;
+        Ltgt(k, 0) = m_params.l * S(k, 0);
     }
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
@@ -1208,6 +1221,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
     writer->add_cell_field("offset_tag", tags[m_tags_count]); // also hacky but it works.
+    writer->add_field("sizing_scalar", S);
+    writer->add_field("target_edge_length", Ltgt);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // surface output
@@ -1252,7 +1267,7 @@ void TopoOffsetTriMesh::write_phi_grid(const std::string& path, const int n) con
             residual(k, 0) = std::min(
                 m_offset_potential->residual_length(p),
                 8. * m_offset_params.target_distance);
-            euclid(k, 0) = m_input_complex_bvh.dist(VectorXd(p));
+            euclid(k, 0) = m_input_complex_bvh->dist(VectorXd(p));
         }
     }
     int f = 0;

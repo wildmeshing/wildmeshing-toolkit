@@ -80,7 +80,15 @@ struct Parameters : public wmtk::OptimizerParameters
     // under tolerance from round 4, while the in-face term needed four more rounds and was still
     // 10.7x larger at convergence. The two are reported separately because they call for
     // different remedies -- at-vertex wants smoothing, in-face wants refinement.
-    double offset_gradient_rel;
+    //
+    // CONVERGENCE, 2D -- same key, different meaning (see .claude/CLAUDE.md, PARAMETER
+    // MEANINGS THAT HAVE MOVED, and the spec doc). The bar is this fraction of a MEASURED
+    // reference -- max |2 (Phi - c) grad Phi . n| over the INITIAL offset vertices, n the
+    // surface's own Voronoi-length-weighted normal -- and both the run criterion and every
+    // Phase B local placement stop compare the FULL gradient norm AT VERTICES against it, one
+    // identical test. Edge-interior samples are a chord diagnostic in 2D: reported, never
+    // gating.
+    double convergence_gradient_norm_rel;
     // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;
     // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to
     // a band whose vertices sit on the level set while its edges cut across it.
@@ -110,12 +118,29 @@ struct Parameters : public wmtk::OptimizerParameters
     bool ab_no_collapse_after_first_round; ///< DIAGNOSTIC: refuse all collapses from round 2
     int ab_phase_a_iterations; ///< iterations of TetWild's loop inside one Phase A
     int ab_smooth_max_passes; ///< cap on Phase B smoothing passes; negative = uncapped (default)
+    /// Phase B's GAUSS-SEIDEL pass budget. Each pass gives every eligible vertex exactly ONE
+    /// local iteration -- offset vertices one descent step on AMIPS + the offset term, background
+    /// vertices one Newton step on their one-ring AMIPS, both line-searched -- and stops early only when
+    /// the run's own convergence criterion is met. This replaced solving each vertex to its own
+    /// minimum, which let a vertex race to a fixed point its neighbours had not seen yet; where
+    /// two offset fronts approach, that is what crushed the elements between them.
+    int ab_phase_b_iterations;
     double ab_smooth_tol;
-    /// Phase B's PER-VERTEX solve tolerance: each visit runs its vertex's local solve until the
-    /// local gradient norm falls below this fraction of its own value at the visit's start.
-    /// Separate from the global criterion (offset_gradient_rel), which is checked once per A/B
-    /// round. See smooth_offset_vertex_backtracking() and smooth_interior_vertex_phase_b().
+    /// Phase B's INTERIOR (background AMIPS) per-vertex Newton tolerance: polysolve's
+    /// rel_grad_norm_tol, the fraction of the visit's own entry gradient the solve stops at.
+    /// In 2D the OFFSET placement no longer reads this -- its descent stops on the run's own
+    /// bar, offset_gradient_tolerance(), so convergence_gradient_norm_rel governs the local
+    /// solves and the global criterion alike (an entry-relative rule with no absolute floor
+    /// limit-cycled; see smooth_offset_vertex_backtracking()). 3D still reads it for BOTH of
+    /// its Phase B solves -- see .claude/CLAUDE.md, PARAMETER MEANINGS THAT HAVE MOVED.
     double ab_vertex_grad_tol_rel;
+    /// Run TriWild over the INPUT mesh before the simplicial embedding and the marching, held
+    /// only by the per-tag region envelopes. 2D only; see TopoOffsetTriMesh::pre_optimize_input_mesh().
+    bool pre_optimize_input = false;
+    /// See the spec: which sizing field pre_optimize_input runs against. false = seed
+    /// target_distance on the input-complex boundary; true = seed every vertex from its own
+    /// incident edge lengths, so target_distance never enters the field.
+    bool pre_optimize_sizing_from_edges = false;
     /// Phase A's offset envelope width, in Phi tolerances -- the same tube every round; see
     /// rebuild_offset_envelope(). Also feeds the derived sizing floor (min_edge_length_rel < 0).
     double ab_offset_envelope_rel;
@@ -130,7 +155,7 @@ struct Parameters : public wmtk::OptimizerParameters
     // paper caps the sizing field below by the envelope epsilon ("to prevent unnecessary
     // over-refinement in problematic regions", Sec 3.2): the surface is only pinned to within
     // eps, so edges shorter than eps cannot buy fidelity. The offset's envelope is Phase A's,
-    // eps = ab_offset_envelope_rel * (offset_gradient_rel / 2) * target_distance, so that
+    // eps = ab_offset_envelope_rel * target_distance, so that
     // product is
     // the derived floor. It is a pure runaway rail, well below the ~delta*sqrt(8*tau) chord any
     // tolerance tau actually needs -- refinement stops at "cannot help" rather than at a fixed
@@ -184,7 +209,7 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
-        offset_gradient_rel = json_params["offset_gradient_rel"];
+        convergence_gradient_norm_rel = json_params["convergence_gradient_norm_rel"];
         offset_residual_samples = json_params["offset_residual_samples"];
 
         sorted_marching = json_params["sorted_marching"];
@@ -198,6 +223,7 @@ struct Parameters : public wmtk::OptimizerParameters
         ab_no_collapse_after_first_round = json_params["ab_no_collapse_after_first_round"];
         ab_phase_a_iterations = json_params["ab_phase_a_iterations"];
         ab_smooth_max_passes = json_params["ab_smooth_max_passes"];
+        ab_phase_b_iterations = json_params["ab_phase_b_iterations"];
         ab_smooth_tol = json_params["ab_smooth_tol"];
         ab_vertex_grad_tol_rel = json_params["ab_vertex_grad_tol_rel"];
         ab_offset_envelope_rel = json_params["ab_offset_envelope_rel"];
@@ -244,6 +270,9 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
+        sizing_propagate_min = json_params["sizing_propagate_min"];
+        pre_optimize_input = json_params["pre_optimize_input"];
+        pre_optimize_sizing_from_edges = json_params["pre_optimize_sizing_from_edges"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
@@ -290,8 +319,13 @@ struct Parameters : public wmtk::OptimizerParameters
         // that has to be resolved, and its scale is delta. See the declaration for why this is
         // no longer derived from an angle.
         if (min_edge_length_rel < 0) {
-            min_edge_length_rel =
-                std::max(ab_offset_envelope_rel * 0.5 * offset_gradient_rel, 1e-12);
+            // THE ENVELOPE EPS, AS A MULTIPLE OF target_distance -- which is now exactly what
+            // ab_offset_envelope_rel is, so no conversion is left to do. The old expression,
+            // ab_offset_envelope_rel * 0.5 * convergence_gradient_norm_rel, was that same eps
+            // back when the tube was a fraction of the residual tolerance; at the old defaults
+            // (0.25, 0.2) it came to 0.025, which is the new default itself, so this is
+            // unchanged in value and only stops restating a definition that has moved.
+            min_edge_length_rel = std::max(ab_offset_envelope_rel, 1e-12);
         }
         if (min_edge_length < 0) {
             min_edge_length = min_edge_length_rel * target_distance;

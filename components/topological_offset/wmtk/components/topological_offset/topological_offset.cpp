@@ -76,7 +76,7 @@ void topological_offset(nlohmann::json json_params)
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
-        logger().info("offset_gradient_rel: {}", params.offset_gradient_rel);
+        logger().info("convergence_gradient_norm_rel: {}", params.convergence_gradient_norm_rel);
         logger().info("===============================");
     }
 
@@ -287,6 +287,10 @@ void topological_offset(nlohmann::json json_params)
                 // authority and cannot drift from the criterion it applied.
                 report["converged"] = mesh.m_converged;
                 report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
+                // The measured scale that tolerance is a fraction of; without it the
+                // tolerance is an unreadable absolute number. 2D only -- 3D normalizes
+                // analytically and has no measured reference to report.
+                report["gradient_reference"] = mesh.gradient_reference();
                 report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();

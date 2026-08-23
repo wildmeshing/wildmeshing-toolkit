@@ -875,11 +875,11 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     mesh.m_vertex_extra[0].label = 1;
     mesh.init_input_complex_bvh();
     Vector2d q(1.0, 1.0);
-    double dist = mesh.m_input_complex_bvh.dist(q);
+    double dist = mesh.m_input_complex_bvh->dist(q);
     REQUIRE(fabs(dist - sqrt(2.0)) < pow(10, -6));
 
     Vector2d q0(0.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q0);
+    dist = mesh.m_input_complex_bvh->dist(q0);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     // label edges and vertices as input
@@ -890,15 +890,15 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     mesh.init_input_complex_bvh();
 
     Vector2d q1(1.0, 1.0);
-    dist = mesh.m_input_complex_bvh.dist(q1);
+    dist = mesh.m_input_complex_bvh->dist(q1);
     REQUIRE(fabs(dist - (sqrt(2) / 2.0)) < pow(10, -6));
 
     Vector2d q2(0.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q2);
+    dist = mesh.m_input_complex_bvh->dist(q2);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     Vector2d q3(10.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q3);
+    dist = mesh.m_input_complex_bvh->dist(q3);
     REQUIRE(fabs(dist - 9.0) < pow(10, -6));
 }
 

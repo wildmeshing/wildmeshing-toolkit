@@ -882,15 +882,15 @@ public:
     ///
     /// WHY IT MATTERS BEYOND REPORTING: this feeds the Phase A offset envelope
     /// (ab_offset_envelope_rel x this) and the derived min_edge_length floor. While it was its
-    /// own knob it kept its old value when a run loosened offset_gradient_rel, so Phase A held
+    /// own knob it kept its old value when a run loosened convergence_gradient_norm_rel, so Phase A held
     /// the offset surface in a tube far tighter than the accuracy the run was judged by --
-    /// measured on prism at offset_gradient_rel 0.2: eps 0.00209 against a permitted error of
+    /// measured on prism at convergence_gradient_norm_rel 0.2: eps 0.00209 against a permitted error of
     /// 0.0837, a factor of 40, and 1/2000th of the target edge length. Tying the two together
     /// means loosening the criterion loosens the tube with it.
     double offset_residual_tolerance() const
     {
         return std::max(
-            0.5 * m_offset_params.offset_gradient_rel * m_offset_params.target_distance,
+            0.5 * m_offset_params.convergence_gradient_norm_rel * m_offset_params.target_distance,
             1e-16);
     }
 
@@ -909,15 +909,16 @@ public:
      * That is what lets a concave input be judged by the same number as a convex one.
      *
      * Not a restatement of the old bound. On a distance-like field the two coincide up to the
-     * factor 2 (see offset_gradient_rel's default), but where |grad Phi| departs from 1 -- near a
-     * medial axis, at a sharp feature, anywhere ESP's several active primitives compete -- they
-     * are different tests and neither implies the other.
+     * factor 2 (see convergence_gradient_norm_rel's default), but where |grad Phi| departs from 1
+     * -- near a medial axis, at a sharp feature, anywhere ESP's several active primitives compete
+     * -- they are different tests and neither implies the other.
      */
     double offset_gradient_tolerance() const
     {
-        // NORMALIZED BY THE FIELD'S SLOPE, so offset_gradient_rel means the same thing whichever
-        // field is in use. |grad (Phi - c)^2| = 2 |Phi - c| |grad Phi|, and |Phi - c| is a field
-        // difference, not a length -- OffsetPotential::level_set_slope() is the conversion. With
+        // NORMALIZED BY THE FIELD'S SLOPE, so convergence_gradient_norm_rel means the same thing
+        // whichever field is in use. |grad (Phi - c)^2| = 2 |Phi - c| |grad Phi|, and |Phi - c| is
+        // a field difference, not a length -- OffsetPotential::level_set_slope() is the conversion.
+        // With
         // s that slope and r = |Phi - c| / s the residual as a LENGTH, the bound below is
         //
         //     2 * r * (|grad Phi| / s)  <=  rel * delta
@@ -950,7 +951,7 @@ public:
         // geometry being reported, not a placement failure.
         const double s = m_offset_potential ? m_offset_potential->level_set_slope() : 1.;
         return std::max(
-            m_offset_params.offset_gradient_rel * m_offset_params.target_distance * s * s,
+            m_offset_params.convergence_gradient_norm_rel * m_offset_params.target_distance * s * s,
             1e-16);
     }
 

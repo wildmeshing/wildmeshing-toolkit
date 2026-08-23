@@ -747,6 +747,29 @@ EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
 }
 
 template <int DIM>
+EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
+    const std::shared_ptr<SimplicialComplexBVH>& bvh,
+    const double delta)
+    : OffsetPotential<DIM>(delta, std::numeric_limits<double>::infinity())
+    , m_bvh(bvh)
+{
+    if constexpr (DIM != 2) {
+        // The BVH's feature query is 2D; 3D still runs on its input-complex envelope. A runtime
+        // check because the explicit instantiations below compile every member for both DIMs.
+        log_and_throw_error("EuclideanOffsetPotential<3>: the BVH-backed path is 2D-only");
+    }
+    if (!(delta > 0.)) {
+        log_and_throw_error(
+            "EuclideanOffsetPotential: target_distance must be positive, got {}",
+            delta);
+    }
+    if (!m_bvh) {
+        log_and_throw_error("EuclideanOffsetPotential: needs a BVH to query");
+    }
+    m_c = delta;
+}
+
+template <int DIM>
 void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, int& dim, VecD& dir)
     const
 {
@@ -754,7 +777,13 @@ void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, i
         bool on_corner = false;
         int feature_id = -1;
         Eigen::Vector2d seg_normal;
-        m_envelope->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
+        // Same query, either engine; the algorithm and its results are identical (the BVH's
+        // copy of it was lifted verbatim from the envelope's).
+        if (m_bvh) {
+            m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
+        } else {
+            m_envelope->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
+        }
         // The 2D query reports the segment NORMAL; the Hessian below is cased on the direction
         // ALONG the feature, so a segment interior is dim 1 with the tangent, obtained by
         // rotating the normal a quarter turn.
@@ -780,6 +809,21 @@ void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, i
 template <int DIM>
 double EuclideanOffsetPotential<DIM>::value(const VecD& p) const
 {
+    if constexpr (DIM == 2) {
+        if (m_bvh) {
+            // THE CURVE'S distance, through the feature query, exactly as the envelope-backed
+            // path measured it -- NOT squared_dist(), which is the distance to the SOLID
+            // complex and is identically zero inside a solid region. The two agree everywhere
+            // the offset lives (outside), but value() should not silently change meaning
+            // inside.
+            Eigen::Vector2d foot;
+            bool on_corner = false;
+            Eigen::Vector2d seg_normal;
+            int feature_id = -1;
+            return std::sqrt(
+                m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id));
+        }
+    }
     return std::sqrt(m_envelope->squared_distance(p));
 }
 
