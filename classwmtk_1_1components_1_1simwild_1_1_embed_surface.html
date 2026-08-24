@@ -87,10 +87,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:acc37525c0567ba27bbd4044628affc40" id="r_acc37525c0567ba27bbd4044628affc40"><td class="memItemLeft" align="right" valign="top"><a id="acc37525c0567ba27bbd4044628affc40" name="acc37525c0567ba27bbd4044628affc40"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>EmbedSurface</b> (const std::vector&lt; std::string &gt; &amp;img_filenames, const std::vector&lt; Matrix4d &gt; &amp;img_transform={}, const double tol_rel=-1, const double tol_abs=-1)</td></tr>
-<tr class="memdesc:acc37525c0567ba27bbd4044628affc40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input from meshes. <br /></td></tr>
-<tr class="separator:acc37525c0567ba27bbd4044628affc40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2c09f5517a8f2a85b0da2fccc60ead7" id="r_af2c09f5517a8f2a85b0da2fccc60ead7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#af2c09f5517a8f2a85b0da2fccc60ead7">EmbedSurface</a> (const std::vector&lt; std::string &gt; &amp;img_filenames, const std::vector&lt; Matrix4d &gt; &amp;img_transform={}, const double tol_rel=-1, const double tol_abs=-1, const bool split_connected_components=false)</td></tr>
+<tr class="memdesc:af2c09f5517a8f2a85b0da2fccc60ead7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Input from meshes.  <br /></td></tr>
+<tr class="separator:af2c09f5517a8f2a85b0da2fccc60ead7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4318e8f936e41b386e616d41a1e8749f" id="r_a4318e8f936e41b386e616d41a1e8749f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_embed_surface.html#a4318e8f936e41b386e616d41a1e8749f">simplify_surface</a> (const double eps, const int num_threads=0)</td></tr>
 <tr class="memdesc:a4318e8f936e41b386e616d41a1e8749f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplify the input surface while staying within the eps envelope.  <br /></td></tr>
 <tr class="separator:a4318e8f936e41b386e616d41a1e8749f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,7 +230,63 @@ std::vector&lt; MatrixXi &gt;&#160;</td><td class="memItemRight" valign="bottom"
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A class for reading an image and converting it into a tet mesh. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="af2c09f5517a8f2a85b0da2fccc60ead7" name="af2c09f5517a8f2a85b0da2fccc60ead7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2c09f5517a8f2a85b0da2fccc60ead7">&#9670;&#160;</a></span>EmbedSurface()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::simwild::EmbedSurface::EmbedSurface </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::string &gt; &amp;&#160;</td>
+          <td class="paramname"><em>img_filenames</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; Matrix4d &gt; &amp;&#160;</td>
+          <td class="paramname"><em>img_transform</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>tol_rel</em> = <code>-1</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>tol_abs</em> = <code>-1</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>split_connected_components</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Input from meshes. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">split_connected_components</td><td>Treat each connected component of an input file as an input in its own right, rather than the file as a whole. What counts as "an input" is what gets its own tag column and its own winding-number evaluation, so a file holding several disjoint closed surfaces is tagged as one region with this off, and as one region per component with it on. Off by default.</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Note that the inputs then outnumber the files, so <code>input_names</code> &ndash; which is applied by position &ndash; no longer lines up with the filenames; components past the end of that list fall back to the generic <code>tag_N</code> names. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="a64fa450f9eaf635f92b0f1c8bba95668" name="a64fa450f9eaf635f92b0f1c8bba95668"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a64fa450f9eaf635f92b0f1c8bba95668">&#9670;&#160;</a></span>check_tag_surface_invariant()</h2>
 
