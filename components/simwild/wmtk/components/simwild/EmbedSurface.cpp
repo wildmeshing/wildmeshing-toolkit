@@ -3,6 +3,8 @@
 #include <wmtk/utils/EmbedTriangles.hpp>
 
 // clang-format off
+#include <igl/adjacency_matrix.h>
+#include <igl/connected_components.h>
 #include <igl/remove_unreferenced.h>
 #include <igl/tet_tet_adjacency.h>
 #include <igl/read_triangle_mesh.h>
@@ -230,53 +232,130 @@ void embed_surface(
 }
 
 
+namespace {
+
+/**
+ * @brief Split a triangle mesh into its connected components.
+ *
+ * Components are vertex-connected: two triangles belong to the same one iff a path of shared
+ * vertices joins them. Each piece is returned self-contained -- its own vertex block, indices
+ * rebased -- because each becomes an input in its own right, and the winding number of an
+ * input is evaluated against its own (V, F).
+ */
+void split_into_connected_components(
+    const MatrixXd& V,
+    const MatrixXi& F,
+    std::vector<MatrixXd>& V_out,
+    std::vector<MatrixXi>& F_out)
+{
+    Eigen::SparseMatrix<int> A;
+    igl::adjacency_matrix(F, A);
+
+    Eigen::VectorXi component_of_vertex;
+    Eigen::VectorXi component_sizes;
+    const int n_components =
+        igl::connected_components(A, component_of_vertex, component_sizes);
+
+    // All three vertices of a triangle are adjacent, so any of them names its component.
+    std::vector<std::vector<int>> faces_of_component(n_components);
+    for (int f = 0; f < F.rows(); ++f) {
+        faces_of_component[component_of_vertex(F(f, 0))].push_back(f);
+    }
+
+    for (const auto& faces : faces_of_component) {
+        if (faces.empty()) {
+            continue; // an isolated vertex is a component with no triangles
+        }
+        MatrixXi F_component(faces.size(), 3);
+        for (size_t k = 0; k < faces.size(); ++k) {
+            F_component.row(k) = F.row(faces[k]);
+        }
+
+        MatrixXd V_piece;
+        MatrixXi F_piece;
+        Eigen::VectorXi _I;
+        igl::remove_unreferenced(V, F_component, V_piece, F_piece, _I);
+
+        V_out.push_back(std::move(V_piece));
+        F_out.push_back(std::move(F_piece));
+    }
+}
+
+} // namespace
+
 EmbedSurface::EmbedSurface(
     const std::vector<std::string>& img_filenames,
     const std::vector<Matrix4d>& img_transform,
     const double tol_rel,
-    const double tol_abs)
+    const double tol_abs,
+    const bool split_connected_components)
     : m_img_filenames(img_filenames)
 {
     assert(img_filenames.size() == img_transform.size());
 
-    Vs.resize(m_img_filenames.size());
-    Fs.resize(m_img_filenames.size());
+    // One entry per INPUT, which is one per file unless split_connected_components is on, in
+    // which case a file contributes one per connected component. Everything downstream sizes
+    // itself off Fs.size() -- the tag columns and the per-input winding numbers -- so the split
+    // only has to be made here.
+    Vs.clear();
+    Fs.clear();
+    Vs.reserve(m_img_filenames.size());
+    Fs.reserve(m_img_filenames.size());
 
     for (size_t i = 0; i < m_img_filenames.size(); ++i) {
         if (!std::filesystem::exists(m_img_filenames[i])) {
             log_and_throw_error("Input file {} does not exist", m_img_filenames[i]);
         }
-        MatrixXi F_single;
-        io::read_triangle_mesh(m_img_filenames[i], Vs[i], F_single, tol_rel, tol_abs);
+        MatrixXd V_file;
+        MatrixXi F_file;
+        io::read_triangle_mesh(m_img_filenames[i], V_file, F_file, tol_rel, tol_abs);
 
-        assert(Vs[i].cols() == 3);
-        assert(F_single.cols() == 3);
+        assert(V_file.cols() == 3);
+        assert(F_file.cols() == 3);
 
-        // apply transform to Vs[i]
-        for (size_t j = 0; j < Vs[i].rows(); ++j) {
-            Vector3d v = Vs[i].row(j);
+        // apply transform to V_file
+        for (size_t j = 0; j < V_file.rows(); ++j) {
+            Vector3d v = V_file.row(j);
             Vector4d x = to_homogenuous(v);
             x = img_transform[i] * x;
-            Vs[i].row(j) = from_homogenuous(x);
+            V_file.row(j) = from_homogenuous(x);
         }
 
-        Fs[i] = F_single;
+        // The pieces this file contributes: itself, or one per connected component.
+        std::vector<MatrixXd> V_pieces;
+        std::vector<MatrixXi> F_pieces;
+        if (split_connected_components) {
+            split_into_connected_components(V_file, F_file, V_pieces, F_pieces);
+            logger().info(
+                "Input {} split into {} connected components",
+                m_img_filenames[i],
+                F_pieces.size());
+        } else {
+            V_pieces.push_back(std::move(V_file));
+            F_pieces.push_back(std::move(F_file));
+        }
 
-        const size_t nV_old = m_V_surface.rows();
-        const size_t nF_old = m_F_surface.rows();
+        for (size_t p = 0; p < F_pieces.size(); ++p) {
+            Vs.push_back(V_pieces[p]);
+            Fs.push_back(F_pieces[p]);
 
-        m_V_surface.conservativeResize(m_V_surface.rows() + Vs[i].rows(), 3);
-        m_V_surface.block(nV_old, 0, Vs[i].rows(), 3) = Vs[i];
+            const size_t nV_old = m_V_surface.rows();
+            const size_t nF_old = m_F_surface.rows();
 
-        F_single.array() += nV_old;
-        m_F_surface.conservativeResize(m_F_surface.rows() + F_single.rows(), 3);
-        m_F_surface.block(nF_old, 0, Fs[i].rows(), 3) = F_single;
+            m_V_surface.conservativeResize(nV_old + V_pieces[p].rows(), 3);
+            m_V_surface.block(nV_old, 0, V_pieces[p].rows(), 3) = V_pieces[p];
 
-        // Which input each row of the concatenated soup came from. Kept alongside
-        // m_F_surface from here on -- remove_unreferenced only touches vertices, and
-        // simplify_surface permutes both together -- so it still answers the question
-        // after the surface has been coarsened, which is where the arrangement sees it.
-        m_F_input.resize(m_F_surface.rows(), i);
+            MatrixXi F_offset = F_pieces[p];
+            F_offset.array() += nV_old;
+            m_F_surface.conservativeResize(nF_old + F_offset.rows(), 3);
+            m_F_surface.block(nF_old, 0, F_offset.rows(), 3) = F_offset;
+
+            // Which input each row of the concatenated soup came from. Kept alongside
+            // m_F_surface from here on -- remove_unreferenced only touches vertices, and
+            // simplify_surface permutes both together -- so it still answers the question
+            // after the surface has been coarsened, which is where the arrangement sees it.
+            m_F_input.resize(m_F_surface.rows(), Fs.size() - 1);
+        }
     }
 
 
