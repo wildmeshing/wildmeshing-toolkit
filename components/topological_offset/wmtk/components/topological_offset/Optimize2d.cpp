@@ -2971,7 +2971,19 @@ bool TopoOffsetTriMesh::collapse_quality_allowed(
 {
     // Pure instrumentation: the base's rule is returned unchanged. See the header for why the
     // `q <= ring_max` clause is the one to watch.
-    const bool allowed = TriOptimizerMesh::collapse_quality_allowed(v1, v2, q, ring_max);
+    // 3D's admission rule, not the 2D base's. The base also admits any collapse whose result
+    // scores under stop_energy -- a clause carried from the original TriWild
+    // (EdgeCollapsing.cpp:189 before cb9b81a66c) that the original TetWild never had (its
+    // EdgeCollapsing.cpp:146). It matters because mesh_improvement() OPENS with a collapse
+    // sweep that has no length gate (local_operations({{0,1,0,0}}, false)), and the A/B loop
+    // runs that sweep at the top of EVERY phase A: on a mesh whose faces all score 2-6, "under
+    // 10 is fine" admits nearly everything, so the sweep demolished the mesh each round
+    // regardless of the sizing field -- two_circles, target_distance 0.02: 1939 -> 476 and
+    // 9510 -> 755 vertices -- and the split pass then rebuilt it 10-80x against a field halved
+    // since, until the rebuild itself manufactured MAX_ENERGY faces (round 3). Requiring "no
+    // worse than the ring's worst" keeps ~97% of the mesh through the sweep; with it (and
+    // sizing_propagate_min off) the case converges. Ablated: necessary in every combination.
+    const bool allowed = !m_vertex_attribute.at(v1).m_is_rounded || q <= ring_max;
     if (q >= MAX_ENERGY) {
         ++m_deg_collapse_offered;
         if (allowed) {
