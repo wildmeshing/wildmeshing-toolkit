@@ -453,7 +453,7 @@ size_t SimWildMesh::refine_sizing_around_worst(double)
 }
 
 
-void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F, const bool use_exact)
+void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F)
 {
     if (m_envelope) {
         log_and_throw_error("Envelope was already initialized once.");
@@ -476,9 +476,12 @@ void SimWildMesh::init_envelope(const MatrixXd& V, const MatrixXi& F, const bool
         m_F_envelope[i] = F.row(i);
     }
 
-    m_envelope = std::make_shared<SampleEnvelope>();
-    m_envelope->use_exact = use_exact;
+    m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
     m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+    logger().info(
+        "Envelope: {} (eps {:.6})",
+        m_envelope->use_exact ? "EXACT" : "sampled",
+        m_envelope_eps);
 }
 
 

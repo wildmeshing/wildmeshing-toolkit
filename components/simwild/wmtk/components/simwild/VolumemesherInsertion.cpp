@@ -301,6 +301,15 @@ void SimWildMesh::init_surfaces_and_boundaries()
         tempF.emplace_back(v1, v2, v3);
     }
 
+    auto reinit_envelope = [&]() {
+        m_envelope = std::make_shared<SampleEnvelope>(!m_sim_params.use_sample_envelope);
+        m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+        logger().info(
+            "Envelope: {} (eps {:.6})",
+            m_envelope->use_exact ? "EXACT" : "sampled",
+            m_envelope_eps);
+    };
+
     if (!m_envelope) {
         logger().info("Init envelope from tet tags");
         // build envelopes
@@ -311,9 +320,7 @@ void SimWildMesh::init_surfaces_and_boundaries()
 
         m_V_envelope = tempV;
         m_F_envelope = tempF;
-        m_envelope = std::make_shared<SampleEnvelope>();
-        m_envelope->use_exact = true;
-        m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+        reinit_envelope();
     } else if (m_sim_params.operation == "remeshing") {
         // Deliberately NOT behind check_envelope_at_init, unlike triwild's: the answer is not an
         // assertion but a decision -- if any surface face starts outside, the envelope is rebuilt
@@ -345,13 +352,9 @@ void SimWildMesh::init_surfaces_and_boundaries()
             for (int i = 0; i < vert_capacity(); i++) {
                 tempV[i] = m_vertex_attribute[i].m_posf;
             }
-            bool use_exact = m_envelope->use_exact;
             m_V_envelope = tempV;
             m_F_envelope = tempF;
-            m_envelope = std::make_shared<SampleEnvelope>();
-            m_envelope->use_exact = use_exact;
-            logger().info("is exact = {}", use_exact);
-            m_envelope->init(m_V_envelope, m_F_envelope, m_envelope_eps);
+            reinit_envelope();
         }
     }
 

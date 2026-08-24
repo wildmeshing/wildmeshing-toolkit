@@ -687,7 +687,7 @@ TEST_CASE(
     for (size_t vid = 0; vid < kTetRingVertices.size(); ++vid) V.row(vid) = kTetRingVertices[vid];
     Eigen::MatrixXi F(3, 3);
     for (size_t i = 0; i < interface_faces.size(); ++i) F.row(i) = interface_faces[i];
-    sim.init_envelope(V, F, false);
+    sim.init_envelope(V, F);
     sim.init_surfaces_and_boundaries();
     sim.init_vertex_order();
 

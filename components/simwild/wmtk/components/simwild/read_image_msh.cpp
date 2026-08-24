@@ -424,6 +424,7 @@ InputData read_mesh(
     const bool preserve_topology = json_params["preserve_topology"];
     const bool skip_simplify = json_params["skip_simplify"];
     const bool tag_from_winding_number = json_params["tag_from_winding_number"];
+    const bool split_connected_components = json_params["split_connected_components"];
     const double epsr_simplify = json_params["eps_simplify_rel"];
     double eps_simplify = json_params["eps_simplify"];
     const std::vector<std::string> input_names = json_params["input_names"];
@@ -436,7 +437,12 @@ InputData read_mesh(
     }
 
     // convert mesh into tet mesh
-    EmbedSurface image_mesh(input_paths, input_transforms, tol_rel, tol_abs);
+    EmbedSurface image_mesh(
+        input_paths,
+        input_transforms,
+        tol_rel,
+        tol_abs,
+        split_connected_components);
     image_mesh.m_num_threads = NUM_THREADS;
     image_mesh.m_perform_sanity_checks = perform_sanity_checks;
 
