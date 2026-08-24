@@ -189,27 +189,33 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                 if (cnt_success == 0) break;
             }
         } else {
-            for (int n = 0; n < ops[i]; ++n) {
-                logger().info("==smoothing {}==", n);
-                smooth_all_vertices();
-            }
+            smooth_all_vertices(size_t(ops[i]));
             if (ops[i] > 0) round_all_vertices();
         }
 
-        if (m_params.debug_output) {
-            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
-        }
-        const auto [max_metric, avg_metric] = optimization_quality_stats();
-        logger()
-            .info("{} max energy = {:.6} avg = {:.6}", names[size_t(i)], max_metric, avg_metric);
-        if (i == 2) {
+        if (ops[i] > 0) {
+            if (m_params.debug_output && i < 3) {
+                // no need to print debug output for smoothing, since it prints already internally
+                write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            }
+            const auto [max_metric, avg_metric] = optimization_quality_stats();
             logger().info(
-                "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
-                cnt_surface_swap.load(),
-                cnt_surface_swap_32.load(),
-                cnt_surface_swap_44.load(),
-                cnt_surface_swap_56.load());
+                "{} max energy = {:.6} avg = {:.6}",
+                names[size_t(i)],
+                max_metric,
+                avg_metric);
+            if (i == 2) {
+                logger().info(
+                    "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
+                    cnt_surface_swap.load(),
+                    cnt_surface_swap_32.load(),
+                    cnt_surface_swap_44.load(),
+                    cnt_surface_swap_56.load());
+            }
+            sanity_checks();
+            update_attributes();
         }
+
         // A pass that ran out of preallocated slots abandoned operations for want of storage.
         // Consolidating both reclaims the slots removed elements still hold -- the counter only
         // advances during a pass, so churn alone can exhaust it -- and re-derives the storage
@@ -237,9 +243,6 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         } else {
             retry_count = 0;
         }
-
-        sanity_checks();
-        update_attributes();
     }
 
     const auto stats = optimization_quality_stats();
@@ -352,6 +355,7 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
 void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 {
     for (size_t i = 0; i < n_iters; ++i) {
+        logger().info("==smoothing {}==", i);
         // Preserve TetWild's deterministic serial random-seed progression. The current
         // collector does not consume rand(), but keeping the state transition makes the move
         // behavior-neutral if its ordering is randomized again.
@@ -372,13 +376,17 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
             }
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTime());
-        logger().debug("Num verts {}", collect_all_ops.size());
+        logger().debug("#V = {}", collect_all_ops.size());
         run_pass(
             *this,
             PassLock::VertexRing,
             "vertex smoothing operation",
             [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
+
+        if (m_params.debug_output) {
+            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
     }
 }
 

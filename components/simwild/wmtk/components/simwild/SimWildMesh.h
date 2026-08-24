@@ -148,7 +148,7 @@ public:
 
     // TODO This should not be here but inside wmtk
     // TODO This should not be here but inside wmtk
-    void init_envelope(const MatrixXd& V, const MatrixXi& F, const bool use_exact);
+    void init_envelope(const MatrixXd& V, const MatrixXi& F);
 
     CellTag string_set_to_cell_tag(const std::set<std::string>& str_set);
 
