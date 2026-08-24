@@ -253,8 +253,7 @@ void split_into_connected_components(
 
     Eigen::VectorXi component_of_vertex;
     Eigen::VectorXi component_sizes;
-    const int n_components =
-        igl::connected_components(A, component_of_vertex, component_sizes);
+    const int n_components = igl::connected_components(A, component_of_vertex, component_sizes);
 
     // All three vertices of a triangle are adjacent, so any of them names its component.
     std::vector<std::vector<int>> faces_of_component(n_components);
