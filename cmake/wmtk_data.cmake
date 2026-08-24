@@ -24,15 +24,23 @@ ExternalProject_Add(
     # where it used to run one, enough for topological_offset_3d alone to exceed the suite's
     # 7200 s budget.
     #
-    # At this revision ALL SIX are commented out: the names sit in a _commented_out key and the
+    # At this revision ALL EIGHT are commented out: the names sit in a _commented_out key and the
     # group's list is empty, so it runs nothing. 2D and 3D now share one optimization flow, and it
     # does not converge on the ESP-based offset potential, so registering any of them would only
-    # assert a known failure. The configs are all still in the repo, and the revision before this
-    # one had already brought the 3D three up to the current spec -- offset_gradient_rel stated
+    # assert a known failure. The configs are all still in the repo, and an earlier revision had
+    # already brought the 3D three up to the current spec -- offset_gradient_rel stated
     # explicitly, offset_field pinned to "smooth" now that the default means ESP, and the inert
     # max_iterations replaced by ab_max_rounds.
     #
-    GIT_TAG cb73d04f52982e11a85a322355a02f78e6ee40d9
+    # The last two names added are FIXTURES FOR AN OPEN PROBLEM rather than cases awaiting a fix
+    # elsewhere: topological_offset_2d_two_circles and topological_offset_2d_annots_tag4_in both
+    # parse against the current strict spec and are parked because the case FAILS. They are the
+    # outward and inward forms of the same thing -- two offset fronts approaching one curve, where
+    # the summed potential never falls to the level c, so those vertices chase a level set that
+    # does not exist and the stuck-refine calls they generate run the ambient mesh away to 1e50.
+    # See "OPEN PROBLEMS" in .claude/CLAUDE.md.
+    #
+    GIT_TAG 5ec0988783795586ad58de404d152393bdabc96f
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

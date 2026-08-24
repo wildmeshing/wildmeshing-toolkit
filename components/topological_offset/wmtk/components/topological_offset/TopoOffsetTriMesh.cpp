@@ -213,6 +213,10 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
         }
         std::vector<std::shared_ptr<SampleEnvelope>> members;
         std::string per_tag_log;
+        // The polyline the tangential placement walks, in the SAME indexing the envelope is
+        // built in, so nearest_point_feature()'s feature_id indexes both. See TagPolyline2d.
+        m_env_polyline_V = tempV;
+        m_tag_polyline.clear();
         for (const auto& [tag, bucket] : tag_edges) {
             if (bucket.empty()) continue; // offset_output_tag ids with no faces yet
             auto env = std::make_shared<SampleEnvelope>();
@@ -220,6 +224,15 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
             m_tag_envelopes[tag] = env;
             members.push_back(env);
             per_tag_log += fmt::format(" {}:{}", m_tag_id_to_name.at(tag), bucket.size());
+
+            TagPolyline2d pl;
+            pl.E = bucket;
+            pl.at_vertex.assign(tempV.size(), {});
+            for (int i = 0; i < int(bucket.size()); ++i) {
+                pl.at_vertex[bucket[i][0]].push_back(i);
+                pl.at_vertex[bucket[i][1]].push_back(i);
+            }
+            m_tag_polyline[tag] = std::move(pl);
         }
 
         // The base's pointer survives as the UNION of the members -- inside any tube -- because

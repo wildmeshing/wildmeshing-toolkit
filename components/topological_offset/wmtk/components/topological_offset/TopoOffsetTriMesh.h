@@ -167,6 +167,34 @@ public:
      */
     std::map<int64_t, std::shared_ptr<SampleEnvelope>> m_tag_envelopes;
 
+    /**
+     * @brief The per-tag boundary POLYLINE, with the adjacency an arclength walk needs.
+     *
+     * The same segments m_tag_envelopes[tag] was built from, kept in the same indexing, so
+     * SampleEnvelope::nearest_point_feature()'s `feature_id` (a polyline VERTEX index when
+     * on_corner, else a SEGMENT index) indexes straight into these. Built once beside the
+     * envelopes in init_surfaces_and_boundaries(), from the INPUT partition, and never rebuilt
+     * -- the envelope is a tube around this curve, so the two must not be able to drift apart.
+     *
+     * WHY THE COMPONENT KEEPS ITS OWN COPY. SampleEnvelope has the arrays (m_v2 / m_e2) but they
+     * are protected, and this mesh is not a subclass of it. The buckets are already in hand at
+     * the build site, so copying them costs nothing and needs no shared-code change.
+     *
+     * `at_vertex` is what the envelope cannot answer: which segments meet at a polyline vertex,
+     * i.e. how the walk continues across a corner. Usually two; one at an open end; more where
+     * three curves meet, and there the walk stops because the continuation is ambiguous.
+     */
+    struct TagPolyline2d
+    {
+        std::vector<Eigen::Vector2i> E; ///< segments, indexing m_env_polyline_V
+        std::vector<std::vector<int>> at_vertex; ///< polyline vertex -> incident segment ids
+    };
+    /// Shared vertex array for every TagPolyline2d: the positions as init_surfaces_and_boundaries()
+    /// saw them, indexed by the mesh vid AT CONSTRUCTION. Never renumbered -- the envelopes hold
+    /// the same snapshot, and both describe the input, not the live mesh.
+    std::vector<Eigen::Vector2d> m_env_polyline_V;
+    std::map<int64_t, TagPolyline2d> m_tag_polyline;
+
     /// Input tag id -> bit position in VertexExtra2d::m_boundary_mask. Assigned in
     /// init_from_image() once the tag maps are complete; at most 64 input tags.
     std::map<int64_t, int> m_tag_bit;
@@ -175,6 +203,105 @@ public:
     /// the queries that need them run concurrently under kPartition.
     mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_isect_cache;
     mutable std::mutex m_isect_mutex;
+
+    /**
+     * @brief Memoized "region tubes AND the offset envelope", keyed by the region mask.
+     *
+     * A SIMPLEX CAN BE ON BOTH, and until 2026-08-23 the dispatch made that an either/or: a
+     * vertex on the offset front that also lay on tag boundaries got its region tubes and LOST
+     * the Phase A offset envelope, while an offset EDGE whose two endpoints happened to share a
+     * region bit got the region tube and lost the offset one. Both are now the intersection.
+     *
+     * SEPARATE FROM m_isect_cache because the members differ in lifetime: the tag envelopes are
+     * built once from the input mesh and live for the whole run, while m_offset_envelope is
+     * rebuilt after every Phase B. rebuild_offset_envelope() clears this, and must keep doing
+     * so -- an entry here holds a shared_ptr to the PREVIOUS round's offset tube and would
+     * silently pin the boundary to where it was two rounds ago. Guarded by m_isect_mutex.
+     */
+    mutable std::map<uint64_t, std::shared_ptr<SampleEnvelope>> m_offset_isect_cache;
+
+    /**
+     * @brief The containment a simplex with this region mask, on/off the offset front, must
+     * satisfy -- the INTERSECTION of everything that holds it, or null if nothing does.
+     *
+     * The single place the two containment families are composed. `region_mask` dispatches
+     * through envelope_for_mask() (itself an intersection when the mask is multi-bit, which is
+     * what pins a junction to the junction); `on_offset` adds m_offset_envelope, but only in
+     * Phase A -- Phase B is the pass whose job is to move the offset boundary, so there it
+     * contributes nothing and the result is the region tubes alone.
+     */
+    std::shared_ptr<SampleEnvelope> containment_for(uint64_t region_mask, bool on_offset) const;
+
+    /**
+     * @brief Move `x` back inside every region tube this vertex lies on. True if it ended up
+     * inside all of them.
+     *
+     * THE PROJECTION HALF OF THE PROJECTED-GRADIENT PLACEMENT. An offset vertex that a region
+     * envelope also holds takes the SAME unconstrained Gauss-Seidel step on the SAME objective
+     * as any other offset vertex, and then this restores its validity -- rather than the step
+     * itself being refused whenever it would leave the tube.
+     *
+     * Why the change (2026-08-23): refusal cannot express "go as far as you may". On
+     * topo_annots_groups at convergence_gradient_norm_rel 1e-3, four junction vertices reported
+     * `EnvelopeBlocked` in EVERY pass of EVERY round -- every trial length along the descent
+     * direction left the tube, so they never moved at all, and one of them (v208, Phi/c = 5.6)
+     * set max_grad at 3.61 against a bar of 0.0339 for all ten rounds while 115k operations ran
+     * around it. Projecting instead keeps the component of the step the tube allows, which for a
+     * vertex ON a boundary curve is motion ALONG that curve -- exactly the freedom it has.
+     *
+     * NEVER ASKS A COMPOSITE. nearest_point() and squared_distance() are non-virtual on
+     * SampleEnvelope and would bind to an IntersectionEnvelope's base subobject, whose BVH was
+     * never built (TagEnvelopes.hpp). So this walks the mask's REAL members from
+     * m_tag_envelopes, the way smoothing_energy_envelope() picks its pull target, and composes
+     * them itself by ALTERNATING PROJECTION: repeatedly project onto the member it violates
+     * worst. Each nearest_point() lands x exactly on that member's curve, so one round settles a
+     * single tube and the remaining rounds are what converge a junction onto the intersection of
+     * its curves.
+     *
+     * Returns false if the alternation did not converge, which is the caller's signal to keep
+     * the entry position rather than commit an invalid one.
+     */
+    bool project_into_containment(size_t vid, Vector2d& x) const;
+
+    /**
+     * @brief Which tag's boundary curve a vertex slides along, or -1.
+     *
+     * The bit of its mask whose curve passes CLOSEST to it. For the common multi-bit case that
+     * choice is immaterial: a mask carries a bit per tag on EITHER side of the boundary (the
+     * symmetric difference init_surfaces_and_boundaries() classifies by), so an interface
+     * between two regions gives both bits and both curves contain that same interface. Where
+     * the curves genuinely differ the line search still tests containment against EVERY member
+     * tube, so picking the nearest only chooses the parameterization, never the constraint.
+     */
+    int64_t tangent_curve_tag(size_t vid, const Vector2d& x) const;
+
+    /**
+     * @brief March `s` of arclength along tag `tag`'s boundary polyline from `x`'s foot on it.
+     *
+     * The reduced coordinate of the tangential placement: the constraint is eliminated rather
+     * than enforced, so every point this returns is ON the curve and needs no containment test
+     * of its own. Returns false if the walk cannot continue -- an open end, or a polyline vertex
+     * where three or more segments meet and the continuation is ambiguous -- in which case `out`
+     * holds the furthest point reached and the caller treats it as the end of the feasible
+     * interval.
+     *
+     * CORNERS ARE NOT SPECIAL-CASED, deliberately. The walk crosses any corner; what stops a
+     * vertex from sliding past a sharp one is the INCIDENT CHORD leaving its tube, which the
+     * caller's backtracking finds. That reproduces the true bound -- roughly eps/sin(theta) for
+     * a turn of theta, unbounded along a straight run -- with no angle threshold anywhere, and
+     * an angle threshold is exactly what a corner special case would have needed.
+     */
+    bool walk_along_curve(int64_t tag, const Vector2d& x, double s, Vector2d& out) const;
+
+    /**
+     * @brief The unit tangent of tag `tag`'s curve at `x`'s foot, or false if there is none.
+     *
+     * From nearest_point_feature()'s seg_normal, rotated a quarter turn. At a polyline vertex
+     * (on_corner) the tangent is two-valued, so this takes the incident segment whose direction
+     * best aligns with the descent the caller is about to attempt -- the standard reading of a
+     * one-sided derivative at a kink.
+     */
+    bool curve_tangent(int64_t tag, const Vector2d& x, const Vector2d& prefer, Vector2d& tau) const;
 
     /**
      * @brief Which half of the alternating optimization is running.
@@ -235,20 +362,28 @@ public:
     // COARSENING bar, applied where 3D applies it -- absolute, and only in m_coarsen_mode.
 
     /**
-     * @brief The tube the offset boundary may not leave during Phase A. Null in Phase B.
+     * @brief The tube the offset boundary may not leave during Phase A.
      *
-     * REBUILT AT THE START OF EVERY PHASE A, from the offset boundary as Phase B just left it,
-     * with eps = ab_offset_envelope_rel x the Phi tolerance. Rebuilding is what lets the boundary
-     * still travel across rounds: each Phase A pins it near its current position, and each
-     * Phase B is free to move it somewhere the next Phase A will then pin.
+     * BUILT WHEN THE OFFSET IS, by optimize_offset() right after label_offset_boundary(), and
+     * REFRESHED AT THE END OF EVERY PHASE B from the boundary as that phase just left it, with
+     * eps = ab_offset_envelope_rel x target_distance. Refreshing is what lets the boundary still
+     * travel across rounds: each Phase A pins it near its current position, and each Phase B is
+     * free to move it somewhere the next Phase A will then pin.
      *
-     * m_envelope, the input complex's and the other regions', is built once from the input mesh
-     * and never rebuilt -- that geometry is what the offset distance is measured against.
+     * NON-NULL FOR THE WHOLE RUN once the offset exists -- it is NOT nulled on entering Phase B,
+     * which is how this used to say "not applicable". The phase test lives in containment_for()
+     * instead, so the pointer answers "has an offset been built" and the phase answers "does its
+     * tube constrain right now"; conflating the two meant a reader outside Phase A could not
+     * tell them apart.
+     *
+     * m_tag_envelopes, the input complex's and the other regions', are built once from the input
+     * mesh and never rebuilt -- that geometry is what the offset distance is measured against.
      */
     std::shared_ptr<SampleEnvelope> m_offset_envelope;
 
-    /// Build m_offset_envelope from the current offset-boundary segments. Called at the start of
-    /// each Phase A.
+    /// Rebuild m_offset_envelope from the current offset-boundary segments, and drop the
+    /// intersections memoized against the old one. Called once when the offset is created and
+    /// again at the end of every Phase B.
     void rebuild_offset_envelope();
 
     /// Hard error if any vertex is on BOTH the input complex and the offset boundary -- a state
@@ -893,6 +1028,8 @@ public:
         Stationary, ///< q(entry) == 0 because grad Phi == 0 (pinch minimum)
         NonFinite, ///< Phi, grad Phi, or the vertex position itself non-finite at entry
         LeftOffset, ///< the step would have left the closed offset region {Phi >= c}; refused
+        EnvelopeBlocked, ///< no tangent could be resolved on the vertex's own boundary curve
+        ChordBlocked, ///< sliding any distance put an incident region edge outside its tube
         COUNT
     };
     static const char* placement_stop_name(PlacementStop s);
@@ -982,6 +1119,30 @@ public:
      */
     void log_region_edge_mask_health(const std::string& when) const;
 
+    /**
+     * @brief WHICH tracked edges are outside their envelope, and by how much.
+     *
+     * The shared pass driver's sanity_checks() already reports "Edge [a, b] is outside!" for any
+     * m_is_surface_fs edge that fails surface_segment_is_outside(). That message says nothing
+     * about WHICH envelope refused it, and the answer forks the diagnosis completely:
+     *
+     *   OFFSET-CLASS (mask 0, both endpoints on the offset)  -- refused by m_offset_envelope, the
+     *     Phase A pin at ab_offset_envelope_rel x target_distance. Means Phase A moved the offset
+     *     boundary out of the tube that is supposed to hold it where Phase B left it.
+     *   REGION-CLASS (mask != 0) -- refused by that tag's tube, or by the INTERSECTION of several
+     *     tubes at a junction. Means a tag-region boundary has drifted off the input partition,
+     *     which is a containment failure of the thing the envelopes exist to protect.
+     *
+     * Reports per-endpoint distance to each REAL member tube. A multi-bit mask dispatches an
+     * IntersectionEnvelope, which must never be asked squared_distance (TagEnvelopes.hpp: its
+     * BVH is null), so the members are walked individually instead of querying the composite.
+     *
+     * Call it at construction as well as inside the loop: an edge already outside BEFORE any
+     * operation runs is a construction defect, and that is a different bug from one an operation
+     * created. Diagnostic only -- reads the mesh, writes only the log.
+     */
+    void audit_surface_containment(const std::string& when) const;
+
     /// How many offset placements this pass could not take to their own minimum -- the visit
     /// entered its one-ring bisection, was refused outright by inversion, or found the ring
     /// already float-inverted on entry. Reset by phase_b_smooth() before each pass; a pass that
@@ -994,6 +1155,29 @@ public:
     /// offset_vertex_normal() is returning the zero vector for real vertices, which is worth
     /// knowing before reading the placement numbers.
     mutable std::atomic<int> m_placement_no_normal{0};
+
+    /// How many Phase B offset placements found the vertex ALREADY outside its own envelope on
+    /// entry. Since 2026-08-23 this disables nothing -- the post-step projection pulls such a
+    /// vertex back in -- but it is still the number to read first: the invariant is 0, and a
+    /// nonzero count means construction or Phase A is leaving offset vertices outside their
+    /// region tube. Never reset -- a run total.
+    mutable std::atomic<int> m_placement_env_entry_outside{0};
+
+    /// How many Phase B offset placements had their accepted step PROJECTED back into the
+    /// vertex's region tubes. The expected steady state on any multi-tag model whose offset
+    /// coincides with a region boundary: it counts the vertices doing constrained motion along a
+    /// boundary curve, not a problem. Read it against the EnvelopeBlocked count in the
+    /// placement-stop breakdown, which is where a projection that could NOT be committed lands.
+    /// Never reset -- a run total.
+    mutable std::atomic<int> m_placement_projected{0};
+
+    /// How many Phase B offset placements were solved TANGENTIALLY -- reduced to arclength along
+    /// the vertex's own tag boundary curve, rather than stepped freely in 2D. The expected
+    /// steady state for every offset vertex that a region envelope also holds. Read it against
+    /// ChordBlocked in the placement-stop breakdown, which counts the visits whose slide was cut
+    /// off by an incident chord leaving its tube -- i.e. the mesh wanting a vertex at a corner.
+    /// Never reset -- a run total.
+    mutable std::atomic<int> m_placement_tangential{0};
 
     /// Per-thread Newton solver for Phase B's interior AMIPS solves. Separate from the base's
     /// m_solver because it carries a different stopping rule: polysolve's rel_grad_norm_tol set
@@ -1131,18 +1315,55 @@ public:
         // or has just created, whose own edge attributes are not written yet; the endpoints'
         // masks are, and they are maintained by the operations themselves (AND at a split, OR
         // at a collapse). That is what edge_is_region_boundary_live() existed to work around.
-        if (const uint64_t mask = edge_mask(vids)) {
-            return envelope_for_mask(mask);
-        }
-        // Phase A holds the offset where Phase B left it; Phase B is what moves it, so it is
-        // unconstrained there. Null when there is no offset envelope yet -- the construction
-        // phase runs before the first one is built.
+        uint64_t mask = edge_mask(vids);
         bool all_offset = true;
         for (const size_t v : vids) {
             all_offset = all_offset && m_vertex_extra[v].m_is_on_offset;
         }
-        if (all_offset && m_phase == OptPhase::A) return m_offset_envelope;
-        return nullptr;
+
+        // THE AMBIGUOUS CASE, AND WHERE THE "Edge [V, V] is outside!" ERRORS CAME FROM. The two
+        // endpoints can each be on region boundaries AND on the offset front -- that is a real
+        // state, not a defect, and the whole point of tracking the two families separately. But
+        // then the endpoint-mask AND is only a NECESSARY condition for the SEGMENT lying on a
+        // shared boundary, never a sufficient one: two vertices on different junctions can share
+        // a tag bit by coincidence and be joined by an offset chord that lies nowhere near that
+        // tag's curve. Measured on topo_annots_groups (tag_0 & tag_2, delta 1.2): edge
+        // [2624, 2700], own class OFFSET, endpoint masks 0x6 and 0xc, AND 0x4 -- held to tag_2's
+        // tube, whose half-width is 0.0707, with its midpoint 0.25 outside it. One such edge at
+        // construction, 21 by the end of Phase A, every one of them refused refinement by a
+        // container it was never meant to satisfy.
+        //
+        // So when the endpoints claim both families, ASK THE EDGE'S OWN CLASS, which is the only
+        // record that distinguishes a chord from a boundary.
+        //
+        // WHY READING THE SLOT IS SAFE HERE, and would not be unconditionally. The base checks a
+        // SPLIT's two child segments (TriOptimizerMeshSplit.cpp:297, :300) BEFORE writing their
+        // attributes at :305, so their slots still hold a recycled edge's class -- reading that
+        // is the same hazard split_adjust_position() exists to avoid on the vertex side. It
+        // cannot bite here, because a split child never reaches this branch: the child's mask
+        // and its offset flag are already mutually exclusive by construction. A parent of class
+        // 0 gives the midpoint m_is_on_region = true and m_is_on_offset = false; an offset
+        // parent gives the reverse and, with m_is_on_region false, vertex_boundary_mask() zeroes
+        // the midpoint's mask outright. Either way one of `mask` and `all_offset` is empty and
+        // the test below is never entered. The m_is_surface_fs guard is the belt to that
+        // braces: an illegible slot leaves both constraints standing rather than dropping one.
+        if (mask != 0 && all_offset) {
+            if (const auto found = try_tuple_from_edge(vids)) {
+                const size_t eid = std::get<1>(*found);
+                if (m_edge_attribute[eid].m_is_surface_fs) {
+                    if (edge_is_offset(eid)) {
+                        mask = 0; // an offset edge lies on no region boundary
+                    } else {
+                        all_offset = false; // a region edge is not the offset front
+                    }
+                }
+            }
+        }
+        // Both families compose: whatever holds this segment holds it at once. Phase A holds the
+        // offset where Phase B left it; Phase B is what moves it, so it contributes nothing
+        // there -- and null when there is no offset envelope yet, which is the pre-pass, before
+        // the offset exists at all.
+        return containment_for(mask, all_offset);
     }
 
     /**
@@ -1232,10 +1453,15 @@ public:
      */
     std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const override
     {
-        if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
-            return m_phase == OptPhase::A ? m_offset_envelope : nullptr;
-        }
-        return envelope_for_mask(vertex_boundary_mask(vid));
+        // BOTH FAMILIES, COMPOSED -- not a choice between them. A vertex where the offset front
+        // meets one or more region boundaries is on all of them at once, and until 2026-08-23
+        // this returned the region tubes ALONE for such a vertex, silently dropping the Phase A
+        // offset envelope that is the only thing stopping TriWild from relocating the boundary
+        // for the sake of element shape. The three cases now fall out of one expression:
+        // pure-offset (mask 0) gives the offset tube in Phase A and null in Phase B, pure-region
+        // gives its tubes' intersection in both, and a junction of the two gives the
+        // intersection of everything.
+        return containment_for(vertex_boundary_mask(vid), m_vertex_extra[vid].m_is_on_offset);
     }
 
     // NO smoothing_extra_energy OVERRIDE. The base's nullptr is correct for both phases now.
@@ -1493,21 +1719,24 @@ public:
      * THE DECIDING MEASURE IS THE FULL GRADIENT NORM AT VERTICES: max_reachable
      * (== max_at_vertex) is max ||2 (Phi - c) grad Phi|| over reachable band vertices, the
      * exact quantity every Phase B local solve stops on, so the run's verdict and the visits'
-     * stops are one test. max_in_edge is a DIAGNOSTIC -- the normal component at edge-interior
-     * samples, the chord error refinement answers -- and gates nothing: a sample is not a
-     * variable, and a criterion that carried it parked every vertex AT the bar while an edge
-     * interior held the verdict a few percent above it. max_normal_aligned is |grad E . n| at
-     * vertices over reachable AND pinned -- the quantity measure_gradient_reference() takes
-     * its max of.
+     * stops are one test. max_in_edge is the EDGE-INTERIOR half of the criterion and GATES
+     * alongside the vertex half (2026-08-23) -- see gradient_split() for why the earlier
+     * "diagnostic only" reading was wrong. max_normal_aligned is |grad E . n| at vertices over
+     * reachable AND pinned -- the quantity measure_gradient_reference() takes its max of.
      */
     struct GradientSplit
     {
         double max_reachable = 0., avg_reachable = 0.;
         double max_pinned = 0.;
         size_t n_reachable = 0, n_pinned = 0;
-        /// max_at_vertex repeats max_reachable (the criterion is vertex-only); max_in_edge is
-        /// the edge-interior chord DIAGNOSTIC -- reported, never gating. See the class comment.
+        /// max_at_vertex is the vertex half of the criterion; max_in_edge is the EDGE-INTERIOR
+        /// half, and since 2026-08-23 it GATES TOO -- same quantity, same bar. Both are the full
+        /// norm ||2 (Phi - c) grad Phi||, and max_in_edge counts only edges whose BOTH endpoints
+        /// are reachable, so a chord to a pinned vertex cannot make the run unconvergeable.
         double max_at_vertex = 0., max_in_edge = 0.;
+        /// The same edge measure over edges with an unreachable endpoint. Reported, never gating
+        /// -- the pinned twin of max_pinned.
+        double max_in_edge_pinned = 0.;
         /// max |2 (Phi - c) grad Phi . n| at band vertices, reachable AND pinned: the quantity
         /// the reference is the max of. See measure_gradient_reference().
         double max_normal_aligned = 0.;
@@ -1520,9 +1749,9 @@ public:
         /// vertex is measured.
         size_t worst_vid = static_cast<size_t>(-1);
     };
-    /// @param include_edge_samples false skips the edge-interior DIAGNOSTIC (the expensive
-    /// half); the deciding vertex measures are identical either way. Verdict-time callers pass
-    /// true so max_in_edge is reported. See phase_b_band_gradient_linf().
+    /// @param include_edge_samples false skips the edge-interior half (the expensive one). Only
+    /// Phase B's own per-pass stop passes false, because placement cannot reduce a chord term;
+    /// every convergence decision passes true. See phase_b_band_gradient_linf().
     GradientSplit gradient_split(bool include_edge_samples = true) const;
 
     /**
@@ -1599,6 +1828,32 @@ public:
         // (see pin_interference_stalled_vertices). Opt-in through WMTK_OFFSET_INTERFERENCE_PIN;
         // the flag is only ever set when that is on, so this test costs nothing when it is off.
         if (vid < m_interference_pinned.size() && m_interference_pinned[vid]) return false;
+
+        // ENVELOPE-HELD OFFSET VERTICES ARE PINNED, and this is the default as of 2026-08-23.
+        // A vertex on the offset front that a region envelope also holds must stay within
+        // envelope_size of the input region boundary AND sit on Phi = c, which is
+        // target_distance away. Those are not simultaneously satisfiable, so its residual
+        // gradient is not a statement about the offset's quality -- it is a statement about the
+        // constraint -- and leaving it in max_reachable makes convergence impossible by
+        // construction. Measured on topo_annots_groups (tag_0 & tag_2, delta 1.2,
+        // convergence_gradient_norm_rel 1e-3): FOUR such vertices held max_grad at 3.6 against a
+        // bar of 0.0339 for all ten rounds while 115k operations ran around them, one of them at
+        // Phi/c = 5.6. At the default rel of 0.2 the same run converges in one round, because the
+        // bar sits above the conflict and it is invisible -- which is exactly why this needs to
+        // be structural rather than left to whether the tolerance happens to hide it.
+        //
+        // STILL REPORTED, never silent: the pinned half of every band measure is logged beside
+        // the reachable half, so these vertices stay visible as a count and a max. That is the
+        // same contract vertex_is_on_domain_boundary() gets below.
+        //
+        // THIS IS A RETREAT, NOT A SOLUTION, and it should be reverted the moment a placement
+        // that works exists. Three have been written and none does -- refusal freezes them,
+        // projection-to-the-curve is strictly stronger than the constraint and made a run worse,
+        // and the tangential arclength solve has an anchoring bug. smooth_before()'s Phase B
+        // Offset branch carries the commented-out call to restore. See "OPEN PROBLEMS" in
+        // .claude/CLAUDE.md.
+        if (m_vertex_extra[vid].m_is_on_offset && vertex_boundary_mask(vid) != 0) return false;
+
         return !vertex_is_on_domain_boundary(vid);
     }
 
