@@ -669,12 +669,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_fac
 <tr class="memitem:ade6cd29e4785209bc24216b8033c4a4b inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ade6cd29e4785209bc24216b8033c4a4b"><td class="memItemLeft" align="right" valign="top">
 double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
 <tr class="separator:ade6cd29e4785209bc24216b8033c4a4b inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0600823a821626eca17a674a5fde9b69 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a0600823a821626eca17a674a5fde9b69"><td class="memItemLeft" align="right" valign="top">
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tet_slots</b> (size_t n)</td></tr>
-<tr class="separator:a0600823a821626eca17a674a5fde9b69 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a705aa747779887b9ecda2d92f839c71f inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a705aa747779887b9ecda2d92f839c71f"><td class="memItemLeft" align="right" valign="top">
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
-<tr class="separator:a705aa747779887b9ecda2d92f839c71f inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae85bd3a56cd68dbef7e5256299128ca7 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ae85bd3a56cd68dbef7e5256299128ca7"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>slots_exhausted</b> () const</td></tr>
+<tr class="separator:ae85bd3a56cd68dbef7e5256299128ca7 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a064c16cbee654a4e012a7adb0d4f05b9 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a064c16cbee654a4e012a7adb0d4f05b9"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_slots_exhausted</b> ()</td></tr>
+<tr class="separator:a064c16cbee654a4e012a7adb0d4f05b9 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76d04adcbfc4809cd3643be5d6425589 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a76d04adcbfc4809cd3643be5d6425589"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_tet_slots</b> (size_t n)</td></tr>
+<tr class="separator:a76d04adcbfc4809cd3643be5d6425589 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac537c979e7550ba8b98a1b6792363098 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ac537c979e7550ba8b98a1b6792363098"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:ac537c979e7550ba8b98a1b6792363098 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1646ff821bf9087f21129cf5e425366d inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a1646ff821bf9087f21129cf5e425366d"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_tet_capacity</b> (size_t extra)</td></tr>
 <tr class="separator:a1646ff821bf9087f21129cf5e425366d inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -869,6 +875,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_tetra</b> (c
 <tr class="memitem:aa85f8199512a563b9c64b1338536e261 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_aa85f8199512a563b9c64b1338536e261"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aa85f8199512a563b9c64b1338536e261">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:aa85f8199512a563b9c64b1338536e261 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:aa85f8199512a563b9c64b1338536e261 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6879ed44988c3abec5bfa6b06935df52 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a6879ed44988c3abec5bfa6b06935df52"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>tet_storage_capacity</b> () const</td></tr>
+<tr class="separator:a6879ed44988c3abec5bfa6b06935df52 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68408249316be543900b8d04a21dd83e inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_a68408249316be543900b8d04a21dd83e"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>vert_storage_capacity</b> () const</td></tr>
+<tr class="separator:a68408249316be543900b8d04a21dd83e inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac51d0d254cb04f788e947253a6302678 inherit pub_methods_classwmtk_1_1_tet_mesh" id="r_ac51d0d254cb04f788e947253a6302678"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_two_ring</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
 <tr class="memdesc:ac51d0d254cb04f788e947253a6302678 inherit pub_methods_classwmtk_1_1_tet_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock v's one-ring and, partially, its two-ring. See the note above. <br /></td></tr>

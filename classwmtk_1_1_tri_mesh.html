@@ -182,12 +182,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_fac
 <tr class="memitem:a8bc7f3ea9a9128004a59ad8804c9e178" id="r_a8bc7f3ea9a9128004a59ad8804c9e178"><td class="memItemLeft" align="right" valign="top"><a id="a8bc7f3ea9a9128004a59ad8804c9e178" name="a8bc7f3ea9a9128004a59ad8804c9e178"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
 <tr class="separator:a8bc7f3ea9a9128004a59ad8804c9e178"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1a729e0062cf29ec9fed50ed4d5488e" id="r_ae1a729e0062cf29ec9fed50ed4d5488e"><td class="memItemLeft" align="right" valign="top"><a id="ae1a729e0062cf29ec9fed50ed4d5488e" name="ae1a729e0062cf29ec9fed50ed4d5488e"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tri_slots</b> (size_t n)</td></tr>
-<tr class="separator:ae1a729e0062cf29ec9fed50ed4d5488e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb7785eb2381dec13a0aa00aadb6203c" id="r_afb7785eb2381dec13a0aa00aadb6203c"><td class="memItemLeft" align="right" valign="top"><a id="afb7785eb2381dec13a0aa00aadb6203c" name="afb7785eb2381dec13a0aa00aadb6203c"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
-<tr class="separator:afb7785eb2381dec13a0aa00aadb6203c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfbb023808af1892457c69a153600b3e" id="r_adfbb023808af1892457c69a153600b3e"><td class="memItemLeft" align="right" valign="top"><a id="adfbb023808af1892457c69a153600b3e" name="adfbb023808af1892457c69a153600b3e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>slots_exhausted</b> () const</td></tr>
+<tr class="separator:adfbb023808af1892457c69a153600b3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf18d23412166f871a26ce3a650f0577" id="r_acf18d23412166f871a26ce3a650f0577"><td class="memItemLeft" align="right" valign="top"><a id="acf18d23412166f871a26ce3a650f0577" name="acf18d23412166f871a26ce3a650f0577"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_slots_exhausted</b> ()</td></tr>
+<tr class="separator:acf18d23412166f871a26ce3a650f0577"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a595dfaecb9ac20d92afbc66bee8ef6b2" id="r_a595dfaecb9ac20d92afbc66bee8ef6b2"><td class="memItemLeft" align="right" valign="top"><a id="a595dfaecb9ac20d92afbc66bee8ef6b2" name="a595dfaecb9ac20d92afbc66bee8ef6b2"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_tri_slots</b> (size_t n)</td></tr>
+<tr class="separator:a595dfaecb9ac20d92afbc66bee8ef6b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a6fb26649466d64f126d45de83594e9" id="r_a6a6fb26649466d64f126d45de83594e9"><td class="memItemLeft" align="right" valign="top"><a id="a6a6fb26649466d64f126d45de83594e9" name="a6a6fb26649466d64f126d45de83594e9"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:a6a6fb26649466d64f126d45de83594e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d8bb552e20bda83d8113874e62f54fe" id="r_a3d8bb552e20bda83d8113874e62f54fe"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a3d8bb552e20bda83d8113874e62f54fe">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="memdesc:a3d8bb552e20bda83d8113874e62f54fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <br /></td></tr>
 <tr class="separator:a3d8bb552e20bda83d8113874e62f54fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -420,6 +426,17 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_vertex</b> (
 <tr class="memitem:abc3ccbd86a79b382228ef9f33b127b5b" id="r_abc3ccbd86a79b382228ef9f33b127b5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#abc3ccbd86a79b382228ef9f33b127b5b">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:abc3ccbd86a79b382228ef9f33b127b5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:abc3ccbd86a79b382228ef9f33b127b5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Storage capacity</div></td></tr>
+<tr><td colspan="2"><div class="groupText"><p>True if any slot request has been refused since the last clear.</p>
+<p>The pass boundary uses this to decide whether to consolidate: a refusal means an operation was abandoned for want of storage, and consolidating reclaims the slots that removed elements still hold (the counter only ever advances during a pass) and re-derives the capacity from the real element count.</p>
+<p>How many slots the storage holds, as opposed to <a class="el" href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2" title="get the current largest global fid">tri_capacity()</a>/vert_capacity(), which report the LIVE count &ndash; the end of the handed-out region. Exhaustion is <code>live == storage capacity</code>, and consolidate re-derives the latter as <code>reserved_capacity(real element count)</code>. </p>
+</div></td></tr>
+<tr class="memitem:adfcfea5430468bdc7c3ed34acf20bc27" id="r_adfcfea5430468bdc7c3ed34acf20bc27"><td class="memItemLeft" align="right" valign="top"><a id="adfcfea5430468bdc7c3ed34acf20bc27" name="adfcfea5430468bdc7c3ed34acf20bc27"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>tri_storage_capacity</b> () const</td></tr>
+<tr class="separator:adfcfea5430468bdc7c3ed34acf20bc27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c1e67f13395558d99c58f4ea99d14ca" id="r_a2c1e67f13395558d99c58f4ea99d14ca"><td class="memItemLeft" align="right" valign="top"><a id="a2c1e67f13395558d99c58f4ea99d14ca" name="a2c1e67f13395558d99c58f4ea99d14ca"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>vert_storage_capacity</b> () const</td></tr>
+<tr class="separator:a2c1e67f13395558d99c58f4ea99d14ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Ring lockers &ndash; NOT balls</div></td></tr>
 <tr><td colspan="2"><div class="groupText"><p>The three helpers below are the ones every pass actually uses, and <b>none of them claims the ball its name suggests</b>. Each walks the ring with </p><pre class="fragment">if (m_vertex_mutex[w].get_owner() == threadid) continue;
 </pre><p> and that <code>continue</code> skips the EXPANSION as well as the lock. So a vertex this thread already holds contributes none of its neighbours. In try_set_edge_mutex_two_ring the effect is systematic rather than incidental: v2 is locked up front, so walking v1's ring skips straight past it, and by the time v2's ring is walked almost everything in it is already owned from v1's expansion and is skipped in turn. What comes out is roughly <em>2-ring(v1) union N(v2)</em> &ndash; the vertices at distance 2 from v2 and 3 from v1 are simply not claimed.</p>
@@ -496,18 +513,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>lock_vertex_ball</b> 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a38f8a18895e7512faad343d53778fc64" id="r_a38f8a18895e7512faad343d53778fc64"><td class="memItemLeft" align="right" valign="top"><a id="a38f8a18895e7512faad343d53778fc64" name="a38f8a18895e7512faad343d53778fc64"></a>
-vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
-<tr class="separator:a38f8a18895e7512faad343d53778fc64"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7ecd5418d1322aa4395402a8f56e864" id="r_ae7ecd5418d1322aa4395402a8f56e864"><td class="memItemLeft" align="right" valign="top"><a id="ae7ecd5418d1322aa4395402a8f56e864" name="ae7ecd5418d1322aa4395402a8f56e864"></a>
-vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tri_connectivity</b></td></tr>
-<tr class="separator:ae7ecd5418d1322aa4395402a8f56e864"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d9f00e14f8f4ed9143c33b4524ad386" id="r_a9d9f00e14f8f4ed9143c33b4524ad386"><td class="memItemLeft" align="right" valign="top"><a id="a9d9f00e14f8f4ed9143c33b4524ad386" name="a9d9f00e14f8f4ed9143c33b4524ad386"></a>
-std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_vert_size</b></td></tr>
-<tr class="separator:a9d9f00e14f8f4ed9143c33b4524ad386"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1967e6c9005c5fcf4759344cc9d4894c" id="r_a1967e6c9005c5fcf4759344cc9d4894c"><td class="memItemLeft" align="right" valign="top"><a id="a1967e6c9005c5fcf4759344cc9d4894c" name="a1967e6c9005c5fcf4759344cc9d4894c"></a>
-std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_tri_size</b></td></tr>
-<tr class="separator:a1967e6c9005c5fcf4759344cc9d4894c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05e0c21a100de1c0a10eae2b7f4a063a" id="r_a05e0c21a100de1c0a10eae2b7f4a063a"><td class="memItemLeft" align="right" valign="top"><a id="a05e0c21a100de1c0a10eae2b7f4a063a" name="a05e0c21a100de1c0a10eae2b7f4a063a"></a>
+<a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
+<tr class="separator:a05e0c21a100de1c0a10eae2b7f4a063a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44448decb1181e805bb773ca9a34dad7" id="r_a44448decb1181e805bb773ca9a34dad7"><td class="memItemLeft" align="right" valign="top"><a id="a44448decb1181e805bb773ca9a34dad7" name="a44448decb1181e805bb773ca9a34dad7"></a>
+<a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html">TriangleConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tri_connectivity</b></td></tr>
+<tr class="separator:a44448decb1181e805bb773ca9a34dad7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a200582e84cc4a054e38708c877d1b581" id="r_a200582e84cc4a054e38708c877d1b581"><td class="memItemLeft" align="right" valign="top"><a id="a200582e84cc4a054e38708c877d1b581" name="a200582e84cc4a054e38708c877d1b581"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_preallocation_factor</b> = 6.0</td></tr>
 <tr class="separator:a200582e84cc4a054e38708c877d1b581"><td class="memSeparator" colspan="2">&#160;</td></tr>

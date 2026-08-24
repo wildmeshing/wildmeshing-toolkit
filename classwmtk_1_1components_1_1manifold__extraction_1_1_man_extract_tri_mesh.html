@@ -556,12 +556,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_fac
 <tr class="memitem:a8bc7f3ea9a9128004a59ad8804c9e178 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a8bc7f3ea9a9128004a59ad8804c9e178"><td class="memItemLeft" align="right" valign="top">
 double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
 <tr class="separator:a8bc7f3ea9a9128004a59ad8804c9e178 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1a729e0062cf29ec9fed50ed4d5488e inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_ae1a729e0062cf29ec9fed50ed4d5488e"><td class="memItemLeft" align="right" valign="top">
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tri_slots</b> (size_t n)</td></tr>
-<tr class="separator:ae1a729e0062cf29ec9fed50ed4d5488e inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb7785eb2381dec13a0aa00aadb6203c inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_afb7785eb2381dec13a0aa00aadb6203c"><td class="memItemLeft" align="right" valign="top">
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
-<tr class="separator:afb7785eb2381dec13a0aa00aadb6203c inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfbb023808af1892457c69a153600b3e inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_adfbb023808af1892457c69a153600b3e"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>slots_exhausted</b> () const</td></tr>
+<tr class="separator:adfbb023808af1892457c69a153600b3e inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf18d23412166f871a26ce3a650f0577 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_acf18d23412166f871a26ce3a650f0577"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_slots_exhausted</b> ()</td></tr>
+<tr class="separator:acf18d23412166f871a26ce3a650f0577 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a595dfaecb9ac20d92afbc66bee8ef6b2 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a595dfaecb9ac20d92afbc66bee8ef6b2"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_tri_slots</b> (size_t n)</td></tr>
+<tr class="separator:a595dfaecb9ac20d92afbc66bee8ef6b2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a6fb26649466d64f126d45de83594e9 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a6a6fb26649466d64f126d45de83594e9"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:a6a6fb26649466d64f126d45de83594e9 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab64cc4ece77d894286c2e433e039dae2 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_ab64cc4ece77d894286c2e433e039dae2"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#ab64cc4ece77d894286c2e433e039dae2">tri_capacity</a> () const</td></tr>
 <tr class="memdesc:ab64cc4ece77d894286c2e433e039dae2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the current largest global fid  <br /></td></tr>
 <tr class="separator:ab64cc4ece77d894286c2e433e039dae2 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -755,6 +761,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_vertex</b> (
 <tr class="memitem:abc3ccbd86a79b382228ef9f33b127b5b inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_abc3ccbd86a79b382228ef9f33b127b5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#abc3ccbd86a79b382228ef9f33b127b5b">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:abc3ccbd86a79b382228ef9f33b127b5b inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:abc3ccbd86a79b382228ef9f33b127b5b inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfcfea5430468bdc7c3ed34acf20bc27 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_adfcfea5430468bdc7c3ed34acf20bc27"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>tri_storage_capacity</b> () const</td></tr>
+<tr class="separator:adfcfea5430468bdc7c3ed34acf20bc27 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c1e67f13395558d99c58f4ea99d14ca inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a2c1e67f13395558d99c58f4ea99d14ca"><td class="memItemLeft" align="right" valign="top">
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>vert_storage_capacity</b> () const</td></tr>
+<tr class="separator:a2c1e67f13395558d99c58f4ea99d14ca inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69a5650ae9b12e41bbb1c47f4d4056d1 inherit pub_methods_classwmtk_1_1_tri_mesh" id="r_a69a5650ae9b12e41bbb1c47f4d4056d1"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>try_set_vertex_mutex_two_ring</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;v, int threadid)</td></tr>
 <tr class="memdesc:a69a5650ae9b12e41bbb1c47f4d4056d1 inherit pub_methods_classwmtk_1_1_tri_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lock v's one-ring and, partially, its two-ring. See the note above. <br /></td></tr>

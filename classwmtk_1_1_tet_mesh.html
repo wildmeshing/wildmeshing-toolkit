@@ -217,12 +217,18 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_preallocation_fac
 <tr class="memitem:ade6cd29e4785209bc24216b8033c4a4b" id="r_ade6cd29e4785209bc24216b8033c4a4b"><td class="memItemLeft" align="right" valign="top"><a id="ade6cd29e4785209bc24216b8033c4a4b" name="ade6cd29e4785209bc24216b8033c4a4b"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>preallocation_factor</b> () const</td></tr>
 <tr class="separator:ade6cd29e4785209bc24216b8033c4a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0600823a821626eca17a674a5fde9b69" id="r_a0600823a821626eca17a674a5fde9b69"><td class="memItemLeft" align="right" valign="top"><a id="a0600823a821626eca17a674a5fde9b69" name="a0600823a821626eca17a674a5fde9b69"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_tet_slots</b> (size_t n)</td></tr>
-<tr class="separator:a0600823a821626eca17a674a5fde9b69"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a705aa747779887b9ecda2d92f839c71f" id="r_a705aa747779887b9ecda2d92f839c71f"><td class="memItemLeft" align="right" valign="top"><a id="a705aa747779887b9ecda2d92f839c71f" name="a705aa747779887b9ecda2d92f839c71f"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
-<tr class="separator:a705aa747779887b9ecda2d92f839c71f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae85bd3a56cd68dbef7e5256299128ca7" id="r_ae85bd3a56cd68dbef7e5256299128ca7"><td class="memItemLeft" align="right" valign="top"><a id="ae85bd3a56cd68dbef7e5256299128ca7" name="ae85bd3a56cd68dbef7e5256299128ca7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>slots_exhausted</b> () const</td></tr>
+<tr class="separator:ae85bd3a56cd68dbef7e5256299128ca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a064c16cbee654a4e012a7adb0d4f05b9" id="r_a064c16cbee654a4e012a7adb0d4f05b9"><td class="memItemLeft" align="right" valign="top"><a id="a064c16cbee654a4e012a7adb0d4f05b9" name="a064c16cbee654a4e012a7adb0d4f05b9"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_slots_exhausted</b> ()</td></tr>
+<tr class="separator:a064c16cbee654a4e012a7adb0d4f05b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76d04adcbfc4809cd3643be5d6425589" id="r_a76d04adcbfc4809cd3643be5d6425589"><td class="memItemLeft" align="right" valign="top"><a id="a76d04adcbfc4809cd3643be5d6425589" name="a76d04adcbfc4809cd3643be5d6425589"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_tet_slots</b> (size_t n)</td></tr>
+<tr class="separator:a76d04adcbfc4809cd3643be5d6425589"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac537c979e7550ba8b98a1b6792363098" id="r_ac537c979e7550ba8b98a1b6792363098"><td class="memItemLeft" align="right" valign="top"><a id="ac537c979e7550ba8b98a1b6792363098" name="ac537c979e7550ba8b98a1b6792363098"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>request_vert_slots</b> (size_t n)</td></tr>
+<tr class="separator:ac537c979e7550ba8b98a1b6792363098"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1646ff821bf9087f21129cf5e425366d" id="r_a1646ff821bf9087f21129cf5e425366d"><td class="memItemLeft" align="right" valign="top"><a id="a1646ff821bf9087f21129cf5e425366d" name="a1646ff821bf9087f21129cf5e425366d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_tet_capacity</b> (size_t extra)</td></tr>
 <tr class="separator:a1646ff821bf9087f21129cf5e425366d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -428,6 +434,17 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>for_each_tetra</b> (c
 <tr class="memitem:aa85f8199512a563b9c64b1338536e261" id="r_aa85f8199512a563b9c64b1338536e261"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#aa85f8199512a563b9c64b1338536e261">substructure_link_condition</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;e_tuple) const</td></tr>
 <tr class="memdesc:aa85f8199512a563b9c64b1338536e261"><td class="mdescLeft">&#160;</td><td class="mdescRight">Link condition that also considers substructures.  <br /></td></tr>
 <tr class="separator:aa85f8199512a563b9c64b1338536e261"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Storage capacity</div></td></tr>
+<tr><td colspan="2"><div class="groupText"><p>True if any slot request has been refused since the last clear.</p>
+<p>The pass boundary uses this to decide whether to consolidate: a refusal means an operation was abandoned for want of storage, and consolidating reclaims the slots that removed elements still hold (the counter only ever advances during a pass) and re-derives the capacity from the real element count.</p>
+<p>How many slots the storage holds, as opposed to <a class="el" href="classwmtk_1_1_tet_mesh.html#ae694542b2ee771a6ab0824c138b66212" title="get the current largest global tid">tet_capacity()</a>/vert_capacity(), which report the LIVE count &ndash; the end of the handed-out region. Exhaustion is <code>live == storage capacity</code>, and consolidate re-derives the latter as <code>reserved_capacity(real element count)</code>. </p>
+</div></td></tr>
+<tr class="memitem:a6879ed44988c3abec5bfa6b06935df52" id="r_a6879ed44988c3abec5bfa6b06935df52"><td class="memItemLeft" align="right" valign="top"><a id="a6879ed44988c3abec5bfa6b06935df52" name="a6879ed44988c3abec5bfa6b06935df52"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>tet_storage_capacity</b> () const</td></tr>
+<tr class="separator:a6879ed44988c3abec5bfa6b06935df52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68408249316be543900b8d04a21dd83e" id="r_a68408249316be543900b8d04a21dd83e"><td class="memItemLeft" align="right" valign="top"><a id="a68408249316be543900b8d04a21dd83e" name="a68408249316be543900b8d04a21dd83e"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>vert_storage_capacity</b> () const</td></tr>
+<tr class="separator:a68408249316be543900b8d04a21dd83e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">Ring lockers &ndash; NOT balls</div></td></tr>
 <tr><td colspan="2"><div class="groupText"><p>The helpers below are the ones every pass actually uses, and <b>none of the two-ring ones claims the ball its name suggests</b>. Each walks the ring with </p><pre class="fragment">if (m_vertex_mutex[w].get_owner() == threadid) continue;
 </pre><p> and that <code>continue</code> skips the EXPANSION as well as the lock. So a vertex this thread already holds contributes none of its neighbours. In try_set_edge_mutex_two_ring the effect is systematic rather than incidental: v2 is locked up front, so walking v1's ring skips straight past it, and by the time v2's ring is walked almost everything in it is already owned from v1's expansion and is skipped in turn. What comes out is roughly <em>2-ring(v1) union N(v2)</em> &ndash; the vertices at distance 2 from v2 and 3 from v1 are simply not claimed. The face variants compose the same helper three times and inherit the same shortfall.</p>
@@ -584,12 +601,12 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:ac03118abec84059a60bdf99afbd8b7f8" id="r_ac03118abec84059a60bdf99afbd8b7f8"><td class="memItemLeft" align="right" valign="top"><a id="ac03118abec84059a60bdf99afbd8b7f8" name="ac03118abec84059a60bdf99afbd8b7f8"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>reserved_capacity</b> (size_t live_count) const</td></tr>
 <tr class="separator:ac03118abec84059a60bdf99afbd8b7f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9a34df448167bcf88e1fcad01ba63f1" id="r_ab9a34df448167bcf88e1fcad01ba63f1"><td class="memItemLeft" align="right" valign="top"><a id="ab9a34df448167bcf88e1fcad01ba63f1" name="ab9a34df448167bcf88e1fcad01ba63f1"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>get_next_empty_slot_t</b> ()</td></tr>
-<tr class="separator:ab9a34df448167bcf88e1fcad01ba63f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82f1815bfbe484de9670f724d5a08b28" id="r_a82f1815bfbe484de9670f724d5a08b28"><td class="memItemLeft" align="right" valign="top"><a id="a82f1815bfbe484de9670f724d5a08b28" name="a82f1815bfbe484de9670f724d5a08b28"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>get_next_empty_slot_v</b> ()</td></tr>
-<tr class="separator:a82f1815bfbe484de9670f724d5a08b28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a143fd56060839daf2dc17f50c3cc8e2e" id="r_a143fd56060839daf2dc17f50c3cc8e2e"><td class="memItemLeft" align="right" valign="top"><a id="a143fd56060839daf2dc17f50c3cc8e2e" name="a143fd56060839daf2dc17f50c3cc8e2e"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_next_empty_slot_t</b> ()</td></tr>
+<tr class="separator:a143fd56060839daf2dc17f50c3cc8e2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fe30073be541fc25284cd9a31a95f66" id="r_a6fe30073be541fc25284cd9a31a95f66"><td class="memItemLeft" align="right" valign="top"><a id="a6fe30073be541fc25284cd9a31a95f66" name="a6fe30073be541fc25284cd9a31a95f66"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>get_next_empty_slot_v</b> ()</td></tr>
+<tr class="separator:a6fe30073be541fc25284cd9a31a95f66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50fa5e5489cc9b3b274a311a90c41f07" id="r_a50fa5e5489cc9b3b274a311a90c41f07"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a50fa5e5489cc9b3b274a311a90c41f07">subdivide_tets</a> (const std::vector&lt; size_t &gt; t_ids, const std::vector&lt; bool &gt; &amp;mark_surface, const std::map&lt; std::array&lt; size_t, 2 &gt;, size_t &gt; &amp;map_edge2vid, std::map&lt; std::array&lt; size_t, 3 &gt;, std::vector&lt; std::array&lt; size_t, 5 &gt; &gt; &gt; &amp;new_face_vids, const std::vector&lt; size_t &gt; &amp;new_vids, std::vector&lt; size_t &gt; &amp;new_tids, std::vector&lt; size_t &gt; &amp;new_center_vids, std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;center_split_tets)</td></tr>
 <tr class="separator:a50fa5e5489cc9b3b274a311a90c41f07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a556fc89003d2b4704944a6ede67849c7" id="r_a556fc89003d2b4704944a6ede67849c7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a556fc89003d2b4704944a6ede67849c7">subdivide_a_tet</a> (size_t t_id, const std::array&lt; int, 6 &gt; &amp;new_v_ids, bool mark_surface, std::map&lt; std::array&lt; size_t, 3 &gt;, std::vector&lt; std::array&lt; size_t, 5 &gt; &gt; &gt; &amp;new_face_vids, std::vector&lt; size_t &gt; &amp;new_tids, std::vector&lt; size_t &gt; &amp;new_center_vids, std::vector&lt; std::array&lt; size_t, 4 &gt; &gt; &amp;center_split_tets)</td></tr>
@@ -621,24 +638,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>lock_vertex_ball</b> 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-methods" name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
-<tr class="memitem:ae50dfffcd94a0e24197537b26c76f2a8" id="r_ae50dfffcd94a0e24197537b26c76f2a8"><td class="memItemLeft" align="right" valign="top"><a id="ae50dfffcd94a0e24197537b26c76f2a8" name="ae50dfffcd94a0e24197537b26c76f2a8"></a>
-static std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>record_old_tet_connectivity</b> (const TetMesh::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt; &amp;conn, const std::vector&lt; size_t &gt; &amp;tets)</td></tr>
-<tr class="separator:ae50dfffcd94a0e24197537b26c76f2a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50aacce31f770fcf8965fb1d578adda8" id="r_a50aacce31f770fcf8965fb1d578adda8"><td class="memItemLeft" align="right" valign="top"><a id="a50aacce31f770fcf8965fb1d578adda8" name="a50aacce31f770fcf8965fb1d578adda8"></a>
+static std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>record_old_tet_connectivity</b> (const <a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt; &amp;conn, const std::vector&lt; size_t &gt; &amp;tets)</td></tr>
+<tr class="separator:a50aacce31f770fcf8965fb1d578adda8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a275949d8f7b7bf458711003f644b393d" id="r_a275949d8f7b7bf458711003f644b393d"><td class="memItemLeft" align="right" valign="top"><a id="a275949d8f7b7bf458711003f644b393d" name="a275949d8f7b7bf458711003f644b393d"></a>
-vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
-<tr class="separator:a275949d8f7b7bf458711003f644b393d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25e8772226fd23adc3053b613a1e3c5e" id="r_a25e8772226fd23adc3053b613a1e3c5e"><td class="memItemLeft" align="right" valign="top"><a id="a25e8772226fd23adc3053b613a1e3c5e" name="a25e8772226fd23adc3053b613a1e3c5e"></a>
-vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_connectivity</b></td></tr>
-<tr class="separator:a25e8772226fd23adc3053b613a1e3c5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af765a83ea1ec72bf3cf0ccd66e3e0ed7" id="r_af765a83ea1ec72bf3cf0ccd66e3e0ed7"><td class="memItemLeft" align="right" valign="top"><a id="af765a83ea1ec72bf3cf0ccd66e3e0ed7" name="af765a83ea1ec72bf3cf0ccd66e3e0ed7"></a>
-std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_vert_size</b></td></tr>
-<tr class="separator:af765a83ea1ec72bf3cf0ccd66e3e0ed7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64695a1504d58c4d96e51f65ddecc3f6" id="r_a64695a1504d58c4d96e51f65ddecc3f6"><td class="memItemLeft" align="right" valign="top"><a id="a64695a1504d58c4d96e51f65ddecc3f6" name="a64695a1504d58c4d96e51f65ddecc3f6"></a>
-std::atomic_long&#160;</td><td class="memItemRight" valign="bottom"><b>current_tet_size</b></td></tr>
-<tr class="separator:a64695a1504d58c4d96e51f65ddecc3f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e955685234858d83331f785d6e217a1" id="r_a8e955685234858d83331f785d6e217a1"><td class="memItemLeft" align="right" valign="top"><a id="a8e955685234858d83331f785d6e217a1" name="a8e955685234858d83331f785d6e217a1"></a>
+<a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_vertex_connectivity.html">VertexConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_vertex_connectivity</b></td></tr>
+<tr class="separator:a8e955685234858d83331f785d6e217a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ee06a6beae8dd9a1deda4df6e2e323d" id="r_a6ee06a6beae8dd9a1deda4df6e2e323d"><td class="memItemLeft" align="right" valign="top"><a id="a6ee06a6beae8dd9a1deda4df6e2e323d" name="a6ee06a6beae8dd9a1deda4df6e2e323d"></a>
+<a class="el" href="classwmtk_1_1_slot_pool.html">SlotPool</a>&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html">TetrahedronConnectivity</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_tet_connectivity</b></td></tr>
+<tr class="separator:a6ee06a6beae8dd9a1deda4df6e2e323d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace4961e3c5e9d0e4f2899357afc2e24e" id="r_ace4961e3c5e9d0e4f2899357afc2e24e"><td class="memItemLeft" align="right" valign="top"><a id="ace4961e3c5e9d0e4f2899357afc2e24e" name="ace4961e3c5e9d0e4f2899357afc2e24e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_preallocation_factor</b> = 6.0</td></tr>
 <tr class="separator:ace4961e3c5e9d0e4f2899357afc2e24e"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -113,9 +113,8 @@ std::array&lt; size_t, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <tr class="memitem:a88519cf833b5df14c16747c750a786b0" id="r_a88519cf833b5df14c16747c750a786b0"><td class="memItemLeft" align="right" valign="top"><a id="a88519cf833b5df14c16747c750a786b0" name="a88519cf833b5df14c16747c750a786b0"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_removed</b> = false</td></tr>
 <tr class="separator:a88519cf833b5df14c16747c750a786b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad4da7de944a0d83816df3e8d33713a1a" id="r_ad4da7de944a0d83816df3e8d33713a1a"><td class="memItemLeft" align="right" valign="top"><a id="ad4da7de944a0d83816df3e8d33713a1a" name="ad4da7de944a0d83816df3e8d33713a1a"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>hash</b> = 0</td></tr>
-<tr class="separator:ad4da7de944a0d83816df3e8d33713a1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c2c9175fd8dba2046fff31f735bfa37" id="r_a1c2c9175fd8dba2046fff31f735bfa37"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tetrahedron_connectivity.html#a1c2c9175fd8dba2046fff31f735bfa37">hash</a> = 0</td></tr>
+<tr class="separator:a1c2c9175fd8dba2046fff31f735bfa37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
@@ -125,7 +124,23 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator==</b> (const
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>(internal use) Maintains the vertices of a given tetra. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a1c2c9175fd8dba2046fff31f735bfa37" name="a1c2c9175fd8dba2046fff31f735bfa37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c2c9175fd8dba2046fff31f735bfa37">&#9670;&#160;</a></span>hash</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::TetMesh::TetrahedronConnectivity::hash = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Bumped whenever an operation changes this tet, so a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> minted earlier can detect that it is stale. Only ever compared for equality against a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a>'s cached copy &ndash; no code reads the value itself, and the rollback path decrements it, which is why it is unsigned: the wrap at 0 is defined, where signed underflow would not be. </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_tet_mesh_8h_source.html">TetMesh.h</a></li>
 </ul>
 </div><!-- contents -->
