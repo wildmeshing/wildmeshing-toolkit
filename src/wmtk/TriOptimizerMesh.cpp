@@ -166,7 +166,14 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
 
     sanity_checks();
     update_attributes();
-    for (size_t i = 0; i < ops.size(); ++i) {
+    size_t retry_count = 0;
+    for (int i = 0; i < ops.size(); ++i) {
+        if (retry_count > 0) {
+            logger().info(
+                "Retrying {} pass after consolidating. Retry count: {}",
+                names[i],
+                retry_count);
+        }
         timer.start();
         m_debug_pass_name = ops[i] > 0 ? std::string(names[i]) : std::string(names[i]) + "-skipped";
         if (i == 0) {
@@ -212,6 +219,34 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             logger().info("{} max energy = {:.6} avg = {:.6}", names[i], max_metric, avg_metric);
             sanity_checks();
             update_attributes();
+        }
+
+        // A pass that ran out of preallocated slots abandoned operations for want of storage.
+        // Consolidating both reclaims the slots removed elements still hold -- the counter only
+        // advances during a pass, so churn alone can exhaust it -- and re-derives the storage
+        // from the real element count, which grows it by m_preallocation_factor when there is
+        // no churn left to reclaim.
+        //
+        // Consolidate renumbers, so the abandoned operations' tuples are gone; the group is
+        // re-run instead, which re-collects them against the enlarged storage. Every retry
+        // grows the storage by the factor, so the chain makes progress and terminates.
+        if (slots_exhausted()) {
+            const size_t live_before = tri_capacity();
+            const size_t store_before = tri_storage_capacity();
+            consolidate_mesh();
+            clear_slots_exhausted();
+            logger().info(
+                "{} pass exhausted its preallocated slots: {} of {} faces reclaimed as "
+                "churn, storage {} -> {}",
+                names[i],
+                live_before - tri_capacity(),
+                live_before,
+                store_before,
+                tri_storage_capacity());
+            --i; // retry the same operation after consolidating
+            ++retry_count;
+        } else {
+            retry_count = 0;
         }
     }
 

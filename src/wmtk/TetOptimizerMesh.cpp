@@ -41,8 +41,8 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
     compute_vertex_partition_morton();
 
     if (optimization_bare_coarsen_passes()) {
-        logger().info("========it pre========");
-        local_operations({{0, 1, 0, 0}}, false);
+        // Performing swaps after the initial collapse improves quality and convergence.
+        local_operations({{0, 1, 1, 0}}, false);
     }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
@@ -138,6 +138,8 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
 {
     igl::Timer timer;
 
+    static constexpr std::array<const char*, 4> names = {{"split", "collapse", "swap", "smooth"}};
+
     auto sanity_checks = [this]() {
         if (!m_params.perform_sanity_checks) return;
 
@@ -162,7 +164,14 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
 
     sanity_checks();
     update_attributes();
+    size_t retry_count = 0;
     for (int i = 0; i < int(ops.size()); ++i) {
+        if (retry_count > 0) {
+            logger().info(
+                "Retrying {} pass after consolidating. Retry count: {}",
+                names[size_t(i)],
+                retry_count);
+        }
         timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
@@ -190,31 +199,60 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                 if (cnt_success == 0) break;
             }
         } else {
-            for (int n = 0; n < ops[i]; ++n) {
-                logger().info("==smoothing {}==", n);
-                smooth_all_vertices();
-            }
+            smooth_all_vertices(size_t(ops[i]));
             if (ops[i] > 0) round_all_vertices();
         }
 
-        if (m_params.debug_output) {
-            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
-        }
-        const auto [max_metric, avg_metric] = optimization_quality_stats();
-        static constexpr std::array<const char*, 4> names = {
-            {"split", "collapse", "swap", "smooth"}};
-        logger()
-            .info("{} max energy = {:.6} avg = {:.6}", names[size_t(i)], max_metric, avg_metric);
-        if (i == 2) {
+        if (ops[i] > 0) {
+            if (m_params.debug_output && i < 3) {
+                // no need to print debug output for smoothing, since it prints already internally
+                write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+            }
+            const auto [max_metric, avg_metric] = optimization_quality_stats();
             logger().info(
-                "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
-                cnt_surface_swap.load(),
-                cnt_surface_swap_32.load(),
-                cnt_surface_swap_44.load(),
-                cnt_surface_swap_56.load());
+                "{} max energy = {:.6} avg = {:.6}",
+                names[size_t(i)],
+                max_metric,
+                avg_metric);
+            if (i == 2) {
+                logger().info(
+                    "cnt_surface_swap (cumulative) = {} [3-2: {}, 4-4: {}, 5-6: {}]",
+                    cnt_surface_swap.load(),
+                    cnt_surface_swap_32.load(),
+                    cnt_surface_swap_44.load(),
+                    cnt_surface_swap_56.load());
+            }
+            sanity_checks();
+            update_attributes();
         }
-        sanity_checks();
-        update_attributes();
+
+        // A pass that ran out of preallocated slots abandoned operations for want of storage.
+        // Consolidating both reclaims the slots removed elements still hold -- the counter only
+        // advances during a pass, so churn alone can exhaust it -- and re-derives the storage
+        // from the real element count, which grows it by m_preallocation_factor when there is
+        // no churn left to reclaim.
+        //
+        // Consolidate renumbers, so the abandoned operations' tuples are gone; the group is
+        // re-run instead, which re-collects them against the enlarged storage. Every retry
+        // grows the storage by the factor, so the chain makes progress and terminates.
+        if (slots_exhausted()) {
+            const size_t live_before = tet_capacity();
+            const size_t store_before = tet_storage_capacity();
+            consolidate_mesh();
+            clear_slots_exhausted();
+            logger().info(
+                "{} pass exhausted its preallocated slots: {} of {} tets reclaimed as "
+                "churn, storage {} -> {}",
+                names[size_t(i)],
+                live_before - tet_capacity(),
+                live_before,
+                store_before,
+                tet_storage_capacity());
+            --i; // retry the same operation after consolidating
+            ++retry_count;
+        } else {
+            retry_count = 0;
+        }
     }
 
     const auto stats = optimization_quality_stats();
@@ -328,6 +366,7 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
 void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
 {
     for (size_t i = 0; i < n_iters; ++i) {
+        logger().info("==smoothing {}==", i);
         // Preserve TetWild's deterministic serial random-seed progression. The current
         // collector does not consume rand(), but keeping the state transition makes the move
         // behavior-neutral if its ordering is randomized again.
@@ -348,13 +387,17 @@ void TetOptimizerMesh::smooth_all_vertices(const size_t n_iters)
             }
         }
         logger().info("vertex smoothing prepare time: {:.4}s", timer.getElapsedTime());
-        logger().debug("Num verts {}", collect_all_ops.size());
+        logger().debug("#V = {}", collect_all_ops.size());
         run_pass(
             *this,
             PassLock::VertexRing,
             "vertex smoothing operation",
             [&](auto& executor, auto& mesh) { executor(mesh, collect_all_ops); });
         logger().info("\tsmooth: {}", m_smooth_rejects.to_string());
+
+        if (m_params.debug_output) {
+            write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
     }
 }
 

@@ -2,6 +2,7 @@
 
 #include <wmtk/utils/VectorUtils.h>
 #include <wmtk/AttributeCollection.hpp>
+#include <wmtk/SlotPool.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -33,7 +34,7 @@ public:
         size_t m_vid = -1;
         size_t m_eid = -1;
         size_t m_fid = -1;
-        size_t m_hash = -1;
+        size_t m_hash = 0;
 
         void update_hash(const TriMesh& m);
 
@@ -370,10 +371,42 @@ public:
     double preallocation_factor() const { return m_preallocation_factor; }
 
     // Atomically reserve `n` contiguous fresh triangle/vertex slots. Returns the
-    // first index of the block, or -1 if that would exceed the preallocated
+    // first index of the block, or INVALID_SLOT if that would exceed the preallocated
     // capacity (the caller must then abort the operation before mutating).
-    long request_tri_slots(size_t n);
-    long request_vert_slots(size_t n);
+
+    /**
+     * @brief True if any slot request has been refused since the last clear.
+     *
+     * The pass boundary uses this to decide whether to consolidate: a refusal means an
+     * operation was abandoned for want of storage, and consolidating reclaims the slots that
+     * removed elements still hold (the counter only ever advances during a pass) and re-derives
+     * the capacity from the real element count.
+     */
+    /**
+     * @name Storage capacity
+     *
+     * How many slots the storage holds, as opposed to tri_capacity()/vert_capacity(), which
+     * report the LIVE count -- the end of the handed-out region. Exhaustion is `live ==
+     * storage capacity`, and consolidate re-derives the latter as
+     * `reserved_capacity(real element count)`.
+     * @{
+     */
+    size_t tri_storage_capacity() const { return m_tri_connectivity.capacity(); }
+    size_t vert_storage_capacity() const { return m_vertex_connectivity.capacity(); }
+    /** @} */
+
+    bool slots_exhausted() const
+    {
+        return m_vertex_connectivity.refused() || m_tri_connectivity.refused();
+    }
+    void clear_slots_exhausted()
+    {
+        m_vertex_connectivity.clear_refused();
+        m_tri_connectivity.clear_refused();
+    }
+
+    size_t request_tri_slots(size_t n);
+    size_t request_vert_slots(size_t n);
 
     /**
      * @brief How many operations have aborted because the preallocated slot pool ran out.
@@ -396,10 +429,8 @@ private:
         return capacity < floor ? floor : capacity;
     }
 
-    vector<VertexConnectivity> m_vertex_connectivity;
-    vector<TriangleConnectivity> m_tri_connectivity;
-    std::atomic_long current_vert_size;
-    std::atomic_long current_tri_size;
+    SlotPool<VertexConnectivity> m_vertex_connectivity;
+    SlotPool<TriangleConnectivity> m_tri_connectivity;
     double m_preallocation_factor = 6.0;
     std::atomic<size_t> m_slot_exhausted{0};
     bool m_use_link_condition = true;
@@ -524,13 +555,13 @@ public:
      *
      * @return size_t
      */
-    size_t tri_capacity() const { return current_tri_size; }
+    size_t tri_capacity() const { return m_tri_connectivity.live(); }
     /**
      * @brief get the current largest global vid
      *
      * @return size_t
      */
-    size_t vert_capacity() const { return current_vert_size; }
+    size_t vert_capacity() const { return m_vertex_connectivity.live(); }
 
     /**
      * @name Dimension-generic cell accessors
@@ -896,7 +927,7 @@ public:
      */
     Tuple tuple_from_tri(size_t fid) const
     {
-        if (fid >= m_tri_connectivity.size() || m_tri_connectivity[fid].m_is_removed)
+        if (fid >= m_tri_connectivity.capacity() || m_tri_connectivity[fid].m_is_removed)
             return Tuple();
         auto vid = m_tri_connectivity[fid][0];
         return Tuple(vid, 1, fid, *this);
@@ -917,7 +948,7 @@ public:
      */
     Tuple tuple_from_vertex(size_t vid) const
     {
-        if (vid >= m_vertex_connectivity.size() || m_vertex_connectivity[vid].m_is_removed ||
+        if (vid >= m_vertex_connectivity.capacity() || m_vertex_connectivity[vid].m_is_removed ||
             m_vertex_connectivity[vid].m_conn_tris.empty()) {
             return Tuple();
         }

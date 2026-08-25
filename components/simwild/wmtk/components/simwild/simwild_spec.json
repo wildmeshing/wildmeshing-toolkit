@@ -13,6 +13,7 @@
       "input_dir",
       "skip_simplify",
       "tag_from_winding_number",
+      "split_connected_components",
       "use_sample_envelope",
       "num_threads",
       "max_iterations",
@@ -52,6 +53,7 @@
       "allow_surface_swap",
       "check_surface_topology",
       "verbose_quality_stats",
+      "preallocation_factor",
       "stuck_refine_stall_eps",
       "stuck_refine_cooldown",
       "stuck_refine_num_worst",
@@ -170,6 +172,12 @@
     "type": "bool",
     "default": true,
     "doc": "How the cells of the arrangement are tagged. True evaluates the winding number of every input at each cell's centroid. False propagates the tags across the arrangement's own surface provenance instead: combinatorial and exact, starting from a cell of the padded box (which is outside everything) and flipping membership of an input whenever a face belonging to that input is crossed. The provenance route needs every input surface to be closed, and says which crossings disagree rather than returning a tagging that depends on the traversal order. 3D surface input only -- a .msh input arrives already tagged."
+  },
+  {
+    "pointer": "/split_connected_components",
+    "type": "bool",
+    "default": false,
+    "doc": "Treat each connected component of an input file as an input in its own right, rather than the file as a whole. What counts as an input is what gets its own tag column and its own winding-number evaluation, so a file holding several disjoint closed surfaces is tagged as one region with this off, and as one region per component with it on. Components are vertex-connected. Note that the inputs then outnumber the files, so /input_names -- which is applied by position -- no longer lines up with the filenames, and components past the end of that list fall back to the generic tag_N names. 3D surface input only: a .msh input arrives already tagged, and the 2D curve path has its own reader."
   },
   {
     "pointer": "/use_sample_envelope",
@@ -402,6 +410,13 @@
     "type": "bool",
     "default": false,
     "doc": "Check if the surface topology is preserved after each operation. This can be very slow and should only be used for debugging."
+  },
+  {
+    "pointer": "/preallocation_factor",
+    "type": "float",
+    "default": 6.0,
+    "min": 1.0,
+    "doc": "Mesh storage (connectivity + attributes) is preallocated to this factor times the live element count at init and consolidation. Operations take fresh slots from that headroom; a pass that exhausts it abandons the affected operations and consolidates at the pass boundary, which reclaims the slots removed elements still hold and re-derives the capacity from the real element count. Lower it for pure-decimation runs, raise it for aggressive refinement."
   },
   {
     "pointer": "/verbose_quality_stats",

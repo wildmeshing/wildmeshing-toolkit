@@ -39,7 +39,7 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
 
     /// update connectivity
     int v_id = get_next_empty_slot_v();
-    if (v_id < 0) {
+    if (v_id == INVALID_SLOT) {
         note_slot_exhausted();
         return false; // out of preallocated vertex slots: abort before mutating
     }
