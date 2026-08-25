@@ -1418,6 +1418,44 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
         return F;
     };
 
+    // THE BAR PHASE A ENFORCES, APPLIED TO THE PLACEMENT STEP. Phase A ends every round with
+    // max AMIPS <= stop_energy; the placement's only shape guard was the exact inversion test, so
+    // where the field's level set is unreachable -- two fronts meeting, where Phi_A + Phi_B > c
+    // across the whole gap -- the offset term pushed both fronts through the background strip
+    // until inversion, and Phase A then remeshed the crushed strip into flat faces every round
+    // (two_circles at target_distance 0.1: strip width 0.0009, 626 coincident vertex pairs, 92
+    // folded edges, edge error cycling 143x -> 65x -> 52x -> 79x, never a joint fixed point).
+    // A trial step may worsen the ring, but not past stop_energy, and not make a face already
+    // over it worse: the step is SHRUNK, not refused, so the front presses up to the bar and
+    // stops there -- the same state Phase A accepts, so the alternation can settle. TriWild's
+    // own smoother never needed this: it descends on AMIPS alone and cannot raise it.
+    const auto ring_max_at = [&](const Vector2d& p) -> double {
+        double q = 0.;
+        for (std::array<double, 6> cell : ring) {
+            cell[0] = p.x();
+            cell[1] = p.y();
+            const double a = wmtk::AMIPS2D_energy(cell);
+            if (!std::isfinite(a)) return std::numeric_limits<double>::infinity();
+            q = std::max(q, a);
+        }
+        return q;
+    };
+    // ONE SWITCH, because it was asked whether the per-region fields made this redundant.
+    // Measured 2026-08-24 with it OFF, fields per region: tangent cases (delta 0.1) and 0.04
+    // still converge, but every case where the fronts actually push into each other fails --
+    // smooth 0.15: strip crushed to 0.002, worst quality 76, folds of 164 deg, no convergence;
+    // Euclidean 0.15: RUNAWAY. (smooth 0.02 also loses convergence, but only to one 6e-4-long
+    // edge folded across the curve at (1.459, 0.954) -- 2.5% of delta, invisible at the
+    // viewer's scale; a measured difference, not a visible kink.) The field fixes the
+    // DIRECTION of the push, this bar is the STOP. Both are needed.
+    constexpr bool kPlacementQualityBound = true;
+    constexpr double kPlacementQualityBoundFactor = 1.; ///< the bar is this x stop_energy; 2x and 10x measured worse, see below
+    const double q_bar = kPlacementQualityBoundFactor * m_params.stop_energy;
+    const double q_bound = kPlacementQualityBound ? std::max(q_bar, ring_max_at(x_orig))
+                                                  : std::numeric_limits<double>::infinity();
+    const auto over_bound = [&](const Vector2d& p) -> bool { return !(ring_max_at(p) <= q_bound); };
+    bool bounded = false; ///< some valid trial step was refused by the bar
+
     Vector2d x_last_inside = x_orig; ///< THE LAST POSITION KNOWN TO KEEP THE ONE-RING VALID
     bool left_ring = false;
     int iters = 0; ///< accepted steps, for the trace
@@ -1494,6 +1532,10 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
                                 tan_ring = true;
                                 continue;
                             }
+                            if (over_bound(x_try)) {
+                                bounded = true;
+                                continue;
+                            }
                             // THE CHORD BOUND, and the reason a corner needs no special case.
                             // surface_segment_is_outside() reads the vertex's stored position,
                             // so the trial has to be in place while it is asked; restored
@@ -1530,6 +1572,8 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
                         if (taken) {
                             stop = PlacementStop::Moved;
                             ++m_placement_tangential;
+                        } else if (bounded) {
+                            stop = PlacementStop::QualityBound;
                         } else if (tan_ring) {
                             left_ring = true;
                             stop = PlacementStop::RingBlocked;
@@ -1581,6 +1625,10 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
                         blocked_by_ring = true;
                         continue;
                     }
+                    if (over_bound(x_try)) {
+                        bounded = true;
+                        continue;
+                    }
                     const QSample nxt = grad_norm_at(x_try);
                     if (nxt.r < r_floor) {
                         stop = PlacementStop::LeftOffset;
@@ -1594,6 +1642,8 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
                 }
                 if (accepted) {
                     stop = PlacementStop::Moved;
+                } else if (bounded) {
+                    stop = PlacementStop::QualityBound;
                 } else if (blocked_by_ring) {
                     // Every trial length inverted the ring: this vertex cannot move at all.
                     left_ring = true;
@@ -1648,6 +1698,16 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
 
     ex.disp = (x_last_inside - x_orig).norm();
     if (stop == PlacementStop::Moved && iters == 1) ++m_placement_trace.moved_one_step;
+    // PRESSED IS A STATE, NOT A STOP REASON. A vertex held against the bar may still take a
+    // hair of a step within it and report Moved; what makes it pressed is that an incident face
+    // sits AT stop_energy where it ends up, i.e. the mesh's quality bar, not the field, is what
+    // stopped it. Only the stop_energy bar counts: a ring that was already worse than the bar on
+    // entry is bounded by its own max instead, and that is not the seam.
+    const bool pressed_now =
+        (stop == PlacementStop::QualityBound) ||
+        (kPlacementQualityBound && ring_max_at(x_last_inside) >= q_bar * (1. - 1e-9));
+    if (pressed_now) ++m_phase_b_pressed;
+    if (vid < m_placement_pressed.size()) m_placement_pressed[vid] = pressed_now ? 1 : 0;
     book(stop);
 
     // The one-ring's stored qualities are now stale; the split/collapse/swap passes read them.
@@ -2134,6 +2194,7 @@ const char* TopoOffsetTriMesh::placement_stop_name(const PlacementStop s)
     case PlacementStop::LeftOffset: return "reached the offset region's edge";
     case PlacementStop::EnvelopeBlocked: return "NO TANGENT ON ITS OWN BOUNDARY CURVE";
     case PlacementStop::ChordBlocked: return "SLIDE CUT OFF BY AN INCIDENT CHORD";
+    case PlacementStop::QualityBound: return "PRESSED: EVERY STEP PUTS AN INCIDENT FACE OVER stop_energy";
     case PlacementStop::RingBlocked: return "RING BLOCKED, no first step";
     case PlacementStop::LeftRing: return "left the ring mid-walk";
     case PlacementStop::MidStationary: return "grad E vanished mid-walk";
@@ -2172,6 +2233,7 @@ void TopoOffsetTriMesh::log_placement_trace() const
         // is arriving at the level set; being stopped by a region tube is having nowhere to go.
         PlacementStop::EnvelopeBlocked,
         PlacementStop::ChordBlocked,
+        PlacementStop::QualityBound,
         PlacementStop::Stationary,
         PlacementStop::MidStationary,
         PlacementStop::PreInverted,
@@ -4277,6 +4339,8 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         // distorted. Ordered rather than interleaved so the background always relaxes against
         // the offset's FINAL position for this pass.
         m_phase_b_constrained = 0;
+        m_phase_b_pressed = 0;
+        if (pass == 0) m_placement_pressed.assign(vert_capacity(), 0);
         m_placement_trace.reset(); // only the Offset sub-sweep books into it
         m_phase_b_sub = PhaseBSub::Offset;
         m_debug_pass_name = "B-offset";
@@ -4334,10 +4398,11 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
             g / g_abs,
             g_abs);
         logger().info(
-            "\t[phase B] pass {}: placed {} constrained {} | background relaxed {}",
+            "\t[phase B] pass {}: placed {} constrained {} pressed {} | background relaxed {}",
             pass + 1,
             placed,
             constrained,
+            m_phase_b_pressed.load(),
             relaxed);
         // `placed` counts every visit that returned true, INCLUDING the ones that put the vertex
         // back exactly where it started. This is the breakdown that tells those apart.
@@ -4405,11 +4470,22 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
     // 1. Every band vertex against the criterion. Non-band vertices are left `true` so they
     //    never veto a neighbour's halving -- the rule is about the BOUNDARY one-ring.
     std::vector<char> in_tol(vert_capacity(), 1), is_band(vert_capacity(), 0);
+    // Pressed vertices (see m_placement_pressed) are neither misplaced nor under-resolved: the
+    // seam is where the level set does not exist, and halving there would refine it forever.
+    const auto pressed = [&](const size_t vtx) {
+        return vtx < m_placement_pressed.size() && m_placement_pressed[vtx];
+    };
+    size_t n_pressed_v = 0, n_pressed_e = 0;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!on_band[vid] || !m_vertex_extra[vid].m_is_on_offset) continue;
         if (!m_vertex_attribute[vid].m_is_rounded) continue; // not placeable, not this rule's
         is_band[vid] = 1;
+        if (pressed(vid)) {
+            in_tol[vid] = 1;
+            ++n_pressed_v;
+            continue;
+        }
         in_tol[vid] = grad_at(m_vertex_attribute[vid].m_posf) <= gtol ? 1 : 0;
     }
 
@@ -4434,6 +4510,10 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
         if (!edge_is_offset_surface_live(e)) continue;
         ++n_edges_seen;
         const std::array<size_t, 2> vs = {{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
+        if (pressed(vs[0]) || pressed(vs[1])) {
+            ++n_pressed_e;
+            continue;
+        }
         if (!in_tol[vs[0]] || !in_tol[vs[1]]) continue;
         bool edge_bad = false;
         for_each_offset_edge_sample(e, [&](const Vector2d& q) {
@@ -4484,6 +4564,13 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
         n_at_floor,
         n_band - n_halved - n_misplaced - n_at_floor,
         s_floor);
+    if (n_pressed_v > 0 || n_pressed_e > 0) {
+        logger().info(
+            "\t[phase B] band sizing: {} pressed vertices and {} edges touching one left alone "
+            "(the seam is not a resolution question)",
+            n_pressed_v,
+            n_pressed_e);
+    }
     return changed.size();
 }
 

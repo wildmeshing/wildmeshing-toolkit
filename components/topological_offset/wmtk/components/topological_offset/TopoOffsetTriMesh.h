@@ -1030,6 +1030,10 @@ public:
         LeftOffset, ///< the step would have left the closed offset region {Phi >= c}; refused
         EnvelopeBlocked, ///< no tangent could be resolved on the vertex's own boundary curve
         ChordBlocked, ///< sliding any distance put an incident region edge outside its tube
+        /// PRESSED: every trial step that kept the ring valid put an incident face over
+        /// stop_energy (or made one already over it worse). The vertex is held by the MESH's
+        /// quality bar, not by the field -- the two-fronts seam. See smooth_offset_vertex_backtracking.
+        QualityBound,
         COUNT
     };
     static const char* placement_stop_name(PlacementStop s);
@@ -1911,6 +1915,12 @@ public:
     /// Written once per vertex per pass by smooth_offset_vertex_backtracking(), so parallel
     /// sweeps do not race on an index.
     std::vector<char> m_placement_stalled;
+    /// Set by the placement when a vertex's last visit stopped on QualityBound, cleared when it
+    /// moved. distance_criterion() counts such a vertex as placed -- its level set is
+    /// unreachable by construction -- and drops edges touching one from the resolution and
+    /// orientation halves; update_band_sizing_from_tolerance() does not refine such edges.
+    std::vector<char> m_placement_pressed;
+    std::atomic<int> m_phase_b_pressed{0}; ///< per pass: placements that stopped on QualityBound
 
     /// |grad Phi . n| / |grad Phi| below which the field's gradient counts as TANGENTIAL to the
     /// offset direction. Hard-coded rather than a spec key: it is a near-degeneracy test, not a
