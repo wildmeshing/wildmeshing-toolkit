@@ -1451,7 +1451,8 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     // viewer's scale; a measured difference, not a visible kink.) The field fixes the
     // DIRECTION of the push, this bar is the STOP. Both are needed.
     constexpr bool kPlacementQualityBound = true;
-    constexpr double kPlacementQualityBoundFactor = 1.; ///< the bar is this x stop_energy; 2x and 10x measured worse, see below
+    constexpr double kPlacementQualityBoundFactor =
+        1.; ///< the bar is this x stop_energy; 2x and 10x measured worse, see below
     const double q_bar = kPlacementQualityBoundFactor * m_params.stop_energy;
     const double q_bound = kPlacementQualityBound ? std::max(q_bar, ring_max_at(x_orig))
                                                   : std::numeric_limits<double>::infinity();
@@ -2196,7 +2197,8 @@ const char* TopoOffsetTriMesh::placement_stop_name(const PlacementStop s)
     case PlacementStop::LeftOffset: return "reached the offset region's edge";
     case PlacementStop::EnvelopeBlocked: return "NO TANGENT ON ITS OWN BOUNDARY CURVE";
     case PlacementStop::ChordBlocked: return "SLIDE CUT OFF BY AN INCIDENT CHORD";
-    case PlacementStop::QualityBound: return "PRESSED: EVERY STEP PUTS AN INCIDENT FACE OVER stop_energy";
+    case PlacementStop::QualityBound:
+        return "PRESSED: EVERY STEP PUTS AN INCIDENT FACE OVER stop_energy";
     case PlacementStop::RingBlocked: return "RING BLOCKED, no first step";
     case PlacementStop::LeftRing: return "left the ring mid-walk";
     case PlacementStop::MidStationary: return "grad E vanished mid-walk";
@@ -3566,10 +3568,12 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     // One energy per region field, plus the union for a vertex with no region: a vertex is
     // measured against the field it is placed on. See potential_for().
     std::vector<std::unique_ptr<OffsetEnergy2D>> energies;
-    for (const auto& rp : m_region_potentials) energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
+    for (const auto& rp : m_region_potentials)
+        energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
     OffsetEnergy2D union_energy(m_offset_potential, 1.0);
     const auto energy_for = [&](const int region) -> OffsetEnergy2D& {
-        return (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)] : union_energy;
+        return (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)]
+                                                                 : union_energy;
     };
 
     // THE NORMAL-ALIGNED COMPANION, |grad E . n| with n the OFFSET SURFACE'S OWN normal (the
@@ -3793,9 +3797,10 @@ TopoOffsetTriMesh::DistanceCriterion TopoOffsetTriMesh::distance_criterion(
             const size_t fa = e.fid(*this), fb = opp->fid(*this);
             const size_t band_f = face_is_offset_band(fa) ? fa : fb;
             const auto vs = oriented_tri_vids(band_f);
-            const Vector2d c = (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
-                                m_vertex_attribute[vs[2]].m_posf) /
-                               3.;
+            const Vector2d c =
+                (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
+                 m_vertex_attribute[vs[2]].m_posf) /
+                3.;
             const Vector2d m = 0.5 * (a + b);
             Vector2d n(t.y(), -t.x());
             n /= n.norm();
@@ -3847,7 +3852,8 @@ void TopoOffsetTriMesh::assign_band_regions()
         const std::optional<Tuple> opp = e.switch_face(*this);
         if (!opp) continue;
         const size_t fa = e.fid(*this), fb = opp->fid(*this);
-        for (const auto [band, input] : {std::pair<size_t, size_t>{fa, fb}, std::pair<size_t, size_t>{fb, fa}}) {
+        for (const auto [band, input] :
+             {std::pair<size_t, size_t>{fa, fb}, std::pair<size_t, size_t>{fb, fa}}) {
             if (!face_is_offset_band(band) || !face_is_input_complex(input)) continue;
             const int r = region_of_input_face(input);
             if (r < 0) continue;
@@ -3901,7 +3907,8 @@ void TopoOffsetTriMesh::assign_band_regions()
         }
     }
     std::string per;
-    for (size_t r = 0; r < n_faces.size(); ++r) per += fmt::format("{}{}", r ? " / " : "", n_faces[r]);
+    for (size_t r = 0; r < n_faces.size(); ++r)
+        per += fmt::format("{}{}", r ? " / " : "", n_faces[r]);
     if (n_mixed_faces > 0 || n_unreached > 0 || n_mixed_verts > 0) {
         logger().warn(
             "\t[regions] band faces per region {} | {} faces reached from TWO regions, {} reached "
@@ -4641,8 +4648,8 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         }
         // The run's own convergence bar: once the band is under it there is nothing another
         // round could do with a better-placed boundary.
-        // Under the "dist_and_orient" criterion the vertex half is judged in length units instead, the
-        // same bar the loop will apply; the gradient is still logged above for comparison.
+        // Under the "dist_and_orient" criterion the vertex half is judged in length units instead,
+        // the same bar the loop will apply; the gradient is still logged above for comparison.
         bool under_bar = g <= g_abs;
         if (use_distance_criterion()) {
             const DistanceCriterion dc = distance_criterion(/*include_edges=*/false);
@@ -4692,15 +4699,19 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
     const double gtol = offset_gradient_tolerance();
     const std::vector<bool> on_band = band_vertex_mask();
     std::vector<std::unique_ptr<OffsetEnergy2D>> energies;
-    for (const auto& rp : m_region_potentials) energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
+    for (const auto& rp : m_region_potentials)
+        energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
     OffsetEnergy2D union_energy(m_offset_potential, 1.0);
     const auto grad_at = [&](const int region, const Vector2d& p) {
         Eigen::VectorXd g(2);
-        OffsetEnergy2D& en = (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)] : union_energy;
+        OffsetEnergy2D& en = (region >= 0 && size_t(region) < energies.size())
+                                 ? *energies[size_t(region)]
+                                 : union_energy;
         en.gradient(Eigen::VectorXd(p), g);
         return g.norm();
     };
-    // Under the "dist_and_orient" criterion the same two questions are judged in length units, by the
+    // Under the "dist_and_orient" criterion the same two questions are judged in length units, by
+    // the
     // same bar the A/B loop gates on -- otherwise this rule would refine toward one criterion
     // and the loop would judge by another. See distance_criterion().
     const bool use_dist = use_distance_criterion();
@@ -4967,8 +4978,8 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         // -- exists to answer. Gating on only the vertex half meant the round refined on the
         // chord term and then declined to be judged by it.
         double phi = std::max(g.max_reachable, g.max_in_edge) / offset_gradient_tolerance();
-        // Under the "dist_and_orient" criterion that geometric ratio gates instead. The gradient line
-        // below is still logged every round, so one run shows both criteria side by side.
+        // Under the "dist_and_orient" criterion that geometric ratio gates instead. The gradient
+        // line below is still logged every round, so one run shows both criteria side by side.
         if (use_distance_criterion()) {
             const DistanceCriterion dc = distance_criterion();
             phi = dc.ratio();

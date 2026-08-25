@@ -98,8 +98,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // within this fraction of target_distance of the level set, first order:
     // |Phi - c| / |grad Phi|. Vertices are the placement half, samples the resolution half.
     double convergence_distance_rel;
-    // "dist_and_orient" only. Largest angle, in degrees, between an offset edge's OUTWARD normal and
-    // the field's own outward direction at the edge midpoint. Signed: a folded edge, whose
+    // "dist_and_orient" only. Largest angle, in degrees, between an offset edge's OUTWARD normal
+    // and the field's own outward direction at the edge midpoint. Signed: a folded edge, whose
     // outward normal points into the band by the field's reckoning, fails outright.
     double convergence_orientation_max_deg;
     // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;

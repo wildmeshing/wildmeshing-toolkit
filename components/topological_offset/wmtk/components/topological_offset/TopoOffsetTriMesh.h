@@ -1821,7 +1821,8 @@ public:
     GradientSplit gradient_split(bool include_edge_samples = true) const;
 
     /**
-     * @brief The "dist_and_orient" convergence criterion (convergence_criterion = "dist_and_orient").
+     * @brief The "dist_and_orient" convergence criterion (convergence_criterion =
+     * "dist_and_orient").
      *
      * Three questions, all in units of target_distance, all required:
      *  - PLACED: every reachable offset vertex within eps of the level set, eps =
