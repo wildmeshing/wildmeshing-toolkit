@@ -1267,12 +1267,14 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
         Vector2d g = Vector2d::Zero(); ///< grad F
         Eigen::Matrix2d H = Eigen::Matrix2d::Zero(); ///< grad^2 F, for the Newton step
     };
+    // THE FIELD THIS VERTEX IS PLACED ON: its own region's, see m_region_potentials.
+    const OffsetPotential2D& pot = potential_for(vid);
     const auto grad_norm_at = [&](const Vector2d& p) -> QSample {
         QSample sm;
-        sm.r = m_offset_potential->value(p) - m_offset_potential->target_level();
-        const Vector2d gphi = m_offset_potential->gradient(p);
+        sm.r = pot.value(p) - pot.target_level();
+        const Vector2d gphi = pot.gradient(p);
         if (!std::isfinite(sm.r) || !gphi.allFinite()) return sm; // q stays -1
-        const Eigen::Matrix2d Hphi = m_offset_potential->hessian(p);
+        const Eigen::Matrix2d Hphi = pot.hessian(p);
         if (!Hphi.allFinite()) return sm;
         Vector2d gF;
         Eigen::Matrix2d HF;
@@ -1397,11 +1399,11 @@ bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     // or a cell is unusable, so a trial point there simply fails the test and gets halved away.
     const auto value_at = [&](const Vector2d& p) -> double {
         const double inf = std::numeric_limits<double>::infinity();
-        const double r = m_offset_potential->value(p) - m_offset_potential->target_level();
+        const double r = pot.value(p) - pot.target_level();
         if (!std::isfinite(r)) return inf;
         double F;
         if (use_grad_proj) {
-            const Vector2d gphi = m_offset_potential->gradient(p);
+            const Vector2d gphi = pot.gradient(p);
             if (!gphi.allFinite()) return inf;
             const double sgn = r * gphi.dot(n_entry);
             F = w_off * sgn * sgn;
@@ -2707,7 +2709,7 @@ void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const d
             cand.dist = (cand.c - Vector2d(foot.x(), foot.y())).norm();
         }
         if (m_offset_potential && c_level > 0.) {
-            cand.phi_over_c = m_offset_potential->value(cand.c) / c_level;
+            cand.phi_over_c = potential_for_face(fid).value(cand.c) / c_level;
         }
 
         int best = kShort; // the LEAST blocked of the three edges; `free` is best of all
@@ -3418,7 +3420,7 @@ double TopoOffsetTriMesh::band_vertex_residual(const size_t vid) const
 {
     // How far this vertex is from the level set Phi = c, as a LENGTH. The offset's own error,
     // as opposed to band_vertex_distance_error()'s Euclidean diagnostic.
-    return m_offset_potential->residual_length(m_vertex_attribute[vid].m_posf);
+    return potential_for(vid).residual_length(m_vertex_attribute[vid].m_posf);
 }
 
 TopoOffsetTriMesh::EdgeSamples TopoOffsetTriMesh::offset_edge_samples(const Tuple& e) const
@@ -3434,7 +3436,7 @@ TopoOffsetTriMesh::EdgeSamples TopoOffsetTriMesh::offset_edge_samples(const Tupl
     const Vector2d pb = m_vertex_attribute[vb].m_posf;
     for (int i = 1; i <= k; ++i) {
         const double t = double(i) / (k + 1);
-        const double r = m_offset_potential->residual_length(pa + t * (pb - pa));
+        const double r = potential_for_edge(va, vb).residual_length(pa + t * (pb - pa));
         s.max = std::max(s.max, r);
         s.sum += r;
         ++s.n;
@@ -3459,7 +3461,7 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
         const size_t vid = v.vid(*this);
         if (!on_band[vid]) continue;
         const Vector2d p = m_vertex_attribute[vid].m_posf;
-        const double err = m_offset_potential->residual_length(p);
+        const double err = potential_for(vid).residual_length(p);
         s.max_reachable = std::max(s.max_reachable, err);
         s.max_at_vertex = std::max(s.max_at_vertex, err);
         sum_reachable += err;
@@ -3468,7 +3470,7 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
             // THE RUNAWAY GUARD's measurement, taken here rather than in its own traversal:
             // this loop already visits exactly the vertices it cares about, and Phi is the
             // expensive part. report_outside_support() turns this into the error.
-            if (!m_offset_potential->within_support(p)) {
+            if (!potential_for(vid).within_support(p)) {
                 ++s.n_outside_support;
                 const double d = m_input_complex_bvh->dist(VectorXd(p));
                 if (d > s.worst_outside_dist) {
@@ -3561,7 +3563,14 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     // WEIGHT 1, deliberately: this is an ABSOLUTE bound in length units, so a tuning weight
     // would scale the bar.
     const std::vector<bool> on_band = band_vertex_mask();
-    OffsetEnergy2D offset_energy(m_offset_potential, 1.0);
+    // One energy per region field, plus the union for a vertex with no region: a vertex is
+    // measured against the field it is placed on. See potential_for().
+    std::vector<std::unique_ptr<OffsetEnergy2D>> energies;
+    for (const auto& rp : m_region_potentials) energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
+    OffsetEnergy2D union_energy(m_offset_potential, 1.0);
+    const auto energy_for = [&](const int region) -> OffsetEnergy2D& {
+        return (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)] : union_energy;
+    };
 
     // THE NORMAL-ALIGNED COMPANION, |grad E . n| with n the OFFSET SURFACE'S OWN normal (the
     // Voronoi-length-weighted vertex normal, offset_surface_normal()). NOT the deciding
@@ -3609,7 +3618,7 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
 
         Eigen::VectorXd g(2);
         const Eigen::VectorXd x = m_vertex_attribute[vid].m_posf;
-        offset_energy.gradient(x, g);
+        energy_for(vertex_region(vid)).gradient(x, g);
         const double gn = g.norm();
         s.max_normal_aligned =
             std::max(s.max_normal_aligned, project(g, offset_vertex_normal(vid)));
@@ -3665,7 +3674,7 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
             const bool gating = band_vertex_is_reachable(va) && band_vertex_is_reachable(vb);
             for_each_offset_edge_sample(e, [&](const Vector2d& q) {
                 Eigen::VectorXd g(2);
-                offset_energy.gradient(Eigen::VectorXd(q), g);
+                energy_for(edge_region(va, vb)).gradient(Eigen::VectorXd(q), g);
                 const double q_full = g.norm();
                 if (gating) {
                     s.max_in_edge = std::max(s.max_in_edge, q_full);
@@ -3697,6 +3706,95 @@ double TopoOffsetTriMesh::phase_b_band_gradient_linf()
     // ROUND's test, not the phase's. "Phase B has finished its work" and "the run is converged"
     // are different questions now, and this is the first.
     return gradient_split(/*include_edge_samples=*/false).max_at_vertex;
+}
+
+void TopoOffsetTriMesh::assign_band_regions()
+{
+    // See m_region_potentials. A flood fill over the band faces, seeded from every band face
+    // that shares an edge with an input-complex face, with that face's region. A band face
+    // reached with two different regions (the bands merged) and a vertex whose band faces
+    // disagree read -2 and fall back to the union field -- reported, never silent.
+    m_face_region.assign(tri_capacity(), -1);
+    m_vertex_region.assign(vert_capacity(), -1);
+    if (m_region_tags.size() <= 1 || m_region_potentials.empty()) return;
+    const auto region_of_input_face = [&](const size_t fid) -> int {
+        const CellTag& tags = m_face_attribute[fid].tags;
+        for (size_t r = 0; r < m_region_tags.size(); ++r) {
+            if (tags.count(m_region_tags[r])) return int(r);
+        }
+        return -1;
+    };
+    std::vector<size_t> queue;
+    for (const Tuple& e : get_edges()) {
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        if (!opp) continue;
+        const size_t fa = e.fid(*this), fb = opp->fid(*this);
+        for (const auto [band, input] : {std::pair<size_t, size_t>{fa, fb}, std::pair<size_t, size_t>{fb, fa}}) {
+            if (!face_is_offset_band(band) || !face_is_input_complex(input)) continue;
+            const int r = region_of_input_face(input);
+            if (r < 0) continue;
+            if (m_face_region[band] == -1) {
+                m_face_region[band] = r;
+                queue.push_back(band);
+            } else if (m_face_region[band] >= 0 && m_face_region[band] != r) {
+                m_face_region[band] = -2;
+            }
+        }
+    }
+    while (!queue.empty()) {
+        const size_t f = queue.back();
+        queue.pop_back();
+        const int r = m_face_region[f];
+        if (r < 0) continue;
+        for (int j = 0; j < 3; ++j) {
+            const std::optional<Tuple> opp = tuple_from_edge(f, j).switch_face(*this);
+            if (!opp) continue;
+            const size_t g = opp->fid(*this);
+            if (!face_is_offset_band(g)) continue;
+            if (m_face_region[g] == -1) {
+                m_face_region[g] = r;
+                queue.push_back(g);
+            } else if (m_face_region[g] >= 0 && m_face_region[g] != r) {
+                m_face_region[g] = -2;
+            }
+        }
+    }
+    std::vector<size_t> n_faces(m_region_tags.size(), 0);
+    size_t n_mixed_faces = 0, n_unreached = 0, n_mixed_verts = 0;
+    for (size_t f = 0; f < m_face_region.size(); ++f) {
+        if (!tuple_from_tri(f).is_valid(*this) || !face_is_offset_band(f)) continue;
+        const int r = m_face_region[f];
+        if (r == -2) {
+            ++n_mixed_faces;
+            continue;
+        }
+        if (r < 0) {
+            ++n_unreached;
+            continue;
+        }
+        ++n_faces[size_t(r)];
+        for (const size_t v : oriented_tri_vids(f)) {
+            if (m_vertex_region[v] == -1) {
+                m_vertex_region[v] = r;
+            } else if (m_vertex_region[v] >= 0 && m_vertex_region[v] != r) {
+                m_vertex_region[v] = -2;
+                ++n_mixed_verts;
+            }
+        }
+    }
+    std::string per;
+    for (size_t r = 0; r < n_faces.size(); ++r) per += fmt::format("{}{}", r ? " / " : "", n_faces[r]);
+    if (n_mixed_faces > 0 || n_unreached > 0 || n_mixed_verts > 0) {
+        logger().warn(
+            "\t[regions] band faces per region {} | {} faces reached from TWO regions, {} reached "
+            "from none, {} vertices on faces of two regions -- all fall back to the union field",
+            per,
+            n_mixed_faces,
+            n_unreached,
+            n_mixed_verts);
+    } else {
+        logger().info("\t[regions] band faces per region {}", per);
+    }
 }
 
 void TopoOffsetTriMesh::check_offset_within_support(const char* when) const
@@ -3977,9 +4075,9 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
         n_offset_e,
         n_region_e,
         n_bbox_e,
-        m_offset_potential->value(p),
-        m_offset_potential->target_level(),
-        m_offset_potential->residual_length(p),
+        potential_for(vid).value(p),
+        potential_for(vid).target_level(),
+        potential_for(vid).residual_length(p),
         smoothing_containment_envelope(vid) ? "yes" : "none");
     // Which objective the smoother would give it, and whether it is refused before reaching one.
     const char* fate =
@@ -4203,13 +4301,13 @@ size_t TopoOffsetTriMesh::pin_interference_stalled_vertices(const size_t pass)
         ++n_candidates;
 
         const Vector2d x = m_vertex_attribute[vid].m_posf;
-        const double phi = m_offset_potential->value(x);
+        const double phi = potential_for(vid).value(x);
         if (!std::isfinite(phi) || !(phi > c)) { // 2. strictly inside the offset region
             ++n_fail_outside;
             continue;
         }
         const Vector2d n = offset_vertex_normal(vid);
-        const Vector2d g = m_offset_potential->gradient(x);
+        const Vector2d g = potential_for(vid).gradient(x);
         if (!(n.norm() > 0.) || !g.allFinite()) continue;
 
         const double gn = g.norm();
@@ -4218,7 +4316,7 @@ size_t TopoOffsetTriMesh::pin_interference_stalled_vertices(const size_t pass)
             ++n_fail_not_tangential;
             continue;
         }
-        const Eigen::Matrix2d H = m_offset_potential->hessian(x);
+        const Eigen::Matrix2d H = potential_for(vid).hessian(x);
         if (!H.allFinite() || !(n.dot(H * n) > 0.)) { // 4. a GENUINE minimum of Phi along n
             ++n_fail_not_min;
             continue;
@@ -4280,6 +4378,7 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
     // tell the two apart: a run whose gradient is still falling at the last pass hit the budget,
     // not a fixed point, and its sizing update should be distrusted.
     std::vector<Vector2d> before(vert_capacity());
+    assign_band_regions();
 
     // THE CRITERION IS THE GRADIENT, relative to its value at phase entry. Zero exactly at the
     // Gauss-Seidel fixed point, so unlike the displacement test it cannot read converged when
@@ -4460,10 +4559,13 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
     // gradient is the expensive part and the edge samples dominate it.
     const double gtol = offset_gradient_tolerance();
     const std::vector<bool> on_band = band_vertex_mask();
-    OffsetEnergy2D energy(m_offset_potential, 1.0);
-    const auto grad_at = [&](const Vector2d& p) {
+    std::vector<std::unique_ptr<OffsetEnergy2D>> energies;
+    for (const auto& rp : m_region_potentials) energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
+    OffsetEnergy2D union_energy(m_offset_potential, 1.0);
+    const auto grad_at = [&](const int region, const Vector2d& p) {
         Eigen::VectorXd g(2);
-        energy.gradient(Eigen::VectorXd(p), g);
+        OffsetEnergy2D& en = (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)] : union_energy;
+        en.gradient(Eigen::VectorXd(p), g);
         return g.norm();
     };
 
@@ -4486,7 +4588,7 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
             ++n_pressed_v;
             continue;
         }
-        in_tol[vid] = grad_at(m_vertex_attribute[vid].m_posf) <= gtol ? 1 : 0;
+        in_tol[vid] = grad_at(vertex_region(vid), m_vertex_attribute[vid].m_posf) <= gtol ? 1 : 0;
     }
 
     // 2. THE RULE, PER EDGE: if BOTH endpoints are in tolerance but ANY interior sample on the
@@ -4517,7 +4619,7 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
         if (!in_tol[vs[0]] || !in_tol[vs[1]]) continue;
         bool edge_bad = false;
         for_each_offset_edge_sample(e, [&](const Vector2d& q) {
-            if (!edge_bad && grad_at(q) > gtol) edge_bad = true;
+            if (!edge_bad && grad_at(edge_region(vs[0], vs[1]), q) > gtol) edge_bad = true;
         });
         if (!edge_bad) continue;
         ++n_bad_edges;
@@ -4641,6 +4743,7 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
             logger().warn("\t[phase A] COLLAPSES DISABLED (ab_no_collapse_after_first_round)");
         }
         mesh_improvement(a_iters);
+        assign_band_regions(); // Phase A changed the topology; the band-to-region map follows
 
         // ASK THE LOOP, in the loop's own units. optimization_quality_stats() reports ABSOLUTE
         // AMIPS against optimization_stop_metric() = stop_energy in Phase A, so a check written
@@ -4940,6 +5043,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // the Phi residual is the criterion's own quantity in length units, and the Euclidean
     // error says how far the smoothed offset ended up from the exact one -- all diagnostics,
     // none a criterion.
+    assign_band_regions();
     const auto [max_dist, avg_dist] = compute_distance_deviation();
     const DistanceSplit r = residual_split();
     const GradientSplit g = gradient_split();

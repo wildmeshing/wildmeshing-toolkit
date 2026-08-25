@@ -140,6 +140,68 @@ public:
     std::shared_ptr<OffsetPotential2D> m_offset_potential;
 
     /**
+     * @brief ONE FIELD PER INPUT REGION, and which one each band vertex is placed on.
+     *
+     * m_offset_potential above is built over the WHOLE selected complex: for the smooth
+     * potential that is the SUM of every region's barrier, for the Euclidean field the distance
+     * to the NEAREST region. Neither is the field a front should be placed on where two regions
+     * are close. Measured on two_circles at target_distance 0.1 (unit circles, gap 0.2, so the
+     * two offsets are exactly tangent): the sum's level set is one merged curve whose neck
+     * closes at |y| ~ 0.28, with Phi = 2c across the whole gap -- no level set exists there and
+     * both fronts are pushed through the background strip until inversion. At 0.15 the neck is
+     * wider still (|y| ~ 0.45, Phi = 8c). The Euclidean min only behaved because a front that
+     * stays on its own side of the medial axis sees its own region as nearest.
+     *
+     * A band is grown from ONE input region and its front is that region's offset, so it is
+     * placed on that region's field alone: Phi_A = c for band A, Phi_B = c for band B. Where
+     * the two would overlap, each front is pulled outward by its own field and held by the
+     * strip's quality bar (smooth_offset_vertex_backtracking) -- a symmetric local minimum
+     * with a thin gap of background between the fronts, which is the topological offset.
+     *
+     * The map from band to region is assign_band_regions(): a flood fill over the band faces
+     * from the input face each band touches, redone after every Phase A. A face reachable from
+     * two regions (bands that merged) and a vertex on faces of two regions read -2 and fall
+     * back to the union field. m_offset_potential itself is kept for everything that is not
+     * per-vertex: the support (dhat), the potential grid the viewer draws, the report.
+     */
+    std::vector<int64_t> m_region_tags; ///< the input tags that get a field each, index order
+    std::vector<std::shared_ptr<OffsetPotential2D>> m_region_potentials; ///< one per tag
+    std::vector<int64_t> m_phi_seg_region; ///< per m_phi_E row: region index, -1 unknown
+    std::vector<int64_t> m_phi_face_region; ///< per m_phi_F row: region index, -1 unknown
+    std::vector<int64_t> m_phi_point_region; ///< per m_phi_P entry: region index, -1 unknown
+    std::vector<int> m_face_region; ///< per face: band's region, -1 none, -2 reached from two
+    std::vector<int> m_vertex_region; ///< per vertex: region of its band faces, -1 / -2 as above
+    void init_region_potentials(double delta, double effective_factor);
+    void assign_band_regions();
+    int vertex_region(const size_t vid) const
+    {
+        return vid < m_vertex_region.size() ? m_vertex_region[vid] : -1;
+    }
+    int edge_region(const size_t va, const size_t vb) const
+    {
+        const int a = vertex_region(va), b = vertex_region(vb);
+        return (a >= 0 && a == b) ? a : -1;
+    }
+    const OffsetPotential2D& potential_for_region(const int region) const
+    {
+        return (region >= 0 && size_t(region) < m_region_potentials.size())
+                   ? *m_region_potentials[size_t(region)]
+                   : *m_offset_potential;
+    }
+    const OffsetPotential2D& potential_for(const size_t vid) const
+    {
+        return potential_for_region(vertex_region(vid));
+    }
+    const OffsetPotential2D& potential_for_edge(const size_t va, const size_t vb) const
+    {
+        return potential_for_region(edge_region(va, vb));
+    }
+    const OffsetPotential2D& potential_for_face(const size_t fid) const
+    {
+        return potential_for_region(fid < m_face_region.size() ? m_face_region[fid] : -1);
+    }
+
+    /**
      * @brief ONE CONTAINMENT ENVELOPE PER INPUT TAG, ambient included. Both phases.
      *
      * E_t is a tube of half-width m_envelope_eps around the boundary segments of region t as
@@ -2205,6 +2267,7 @@ public:
     /// points. Filled by init_input_complex_bvh(), consumed by init_offset_potential().
     MatrixXd m_phi_V;
     MatrixXi m_phi_E;
+    MatrixXi m_phi_F; ///< the complex faces, in the same vertex index space (for per-region BVHs)
     std::vector<int> m_phi_P;
 
     //// overriden splits/invariants
