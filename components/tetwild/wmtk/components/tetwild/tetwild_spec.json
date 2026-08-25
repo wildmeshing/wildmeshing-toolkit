@@ -20,7 +20,7 @@
       "use_legacy_code",
       "num_threads",
       "max_iterations",
-    "max_expected_iterations",
+      "max_expected_iterations",
       "filter",
       "eps_rel",
       "length_rel",
@@ -212,7 +212,7 @@
   {
     "pointer": "/split_high_valence_threshold",
     "type": "int",
-    "default": 200,
+    "default": 0,
     "doc": "Incident-tet count above which a vertex accepts only one valence-increasing split per split pass, or 0 to disable. A well-shaped tet mesh has valence around 20-30; a split cascade can drive one vertex into the thousands, at which point every operation touching it is O(valence) and the pass stalls. Splitting an edge leaves its endpoints' counts unchanged and adds one to each vertex in the edge's link, so the gate applies to the link."
   },
   {
@@ -220,21 +220,21 @@
     "type": "int",
     "default": 12,
     "doc": "Bisections tried by the projected line search before it gives up on a vertex: the step along the Newton direction is halved this many times, each candidate projected onto the input, and the first that does not invert and lowers the worst incident element is taken."
-},
-{
+  },
+  {
     "pointer": "/project_line_search_nested_steps",
     "type": "int",
     "default": 0,
     "doc": "After the projected line search gives up, revisit each candidate and bisect between the interpolated point and its projection this many times, taking the longest step toward the input that still does not invert and still lowers the worst element. Lets a vertex whose one-ring cannot tolerate a full projection still travel toward the input, instead of being refused every pass from the same place. 0 disables the pass."
-},
-{
+  },
+  {
     "pointer": "/smoothing_mode",
     "type": "string",
     "default": "projected",
     "options": ["projected", "exact"],
     "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
-},
-{
+  },
+  {
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,
@@ -331,11 +331,10 @@
     "doc": "Diagnostic only. Disables every envelope containment check during the tetrahedralisation, after the input simplification has run. The envelope is the only thing that rejects an operation for geometric rather than combinatorial reasons, so this answers whether a stalled optimization is blocked by the envelope or by the mesh. The output has no containment guarantee and must not be used."
   },
   {
-
-      "pointer": "/max_expected_iterations",
-      "type": "int",
-      "default": 0,
-      "doc": "Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches."
+    "pointer": "/max_expected_iterations",
+    "type": "int",
+    "default": 0,
+    "doc": "Fail the run if mesh_improvement needed more than this many iterations, even if it did reach stop_energy. 0 disables the check. This is a regression guard rather than a quality target: an input that normally converges in a handful of iterations and suddenly needs the whole budget means the sizing-refinement trigger stopped firing when it should, which is a silent slowdown that no energy or envelope assertion catches."
   },
   {
     "pointer": "/stuck_refine_stall_eps",

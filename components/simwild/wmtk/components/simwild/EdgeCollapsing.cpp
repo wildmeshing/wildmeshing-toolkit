@@ -58,12 +58,17 @@ void SimWildMesh::simplify()
     m_envelope->use_exact = false;
     m_envelope->init(m_V_envelope, m_F_envelope, m_sim_params.eps_simplify);
 
-    m_collapse_check_quality = false;
+    /**
+     * Not checking the quality here can lead to horrible elements that take forever to fix in the
+     * optimization stage. The quality check reduces the amount of simplification, but the overall
+     * convergence is faster because the optimizer does not have to fix the mess.
+     */
+    // m_collapse_check_quality = false;
     collapse_all_edges();
     if (m_params.debug_output) {
         write_vtu(fmt::format("debug_{}", m_debug_print_counter++));
     }
-    m_collapse_check_quality = true;
+    // m_collapse_check_quality = true;
 
     logger().warn("Update envelope");
     MatrixXd V(vert_capacity(), 3);

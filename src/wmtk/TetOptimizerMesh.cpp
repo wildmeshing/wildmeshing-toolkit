@@ -41,7 +41,8 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
     compute_vertex_partition_morton();
 
     logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    // Performing swaps after the initial collapse improves quality and convergence.
+    local_operations({{0, 1, 1, 0}}, false);
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
