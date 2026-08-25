@@ -189,8 +189,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>check_mesh_quality</b
 <tr class="memitem:a9afadf871f21606b57e2b799ae667a9d" id="r_a9afadf871f21606b57e2b799ae667a9d"><td class="memItemLeft" align="right" valign="top"><a id="a9afadf871f21606b57e2b799ae667a9d" name="a9afadf871f21606b57e2b799ae667a9d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>write_msh</b> (std::string file, const bool write_envelope=true)</td></tr>
 <tr class="separator:a9afadf871f21606b57e2b799ae667a9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1e683f32589e3f37c3f2fc4361cd75b" id="r_ae1e683f32589e3f37c3f2fc4361cd75b"><td class="memItemLeft" align="right" valign="top"><a id="ae1e683f32589e3f37c3f2fc4361cd75b" name="ae1e683f32589e3f37c3f2fc4361cd75b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>simplify</b> ()</td></tr>
+<tr class="memitem:ae1e683f32589e3f37c3f2fc4361cd75b" id="r_ae1e683f32589e3f37c3f2fc4361cd75b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh.html#ae1e683f32589e3f37c3f2fc4361cd75b">simplify</a> ()</td></tr>
 <tr class="separator:ae1e683f32589e3f37c3f2fc4361cd75b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40ac025c029e384eaeacd14b91dd918a" id="r_a40ac025c029e384eaeacd14b91dd918a"><td class="memItemLeft" align="right" valign="top"><a id="a40ac025c029e384eaeacd14b91dd918a" name="a40ac025c029e384eaeacd14b91dd918a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>all_rounded</b> () const</td></tr>
@@ -1782,6 +1781,24 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a>.</p>
+
+</div>
+</div>
+<a id="ae1e683f32589e3f37c3f2fc4361cd75b" name="ae1e683f32589e3f37c3f2fc4361cd75b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1e683f32589e3f37c3f2fc4361cd75b">&#9670;&#160;</a></span>simplify()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::simwild::SimWildMesh::simplify </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Not checking the quality here can lead to horrible elements that take forever to fix in the optimization stage. The quality check reduces the amount of simplification, but the overall convergence is faster because the optimizer does not have to fix the mess.</p>
 
 </div>
 </div>
