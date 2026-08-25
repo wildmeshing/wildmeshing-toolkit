@@ -1821,6 +1821,53 @@ public:
     GradientSplit gradient_split(bool include_edge_samples = true) const;
 
     /**
+     * @brief The "dist_and_orient" convergence criterion (convergence_criterion = "dist_and_orient").
+     *
+     * Three questions, all in units of target_distance, all required:
+     *  - PLACED: every reachable offset vertex within eps of the level set, eps =
+     *    convergence_distance_rel x target_distance, distance taken first order as
+     *    |Phi - c| / |grad Phi|.
+     *  - RESOLVED: every edge-interior sample (offset_residual_samples per edge, both endpoints
+     *    reachable) within the same eps. Only refinement lowers this half.
+     *  - ORIENTED: every offset edge's outward normal within convergence_orientation_max_deg of
+     *    the field's outward direction at the edge midpoint. Signed, so a fold fails outright.
+     *
+     * A point where |grad Phi| vanishes (outside the potential's support) has no distance; it is
+     * counted in n_outside_support and the criterion is not met while any exist.
+     *
+     * Why this exists next to the gradient criterion: see convergence_criterion in the spec.
+     */
+    struct DistanceCriterion
+    {
+        double max_vertex_dist = 0., max_edge_dist = 0.; ///< model units
+        double max_vertex_rel = 0., max_edge_rel = 0.; ///< the same over eps; 1 is the bar
+        double min_cos = 1.; ///< min over edges of outward-normal . field-outward
+        double worst_angle_deg = 0.;
+        size_t n_folded = 0; ///< edges with min_cos < 0: outward normal points into the band
+        size_t n_outside_support = 0;
+        size_t n_vertices = 0, n_edges = 0, n_samples = 0;
+        size_t n_pressed = 0, n_edges_pressed = 0; ///< excluded: see m_placement_pressed
+        size_t worst_vid = 0;
+        Vector2d worst_edge_mid = Vector2d::Zero();
+        bool placed = false, resolved = false, oriented = false;
+        bool converged() const { return placed && resolved && oriented; }
+        /// One number for the driver to log and gate on, > 1 meaning not converged. The two
+        /// distance halves are genuine ratios; an orientation failure or a point outside the
+        /// support has no ratio and is reported as 2 so it cannot read as converged.
+        double ratio() const
+        {
+            double r = std::max(max_vertex_rel, max_edge_rel);
+            if (!oriented || n_outside_support > 0) r = std::max(r, 2.);
+            return r;
+        }
+    };
+    DistanceCriterion distance_criterion(bool include_edges = true) const;
+    bool use_distance_criterion() const
+    {
+        return m_offset_params.convergence_criterion == "dist_and_orient";
+    }
+
+    /**
      * @brief Unit normal of the OFFSET SURFACE at band vertex `vid`, Voronoi-length weighted.
      *
      * The 2D analogue of an area-weighted vertex normal: the offset boundary is a polyline, so

@@ -23,6 +23,9 @@
             "offset_field",
             "offset_dhat_factor",
             "convergence_gradient_norm_rel",
+            "convergence_criterion",
+            "convergence_distance_rel",
+            "convergence_orientation_max_deg",
             "offset_residual_samples",
             "sorted_marching",
             "check_manifoldness",
@@ -199,6 +202,25 @@
         "default": 0.2,
         "type": "float",
         "doc": "THE CONVERGENCE CRITERION, as a fraction of a MEASURED maximum. 2D: the reference is max |2 (Phi - c) grad Phi . n| over the INITIAL offset-surface vertices -- n the surface's own Voronoi-length-weighted normal (offset_surface_normal) -- measured once on the band as constructed and reported as the log's gradient reference. The run converges when max ||2 (Phi - c) grad Phi|| over the reachable offset vertices falls to this fraction of that reference, and each Phase B per-vertex placement solve terminates on exactly the same comparison at its own vertex -- the overall and local criteria are IDENTICAL, so the run is converged precisely when every visit stops immediately. Edge-interior samples (offset_residual_samples per edge) are still measured as a chord diagnostic (max_grad_in_edge in the report) but do not gate: a sample is not a variable, and refinement rather than placement is what lowers it. So 0.1 means 'reduce every vertex's placement gradient to a tenth of the worst initial normal-aligned misplacement'. 3D: UNCHANGED and NOT the same meaning -- there the bound is still the analytic convergence_gradient_norm_rel x target_distance x level_set_slope()^2 on the full gradient norm, measured at vertices AND at in-face samples, both gating. The two dimensions share this key and interpret it differently; 3D was left alone deliberately."
+    },
+    {
+        "pointer": "/convergence_criterion",
+        "options": ["gradient", "dist_and_orient"],
+        "default": "gradient",
+        "type": "string",
+        "doc": "WHICH CRITERION GATES THE RUN, 2D only (3D reads 'gradient' regardless). 'gradient': the measured-reference criterion of convergence_gradient_norm_rel, unchanged. 'dist_and_orient': a geometric criterion in units of target_distance -- every reachable offset vertex and every edge-interior sample within convergence_distance_rel x target_distance of the level set (first order, |Phi - c| / |grad Phi|), and every offset edge oriented with the field to within convergence_orientation_max_deg. WHY: the gradient reference is max |2 (Phi - c) grad Phi . n| over the band AS CONSTRUCTED, which is ZERO for a perfectly placed vertex, grows with misplacement near the level set, and shrinks again far from it where grad Phi decays -- so the better the construction, the STRICTER the absolute bar, and a fraction of it says nothing in geometric units (two_circles at target_distance 0.02 with 0.01: the demand came to 0.37% of target_distance while Phase A's own envelope holds the offset to 2.5%). dist_and_orient is construction-independent, readable, and can be matched to the envelope. Both criteria are computed and logged on every round whichever gates, so one run compares them. The gradient criterion alone is also blind to a folded or zigzag offset -- it is zero anywhere ON the level set -- which the orientation test is for."
+    },
+    {
+        "pointer": "/convergence_distance_rel",
+        "default": 0.01,
+        "type": "float",
+        "doc": "'dist_and_orient' criterion only: the placement AND resolution bar as a fraction of target_distance. A reachable offset vertex farther than this from the level set fails the placement half; an edge-interior sample farther than this fails the resolution half (which only the sizing update can lower -- see update_band_sizing_from_tolerance, which judges 'in tolerance' by this same bar under this criterion). Pick it against ab_offset_envelope_rel (default 0.025): Phase A is allowed to perturb the offset by that much, so demanding much less of Phase B asks it to beat a tolerance the other phase does not keep."
+    },
+    {
+        "pointer": "/convergence_orientation_max_deg",
+        "default": 15.0,
+        "type": "float",
+        "doc": "'dist_and_orient' criterion only: the orientation half. At each offset edge's midpoint, the angle between the edge's OUTWARD normal (away from the band face) and the field's outward direction (-grad Phi for the smooth potential, which is larger inside; +grad d for the Euclidean field) must not exceed this. It is SIGNED: a folded edge has its outward normal pointing into the band by the field's reckoning, an angle near 180, and fails however short it is; a zigzag polyline whose vertices all sit on the level set alternates large angles and fails too, which neither distance half can see. A genuine bend of the level set -- two fronts summing, as on two_circles at target_distance 0.1 -- is fine as long as the chord is short enough that its normal tracks the field's, which is what the resolution half enforces."
     },
     {
         "pointer": "/offset_residual_samples",

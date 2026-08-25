@@ -3708,6 +3708,124 @@ double TopoOffsetTriMesh::phase_b_band_gradient_linf()
     return gradient_split(/*include_edge_samples=*/false).max_at_vertex;
 }
 
+TopoOffsetTriMesh::DistanceCriterion TopoOffsetTriMesh::distance_criterion(
+    const bool include_edges) const
+{
+    // See the header. Reachability, rounding and the band mask follow gradient_split() exactly,
+    // so the two criteria judge the same set of vertices and the same edge samples.
+    DistanceCriterion s;
+    const double delta = m_offset_params.target_distance;
+    const double eps = std::max(m_offset_params.convergence_distance_rel, 1e-16) * delta;
+    const double kPi = std::acos(-1.);
+    const double cos_max = std::cos(m_offset_params.convergence_orientation_max_deg * kPi / 180.);
+    const std::vector<bool> on_band = band_vertex_mask();
+    // A vertex whose last placement stopped on QualityBound is held by the mesh's quality bar,
+    // not by the field: its level set is unreachable by construction (two fronts meeting), so
+    // it counts as placed, and an edge touching one is the seam -- not a resolution or an
+    // orientation question, since the field's gradient is ~0 along the midline there.
+    const auto pressed = [&](const size_t vtx) {
+        return vtx < m_placement_pressed.size() && m_placement_pressed[vtx];
+    };
+
+    // First-order distance to the level set. -1 where the field gives no direction: outside the
+    // support Phi is identically zero WITH a zero gradient, and a division there is not a
+    // distance. Such points are counted, never silently skipped.
+    const auto dist_at = [&](const OffsetPotential2D& P, const Vector2d& p) -> double {
+        const double r = P.value(p) - P.target_level();
+        const double gn = P.gradient(p).norm();
+        if (!std::isfinite(r) || !std::isfinite(gn) || gn <= 1e-300) return -1.;
+        return std::abs(r) / gn;
+    };
+
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!on_band[vid] || !m_vertex_extra[vid].m_is_on_offset) continue;
+        if (!m_vertex_attribute[vid].m_is_rounded) continue;
+        if (!band_vertex_is_reachable(vid)) continue;
+        if (pressed(vid)) {
+            ++s.n_pressed;
+            continue;
+        }
+        ++s.n_vertices;
+        const double d = dist_at(potential_for(vid), m_vertex_attribute[vid].m_posf);
+        if (d < 0.) {
+            ++s.n_outside_support;
+            continue;
+        }
+        if (d > s.max_vertex_dist) {
+            s.max_vertex_dist = d;
+            s.worst_vid = vid;
+        }
+    }
+
+    if (include_edges) {
+        for (const Tuple& e : get_edges()) {
+            if (!edge_is_offset_surface_live(e)) continue;
+            const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+            if (!band_vertex_is_reachable(va) || !band_vertex_is_reachable(vb)) continue;
+            if (pressed(va) || pressed(vb)) {
+                ++s.n_edges_pressed;
+                continue;
+            }
+            ++s.n_edges;
+            const OffsetPotential2D& P_e = potential_for_edge(va, vb);
+            for_each_offset_edge_sample(e, [&](const Vector2d& q) {
+                ++s.n_samples;
+                const double d = dist_at(P_e, q);
+                if (d < 0.) {
+                    ++s.n_outside_support;
+                    return;
+                }
+                s.max_edge_dist = std::max(s.max_edge_dist, d);
+            });
+
+            // ORIENTATION. The edge's outward normal is the one pointing away from the band face
+            // (the centroid says which side that is -- no orientation convention to get wrong).
+            // The field's outward direction is the way Phi changes on LEAVING the band, read off
+            // the field itself by comparing it at the band centroid and at the midpoint, so the
+            // test is right for the smooth potential (larger inside) and the Euclidean distance
+            // (smaller inside) alike without knowing which one it has.
+            const Vector2d a = m_vertex_attribute[va].m_posf, b = m_vertex_attribute[vb].m_posf;
+            const Vector2d t = b - a;
+            if (t.norm() <= 0.) continue;
+            const std::optional<Tuple> opp = e.switch_face(*this);
+            if (!opp) continue;
+            const size_t fa = e.fid(*this), fb = opp->fid(*this);
+            const size_t band_f = face_is_offset_band(fa) ? fa : fb;
+            const auto vs = oriented_tri_vids(band_f);
+            const Vector2d c = (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
+                                m_vertex_attribute[vs[2]].m_posf) /
+                               3.;
+            const Vector2d m = 0.5 * (a + b);
+            Vector2d n(t.y(), -t.x());
+            n /= n.norm();
+            if (n.dot(m - c) < 0.) n = -n;
+            const Vector2d g = P_e.gradient(m);
+            const double gn = g.norm();
+            if (!std::isfinite(gn) || gn <= 1e-300) {
+                ++s.n_outside_support;
+                continue;
+            }
+            const double inside_minus_mid = P_e.value(c) - P_e.value(m);
+            const Vector2d field_out = (inside_minus_mid >= 0. ? -1. : 1.) * (g / gn);
+            const double cs = n.dot(field_out);
+            if (cs < s.min_cos) {
+                s.min_cos = cs;
+                s.worst_edge_mid = m;
+            }
+            if (cs < 0.) ++s.n_folded;
+        }
+    }
+
+    s.max_vertex_rel = s.max_vertex_dist / eps;
+    s.max_edge_rel = s.max_edge_dist / eps;
+    s.worst_angle_deg = std::acos(std::clamp(s.min_cos, -1., 1.)) * 180. / kPi;
+    s.placed = s.n_outside_support == 0 && s.max_vertex_dist <= eps;
+    s.resolved = !include_edges || s.max_edge_dist <= eps;
+    s.oriented = !include_edges || s.min_cos >= cos_max;
+    return s;
+}
+
 void TopoOffsetTriMesh::assign_band_regions()
 {
     // See m_region_potentials. A flood fill over the band faces, seeded from every band face
@@ -4523,7 +4641,21 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         }
         // The run's own convergence bar: once the band is under it there is nothing another
         // round could do with a better-placed boundary.
-        if (g <= g_abs) {
+        // Under the "dist_and_orient" criterion the vertex half is judged in length units instead, the
+        // same bar the loop will apply; the gradient is still logged above for comparison.
+        bool under_bar = g <= g_abs;
+        if (use_distance_criterion()) {
+            const DistanceCriterion dc = distance_criterion(/*include_edges=*/false);
+            under_bar = dc.placed;
+            logger().info(
+                "\t[phase B] pass {}: dist_and_orient, vertices: max {:.6g} = {:.4}x the bar "
+                "({} outside support)",
+                pass + 1,
+                dc.max_vertex_dist,
+                dc.max_vertex_rel,
+                dc.n_outside_support);
+        }
+        if (under_bar) {
             ++pass;
             break;
         }
@@ -4568,6 +4700,20 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
         en.gradient(Eigen::VectorXd(p), g);
         return g.norm();
     };
+    // Under the "dist_and_orient" criterion the same two questions are judged in length units, by the
+    // same bar the A/B loop gates on -- otherwise this rule would refine toward one criterion
+    // and the loop would judge by another. See distance_criterion().
+    const bool use_dist = use_distance_criterion();
+    const double dist_bar =
+        m_offset_params.convergence_distance_rel * m_offset_params.target_distance;
+    const auto within_tol = [&](const int region, const Vector2d& p) -> bool {
+        if (!use_dist) return grad_at(region, p) <= gtol;
+        const OffsetPotential2D& P = potential_for_region(region);
+        const double r = P.value(p) - P.target_level();
+        const double gn = P.gradient(p).norm();
+        if (!std::isfinite(r) || !std::isfinite(gn) || gn <= 1e-300) return false;
+        return std::abs(r) / gn <= dist_bar;
+    };
 
     // 1. Every band vertex against the criterion. Non-band vertices are left `true` so they
     //    never veto a neighbour's halving -- the rule is about the BOUNDARY one-ring.
@@ -4588,7 +4734,7 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
             ++n_pressed_v;
             continue;
         }
-        in_tol[vid] = grad_at(vertex_region(vid), m_vertex_attribute[vid].m_posf) <= gtol ? 1 : 0;
+        in_tol[vid] = within_tol(vertex_region(vid), m_vertex_attribute[vid].m_posf) ? 1 : 0;
     }
 
     // 2. THE RULE, PER EDGE: if BOTH endpoints are in tolerance but ANY interior sample on the
@@ -4619,7 +4765,7 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
         if (!in_tol[vs[0]] || !in_tol[vs[1]]) continue;
         bool edge_bad = false;
         for_each_offset_edge_sample(e, [&](const Vector2d& q) {
-            if (!edge_bad && grad_at(edge_region(vs[0], vs[1]), q) > gtol) edge_bad = true;
+            if (!edge_bad && !within_tol(edge_region(vs[0], vs[1]), q)) edge_bad = true;
         });
         if (!edge_bad) continue;
         ++n_bad_edges;
@@ -4820,7 +4966,32 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         // is the half update_band_sizing_from_tolerance() -- called right below when this fails
         // -- exists to answer. Gating on only the vertex half meant the round refined on the
         // chord term and then declined to be judged by it.
-        const double phi = std::max(g.max_reachable, g.max_in_edge) / offset_gradient_tolerance();
+        double phi = std::max(g.max_reachable, g.max_in_edge) / offset_gradient_tolerance();
+        // Under the "dist_and_orient" criterion that geometric ratio gates instead. The gradient line
+        // below is still logged every round, so one run shows both criteria side by side.
+        if (use_distance_criterion()) {
+            const DistanceCriterion dc = distance_criterion();
+            phi = dc.ratio();
+            logger().info(
+                "\t[phase B] dist_and_orient: vertices {:.4}x, edge samples {:.4}x of the bar "
+                "{:.6g} (= {} x target_distance) | worst edge angle {:.2f} deg (max {:.1f}), {} "
+                "folded | {} points outside support | {} vertices, {} edges, {} samples | pressed: "
+                "{} vertices and {} edges touching one, excluded -> {}",
+                dc.max_vertex_rel,
+                dc.max_edge_rel,
+                m_offset_params.convergence_distance_rel * m_offset_params.target_distance,
+                m_offset_params.convergence_distance_rel,
+                dc.worst_angle_deg,
+                m_offset_params.convergence_orientation_max_deg,
+                dc.n_folded,
+                dc.n_outside_support,
+                dc.n_vertices,
+                dc.n_edges,
+                dc.n_samples,
+                dc.n_pressed,
+                dc.n_edges_pressed,
+                dc.converged() ? "CONVERGED" : "not converged");
+        }
         logger().info(
             "\t[phase B] {} smoothing passes, max placement gradient {:.6g} = {:.4}x tolerance "
             "(in-edge diagnostic {:.4}x) | phi residual {:.4}x its own bar | {} reachable, "
@@ -5095,7 +5266,40 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // to be excluded and why that was wrong.
     const double crit = std::max(g.max_reachable, g.max_in_edge);
     m_converged = crit <= gtol;
-    if (m_converged) {
+    if (use_distance_criterion()) {
+        const DistanceCriterion dc = distance_criterion();
+        m_converged = dc.converged();
+        logger().log(
+            m_converged ? spdlog::level::info : spdlog::level::warn,
+            "{} [dist_and_orient]: placed {} (max vertex distance {:.6g} = {:.4}x the bar, "
+            "worst vertex {}), resolved {} (max edge-sample distance {:.6g} = {:.4}x), oriented {} "
+            "(worst edge angle {:.2f} deg vs {:.1f}, {} folded, at ({:.6g}, {:.6g})), {} points "
+            "outside support | pressed (excluded): {} vertices, {} edges | bar {:.6g} = {} x "
+            "target_distance | gradient criterion for comparison: {:.6g} vs {:.6g} ({:.4}x)",
+            m_converged ? "Converged" : "Optimization did not converge",
+            dc.placed,
+            dc.max_vertex_dist,
+            dc.max_vertex_rel,
+            dc.worst_vid,
+            dc.resolved,
+            dc.max_edge_dist,
+            dc.max_edge_rel,
+            dc.oriented,
+            dc.worst_angle_deg,
+            m_offset_params.convergence_orientation_max_deg,
+            dc.n_folded,
+            dc.worst_edge_mid.x(),
+            dc.worst_edge_mid.y(),
+            dc.n_outside_support,
+            dc.n_pressed,
+            dc.n_edges_pressed,
+            m_offset_params.convergence_distance_rel * m_offset_params.target_distance,
+            m_offset_params.convergence_distance_rel,
+            crit,
+            gtol,
+            crit / gtol);
+    }
+    if (m_converged && !use_distance_criterion()) {
         logger().info(
             "Converged ([max placement gradient over band vertices AND edge-interior samples] "
             "{} <= {} [convergence_gradient_norm_rel x reference]); at vertices {}, in edges {}"
@@ -5128,7 +5332,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         }
     }
 
-    if (!m_converged) {
+    if (!m_converged && !use_distance_criterion()) {
         // WHICH HALF FAILED IS THE WHOLE DIAGNOSIS, and the two want opposite remedies: the
         // vertex term is placement (Phase B), the edge term is resolution (the sizing update and
         // the Phase A that acts on it). Both are printed against the one bar, and the failing

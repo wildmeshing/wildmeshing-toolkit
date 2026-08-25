@@ -89,6 +89,19 @@ struct Parameters : public wmtk::OptimizerParameters
     // identical test. Edge-interior samples are a chord diagnostic in 2D: reported, never
     // gating.
     double convergence_gradient_norm_rel;
+    // WHICH CONVERGENCE CRITERION GATES THE RUN. "gradient" (default): the measured-reference
+    // gradient bar above, byte-identical to before this key existed. "dist_and_orient": a geometric
+    // criterion in units of target_distance -- see the two keys below and
+    // TopoOffsetTriMesh::distance_criterion(). 2D only; 3D reads only "gradient".
+    std::string convergence_criterion;
+    // "dist_and_orient" only. Every reachable offset vertex AND every edge-interior sample must lie
+    // within this fraction of target_distance of the level set, first order:
+    // |Phi - c| / |grad Phi|. Vertices are the placement half, samples the resolution half.
+    double convergence_distance_rel;
+    // "dist_and_orient" only. Largest angle, in degrees, between an offset edge's OUTWARD normal and
+    // the field's own outward direction at the edge midpoint. Signed: a folded edge, whose
+    // outward normal points into the band by the field's reckoning, fails outright.
+    double convergence_orientation_max_deg;
     // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;
     // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to
     // a band whose vertices sit on the level set while its edges cut across it.
@@ -210,6 +223,9 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
         convergence_gradient_norm_rel = json_params["convergence_gradient_norm_rel"];
+        convergence_criterion = json_params["convergence_criterion"];
+        convergence_distance_rel = json_params["convergence_distance_rel"];
+        convergence_orientation_max_deg = json_params["convergence_orientation_max_deg"];
         offset_residual_samples = json_params["offset_residual_samples"];
 
         sorted_marching = json_params["sorted_marching"];
