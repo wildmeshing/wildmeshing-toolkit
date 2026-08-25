@@ -118,7 +118,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
 
     if (optimization_bare_coarsen_passes()) {
         logger().info("========it post========");
-        local_operations({{0, 1, 0, 0}});
+        local_operations({{0, 1, 1, 0}});
     }
 
     // Removing what the mesh does not need is the last thing to do, not something to

@@ -46,7 +46,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
 
     if (optimization_bare_coarsen_passes()) {
         logger().info("========it pre========");
-        local_operations({{0, 1, 0, 0}}, false);
+        local_operations({{0, 1, 1, 0}}, false);
     }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
@@ -122,7 +122,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
 
     if (optimization_bare_coarsen_passes()) {
         logger().info("========it post========");
-        local_operations({{0, 1, 0, 0}});
+        local_operations({{0, 1, 1, 0}});
     }
 
     // Removing what the mesh does not need is the last thing to do, not something to

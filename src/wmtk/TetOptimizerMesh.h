@@ -472,7 +472,7 @@ protected:
     /**
      * @brief Whether the loop opens with an UNLIMITED-LENGTH collapse pass.
      *
-     * mesh_improvement() begins with local_operations({{0,1,0,0}}, false) -- a collapse pass
+     * mesh_improvement() begins with local_operations({{0,1,1,0}}, false) -- a collapse pass
      * with collapse_limit_length FALSE, so no edge is too short to be collapsed and no edge is
      * too long to be collapsed either. For TetWild and SimWild that is exactly right: it strips
      * the redundancy left by insertion before the real work starts, and their tracked surface is
