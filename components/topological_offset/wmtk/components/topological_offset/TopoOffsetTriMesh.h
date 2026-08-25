@@ -2123,8 +2123,17 @@ public:
             m_debug_pass = 0;
         }
         if (path.rfind("debug_", 0) == 0) {
-            name =
-                fmt::format("step_{:05d}_r{}{}{}", m_debug_seq++, m_ab_round, ph, ++m_debug_pass);
+            // The pass this frame follows, from TriOptimizerMesh::m_debug_pass_name: the shared
+            // driver writes several frames per operation group (a checkpoint after every group,
+            // even one that ran nothing, plus the group's own frame), and Phase B writes one per
+            // sub-sweep, so without the name a timeline reads as identical frames in a row.
+            name = fmt::format(
+                "step_{:05d}_r{}{}{}{}",
+                m_debug_seq++,
+                m_ab_round,
+                ph,
+                ++m_debug_pass,
+                m_debug_pass_name.empty() ? std::string() : "_" + m_debug_pass_name);
         } else if (path.rfind("phase_", 0) == 0) {
             name = fmt::format("step_{:05d}_r{}{}_end", m_debug_seq++, m_ab_round, ph);
         }

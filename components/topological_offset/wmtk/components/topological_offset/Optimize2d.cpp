@@ -4279,6 +4279,7 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         m_phase_b_constrained = 0;
         m_placement_trace.reset(); // only the Offset sub-sweep books into it
         m_phase_b_sub = PhaseBSub::Offset;
+        m_debug_pass_name = "B-offset";
         smooth_all_vertices(1);
         // Captured between the sweeps: only the offset sub-sweep can constrain a placement, and
         // smooth_all_vertices() resets the shared reject counters, so a before/after delta on
@@ -4287,6 +4288,7 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         const size_t placed = m_smooth_rejects.accepted.load();
 
         m_phase_b_sub = PhaseBSub::Background;
+        m_debug_pass_name = "B-background";
         smooth_all_vertices(1);
         const size_t relaxed = m_smooth_rejects.accepted.load();
 
@@ -4344,9 +4346,9 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         // single `step_<NNNNN>_r<round>B` timeline the phase A passes also land in, so the two
         // phases interleave in the order they actually ran. Opt-in through
         // DEBUG_output_per_pass -- see the override, which drops debug_ frames unless it is set.
-        if (m_params.debug_output) {
-            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
-        }
+        // No frame here: smooth_all_vertices() already wrote one after each of the two sweeps
+        // above, and a third would be the background sweep's mesh again. (Comment above kept for
+        // the naming it describes; the writes it refers to are the two sweeps'.)
         // THE NATURAL EXIT. Every offset vertex reached its unconstrained minimum inside its own
         // one-ring, so nothing had to be backtracked -- the fixed point this scheme is defined
         // to seek. Checked before the gradient bar because it is the stronger statement.
@@ -4818,6 +4820,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // only writes a frame after each operation pass, so without this the timeline starts at the
     // end of the first split and there is nothing to compare against.
     if (m_params.debug_output) {
+        m_debug_pass_name = "construction";
         write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 

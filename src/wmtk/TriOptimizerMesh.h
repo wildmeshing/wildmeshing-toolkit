@@ -151,6 +151,11 @@ public:
 
     bool m_collapse_limit_length = true;
     int m_debug_print_counter = 0;
+    /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
+    /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer
+    /// before it writes, so an application that renames frames (the 2D offset) can carry the
+    /// pass name into the file name; the base's own "debug_<N>" names are unchanged.
+    std::string m_debug_pass_name;
 
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;

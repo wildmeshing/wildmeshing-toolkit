@@ -40,6 +40,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     partition_mesh_morton();
 
     if (m_params.debug_output) {
+        m_debug_pass_name = "improve-entry";
         write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
@@ -167,6 +168,7 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
     update_attributes();
     for (size_t i = 0; i < ops.size(); ++i) {
         timer.start();
+        m_debug_pass_name = ops[i] > 0 ? std::string(names[i]) : std::string(names[i]) + "-skipped";
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
                 logger().info("==splitting {}==", n);
@@ -196,7 +198,11 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             if (ops[i] > 0) round_all_vertices();
         }
 
-        optimization_debug_checkpoint();
+        // No checkpoint frame here. For split/collapse/swap the group writes its own frame just
+        // below, and smooth_all_vertices() writes one per sweep, so a checkpoint after the group
+        // duplicated the frame before it -- and a group with ops[i] == 0 wrote a frame of a mesh
+        // nothing had touched. Measured on the 2D offset: 18 frames per phase-A iteration where
+        // 6 passes ran.
         if (ops[i] > 0) {
             if (m_params.debug_output && i < 3) {
                 // no need to print debug output for smoothing, since it prints already internally

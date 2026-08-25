@@ -4,6 +4,7 @@
     ./visualize_offset.py runs/prism                 # a run directory
     ./visualize_offset.py out.msh                    # mesh alone
     ./visualize_offset.py out.msh config.json        # mesh + the config it ran under
+    ./visualize_offset.py runs/prism --lazy          # long series: read frames on demand
 
 Needs polyscope, meshio and numpy. The simwild conda env has all three:
 
@@ -336,9 +337,10 @@ def dist_to_triangles(q, t0, t1, t2):
 
 FRAME_RE = __import__("re").compile(r"(\d+)(?=\D*$)")
 
-# The 2D offset's own timeline: <output>_step_<NNNNN>_r<round><A|B><pass>[_end].
+# The 2D offset's own timeline: <output>_step_<NNNNN>_r<round><A|B><pass>[_<op>] or [_end].
+# <op> is the pass the frame follows ("split", "smooth", "collapse-skipped", "B-offset", ...).
 # See TopoOffsetTriMesh::write_smoothing_debug_output, which is what names these.
-STEP_RE = re.compile(r"step_(\d+)_r(\d+)([AB])(?:(\d+)|_end)$")
+STEP_RE = re.compile(r"step_(\d+)_r(\d+)([AB])(?:(\d+)(?:_([A-Za-z][A-Za-z-]*))?|_end)$")
 
 
 def step_label(stem):
@@ -349,10 +351,11 @@ def step_label(stem):
     m = STEP_RE.search(stem)
     if not m:
         return None
-    _, rnd, ph, sub = m.groups()
+    _, rnd, ph, sub, op = m.groups()
+    tail = ("   after " + op) if op else ""
     if int(rnd) == 0:
-        return "construction"
-    return "round %s  phase %s%s" % (rnd, ph, sub if sub else " (end)")
+        return "construction" + tail
+    return "round %s  phase %s%s%s" % (rnd, ph, sub if sub else " (end)", tail)
 
 
 def frame_key(p):
@@ -372,13 +375,15 @@ def frame_key(p):
 
 def resolve(args):
     """Command line -> (list of mesh paths, config dict or {}, stride)."""
-    stride, max_frames, rest = 1, 60, []
+    stride, max_frames, lazy, rest = 1, 60, False, []
     it = iter(args)
     for a in it:
         if a in ("--stride", "-s"):
             stride = max(1, int(next(it)))
         elif a == "--max-frames":
             max_frames = max(1, int(next(it)))
+        elif a == "--lazy":
+            lazy = True
         else:
             rest.append(a)
     paths = [Path(a) for a in rest]
@@ -442,6 +447,7 @@ def resolve(args):
             print("%d frames after stride %d exceeds --max-frames %d; taking every %d instead"
                   % (len(kept), stride, max_frames, stride * extra))
             kept = meshes[::stride * extra]
+            stride = stride * extra  # the panel reports the EFFECTIVE stride, not the requested one
         if len(kept) != len(meshes):
             print("series: %d of %d frames (stride %d)" % (len(kept), len(meshes), stride))
         meshes = kept
@@ -462,7 +468,7 @@ def resolve(args):
             print("config %s" % cfg_path)
         except Exception as e:
             print("config %s unreadable (%s); using defaults" % (cfg_path, e))
-    return meshes, cfg, stride
+    return meshes, cfg, stride, lazy
 
 
 def load(msh, cfg):
@@ -709,11 +715,13 @@ def load_phi_grid(meshes):
 
 
 def main():
-    meshes, cfg, stride = resolve(sys.argv[1:])
+    meshes, cfg, stride, lazy = resolve(sys.argv[1:])
     for m in meshes:
         if not m.is_file():
             sys.exit("missing mesh: %s" % m)
     series = len(meshes) > 1
+    lazy = lazy and series
+    n_frames = len(meshes)
 
     # THE RUN'S OWN DISTANCE FIELD, where it wrote one. Everything below prefers it to the
     # distance this viewer can compute for itself, and the difference is not small.
@@ -729,8 +737,7 @@ def main():
     # reading it back is the same measurement rather than a reconstruction of it.
     phi_grid = load_phi_grid(meshes)
 
-    frames = []
-    for k, path in enumerate(meshes):
+    def load_frame(path):
         points, dim, groups, surf, delta, prov, err, mesh, sizing = load(path, cfg)
         if phi_grid is not None and len(surf["offset"]):
             op, oc = compact(points, surf["offset"])
@@ -738,7 +745,28 @@ def main():
                 phi_grid[1], np.asarray(phi_grid[3]["euclidean_distance"]).ravel(), op[:, :2])
             if d is not None:
                 err = (op, oc, d, np.abs(d - delta) / delta)
-        frames.append((path, points, dim, groups, surf, delta, prov, err, mesh, sizing))
+        return (path, points, dim, groups, surf, delta, prov, err, mesh, sizing)
+
+    # --lazy: a series is read ONE FRAME AT A TIME, when the slider lands on it, instead of
+    # every frame up front. Both halves of the eager path are the slow part -- load() parses
+    # the file, extracts the interfaces and measures the distance field, and then every frame
+    # is a registered polyscope structure -- so on a run of several hundred passes the eager
+    # window takes minutes to open and scrubbing drags. Lazy costs a short pause the first
+    # time a frame is visited; the last few visited stay cached.
+    cache = {}
+
+    def frame_at(k):
+        if k not in cache:
+            if len(cache) >= 8:
+                del cache[next(iter(cache))]
+            cache[k] = load_frame(meshes[k])
+        return cache[k]
+
+    frames = []
+    for k, path in enumerate(meshes[:1] if lazy else meshes):
+        fr = frame_at(k) if lazy else load_frame(path)
+        frames.append(fr)
+        path, points, dim, groups, surf, delta, prov, err, mesh, sizing = fr
         if k == 0 or not series:
             print("mesh   %s  (%s)" % (path, "tets" if dim == 3 else "triangles"))
             print("delta  %g  (%s)" % (delta, prov))
@@ -761,7 +789,8 @@ def main():
                 print("  distance layer omitted: no input-region cells to measure against"
                       " (edge or vertex input complex, or empty surfaces)")
     if series:
-        print("series: %d frames, %s .. %s" % (len(frames), meshes[0].name, meshes[-1].name))
+        print("series: %d frames, %s .. %s%s" % (n_frames, meshes[0].name, meshes[-1].name,
+                                                  "  (lazy: read on demand)" if lazy else ""))
 
     dim = frames[0][2]
     ps.init()
@@ -775,7 +804,7 @@ def main():
     registered = []
     extra_qs = [] # per frame: quantity handles the sizing toggle flips, see register_frame
     for k, (path, points, d, groups, surf, delta, prov, err, mesh, sizing) in enumerate(frames):
-        prefix = ("f%04d " % k) if series else ""
+        prefix = ("f%04d " % k) if series and not lazy else ""
         layers, extras = register_frame(prefix, points, d, surf, err, mesh, sizing)
         registered.append(layers)
         extra_qs.append(extras)
@@ -864,7 +893,7 @@ def main():
         """
         if not has_quality:
             return
-        cur = state["frame"]
+        cur = 0 if lazy else state["frame"]
         ex = extra_qs[cur] if cur < len(extra_qs) else {}
         sel = None
         if state["bad quality (red)"] and "quality" in ex:
@@ -888,7 +917,7 @@ def main():
         bad_structs["verts"] = pc
 
     def apply_visibility():
-        cur = state["frame"]
+        cur = 0 if lazy else state["frame"]
         for k, layers in enumerate(registered):
             for label, s in layers.items():
                 s.set_enabled(k == cur and state[label])
@@ -919,8 +948,23 @@ def main():
 
     apply_visibility()
 
+    def show_frame(v):
+        state["frame"] = v
+        if lazy:
+            # Swap the one registered frame: drop the old structures by handle (a layer the
+            # new frame lacks would otherwise linger), then register the new frame under the
+            # same names.
+            for s in registered[0].values():
+                try:
+                    s.remove()
+                except Exception:
+                    pass
+            fr = frame_at(v)
+            registered[0], extra_qs[0] = register_frame("", fr[1], fr[2], fr[4], fr[7], fr[8], fr[9])
+        apply_visibility()
+
     def callback():
-        f = frames[state["frame"]]
+        f = frame_at(state["frame"]) if lazy else frames[state["frame"]]
         lbl = step_label(f[0].stem)
         if lbl:
             # THE SUB-ITERATION, not the file name: which A/B round and which pass inside which
@@ -931,25 +975,21 @@ def main():
             psim.TextUnformatted("%s   delta %g" % (f[0].name, f[5]))
         if series:
             psim.TextUnformatted(
-                "frame %d / %d   (stride %d)" % (state["frame"] + 1, len(frames), stride))
-            changed, v = psim.SliderInt("frame", state["frame"], 0, len(frames) - 1)
+                "frame %d / %d   (stride %d)" % (state["frame"] + 1, n_frames, stride))
+            changed, v = psim.SliderInt("frame", state["frame"], 0, n_frames - 1)
             if changed:
-                state["frame"] = v
-                apply_visibility()
+                show_frame(v)
             if psim.Button("prev") and state["frame"] > 0:
-                state["frame"] -= 1
-                apply_visibility()
+                show_frame(state["frame"] - 1)
             psim.SameLine()
-            if psim.Button("next") and state["frame"] + 1 < len(frames):
-                state["frame"] += 1
-                apply_visibility()
+            if psim.Button("next") and state["frame"] + 1 < n_frames:
+                show_frame(state["frame"] + 1)
             psim.SameLine()
             _, state["play"] = psim.Checkbox("play", state["play"])
             if state["play"]:
                 state["tick"] += 1
                 if state["tick"] % 6 == 0:  # ~10 fps at a 60 Hz draw
-                    state["frame"] = (state["frame"] + 1) % len(frames)
-                    apply_visibility()
+                    show_frame((state["frame"] + 1) % n_frames)
         psim.Separator()
         for label, _ in LAYERS:
             if not any(label in layers for layers in registered):

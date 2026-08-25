@@ -508,6 +508,7 @@ size_t TriOptimizerMesh::coarsen_mesh()
         m_coarsen_mode = false;
         total += accepted;
 
+        m_debug_pass_name = "coarsen-smooth";
         smooth_all_vertices(size_t(m_params.coarsen_global_smoothing_passes));
         if (m_params.coarsen_global_smoothing_passes > 0) {
             round_all_vertices();
