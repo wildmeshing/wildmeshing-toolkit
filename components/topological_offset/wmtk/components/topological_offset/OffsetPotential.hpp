@@ -360,7 +360,11 @@ public:
     /// EXACT, not first-order: the level set is d = delta, so the distance to it IS |d - delta|.
     /// No reference slope, hence none of the overstatement that the calibrated conversion carries
     /// wherever Phi's isolines are packed tighter than on a flat stretch.
-    double residual_length(const VecD& p) const override { return std::abs(value(p) - m_c); }
+    /// value is d / delta (see the constructor), so back to length units through the slope.
+    double residual_length(const VecD& p) const override
+    {
+        return std::abs(value(p) - m_c) / m_grad_ref;
+    }
 
     /// Everywhere. d has no compact support.
     bool within_support(const VecD& p) const override { return true; }
@@ -377,6 +381,7 @@ private:
     void nearest_feature(const VecD& p, VecD& foot, int& dim, VecD& dir) const;
 
     using OffsetPotential<DIM>::m_delta;
+    using OffsetPotential<DIM>::m_grad_ref;
     using OffsetPotential<DIM>::m_dhat;
     using OffsetPotential<DIM>::m_c;
 

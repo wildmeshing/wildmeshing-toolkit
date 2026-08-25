@@ -743,7 +743,15 @@ EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     // NO CALIBRATION. The level IS the offset distance -- that is the entire content of "the
     // Euclidean offset" -- where the smooth potential has to discover its own level by evaluating
     // Phi at distance delta from a flat reference.
-    m_c = delta;
+    // IN UNITS OF target_distance: value = d / delta, level c = 1, so |grad| = 1 / delta.
+    // The raw distance made the placement's pull, 2 (d - delta) |grad d|, ~1/delta^2 weaker
+    // than the smooth potential's at the same misplacement (measured on two_circles at 0.1:
+    // 0.023 against the smooth field's ~86), so the 1e-4 AMIPS term was no longer negligible
+    // and construction zigzags 12% off the offset survived as exact balance points. Every
+    // consumer works in ratios of value to c or divides by level_set_slope(), so nothing else
+    // changes: the dist_and_orient distance |value - c| / |grad| is still d - delta.
+    m_c = 1.;
+    m_grad_ref = 1. / delta;
 }
 
 template <int DIM>
@@ -766,7 +774,15 @@ EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     if (!m_bvh) {
         log_and_throw_error("EuclideanOffsetPotential: needs a BVH to query");
     }
-    m_c = delta;
+    // IN UNITS OF target_distance: value = d / delta, level c = 1, so |grad| = 1 / delta.
+    // The raw distance made the placement's pull, 2 (d - delta) |grad d|, ~1/delta^2 weaker
+    // than the smooth potential's at the same misplacement (measured on two_circles at 0.1:
+    // 0.023 against the smooth field's ~86), so the 1e-4 AMIPS term was no longer negligible
+    // and construction zigzags 12% off the offset survived as exact balance points. Every
+    // consumer works in ratios of value to c or divides by level_set_slope(), so nothing else
+    // changes: the dist_and_orient distance |value - c| / |grad| is still d - delta.
+    m_c = 1.;
+    m_grad_ref = 1. / delta;
 }
 
 template <int DIM>
@@ -821,10 +837,11 @@ double EuclideanOffsetPotential<DIM>::value(const VecD& p) const
             Eigen::Vector2d seg_normal;
             int feature_id = -1;
             return std::sqrt(
-                m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id));
+                       m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id)) /
+                   m_delta;
         }
     }
-    return std::sqrt(m_envelope->squared_distance(p));
+    return std::sqrt(m_envelope->squared_distance(p)) / m_delta;
 }
 
 template <int DIM>
@@ -845,7 +862,7 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
     if (!(d > 1e-14)) {
         return VecD::Zero();
     }
-    return r / d;
+    return r / (d * m_delta);
 }
 
 template <int DIM>
@@ -872,10 +889,10 @@ typename EuclideanOffsetPotential<DIM>::MatD EuclideanOffsetPotential<DIM>::hess
     }
     if (dim == 1) {
         // 3D edge interior: free along the edge, curved around it.
-        return (MatD::Identity() - dir * dir.transpose() - u * u.transpose()) / d;
+        return (MatD::Identity() - dir * dir.transpose() - u * u.transpose()) / (d * m_delta);
     }
     // Vertex: distance to a point, curved in every direction but radially.
-    return (MatD::Identity() - u * u.transpose()) / d;
+    return (MatD::Identity() - u * u.transpose()) / (d * m_delta);
 }
 
 template <int DIM>
