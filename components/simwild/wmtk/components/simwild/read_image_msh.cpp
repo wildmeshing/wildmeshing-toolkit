@@ -429,12 +429,9 @@ InputData read_mesh(
     double eps_simplify = json_params["eps_simplify"];
     const std::vector<std::string> input_names = json_params["input_names"];
 
-    double tol_rel = -1;
-    double tol_abs = -1;
-    if (!preserve_topology) {
-        tol_rel = 0.1 * epsr_simplify;
-        tol_abs = 0.1 * eps_simplify;
-    }
+    const double remove_duplicate_eps = json_params["remove_duplicate_eps"];
+    const double tol_rel = remove_duplicate_eps;
+    const double tol_abs = -1;
 
     // convert mesh into tet mesh
     EmbedSurface image_mesh(
