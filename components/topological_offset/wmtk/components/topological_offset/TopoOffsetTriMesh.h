@@ -1432,6 +1432,9 @@ public:
     /// ||grad F|| at front vertex vid, F the objective smooth_front_vertex_phase_b() minimises.
     /// +inf if unmeasurable. The pass stop and the loop's vertex test.
     double front_vertex_normal_gradient(size_t vid) const;
+    /// The line a front vertex is placed along: the field normal, or the boundary tangent where
+    /// an input envelope holds it. See the definition.
+    Vector2d front_vertex_move_direction(size_t vid) const;
     /// The vertex's convergence measure divided by its bar, per phase_b_conv_criterion: 1 is the
     /// bar. See the spec entry for the three measures. Infinite when unmeasurable.
     double front_vertex_conv_ratio(size_t vid) const;

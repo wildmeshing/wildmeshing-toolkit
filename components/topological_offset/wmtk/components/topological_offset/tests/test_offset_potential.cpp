@@ -596,11 +596,14 @@ TEST_CASE("offset-energy-derivatives", "[offset][potential]")
         }
 
         // The Gauss-Newton Hessian is the outer product alone, so it is PSD by construction --
-        // which is the whole reason it is the default.
+        // which is the whole reason it is the default. Up to roundoff, RELATIVE to the matrix:
+        // its scale is 2 w |grad Phi|^2 / c^2 (the energy is ((Phi - c)/c)^2 since 2026-08-25),
+        // and the exact zero eigenvalue lands a few ulps of that on either side of zero. An
+        // absolute 1e-12 failed at c ~ 0.17 for exactly that reason.
         MatrixXd H;
         energy.hessian(xv, H);
         const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
-        CHECK(es.eigenvalues().minCoeff() >= -1e-12);
+        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
 
         // The energy vanishes exactly on the level set, wherever that is along this ray.
         CHECK(energy.value(xv) >= 0.);

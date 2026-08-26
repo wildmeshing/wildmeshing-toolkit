@@ -228,7 +228,12 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
             // its constructor flag selects the engine -- true = fast-envelope's exact predicates,
             // false = the sampled test. TetWild and TriWild build theirs exact by default; the
             // 3D offset (TopoOffsetTetMesh.cpp) still builds its three envelopes sampled.
-            auto env = std::make_shared<SampleEnvelope>(/*exact=*/true);
+            // The exact engine needs a real half-width: the unit tests construct the mesh without
+            // params.init(), so m_envelope_eps can be an uninitialised double (3e-314 seen), and
+            // fast-envelope's 2D init segfaults on it where the sampled path merely built nonsense.
+            // Sampled there; exact wherever the parameters were initialised.
+            const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
+            auto env = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
             env->init(tempV, bucket, m_envelope_eps);
             m_tag_envelopes[tag] = env;
             members.push_back(env);
@@ -250,9 +255,11 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
         m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
         logger().info(
             "\tPer-tag boundary envelopes: {} segments total (tag boundaries + domain wall), "
-            "eps {:.6g} |{}",
+            "eps {:.6g}, {} |{}",
             n_edges_tracked,
             m_envelope_eps,
+            (std::isfinite(m_envelope_eps) && m_envelope_eps > 0.) ? "EXACT"
+                                                                   : "sampled (no valid eps)",
             per_tag_log);
     }
 
@@ -526,7 +533,11 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     // WHICH INPUT REGION each complex primitive belongs to, for the per-region fields (see
     // m_region_potentials). A region is one tag of the selection expression; a primitive's
     // region is the first involved tag its (adjacent) face carries, -1 when none does.
-    {
+    // No selection expression (the unit tests build the mesh without one): no regions, every
+    // primitive falls back to the union field. Dereferencing the null expression here crashed
+    // wmtk_test_topological_offset from 2f793c596e (2026-08-24) until 2026-08-25.
+    m_region_tags.clear();
+    if (m_offset_params.offset_selection) {
         const CellTag involved = m_offset_params.offset_selection->tags_involved();
         m_region_tags.assign(involved.begin(), involved.end());
     }

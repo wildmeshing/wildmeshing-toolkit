@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <limits>
 #include <set>
 
@@ -859,10 +860,14 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
         // a front vertex an input envelope also holds: two requirements that cannot both be met
         // (see the note that used to sit here, kept in git history), so it stays where Phase A
         // left it.
-        if (is_offset && enveloped) {
-            ++m_smooth_trace.before_phase_b_enveloped_offset;
-            return false;
-        }
+        // NO LONGER SKIPPED (Uday, 2026-08-25): a front vertex an input envelope holds is placed
+        // ALONG that boundary -- smooth_front_vertex_phase_b() solves it in one unknown along the
+        // boundary's tangent and refuses a move that leaves the tube -- so it reaches the point of
+        // its boundary line that is target_distance from the complex. Left where Phase A put it
+        // (0.125 delta on topological_offset_2d, 1800 skipped visits per run) it dragged its
+        // placed neighbours off the level set and the vertex test never passed there.
+        (void)is_offset;
+        (void)enveloped;
     }
     return true;
 }
@@ -1050,6 +1055,41 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
 }
 
 
+Vector2d TopoOffsetTriMesh::front_vertex_move_direction(const size_t vid) const
+{
+    // A front vertex held by an input envelope (it sits on a tag-region boundary or the domain
+    // wall) may only move ALONG that boundary: its direction is the boundary's tangent at the
+    // vertex, the mean of its region-class surface edges' unit directions. Every other front
+    // vertex moves along the field normal. Zero when neither is defined.
+    if (smoothing_containment_envelope(vid)) {
+        const Vector2d x = m_vertex_attribute[vid].m_posf;
+        Vector2d t = Vector2d::Zero();
+        int n = 0;
+        for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+            const size_t eid = e.eid(*this);
+            if (!m_edge_attribute[eid].m_is_surface_fs || edge_is_offset(eid)) continue;
+            const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+            const size_t q = (va == vid) ? vb : va;
+            Vector2d d = m_vertex_attribute[q].m_posf - x;
+            if (!(d.norm() > 0.)) continue;
+            d /= d.norm();
+            if (n > 0 && d.dot(t) < 0.) d = -d; // the two edges point away from x: make them agree
+            t += d;
+            ++n;
+        }
+        if (n > 0 && t.norm() > 0.) return t / t.norm();
+    }
+    // The field normal. Its known failure: on the input's medial axis grad Phi is undefined, and a
+    // front vertex at a CONCAVE corner of the input sits exactly there (equidistant from two
+    // walls); along either wall's normal the distance to the other wall does not change, so the
+    // line solve cannot reach the level set's corner point and oscillates -- topological_offset_2d,
+    // Euclidean, one vertex at (-13.76, -6.24), 3.1x the bar in every round. The polyline's own
+    // (Voronoi-weighted) normal was tried instead on 2026-08-25 and rejected: around a CONVEX
+    // corner the front moves inward along converging normals, two vertices slid into each other
+    // (edge 0.088 -> 0.0026 in six passes) and deadlocked worse. Open.
+    return front_vertex_normal(vid);
+}
+
 Vector2d TopoOffsetTriMesh::front_vertex_normal(const size_t vid) const
 {
     const Vector2d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
@@ -1071,7 +1111,7 @@ double TopoOffsetTriMesh::front_vertex_normal_gradient(const size_t vid) const
     // energy (only w x AMIPS acts along the front) -- a tiny gradient there is a large Newton
     // step, and the free 2-D placement never passed a test that counted it while producing the
     // smoothest front of all (turn 2.2 deg per vertex against a circle's 2.25 at 0.4).
-    const Vector2d n = front_vertex_normal(vid);
+    const Vector2d n = front_vertex_move_direction(vid);
     if (n.squaredNorm() > 0.) return std::abs(n.dot(Vector2d(g)));
     return g.norm();
 }
@@ -1168,10 +1208,11 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
     // stiff tangential penalty (k = 1e6) that had been standing in for the restriction -- that
     // made the Hessian's condition number 1e6 and was never what "along the normal" meant.
     const size_t vid = t.vid(*this);
-    const Vector2d n = front_vertex_normal(vid);
-    if (!(n.squaredNorm() > 0.)) { // no field direction here: the 2-D solve is the fallback
+    const Vector2d n = front_vertex_move_direction(vid);
+    if (!(n.squaredNorm() > 0.)) { // no direction here: the 2-D solve is the fallback
         return optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
     }
+    const std::shared_ptr<SampleEnvelope> hold = smoothing_containment_envelope(vid);
     const std::vector<size_t>& locs = get_one_ring_fids_for_vertex(t);
     for (const size_t fid : locs) {
         if (is_inverted_f(fid)) {
@@ -1187,6 +1228,21 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
     } catch (const std::exception&) {
     }
     set_smoothing_position(vid, Vector2d(x0 + s(0) * n));
+    if (hold) { // the boundary's tube, on the region edges the move reshaped -- as the shared
+                // smoother
+        const Vector2d p = smoothing_position(vid);
+        for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+            const size_t eid = e.eid(*this);
+            if (!m_edge_attribute[eid].m_is_surface_fs || edge_is_offset(eid)) continue;
+            const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+            const Vector2d q = m_vertex_attribute[(va == vid) ? vb : va].m_posf;
+            if (hold->is_outside(std::array<Vector2d, 2>{{p, q}})) {
+                set_smoothing_position(vid, x0);
+                ++m_smooth_rejects.envelope;
+                return false;
+            }
+        }
+    }
     for (const size_t fid : locs) {
         if (is_inverted(fid)) {
             set_smoothing_position(vid, x0);
@@ -1810,12 +1866,26 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
                 seeds.push_back(vid);
             }
         }
+        // A CURVE COMPLEX HAS NO LABEL-1 FACES (Uday, 2026-08-25). The edge test above sees the
+        // complex only where it bounds a label-1 REGION; a complex that is a curve between two
+        // regions -- topological_offset_2d's "(tag_0 | tag_2 | tag_3) & tag_1" -- has none, the
+        // seed found 0 vertices and the pre-pass was a silent no-op ("max element quality 0 ->
+        // 0"), so the band was built one coarse input cell thick (front at 0.5 = 2 delta) and the
+        // 1-wide slots were squeezed at their mouths from the first placement on. The complex's
+        // vertices themselves carry the label, whatever its dimension: seed those too.
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].label != 1) continue;
+            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
+            sc = std::min(sc, s_input);
+            seeds.push_back(vid);
+        }
         wmtk::vector_unique(seeds);
         if (!seeds.empty()) {
             gradation_smooth_sizing(m_offset_params.sizing_gradation, seeds);
         }
         logger().info(
-            "[pre-optimize] sizing seed: {} input-complex-boundary vertices at scalar {:.6g} "
+            "[pre-optimize] sizing seed: {} input-complex vertices at scalar {:.6g} "
             "(= target_distance {} / l {:.6g}), graded outward at {}x per ring",
             seeds.size(),
             s_input,
@@ -3049,8 +3119,7 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
     const auto placed = [&](const size_t vid) {
-        return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded &&
-               vertex_boundary_mask(vid) == 0;
+        return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
@@ -3106,7 +3175,6 @@ double TopoOffsetTriMesh::phase_b_front_gradient_linf()
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        if (vertex_boundary_mask(vid) != 0) continue; // pinned: not placed by Phase B
         if (vid < m_placement_pressed.size() && m_placement_pressed[vid])
             continue; // constrained minimum
         const double gn = m_front_gradient_reference > 0. ||
@@ -3137,7 +3205,8 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
     prob->gradient(xv, g);
     prob->hessian(xv, H);
     if (!g.allFinite() || !H.allFinite()) return std::numeric_limits<double>::infinity();
-    Vector2d n = front_vertex_normal(vid); // the field normal, see front_vertex_normal_gradient()
+    Vector2d n =
+        front_vertex_move_direction(vid); // the field normal, or the boundary tangent where held
     if (!(n.squaredNorm() > 0.)) n = g.normalized();
     if (!(n.squaredNorm() > 0.)) return std::numeric_limits<double>::infinity();
     const double gn = n.dot(Vector2d(g)), h = n.dot(H * n);
