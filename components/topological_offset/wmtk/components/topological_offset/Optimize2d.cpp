@@ -2874,10 +2874,12 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     // One energy per region field, plus the union for a vertex with no region: a vertex is
     // measured against the field it is placed on. See potential_for().
     std::vector<std::unique_ptr<OffsetEnergy2D>> energies;
-    for (const auto& rp : m_region_potentials) energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
+    for (const auto& rp : m_region_potentials)
+        energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
     OffsetEnergy2D union_energy(m_offset_potential, 1.0);
     const auto energy_for = [&](const int region) -> OffsetEnergy2D& {
-        return (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)] : union_energy;
+        return (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)]
+                                                                 : union_energy;
     };
 
     // THE NORMAL-ALIGNED COMPANION, |grad E . n| with n the OFFSET SURFACE'S OWN normal (the
@@ -3236,7 +3238,8 @@ void TopoOffsetTriMesh::assign_band_regions()
         const std::optional<Tuple> opp = e.switch_face(*this);
         if (!opp) continue;
         const size_t fa = e.fid(*this), fb = opp->fid(*this);
-        for (const auto [band, input] : {std::pair<size_t, size_t>{fa, fb}, std::pair<size_t, size_t>{fb, fa}}) {
+        for (const auto [band, input] :
+             {std::pair<size_t, size_t>{fa, fb}, std::pair<size_t, size_t>{fb, fa}}) {
             if (!face_is_offset_band(band) || !face_is_input_complex(input)) continue;
             const int r = region_of_input_face(input);
             if (r < 0) continue;
@@ -3290,7 +3293,8 @@ void TopoOffsetTriMesh::assign_band_regions()
         }
     }
     std::string per;
-    for (size_t r = 0; r < n_faces.size(); ++r) per += fmt::format("{}{}", r ? " / " : "", n_faces[r]);
+    for (size_t r = 0; r < n_faces.size(); ++r)
+        per += fmt::format("{}{}", r ? " / " : "", n_faces[r]);
     if (n_mixed_faces > 0 || n_unreached > 0 || n_mixed_verts > 0) {
         logger().warn(
             "\t[regions] band faces per region {} | {} faces reached from TWO regions, {} reached "

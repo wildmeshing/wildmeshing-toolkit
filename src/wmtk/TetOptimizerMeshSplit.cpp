@@ -29,6 +29,8 @@ void TetOptimizerMesh::split_all_edges()
         // valence-increasing splits in a single pass, where the gate allows one, reaching
         // valence ~700 while the max energy climbed with it. The attribute collections are
         // resized to the reservation, so their size is the capacity to use.
+        // UPDATE (dzint): This seems to be no longer necessary. At least model 509315 passes
+        // without this.
         m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
         m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
     }

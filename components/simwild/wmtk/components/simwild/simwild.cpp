@@ -221,8 +221,7 @@ void run_3D(const nlohmann::json& json_params, const InputData& input_data)
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
     // first init envelope
     if (input_data.V_envelope.size() != 0) {
-        bool use_exact = !json_params["use_sample_envelope"];
-        mesh.init_envelope(input_data.V_envelope, input_data.F_envelope, use_exact);
+        mesh.init_envelope(input_data.V_envelope, input_data.F_envelope);
     }
     if (input_data.V_input_r.size() == 0) {
         logger().info("Use float input for TetWild");

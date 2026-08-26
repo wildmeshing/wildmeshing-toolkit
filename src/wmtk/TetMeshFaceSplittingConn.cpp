@@ -74,7 +74,6 @@ bool TetMesh::split_face(const Tuple& t, std::vector<Tuple>& new_tets)
 
     // abort before mutating if we ran out of preallocated slots; mark any slots we
     // did manage to reserve as removed so they don't become live-but-empty phantoms.
-    constexpr size_t INVALID_SLOT = static_cast<size_t>(-1);
     if (new_vid == INVALID_SLOT || new_tid1 == INVALID_SLOT || new_tid2 == INVALID_SLOT ||
         (t_opp && (new_tid1_opp.value() == INVALID_SLOT || new_tid2_opp.value() == INVALID_SLOT))) {
         note_slot_exhausted();

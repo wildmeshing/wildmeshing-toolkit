@@ -379,8 +379,8 @@ void TopoOffsetTriMesh::label_input_complex()
                     }
                 }
             }
-        } else if (m_offset_params
-                       .offset_in) { // input complex is everything outside body plus boundary
+        } else if (m_offset_params.offset_in) { // input complex is everything outside body plus
+                                                // boundary
             // faces (hacky but works)
             auto faces = get_faces();
             for (const Tuple& f : faces) {
@@ -650,9 +650,10 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     std::map<simplex::Edge, int64_t> boundary_region; // a boundary edge has exactly one face
     for (size_t fi = 0; fi < complex_faces.size(); ++fi) {
         const auto vs = complex_faces[fi].vertices();
-        for (const simplex::Edge e : {simplex::Edge(vs[0], vs[1]),
-                                      simplex::Edge(vs[1], vs[2]),
-                                      simplex::Edge(vs[0], vs[2])}) {
+        for (const simplex::Edge e :
+             {simplex::Edge(vs[0], vs[1]),
+              simplex::Edge(vs[1], vs[2]),
+              simplex::Edge(vs[0], vs[2])}) {
             ++boundary_count[e];
             boundary_region[e] = complex_face_region[fi];
         }
@@ -793,13 +794,16 @@ void TopoOffsetTriMesh::init_region_potentials(const double delta, const double 
         // A primitive whose region is unknown (-1) is given to every field, conservatively.
         std::vector<int> erows, frows, pidx;
         for (int i = 0; i < m_phi_E.rows(); ++i) {
-            if (m_phi_seg_region[size_t(i)] < 0 || m_phi_seg_region[size_t(i)] == int64_t(r)) erows.push_back(i);
+            if (m_phi_seg_region[size_t(i)] < 0 || m_phi_seg_region[size_t(i)] == int64_t(r))
+                erows.push_back(i);
         }
         for (int i = 0; i < m_phi_F.rows(); ++i) {
-            if (m_phi_face_region[size_t(i)] < 0 || m_phi_face_region[size_t(i)] == int64_t(r)) frows.push_back(i);
+            if (m_phi_face_region[size_t(i)] < 0 || m_phi_face_region[size_t(i)] == int64_t(r))
+                frows.push_back(i);
         }
         for (size_t i = 0; i < m_phi_P.size(); ++i) {
-            if (m_phi_point_region[i] < 0 || m_phi_point_region[i] == int64_t(r)) pidx.push_back(int(i));
+            if (m_phi_point_region[i] < 0 || m_phi_point_region[i] == int64_t(r))
+                pidx.push_back(int(i));
         }
         MatrixXi E_r(erows.size(), 2);
         for (size_t i = 0; i < erows.size(); ++i) E_r.row(i) = m_phi_E.row(erows[i]);
@@ -814,13 +818,14 @@ void TopoOffsetTriMesh::init_region_potentials(const double delta, const double 
             bvh->init(m_phi_V, MatrixXi(0, 4), F_r, E_r, P_m);
             m_region_potentials.push_back(std::make_shared<EuclideanOffsetPotential2D>(bvh, delta));
         } else {
-            m_region_potentials.push_back(std::make_shared<SmoothOffsetPotential2D>(
-                m_phi_V,
-                E_r,
-                MatrixXi(0, 3),
-                P_r,
-                delta,
-                effective_factor));
+            m_region_potentials.push_back(
+                std::make_shared<SmoothOffsetPotential2D>(
+                    m_phi_V,
+                    E_r,
+                    MatrixXi(0, 3),
+                    P_r,
+                    delta,
+                    effective_factor));
         }
         logger().info(
             "\tOffset field for region {} (tag {}): {} segments, {} faces, {} points -- the band "

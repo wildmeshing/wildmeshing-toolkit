@@ -66,12 +66,12 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
 
     // Reserve the additional tet slots up-front so that, if the preallocated
     // capacity is exhausted, we abort *before* mutating any connectivity.
-    long reserved_first = -1;
+    size_t reserved_first = INVALID_SLOT;
     size_t add_size = 0;
     if (allocate_id.empty() && new_tet_conn.size() > remove_id.size()) {
         add_size = new_tet_conn.size() - remove_id.size();
         reserved_first = request_tet_slots(add_size);
-        if (reserved_first < 0) {
+        if (reserved_first == INVALID_SLOT) {
             note_slot_exhausted();
             ok = false; // out of preallocated space; nothing mutated yet
             return {};
@@ -111,7 +111,7 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
 
             // consume the slots reserved above (contiguous block)
             for (size_t i = 0; i < add_size; i++) {
-                allocate_id[i + hole_size] = static_cast<size_t>(reserved_first + (long)i);
+                allocate_id[i + hole_size] = reserved_first + i;
             }
         }
     }
@@ -124,7 +124,7 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
         tet_conn[id].hash++;
         for (auto j = 0; j < 4; j++) {
             auto vid = new_tet_conn[i][j];
-            assert(vert_conn.size() > vid && "Sufficient number of verts");
+            assert(vert_conn.capacity() > vid && "Sufficient number of verts");
             wmtk::set_insert(vert_conn[vid].m_conn_tets, id);
         }
     }

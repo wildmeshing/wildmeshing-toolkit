@@ -67,12 +67,23 @@ class EmbedSurface
 public:
     /**
      * @brief Input from meshes.
+     *
+     * @param split_connected_components Treat each connected component of an input file as an
+     * input in its own right, rather than the file as a whole. What counts as "an input" is
+     * what gets its own tag column and its own winding-number evaluation, so a file holding
+     * several disjoint closed surfaces is tagged as one region with this off, and as one
+     * region per component with it on. Off by default.
+     *
+     * Note that the inputs then outnumber the files, so `input_names` -- which is applied by
+     * position -- no longer lines up with the filenames; components past the end of that list
+     * fall back to the generic `tag_N` names.
      */
     EmbedSurface(
         const std::vector<std::string>& img_filenames,
         const std::vector<Matrix4d>& img_transform = {},
         const double tol_rel = -1,
-        const double tol_abs = -1);
+        const double tol_abs = -1,
+        const bool split_connected_components = false);
 
     /**
      * @brief Simplify the input surface while staying within the eps envelope.

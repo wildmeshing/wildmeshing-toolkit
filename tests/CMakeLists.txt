@@ -26,6 +26,7 @@ set(TEST_SOURCES
     test_optimization.cpp
     test_threading.cpp
     test_ring_lock.cpp
+    test_slot_allocation.cpp
 )
 
 add_executable(wmtk_tests ${TEST_SOURCES})
