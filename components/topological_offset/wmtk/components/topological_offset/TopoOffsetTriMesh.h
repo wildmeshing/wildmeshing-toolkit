@@ -1,7 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriOptimizerMesh.h>
-#include <wmtk/optimization/EnergySum.hpp>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -10,6 +9,7 @@
 #include <map>
 #include <mutex>
 #include <set>
+#include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 #include "OffsetPotential.hpp"
@@ -938,7 +938,8 @@ public:
         std::atomic<int> attempted{0}; ///< smooth_before() entered
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
-        std::atomic<int> before_phase_b_not_offset{0}; ///< Phase B: on an input surface, neither placed nor relaxed
+        std::atomic<int> before_phase_b_not_offset{
+            0}; ///< Phase B: on an input surface, neither placed nor relaxed
         std::atomic<int> before_phase_b_enveloped_background{0}; ///< Phase B: envelope-held
         std::atomic<int> before_phase_b_enveloped_offset{0}; ///< Phase B: on-offset AND held
         std::atomic<int> offset_attempted{0}; ///< reached the smoother with the offset term
@@ -1436,12 +1437,15 @@ public:
     double front_vertex_conv_ratio(size_t vid) const;
     /// The edge test divided by its bar (1 = bar), per phase_b_conv_criterion; -1 unmeasurable.
     double edge_conv_ratio(const Tuple& e) const;
-    mutable size_t m_front_gradient_worst_vid = static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
+    mutable size_t m_front_gradient_worst_vid =
+        static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
     /// The field's outward unit direction at front vertex vid (zero where grad Phi vanishes).
     Vector2d front_vertex_normal(size_t vid) const;
     /// The Phase B objective of front vertex vid with the vertex at x: AMIPS of its one-ring +
     /// phase_b_front_energy(). What the measure above differentiates.
-    std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_objective(size_t vid, const Vector2d& x) const;
+    std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_objective(
+        size_t vid,
+        const Vector2d& x) const;
     /// Phase B's offset terms, handed to the shared smoother for a front vertex it is placing.
     /// Null in Phase A (the front is held by m_offset_envelope and carries no term) and for a
     /// front vertex an input envelope also pins.
@@ -1453,7 +1457,7 @@ public:
         const int r = vertex_region(vid);
         const std::shared_ptr<const OffsetPotential2D> pot =
             (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
-                                                                : m_offset_potential;
+                                                               : m_offset_potential;
         return phase_b_front_energy(vid, pot);
     }
     /// The two offset terms for a front vertex, see smooth_front_vertex_phase_b(): the zeroth-order
@@ -1556,9 +1560,7 @@ public:
         //
         // Zero until measure_gradient_reference() runs, which would make the bound 1e-16 and
         // convergence unreachable rather than free -- see that function.
-        return std::max(
-            m_offset_params.phase_b_conv_rel * m_gradient_reference,
-            1e-16);
+        return std::max(m_offset_params.phase_b_conv_rel * m_gradient_reference, 1e-16);
     }
 
     /// max |2 (Phi - c) grad Phi . n| over the initial offset-surface vertices; the scale
@@ -1769,7 +1771,10 @@ public:
      */
     struct EnergyCriterion
     {
-        double max_vertex = 0., max_edge = 0.; ///< RATIOS to the bar (1 = bar): the vertex measure per phase_b_conv_criterion; the edge test
+        double
+            max_vertex = 0.,
+            max_edge =
+                0.; ///< RATIOS to the bar (1 = bar): the vertex measure per phase_b_conv_criterion; the edge test
         double bar = 1.; ///< the ratios' bar, 1
         size_t n_vertices = 0, n_edges = 0, n_unmeasurable = 0;
         size_t n_pressed = 0, n_edges_pressed = 0; ///< skipped: pressed (see m_placement_pressed)

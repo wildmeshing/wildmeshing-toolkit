@@ -698,11 +698,8 @@ AlignEnergy2D::AlignEnergy2D(
     , m_weight(weight)
 {}
 
-void AlignEnergy2D::residual(
-    const Eigen::Vector2d& x,
-    const Edge& e,
-    double& r,
-    Eigen::Vector2d& J) const
+void AlignEnergy2D::residual(const Eigen::Vector2d& x, const Edge& e, double& r, Eigen::Vector2d& J)
+    const
 {
     r = 0.;
     J.setZero();
@@ -714,7 +711,8 @@ void AlignEnergy2D::residual(
     const Eigen::Vector2d t = d / len;
     const Eigen::Matrix2d R90 = (Eigen::Matrix2d() << 0., -1., 1., 0.).finished();
     const Eigen::Vector2d n = e.sigma * (R90 * t);
-    const Eigen::Matrix2d dn_dx = -e.sigma * R90 * (Eigen::Matrix2d::Identity() - t * t.transpose()) / len;
+    const Eigen::Matrix2d dn_dx =
+        -e.sigma * R90 * (Eigen::Matrix2d::Identity() - t * t.transpose()) / len;
     // The field's outward unit direction at the midpoint and its derivative:
     // m = (x + q) / 2, u = grad Phi / |grad Phi|, du/dm = (I - u u^T) H / |grad Phi|, dm/dx = 1/2.
     const Eigen::Vector2d m = 0.5 * (x + e.q);
@@ -725,7 +723,8 @@ void AlignEnergy2D::residual(
     const Eigen::Matrix2d H = m_potential->hessian(m);
     if (!H.allFinite()) return;
     const Eigen::Vector2d ghat = m_sign * u;
-    const Eigen::Matrix2d dghat_dx = 0.5 * m_sign * (Eigen::Matrix2d::Identity() - u * u.transpose()) * H / gn;
+    const Eigen::Matrix2d dghat_dx =
+        0.5 * m_sign * (Eigen::Matrix2d::Identity() - u * u.transpose()) * H / gn;
     r = 1. - n.dot(ghat);
     // d r / dx = -(dn/dx)^T ghat - (dghat/dx)^T n
     J = -(dn_dx.transpose() * ghat) - (dghat_dx.transpose() * n);

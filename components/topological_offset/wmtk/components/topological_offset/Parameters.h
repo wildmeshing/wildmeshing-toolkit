@@ -97,8 +97,8 @@ struct Parameters : public wmtk::OptimizerParameters
     // "dist_and_orient" only. Every reachable offset vertex AND every edge-interior sample must lie
     // within this fraction of target_distance of the level set, first order:
     // |Phi - c| / |grad Phi|. Vertices are the placement half, samples the resolution half.
-    // "dist_and_orient" only. Largest angle, in degrees, between an offset edge's OUTWARD normal and
-    // the field's own outward direction at the edge midpoint. Signed: a folded edge, whose
+    // "dist_and_orient" only. Largest angle, in degrees, between an offset edge's OUTWARD normal
+    // and the field's own outward direction at the edge midpoint. Signed: a folded edge, whose
     // outward normal points into the band by the field's reckoning, fails outright.
     // PHASE B NORMAL-ONLY PLACEMENT (Uday, 2026-08-25): a front vertex moves only along the field's
     // normal at its visit's start. Where a vertex sits along the front carries no information about

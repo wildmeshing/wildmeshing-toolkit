@@ -5,9 +5,9 @@
 #include <wmtk/utils/SizingField.hpp>
 
 #include <algorithm>
-#include <set>
 #include <cmath>
 #include <limits>
+#include <set>
 
 namespace wmtk::components::topological_offset {
 
@@ -1039,10 +1039,12 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
     }
     const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     auto sum = std::make_shared<optimization::EnergySum>();
-    if (m_params.w_amips > 0) sum->add_energy(std::make_shared<optimization::AMIPSEnergy2D>(cells, amips_w));
+    if (m_params.w_amips > 0)
+        sum->add_energy(std::make_shared<optimization::AMIPSEnergy2D>(cells, amips_w));
     const int r = vertex_region(vid);
     const std::shared_ptr<const OffsetPotential2D> pot =
-        (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)] : m_offset_potential;
+        (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
+                                                           : m_offset_potential;
     sum->add_energy(phase_b_front_energy(vid, pot));
     return sum;
 }
@@ -1084,7 +1086,10 @@ public:
     using typename polysolve::nonlinear::Problem::Scalar;
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
-    LineProblem2D(std::shared_ptr<polysolve::nonlinear::Problem> p, const Vector2d& x0, const Vector2d& n)
+    LineProblem2D(
+        std::shared_ptr<polysolve::nonlinear::Problem> p,
+        const Vector2d& x0,
+        const Vector2d& n)
         : m_p(std::move(p))
         , m_x0(x0)
         , m_n(n)
@@ -1109,9 +1114,18 @@ public:
         h.resize(1, 1);
         h(0, 0) = m_n.dot(h2 * m_n);
     }
-    bool is_step_valid(const TVector& s0, const TVector& s1) override { return m_p->is_step_valid(at(s0), at(s1)); }
-    double max_step_size(const TVector& s0, const TVector& s1) override { return m_p->max_step_size(at(s0), at(s1)); }
-    void line_search_begin(const TVector& s0, const TVector& s1) override { m_p->line_search_begin(at(s0), at(s1)); }
+    bool is_step_valid(const TVector& s0, const TVector& s1) override
+    {
+        return m_p->is_step_valid(at(s0), at(s1));
+    }
+    double max_step_size(const TVector& s0, const TVector& s1) override
+    {
+        return m_p->max_step_size(at(s0), at(s1));
+    }
+    void line_search_begin(const TVector& s0, const TVector& s1) override
+    {
+        m_p->line_search_begin(at(s0), at(s1));
+    }
     void line_search_end() override { m_p->line_search_end(); }
     void solution_changed(const TVector& s) override { m_p->solution_changed(at(s)); }
 
@@ -3005,7 +3019,8 @@ double TopoOffsetTriMesh::edge_interpolation_residual(const Tuple& e) const
     const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
     const int r = edge_region(a, b);
     const std::shared_ptr<const OffsetPotential2D> pot =
-        (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)] : m_offset_potential;
+        (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
+                                                           : m_offset_potential;
     const double c = pot->target_level();
     if (!(c > 0.)) return -1.;
     // THE VALUE, NOT THE GRADIENT (Uday, 2026-08-25). The gradient of ((Phi - c) / c)^2 is
@@ -3072,8 +3087,10 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         ++s.n_edges;
         if (gn > s.max_edge) {
             s.max_edge = gn;
-            s.worst_edge_mid = 0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
-            s.worst_edge_len = (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
+            s.worst_edge_mid =
+                0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
+            s.worst_edge_len =
+                (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
         }
     }
     m_phase = saved;
@@ -3090,8 +3107,10 @@ double TopoOffsetTriMesh::phase_b_front_gradient_linf()
         const size_t vid = v.vid(*this);
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
         if (vertex_boundary_mask(vid) != 0) continue; // pinned: not placed by Phase B
-        if (vid < m_placement_pressed.size() && m_placement_pressed[vid]) continue; // constrained minimum
-        const double gn = m_front_gradient_reference > 0. || m_offset_params.phase_b_conv_criterion != "gradient_norm_rel"
+        if (vid < m_placement_pressed.size() && m_placement_pressed[vid])
+            continue; // constrained minimum
+        const double gn = m_front_gradient_reference > 0. ||
+                                  m_offset_params.phase_b_conv_criterion != "gradient_norm_rel"
                               ? front_vertex_conv_ratio(vid)
                               : front_vertex_normal_gradient(vid);
         if (gn > worst) {
@@ -3108,7 +3127,8 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
     const std::string& crit = m_offset_params.phase_b_conv_criterion;
     if (crit == "gradient_norm_rel") {
         const double bar = rel * m_front_gradient_reference;
-        return bar > 0. ? front_vertex_normal_gradient(vid) / bar : std::numeric_limits<double>::infinity();
+        return bar > 0. ? front_vertex_normal_gradient(vid) / bar
+                        : std::numeric_limits<double>::infinity();
     }
     const Vector2d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(2);
@@ -3139,7 +3159,7 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
         const double bar = rel * m_front_gradient_reference;
         return bar > 0. ? r / bar : std::numeric_limits<double>::infinity();
     }
-    // RESOLUTION IS THE ENVELOPE'S BUSINESS, NOT rel's (Uday, 2026-08-25): sagitta <= 
+    // RESOLUTION IS THE ENVELOPE'S BUSINESS, NOT rel's (Uday, 2026-08-25): sagitta <=
     // ab_offset_envelope_rel x c, i.e. |r(m) - mean r| <= ab_offset_envelope_rel -- the level set
     // is resolved to within the tube Phase A already lets the front wander in. rel is the
     // convergence tolerance only; tying the edge test to it made a safe rel (0.01, needed so a
@@ -3148,7 +3168,8 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
     const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
     const int reg = edge_region(a, b);
     const std::shared_ptr<const OffsetPotential2D> pot =
-        (reg >= 0 && size_t(reg) < m_region_potentials.size()) ? m_region_potentials[size_t(reg)] : m_offset_potential;
+        (reg >= 0 && size_t(reg) < m_region_potentials.size()) ? m_region_potentials[size_t(reg)]
+                                                               : m_offset_potential;
     const double c = pot->target_level();
     return (r * c / (2. * (1. - m_params.w_amips))) / m_offset_params.ab_offset_envelope_rel;
 }
@@ -3171,8 +3192,7 @@ double TopoOffsetTriMesh::phase_b_band_gradient_linf()
     return gradient_split(/*include_edge_samples=*/false).max_at_vertex;
 }
 
-namespace {
-} // namespace
+namespace {} // namespace
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_energy(
     const size_t vid,
@@ -3922,7 +3942,8 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
-            if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
+            if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded)
+                continue;
             const Vector2d nrm = offset_vertex_normal(vid);
             Vector2d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
             if (!(nrm.norm() > 0.) || !(g.norm() > 0.) || !g.allFinite()) continue;
@@ -4050,21 +4071,22 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         }
         // The run's own convergence bar: once the band is under it there is nothing another
         // round could do with a better-placed boundary.
-        // Under the "dist_and_orient" criterion the vertex half is judged in length units instead, the
-        // same bar the loop will apply; the gradient is still logged above for comparison.
-        // THE PASS STOP IS THE SOLVER'S OWN QUESTION (Uday, 2026-08-25): the max over the placed
-        // front vertices of ||grad F||, F the full Phase B objective as the shared smoother
-        // assembles it, against phase_b_conv_rel x ONE reference -- the same max on
-        // the band as constructed, measured once before round 1 (m_front_gradient_reference).
-        // Not relative to each Phase B's entry: later rounds enter already close, and a fraction
-        // of that is a bar that tightens by accident. Newton drives the gradient to zero; the
-        // geometric halves (distance, edge samples, orientation) remain the LOOP's stop.
+        // Under the "dist_and_orient" criterion the vertex half is judged in length units instead,
+        // the same bar the loop will apply; the gradient is still logged above for comparison. THE
+        // PASS STOP IS THE SOLVER'S OWN QUESTION (Uday, 2026-08-25): the max over the placed front
+        // vertices of ||grad F||, F the full Phase B objective as the shared smoother assembles it,
+        // against phase_b_conv_rel x ONE reference -- the same max on the band as constructed,
+        // measured once before round 1 (m_front_gradient_reference). Not relative to each Phase B's
+        // entry: later rounds enter already close, and a fraction of that is a bar that tightens by
+        // accident. Newton drives the gradient to zero; the geometric halves (distance, edge
+        // samples, orientation) remain the LOOP's stop.
         const double eg = phase_b_front_gradient_linf();
         bool under_bar = eg <= 1.; // eg is the ratio to the bar, see phase_b_front_gradient_linf()
         {
             const size_t wv = m_front_gradient_worst_vid;
             logger().info(
-                "\t[phase B] pass {}: vertex test ({}) max {:.4}x the bar ({}) | worst vertex {} at "
+                "\t[phase B] pass {}: vertex test ({}) max {:.4}x the bar ({}) | worst vertex {} "
+                "at "
                 "({:.4f}, {:.4f})",
                 pass + 1,
                 m_offset_params.phase_b_conv_criterion,
@@ -4283,7 +4305,9 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         m_offset_params.phase_b_conv_criterion,
         m_offset_params.phase_b_conv_rel,
         m_offset_params.phase_b_conv_criterion == "gradient_norm_rel"
-            ? fmt::format(" => bar {:.6g}", m_offset_params.phase_b_conv_rel * m_front_gradient_reference)
+            ? fmt::format(
+                  " => bar {:.6g}",
+                  m_offset_params.phase_b_conv_rel * m_front_gradient_reference)
             : std::string());
     // PHASE A RUNS WHEN THE SIZING CHANGED (Uday, 2026-08-25): round 1 always, afterwards only
     // after the edge test halved something. Phase A is the response to a new sizing field; on
@@ -4304,9 +4328,10 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         std::set<std::pair<size_t, size_t>> over;
         for (const Tuple& e : get_edges()) {
             const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
-            const double sr =
-                0.5 * (m_vertex_attribute[a].m_sizing_scalar + m_vertex_attribute[b].m_sizing_scalar);
-            if (get_length2(e) > m_params.splitting_l2 * sr * sr) over.emplace(std::min(a, b), std::max(a, b));
+            const double sr = 0.5 * (m_vertex_attribute[a].m_sizing_scalar +
+                                     m_vertex_attribute[b].m_sizing_scalar);
+            if (get_length2(e) > m_params.splitting_l2 * sr * sr)
+                over.emplace(std::min(a, b), std::max(a, b));
         }
         return over;
     };
@@ -4319,7 +4344,8 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         // ---- PHASE A: TriWild, with the offset held inside its envelope ----
         if (!sizing_changed) {
             logger().info(
-                "======== A/B round {} / {}: phase A skipped, sizing unchanged; phase B continues ========",
+                "======== A/B round {} / {}: phase A skipped, sizing unchanged; phase B continues "
+                "========",
                 round + 1,
                 rounds);
         } else {
@@ -4360,7 +4386,8 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
                 // (envelope too tight / unfixable elements) and this is what tells them apart.
                 log_refine_block_census(fmt::format("round {} phase A gave up", round + 1), bar);
                 log_and_throw_error(
-                    "Phase A did not converge within {} iterations: max element quality {:.6} against "
+                    "Phase A did not converge within {} iterations: max element quality {:.6} "
+                    "against "
                     "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
                     "{}), or the mesh has elements no operation can fix.",
                     a_iters,
@@ -4368,7 +4395,10 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
                     bar,
                     m_offset_params.ab_offset_envelope_rel);
             }
-            logger().info("\t[phase A] converged: max element quality {:.4} (stop {:.4})", amips, bar);
+            logger().info(
+                "\t[phase A] converged: max element quality {:.4} (stop {:.4})",
+                amips,
+                bar);
             // Phase A collapses can merge an offset vertex into an input one, and
             // collapse_after_vertex() ORs both flags onto the survivor.
             check_no_vertex_on_both_surfaces(fmt::format("round {} phase A", round + 1).c_str());
@@ -4509,7 +4539,8 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
             max_quality_after_b < m_params.stop_energy ? "ok" : "OVER (for information)");
         if (phi <= 1.0) {
             logger().info(
-                "A/B converged after {} round(s): amips {:.4}x, phi {:.4}x, max AMIPS after B {:.6g}",
+                "A/B converged after {} round(s): amips {:.4}x, phi {:.4}x, max AMIPS after B "
+                "{:.6g}",
                 round + 1,
                 amips,
                 phi,
@@ -4558,7 +4589,8 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         }
         sizing_changed = n_halved > 0 || n_new_long > 0;
         logger().info(
-            "\t[A/B round {}] sizing {}: {} vertices halved, {} edges over the split threshold that "
+            "\t[A/B round {}] sizing {}: {} vertices halved, {} edges over the split threshold "
+            "that "
             "were not after phase A -> next phase A {}",
             round + 1,
             sizing_changed ? "violated" : "satisfied",
