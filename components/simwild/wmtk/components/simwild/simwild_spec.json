@@ -22,6 +22,7 @@
       "eps_simplify_rel",
       "optimize_envelope_around_simplified",
       "eps_simplify",
+      "remove_duplicate_eps",
       "order2_envelope_ratio",
       "length",
       "length_rel",
@@ -226,6 +227,12 @@
     "type": "float",
     "default": -1,
     "doc": "Absolute envelope thickness for the initial simplification. If this value is negative, the relative envelope thickness is used to compute the absolute one. Will be ignored if skip_simplify is true or the input is already a tet mesh."
+  },
+  {
+    "pointer": "/remove_duplicate_eps",
+    "type": "float",
+    "default": 0,
+    "doc": "Remove duplicate vertices in the input meshes that are closer than this fraction of the bounding box diagonal. Applied to each input file separately, right after it is read and before it is split into connected components -- unmerged coincident vertices would otherwise leave one surface looking like several. 0 merges only exactly coincident vertices; negative skips the pass entirely."
   },
   {
     "pointer": "/order2_envelope_ratio",
