@@ -687,10 +687,93 @@ OffsetEnergy<DIM>::OffsetEnergy(
 {}
 
 
+AlignEnergy2D::AlignEnergy2D(
+    const std::shared_ptr<const OffsetPotential2D>& potential,
+    std::vector<Edge> edges,
+    const double outward_sign,
+    const double weight)
+    : m_potential(potential)
+    , m_edges(std::move(edges))
+    , m_sign(outward_sign)
+    , m_weight(weight)
+{}
+
+void AlignEnergy2D::residual(
+    const Eigen::Vector2d& x,
+    const Edge& e,
+    double& r,
+    Eigen::Vector2d& J) const
+{
+    r = 0.;
+    J.setZero();
+    // The edge's outward unit normal and its derivative. t = (q - x) / |q - x|,
+    // dt/dx = -(I - t t^T) / |q - x|; n = sigma R90 t, R90 = [[0, -1], [1, 0]].
+    const Eigen::Vector2d d = e.q - x;
+    const double len = d.norm();
+    if (!(len > 0.)) return;
+    const Eigen::Vector2d t = d / len;
+    const Eigen::Matrix2d R90 = (Eigen::Matrix2d() << 0., -1., 1., 0.).finished();
+    const Eigen::Vector2d n = e.sigma * (R90 * t);
+    const Eigen::Matrix2d dn_dx = -e.sigma * R90 * (Eigen::Matrix2d::Identity() - t * t.transpose()) / len;
+    // The field's outward unit direction at the midpoint and its derivative:
+    // m = (x + q) / 2, u = grad Phi / |grad Phi|, du/dm = (I - u u^T) H / |grad Phi|, dm/dx = 1/2.
+    const Eigen::Vector2d m = 0.5 * (x + e.q);
+    const Eigen::Vector2d g = m_potential->gradient(m);
+    const double gn = g.norm();
+    if (!std::isfinite(gn) || gn <= 1e-300) return;
+    const Eigen::Vector2d u = g / gn;
+    const Eigen::Matrix2d H = m_potential->hessian(m);
+    if (!H.allFinite()) return;
+    const Eigen::Vector2d ghat = m_sign * u;
+    const Eigen::Matrix2d dghat_dx = 0.5 * m_sign * (Eigen::Matrix2d::Identity() - u * u.transpose()) * H / gn;
+    r = 1. - n.dot(ghat);
+    // d r / dx = -(dn/dx)^T ghat - (dghat/dx)^T n
+    J = -(dn_dx.transpose() * ghat) - (dghat_dx.transpose() * n);
+}
+
+double AlignEnergy2D::value(const TVector& x)
+{
+    double E = 0., r;
+    Eigen::Vector2d J;
+    for (const Edge& e : m_edges) {
+        residual(x.head(2), e, r, J);
+        E += m_weight * r * r;
+    }
+    return E;
+}
+
+void AlignEnergy2D::gradient(const TVector& x, TVector& gradv)
+{
+    Eigen::Vector2d G = Eigen::Vector2d::Zero(), J;
+    double r;
+    for (const Edge& e : m_edges) {
+        residual(x.head(2), e, r, J);
+        G += 2. * m_weight * r * J;
+    }
+    gradv = G;
+}
+
+void AlignEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    Eigen::Matrix2d Hs = Eigen::Matrix2d::Zero();
+    Eigen::Vector2d J;
+    double r;
+    for (const Edge& e : m_edges) {
+        residual(x.head(2), e, r, J);
+        Hs += 2. * m_weight * J * J.transpose();
+    }
+    hessian = Hs;
+}
+
 template <int DIM>
 double OffsetEnergy<DIM>::value(const TVector& x)
 {
-    const double r = m_potential->value(VecD(x.head(DIM))) - m_potential->target_level();
+    // NORMALISED BY THE LEVEL (Uday, 2026-08-25): r = (Phi - c) / c, so the term is O(1) for
+    // every field and every target_distance. The Euclidean field has c = 1 and is unchanged; the
+    // smooth potential's c ranges 0.19-2.4 across the two_circles deltas, which scaled this term
+    // by up to 6x against AMIPS and the alignment term. Gradient and Hessian below carry 1/c.
+    const double c = std::max(m_potential->target_level(), 1e-300);
+    const double r = (m_potential->value(VecD(x.head(DIM))) - c) / c;
     return m_weight * r * r;
 }
 
@@ -699,8 +782,9 @@ template <int DIM>
 void OffsetEnergy<DIM>::gradient(const TVector& x, TVector& gradv)
 {
     const VecD p = x.head(DIM);
-    const double r = m_potential->value(p) - m_potential->target_level();
-    gradv = 2. * m_weight * r * m_potential->gradient(p);
+    const double c = std::max(m_potential->target_level(), 1e-300);
+    const double r = (m_potential->value(p) - c) / c;
+    gradv = 2. * m_weight * r * m_potential->gradient(p) / c;
 }
 
 
@@ -708,11 +792,12 @@ template <int DIM>
 void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 {
     const VecD p = x.head(DIM);
-    const VecD g = m_potential->gradient(p);
+    const double c = std::max(m_potential->target_level(), 1e-300);
+    const VecD g = m_potential->gradient(p) / c;
     MatD H = 2. * m_weight * g * g.transpose();
     if (!m_gauss_newton) {
-        const double r = m_potential->value(p) - m_potential->target_level();
-        H += 2. * m_weight * r * m_potential->hessian(p);
+        const double r = (m_potential->value(p) - c) / c;
+        H += 2. * m_weight * r * m_potential->hessian(p) / c;
     }
     hessian = H;
 }

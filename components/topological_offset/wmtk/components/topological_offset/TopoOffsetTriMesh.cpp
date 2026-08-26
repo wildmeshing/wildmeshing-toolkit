@@ -219,7 +219,16 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
         m_tag_polyline.clear();
         for (const auto& [tag, bucket] : tag_edges) {
             if (bucket.empty()) continue; // offset_output_tag ids with no faces yet
-            auto env = std::make_shared<SampleEnvelope>();
+            // EXACT (Uday, 2026-08-25): the sampled test decides by where its sample points fall.
+            // A 0.151 input chord at the tube wall passed the collapse's whole-segment test by
+            // 4e-5 and failed the split's half-segment test by 2e-5, leaving an edge TriWild
+            // could neither split nor collapse; the split pass then gnawed around it into 1203
+            // zero-area faces. The exact envelope answers the same question for any sub-segment.
+            // NAMING: SampleEnvelope is the toolkit's only envelope class (a TetWild inheritance);
+            // its constructor flag selects the engine -- true = fast-envelope's exact predicates,
+            // false = the sampled test. TetWild and TriWild build theirs exact by default; the
+            // 3D offset (TopoOffsetTetMesh.cpp) still builds its three envelopes sampled.
+            auto env = std::make_shared<SampleEnvelope>(/*exact=*/true);
             env->init(tempV, bucket, m_envelope_eps);
             m_tag_envelopes[tag] = env;
             members.push_back(env);

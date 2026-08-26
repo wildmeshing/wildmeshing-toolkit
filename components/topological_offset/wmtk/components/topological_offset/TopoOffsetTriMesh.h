@@ -1,6 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.h>
 #include <wmtk/TriOptimizerMesh.h>
+#include <wmtk/optimization/EnergySum.hpp>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -304,7 +305,7 @@ public:
      * itself being refused whenever it would leave the tube.
      *
      * Why the change (2026-08-23): refusal cannot express "go as far as you may". On
-     * topo_annots_groups at convergence_gradient_norm_rel 1e-3, four junction vertices reported
+     * topo_annots_groups at phase_b_conv_rel 1e-3, four junction vertices reported
      * `EnvelopeBlocked` in EVERY pass of EVERY round -- every trial length along the descent
      * direction left the tube, so they never moved at all, and one of them (v208, Phi/c = 5.6)
      * set max_grad at 3.61 against a bar of 0.0339 for all ten rounds while 115k operations ran
@@ -395,28 +396,16 @@ public:
     /// Which phase is running. Read by every hook that differs between them; see OptPhase.
     OptPhase m_phase = OptPhase::A;
 
-    /**
-     * @brief Phase B's two sub-sweeps, run in this order within every smoothing pass.
-     *
-     * Offset: place every offset-boundary vertex on the level set, by the 1-D minimization of
-     * (Phi - c)^2 along grad Phi, backtracked into the one-ring if the minimum lies outside it.
-     * Background: relax the interior by AMIPS, under the boundary those placements just defined.
-     *
-     * SEPARATE SWEEPS, NOT ONE INTERLEAVED PASS. Relaxing the background against the PREVIOUS
-     * pass's boundary spends the work on a configuration that is about to move, and interleaving
-     * makes each vertex's one-ring a moving target for its neighbours within the same sweep --
-     * so the backtracking a placement hits depends on the visit order rather than on the
-     * geometry. Ordering them makes the pass mean "place, then relieve what the placement cost".
-     *
-     * smooth_before() reads this and refuses the other class outright, so the two sweeps share
-     * all of the executor, counters and accept gates and differ only in who they admit.
-     */
-    enum class PhaseBSub { Offset, Background };
-    PhaseBSub m_phase_b_sub = PhaseBSub::Offset;
+    // Phase B is ONE sweep over every vertex per pass (Uday, 2026-08-25): a front vertex is
+    // placed by smooth_offset_vertex_backtracking(), an interior one relaxed by
+    // the shared smoother, in mesh order -- see smooth_before(). It replaced two
+    // ordered sub-sweeps (front first, then interior), measured to reach the same fixed point.
 
     /// DIAGNOSTIC: set by the driver after the first round when
     /// ab_no_collapse_after_first_round is on, and read by collapse_edge_before().
     bool m_ab_collapses_disabled = false;
+    /// The final Phase A: front vertices are not smoothed (see smooth_before()).
+    bool m_freeze_front = false;
 
     // NO offset_criterion_gates_operations(). It gated a non-degrading Phi test on every
     // collapse and swap in Phase B, which is TETWILD PARITY'S opposite: the envelope is the
@@ -460,7 +449,7 @@ public:
 
     /// Phase B's smoothing loop. Each pass sweeps every vertex once: offset vertices are placed
     /// on the level set by smooth_offset_vertex_backtracking(), background (interior) vertices
-    /// minimize their one-ring AMIPS by smooth_interior_vertex_phase_b() -- each visit runs its
+    /// minimize their one-ring AMIPS by the shared smoother -- each visit runs its
     /// vertex's local solve under the run's own gradient bar (offset placement) or to
     /// ab_vertex_grad_tol_rel of its entry gradient (interior AMIPS).
     /// Returns the number of passes run; the natural exit is a pass in which NO offset vertex
@@ -469,17 +458,12 @@ public:
     /// ab_smooth_max_passes cap).
     size_t phase_b_smooth();
 
-    /**
-     * @brief Phase B's placement of an offset-boundary vertex: the 1-D minimization of
-     * E = (Phi - c)^2 along grad Phi, Levenberg-Marquardt damped, backtracked into the one-ring
-     * by bisection if the minimum would invert it.
-     *
-     * See the definition, and the 3D twin it is a transcription of, for why this is not a 3-D
-     * (here 2-D) minimization of E -- the Gauss-Newton Hessian 2 g g^T is RANK ONE, so it fixes
-     * one degree of freedom and lets the tangential one drift -- and for why the step is damped
-     * rather than the plain Gauss-Newton step, which is singular exactly at a pinch minimum.
-     */
-    bool smooth_offset_vertex_backtracking(const Tuple& t);
+    /// Max over the front vertices Phase B places of ||grad F||, F the vertex's full Phase B
+    /// objective (AMIPS + the offset terms, as the shared smoother assembles it). The pass stop.
+    double phase_b_front_gradient_linf();
+    /// Its value on the band as constructed, measured once before round 1: the reference the
+    /// Phase B pass stop is a fraction of.
+    double m_front_gradient_reference = 0.;
 
     /**
      * @brief Phase B's placement of a background vertex: Newton on the one-ring AMIPS energy,
@@ -491,7 +475,6 @@ public:
      * criterion. Reuses the shared smoother (optimization::smooth_vertex_2d) with Phase B's own
      * solver, configured to stop at ab_vertex_grad_tol_rel of the visit's initial gradient.
      */
-    bool smooth_interior_vertex_phase_b(const Tuple& t);
 
     /**
      * @brief L-inf over offset vertices of |grad (Phi - c)^2| -- the gradient of the same
@@ -955,7 +938,7 @@ public:
         std::atomic<int> attempted{0}; ///< smooth_before() entered
         std::atomic<int> before_bbox{0}; ///< base smooth_before said no: on the bounding box
         std::atomic<int> before_unrounded{0}; ///< base smooth_before said no: could not round
-        std::atomic<int> before_phase_b_not_offset{0}; ///< Phase B: wrong class for this sub-sweep
+        std::atomic<int> before_phase_b_not_offset{0}; ///< Phase B: on an input surface, neither placed nor relaxed
         std::atomic<int> before_phase_b_enveloped_background{0}; ///< Phase B: envelope-held
         std::atomic<int> before_phase_b_enveloped_offset{0}; ///< Phase B: on-offset AND held
         std::atomic<int> offset_attempted{0}; ///< reached the smoother with the offset term
@@ -1060,100 +1043,6 @@ public:
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_parent_flatness;
     void log_smooth_trace() const;
 
-    /**
-     * @brief WHERE A PHASE B OFFSET PLACEMENT STOPPED, and therefore why the vertex did or did
-     *        not move.
-     *
-     * smooth_offset_vertex_backtracking() has a dozen exits and only three of them mean "this
-     * vertex is where it wants to be". The counters that existed before could not tell them apart:
-     * `constrained` lumps the two ring refusals together, and everything else -- including the
-     * paths that put the vertex back exactly where it started and return true -- was reported as
-     * `placed`. A vertex that never took a step looked identical in the log to one that walked
-     * onto the level set, which is exactly the question "some vertices are not moving" asks.
-     *
-     * The zero-entry-gradient cases are the ones worth separating. q = ||2 (Phi - c) grad
-     * Phi|| is zero when Phi == c (done) or when grad Phi == 0 (a pinch minimum, a legitimate
-     * stationary point of E), and negative where the field came back non-finite. Only the
-     * first is convergence.
-     */
-    enum class PlacementStop : int {
-        Moved = 0, ///< took >= 1 step and got under the run's own gradient bar
-        IterCap, ///< moved, but ran out of kMaxDescentIters (2 delta of travel)
-        RingBlocked, ///< the FIRST trial step inverted the one ring: displacement is exactly 0
-        LeftRing, ///< left the ring after >= 1 accepted step; kept the last inside position
-        MidStationary, ///< grad E hit zero part-way down the walk
-        MidNonFinite, ///< Phi or grad Phi went non-finite part-way down the walk
-        PreInverted, ///< a one-ring face was already inverted in floats on entry
-        NoRing, ///< empty one-ring
-        OnLevelSet, ///< q(entry) == 0 because Phi == c. Clean "nothing to do".
-        UnderBar, ///< q(entry) already <= the run's convergence bar; equally clean
-        Stationary, ///< q(entry) == 0 because grad Phi == 0 (pinch minimum)
-        NonFinite, ///< Phi, grad Phi, or the vertex position itself non-finite at entry
-        LeftOffset, ///< the step would have left the closed offset region {Phi >= c}; refused
-        EnvelopeBlocked, ///< no tangent could be resolved on the vertex's own boundary curve
-        ChordBlocked, ///< sliding any distance put an incident region edge outside its tube
-        /// PRESSED: every trial step that kept the ring valid put an incident face over
-        /// stop_energy (or made one already over it worse). The vertex is held by the MESH's
-        /// quality bar, not by the field -- the two-fronts seam. See smooth_offset_vertex_backtracking.
-        QualityBound,
-        COUNT
-    };
-    static const char* placement_stop_name(PlacementStop s);
-
-    struct PlacementTrace
-    {
-        static constexpr size_t N = size_t(PlacementStop::COUNT);
-
-        /// One vertex, kept per reason so a count can be turned into something to go and look
-        /// at. The one kept is the worst: largest |Phi - c|, i.e. the furthest off the level set.
-        struct Exemplar
-        {
-            size_t vid = size_t(-1);
-            double res = 0.; ///< Phi - c at entry; 0 where it was never measured
-            double gnorm = 0.; ///< |grad Phi| at entry
-            double cosn = 0.; ///< |grad Phi . n| / (|grad Phi| |n|) -- 0 is exactly tangent
-            double nnorm = 0.; ///< |n|; 0 means offset_surface_normal() found nothing
-            double disp = 0.; ///< how far the vertex actually moved this visit
-            int iters = 0; ///< accepted descent steps
-            double x = 0., y = 0.; ///< where it is, so it can be found in the viewer
-        };
-
-        std::array<std::atomic<int>, N> n{};
-        std::array<std::atomic<int>, N> n_reachable{}; ///< ... of which gate convergence
-        std::atomic<int> moved_one_step{0}; ///< Moved, but with exactly one step
-        std::mutex mtx;
-        std::array<Exemplar, N> worst{};
-
-        void reset()
-        {
-            for (size_t i = 0; i < N; ++i) {
-                n[i].store(0);
-                n_reachable[i].store(0);
-                worst[i] = Exemplar{};
-            }
-            moved_one_step.store(0);
-        }
-
-        void record(PlacementStop s, bool reachable, const Exemplar& e)
-        {
-            const size_t i = size_t(s);
-            ++n[i];
-            if (reachable) ++n_reachable[i];
-            // Racy pre-check, then the real one under the lock: this runs once per offset vertex
-            // per pass and the exemplar is a diagnostic, so the cost matters more than which of
-            // two equally bad vertices wins a tie. The empty test comes first so that every
-            // non-zero count is guaranteed an exemplar, including the reasons whose residual is
-            // never measured (an inverted ring is refused before Phi is ever evaluated).
-            const bool empty = worst[i].vid == size_t(-1);
-            if (!empty && std::abs(e.res) <= std::abs(worst[i].res)) return;
-            std::lock_guard<std::mutex> lock(mtx);
-            if (worst[i].vid == size_t(-1) || std::abs(e.res) > std::abs(worst[i].res)) {
-                worst[i] = e;
-            }
-        }
-    };
-    PlacementTrace m_placement_trace;
-    void log_placement_trace() const;
 
     /**
      * @brief AUDIT THE PHASE B CONTRACT: no offset-boundary vertex may be envelope-held there.
@@ -1215,12 +1104,6 @@ public:
     /// ends with this at zero is the loop's natural exit.
     mutable std::atomic<int> m_phase_b_constrained{0};
 
-    /// How many offset placements ran under the DEFAULT (normal-projected gradient) term but had
-    /// no usable n_i, so the term fell back to the plain quadratic error. Never reset -- it is a
-    /// run total, reported at the end of each Phase B. The invariant is 0; a nonzero count means
-    /// offset_vertex_normal() is returning the zero vector for real vertices, which is worth
-    /// knowing before reading the placement numbers.
-    mutable std::atomic<int> m_placement_no_normal{0};
 
     /// How many Phase B offset placements found the vertex ALREADY outside its own envelope on
     /// entry. Since 2026-08-23 this disables nothing -- the post-step projection pulls such a
@@ -1530,15 +1413,56 @@ public:
         return containment_for(vertex_boundary_mask(vid), m_vertex_extra[vid].m_is_on_offset);
     }
 
-    // NO smoothing_extra_energy OVERRIDE. The base's nullptr is correct for both phases now.
-    //
-    // This used to hand Phase B an OffsetEnergy2D so the offset term was minimised by the shared
-    // AMIPS solver. Phase B no longer uses that solver for the offset at all: offset-only
-    // vertices go through smooth_offset_vertex_backtracking()'s 1-D root find, and
-    // smooth_before() refuses every other vertex in that sub-sweep. Phase A carries no offset
-    // term either -- it is TriWild, and the offset boundary is held there by m_offset_envelope,
-    // not by an energy. So the hook has no caller left in either phase. OffsetEnergy2D itself
-    // survives; gradient_split() still builds one to measure the placement gradient.
+    /**
+     * @brief PHASE B PLACEMENT OF A FRONT VERTEX: the shared smoother with the offset's options
+     * (Uday, 2026-08-25). Same 2-D Newton solve, line search and accept tests as any TriWild
+     * vertex; the objective carries the offset terms through smoothing_extra_energy(); no
+     * quality veto, because a front vertex has to be able to worsen its ring on its way to the
+     * level set (with TriWild's strict veto 3 of 292 moved per pass; with a bar of stop_energy a
+     * vertex 0.14 out on a 0.02 offset never moved: its whole solve was refused every pass).
+     * Element shape is Phase A's job. Measured: smooth 0.04 converges in 1-6 rounds, front within
+     * 0.14x of a 1% distance bar.
+     *
+     * A 1-D placement along the field normal was tried in between (2026-08-25, 14:30-15:00):
+     * seams stopped sliding, but at a seam the strip is crushed to F's minimum and Phase A's
+     * split pass then makes a degenerate element; parked, in the session snapshot.
+     */
+    bool smooth_front_vertex_phase_b(const Tuple& t);
+    /// ||grad F|| at front vertex vid, F the objective smooth_front_vertex_phase_b() minimises.
+    /// +inf if unmeasurable. The pass stop and the loop's vertex test.
+    double front_vertex_normal_gradient(size_t vid) const;
+    /// The vertex's convergence measure divided by its bar, per phase_b_conv_criterion: 1 is the
+    /// bar. See the spec entry for the three measures. Infinite when unmeasurable.
+    double front_vertex_conv_ratio(size_t vid) const;
+    /// The edge test divided by its bar (1 = bar), per phase_b_conv_criterion; -1 unmeasurable.
+    double edge_conv_ratio(const Tuple& e) const;
+    mutable size_t m_front_gradient_worst_vid = static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
+    /// The field's outward unit direction at front vertex vid (zero where grad Phi vanishes).
+    Vector2d front_vertex_normal(size_t vid) const;
+    /// The Phase B objective of front vertex vid with the vertex at x: AMIPS of its one-ring +
+    /// phase_b_front_energy(). What the measure above differentiates.
+    std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_objective(size_t vid, const Vector2d& x) const;
+    /// Phase B's offset terms, handed to the shared smoother for a front vertex it is placing.
+    /// Null in Phase A (the front is held by m_offset_envelope and carries no term) and for a
+    /// front vertex an input envelope also pins.
+    std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t vid) const override
+    {
+        if (m_phase != OptPhase::B || !m_offset_potential) return nullptr;
+        if (!m_vertex_extra[vid].m_is_on_offset || vertex_boundary_mask(vid) != 0) return nullptr;
+        const int r = vertex_region(vid);
+        const std::shared_ptr<const OffsetPotential2D> pot =
+            (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
+                                                                : m_offset_potential;
+        return phase_b_front_energy(vid, pot);
+    }
+    /// The two offset terms for a front vertex, see smooth_front_vertex_phase_b(): the zeroth-order
+    /// (OffsetEnergy2D) and the first-order one (AlignEnergy2D, one residual per incident live
+    /// front edge). Defined in Optimize2d.cpp, next to the criterion that measures the same
+    /// quantities.
+    std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_energy(
+        size_t vid,
+        const std::shared_ptr<const OffsetPotential2D>& pot) const;
 
     /**
      * @brief The loop's convergence metric, normalized so that 1.0 means "done".
@@ -1547,7 +1471,7 @@ public:
      * target, so mesh_improvement() stops exactly when both are met:
      *
      *   - max face AMIPS over stop_energy -- TriWild's, via quality_rel()
-     *   - max Phi residual over (convergence_gradient_norm_rel / 2) * target_distance, over the REACHABLE band
+     *   - max Phi residual over (phase_b_conv_rel / 2) * target_distance, over the REACHABLE band
      *
      * The average returned alongside it is the same expression over the two averages, so both
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
@@ -1633,7 +1557,7 @@ public:
         // Zero until measure_gradient_reference() runs, which would make the bound 1e-16 and
         // convergence unreachable rather than free -- see that function.
         return std::max(
-            m_offset_params.convergence_gradient_norm_rel * m_gradient_reference,
+            m_offset_params.phase_b_conv_rel * m_gradient_reference,
             1e-16);
     }
 
@@ -1821,51 +1745,48 @@ public:
     GradientSplit gradient_split(bool include_edge_samples = true) const;
 
     /**
-     * @brief The "dist_and_orient" convergence criterion (convergence_criterion = "dist_and_orient").
+     * @brief The "energy_gradient" criterion (Uday, 2026-08-25): the front is at a critical point
+     * of Phase B's energy, and every edge resolves the pull that drives it there.
      *
-     * Three questions, all in units of target_distance, all required:
-     *  - PLACED: every reachable offset vertex within eps of the level set, eps =
-     *    convergence_distance_rel x target_distance, distance taken first order as
-     *    |Phi - c| / |grad Phi|.
-     *  - RESOLVED: every edge-interior sample (offset_residual_samples per edge, both endpoints
-     *    reachable) within the same eps. Only refinement lowers this half.
-     *  - ORIENTED: every offset edge's outward normal within convergence_orientation_max_deg of
-     *    the field's outward direction at the edge midpoint. Signed, so a fold fails outright.
-     *
-     * A point where |grad Phi| vanishes (outside the potential's support) has no distance; it is
-     * counted in n_outside_support and the criterion is not met while any exist.
-     *
-     * Why this exists next to the gradient criterion: see convergence_criterion in the spec.
+     * One bar for everything, B = phase_b_conv_rel x m_front_gradient_reference:
+     *  - VERTICES: max over the placed front vertices of ||grad F||, F the vertex's full Phase B
+     *    objective (AMIPS + the two offset terms, as the shared smoother assembles it) -- the same
+     *    quantity and bar as the Phase B pass stop.
+     *  - EDGES, THE INTERPOLATION TEST: with r(x) = (Phi(x) - c) / c on the edge's region's
+     *    field, every live front edge (a, b) with midpoint m must satisfy
+     *    (2 w / c) |r(m) - (r(a) + r(b)) / 2| <= B, w = 1 - w_amips. That is the second
+     *    difference of the offset residual along the edge, in the units of the offset term's
+     *    gradient (2 w / c) r grad Phi: how far the level set curves away from the chord, which
+     *    halving the edge reduces; the bar is ab_offset_envelope_rel x c under step_size_rel and
+     *    decrement (see edge_conv_ratio()). It was first the gradient's own interpolation error,
+     *    ||g(m) - (g(a) + g(b)) / 2||; that is r x (change of grad Phi) and at a pressed seam
+     *    (r ~ 0.3-0.5) it read the press, not the resolution -- see
+     *    edge_interpolation_residual() for the measurement. No AMIPS at the midpoint (a virtual
+     *    split's lopsided children carried an O(w/h) AMIPS pull that never vanished -- measured
+     *    2026-08-25, 30x the bar after eight rounds of refinement), no length units.
+     * The sizing rule halves an edge whose endpoints pass and which fails the interpolation
+     * test. dist_and_orient is still logged for information.
      */
-    struct DistanceCriterion
+    struct EnergyCriterion
     {
-        double max_vertex_dist = 0., max_edge_dist = 0.; ///< model units
-        double max_vertex_rel = 0., max_edge_rel = 0.; ///< the same over eps; 1 is the bar
-        double min_cos = 1.; ///< min over edges of outward-normal . field-outward
-        double worst_angle_deg = 0.;
-        size_t n_folded = 0; ///< edges with min_cos < 0: outward normal points into the band
-        size_t n_outside_support = 0;
-        size_t n_vertices = 0, n_edges = 0, n_samples = 0;
-        size_t n_pressed = 0, n_edges_pressed = 0; ///< excluded: see m_placement_pressed
-        size_t worst_vid = 0;
+        double max_vertex = 0., max_edge = 0.; ///< RATIOS to the bar (1 = bar): the vertex measure per phase_b_conv_criterion; the edge test
+        double bar = 1.; ///< the ratios' bar, 1
+        size_t n_vertices = 0, n_edges = 0, n_unmeasurable = 0;
+        size_t n_pressed = 0, n_edges_pressed = 0; ///< skipped: pressed (see m_placement_pressed)
+        size_t worst_vid = static_cast<size_t>(-1);
         Vector2d worst_edge_mid = Vector2d::Zero();
-        bool placed = false, resolved = false, oriented = false;
-        bool converged() const { return placed && resolved && oriented; }
-        /// One number for the driver to log and gate on, > 1 meaning not converged. The two
-        /// distance halves are genuine ratios; an orientation failure or a point outside the
-        /// support has no ratio and is reported as 2 so it cannot read as converged.
-        double ratio() const
-        {
-            double r = std::max(max_vertex_rel, max_edge_rel);
-            if (!oriented || n_outside_support > 0) r = std::max(r, 2.);
-            return r;
-        }
+        double worst_edge_len = 0.;
+        bool vertices_ok() const { return max_vertex <= bar; }
+        bool edges_ok() const { return max_edge <= bar; }
+        bool converged() const { return vertices_ok() && edges_ok() && n_unmeasurable == 0; }
+        double ratio() const { return bar > 0. ? std::max(max_vertex, max_edge) / bar : 0.; }
     };
-    DistanceCriterion distance_criterion(bool include_edges = true) const;
-    bool use_distance_criterion() const
-    {
-        return m_offset_params.convergence_criterion == "dist_and_orient";
-    }
+    EnergyCriterion energy_criterion();
+    /// The energy criterion as measured when the A/B loop converged; the final Phase A runs
+    /// after it and the verdict must not be re-measured on that mesh.
+    std::optional<EnergyCriterion> m_energy_verdict;
+    /// The interpolation residual of front edge e, see EnergyCriterion. -1 when unmeasurable.
+    double edge_interpolation_residual(const Tuple& e) const;
 
     /**
      * @brief Unit normal of the OFFSET SURFACE at band vertex `vid`, Voronoi-length weighted.
@@ -1949,7 +1870,7 @@ public:
         // gradient is not a statement about the offset's quality -- it is a statement about the
         // constraint -- and leaving it in max_reachable makes convergence impossible by
         // construction. Measured on topo_annots_groups (tag_0 & tag_2, delta 1.2,
-        // convergence_gradient_norm_rel 1e-3): FOUR such vertices held max_grad at 3.6 against a
+        // phase_b_conv_rel 1e-3): FOUR such vertices held max_grad at 3.6 against a
         // bar of 0.0339 for all ten rounds while 115k operations ran around them, one of them at
         // Phi/c = 5.6. At the default rel of 0.2 the same run converges in one round, because the
         // bar sits above the conflict and it is invisible -- which is exactly why this needs to
@@ -2029,7 +1950,7 @@ public:
     /// unreachable by construction -- and drops edges touching one from the resolution and
     /// orientation halves; update_band_sizing_from_tolerance() does not refine such edges.
     std::vector<char> m_placement_pressed;
-    std::atomic<int> m_phase_b_pressed{0}; ///< per pass: placements that stopped on QualityBound
+    std::atomic<int> m_phase_b_pressed{0}; ///< per pass: placements the clearance guard stopped
 
     /// |grad Phi . n| / |grad Phi| below which the field's gradient counts as TANGENTIAL to the
     /// offset direction. Hard-coded rather than a spec key: it is a near-degeneracy test, not a
@@ -2180,13 +2101,18 @@ public:
     std::set<std::pair<long, long>> m_stuck_prev_cells;
     size_t m_stuck_calls = 0;
 
-    // optimization_bare_coarsen_passes() is NOT overridden: the base's true -- TriWild's opening
-    // and closing unlimited-length collapse passes -- applies, as in 3D. The override returned
-    // false on the grounds that the offset boundary "has no envelope holding it, so a bare
-    // collapse pass can only decimate it". Phase A now rebuilds m_offset_envelope before every
-    // mesh_improvement() call, so the boundary is held exactly the way TriWild's input surface
-    // is during ITS bare passes, and the premise is gone. Decimating to what the envelope
-    // tolerates is the contract, not the leak.
+    /// TriWild's bare collapse passes are OFF for the offset: the opening one (length gate off)
+    /// and the closing one, plus coarsen_mesh(). The opening pass is meant to run once on an
+    /// inserted input; the A/B loop calls mesh_improvement() every round, so it ran every round
+    /// with no length gate, and on a mesh whose faces score 2-6 the quality test alone let it
+    /// demolish the band interior and background (two_circles 0.02: 1939 -> 476 and 9510 -> 755
+    /// vertices per round, then a 10-80x rebuild by the split pass). The sizing field cannot
+    /// refuse a collapse -- only the length gate can, and that pass switches it off; the offset
+    /// envelope holds the boundary, not the interior. An earlier override returned false and was
+    /// removed on the envelope argument; measured 2026-08-25 it is the right setting: 0.02 and
+    /// 0.04 converge in 3 / 1 rounds, at 1.5-2x the vertices (the closing coarsening goes with
+    /// it). Phase A is otherwise TriWild's mesh_improvement(), untouched.
+    bool optimization_bare_coarsen_passes() const override { return false; }
 
     /**
      * @brief A collapse is accepted by the SAME criterion the smoothing minimises.
@@ -2245,7 +2171,7 @@ public:
             // The pass this frame follows, from TriOptimizerMesh::m_debug_pass_name: the shared
             // driver writes several frames per operation group (a checkpoint after every group,
             // even one that ran nothing, plus the group's own frame), and Phase B writes one per
-            // sub-sweep, so without the name a timeline reads as identical frames in a row.
+            // sweep, so without the name a timeline reads as identical frames in a row.
             name = fmt::format(
                 "step_{:05d}_r{}{}{}{}",
                 m_debug_seq++,

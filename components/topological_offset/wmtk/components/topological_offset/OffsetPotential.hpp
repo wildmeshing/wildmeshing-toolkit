@@ -450,6 +450,57 @@ private:
 };
 
 using OffsetEnergy2D = OffsetEnergy<2>;
+
+/**
+ * @brief FIRST-ORDER OFFSET TERM: each front edge at the vertex against the field.
+ *
+ *     E(x) = w * sum over the vertex's incident front edges e of (1 - n_e(x) . g(m_e(x)))^2
+ *
+ * n_e(x) = sigma_e R90 (q_e - x) / |q_e - x| is the edge's outward unit normal (q_e the other
+ * endpoint, fixed; sigma_e = +-1 chosen at construction so the normal points away from the band),
+ * g(m) = s grad Phi(m) / |grad Phi(m)| the field's outward unit direction at the edge midpoint
+ * m_e = (x + q_e) / 2 (s = -1 for the smooth potential, larger inside; +1 for the Euclidean
+ * distance). It is the orientation criterion's quantity, made an energy: zero when the edge lies
+ * along the level set, 4 w per edge when it points the wrong way. Uday, 2026-08-25.
+ *
+ * BOTH dependences on x are differentiated: the edge's rotation (d n_e / dx, exact) and the
+ * field's turning (d g / dx through the potential's Hessian). An earlier version froze the
+ * vertex normal for the visit, which made the term blind to a fold wherever the field is
+ * locally straight. The term's own Hessian would need the third derivative of Phi, so its
+ * block is the Gauss-Newton 2 w sum J_e J_e^T -- the same choice OffsetEnergy makes.
+ */
+class AlignEnergy2D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    struct Edge
+    {
+        Eigen::Vector2d q; ///< the other endpoint
+        double sigma; ///< +-1: sigma * R90 (q - x) points away from the band
+    };
+    AlignEnergy2D(
+        const std::shared_ptr<const OffsetPotential2D>& potential,
+        std::vector<Edge> edges,
+        double outward_sign,
+        double weight);
+    /// r_e and its derivative for one edge; r = 0 with J = 0 where grad Phi vanishes.
+    void residual(const Eigen::Vector2d& x, const Edge& e, double& r, Eigen::Vector2d& J) const;
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    std::shared_ptr<const OffsetPotential2D> m_potential;
+    std::vector<Edge> m_edges;
+    double m_sign, m_weight;
+};
 using OffsetEnergy3D = OffsetEnergy<3>;
 
 } // namespace wmtk::components::topological_offset

@@ -5,6 +5,7 @@
 #include <wmtk/utils/SizingField.hpp>
 
 #include <algorithm>
+#include <set>
 #include <cmath>
 #include <limits>
 
@@ -799,6 +800,13 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
 {
     ++m_smooth_trace.attempted;
     const size_t vid = t.vid(*this);
+    // THE FINAL PHASE A DOES NOT MOVE THE FRONT (Uday, 2026-08-25). Its smoothing is AMIPS
+    // alone with the front free anywhere inside the offset tube (0.025 x target_distance), and
+    // no Phase B follows to put the front back: measured on Euclidean 0.4, the front's turn
+    // angle per vertex went from 3.1 deg (a smooth circle: 2.6) before the final Phase A to
+    // 10.2 deg after it, max 17 -> 41 deg. The front is converged; the final pass may split,
+    // collapse and swap around it and smooth everything else.
+    if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
 
     // NEEDLE/SMOOTHING INSTRUMENTATION (diagnostic). Recorded for every visit; only visits whose
     // ring already holds a needle are counted, and smooth_after() reads this back.
@@ -821,11 +829,8 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
         return false;
     }
 
-    // PHASE B RUNS IN TWO ORDERED SUB-SWEEPS; SEE PhaseBSub.
-    //
-    // A pass places every offset-boundary vertex first, then relaxes the background under the
-    // boundary those placements just defined. This admission is what splits them -- each
-    // sub-sweep refuses the other's class outright.
+    // PHASE B IS ONE SWEEP OVER EVERY VERTEX (Uday, 2026-08-25): a front vertex is placed, an
+    // interior vertex relaxed, in mesh order. This admission decides who is visited at all.
     //
     // ENVELOPES ARE THE OTHER AXIS. Phase B runs with the offset envelope RELEASED and takes no
     // containment responsibility, so a vertex an envelope is supposed to hold has no one to hold
@@ -848,50 +853,14 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
         // both honest.)
         const bool enveloped = smoothing_containment_envelope(vid) != nullptr;
 
-        if (m_phase_b_sub == PhaseBSub::Offset) {
-            if (!is_offset) {
-                ++m_smooth_trace.before_phase_b_not_offset;
-                return false;
-            }
-            if (enveloped) {
-                // PINNED, AND NOT PLACED AT ALL. This is the default as of 2026-08-23 and it is a
-                // retreat, deliberately: an offset vertex that a region envelope also holds has
-                // two requirements that are not simultaneously satisfiable -- stay within
-                // envelope_size of the input region boundary, and sit on Phi = c, which is
-                // target_distance away -- and NONE of the three placements written for it works.
-                // See "OPEN PROBLEMS" in .claude/CLAUDE.md for the measurements; in short, on
-                // topo_annots_groups (tag_0 & tag_2, delta 1.2, rel 1e-3) refusal froze four such
-                // vertices in every pass of every round, projection-to-the-curve made the run
-                // WORSE (130.6x vs 106.7x) because nearest_point lands at distance 0 when the
-                // tube permits eps, and the tangential arclength solve froze the offset outright
-                // on an anchoring bug that is understood but not fixed.
-                //
-                // So the vertex is left where Phase A put it AND booked unreachable -- see
-                // band_vertex_is_reachable(), which is the half that matters. Skipping alone
-                // would be the worst of both: the vertex never moves and still gates max_grad,
-                // which is precisely the state that made the run above unconvergeable. Pinning
-                // says the honest thing instead: this vertex's containment provably prevents it
-                // reaching the level set, so it is reported and excluded rather than chased.
-                //
-                // THE PLACEMENT CALL IS KEPT, COMMENTED OUT, one line below. It is the thing to
-                // restore first when the anchoring fix lands; leaving it in place keeps the two
-                // halves of the decision next to each other rather than in a git log.
-                ++m_smooth_trace.before_phase_b_enveloped_offset;
-                return false;
-                // return true; // <-- RESTORE THIS to place enveloped offset vertices again
-                //                    (smooth_offset_vertex_backtracking's tangential branch)
-            }
-            return true;
-        }
-
-        // PhaseBSub::Background
-        if (is_offset || m_vertex_attribute[vid].m_is_on_surface) {
-            ++m_smooth_trace.before_phase_b_not_offset;
-            return false;
-        }
-        if (enveloped) {
-            // See the stencil in smooth_interior_vertex_phase_b().
-            ++m_smooth_trace.before_phase_b_enveloped_background;
+        // EVERY VERTEX MOVES IN PHASE B (Uday, 2026-08-25), each under its own rule: a front
+        // vertex with the offset term (smoothing_extra_energy), an input-boundary vertex under
+        // its tag envelopes exactly as in Phase A, an interior vertex free. The one exception is
+        // a front vertex an input envelope also holds: two requirements that cannot both be met
+        // (see the note that used to sit here, kept in git history), so it stays where Phase A
+        // left it.
+        if (is_offset && enveloped) {
+            ++m_smooth_trace.before_phase_b_enveloped_offset;
             return false;
         }
     }
@@ -940,26 +909,16 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
         ++m_smooth_trace.interior_attempted;
     }
 
-    // TWO PHASES; IN B, TWO SOLVES, AND NO AMIPS IN THE OFFSET PLACEMENT.
-    //
-    // Phase B places offset-only vertices with the offset potential alone: the 1-D minimization
-    // of (Phi - c)^2 along grad Phi, backtracked into the element by bisection if the minimum
-    // would invert the ring. Its interior vertices minimize their one-ring AMIPS to their own
-    // minimum. smooth_before() has already refused everything else in this phase, so the branch
-    // below is exhaustive.
-    //
-    // WHY THE OFFSET SOLVE TAKES NO AMIPS. Blending w_amips * AMIPS into an offset vertex's
-    // objective leaves it resting a w_amips-proportional distance off the level set -- the
-    // at-vertex wall. And AMIPS alone cannot be dropped from the shared solve either: the offset
-    // energy's Hessian is 2*w*g*g^T, rank 1, with a 1-D nullspace along the level set's tangent,
-    // so a 2-D minimize of it is ill-posed. The 1-D root find sidesteps both.
-    if (m_phase == OptPhase::B) {
-        const bool ok = ve.m_is_on_offset ? smooth_offset_vertex_backtracking(t)
-                                          : smooth_interior_vertex_phase_b(t);
-        if (ok && ve.m_is_on_offset) ++m_smooth_trace.offset_accepted;
+    // PHASE B: a front vertex goes through the SHARED smoother -- same solver, line search and
+    // accept tests as every other vertex -- with the offset's options: its objective carries the
+    // offset terms (smoothing_extra_energy), and no quality veto (a front vertex has to be able
+    // to worsen its ring on its way to the level set; shape is Phase A's job). Every other
+    // vertex, in both phases, is TriWild's smooth_after() unchanged. Uday, 2026-08-25.
+    if (m_phase == OptPhase::B && ve.m_is_on_offset) {
+        const bool ok = smooth_front_vertex_phase_b(t);
+        if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
     }
-
     // PHASE A is TriWild: the shared smoother, with the offset boundary held by
     // m_offset_envelope and carrying no offset term of its own.
     const double before = ve.m_is_on_offset ? band_vertex_residual(vid) : 0.;
@@ -1061,707 +1020,169 @@ Vector2d TopoOffsetTriMesh::offset_surface_normal(const size_t vid) const
 }
 
 
-bool TopoOffsetTriMesh::smooth_offset_vertex_backtracking(const Tuple& t)
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_objective(
+    const size_t vid,
+    const Vector2d& x) const
 {
-    const size_t vid = t.vid(*this);
-    const std::vector<size_t>& locs = get_one_ring_fids_for_vertex(t);
-
-    // INSTRUMENTATION. Every exit below books a PlacementStop, so "placed" stops meaning "did
-    // not throw" and starts meaning something. See the enum for why the four zero-gradient cases
-    // are separated. `ex` is filled in as the entry quantities become known and is what the
-    // per-reason exemplar is taken from.
-    const bool reachable = band_vertex_is_reachable(vid);
-    PlacementTrace::Exemplar ex;
-    ex.vid = vid;
-    const auto book = [&](const PlacementStop stop) {
-        const Vector2d& p = m_vertex_attribute[vid].m_posf;
-        ex.x = p.x();
-        ex.y = p.y();
-        m_placement_trace.record(stop, reachable, ex);
-        // The one input to pin_interference_stalled_vertices() that only this function knows:
-        // whether the vertex's own step found any descent. One write per vertex per pass.
-        if (vid < m_placement_stalled.size()) {
-            m_placement_stalled[vid] = (stop == PlacementStop::MidStationary) ? 1 : 0;
-        }
-    };
-
-    if (locs.empty()) {
-        book(PlacementStop::NoRing);
-        return false;
+    // The one-ring's AMIPS with the vertex first in every cell (what AMIPS2D_jacobian
+    // differentiates with respect to), weighted as the shared smoother weights it, plus the offset
+    // terms on the vertex's own region's field.
+    std::vector<std::array<double, 6>> cells;
+    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
+        const std::array<size_t, 3> vs = oriented_tri_vids(fid);
+        int k = 0;
+        while (k < 3 && vs[k] != vid) ++k;
+        if (k == 3) continue;
+        const Vector2d& a = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
+        const Vector2d& b = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
+        cells.push_back({{x.x(), x.y(), a.x(), a.y(), b.x(), b.y()}});
     }
-
-    // Same entry guard the shared smoother applies: a one-ring already inverted in floats has no
-    // valid segment to search, and the exact predicate below would reject every candidate.
-    for (const size_t fid : locs) {
-        if (is_inverted_f(fid)) {
-            ++m_smooth_rejects.already_inverted;
-            ++m_phase_b_constrained; // cannot even attempt its minimum
-            book(PlacementStop::PreInverted);
-            return false;
-        }
-    }
-
-    const Vector2d x_orig = m_vertex_attribute[vid].m_posf;
-
-    // FIXED-STEP GRADIENT DESCENT ON E = (Phi - c)^2, STOPPED ON THE RUN'S OWN CONVERGENCE BAR.
-    //
-    // The step direction is -grad E / |grad E| with grad E = 2 (Phi - c) grad Phi, and the step
-    // LENGTH is a fixed fraction of target_distance -- so every step moves the vertex the same
-    // distance and the sequence is a walk down E rather than a Newton-like jump to its root.
-    // This replaces a Levenberg-Marquardt step; the damped step solved for the minimum in one
-    // move where a root existed, which is faster but couples the step size to |grad Phi| and so
-    // to how close the vertex already is.
-    //
-    // THE STOPPING TEST IS THE CONVERGENCE CRITERION AT THIS VERTEX, exactly:
-    //
-    //     q(x) = || 2 (Phi(x) - c) grad Phi(x) ||  <=  offset_gradient_tolerance()
-    //
-    // the FULL norm of grad E against the run's own bar -- convergence_gradient_norm_rel x
-    // m_gradient_reference, the same comparison gradient_split() makes when the run is judged.
-    // One parameter, one bar, one quantity: the run has converged precisely when every one of
-    // these visits terminates immediately, so the local solves cannot walk to a fixed point
-    // the run then rejects, nor the run accept a surface a visit would still move. (The
-    // REFERENCE the bar is a fraction of is normal-aligned -- max |grad E . n| over the
-    // initial surface, see measure_gradient_reference() -- because "how misplaced did this
-    // start" is a question about motion along the normal. The running test is the full norm.)
-    //
-    // This replaced two earlier stops. A per-visit RELATIVE test, q <= ab_vertex_grad_tol_rel *
-    // q(x_entry), had no absolute floor and manufactured a limit cycle: a vertex 650x INSIDE
-    // the run's bar still owed a further 100x reduction of its own entry value, could not
-    // resolve it (the fixed step h changes |Phi - c| by h x |grad Phi| per move, ~100x more
-    // than the target), and burned all 2000 iterations oscillating around the level set to end
-    // exactly where it started -- 180 of 203 visits per pass on two_circles, ~9M wasted field
-    // evaluations per run. Then a NORMAL-PROJECTED test, |grad E . n| against the bar: it
-    // matched the criterion of the day at vertices, but that criterion also gated on
-    // edge-interior samples no visit could move, so runs parked every vertex exactly AT the
-    // bar and failed overall on a chord term a few percent above it. ab_vertex_grad_tol_rel
-    // now governs only the interior AMIPS Newton, where the quantity is an energy gradient and
-    // the run's Phi bar means nothing.
-    //
-    // ONE GAUSS-SEIDEL ITERATION PER VISIT, not a solve. The phase sweeps every eligible vertex
-    // once per pass and repeats up to ab_phase_b_iterations times, so a vertex advances
-    // alongside its neighbours instead of running to a fixed point they have not seen. Solving
-    // each vertex to convergence is what let two approaching offset fronts each drive to the
-    // same curve and crush the elements between them into zero-area triangles.
-    //
-    // THERE IS NO STEP-LENGTH CONSTANT ANY MORE. The step is a damped Newton step with an Armijo
-    // line search, so its length comes from the local model; see the walk below for why the
-    // hard-coded kStepFrac x delta existed and why it no longer has a reason to.
-
-    // Exact orientation test on the rational position, exactly as the shared smoother's accept
-    // test is. Leaves the vertex AT `p`; callers set the final position explicitly.
-    const auto inverts = [&](const Vector2d& p) {
-        set_vertex_position(vid, p);
-        for (const size_t fid : locs) {
-            if (is_inverted(fid)) return true;
-        }
-        return false;
-    };
-
-    // THE OBJECTIVE: AMIPS + AN OFFSET TERM, the offset term selected by WMTK_OFFSET_PLACEMENT.
-    //
-    //     F(x) = w_amips * sum_ring AMIPS(x) + (1 - w_amips) * <offset term>
-    //
-    //   DEFAULT (unset, or =quadratic)   the plain quadratic error (Phi - c)^2.
-    //
-    //   =custom          the NORMAL-PROJECTED GRADIENT of the quadratic error. EXPERIMENTAL --
-    //                    off by default; it is here to be measured, not relied on. Last measured
-    //                    on two_circles at delta 0.1 (offset_out_d0p1_ridge_*): it fixes nothing
-    //                    on its own -- phase B declares a fixed point after ONE pass per round,
-    //                    hands a barely-moved offset to phase A, and phase A runs away. It does
-    //                    stay inside the support, which the unconstrained version did not.
-    //
-    //
-    //       G(x) = ( (Phi(x) - c) * (grad Phi(x) . n_i) )^2
-    //
-    //     n_i is THIS vertex's normal (offset_vertex_normal), measured once at entry and held
-    //     FIXED for the visit -- it is a per-vertex direction, not a field, so G's gradient
-    //     carries no dn/dx term and is exact:
-    //
-    //       grad G = 2 s [ grad Phi (grad Phi . n) + (Phi - c) H n ],  s = (Phi - c)(grad Phi . n)
-    //
-    //     with H = hessian(x), which the potential supplies analytically. G vanishes on exactly
-    //     the two places an offset vertex is allowed to rest:
-    //
-    //       Phi = c            the level set itself, where the offset belongs; and
-    //       grad Phi . n = 0   no further progress along the normal -- the RIDGE. Where two
-    //                          fronts approach, Phi in the corridor never falls to c (two
-    //                          circles at delta = 0.1: Phi at the gap midpoint is 2c), so there
-    //                          is no level set to reach and the front should settle at the
-    //                          corridor's saddle, which is precisely this condition.
-    //
-    //     THE CONSTRAINT IS WHAT MAKES THOSE THE ONLY TWO. G has a third zero with no geometric
-    //     meaning: outside dhat, Phi == 0 AND grad Phi == 0 identically, so G == 0 -- its global
-    //     minimum, sitting in the flat region the potential does not reach. Worse, the level set
-    //     is a zero of value 0 with no barrier past it, so a vertex could drift outward across
-    //     it on AMIPS pressure alone and coast to that flat region. Measured, before the
-    //     constraint: 20 offset vertices escaped to 4.74x target_distance and the run aborted.
-    //     So the walk is confined to the CLOSED OFFSET REGION {Phi >= c}. Inside it every zero
-    //     of G is one of the two above: Phi = c is its boundary, and an interior grad Phi.n = 0
-    //     with Phi > c is a genuine local minimum of Phi along n, i.e. the ridge. A vertex that
-    //     starts outside (construction can leave one there) is not frozen -- the floor is
-    //     min(0, r_entry), so it may always improve, never worsen.
-    //
-    //     Where n_i is unavailable (zero vector -- no live offset edge for the surface
-    //     normal, or a vertex sitting exactly on the complex for the projected one) the term
-    //     falls back to the quadratic error and the visit is counted in m_placement_no_normal,
-    //     so the fallback is never silent.
-    //
-    //   =descent         (Phi - c)^2 alone, w_amips = 0, stopped on the run's global bar --
-    //                    the original pure descent, and the whole of this function's history below.
-    //
-    // WHY AMIPS IS BACK. The pure offset energy's Hessian is 2 w g g^T: rank 1, with a 1-D
-    // nullspace along the level set's tangent, so a 2-D minimisation of it is ill-posed and the
-    // solve only ever had a direction because the step was normalised. AMIPS supplies curvature
-    // in exactly that nullspace. The price, which is why it was removed before, is that a
-    // w_amips-weighted shape term leaves the vertex resting a w_amips-proportional distance OFF
-    // the level set -- the at-vertex wall. w_amips = 1e-4 (OptimizerParameters' default, shared
-    // with the smoother) is the same compromise the envelope smoothing already makes.
-    //
-    // The AMIPS stencil puts the MOVING vertex first in each cell, which is what
-    // AMIPS2D_jacobian differentiates with respect to (see optimization/AMIPSEnergy.cpp).
-    enum class OffTerm { Quadratic, GradProj, PureDescent };
-    static const OffTerm s_off_term = [] {
-        const char* e = std::getenv("WMTK_OFFSET_PLACEMENT");
-        const std::string v = e ? std::string(e) : std::string();
-        if (v.empty() || v == "quadratic") return OffTerm::Quadratic;
-        if (v == "custom") return OffTerm::GradProj;
-        if (v == "descent") return OffTerm::PureDescent;
-        // NOT silent: a typo in an experiment knob otherwise reads as "the default was fine".
-        logger().warn(
-            "WMTK_OFFSET_PLACEMENT='{}' is not a known offset term (quadratic | custom | "
-            "descent); using quadratic.",
-            v);
-        return OffTerm::Quadratic;
-    }();
-    const bool s_pure_descent = (s_off_term == OffTerm::PureDescent);
-    const double w_amips = s_pure_descent ? 0. : m_params.w_amips;
-    const double w_off = 1. - w_amips;
-
-    // n_i, fixed for the whole visit -- see the objective note above. Measured BEFORE the entry
-    // sample because grad_norm_at() reads it.
-    const Vector2d n_entry = offset_vertex_normal(vid);
-    const bool use_grad_proj = (s_off_term == OffTerm::GradProj) && (n_entry.norm() > 0.);
-    if (s_off_term == OffTerm::GradProj && !use_grad_proj) ++m_placement_no_normal;
-
-    std::vector<std::array<double, 6>> ring;
-    if (!s_pure_descent) {
-        ring.reserve(locs.size());
-        for (const size_t fid : locs) {
-            const auto vs = oriented_tri_vids(fid);
-            int k = 0;
-            while (k < 3 && vs[k] != vid) ++k;
-            if (k == 3) continue; // not incident; cannot happen, but do not fabricate a cell
-            const Vector2d& a = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
-            const Vector2d& b = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
-            ring.push_back({{0., 0., a.x(), a.y(), b.x(), b.y()}});
-        }
-    }
-
-    // q at the CURRENT position: ||grad F||. The PARTS are kept as well as the product, because
-    // q == 0 has three different causes and only r and |grad Phi| separately tell them apart.
-    struct QSample
-    {
-        double q = -1.; ///< ||grad F||, or -1 where the field is not finite
-        double r = 0.;
-        Vector2d g = Vector2d::Zero(); ///< grad F
-        Eigen::Matrix2d H = Eigen::Matrix2d::Zero(); ///< grad^2 F, for the Newton step
-    };
-    // THE FIELD THIS VERTEX IS PLACED ON: its own region's, see m_region_potentials.
-    const OffsetPotential2D& pot = potential_for(vid);
-    const auto grad_norm_at = [&](const Vector2d& p) -> QSample {
-        QSample sm;
-        sm.r = pot.value(p) - pot.target_level();
-        const Vector2d gphi = pot.gradient(p);
-        if (!std::isfinite(sm.r) || !gphi.allFinite()) return sm; // q stays -1
-        const Eigen::Matrix2d Hphi = pot.hessian(p);
-        if (!Hphi.allFinite()) return sm;
-        Vector2d gF;
-        Eigen::Matrix2d HF;
-        if (use_grad_proj) {
-            // G = s^2 with s = (Phi - c)(grad Phi . n); see the objective note above.
-            const double gdotn = gphi.dot(n_entry);
-            const double sgn = sm.r * gdotn;
-            const Vector2d ds = gdotn * gphi + sm.r * (Hphi * n_entry);
-            gF = w_off * 2. * sgn * ds;
-            // GAUSS-NEWTON on the least-squares form G = s^2: drop s * grad^2 s, which needs
-            // the third derivative of Phi. Exact at a zero of s -- which is where this term is
-            // trying to land -- and positive semi-definite everywhere, so it never contributes
-            // an indefinite block for the shift below to undo.
-            HF = w_off * 2. * ds * ds.transpose();
-        } else {
-            gF = w_off * 2. * sm.r * gphi;
-            // grad^2 (Phi - c)^2 = 2 (grad Phi grad Phi^T + (Phi - c) grad^2 Phi). The first term
-            // alone is rank 1 -- singular along the level set's tangent -- which is exactly why
-            // this solve used to have no usable Newton step and carried a hard-coded length
-            // instead. AMIPS below fills that nullspace.
-            HF = w_off * 2. * (gphi * gphi.transpose() + sm.r * Hphi);
-        }
-        if (w_amips > 0.) {
-            Vector2d gA = Vector2d::Zero();
-            Eigen::Matrix2d HA = Eigen::Matrix2d::Zero();
-            for (std::array<double, 6> cell : ring) {
-                cell[0] = p.x();
-                cell[1] = p.y();
-                Vector2d j;
-                Eigen::Matrix2d h;
-                wmtk::AMIPS2D_jacobian(cell, j);
-                wmtk::AMIPS2D_hessian(cell, h);
-                // A degenerate cell has no usable AMIPS derivative.
-                if (!j.allFinite() || !h.allFinite()) return sm;
-                gA += j;
-                HA += h;
-            }
-            gF += w_amips * gA;
-            HF += w_amips * HA;
-        }
-        if (!gF.allFinite() || !HF.allFinite()) return sm;
-        sm.g = gF;
-        sm.q = gF.norm();
-        sm.H = HF;
-        return sm;
-    };
-
-    // The entry value, measured with the vertex where it started.
-    set_vertex_position(vid, x_orig);
-    const QSample entry = grad_norm_at(x_orig);
-    const double q_entry = entry.q;
-
-    // THE STOP IS RELATIVE TO THIS VISIT'S OWN ENTRY GRADIENT, one parameter:
-    //     ||grad F(x)|| <= convergence_gradient_norm_rel * ||grad F(x_entry)||
-    // In WMTK_OFFSET_PLACEMENT=descent mode it is the run's global bar instead, as before.
-    //
-    // KNOWN RISK, recorded so it is recognised if it returns: an entry-relative rule has no
-    // absolute floor, and the last time this function used one it limit-cycled -- a vertex far
-    // inside the run's bar still owed a further reduction of its own entry value, could not
-    // resolve it at the FIXED step, and burned all 2000 iterations oscillating to end where it
-    // started (180 of 203 visits per pass on two_circles). Two things are different now: F
-    // carries AMIPS, so the fixed point is a real 2-D minimum rather than a point on a 1-D
-    // valley floor; and the step is line-searched, so it cannot overshoot a minimum it can see.
-    // The visit also takes only ONE step, so a limit cycle would show up as a pass count that
-    // never converges rather than as wasted evaluations inside a visit.
-    const double q_tol =
-        s_pure_descent ? offset_gradient_tolerance()
-                       : m_offset_params.convergence_gradient_norm_rel * std::max(q_entry, 0.);
-
-    // THE WALK'S FEASIBLE SET: r = Phi - c may not fall below this. Zero for a vertex at or
-    // inside the level set, so it is confined to {Phi >= c}; the entry value for one that starts
-    // outside, so it can always come back but never go further out. Only the normal-projected
-    // term needs it -- (Phi - c)^2 grows on both sides of the level set and confines itself --
-    // so the other two modes are left unconstrained and keep their measured behaviour exactly.
-    const double r_floor =
-        use_grad_proj ? std::min(0., entry.r) : -std::numeric_limits<double>::infinity();
-
-    // THE CONTAINMENT CONSTRAINT, for an offset vertex that a region envelope ALSO holds.
-    //
-    // ENFORCED BY PROJECTION AFTER THE STEP, not by refusing trial points during it
-    // (2026-08-23). The step below is the SAME unconstrained Gauss-Seidel step on the SAME
-    // objective every other offset vertex takes; project_into_containment() then restores
-    // validity. See its declaration for the measurement that forced the change -- refusal froze
-    // four junction vertices on topo_annots_groups for ten entire rounds.
-    //
-    // Read as a BOOLEAN here and nothing more. The projection walks the mask's real member
-    // envelopes itself, because a junction's containment is an IntersectionEnvelope and
-    // TagEnvelopes.hpp forbids asking a composite anything but is_outside().
-    const bool has_containment = vertex_boundary_mask(vid) != 0;
-    // THE CURVE THIS VERTEX SLIDES ALONG, and the incident REGION edges whose chords bound how
-    // far it may slide. Resolved once, before the search, because both are fixed for the visit.
-    const int64_t curve_tag = has_containment ? tangent_curve_tag(vid, x_orig) : int64_t(-1);
-    std::vector<size_t> region_nbrs;
-    if (curve_tag >= 0) {
-        for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
-            const size_t eid = e.eid(*this);
-            if (!edge_is_region(eid)) continue;
-            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
-            region_nbrs.push_back(a == vid ? b : a);
-        }
-    }
-    const bool tangential = curve_tag >= 0;
-    // ALREADY OUTSIDE ON ENTRY. No longer disables anything -- the projection FIXES such a
-    // vertex rather than having to route around it -- but still counted, because a vertex that
-    // starts outside its own tube is a construction or Phase A defect and the invariant is zero.
-    if (has_containment) {
-        const std::shared_ptr<SampleEnvelope> containment = smoothing_containment_envelope(vid);
-        if (containment && containment->is_outside(x_orig)) ++m_placement_env_entry_outside;
-    }
-
-    // n_entry is measured above, next to the objective it now feeds. Under the default term it
-    // is part of F; under =quadratic and =descent it is a DIAGNOSTIC only -- the exemplar's
-    // |cos(grad Phi, n)| column, which says how tangential an entry gradient was.
-    ex.res = entry.r;
-    ex.gnorm = entry.g.norm();
-    ex.nnorm = n_entry.norm();
-    ex.cosn = (ex.gnorm > 0. && ex.nnorm > 0.)
-                  ? std::abs(entry.g.dot(n_entry)) / (ex.gnorm * ex.nnorm)
-                  : 0.;
-
-    // F itself, needed by the line search's sufficient-decrease test. Infinite where the field
-    // or a cell is unusable, so a trial point there simply fails the test and gets halved away.
-    const auto value_at = [&](const Vector2d& p) -> double {
-        const double inf = std::numeric_limits<double>::infinity();
-        const double r = pot.value(p) - pot.target_level();
-        if (!std::isfinite(r)) return inf;
-        double F;
-        if (use_grad_proj) {
-            const Vector2d gphi = pot.gradient(p);
-            if (!gphi.allFinite()) return inf;
-            const double sgn = r * gphi.dot(n_entry);
-            F = w_off * sgn * sgn;
-        } else {
-            F = w_off * r * r;
-        }
-        for (std::array<double, 6> cell : ring) {
-            cell[0] = p.x();
-            cell[1] = p.y();
-            const double a = wmtk::AMIPS2D_energy(cell);
-            if (!std::isfinite(a)) return inf;
-            F += w_amips * a;
-        }
-        return F;
-    };
-
-    // THE BAR PHASE A ENFORCES, APPLIED TO THE PLACEMENT STEP. Phase A ends every round with
-    // max AMIPS <= stop_energy; the placement's only shape guard was the exact inversion test, so
-    // where the field's level set is unreachable -- two fronts meeting, where Phi_A + Phi_B > c
-    // across the whole gap -- the offset term pushed both fronts through the background strip
-    // until inversion, and Phase A then remeshed the crushed strip into flat faces every round
-    // (two_circles at target_distance 0.1: strip width 0.0009, 626 coincident vertex pairs, 92
-    // folded edges, edge error cycling 143x -> 65x -> 52x -> 79x, never a joint fixed point).
-    // A trial step may worsen the ring, but not past stop_energy, and not make a face already
-    // over it worse: the step is SHRUNK, not refused, so the front presses up to the bar and
-    // stops there -- the same state Phase A accepts, so the alternation can settle. TriWild's
-    // own smoother never needed this: it descends on AMIPS alone and cannot raise it.
-    const auto ring_max_at = [&](const Vector2d& p) -> double {
-        double q = 0.;
-        for (std::array<double, 6> cell : ring) {
-            cell[0] = p.x();
-            cell[1] = p.y();
-            const double a = wmtk::AMIPS2D_energy(cell);
-            if (!std::isfinite(a)) return std::numeric_limits<double>::infinity();
-            q = std::max(q, a);
-        }
-        return q;
-    };
-    // ONE SWITCH, because it was asked whether the per-region fields made this redundant.
-    // Measured 2026-08-24 with it OFF, fields per region: tangent cases (delta 0.1) and 0.04
-    // still converge, but every case where the fronts actually push into each other fails --
-    // smooth 0.15: strip crushed to 0.002, worst quality 76, folds of 164 deg, no convergence;
-    // Euclidean 0.15: RUNAWAY. (smooth 0.02 also loses convergence, but only to one 6e-4-long
-    // edge folded across the curve at (1.459, 0.954) -- 2.5% of delta, invisible at the
-    // viewer's scale; a measured difference, not a visible kink.) The field fixes the
-    // DIRECTION of the push, this bar is the STOP. Both are needed.
-    constexpr bool kPlacementQualityBound = true;
-    constexpr double kPlacementQualityBoundFactor = 1.; ///< the bar is this x stop_energy; 2x and 10x measured worse, see below
-    const double q_bar = kPlacementQualityBoundFactor * m_params.stop_energy;
-    const double q_bound = kPlacementQualityBound ? std::max(q_bar, ring_max_at(x_orig))
-                                                  : std::numeric_limits<double>::infinity();
-    const auto over_bound = [&](const Vector2d& p) -> bool { return !(ring_max_at(p) <= q_bound); };
-    bool bounded = false; ///< some valid trial step was refused by the bar
-
-    Vector2d x_last_inside = x_orig; ///< THE LAST POSITION KNOWN TO KEEP THE ONE-RING VALID
-    bool left_ring = false;
-    int iters = 0; ///< accepted steps, for the trace
-    PlacementStop stop = PlacementStop::Moved;
-    if (q_entry > q_tol) {
-        // ONE GAUSS-SEIDEL ITERATION: a DAMPED NEWTON STEP with an Armijo backtracking line
-        // search. The step length comes out of the local quadratic model and the line search --
-        // there is no dialled-in length, because a fixed length is not an iteration of anything.
-        //
-        // WHY THERE USED TO BE ONE. With the objective (Phi - c)^2 alone, grad^2 F = 2 grad Phi
-        // grad Phi^T + 2 (Phi - c) grad^2 Phi, whose leading term is RANK 1: singular along the
-        // level set's tangent, so Newton had no direction there and the code kept only the
-        // normalised gradient plus an arbitrary kStepFrac x delta. AMIPS is back in F now and it
-        // supplies curvature in exactly that nullspace, so the model is non-degenerate and the
-        // hard-coded length has no reason to survive.
-        //
-        // The shift below makes that robust rather than assumed: it does not matter whether
-        // AMIPS happens to fill the nullspace at this particular vertex.
-        const QSample cur = entry;
-        if (cur.q < 0.) {
-            stop = PlacementStop::MidNonFinite;
-        } else if (!(cur.q > 0.)) {
-            stop = PlacementStop::MidStationary;
-        } else {
-            // DIRECTION. Shift the Hessian to positive definite -- 2x2, so the eigenvalues are
-            // exact and cheap -- and solve H d = -g. With lam_min already positive this is the
-            // plain Newton direction; where the model is flat or indefinite the shift is what
-            // turns it into a descent direction, degrading smoothly to steepest descent as the
-            // shift grows. Scale-aware floor: a fixed epsilon would mean different things on
-            // meshes of different size.
-            bool handled = false;
-            if (tangential) {
-                // ---- CODIMENSION-1 SOLVE, on the boundary curve itself ----
-                //
-                // The constraint is ELIMINATED, not enforced: the vertex is parameterized by
-                // arclength along its tag's boundary polyline, so every point the search visits
-                // lies ON the curve and its own containment holds by construction. What is left
-                // to bound is the INCIDENT CHORDS -- the mesh edges from this vertex to its
-                // region-boundary neighbours, which are straight and so leave the tube once the
-                // vertex slides far enough past a corner. That bound is found by the same
-                // backtracking as everything else, which is why no corner needs an angle
-                // threshold: it comes out at roughly eps/sin(theta) for a turn of theta, and is
-                // absent along a straight run.
-                //
-                // phi(s) = F(walk(s)); phi' = tau . g and phi'' = tau^T H tau, both already in
-                // hand from the 2-D sample, so the Newton step is the 1-D one.
-                handled = true;
-                Vector2d tau;
-                if (!curve_tangent(curve_tag, x_orig, Vector2d(-cur.g), tau)) {
-                    stop = PlacementStop::EnvelopeBlocked;
-                } else {
-                    const double d1 = tau.dot(cur.g);
-                    const double d2 = tau.dot(cur.H * tau);
-                    double s_step =
-                        (d2 > 0.)
-                            ? (-d1 / d2)
-                            : (-d1 / std::max(
-                                         std::abs(d2),
-                                         cur.q / std::max(m_offset_params.target_distance, 1e-16)));
-                    if (!std::isfinite(s_step) || s_step == 0.) {
-                        stop = PlacementStop::MidStationary;
-                    } else {
-                        const double F0 = value_at(x_orig);
-                        constexpr double kArmijoC1 = 1e-4;
-                        constexpr int kMaxHalvings = 40;
-                        bool taken = false;
-                        bool tan_ring = false;
-                        bool tan_chord = false;
-                        for (int k = 0; k < kMaxHalvings; ++k, s_step *= 0.5) {
-                            Vector2d x_try;
-                            if (!walk_along_curve(curve_tag, x_orig, s_step, x_try)) continue;
-                            if (!x_try.allFinite()) continue;
-                            if (inverts(x_try)) {
-                                tan_ring = true;
-                                continue;
-                            }
-                            if (over_bound(x_try)) {
-                                bounded = true;
-                                continue;
-                            }
-                            // THE CHORD BOUND, and the reason a corner needs no special case.
-                            // surface_segment_is_outside() reads the vertex's stored position,
-                            // so the trial has to be in place while it is asked; restored
-                            // immediately either way. Phase B is single-visit-per-vertex, so no
-                            // other thread is reading this slot.
-                            bool chord_out = false;
-                            for (const size_t nb : region_nbrs) {
-                                const Vector2d save = m_vertex_attribute[vid].m_posf;
-                                m_vertex_attribute[vid].m_posf = x_try;
-                                const bool bad = surface_segment_is_outside(vid, nb);
-                                m_vertex_attribute[vid].m_posf = save;
-                                if (bad) {
-                                    chord_out = true;
-                                    break;
-                                }
-                            }
-                            if (chord_out) {
-                                tan_chord = true;
-                                continue;
-                            }
-                            const QSample nxt = grad_norm_at(x_try);
-                            if (nxt.r < r_floor) {
-                                stop = PlacementStop::LeftOffset;
-                                continue;
-                            }
-                            // Sufficient decrease in the REDUCED objective: the slope along the
-                            // curve is d1 and the step is s_step of arclength.
-                            if (!(value_at(x_try) <= F0 + kArmijoC1 * s_step * d1)) continue;
-                            x_last_inside = x_try;
-                            ++iters;
-                            taken = true;
-                            break;
-                        }
-                        if (taken) {
-                            stop = PlacementStop::Moved;
-                            ++m_placement_tangential;
-                        } else if (bounded) {
-                            stop = PlacementStop::QualityBound;
-                        } else if (tan_ring) {
-                            left_ring = true;
-                            stop = PlacementStop::RingBlocked;
-                        } else if (tan_chord) {
-                            // Every admissible arclength put an incident region edge outside its
-                            // tube. NOT a placement failure: it is the mesh saying it wants a
-                            // vertex at the corner this one is trying to slide past, which is
-                            // Phase A's job rather than this visit's.
-                            stop = PlacementStop::ChordBlocked;
-                        } else if (stop != PlacementStop::LeftOffset) {
-                            stop = PlacementStop::MidStationary;
-                        }
-                    }
-                }
-            }
-            if (!handled) {
-                Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> es(cur.H);
-                const double lam_min = es.eigenvalues().minCoeff();
-                const double lam_max = std::max(es.eigenvalues().maxCoeff(), 0.);
-                const double floor_lam = std::max(
-                    1e-8 * lam_max,
-                    1e-8 * cur.q / std::max(m_offset_params.target_distance, 1e-16));
-                const double shift = (lam_min >= floor_lam) ? 0. : (floor_lam - lam_min);
-                const Eigen::Matrix2d Hpd = cur.H + shift * Eigen::Matrix2d::Identity();
-                Vector2d d = Hpd.ldlt().solve(-cur.g);
-                // Guard the solve rather than trust it: a direction that is not finite, or that
-                // does not actually go downhill, falls back to steepest descent scaled by the model
-                // so it still carries a length.
-                if (!d.allFinite() || cur.g.dot(d) >= 0.) {
-                    d = -cur.g /
-                        std::max(lam_max, cur.q / std::max(m_offset_params.target_distance, 1e-16));
-                }
-
-                // ARMIJO BACKTRACKING, with the one-ring inversion, the feasible set and the
-                // containment envelope as hard constraints on the trial point. Halving from the
-                // full Newton step means the accepted length is the model's own unless something
-                // refuses it.
-                const double F0 = value_at(x_orig);
-                const double slope = cur.g.dot(d); // < 0
-                constexpr double kArmijoC1 = 1e-4;
-                constexpr int kMaxHalvings = 40;
-                double t = 1.;
-                bool accepted = false;
-                bool blocked_by_ring = false;
-                for (int k = 0; k < kMaxHalvings; ++k, t *= 0.5) {
-                    const Vector2d x_try = x_orig + t * d;
-                    if (!x_try.allFinite()) continue;
-                    if (inverts(x_try)) {
-                        blocked_by_ring = true;
-                        continue;
-                    }
-                    if (over_bound(x_try)) {
-                        bounded = true;
-                        continue;
-                    }
-                    const QSample nxt = grad_norm_at(x_try);
-                    if (nxt.r < r_floor) {
-                        stop = PlacementStop::LeftOffset;
-                        continue; // a shorter step may still be feasible
-                    }
-                    if (!(value_at(x_try) <= F0 + kArmijoC1 * t * slope)) continue;
-                    x_last_inside = x_try;
-                    ++iters;
-                    accepted = true;
-                    break;
-                }
-                if (accepted) {
-                    stop = PlacementStop::Moved;
-                } else if (bounded) {
-                    stop = PlacementStop::QualityBound;
-                } else if (blocked_by_ring) {
-                    // Every trial length inverted the ring: this vertex cannot move at all.
-                    left_ring = true;
-                    stop = PlacementStop::RingBlocked;
-                } else if (stop != PlacementStop::LeftOffset) {
-                    // No length gave sufficient decrease and nothing refused it either -- the model
-                    // says downhill but the function does not follow, i.e. a numerically stationary
-                    // point.
-                    stop = PlacementStop::MidStationary;
-                }
-            } // !handled
-        }
-    } else {
-        // NO STEP WAS EVER ATTEMPTED. Four different reasons; the first two are convergence.
-        if (q_entry < 0.) {
-            stop = PlacementStop::NonFinite;
-        } else if (!(std::abs(entry.r) > 0.)) {
-            stop = PlacementStop::OnLevelSet;
-        } else if (q_entry > 0.) {
-            // Off the level set, but the gradient is already at or under the run's own
-            // convergence bar -- there is nothing left for this visit to chase. This is the
-            // common case in late passes, and it is what the entry-relative rule turned into
-            // 2000-step limit cycles.
-            stop = PlacementStop::UnderBar;
-        } else {
-            // r != 0, so q == 0 means grad F vanished on its own: under the quadratic terms
-            // q = 2 |r| |grad Phi|, leaving only grad Phi == 0 -- the pinch minimum. Under the
-            // normal-projected term it also covers grad Phi . n == 0, a purely tangential
-            // gradient. Either way a genuine stationary point with no descent direction.
-            stop = PlacementStop::Stationary;
-        }
-    }
-    ex.iters = iters;
-
-    if (left_ring) {
-        // The minimum this visit was walking toward lies outside what the one-ring admits --
-        // the count the pass loop's backtrack-free exit watches.
-        ++m_phase_b_constrained;
-    }
-    if (!x_last_inside.allFinite()) {
-        set_vertex_position(vid, x_orig);
-        ++m_smooth_rejects.inverted;
-        ++m_phase_b_constrained;
-        ex.disp = 0.;
-        // x_last_inside is only ever x_orig or a position that already passed allFinite, so
-        // reaching here means the vertex's OWN position was not finite on entry.
-        book(PlacementStop::NonFinite);
-        return false;
-    }
-    // Set it explicitly rather than relying on where the last inverts() probe left the vertex.
-    set_vertex_position(vid, x_last_inside);
-
-    ex.disp = (x_last_inside - x_orig).norm();
-    if (stop == PlacementStop::Moved && iters == 1) ++m_placement_trace.moved_one_step;
-    // PRESSED IS A STATE, NOT A STOP REASON. A vertex held against the bar may still take a
-    // hair of a step within it and report Moved; what makes it pressed is that an incident face
-    // sits AT stop_energy where it ends up, i.e. the mesh's quality bar, not the field, is what
-    // stopped it. Only the stop_energy bar counts: a ring that was already worse than the bar on
-    // entry is bounded by its own max instead, and that is not the seam.
-    const bool pressed_now =
-        (stop == PlacementStop::QualityBound) ||
-        (kPlacementQualityBound && ring_max_at(x_last_inside) >= q_bar * (1. - 1e-9));
-    if (pressed_now) ++m_phase_b_pressed;
-    if (vid < m_placement_pressed.size()) m_placement_pressed[vid] = pressed_now ? 1 : 0;
-    book(stop);
-
-    // The one-ring's stored qualities are now stale; the split/collapse/swap passes read them.
-    for (const size_t fid : locs) {
-        m_face_attribute[fid].m_quality = get_quality(fid);
-    }
-    ++m_smooth_rejects.accepted;
-    return true;
+    const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
+    auto sum = std::make_shared<optimization::EnergySum>();
+    if (m_params.w_amips > 0) sum->add_energy(std::make_shared<optimization::AMIPSEnergy2D>(cells, amips_w));
+    const int r = vertex_region(vid);
+    const std::shared_ptr<const OffsetPotential2D> pot =
+        (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)] : m_offset_potential;
+    sum->add_energy(phase_b_front_energy(vid, pot));
+    return sum;
 }
 
-bool TopoOffsetTriMesh::smooth_interior_vertex_phase_b(const Tuple& t)
-{
-    // Pure one-ring AMIPS, solved to this vertex's own minimum; see the declaration. AMIPS alone
-    // at unit weight -- Newton cancels any positive scale, so the value is irrelevant -- and no
-    // envelope terms: an interior vertex carries no surface, so the shared smoother's pull and
-    // containment branches are bypassed and this is exactly `solve()` plus the exact inversion
-    // accept and the quality veto.
-    optimization::SmoothVertexOptions opts;
-    opts.w_amips = 1.0;
-    opts.w_envelope = 0.0;
-    opts.s_amips = 1.0;
-    opts.s_envelope = 0.0;
-    opts.two_stage = false;
-    opts.quality_veto = m_params.smooth_quality_veto;
 
+Vector2d TopoOffsetTriMesh::front_vertex_normal(const size_t vid) const
+{
+    const Vector2d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
+    const double gn = g.norm();
+    return (std::isfinite(gn) && gn > 0.) ? Vector2d(g / gn) : Vector2d::Zero();
+}
+
+double TopoOffsetTriMesh::front_vertex_normal_gradient(const size_t vid) const
+{
+    // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex_phase_b()
+    // minimises: stationarity of the 2-D solve. Under phase_b_normal_only the unknown is the
+    // position along the normal, so the derivative along it, |grad F . n|.
+    const Vector2d x = m_vertex_attribute[vid].m_posf;
+    Eigen::VectorXd xv = x, g(2);
+    phase_b_front_objective(vid, x)->gradient(xv, g);
+    if (!g.allFinite()) return std::numeric_limits<double>::infinity();
+    // ALONG THE FIELD NORMAL WHATEVER THE PLACEMENT MODE (Uday, 2026-08-25): the test asks whether
+    // the front is where the field wants it. Tangential motion is the flat direction of the
+    // energy (only w x AMIPS acts along the front) -- a tiny gradient there is a large Newton
+    // step, and the free 2-D placement never passed a test that counted it while producing the
+    // smoothest front of all (turn 2.2 deg per vertex against a circle's 2.25 at 0.4).
+    const Vector2d n = front_vertex_normal(vid);
+    if (n.squaredNorm() > 0.) return std::abs(n.dot(Vector2d(g)));
+    return g.norm();
+}
+
+namespace {
+/// The front vertex's objective restricted to the line x(s) = x0 + s n: the same energy, one
+/// unknown. Every hook the solver's line search asks -- step validity (the AMIPS inversion
+/// guard), the step cap, begin/end, solution_changed -- is forwarded on the mapped points.
+class LineProblem2D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    LineProblem2D(std::shared_ptr<polysolve::nonlinear::Problem> p, const Vector2d& x0, const Vector2d& n)
+        : m_p(std::move(p))
+        , m_x0(x0)
+        , m_n(n)
+    {}
+    Eigen::VectorXd at(const TVector& s) const { return Eigen::VectorXd(m_x0 + s(0) * m_n); }
+    double value(const TVector& s) override { return m_p->value(at(s)); }
+    void gradient(const TVector& s, TVector& g) override
+    {
+        Eigen::VectorXd g2(2);
+        m_p->gradient(at(s), g2);
+        g.resize(1);
+        g(0) = m_n.dot(Vector2d(g2));
+    }
+    void hessian(const TVector&, THessian&) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& s, Eigen::MatrixXd& h) override
+    {
+        Eigen::MatrixXd h2(2, 2);
+        m_p->hessian(at(s), h2);
+        h.resize(1, 1);
+        h(0, 0) = m_n.dot(h2 * m_n);
+    }
+    bool is_step_valid(const TVector& s0, const TVector& s1) override { return m_p->is_step_valid(at(s0), at(s1)); }
+    double max_step_size(const TVector& s0, const TVector& s1) override { return m_p->max_step_size(at(s0), at(s1)); }
+    void line_search_begin(const TVector& s0, const TVector& s1) override { m_p->line_search_begin(at(s0), at(s1)); }
+    void line_search_end() override { m_p->line_search_end(); }
+    void solution_changed(const TVector& s) override { m_p->solution_changed(at(s)); }
+
+private:
+    std::shared_ptr<polysolve::nonlinear::Problem> m_p;
+    Vector2d m_x0, m_n;
+};
+} // namespace
+
+bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
+{
+    // See the header: the shared smoother with the offset's options. The objective's offset
+    // terms arrive through smoothing_extra_energy(); AMIPS is weighted as in TriOptimizerMesh::
+    // smooth_after(); a front vertex has no envelope in Phase B, so neither the projected path
+    // nor the containment check applies -- solve, exact inversion test, done.
+    optimization::SmoothVertexOptions opts;
+    opts.w_amips = m_params.w_amips;
+    opts.w_envelope = m_params.w_envelope;
+    opts.s_amips = m_s_amips;
+    opts.s_envelope = m_s_envelope;
+    opts.two_stage = false;
+    opts.quality_veto = false;
     auto& solver = m_phase_b_solver.local();
     if (!solver) {
-        // The base solver's twin, with the stopping rule this phase is about: polysolve's
-        // rel_grad_norm_tol is exactly gradNorm / initial_grad_norm, so the solve stops at
-        // ab_vertex_grad_tol_rel of the visit's initial gradient, and the iteration budget is
-        // deep enough that the tolerance is what actually fires.
-        polysolve::json params = optimization::basic_nonlinear_solver_params;
-        // ONE NEWTON STEP PER VISIT -- this is the "one Gauss-Seidel iteration" the phase is
-        // built on. The tolerance is kept so a vertex already at its minimum costs nothing, but
-        // with a budget of 1 it is the iteration count that decides, not the tolerance.
-        params["max_iterations"] = 1;
-        params["rel_grad_norm_tol"] = m_offset_params.ab_vertex_grad_tol_rel;
         solver = polysolve::nonlinear::Solver::create(
-            params,
+            optimization::basic_nonlinear_solver_params,
             optimization::basic_linear_solver_params,
             1,
             opt_logger());
     }
-    return optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+    if (!m_offset_params.phase_b_normal_only) {
+        return optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+    }
 
-    // ---------------------------------------------------------------------------------------
-    // STENCIL: the envelope-held background vertex, which smooth_before() currently refuses.
-    // See the 3D twin for the options it needs (w_amips / w_envelope / smoothing_mode / the two
-    // projection step counts) and for why it should run LAST in the pass. Not written yet
-    // because the models under test have no such vertex, and a half-constrained version would be
-    // worse than leaving them where Phase A put them.
-    // ---------------------------------------------------------------------------------------
+    // NORMAL-ONLY = A ONE-DIMENSIONAL SOLVE (Uday, 2026-08-25). The same objective the 2-D path
+    // minimises (phase_b_front_objective: the ring's AMIPS + the offset terms), restricted to the
+    // line through the vertex along n = grad Phi / |grad Phi|, solved by the same solver with the
+    // same line search, then the same accept test as the shared smoother's no-envelope path (exact
+    // inversion of the ring; no envelope, no veto). Nothing is added to the energy. It replaces a
+    // stiff tangential penalty (k = 1e6) that had been standing in for the restriction -- that
+    // made the Hessian's condition number 1e6 and was never what "along the normal" meant.
+    const size_t vid = t.vid(*this);
+    const Vector2d n = front_vertex_normal(vid);
+    if (!(n.squaredNorm() > 0.)) { // no field direction here: the 2-D solve is the fallback
+        return optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+    }
+    const std::vector<size_t>& locs = get_one_ring_fids_for_vertex(t);
+    for (const size_t fid : locs) {
+        if (is_inverted_f(fid)) {
+            ++m_smooth_rejects.already_inverted;
+            return false;
+        }
+    }
+    const Vector2d x0 = smoothing_position(vid);
+    auto line = std::make_shared<LineProblem2D>(phase_b_front_objective(vid, x0), x0, n);
+    Eigen::VectorXd s = Eigen::VectorXd::Zero(1);
+    try {
+        solver->minimize(*line, s);
+    } catch (const std::exception&) {
+    }
+    set_smoothing_position(vid, Vector2d(x0 + s(0) * n));
+    for (const size_t fid : locs) {
+        if (is_inverted(fid)) {
+            set_smoothing_position(vid, x0);
+            ++m_smooth_rejects.inverted;
+            return false;
+        }
+    }
+    for (const size_t fid : locs) m_face_attribute[fid].m_quality = get_quality(fid);
+    ++m_smooth_rejects.accepted;
+    return true;
 }
 
 void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
@@ -2185,120 +1606,6 @@ void TopoOffsetTriMesh::audit_phase_b_offset_envelope_holds() const
                 m_face_extra[e.fid(*this)].label,
                 opp ? std::to_string(m_face_extra[opp->fid(*this)].label) : std::string("-"));
         }
-    }
-}
-
-const char* TopoOffsetTriMesh::placement_stop_name(const PlacementStop s)
-{
-    switch (s) {
-    case PlacementStop::Moved: return "moved";
-    case PlacementStop::IterCap: return "hit the iteration cap";
-    case PlacementStop::LeftOffset: return "reached the offset region's edge";
-    case PlacementStop::EnvelopeBlocked: return "NO TANGENT ON ITS OWN BOUNDARY CURVE";
-    case PlacementStop::ChordBlocked: return "SLIDE CUT OFF BY AN INCIDENT CHORD";
-    case PlacementStop::QualityBound: return "PRESSED: EVERY STEP PUTS AN INCIDENT FACE OVER stop_energy";
-    case PlacementStop::RingBlocked: return "RING BLOCKED, no first step";
-    case PlacementStop::LeftRing: return "left the ring mid-walk";
-    case PlacementStop::MidStationary: return "grad E vanished mid-walk";
-    case PlacementStop::MidNonFinite: return "field non-finite mid-walk";
-    case PlacementStop::PreInverted: return "ring already inverted on entry";
-    case PlacementStop::NoRing: return "no one-ring";
-    case PlacementStop::OnLevelSet: return "already on the level set";
-    case PlacementStop::UnderBar: return "already under the run's bar";
-    case PlacementStop::Stationary: return "stationary, grad Phi = 0";
-    case PlacementStop::NonFinite: return "field non-finite on entry";
-    default: return "?";
-    }
-}
-
-void TopoOffsetTriMesh::log_placement_trace() const
-{
-    const auto& tr = m_placement_trace;
-    int total = 0;
-    for (size_t i = 0; i < PlacementTrace::N; ++i) total += tr.n[i].load();
-    if (total == 0) return;
-
-    // ORDERED SO THE ANSWER IS AT THE TOP. The exits that mean the vertex is where it wants
-    // to be come first; everything after them is a vertex that did not get there, and the count
-    // beside it is how many.
-    static constexpr PlacementStop kOrder[] = {
-        PlacementStop::Moved,
-        PlacementStop::OnLevelSet,
-        PlacementStop::UnderBar,
-        // A CONVERGED STOP, not a failure: the walk reached the edge of {Phi >= c}, which under
-        // the normal-projected term IS the level set. Grouped with the arrivals for that reason.
-        PlacementStop::LeftOffset,
-        PlacementStop::IterCap,
-        PlacementStop::RingBlocked,
-        PlacementStop::LeftRing,
-        // A FAILURE, not an arrival -- unlike LeftOffset above. Reaching the edge of {Phi >= c}
-        // is arriving at the level set; being stopped by a region tube is having nowhere to go.
-        PlacementStop::EnvelopeBlocked,
-        PlacementStop::ChordBlocked,
-        PlacementStop::QualityBound,
-        PlacementStop::Stationary,
-        PlacementStop::MidStationary,
-        PlacementStop::PreInverted,
-        PlacementStop::NoRing,
-        PlacementStop::NonFinite,
-        PlacementStop::MidNonFinite,
-    };
-    // The list is hand-ordered, so it can silently fall behind the enum -- and did once, hiding
-    // a whole stop reason while the printed counts quietly stopped summing to the visit count.
-    static_assert(
-        std::size(kOrder) == size_t(PlacementStop::COUNT),
-        "kOrder must list every PlacementStop; add the new one and pick where it reads");
-    std::string line;
-    for (const PlacementStop st : kOrder) {
-        const int c = tr.n[size_t(st)].load();
-        if (c == 0) continue;
-        line += fmt::format(
-            "{}{} {} ({} reachable)",
-            line.empty() ? "" : " | ",
-            placement_stop_name(st),
-            c,
-            tr.n_reachable[size_t(st)].load());
-    }
-    logger().info(
-        "\t[phase B] placement stops over {} offset visits: {} | of the {} that moved, {} took a "
-        "single step",
-        total,
-        line,
-        tr.n[size_t(PlacementStop::Moved)].load(),
-        tr.moved_one_step.load());
-
-    // THE EXEMPLARS ARE THE POINT. A count says how many; this says which, and carries the four
-    // numbers that separate the causes -- so a suspect vertex can be found in the viewer instead
-    // of inferred. Only the stops that mean the vertex is NOT placed get one.
-    for (const PlacementStop st :
-         {PlacementStop::RingBlocked,
-          PlacementStop::LeftRing,
-          PlacementStop::Stationary,
-          PlacementStop::MidStationary,
-          PlacementStop::IterCap,
-          PlacementStop::PreInverted,
-          PlacementStop::NonFinite,
-          PlacementStop::MidNonFinite,
-          PlacementStop::NoRing}) {
-        const size_t i = size_t(st);
-        if (tr.n[i].load() == 0) continue;
-        const auto& w = tr.worst[i];
-        if (w.vid == size_t(-1)) continue;
-        logger().warn(
-            "\t  worst [{}]: v{} at ({:.6g}, {:.6g}) | Phi - c = {:.4g} (tol {:.4g}) | "
-            "|grad Phi| = {:.4g} | |cos(grad Phi, n)| = {:.3g} | |n| = {:.3g} | steps {} | "
-            "moved {:.4g}",
-            placement_stop_name(st),
-            w.vid,
-            w.x,
-            w.y,
-            w.res,
-            offset_residual_tolerance(),
-            w.gnorm,
-            w.cosn,
-            w.nnorm,
-            w.iters,
-            w.disp);
     }
 }
 
@@ -3033,21 +2340,22 @@ bool TopoOffsetTriMesh::collapse_quality_allowed(
     const double q,
     const double ring_max) const
 {
-    // Pure instrumentation: the base's rule is returned unchanged. See the header for why the
-    // `q <= ring_max` clause is the one to watch.
-    // 3D's admission rule, not the 2D base's. The base also admits any collapse whose result
-    // scores under stop_energy -- a clause carried from the original TriWild
-    // (EdgeCollapsing.cpp:189 before cb9b81a66c) that the original TetWild never had (its
-    // EdgeCollapsing.cpp:146). It matters because mesh_improvement() OPENS with a collapse
-    // sweep that has no length gate (local_operations({{0,1,0,0}}, false)), and the A/B loop
-    // runs that sweep at the top of EVERY phase A: on a mesh whose faces all score 2-6, "under
-    // 10 is fine" admits nearly everything, so the sweep demolished the mesh each round
-    // regardless of the sizing field -- two_circles, target_distance 0.02: 1939 -> 476 and
-    // 9510 -> 755 vertices -- and the split pass then rebuilt it 10-80x against a field halved
-    // since, until the rebuild itself manufactured MAX_ENERGY faces (round 3). Requiring "no
-    // worse than the ring's worst" keeps ~97% of the mesh through the sweep; with it (and
-    // sizing_propagate_min off) the case converges. Ablated: necessary in every combination.
-    const bool allowed = !m_vertex_attribute.at(v1).m_is_rounded || q <= ring_max;
+    // Pure instrumentation: the base's rule -- TriWild's -- is returned unchanged, so Phase A
+    // is TriWild's mesh_improvement() with no offset-specific admission. See the header for why
+    // the `q <= ring_max` clause is the one to watch.
+    //
+    // HISTORY. 2026-08-24 this returned 3D's rule instead, `q <= ring_max` alone, dropping the
+    // base's extra "any result under stop_energy" clause (original TriWild had it,
+    // EdgeCollapsing.cpp:189 before cb9b81a66c; original TetWild never did). The reason was the
+    // length-blind opening collapse sweep, which the A/B loop ran at the top of every Phase A and
+    // which "under 10 is fine" let demolish the mesh each round (two_circles 0.02: 1939 -> 476
+    // vertices). That sweep is now switched off instead (optimization_bare_coarsen_passes), which
+    // is the targeted fix and keeps Phase A pure TriWild. Measured 2026-08-25 with the base rule
+    // and the sweep off: 0.02 and 0.04 converge; the two overlap cases (target_distance 0.15,
+    // smooth and Euclidean) do NOT -- 110 / 141 deg folds at the seam that 3D's rule prevented
+    // (it refuses a collapse that worsens a ring sitting under the bar; the strip's short edges
+    // are exactly such collapses). A separate issue, kept open deliberately.
+    const bool allowed = TriOptimizerMesh::collapse_quality_allowed(v1, v2, q, ring_max);
     if (q >= MAX_ENERGY) {
         ++m_deg_collapse_offered;
         if (allowed) {
@@ -3513,7 +2821,7 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::measure_gradient_reference()
     // is a statement about how far out of place the offset STARTED (and a pinned vertex is out
     // of place too, hence both halves). What it scales is then the FULL norm at those same
     // vertices: the convergence criterion and every Phase B local stop compare
-    // ||2 (Phi - c) grad Phi|| against convergence_gradient_norm_rel x this. One reference,
+    // ||2 (Phi - c) grad Phi|| against phase_b_conv_rel x this. One reference,
     // one parameter, one bar.
     const GradientSplit g = gradient_split();
     m_gradient_reference = g.max_normal_aligned;
@@ -3533,9 +2841,9 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::measure_gradient_reference()
         g.max_in_edge,
         g.n_edge_samples);
     logger().info(
-        "\t  => convergence bound {:.6g} = convergence_gradient_norm_rel {} x reference",
+        "\t  => convergence bound {:.6g} = phase_b_conv_rel {} x reference",
         offset_gradient_tolerance(),
-        m_offset_params.convergence_gradient_norm_rel);
+        m_offset_params.phase_b_conv_rel);
 
     if (!(m_gradient_reference > 0.)) {
         logger().warn(
@@ -3576,7 +2884,7 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     // Voronoi-length-weighted vertex normal, offset_surface_normal()). NOT the deciding
     // measure: it is the quantity the REFERENCE is the max of -- measure_gradient_reference()
     // reads max_normal_aligned off the band as constructed, and every full-norm comparison is
-    // against convergence_gradient_norm_rel x that. Only motion along n moves the surface off
+    // against phase_b_conv_rel x that. Only motion along n moves the surface off
     // the level set, so the reference is a statement about how MISPLACED the initial surface
     // was; the running tests are then the full norm, which a local solve can actually zero.
     // The same projection serves the in-edge chord diagnostic, onto the edge's own unit
@@ -3690,6 +2998,159 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     return s;
 }
 
+double TopoOffsetTriMesh::edge_interpolation_residual(const Tuple& e) const
+{
+    const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+    const int r = edge_region(a, b);
+    const std::shared_ptr<const OffsetPotential2D> pot =
+        (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)] : m_offset_potential;
+    const double c = pot->target_level();
+    if (!(c > 0.)) return -1.;
+    // THE VALUE, NOT THE GRADIENT (Uday, 2026-08-25). The gradient of ((Phi - c) / c)^2 is
+    // (2 / c) r grad Phi with r = (Phi - c) / c, so interpolating it across an edge measured
+    // r x (the change of grad Phi's direction). On a free stretch r ~ 0.005 and that is the
+    // geometry; at a seam the strip is pressed off the level set, r ~ 0.3-0.5, and the same
+    // change of direction -- for the Euclidean field a kink at every input polygon vertex that
+    // no refinement shrinks -- read 60-100x larger: Euclidean 0.2 measured 2.7x the bar at the
+    // seam against 0.74x for the value form, identical on the free part (0.93x both). The
+    // sizing rule then halved the seam every round, the strip thinned with its edges (0.0069
+    // -> 0.0017 -> 0.0008) and Phase B slowed with the sliver (29, 162, >200 passes to the bar).
+    // The second difference of r along the edge cancels a uniform press and keeps only how far
+    // the level set curves away from the chord, which halving the edge does reduce (~L^2).
+    // The factor 2 w / c puts it in the gradient's units, so the vertex bar applies unchanged.
+    const auto r_at = [&](const Vector2d& p) { return (pot->value(p) - c) / c; };
+    const Vector2d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
+    const double ra = r_at(pa), rb = r_at(pb), rm = r_at(0.5 * (pa + pb));
+    if (!std::isfinite(ra) || !std::isfinite(rb) || !std::isfinite(rm)) return -1.;
+    return 2. * (1. - m_params.w_amips) / c * std::abs(rm - 0.5 * (ra + rb));
+}
+
+
+TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
+{
+    EnergyCriterion s;
+    const OptPhase saved = m_phase;
+    m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
+    const auto placed = [&](const size_t vid) {
+        return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded &&
+               vertex_boundary_mask(vid) == 0;
+    };
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!placed(vid)) continue;
+        if (vid < m_placement_pressed.size() && m_placement_pressed[vid]) {
+            ++s.n_pressed; // constrained minimum: grad F is the constraint force, not a residual
+            continue;
+        }
+        const double gn = front_vertex_conv_ratio(vid);
+        if (!std::isfinite(gn)) {
+            ++s.n_unmeasurable;
+            continue;
+        }
+        ++s.n_vertices;
+        if (gn > s.max_vertex) {
+            s.max_vertex = gn;
+            s.worst_vid = vid;
+        }
+    }
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+        if (!placed(va) || !placed(vb)) continue;
+        if ((va < m_placement_pressed.size() && m_placement_pressed[va]) ||
+            (vb < m_placement_pressed.size() && m_placement_pressed[vb])) {
+            ++s.n_edges_pressed; // the seam: a constrained pair, not a resolution question
+            continue;
+        }
+        const double gn = edge_conv_ratio(e);
+        if (gn < 0.) {
+            ++s.n_unmeasurable;
+            continue;
+        }
+        ++s.n_edges;
+        if (gn > s.max_edge) {
+            s.max_edge = gn;
+            s.worst_edge_mid = 0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
+            s.worst_edge_len = (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
+        }
+    }
+    m_phase = saved;
+    return s;
+}
+
+double TopoOffsetTriMesh::phase_b_front_gradient_linf()
+{
+    // The vertex convergence measure over the front vertices Phase B places, as a ratio to its
+    // bar (1 = bar); see front_vertex_conv_ratio(). Under gradient_norm_rel, before the
+    // reference is measured, this is the raw |n . grad F| (the reference itself).
+    double worst = 0.;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
+        if (vertex_boundary_mask(vid) != 0) continue; // pinned: not placed by Phase B
+        if (vid < m_placement_pressed.size() && m_placement_pressed[vid]) continue; // constrained minimum
+        const double gn = m_front_gradient_reference > 0. || m_offset_params.phase_b_conv_criterion != "gradient_norm_rel"
+                              ? front_vertex_conv_ratio(vid)
+                              : front_vertex_normal_gradient(vid);
+        if (gn > worst) {
+            worst = gn;
+            m_front_gradient_worst_vid = vid;
+        }
+    }
+    return worst;
+}
+
+double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
+{
+    const double rel = m_offset_params.phase_b_conv_rel;
+    const std::string& crit = m_offset_params.phase_b_conv_criterion;
+    if (crit == "gradient_norm_rel") {
+        const double bar = rel * m_front_gradient_reference;
+        return bar > 0. ? front_vertex_normal_gradient(vid) / bar : std::numeric_limits<double>::infinity();
+    }
+    const Vector2d x = m_vertex_attribute[vid].m_posf;
+    Eigen::VectorXd xv = x, g(2);
+    Eigen::MatrixXd H(2, 2);
+    const auto prob = phase_b_front_objective(vid, x);
+    prob->gradient(xv, g);
+    prob->hessian(xv, H);
+    if (!g.allFinite() || !H.allFinite()) return std::numeric_limits<double>::infinity();
+    Vector2d n = front_vertex_normal(vid); // the field normal, see front_vertex_normal_gradient()
+    if (!(n.squaredNorm() > 0.)) n = g.normalized();
+    if (!(n.squaredNorm() > 0.)) return std::numeric_limits<double>::infinity();
+    const double gn = n.dot(Vector2d(g)), h = n.dot(H * n);
+    if (!(h > 0.)) return gn == 0. ? 0. : std::numeric_limits<double>::infinity();
+    if (crit == "step_size_rel") {
+        return std::abs(gn / h) / (rel * m_offset_params.target_distance);
+    }
+    // decrement: half of g_n^2 / h, the energy the next Newton step still gains, against rel x F
+    const double F = prob->value(xv);
+    return F > 0. ? (0.5 * gn * gn / h) / (rel * F) : std::numeric_limits<double>::infinity();
+}
+
+double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
+{
+    const double r = edge_interpolation_residual(e); // (2 w / c) |r(m) - mean r|, -1 unmeasurable
+    if (r < 0.) return r;
+    const double rel = m_offset_params.phase_b_conv_rel;
+    if (m_offset_params.phase_b_conv_criterion == "gradient_norm_rel") {
+        const double bar = rel * m_front_gradient_reference;
+        return bar > 0. ? r / bar : std::numeric_limits<double>::infinity();
+    }
+    // RESOLUTION IS THE ENVELOPE'S BUSINESS, NOT rel's (Uday, 2026-08-25): sagitta <= 
+    // ab_offset_envelope_rel x c, i.e. |r(m) - mean r| <= ab_offset_envelope_rel -- the level set
+    // is resolved to within the tube Phase A already lets the front wander in. rel is the
+    // convergence tolerance only; tying the edge test to it made a safe rel (0.01, needed so a
+    // creeping front cannot exit early) over-refine (0.04: 5906 vertices for 1351) and a coarse
+    // rel (0.1) exit with the front at 0.22 of 0.40. Undo the (2 w / c) of the gradient units.
+    const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+    const int reg = edge_region(a, b);
+    const std::shared_ptr<const OffsetPotential2D> pot =
+        (reg >= 0 && size_t(reg) < m_region_potentials.size()) ? m_region_potentials[size_t(reg)] : m_offset_potential;
+    const double c = pot->target_level();
+    return (r * c / (2. * (1. - m_params.w_amips))) / m_offset_params.ab_offset_envelope_rel;
+}
+
 double TopoOffsetTriMesh::phase_b_band_gradient_linf()
 {
     // One measurement, one definition -- the Phase B stop test and the convergence test read the
@@ -3708,122 +3169,50 @@ double TopoOffsetTriMesh::phase_b_band_gradient_linf()
     return gradient_split(/*include_edge_samples=*/false).max_at_vertex;
 }
 
-TopoOffsetTriMesh::DistanceCriterion TopoOffsetTriMesh::distance_criterion(
-    const bool include_edges) const
+namespace {
+} // namespace
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_energy(
+    const size_t vid,
+    const std::shared_ptr<const OffsetPotential2D>& pot) const
 {
-    // See the header. Reachability, rounding and the band mask follow gradient_split() exactly,
-    // so the two criteria judge the same set of vertices and the same edge samples.
-    DistanceCriterion s;
-    const double delta = m_offset_params.target_distance;
-    const double eps = std::max(m_offset_params.convergence_distance_rel, 1e-16) * delta;
-    const double kPi = std::acos(-1.);
-    const double cos_max = std::cos(m_offset_params.convergence_orientation_max_deg * kPi / 180.);
-    const std::vector<bool> on_band = band_vertex_mask();
-    // A vertex whose last placement stopped on QualityBound is held by the mesh's quality bar,
-    // not by the field: its level set is unreachable by construction (two fronts meeting), so
-    // it counts as placed, and an edge touching one is the seam -- not a resolution or an
-    // orientation question, since the field's gradient is ~0 along the midline there.
-    const auto pressed = [&](const size_t vtx) {
-        return vtx < m_placement_pressed.size() && m_placement_pressed[vtx];
-    };
-
-    // First-order distance to the level set. -1 where the field gives no direction: outside the
-    // support Phi is identically zero WITH a zero gradient, and a division there is not a
-    // distance. Such points are counted, never silently skipped.
-    const auto dist_at = [&](const OffsetPotential2D& P, const Vector2d& p) -> double {
-        const double r = P.value(p) - P.target_level();
-        const double gn = P.gradient(p).norm();
-        if (!std::isfinite(r) || !std::isfinite(gn) || gn <= 1e-300) return -1.;
-        return std::abs(r) / gn;
-    };
-
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        if (!on_band[vid] || !m_vertex_extra[vid].m_is_on_offset) continue;
-        if (!m_vertex_attribute[vid].m_is_rounded) continue;
-        if (!band_vertex_is_reachable(vid)) continue;
-        if (pressed(vid)) {
-            ++s.n_pressed;
-            continue;
-        }
-        ++s.n_vertices;
-        const double d = dist_at(potential_for(vid), m_vertex_attribute[vid].m_posf);
-        if (d < 0.) {
-            ++s.n_outside_support;
-            continue;
-        }
-        if (d > s.max_vertex_dist) {
-            s.max_vertex_dist = d;
-            s.worst_vid = vid;
-        }
+    const double w_off = 1. - m_params.w_amips;
+    auto sum = std::make_shared<optimization::EnergySum>();
+    // Gauss-Newton Hessian (the default). Measured 2026-08-25: the exact Hessian (adds
+    // r grad^2 Phi) changed nothing on two_circles at 0.04-0.2, same passes, same meshes.
+    sum->add_energy(std::make_shared<OffsetEnergy2D>(pot, w_off));
+    // One alignment residual per incident live front edge. sigma orients the edge's normal
+    // away from its band face, read off the face centroid exactly as distance_criterion() does.
+    std::vector<AlignEnergy2D::Edge> edges;
+    const Vector2d x = m_vertex_attribute[vid].m_posf;
+    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+        const size_t q = (va == vid) ? vb : va;
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        if (!opp) continue;
+        const size_t fa = e.fid(*this), fb = opp->fid(*this);
+        const size_t band_f = face_is_offset_band(fa) ? fa : fb;
+        const auto vs = oriented_tri_vids(band_f);
+        const Vector2d c = (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
+                            m_vertex_attribute[vs[2]].m_posf) /
+                           3.;
+        const Vector2d d = m_vertex_attribute[q].m_posf - x;
+        if (!(d.norm() > 0.)) continue;
+        const Vector2d n_plus(-d.y(), d.x()); // R90 (q - x)
+        const Vector2d mid = 0.5 * (x + m_vertex_attribute[q].m_posf);
+        const double sigma = n_plus.dot(mid - c) >= 0. ? 1. : -1.;
+        edges.push_back({m_vertex_attribute[q].m_posf, sigma});
     }
-
-    if (include_edges) {
-        for (const Tuple& e : get_edges()) {
-            if (!edge_is_offset_surface_live(e)) continue;
-            const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-            if (!band_vertex_is_reachable(va) || !band_vertex_is_reachable(vb)) continue;
-            if (pressed(va) || pressed(vb)) {
-                ++s.n_edges_pressed;
-                continue;
-            }
-            ++s.n_edges;
-            const OffsetPotential2D& P_e = potential_for_edge(va, vb);
-            for_each_offset_edge_sample(e, [&](const Vector2d& q) {
-                ++s.n_samples;
-                const double d = dist_at(P_e, q);
-                if (d < 0.) {
-                    ++s.n_outside_support;
-                    return;
-                }
-                s.max_edge_dist = std::max(s.max_edge_dist, d);
-            });
-
-            // ORIENTATION. The edge's outward normal is the one pointing away from the band face
-            // (the centroid says which side that is -- no orientation convention to get wrong).
-            // The field's outward direction is the way Phi changes on LEAVING the band, read off
-            // the field itself by comparing it at the band centroid and at the midpoint, so the
-            // test is right for the smooth potential (larger inside) and the Euclidean distance
-            // (smaller inside) alike without knowing which one it has.
-            const Vector2d a = m_vertex_attribute[va].m_posf, b = m_vertex_attribute[vb].m_posf;
-            const Vector2d t = b - a;
-            if (t.norm() <= 0.) continue;
-            const std::optional<Tuple> opp = e.switch_face(*this);
-            if (!opp) continue;
-            const size_t fa = e.fid(*this), fb = opp->fid(*this);
-            const size_t band_f = face_is_offset_band(fa) ? fa : fb;
-            const auto vs = oriented_tri_vids(band_f);
-            const Vector2d c = (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
-                                m_vertex_attribute[vs[2]].m_posf) /
-                               3.;
-            const Vector2d m = 0.5 * (a + b);
-            Vector2d n(t.y(), -t.x());
-            n /= n.norm();
-            if (n.dot(m - c) < 0.) n = -n;
-            const Vector2d g = P_e.gradient(m);
-            const double gn = g.norm();
-            if (!std::isfinite(gn) || gn <= 1e-300) {
-                ++s.n_outside_support;
-                continue;
-            }
-            const double inside_minus_mid = P_e.value(c) - P_e.value(m);
-            const Vector2d field_out = (inside_minus_mid >= 0. ? -1. : 1.) * (g / gn);
-            const double cs = n.dot(field_out);
-            if (cs < s.min_cos) {
-                s.min_cos = cs;
-                s.worst_edge_mid = m;
-            }
-            if (cs < 0.) ++s.n_folded;
-        }
+    // KEPT (measured 2026-08-25): without it the seam is rougher -- worst edge angle against the
+    // field 6 -> 17 deg at 0.10, 16 -> 26 at 0.15, 21 -> 39 at 0.20 -- since under
+    // phase_b_normal_only nothing else acts on the edge normals; 10-15% fewer passes is not
+    // worth that.
+    if (!edges.empty()) {
+        const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
+        sum->add_energy(std::make_shared<AlignEnergy2D>(pot, std::move(edges), sign, w_off));
     }
-
-    s.max_vertex_rel = s.max_vertex_dist / eps;
-    s.max_edge_rel = s.max_edge_dist / eps;
-    s.worst_angle_deg = std::acos(std::clamp(s.min_cos, -1., 1.)) * 180. / kPi;
-    s.placed = s.n_outside_support == 0 && s.max_vertex_dist <= eps;
-    s.resolved = !include_edges || s.max_edge_dist <= eps;
-    s.oriented = !include_edges || s.min_cos >= cos_max;
-    return s;
+    return sum;
 }
 
 void TopoOffsetTriMesh::assign_band_regions()
@@ -4386,7 +3775,7 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
     const double eps =
         std::max(m_offset_params.ab_offset_envelope_rel * m_offset_params.target_distance, 1e-12);
 
-    m_offset_envelope = std::make_shared<SampleEnvelope>();
+    m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true); // see the tag envelopes
     m_offset_envelope->init(verts, segs, eps);
     logger().info(
         "\t[offset envelope] rebuilt: {} segments, {} (eps {:.6g} = "
@@ -4520,6 +3909,32 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
     }
 
     const double g_entry = phase_b_band_gradient_linf();
+    const double eg_entry = phase_b_front_gradient_linf();
+    {
+        // Sanity of the alignment term's sign convention: the front's outward normal against the
+        // field's outward direction should read ~+1 on a well-formed front.
+        double sum_cos = 0., min_cos = 1.;
+        size_t n = 0;
+        const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
+            const Vector2d nrm = offset_vertex_normal(vid);
+            Vector2d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
+            if (!(nrm.norm() > 0.) || !(g.norm() > 0.) || !g.allFinite()) continue;
+            const double cs = nrm.dot(sign * g / g.norm());
+            sum_cos += cs;
+            min_cos = std::min(min_cos, cs);
+            ++n;
+        }
+        logger().info(
+            "\t[phase B] entry: energy gradient max {:.6g} over the front | front normal . field "
+            "outward: mean {:.4f}, min {:.4f} over {} vertices",
+            eg_entry,
+            n ? sum_cos / n : 0.,
+            n ? min_cos : 0.,
+            n);
+    }
     // TWO BARS, WHICHEVER COMES FIRST. The entry-relative one asks "has this phase finished the
     // work it was handed"; the ABSOLUTE one is the run's own convergence bar, and once the band
     // is under it there is nothing left for another round to do.
@@ -4551,27 +3966,18 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
             before[i] = m_vertex_attribute[i].m_posf;
         }
 
-        // TWO ORDERED SUB-SWEEPS. First place every offset-boundary vertex on the level set,
-        // then let every free interior vertex relax against the mesh that placement just
-        // distorted. Ordered rather than interleaved so the background always relaxes against
-        // the offset's FINAL position for this pass.
+        // ONE SWEEP: every vertex once, front vertices placed and interior vertices relaxed in
+        // mesh order (see smooth_before()). `placed` counts the accepted front visits, `relaxed`
+        // the accepted interior ones.
         m_phase_b_constrained = 0;
         m_phase_b_pressed = 0;
         if (pass == 0) m_placement_pressed.assign(vert_capacity(), 0);
-        m_placement_trace.reset(); // only the Offset sub-sweep books into it
-        m_phase_b_sub = PhaseBSub::Offset;
-        m_debug_pass_name = "B-offset";
+        const size_t offset_accepted_before = m_smooth_trace.offset_accepted.load();
+        m_debug_pass_name = "B";
         smooth_all_vertices(1);
-        // Captured between the sweeps: only the offset sub-sweep can constrain a placement, and
-        // smooth_all_vertices() resets the shared reject counters, so a before/after delta on
-        // `accepted` would wrap.
         const int constrained = m_phase_b_constrained.load();
-        const size_t placed = m_smooth_rejects.accepted.load();
-
-        m_phase_b_sub = PhaseBSub::Background;
-        m_debug_pass_name = "B-background";
-        smooth_all_vertices(1);
-        const size_t relaxed = m_smooth_rejects.accepted.load();
+        const size_t placed = m_smooth_trace.offset_accepted.load() - offset_accepted_before;
+        const size_t relaxed = m_smooth_rejects.accepted.load() - placed;
 
         disp = 0.;
         for (const Tuple& v : get_vertices()) {
@@ -4623,7 +4029,6 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
             relaxed);
         // `placed` counts every visit that returned true, INCLUDING the ones that put the vertex
         // back exactly where it started. This is the breakdown that tells those apart.
-        log_placement_trace();
         // ONE FRAME PER SMOOTHING PASS. write_smoothing_debug_output() renames it into the
         // single `step_<NNNNN>_r<round>B` timeline the phase A passes also land in, so the two
         // phases interleave in the order they actually ran. Opt-in through
@@ -4643,17 +4048,27 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         // round could do with a better-placed boundary.
         // Under the "dist_and_orient" criterion the vertex half is judged in length units instead, the
         // same bar the loop will apply; the gradient is still logged above for comparison.
-        bool under_bar = g <= g_abs;
-        if (use_distance_criterion()) {
-            const DistanceCriterion dc = distance_criterion(/*include_edges=*/false);
-            under_bar = dc.placed;
+        // THE PASS STOP IS THE SOLVER'S OWN QUESTION (Uday, 2026-08-25): the max over the placed
+        // front vertices of ||grad F||, F the full Phase B objective as the shared smoother
+        // assembles it, against phase_b_conv_rel x ONE reference -- the same max on
+        // the band as constructed, measured once before round 1 (m_front_gradient_reference).
+        // Not relative to each Phase B's entry: later rounds enter already close, and a fraction
+        // of that is a bar that tightens by accident. Newton drives the gradient to zero; the
+        // geometric halves (distance, edge samples, orientation) remain the LOOP's stop.
+        const double eg = phase_b_front_gradient_linf();
+        bool under_bar = eg <= 1.; // eg is the ratio to the bar, see phase_b_front_gradient_linf()
+        {
+            const size_t wv = m_front_gradient_worst_vid;
             logger().info(
-                "\t[phase B] pass {}: dist_and_orient, vertices: max {:.6g} = {:.4}x the bar "
-                "({} outside support)",
+                "\t[phase B] pass {}: vertex test ({}) max {:.4}x the bar ({}) | worst vertex {} at "
+                "({:.4f}, {:.4f})",
                 pass + 1,
-                dc.max_vertex_dist,
-                dc.max_vertex_rel,
-                dc.n_outside_support);
+                m_offset_params.phase_b_conv_criterion,
+                eg,
+                under_bar ? "under" : "over",
+                wv,
+                wv < m_vertex_attribute.size() ? m_vertex_attribute[wv].m_posf.x() : 0.,
+                wv < m_vertex_attribute.size() ? m_vertex_attribute[wv].m_posf.y() : 0.);
         }
         if (under_bar) {
             ++pass;
@@ -4687,33 +4102,13 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
 
 size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
 {
-    // See the header for the rule. Three passes so each quantity is computed once: Phi's
-    // gradient is the expensive part and the edge samples dominate it.
-    const double gtol = offset_gradient_tolerance();
+    // See the header for the rule. A vertex is in tolerance when it passes the vertex test
+    // (front_vertex_conv_ratio), an edge is under-resolved when it fails the edge test
+    // (edge_conv_ratio): the same two tests the loop gates on, so this rule refines toward
+    // exactly what the loop judges.
     const std::vector<bool> on_band = band_vertex_mask();
-    std::vector<std::unique_ptr<OffsetEnergy2D>> energies;
-    for (const auto& rp : m_region_potentials) energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
-    OffsetEnergy2D union_energy(m_offset_potential, 1.0);
-    const auto grad_at = [&](const int region, const Vector2d& p) {
-        Eigen::VectorXd g(2);
-        OffsetEnergy2D& en = (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)] : union_energy;
-        en.gradient(Eigen::VectorXd(p), g);
-        return g.norm();
-    };
-    // Under the "dist_and_orient" criterion the same two questions are judged in length units, by the
-    // same bar the A/B loop gates on -- otherwise this rule would refine toward one criterion
-    // and the loop would judge by another. See distance_criterion().
-    const bool use_dist = use_distance_criterion();
-    const double dist_bar =
-        m_offset_params.convergence_distance_rel * m_offset_params.target_distance;
-    const auto within_tol = [&](const int region, const Vector2d& p) -> bool {
-        if (!use_dist) return grad_at(region, p) <= gtol;
-        const OffsetPotential2D& P = potential_for_region(region);
-        const double r = P.value(p) - P.target_level();
-        const double gn = P.gradient(p).norm();
-        if (!std::isfinite(r) || !std::isfinite(gn) || gn <= 1e-300) return false;
-        return std::abs(r) / gn <= dist_bar;
-    };
+    const OptPhase saved_phase = m_phase;
+    m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
 
     // 1. Every band vertex against the criterion. Non-band vertices are left `true` so they
     //    never veto a neighbour's halving -- the rule is about the BOUNDARY one-ring.
@@ -4734,7 +4129,8 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
             ++n_pressed_v;
             continue;
         }
-        in_tol[vid] = within_tol(vertex_region(vid), m_vertex_attribute[vid].m_posf) ? 1 : 0;
+        const double gn = front_vertex_conv_ratio(vid);
+        in_tol[vid] = (std::isfinite(gn) && gn <= 1.) ? 1 : 0;
     }
 
     // 2. THE RULE, PER EDGE: if BOTH endpoints are in tolerance but ANY interior sample on the
@@ -4763,10 +4159,8 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
             continue;
         }
         if (!in_tol[vs[0]] || !in_tol[vs[1]]) continue;
-        bool edge_bad = false;
-        for_each_offset_edge_sample(e, [&](const Vector2d& q) {
-            if (!edge_bad && !within_tol(edge_region(vs[0], vs[1]), q)) edge_bad = true;
-        });
+        const double gn = edge_conv_ratio(e);
+        const bool edge_bad = gn < 0. || gn > 1.;
         if (!edge_bad) continue;
         ++n_bad_edges;
         mark[vs[0]] = 1;
@@ -4819,6 +4213,7 @@ size_t TopoOffsetTriMesh::update_band_sizing_from_tolerance()
             n_pressed_v,
             n_pressed_e);
     }
+    m_phase = saved_phase;
     return changed.size();
 }
 
@@ -4871,59 +4266,110 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
     int prev_recol = iter_cnt_recollapsed.load();
     int prev_recol_same = iter_cnt_recollapsed_same_pass.load();
 
+    // THE ONE REFERENCE for Phase B's pass stop: the front's energy gradient on the band as
+    // constructed, before anything has moved. See phase_b_smooth().
+    assign_band_regions();
+    m_phase = OptPhase::B; // the objective's extra terms exist only in Phase B
+    m_front_gradient_reference = phase_b_front_gradient_linf();
+    m_phase = OptPhase::A;
+    logger().info(
+        "\tFront energy-gradient reference (band as constructed): {:.6g} | phase_b_conv_criterion "
+        "{} at phase_b_conv_rel {}{}",
+        m_front_gradient_reference,
+        m_offset_params.phase_b_conv_criterion,
+        m_offset_params.phase_b_conv_rel,
+        m_offset_params.phase_b_conv_criterion == "gradient_norm_rel"
+            ? fmt::format(" => bar {:.6g}", m_offset_params.phase_b_conv_rel * m_front_gradient_reference)
+            : std::string());
+    // PHASE A RUNS WHEN THE SIZING CHANGED (Uday, 2026-08-25): round 1 always, afterwards only
+    // after the edge test halved something. Phase A is the response to a new sizing field; on
+    // an unchanged field it has nothing to refine, and what it did instead was undo Phase B:
+    // the strip two fronts press to a sliver (AMIPS ~50 at the energy's minimum) stalls
+    // TriWild, stuck-refine force-splits it (51, 33, 52, 24, 10 faces per round on Euclidean
+    // 0.2) and the next Phase B presses it from scratch, ~29 passes every round. With a pass
+    // budget below that the loop never converged; with this rule a Phase B that ran out of
+    // passes simply continues, and the budget only chunks it.
+    // ... OR VIOLATED: Phase B moves the front from where the band was built to its target and
+    // drags the band with it -- after round 1's Phase B, edges over TriWild's split threshold
+    // (4/3 x the sizing) went from 4-10 to 621 (0.15, up to 3.6x), 807 (0.2, 4.8x), 1088 (0.5,
+    // 11x) of 1736 band edges. Only Phase A re-meshes that, so it also runs when an edge is over
+    // the threshold now that was not when Phase A finished; TriWild's own split gate as the
+    // scheduler, no knob. At a converged seam nothing gets longer (the strip's edges sit at or
+    // below the sizing), so Phase B just continues there.
+    const auto over_threshold_edges = [&]() {
+        std::set<std::pair<size_t, size_t>> over;
+        for (const Tuple& e : get_edges()) {
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            const double sr =
+                0.5 * (m_vertex_attribute[a].m_sizing_scalar + m_vertex_attribute[b].m_sizing_scalar);
+            if (get_length2(e) > m_params.splitting_l2 * sr * sr) over.emplace(std::min(a, b), std::max(a, b));
+        }
+        return over;
+    };
+    std::set<std::pair<size_t, size_t>> over_after_a;
+    bool sizing_changed = true;
+    double amips = 0., bar = optimization_stop_metric();
     for (int round = 0; round < rounds; ++round) {
         // Tags every debug frame this round writes; see write_smoothing_debug_output().
         m_ab_round = round + 1;
         // ---- PHASE A: TriWild, with the offset held inside its envelope ----
-        logger().info("======== A/B round {} / {}: phase A ========", round + 1, rounds);
-        audit_surface_containment(fmt::format("round {} phase A entry", round + 1));
-        // CLEARED BEFORE ANY TOPOLOGY RUNS. The pins are per-pass evidence about specific
-        // vertices; Phase A recycles vertex slots, so a flag left set here would land on an
-        // unrelated vertex created by a split. Phase B recomputes them from scratch anyway.
-        std::fill(m_interference_pinned.begin(), m_interference_pinned.end(), char(0));
-        m_phase = OptPhase::A;
-        // DIAGNOSTIC; see ab_no_collapse_after_first_round. Round 1 keeps its collapses because
-        // the mesh as constructed genuinely needs them.
-        m_ab_collapses_disabled = m_offset_params.ab_no_collapse_after_first_round && round > 0;
-        if (m_ab_collapses_disabled) {
-            logger().warn("\t[phase A] COLLAPSES DISABLED (ab_no_collapse_after_first_round)");
-        }
-        mesh_improvement(a_iters);
-        assign_band_regions(); // Phase A changed the topology; the band-to-region map follows
+        if (!sizing_changed) {
+            logger().info(
+                "======== A/B round {} / {}: phase A skipped, sizing unchanged; phase B continues ========",
+                round + 1,
+                rounds);
+        } else {
+            logger().info("======== A/B round {} / {}: phase A ========", round + 1, rounds);
+            audit_surface_containment(fmt::format("round {} phase A entry", round + 1));
+            // CLEARED BEFORE ANY TOPOLOGY RUNS. The pins are per-pass evidence about specific
+            // vertices; Phase A recycles vertex slots, so a flag left set here would land on an
+            // unrelated vertex created by a split. Phase B recomputes them from scratch anyway.
+            std::fill(m_interference_pinned.begin(), m_interference_pinned.end(), char(0));
+            m_phase = OptPhase::A;
+            // DIAGNOSTIC; see ab_no_collapse_after_first_round. Round 1 keeps its collapses because
+            // the mesh as constructed genuinely needs them.
+            m_ab_collapses_disabled = m_offset_params.ab_no_collapse_after_first_round && round > 0;
+            if (m_ab_collapses_disabled) {
+                logger().warn("\t[phase A] COLLAPSES DISABLED (ab_no_collapse_after_first_round)");
+            }
+            mesh_improvement(a_iters);
+            assign_band_regions(); // Phase A changed the topology; the band-to-region map follows
 
-        // ASK THE LOOP, in the loop's own units. optimization_quality_stats() reports ABSOLUTE
-        // AMIPS against optimization_stop_metric() = stop_energy in Phase A, so a check written
-        // in normalized units fails a Phase A that converged.
-        const double amips = std::get<0>(optimization_quality_stats());
-        const double bar = optimization_stop_metric();
-        if (m_offset_params.debug_output) {
-            // THE FRAME THE PHASE HANDS ON. write_smoothing_debug_output() renames it
-            // `step_<NNNNN>_r<round>A_end`, so it sits in the one timeline at the right place
-            // and is still identifiable as a phase boundary.
-            write_smoothing_debug_output(fmt::format("phase_{}A", round + 1));
-        }
+            // ASK THE LOOP, in the loop's own units. optimization_quality_stats() reports ABSOLUTE
+            // AMIPS against optimization_stop_metric() = stop_energy in Phase A, so a check written
+            // in normalized units fails a Phase A that converged.
+            amips = std::get<0>(optimization_quality_stats());
+            bar = optimization_stop_metric();
+            if (m_offset_params.debug_output) {
+                // THE FRAME THE PHASE HANDS ON. write_smoothing_debug_output() renames it
+                // `step_<NNNNN>_r<round>A_end`, so it sits in the one timeline at the right place
+                // and is still identifiable as a phase boundary.
+                write_smoothing_debug_output(fmt::format("phase_{}A", round + 1));
+            }
 
-        // PHASE A HAS TO CONVERGE. It is TriWild on a mesh TriWild can improve, with the offset
-        // pinned to a tolerance-wide tube; if element quality is still above stop_energy when
-        // the loop gives up, something is wrong that iterating further will not fix, and
-        // continuing into Phase B would optimize the offset on a mesh that cannot carry it.
-        if (amips > bar) {
-            // Attribute the failure before throwing: the throw's own text offers two guesses
-            // (envelope too tight / unfixable elements) and this is what tells them apart.
-            log_refine_block_census(fmt::format("round {} phase A gave up", round + 1), bar);
-            log_and_throw_error(
-                "Phase A did not converge within {} iterations: max element quality {:.6} against "
-                "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
-                "{}), or the mesh has elements no operation can fix.",
-                a_iters,
-                amips,
-                bar,
-                m_offset_params.ab_offset_envelope_rel);
-        }
-        logger().info("\t[phase A] converged: max element quality {:.4} (stop {:.4})", amips, bar);
-        // Phase A collapses can merge an offset vertex into an input one, and
-        // collapse_after_vertex() ORs both flags onto the survivor.
-        check_no_vertex_on_both_surfaces(fmt::format("round {} phase A", round + 1).c_str());
+            // PHASE A HAS TO CONVERGE. It is TriWild on a mesh TriWild can improve, with the offset
+            // pinned to a tolerance-wide tube; if element quality is still above stop_energy when
+            // the loop gives up, something is wrong that iterating further will not fix, and
+            // continuing into Phase B would optimize the offset on a mesh that cannot carry it.
+            if (amips > bar) {
+                // Attribute the failure before throwing: the throw's own text offers two guesses
+                // (envelope too tight / unfixable elements) and this is what tells them apart.
+                log_refine_block_census(fmt::format("round {} phase A gave up", round + 1), bar);
+                log_and_throw_error(
+                    "Phase A did not converge within {} iterations: max element quality {:.6} against "
+                    "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
+                    "{}), or the mesh has elements no operation can fix.",
+                    a_iters,
+                    amips,
+                    bar,
+                    m_offset_params.ab_offset_envelope_rel);
+            }
+            logger().info("\t[phase A] converged: max element quality {:.4} (stop {:.4})", amips, bar);
+            // Phase A collapses can merge an offset vertex into an input one, and
+            // collapse_after_vertex() ORs both flags onto the survivor.
+            check_no_vertex_on_both_surfaces(fmt::format("round {} phase A", round + 1).c_str());
+            over_after_a = over_threshold_edges();
+        } // sizing_changed
 
         // ---- PHASE B: smoothing only, and the sizing update ----
         logger().info("======== A/B round {} / {}: phase B ========", round + 1, rounds);
@@ -4955,67 +4401,33 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
 
         const DistanceSplit r = residual_split();
         report_outside_support("A/B round", r);
-        // THE LOOP'S CONVERGENCE TEST IS THE GRADIENT. The Phi residual and the Euclidean
-        // distance error are both still measured every round and both still logged, because they
-        // answer questions this one cannot -- the residual carries the chord term that ranks the
-        // sizing field, the Euclidean error says how far the smoothed offset ended up from the
-        // exact one -- but neither gates the run. See offset_gradient_tolerance().
-        const GradientSplit g = gradient_split();
-        // BOTH HALVES. Phase B has just placed every vertex it can; whether the chords BETWEEN
-        // those vertices still cut the level set is the other half of the same question, and it
-        // is the half update_band_sizing_from_tolerance() -- called right below when this fails
-        // -- exists to answer. Gating on only the vertex half meant the round refined on the
-        // chord term and then declined to be judged by it.
-        double phi = std::max(g.max_reachable, g.max_in_edge) / offset_gradient_tolerance();
-        // Under the "dist_and_orient" criterion that geometric ratio gates instead. The gradient line
-        // below is still logged every round, so one run shows both criteria side by side.
-        if (use_distance_criterion()) {
-            const DistanceCriterion dc = distance_criterion();
-            phi = dc.ratio();
-            logger().info(
-                "\t[phase B] dist_and_orient: vertices {:.4}x, edge samples {:.4}x of the bar "
-                "{:.6g} (= {} x target_distance) | worst edge angle {:.2f} deg (max {:.1f}), {} "
-                "folded | {} points outside support | {} vertices, {} edges, {} samples | pressed: "
-                "{} vertices and {} edges touching one, excluded -> {}",
-                dc.max_vertex_rel,
-                dc.max_edge_rel,
-                m_offset_params.convergence_distance_rel * m_offset_params.target_distance,
-                m_offset_params.convergence_distance_rel,
-                dc.worst_angle_deg,
-                m_offset_params.convergence_orientation_max_deg,
-                dc.n_folded,
-                dc.n_outside_support,
-                dc.n_vertices,
-                dc.n_edges,
-                dc.n_samples,
-                dc.n_pressed,
-                dc.n_edges_pressed,
-                dc.converged() ? "CONVERGED" : "not converged");
-        }
+        // THE LOOP'S CONVERGENCE TEST: the vertex test (phase_b_conv_criterion) over the placed
+        // front vertices AND the edge test over every live front edge, one bar (1 = the bar);
+        // see energy_criterion(). Both halves: Phase B has just placed every vertex it can;
+        // whether the chords BETWEEN those vertices still resolve the level set is the other
+        // half of the same question, and the half update_band_sizing_from_tolerance() -- called
+        // below when this fails -- exists to answer.
+        const EnergyCriterion ec = energy_criterion();
+        const double phi = ec.ratio();
+        // The verdict is THIS measurement: the final Phase A below re-meshes the strip and
+        // moves the front inside its envelope, so re-measuring after it reports a mesh that
+        // is, by design, no longer at the minimum (22x the bar on Euclidean 0.15).
+        if (ec.converged()) m_energy_verdict = ec;
         logger().info(
-            "\t[phase B] {} smoothing passes, max placement gradient {:.6g} = {:.4}x tolerance "
-            "(in-edge diagnostic {:.4}x) | phi residual {:.4}x its own bar | {} reachable, "
-            "{} pinned (max {:.6g}), {} skipped ({} unrounded, {} inverted ring)"
-            "{}",
+            "\t[phase B] {} passes | energy ({}): vertices max {:.4}x the bar, edges max {:.4}x "
+            "the bar (worst edge length {:.4g}) | {} vertices ({} pressed, skipped), {} edges ({} "
+            "touching a pressed vertex, skipped), {} unmeasurable -> {}",
             passes,
-            g.max_reachable,
-            phi,
-            g.max_in_edge / offset_gradient_tolerance(),
-            r.max_reachable / offset_residual_tolerance(),
-            g.n_reachable,
-            g.n_pinned,
-            g.max_pinned,
-            g.n_skipped_unrounded + g.n_skipped_inverted,
-            g.n_skipped_unrounded,
-            g.n_skipped_inverted,
-            // Only ever nonzero under the default placement term, and the invariant is 0 --
-            // see m_placement_no_normal. Absent from the line entirely when there is nothing
-            // to report, so a clean run's log does not carry a permanent zero.
-            m_placement_no_normal.load()
-                ? fmt::format(
-                      " | {} placements had NO NORMAL (fell back to (Phi-c)^2)",
-                      m_placement_no_normal.load())
-                : std::string());
+            m_offset_params.phase_b_conv_criterion,
+            ec.max_vertex,
+            ec.max_edge,
+            ec.worst_edge_len,
+            ec.n_vertices,
+            ec.n_pressed,
+            ec.n_edges,
+            ec.n_edges_pressed,
+            ec.n_unmeasurable,
+            ec.converged() ? "CONVERGED" : "not converged");
 
         // BEFORE the convergence check below, so the round that converges is recorded like every
         // other one rather than dropped by the early return.
@@ -5074,12 +4486,57 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         // tube one Phase B out of date.
         rebuild_offset_envelope();
 
+        // BOTH PHASES DONE (Uday, 2026-08-25): Phase B's criterion alone let a run end with strip
+        // faces at quality 66 -- the last Phase B re-pressed the strip after Phase A had finished
+        // under stop_energy, and nobody looked again. Logged here for the record; convergence is
+        // the energy criterion alone (a local minimum), quality is Phase A's business.
+        double max_quality_after_b = 0.;
+        for (const Tuple& f : get_faces()) {
+            max_quality_after_b = std::max(max_quality_after_b, get_quality(f));
+        }
+        // LOGGED, NOT GATING (Uday, 2026-08-25): gating on it made 0.10 take 5 rounds instead of 3
+        // and kept 0.15 open on ~10 thin wedges at the lens tips that Phase B's press recreates
+        // every round. Left as information until the tips are dealt with.
+        logger().info(
+            "\t[A/B round {}] after Phase B: max AMIPS {:.6g} vs stop_energy {} -> {}",
+            round + 1,
+            max_quality_after_b,
+            m_params.stop_energy,
+            max_quality_after_b < m_params.stop_energy ? "ok" : "OVER (for information)");
         if (phi <= 1.0) {
             logger().info(
-                "A/B converged after {} round(s): amips {:.4}x, phi {:.4}x",
+                "A/B converged after {} round(s): amips {:.4}x, phi {:.4}x, max AMIPS after B {:.6g}",
                 round + 1,
                 amips,
-                phi);
+                phi,
+                max_quality_after_b);
+            // FINAL PHASE A (Uday, 2026-08-25): convergence means a local minimum of the front
+            // energy, not a quality bound. Where two fronts meet, that minimum is a sliver strip
+            // (Euclidean 0.15: width 0.006, AMIPS 45 vs stop_energy 10), so the converged mesh can
+            // be over Phase A's bar. One more pure-TriWild pass on it; the front does not move
+            // again after this, so nothing re-presses the strip.
+            if (max_quality_after_b >= m_params.stop_energy) {
+                logger().info(
+                    "======== final phase A: max AMIPS {:.6g} >= stop_energy {} ========",
+                    max_quality_after_b,
+                    m_params.stop_energy);
+                m_ab_round = round + 2;
+                m_phase = OptPhase::A;
+                m_freeze_front = true;
+                mesh_improvement(a_iters);
+                m_freeze_front = false;
+                assign_band_regions();
+                rebuild_offset_envelope();
+                const double final_amips = std::get<0>(optimization_quality_stats());
+                logger().info(
+                    "\t[final phase A] max element quality {:.4} (stop {:.4}) -> {}",
+                    final_amips,
+                    optimization_stop_metric(),
+                    final_amips < m_params.stop_energy ? "ok" : "STILL OVER");
+                if (m_offset_params.debug_output) {
+                    write_smoothing_debug_output(fmt::format("phase_{}A", round + 2));
+                }
+            }
             return;
         }
 
@@ -5090,7 +4547,20 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
         // ever lower a scalar, but they disagree on WHICH vertices: the old routine refined
         // around any segment over tolerance, including one whose own vertex is misplaced rather
         // than under-resolved. That routine is deleted, as it is in 3D.
-        update_band_sizing_from_tolerance();
+        const size_t n_halved = update_band_sizing_from_tolerance();
+        size_t n_new_long = 0;
+        for (const auto& e : over_threshold_edges()) {
+            if (!over_after_a.count(e)) ++n_new_long;
+        }
+        sizing_changed = n_halved > 0 || n_new_long > 0;
+        logger().info(
+            "\t[A/B round {}] sizing {}: {} vertices halved, {} edges over the split threshold that "
+            "were not after phase A -> next phase A {}",
+            round + 1,
+            sizing_changed ? "violated" : "satisfied",
+            n_halved,
+            n_new_long,
+            sizing_changed ? "runs" : "skipped");
     }
 
     logger().warn(
@@ -5132,12 +4602,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // this function is still building -- so this states the SHAPE of the bound and the
     // reference line that follows it states the value.
     logger().info(
-        "\tOffset criterion: |grad (Phi - c)^2 . n| <= convergence_gradient_norm_rel {} x "
+        "\tOffset criterion: |grad (Phi - c)^2 . n| <= phase_b_conv_rel {} x "
         "max|grad (Phi - c)^2 . n| over the band AS CONSTRUCTED, with n the unit normal from "
         "the offset surface's own normal (Voronoi-weighted at vertices, the edge's own inside "
         "an edge). Measured over every band vertex and {} sample(s) "
         "per band edge; the reference is reported next, before the loop starts.",
-        m_offset_params.convergence_gradient_norm_rel,
+        m_offset_params.phase_b_conv_rel,
         offset_residual_samples());
 
     // Seed the sizing field from the offset's current edge lengths, before any operation runs.
@@ -5222,12 +4692,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     const double gtol = offset_gradient_tolerance();
     logger().info(
         "placement gradient (at band vertices): max {} (avg {}) vs tolerance {} "
-        "[convergence_gradient_norm_rel {}] | in-edge diagnostic {} ({} edge samples) | {} "
+        "[phase_b_conv_rel {}] | in-edge diagnostic {} ({} edge samples) | {} "
         "reachable, {} pinned (max {}), {} skipped ({} unrounded, {} inverted ring)",
         g.max_reachable,
         g.avg_reachable,
         gtol,
-        m_offset_params.convergence_gradient_norm_rel,
+        m_offset_params.phase_b_conv_rel,
         g.max_in_edge,
         g.n_edge_samples,
         g.n_reachable,
@@ -5260,107 +4730,27 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
           g.max_in_edge}});
     log_worst_dist_vertex();
 
-    // BOTH HALVES, ONE BAR. The vertex max and the edge-interior max are the same quantity
-    // against the same tolerance; placement answers the first and refinement answers the second,
-    // and a run is done only when both are met. See gradient_split() for why the edge half used
-    // to be excluded and why that was wrong.
-    const double crit = std::max(g.max_reachable, g.max_in_edge);
-    m_converged = crit <= gtol;
-    if (use_distance_criterion()) {
-        const DistanceCriterion dc = distance_criterion();
-        m_converged = dc.converged();
+    {
+        // Measured at convergence when the loop converged (see m_energy_verdict), else now.
+        const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
+        m_converged = ec.converged();
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{} [dist_and_orient]: placed {} (max vertex distance {:.6g} = {:.4}x the bar, "
-            "worst vertex {}), resolved {} (max edge-sample distance {:.6g} = {:.4}x), oriented {} "
-            "(worst edge angle {:.2f} deg vs {:.1f}, {} folded, at ({:.6g}, {:.6g})), {} points "
-            "outside support | pressed (excluded): {} vertices, {} edges | bar {:.6g} = {} x "
-            "target_distance | gradient criterion for comparison: {:.6g} vs {:.6g} ({:.4}x)",
+            "{} [energy, {}]{}: vertices max {:.4}x the bar (worst vertex {}), edges max {:.4}x "
+            "the bar (at ({:.6g}, {:.6g})) | phase_b_conv_rel {} | {} vertices, {} edges, {} "
+            "unmeasurable",
             m_converged ? "Converged" : "Optimization did not converge",
-            dc.placed,
-            dc.max_vertex_dist,
-            dc.max_vertex_rel,
-            dc.worst_vid,
-            dc.resolved,
-            dc.max_edge_dist,
-            dc.max_edge_rel,
-            dc.oriented,
-            dc.worst_angle_deg,
-            m_offset_params.convergence_orientation_max_deg,
-            dc.n_folded,
-            dc.worst_edge_mid.x(),
-            dc.worst_edge_mid.y(),
-            dc.n_outside_support,
-            dc.n_pressed,
-            dc.n_edges_pressed,
-            m_offset_params.convergence_distance_rel * m_offset_params.target_distance,
-            m_offset_params.convergence_distance_rel,
-            crit,
-            gtol,
-            crit / gtol);
-    }
-    if (m_converged && !use_distance_criterion()) {
-        logger().info(
-            "Converged ([max placement gradient over band vertices AND edge-interior samples] "
-            "{} <= {} [convergence_gradient_norm_rel x reference]); at vertices {}, in edges {}"
-            " | pinned, not gating: vertices {}, in edges {}",
-            crit,
-            gtol,
-            g.max_reachable,
-            g.max_in_edge,
-            g.max_pinned,
-            g.max_in_edge_pinned);
-        // A band with unmeasured vertices is not a fully measured band, and the criterion is a
-        // max: saying so at the moment of the verdict is the only place it cannot be missed.
-        if (const size_t skipped = g.n_skipped_unrounded + g.n_skipped_inverted; skipped > 0) {
-            logger().warn(
-                "Converged with {} band vertices NOT measured ({} unrounded, {} with an inverted "
-                "ring). The smoother refuses to place these, so their gradient is not part of the "
-                "fixed point -- but the verdict above is a max over the rest.",
-                skipped,
-                g.n_skipped_unrounded,
-                g.n_skipped_inverted);
-        }
-        if (g.n_pinned > 0 && g.max_pinned > gtol) {
-            logger().warn(
-                "{} pinned band vertices are over the gradient tolerance (max {} > {}). These are "
-                "on the domain boundary, where construction ran out of room, so no further round "
-                "can lower this -- it is a construction defect, not a convergence one.",
-                g.n_pinned,
-                g.max_pinned,
-                gtol);
-        }
-    }
-
-    if (!m_converged && !use_distance_criterion()) {
-        // WHICH HALF FAILED IS THE WHOLE DIAGNOSIS, and the two want opposite remedies: the
-        // vertex term is placement (Phase B), the edge term is resolution (the sizing update and
-        // the Phase A that acts on it). Both are printed against the one bar, and the failing
-        // one is named explicitly so the reader does not have to compare them by eye.
-        const char* which = (g.max_reachable > gtol && g.max_in_edge > gtol)
-                                ? "BOTH halves"
-                                : (g.max_reachable > gtol ? "the VERTEX half (placement)"
-                                                          : "the EDGE half (resolution)");
-        logger().warn(
-            "Optimization did not converge: {} over the bar. max placement gradient {} > {} "
-            "[convergence_gradient_norm_rel x reference] -- at vertices {} (worst vertex {}), "
-            "in edges {} | pinned, not gating: vertices {}, in edges {}",
-            which,
-            crit,
-            gtol,
-            g.max_reachable,
-            g.worst_vid,
-            g.max_in_edge,
-            g.max_pinned,
-            g.max_in_edge_pinned);
-
-        // The "blocked by topological preservation" warning that used to sit here is gone with
-        // the growth pass. respect_all_topologies gated offset_tri_consistent_topology(), which
-        // only grow_offset_conservative() ever called, so the flag now constrains nothing and
-        // advising the user to change it would send them after a knob that no longer exists. If
-        // topological blocking needs a diagnostic again, it has to be written against the
-        // operations that actually refuse on topology now: the link conditions in
-        // split/collapse/swap.
+            m_offset_params.phase_b_conv_criterion,
+            m_energy_verdict ? " (measured at convergence, before the final phase A)" : "",
+            ec.max_vertex,
+            ec.worst_vid,
+            ec.max_edge,
+            ec.worst_edge_mid.x(),
+            ec.worst_edge_mid.y(),
+            m_offset_params.phase_b_conv_rel,
+            ec.n_vertices,
+            ec.n_edges,
+            ec.n_unmeasurable);
     }
 
     // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log

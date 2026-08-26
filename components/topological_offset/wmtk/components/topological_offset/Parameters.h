@@ -88,20 +88,26 @@ struct Parameters : public wmtk::OptimizerParameters
     // Phase B local placement stop compare the FULL gradient norm AT VERTICES against it, one
     // identical test. Edge-interior samples are a chord diagnostic in 2D: reported, never
     // gating.
-    double convergence_gradient_norm_rel;
+    double phase_b_conv_rel;
     // WHICH CONVERGENCE CRITERION GATES THE RUN. "gradient" (default): the measured-reference
     // gradient bar above, byte-identical to before this key existed. "dist_and_orient": a geometric
     // criterion in units of target_distance -- see the two keys below and
     // TopoOffsetTriMesh::distance_criterion(). 2D only; 3D reads only "gradient".
-    std::string convergence_criterion;
+    std::string phase_b_conv_criterion; ///< 2D: gradient_norm_rel | step_size_rel | decrement
     // "dist_and_orient" only. Every reachable offset vertex AND every edge-interior sample must lie
     // within this fraction of target_distance of the level set, first order:
     // |Phi - c| / |grad Phi|. Vertices are the placement half, samples the resolution half.
-    double convergence_distance_rel;
     // "dist_and_orient" only. Largest angle, in degrees, between an offset edge's OUTWARD normal and
     // the field's own outward direction at the edge midpoint. Signed: a folded edge, whose
     // outward normal points into the band by the field's reckoning, fails outright.
-    double convergence_orientation_max_deg;
+    // PHASE B NORMAL-ONLY PLACEMENT (Uday, 2026-08-25): a front vertex moves only along the field's
+    // normal at its visit's start. Where a vertex sits along the front carries no information about
+    // the offset (a free gauge, redistributed by Phase A's smoother); the 2-D solve's tangential
+    // component is the AMIPS step alone, which made fronts slide and fold where two of them meet.
+    // Imposed through the front's own energy (a stiff quadratic penalty on tangential
+    // displacement, see phase_b_front_energy), so the shared smoother is untouched; the pass stop
+    // and the loop's vertex test then measure |grad F . n|, the derivative along the only unknown.
+    bool phase_b_normal_only = false;
     // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;
     // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to
     // a band whose vertices sit on the level set while its edges cut across it.
@@ -142,7 +148,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Phase B's INTERIOR (background AMIPS) per-vertex Newton tolerance: polysolve's
     /// rel_grad_norm_tol, the fraction of the visit's own entry gradient the solve stops at.
     /// In 2D the OFFSET placement no longer reads this -- its descent stops on the run's own
-    /// bar, offset_gradient_tolerance(), so convergence_gradient_norm_rel governs the local
+    /// bar, offset_gradient_tolerance(), so phase_b_conv_rel governs the local
     /// solves and the global criterion alike (an entry-relative rule with no absolute floor
     /// limit-cycled; see smooth_offset_vertex_backtracking()). 3D still reads it for BOTH of
     /// its Phase B solves -- see .claude/CLAUDE.md, PARAMETER MEANINGS THAT HAVE MOVED.
@@ -222,10 +228,8 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
         offset_field = json_params["offset_field"];
-        convergence_gradient_norm_rel = json_params["convergence_gradient_norm_rel"];
-        convergence_criterion = json_params["convergence_criterion"];
-        convergence_distance_rel = json_params["convergence_distance_rel"];
-        convergence_orientation_max_deg = json_params["convergence_orientation_max_deg"];
+        phase_b_conv_rel = json_params["phase_b_conv_rel"];
+        phase_b_conv_criterion = json_params["phase_b_conv_criterion"];
         offset_residual_samples = json_params["offset_residual_samples"];
 
         sorted_marching = json_params["sorted_marching"];
@@ -287,6 +291,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         sizing_propagate_min = json_params["sizing_propagate_min"];
+        phase_b_normal_only = json_params["phase_b_normal_only"];
         pre_optimize_input = json_params["pre_optimize_input"];
         pre_optimize_sizing_from_edges = json_params["pre_optimize_sizing_from_edges"];
         w_amips = json_params["w_amips"];
@@ -337,7 +342,7 @@ struct Parameters : public wmtk::OptimizerParameters
         if (min_edge_length_rel < 0) {
             // THE ENVELOPE EPS, AS A MULTIPLE OF target_distance -- which is now exactly what
             // ab_offset_envelope_rel is, so no conversion is left to do. The old expression,
-            // ab_offset_envelope_rel * 0.5 * convergence_gradient_norm_rel, was that same eps
+            // ab_offset_envelope_rel * 0.5 * phase_b_conv_rel, was that same eps
             // back when the tube was a fraction of the residual tolerance; at the old defaults
             // (0.25, 0.2) it came to 0.025, which is the new default itself, so this is
             // unchanged in value and only stops restating a definition that has moved.
