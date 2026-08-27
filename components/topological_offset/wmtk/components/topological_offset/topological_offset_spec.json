@@ -68,7 +68,6 @@
       "stuck_refine_min_scalar",
       "stuck_refine_gradation",
       "stuck_refine_force_split",
-      "sizing_propagate_min",
       "phase_b_normal_only",
       "pre_optimize_sizing_from_edges",
       "pre_optimize_input",
@@ -445,12 +444,6 @@
     "default": true,
     "type": "bool",
     "doc": "2D. Phase B places a front vertex by a ONE-DIMENSIONAL solve along its field normal n = grad Phi/|grad Phi|: the same objective (ring AMIPS + offset terms) restricted to the line x0 + s n, same solver, line search and accept test; the vertex test reads the step along the same n. Measured 2026-08-25 (two_circles, cap 20, rel 0.01): the free 2-D placement also converges everywhere under the step criterion, with 1-2 more rounds and more vertices, since the front slides tangentially while it travels. Until 2026-08-25 19:40 this was a stiff tangential penalty (k = 1e6) in the energy; it is not any more. ORIGINAL DOC: Phase B places a front vertex along the field's normal only (the direction of grad Phi at the visit's start), instead of the free 2-D solve. Where a vertex sits along the front carries no information about the offset; the 2-D solve's tangential motion is driven by AMIPS alone and made fronts slide and fold where two of them meet (measured 2026-08-25). Imposed as a stiff quadratic penalty on tangential displacement inside the front's own energy, so the shared smoother is unchanged; the pass stop and the loop's vertex test then measure |grad F . n|. Spacing along the front is left to Phase A's smoother."
-  },
-  {
-    "pointer": "/sizing_propagate_min",
-    "default": false,
-    "type": "bool",
-    "doc": "How a split midpoint inherits its sizing scalar. false (TetWild's rule): the mean of the two endpoints, which dilutes refinement across the frontier of a refined region. true: the min of the two, so refinement propagates undiluted to split children and a refined region reaches its target length in one generation of splits. The collapse survivor keeps its own scalar either way. 2D only: the 3D split keeps the mean unconditionally."
   },
   {
     "pointer": "/pre_optimize_sizing_from_edges",

@@ -408,17 +408,6 @@ public:
     size_t request_tri_slots(size_t n);
     size_t request_vert_slots(size_t n);
 
-    /**
-     * @brief How many operations have aborted because the preallocated slot pool ran out.
-     *
-     * Identical in meaning and in mechanism to TetMesh::slot_exhausted(): the abort happens
-     * inside the connectivity update, before any application hook, so the operation simply does
-     * not happen and nothing downstream can observe it. Reset before a pass and check after.
-     */
-    size_t slot_exhausted() const { return m_slot_exhausted.load(std::memory_order_relaxed); }
-    void reset_slot_exhausted() { m_slot_exhausted.store(0, std::memory_order_relaxed); }
-    void note_slot_exhausted() { m_slot_exhausted.fetch_add(1, std::memory_order_relaxed); }
-
 private:
     size_t reserved_capacity(size_t live_count) const
     {
@@ -432,7 +421,6 @@ private:
     SlotPool<VertexConnectivity> m_vertex_connectivity;
     SlotPool<TriangleConnectivity> m_tri_connectivity;
     double m_preallocation_factor = 6.0;
-    std::atomic<size_t> m_slot_exhausted{0};
     bool m_use_link_condition = true;
 
 protected:

@@ -119,14 +119,6 @@ struct OptimizerParameters
     // Lower bound on m_sizing_scalar. Much smaller than the old l_min/l floor;
     // still far above the position-rounding scale so it stays numerically safe.
     double stuck_refine_min_scalar = 1e-3;
-    // How a split midpoint inherits its sizing scalar. false (TetWild's rule): the MEAN of
-    // the two endpoints, which dilutes refinement across the frontier of a refined region --
-    // each split born on that frontier starts halfway back to coarse. true: the MIN of the
-    // two, so refinement propagates undiluted and a refined region reaches its target in one
-    // generation of splits instead of geometrically. (The collapse survivor keeps its own
-    // scalar in 2D either way; only the split reads this.) Wired in TriOptimizerMesh only --
-    // the 3D split keeps the mean unconditionally.
-    bool sizing_propagate_min = false;
     // Gradation cap for the monotone sizing smoothing: neighboring sizings may
     // differ by at most this factor. The smoothing only ever *lowers* sizings
     // (spreads refinement outward), never raises the refined values, avoiding
@@ -187,6 +179,7 @@ struct OptimizerParameters
     /// Whether smoothing refuses a move that raises the worst incident element's quality. True
     /// is TriWild's and SimWild's behaviour; see optimization::SmoothVertexOptions::quality_veto
     /// for the objective it stops being the right rule for.
+    /// This is used in topological_offset to allow the offset surface to move even if it reduces quality.
     bool smooth_quality_veto = true;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 

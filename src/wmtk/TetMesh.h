@@ -710,19 +710,6 @@ public:
     size_t request_tet_slots(size_t n);
     size_t request_vert_slots(size_t n);
 
-    /**
-     * @brief How many operations have aborted because the preallocated slot pool ran out.
-     *
-     * The abort happens inside the connectivity update, before any application hook, so nothing
-     * downstream can observe it: the operation simply does not happen, no rejection is recorded,
-     * and nothing is logged. mesh_improvement() is insulated from that because it consolidates
-     * every iteration and the operation is retried, but a caller that runs a single pass silently
-     * gets a fraction of the work it asked for. Reset it before a pass and check it after.
-     */
-    size_t slot_exhausted() const { return m_slot_exhausted.load(std::memory_order_relaxed); }
-    void reset_slot_exhausted() { m_slot_exhausted.store(0, std::memory_order_relaxed); }
-    void note_slot_exhausted() { m_slot_exhausted.fetch_add(1, std::memory_order_relaxed); }
-
     // Construction/insertion helpers (single-threaded ONLY): guarantee at least
     // `extra` free tet/vertex slots beyond the current used count, growing the
     // storage geometrically if necessary. Unlike request_*_slots these never fail;
@@ -764,7 +751,6 @@ private:
     SlotPool<TetrahedronConnectivity> m_tet_connectivity;
 
     double m_preallocation_factor = 6.0;
-    std::atomic<size_t> m_slot_exhausted{0};
 
     int m_t_empty_slot = 0;
     int m_v_empty_slot = 0;

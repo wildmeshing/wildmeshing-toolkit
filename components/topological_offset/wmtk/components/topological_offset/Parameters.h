@@ -290,7 +290,6 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_min_scalar = json_params["stuck_refine_min_scalar"];
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
-        sizing_propagate_min = json_params["sizing_propagate_min"];
         phase_b_normal_only = json_params["phase_b_normal_only"];
         pre_optimize_input = json_params["pre_optimize_input"];
         pre_optimize_sizing_from_edges = json_params["pre_optimize_sizing_from_edges"];

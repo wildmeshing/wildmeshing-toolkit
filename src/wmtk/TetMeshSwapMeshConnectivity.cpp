@@ -72,7 +72,6 @@ std::map<size_t, TetMesh::VertexConnectivity> wmtk::TetMesh::operation_update_co
         add_size = new_tet_conn.size() - remove_id.size();
         reserved_first = request_tet_slots(add_size);
         if (reserved_first == INVALID_SLOT) {
-            note_slot_exhausted();
             ok = false; // out of preallocated space; nothing mutated yet
             return {};
         }
