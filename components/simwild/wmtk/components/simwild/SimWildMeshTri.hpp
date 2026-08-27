@@ -275,7 +275,6 @@ protected:
     void write_smoothing_debug_output(const std::string& path) const override { write_vtu(path); }
 
     bool collapse_quality_allowed(size_t v1, size_t fid, double q, double ring_max) const override;
-    void collapse_after_vertex(size_t v1, size_t v2) override;
     bool split_adjust_position(size_t v_new, const std::vector<Tuple>& children) override;
     void split_after_vertex(size_t v_new) override { m_last_split_vertex = v_new; }
 };

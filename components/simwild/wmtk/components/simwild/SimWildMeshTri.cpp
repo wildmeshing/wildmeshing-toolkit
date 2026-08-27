@@ -1094,41 +1094,6 @@ void SimWildMeshTri::update_attributes()
     }
 }
 
-void SimWildMeshTri::collapse_after_vertex(size_t v1, size_t v2)
-{
-    // // SimWild's tracked edges are derived from neighboring cell tags. Rebuild the local
-    // // interface instead of retaining an OR-merge of the two old edge flags.
-    // std::set<size_t> affected_vertices;
-    // affected_vertices.insert(v2);
-
-    // for (const size_t fid : get_one_ring_fids_for_vertex(v2)) {
-    //     if (!tuple_from_tri(fid).is_valid(*this)) continue;
-    //     for (int j = 0; j < 3; ++j) {
-    //         const Tuple edge = tuple_from_edge(fid, j);
-    //         const auto opposite = edge.switch_face(*this);
-    //         const bool is_interface =
-    //             opposite.has_value() &&
-    //             m_face_attribute[fid].tags != m_face_attribute[opposite->fid(*this)].tags;
-    //         m_edge_attribute[edge.eid(*this)].m_is_surface_fs = is_interface;
-    //         const auto evs = get_edge_vids(edge);
-    //         affected_vertices.insert(evs.begin(), evs.end());
-    //     }
-    // }
-
-    // for (const size_t vid : affected_vertices) {
-    //     bool on_interface = false;
-    //     for (const Tuple& edge : get_one_ring_edges_for_vertex(vid)) {
-    //         if (m_edge_attribute[edge.eid(*this)].m_is_surface_fs) {
-    //             on_interface = true;
-    //             break;
-    //         }
-    //     }
-    //     m_vertex_attribute[vid].m_is_on_surface = on_interface;
-    // }
-    m_vertex_attribute[v2].m_sizing_scalar =
-        std::min(m_vertex_attribute[v1].m_sizing_scalar, m_vertex_attribute[v2].m_sizing_scalar);
-}
-
 std::shared_ptr<polysolve::nonlinear::Problem> SimWildMeshTri::get_envelope_energy(
     const Tuple& t) const
 {

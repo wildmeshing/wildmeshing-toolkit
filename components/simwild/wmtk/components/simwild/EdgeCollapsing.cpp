@@ -41,12 +41,6 @@ bool SimWildMesh::collapse_after_connectivity(
     return true;
 }
 
-void SimWildMesh::collapse_after_vertex(size_t v1, size_t v2)
-{
-    m_vertex_attribute[v2].m_sizing_scalar =
-        std::min(m_vertex_attribute[v1].m_sizing_scalar, m_vertex_attribute[v2].m_sizing_scalar);
-}
-
 void SimWildMesh::simplify()
 {
     compute_vertex_partition_morton();
