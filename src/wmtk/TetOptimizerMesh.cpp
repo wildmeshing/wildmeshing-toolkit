@@ -106,8 +106,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_metric > optimization_stop_metric() &&
-            (pre_max_metric - max_metric) <=
-                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");

@@ -1583,16 +1583,6 @@ public:
      */
     void check_offset_within_support(const char* when) const;
 
-    // NO optimization_stalled OVERRIDE, and no optimization_iteration_begin ONE.
-    //
-    // Both existed for the JOINT loop. The stall override applied the base's inequality per
-    // criterion because a run could be stuck on one while the other still moved; Phase A has one
-    // criterion -- TriWild's -- so the base's own scalar test is the right one, which is what the
-    // override already delegated to in Phase A anyway. optimization_iteration_begin() re-derived
-    // the tracked surfaces from the face labels every iteration and logged both criteria; the
-    // classification is done once at the top of optimize_offset() now and maintained by the
-    // operations, exactly as in 3D, and the per-round criteria are logged by the A/B driver.
-
     /**
      * @brief The band's distance error, split by whether the optimizer can do anything about it.
      *

@@ -502,6 +502,25 @@ protected:
     uint32_t m_op_epoch = 0;
     virtual bool optimization_stop_at_float() const { return false; }
 
+    /**
+     * @brief Whether an iteration that moved the metric from @p prev to @p cur is stalled, and
+     * the sizing refinement should therefore fire.
+     *
+     * Exactly the expression mesh_improvement() used inline: the improvement is small next to
+     * the distance the metric still has to cover, i.e. the mesh is not on course to reach the
+     * target within about 1/stall_eps more iterations.
+     *
+     * It is a virtual because the scalar the driver has is a MAX over criteria, and for an
+     * application with more than one criterion that max only ever reports on whichever is
+     * currently worst -- so a run whose worst criterion is stuck refines every iteration even
+     * while the others are improving. An application that knows its criteria apart overrides
+     * this to ask the question of each of them.
+     */
+    virtual bool optimization_stalled(double prev, double cur)
+    {
+        return (prev - cur) <= m_params.stuck_refine_stall_eps * (cur - optimization_stop_metric());
+    }
+
     /// Non-const: an override may cache what it measured before the collapse so its `after`
     /// counterpart can tell a regression from a defect that was already there.
     virtual bool collapse_before_vertex(size_t, size_t, double) { return true; }
