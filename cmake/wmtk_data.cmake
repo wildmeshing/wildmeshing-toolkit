@@ -24,23 +24,16 @@ ExternalProject_Add(
     # where it used to run one, enough for topological_offset_3d alone to exceed the suite's
     # 7200 s budget.
     #
-    # At this revision ALL EIGHT are commented out: the names sit in a _commented_out key and the
-    # group's list is empty, so it runs nothing. 2D and 3D now share one optimization flow, and it
-    # does not converge on the ESP-based offset potential, so registering any of them would only
-    # assert a known failure. The configs are all still in the repo, and an earlier revision had
-    # already brought the 3D three up to the current spec -- offset_gradient_rel stated
-    # explicitly, offset_field pinned to "smooth" now that the default means ESP, and the inert
-    # max_iterations replaced by ab_max_rounds.
+    # At 99c36d4 (data2 PRs #6 and #7, 2026-08-28) the SIX 2D cases are registered and run --
+    # topological_offset_2d, _two_circles, _annots_tag4_in, _vertex_input, _dragon and the new
+    # _two_overlap (models/two_overlap_crossing.msh, two overlapping disks, the minimal form of the
+    # dragon's defect). The group asserts only that a case runs without throwing; dragon and
+    # two_overlap are fixtures for the open wall problem (input boundaries inside the offset
+    # distance) and are kept as regression fixtures, not as converging cases. The three 3D cases
+    # stay parked. Keys the spec no longer has (pre_optimize_sizing_from_edges as a default,
+    # sizing_propagate_min, the old phase_b_conv_rel default) were dropped from the fixtures.
     #
-    # The last two names added are FIXTURES FOR AN OPEN PROBLEM rather than cases awaiting a fix
-    # elsewhere: topological_offset_2d_two_circles and topological_offset_2d_annots_tag4_in both
-    # parse against the current strict spec and are parked because the case FAILS. They are the
-    # outward and inward forms of the same thing -- two offset fronts approaching one curve, where
-    # the summed potential never falls to the level c, so those vertices chase a level set that
-    # does not exist and the stuck-refine calls they generate run the ambient mesh away to 1e50.
-    # See "OPEN PROBLEMS" in .claude/CLAUDE.md.
-    #
-    GIT_TAG 5ec0988783795586ad58de404d152393bdabc96f
+    GIT_TAG 99c36d42e654b3cecb086b3321ced2d4b5ae3ea9
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
