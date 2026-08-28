@@ -108,6 +108,12 @@ struct Parameters : public wmtk::OptimizerParameters
     // displacement, see phase_b_front_energy), so the shared smoother is untouched; the pass stop
     // and the loop's vertex test then measure |grad F . n|, the derivative along the only unknown.
     bool phase_b_normal_only = false;
+    bool phase_b_alignment = true;
+    /// 2D: false (the default) is the single phase -- TriWild's loop with the front placed inside
+    /// its smoothing passes; true is the A/B loop, which is also what 3D always runs.
+    bool alternating_opt = false;
+    /// 2D single phase: the turn budget. The loop leaves on the front test; this is the guard.
+    int single_max_turns = 40;
     // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;
     // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to
     // a band whose vertices sit on the level set while its edges cut across it.
@@ -291,6 +297,9 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_gradation = json_params["stuck_refine_gradation"];
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         phase_b_normal_only = json_params["phase_b_normal_only"];
+        phase_b_alignment = json_params["phase_b_alignment"];
+        alternating_opt = json_params["alternating_opt"];
+        single_max_turns = json_params["single_max_turns"];
         pre_optimize_input = json_params["pre_optimize_input"];
         pre_optimize_sizing_from_edges = json_params["pre_optimize_sizing_from_edges"];
         w_amips = json_params["w_amips"];

@@ -71,6 +71,16 @@ C_OFFSET = (0.169, 0.498, 0.831)
 C_INNER = (0.55, 0.55, 0.58)
 C_OTHER = (0.55, 0.75, 0.55)
 C_BAD = (0.839, 0.153, 0.157)  # bad-quality highlight; red is reserved for this
+C_BAND = (0.45, 0.66, 0.90)  # the band's cells, filled: a lighter form of the front's blue
+# One colour per tag for the per-tag boundary layers, in sorted tag order, each named in the
+# layer's label. None is the blue of the offset surface, the orange of the input surface, the
+# green of the region boundaries, the grey of the inner interface or the red of the bad-quality
+# highlight, and no two are the same hue -- the first palette had a cyan beside the blue front
+# and two pinks, which read as one thing.
+TAG_COLORS = [((0.45, 0.16, 0.62), "purple"), ((0.55, 0.27, 0.07), "brown"),
+              ((0.93, 0.79, 0.00), "yellow"), ((0.80, 0.10, 0.45), "magenta"),
+              ((0.10, 0.10, 0.10), "black"), ((0.00, 0.45, 0.40), "teal"),
+              ((0.60, 0.60, 0.00), "olive"), ((0.95, 0.45, 0.30), "coral")]
 
 # The C++ sentinel for "degenerate, do not trust the number" -- wmtk::TriOptimizerMesh::MAX_ENERGY.
 MAX_ENERGY = 1e50
@@ -337,24 +347,54 @@ def dist_to_triangles(q, t0, t1, t2):
 
 FRAME_RE = __import__("re").compile(r"(\d+)(?=\D*$)")
 
+
+# <output>_frames.txt, written beside the frames: one "NNNNN<tab>label" line per frame, the label
+# being the compact token r<round><phase><pass>_<operation>. The FILE NAMES are the sequence number
+# alone, so ParaView loads them as one time series; what a reader needs to say which round and pass
+# a frame belongs to lives here instead.
+SEQ_RE = re.compile(r"_(\d{5})$")  # the writer's zero-padded frame counter, at the end of the stem
+
+
+def read_frame_labels(d):
+    """{frame index: label} from <something>_frames.txt in directory `d`; {} if there is none."""
+    out = {}
+    for man in sorted(Path(d).glob("*_frames.txt")):
+        for line in open(man):
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) == 2 and parts[0].strip().isdigit():
+                out[int(parts[0])] = parts[1]
+    return out
+
 # The 2D offset's own timeline: <output>_step_<NNNNN>_r<round><A|B><pass>[_<op>] or [_end].
 # <op> is the pass the frame follows ("split", "smooth", "collapse-skipped", "B-offset", ...).
 # See TopoOffsetTriMesh::write_smoothing_debug_output, which is what names these.
-STEP_RE = re.compile(r"step_(\d+)_r(\d+)([AB])(?:(\d+)(?:_([A-Za-z][A-Za-z-]*))?|_end)$")
+# S is the single-phase mode (alternating_opt false): one loop, so its frames are r<it>S<pass>.
+STEP_RE = re.compile(r"step_(\d+)_r(\d+)([ABS])(?:(\d+)(?:_([A-Za-z][A-Za-z-]*))?|_end)$")
 
 
-def step_label(stem):
-    """`step_00007_r1A3` -> 'round 1  phase A3'; the _end frames -> 'round 1  phase A (end)'.
+TOKEN_RE = re.compile(r"r(\d+)([ABS])(?:(\d+)(?:_([A-Za-z][A-Za-z-]*))?|_end)$")
 
-    Returns None for a name that is not a step frame, so callers can fall back.
+
+def step_label(stem, token=None):
+    """'r1A3' (a manifest label) or a legacy 'step_00007_r1A3' name -> 'round 1  phase A3'.
+
+    Returns None when neither form matches, so callers can fall back to the file name.
     """
-    m = STEP_RE.search(stem)
-    if not m:
-        return None
-    _, rnd, ph, sub, op = m.groups()
+    if token:
+        m = TOKEN_RE.search(token)
+        if not m:
+            return token
+        rnd, ph, sub, op = m.groups()
+    else:
+        m = STEP_RE.search(stem)
+        if not m:
+            return None
+        _, rnd, ph, sub, op = m.groups()
     tail = ("   after " + op) if op else ""
     if int(rnd) == 0:
         return "construction" + tail
+    if ph == "S":
+        return "iteration %s  pass %s%s" % (rnd, sub if sub else "(end)", tail)
     return "round %s  phase %s%s%s" % (rnd, ph, sub if sub else " (end)", tail)
 
 
@@ -375,13 +415,23 @@ def frame_key(p):
 
 def resolve(args):
     """Command line -> (list of mesh paths, config dict or {}, stride)."""
-    stride, max_frames, lazy, rest = 1, 60, False, []
+    # No frame cap and lazy loading by default for a series (2026-08-26): the process is what
+    # is scrubbed through, so every frame at stride 1 is the normal case, and lazy reading is
+    # what makes that affordable. --eager restores reading everything up front.
+    stride, max_frames, lazy, rest = 1, None, None, []
+    tags_on, input_ref = set(), None
     it = iter(args)
     for a in it:
         if a in ("--stride", "-s"):
             stride = max(1, int(next(it)))
         elif a == "--max-frames":
             max_frames = max(1, int(next(it)))
+        elif a == "--eager":
+            lazy = False
+        elif a == "--tags":  # ONLY these per-tag boundary layers on at start (default: all)
+            tags_on = set(next(it).split(","))
+        elif a == "--input":  # the input mesh, for the fixed per-tag reference curves
+            input_ref = Path(next(it))
         elif a == "--lazy":
             lazy = True
         else:
@@ -418,8 +468,19 @@ def resolve(args):
         # in run order, each frame naming the round and pass it belongs to. That is what the
         # slider scrubs. With DEBUG_output alone it holds just the `_end` frames (two per round);
         # with DEBUG_output_per_pass it holds every pass as well.
-        frames = sorted(
-            (f for f in d.glob("*step_*.vtu") if STEP_RE.search(f.stem)), key=frame_key)
+        # SEQUENTIALLY NAMED FRAMES + their manifest, which is what the writer produces now.
+        labels = read_frame_labels(d)
+        frames = []
+        if labels:
+            # The 5-digit form ONLY: save_vtu also writes <output>_<iteration>.vtu result meshes,
+            # and those single-digit numbers would otherwise collide with the frame counter.
+            frames = sorted(
+                (f for f in d.glob("*.vtu")
+                 if SEQ_RE.search(f.stem) and int(SEQ_RE.search(f.stem).group(1)) in labels),
+                key=frame_key)
+        if not frames:
+            frames = sorted(
+                (f for f in d.glob("*step_*.vtu") if STEP_RE.search(f.stem)), key=frame_key)
         # The older two-series naming, for runs made before the step naming existed.
         if not frames:
             frames = sorted(
@@ -441,7 +502,7 @@ def resolve(args):
     if len(meshes) > 1:
         meshes = sorted(meshes, key=frame_key)
         kept = meshes[::stride]
-        if len(kept) > max_frames:
+        if max_frames is not None and len(kept) > max_frames:
             # Say what was dropped rather than silently showing part of the run.
             extra = -(-len(kept) // max_frames)
             print("%d frames after stride %d exceeds --max-frames %d; taking every %d instead"
@@ -468,7 +529,15 @@ def resolve(args):
             print("config %s" % cfg_path)
         except Exception as e:
             print("config %s unreadable (%s); using defaults" % (cfg_path, e))
-    return meshes, cfg, stride, lazy
+    if lazy is None:
+        lazy = len(meshes) > 1
+    # The reference input defaults to the config's own "input", relative to the config file.
+    if input_ref is None and cfg.get("input"):
+        cand = Path(cfg["input"])
+        if not cand.is_absolute() and cfg_path is not None:
+            cand = (cfg_path.parent / cand).resolve()
+        input_ref = cand
+    return meshes, cfg, stride, lazy, tags_on, input_ref
 
 
 def load(msh, cfg):
@@ -563,6 +632,27 @@ def load(msh, cfg):
         "region": region,
         "envelope": envelope,
     }
+    # PER-TAG BOUNDARIES, one curve per tag, from THIS frame's tags: the boundary of the set of
+    # cells carrying the tag, whatever else they carry. The classes above come from
+    # offset_selection, which is the right view of the offset and a misleading one of the
+    # input: on a multi-tag model (the dragon fixture) "input surface" is the outline of
+    # everything the selection matches -- every tag, when no config is found -- and where the
+    # band overwrote tags it is cropped at the band and moves as cells beside it collapse.
+    # These curves say, per tag, what that tag's cells look like right now.
+    # Not for the band (any of its names) and not for ambient, whose "boundary" is the domain
+    # box plus the outline of everything tagged -- the layer that read as the input surface
+    # showing the box.
+    skip = offset_tags | {"offset_tag", "offset", "ambient"} | set(cfg.get("offset_output_tags", []))
+    for g in sorted(groups):
+        if g in skip:
+            continue
+        without = [row for row, names in seen.values() if g not in names]
+        parts = {"in": groups[g]}
+        if without:
+            parts["out"] = np.asarray(without)
+        tb = interfaces(points, dim, parts)
+        got = [tb[p] for p in (("in", "out"), ("in", "")) if p in tb]
+        surf["tag:" + g] = np.vstack(got) if got else np.zeros((0, dim), np.int64)
 
     delta = float(cfg.get("target_distance", -1.0))
     if delta <= 0:
@@ -596,6 +686,7 @@ def load(msh, cfg):
 
 LAYERS = [
     ("background mesh (tags as cell layers)", "background mesh"),
+    ("offset band (filled, pale blue)", "offset band"),
     ("input surface (orange)", "input surface"),
     ("offset surface", "offset surface"),
     ("inner interface (grey)", "inner interface"),
@@ -640,8 +731,11 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None):
                 color=(0.85, 0.85, 0.87), edge_width=1.0,
             )
         where = "cells" if dim == 3 else "faces"
+        # OFF by default (2026-08-26): with it on, every cell that is neither source nor band --
+        # on a multi-tag model, other regions' cells -- is painted the colormap's low end, a
+        # magenta that drowned the curve layers. The mesh is flat grey unless it is switched on.
         m.add_scalar_quantity("class (0 ambient, 1 input, 2 offset)", mesh_class,
-                              defined_on=where, cmap="spectral", vminmax=(0.0, 2.0), enabled=True)
+                              defined_on=where, cmap="spectral", vminmax=(0.0, 2.0), enabled=False)
         for g, v in mesh_tags.items():
             m.add_scalar_quantity(g, v, defined_on=where, cmap="blues", vminmax=(0.0, 1.0))
         if sizing is not None:
@@ -663,20 +757,44 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None):
             extras["quality"] = (points, mesh_cells, q)
         m.set_enabled(False)
         out["background mesh (tags as cell layers)"] = m
+        # THE BAND'S CELLS, FILLED. Everything else stays grey, so the region the offset owns
+        # right now reads at a glance; the front (blue curve) is its edge.
+        band_cells = mesh_cells[mesh_class == 2.0]
+        if len(band_cells):
+            if dim == 3:
+                b = ps.register_volume_mesh(prefix + "offset band", points, band_cells, color=C_BAND)
+            else:
+                # Lifted a hair toward the camera: in the same plane as the background mesh it
+                # z-fights with it and the grey wins. Relative to the scene size, like the tube
+                # radii; still under the curve tubes.
+                lift = np.zeros_like(points)
+                lift[:, 2] = 5e-4 * float(np.linalg.norm(points.max(axis=0) - points.min(axis=0)))
+                b = ps.register_surface_mesh(prefix + "offset band", points + lift, band_cells,
+                                             color=C_BAND, edge_width=1.0)
+            b.set_enabled(False)
+            out["offset band (filled, pale blue)"] = b
 
     out["input surface (orange)"] = curve_or_surface("input surface", surf["input"], C_INPUT, 0.0022)
     out["offset surface"] = curve_or_surface("offset surface", surf["offset"], C_OFFSET, 0.0022)
     out["inner interface (grey)"] = curve_or_surface("inner interface", surf["inner"], C_INNER, 0.0022)
     out["region boundaries (green)"] = curve_or_surface("region boundaries", surf["region"], C_OTHER, 0.0022)
     out["envelope curves (orange)"] = curve_or_surface("envelope curves", surf["envelope"], C_INPUT, 0.0018)
+    for i, key in enumerate(sorted(k for k in surf if k.startswith("tag:"))):
+        g = key[len("tag:"):]
+        color, cname = TAG_COLORS[i % len(TAG_COLORS)]
+        out["tag boundary: %s (%s)" % (g, cname)] = curve_or_surface(
+            "tag boundary " + g, surf[key], color, 0.0007)
 
     if err is not None and len(surf["offset"]):
         _, _, dist, rel = err
         # In 2D the offset surface is a CURVE NETWORK, in 3D a surface mesh; both take vertex
         # scalars, and the error along the offset is the first thing worth looking at.
         m = (ps.get_surface_mesh if dim == 3 else ps.get_curve_network)(prefix + "offset surface")
+        # OFF by default (2026-08-26): "reds" is white at zero error, so a well-placed front drew
+        # as a white/grey tube. Plain blue says where the front is; switch this on to see how far
+        # from delta it is.
         m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
-                              vminmax=(0.0, float(rel.max())), enabled=True)
+                              vminmax=(0.0, float(rel.max())), enabled=False)
         m.add_scalar_quantity("distance to input", dist, cmap="viridis")
     if sizing is not None and out.get("offset surface") is not None:
         # The same compaction the surface itself was registered with: its vertices are
@@ -715,7 +833,8 @@ def load_phi_grid(meshes):
 
 
 def main():
-    meshes, cfg, stride, lazy = resolve(sys.argv[1:])
+    meshes, cfg, stride, lazy, tags_on, input_ref = resolve(sys.argv[1:])
+    frame_labels = read_frame_labels(meshes[0].parent) if meshes else {}
     for m in meshes:
         if not m.is_file():
             sys.exit("missing mesh: %s" % m)
@@ -770,6 +889,10 @@ def main():
         if k == 0 or not series:
             print("mesh   %s  (%s)" % (path, "tets" if dim == 3 else "triangles"))
             print("delta  %g  (%s)" % (delta, prov))
+            print("  'input surface' = boundary of the cells offset_selection %r matches%s"
+                  % (cfg.get("offset_selection", "!_"),
+                     "" if cfg else "  -- NO CONFIG FOUND, so every tag counts; put the run's "
+                                    "json next to the frames"))
             print("  %-22s %8d cells, %d vertices" % ("background mesh", len(mesh[0]), len(points)))
             for n in sorted(groups):
                 print("  group %-16s %8d cells" % (n, len(groups[n])))
@@ -857,6 +980,40 @@ def main():
         phi_struct.set_enabled(False)
         print("  phi at the offset surface (the level c): %.6g" % level)
 
+    # THE INPUT GEOMETRY, per tag, as a fixed reference: the boundary of each physical group of
+    # the input mesh (--input, or the config's "input"), registered once. The frames' own tag
+    # boundaries move -- the band overwrites tags and Phase A collapses cells -- so "has the
+    # dragon changed?" needs the input drawn beside it, and this is the input as the run loaded it.
+    ref_structs = []
+    if input_ref is not None and input_ref.is_file():
+        rp, rdim, rgroups, _, _ = read_groups(input_ref)
+        rows = {}
+        for g, cells in rgroups.items():
+            for r in cells:
+                rows.setdefault(tuple(sorted(r)), [r, set()])[1].add(g)
+        for i, g in enumerate(sorted(g for g in rgroups if g != "ambient")):
+            without = [r for r, names in rows.values() if g not in names]
+            parts = {"in": rgroups[g]}
+            if without:
+                parts["out"] = np.asarray(without)
+            tb = interfaces(rp, rdim, parts)
+            got = [tb[p] for p in (("in", "out"), ("in", "")) if p in tb]
+            if not got:
+                continue
+            pts_, c_ = compact(rp, np.vstack(got))
+            # Same hue as the frame's own layer for that tag, THIN: thick = this frame, thin = input.
+            color = TAG_COLORS[i % len(TAG_COLORS)][0]
+            name = "input %s (reference)" % g
+            if rdim == 3:
+                s = ps.register_surface_mesh(name, pts_, c_, color=color, edge_width=1.0)
+            else:
+                s = ps.register_curve_network(name, pts_, c_, color=color, radius=0.0007)
+            s.set_enabled(False)
+            ref_structs.append(s)
+        print("input geometry (reference): %s, %d tag boundaries" % (input_ref, len(ref_structs)))
+    elif input_ref is not None:
+        print("input geometry (reference): %s not found" % input_ref)
+
     # Which LAYERS are on is one choice for the whole series; which FRAME is showing is another.
     # Defaults match the single-mesh viewer: the mesh and the two surfaces, plus the region
     # outlines when there is no input surface to show.
@@ -864,6 +1021,7 @@ def main():
     state["background mesh (tags as cell layers)"] = dim == 2
     state["input surface (orange)"] = True
     state["offset surface"] = True
+    state["offset band (filled, pale blue)"] = True
     state["region boundaries (green)"] = len(frames[0][4]["input"]) == 0
     state["envelope curves (orange)"] = True
     state["smooth offset potential"] = False
@@ -871,6 +1029,7 @@ def main():
     state["frame"] = 0
     state["play"] = False
     state["tick"] = 0
+    state["input geometry (reference)"] = bool(ref_structs)
     # THE THRESHOLD DEFAULTS TO THE RUN'S OWN BAR. stop_energy is what Phase A is trying to get
     # every triangle under, so "bad" out of the box means "the run is not done with this one",
     # not an arbitrary cutoff. The offset spec's default is 100; a config that set it wins.
@@ -920,10 +1079,12 @@ def main():
         cur = 0 if lazy else state["frame"]
         for k, layers in enumerate(registered):
             for label, s in layers.items():
-                s.set_enabled(k == cur and state[label])
+                s.set_enabled(k == cur and state.get(label, False))
         rebuild_bad()  # the highlight follows the frame, so it is rebuilt with it
         if phi_struct is not None:
             phi_struct.set_enabled(state["smooth offset potential"])
+        for s in ref_structs:
+            s.set_enabled(state["input geometry (reference)"])
         # The sizing toggle swaps which scalar the visible structures are colored by --
         # set on EVERY frame, not just the current one, so scrubbing keeps the choice.
         # Re-adding under the same name is this polyscope's setter; see register_frame.
@@ -936,7 +1097,7 @@ def main():
                 if not on and rel_info is not None:
                     rel, rmax = rel_info
                     m.add_scalar_quantity("|dist - delta| / delta", rel, cmap="reds",
-                                          vminmax=(0.0, rmax), enabled=True)
+                                          vminmax=(0.0, rmax), enabled=False)
             if "bg" in ex:
                 m, s, cls, where = ex["bg"]
                 m.add_scalar_quantity("sizing", s, cmap="viridis", vminmax=(0.0, 1.0),
@@ -944,7 +1105,7 @@ def main():
                 if not on:
                     m.add_scalar_quantity("class (0 ambient, 1 input, 2 offset)", cls,
                                           defined_on=where, cmap="spectral",
-                                          vminmax=(0.0, 2.0), enabled=True)
+                                          vminmax=(0.0, 2.0), enabled=False)
 
     apply_visibility()
 
@@ -965,7 +1126,9 @@ def main():
 
     def callback():
         f = frame_at(state["frame"]) if lazy else frames[state["frame"]]
-        lbl = step_label(f[0].stem)
+        idx_m = SEQ_RE.search(f[0].stem)
+        tok = frame_labels.get(int(idx_m.group(1))) if idx_m else None
+        lbl = step_label(f[0].stem, tok)
         if lbl:
             # THE SUB-ITERATION, not the file name: which A/B round and which pass inside which
             # phase is the thing being scrubbed through, so it goes first and largest.
@@ -995,6 +1158,22 @@ def main():
             if not any(label in layers for layers in registered):
                 continue
             changed, state[label] = psim.Checkbox(label, state[label])
+            if changed:
+                apply_visibility()
+        tag_labels = sorted({l for layers in registered for l in layers
+                             if l.startswith("tag boundary: ")})
+        if tag_labels:
+            psim.Separator()
+            psim.TextUnformatted("boundary of each tag's cells, from this frame")
+            for label in tag_labels:
+                tag_name = label[len("tag boundary: "):].rsplit(" (", 1)[0]
+                state.setdefault(label, (tag_name in tags_on) if tags_on else True)
+                changed, state[label] = psim.Checkbox(label, state[label])
+                if changed:
+                    apply_visibility()
+        if ref_structs:
+            changed, state["input geometry (reference)"] = psim.Checkbox(
+                "input geometry per tag (reference, thin)", state["input geometry (reference)"])
             if changed:
                 apply_visibility()
         if phi_struct is not None:

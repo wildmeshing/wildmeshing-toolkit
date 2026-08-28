@@ -16,7 +16,8 @@ void TopoOffsetTriMesh::init_from_image(
     const MatrixSi& F_tags,
     const MatrixXd& V_env,
     const MatrixXi& F_env,
-    const std::vector<std::string>& tag_names)
+    const std::vector<std::string>& tag_names,
+    const std::string& curve_name)
 {
     // assert dimensions
     assert(V.cols() == 2);
@@ -63,6 +64,23 @@ void TopoOffsetTriMesh::init_from_image(
         }
     }
 
+    // THE CURVE GROUP AS A TAG (Uday, 2026-08-26). The reader hands the .msh line elements over
+    // as the envelope polyline; registered under the group's name it becomes selectable, which
+    // is the only way an OPEN curve can be the complex -- offset_selection is otherwise an
+    // expression over face tags and the complex their selection's boundary. Which mesh edges
+    // carry it is decided geometrically below, once positions exist: an edge inside the
+    // polyline's tube (the same eps the tag envelopes use) is on the curve. Exact matching by
+    // vertex is not available: triwild writes its curves with their own vertices.
+    if (F_env.rows() > 0) {
+        m_curve_V = V_env;
+        m_curve_E = F_env;
+        std::string name = curve_name.empty() ? "curve" : curve_name;
+        while (m_tag_name_to_id.count(name)) name += "_";
+        m_curve_tag = int64_t(m_tag_id_to_name.size());
+        m_tag_id_to_name[m_curve_tag] = name;
+        m_tag_name_to_id[name] = m_curve_tag;
+        m_tags_count++;
+    }
     // collect int ids for offset output
     for (const std::string& name : m_offset_params.offset_output_tag) {
         m_offset_output_tag_ids.insert(m_tag_name_to_id[name]);
@@ -113,7 +131,11 @@ void TopoOffsetTriMesh::init_from_image(
         size_t v_id = v.vid(*this);
         set_vertex_position(v_id, Vector2d(V.row(v_id)));
     }
-
+    // ONCE AT LOAD TOO, before the masks are seeded: init_surfaces_and_boundaries() reads
+    // on_curve to put the curve group's edges in its tube, and a curve that bounds no region --
+    // an open sketch line -- is held by nothing otherwise. label_input_complex() re-derives it
+    // afterwards, on whatever mesh the pre-optimisation left.
+    classify_curve_edges();
     init_surfaces_and_boundaries();
 }
 
@@ -139,11 +161,13 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
         // boundary here). Wall edge: every tag of its single face, the boundary against the
         // unmeshed outside -- which is how ambient's envelope comes to hold the wall.
         CellTag edge_tags;
+        const bool on_curve = m_edge_extra[eid].on_curve;
+        if (on_curve) edge_tags.insert(m_curve_tag); // held in the curve group's tube too
         const std::optional<Tuple> f_opp = e.switch_face(*this);
         if (f_opp) {
             const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
             const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
-            if (tag0 == tag1) {
+            if (tag0 == tag1 && !on_curve) {
                 continue;
             }
             std::set_symmetric_difference(
@@ -340,8 +364,45 @@ bool TopoOffsetTriMesh::ambient_assert()
 }
 
 
+void TopoOffsetTriMesh::classify_curve_edges()
+{
+    // See the declaration. Idempotent: every edge is answered, so a stale true is cleared.
+    if (m_curve_tag < 0 || m_curve_E.rows() == 0) return;
+    const double eps = m_offset_params.envelope_size;
+    if (!(std::isfinite(eps) && eps > 0.)) {
+        logger().warn(
+            "\tCurve group '{}': no valid envelope_size to classify edges by; no edge carries it",
+            m_tag_id_to_name[m_curve_tag]);
+        return;
+    }
+    std::vector<Eigen::Vector2d> cv(m_curve_V.rows());
+    for (int i = 0; i < m_curve_V.rows(); ++i) cv[i] = m_curve_V.row(i).head<2>();
+    std::vector<Eigen::Vector2i> ce(m_curve_E.rows());
+    for (int i = 0; i < m_curve_E.rows(); ++i)
+        ce[i] = Eigen::Vector2i(m_curve_E(i, 0), m_curve_E(i, 1));
+    SampleEnvelope curve(/*exact=*/true);
+    curve.init(cv, ce, eps);
+    size_t n_on = 0;
+    for (const Tuple& e : get_edges()) {
+        const Vector2d p = m_vertex_attribute[e.vid(*this)].m_posf;
+        const Vector2d q = m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf;
+        const bool on = !curve.is_outside(std::array<Vector2d, 2>{{p, q}});
+        m_edge_extra[e.eid(*this)].on_curve = on;
+        n_on += on ? 1 : 0;
+    }
+    logger().info(
+        "\tCurve group '{}' (tag {}): {} polyline segments; {} of the mesh's edges lie inside its "
+        "tube (eps {:.6g}) and carry the tag",
+        m_tag_id_to_name[m_curve_tag],
+        m_curve_tag,
+        m_curve_E.rows(),
+        n_on,
+        eps);
+}
+
 void TopoOffsetTriMesh::label_input_complex()
 {
+    classify_curve_edges(); // the mesh may have been refined since the last call
     // ensure all tags exist in map
     const ExpressionPtr& expr = m_offset_params.offset_selection;
     const CellTag tags_involved = expr->tags_involved();
@@ -359,6 +420,30 @@ void TopoOffsetTriMesh::label_input_complex()
     if (single_body) { // single body mode
         m_singlebody = true;
         m_single_tag = *tags_involved.begin();
+        if (m_single_tag == m_curve_tag) {
+            // THE CURVE IS THE COMPLEX: its edges and their vertices, no faces. The band then
+            // grows on both sides of it (marching takes every label-0 face around a label-1
+            // vertex), which is the offset of a curve, open or closed. offset_in / offset_out
+            // have no meaning for it and are not consulted.
+            size_t n = 0;
+            for (const Tuple& e : get_edges()) {
+                const size_t e_id = e.eid(*this);
+                if (!m_edge_extra[e_id].on_curve) continue;
+                m_edge_extra[e_id].label = 1;
+                m_vertex_extra[e.vid(*this)].label = 1;
+                m_vertex_extra[e.switch_vertex(*this).vid(*this)].label = 1;
+                ++n;
+            }
+            logger().info(
+                "Using the curve group '{}' as the complex: {} edges",
+                m_tag_id_to_name[m_single_tag],
+                n);
+            if (n == 0)
+                log_and_throw_error(
+                    "offset_selection names the curve group but no mesh edge lies on it");
+            mark_input_complex_vertices();
+            return;
+        }
         if (!(m_offset_params.offset_in || m_offset_params.offset_out)) {
             log_and_throw_error(
                 "At least one of offset_in and offset_out must be true for singlebody mode.");
@@ -530,26 +615,11 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
         vertex_in_closure[v.vid(*this)] = false;
     }
 
-    // WHICH INPUT REGION each complex primitive belongs to, for the per-region fields (see
-    // m_region_potentials). A region is one tag of the selection expression; a primitive's
-    // region is the first involved tag its (adjacent) face carries, -1 when none does.
-    // No selection expression (the unit tests build the mesh without one): no regions, every
-    // primitive falls back to the union field. Dereferencing the null expression here crashed
-    // wmtk_test_topological_offset from 2f793c596e (2026-08-24) until 2026-08-25.
-    m_region_tags.clear();
-    if (m_offset_params.offset_selection) {
-        const CellTag involved = m_offset_params.offset_selection->tags_involved();
-        m_region_tags.assign(involved.begin(), involved.end());
-    }
-    const auto region_of = [&](const CellTag& tags) -> int64_t {
-        for (size_t r = 0; r < m_region_tags.size(); ++r) {
-            if (tags.count(m_region_tags[r])) return int64_t(r);
-        }
-        return -1;
-    };
+    // WHICH INPUT REGION each complex primitive belongs to is decided further down, once the
+    // complex has been collected: a region is ONE CONNECTED PIECE of the input complex, not one
+    // tag. See m_n_regions.
     // collect faces in input complex
     std::vector<simplex::Face> complex_faces;
-    std::vector<int64_t> complex_face_region;
     for (const Tuple& f : faces) {
         size_t f_id = f.fid(*this);
         if (m_face_extra[f_id].label == 1) {
@@ -557,7 +627,6 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
             size_t v1 = f.switch_vertex(*this).vid(*this);
             size_t v2 = f.switch_edge(*this).switch_vertex(*this).vid(*this);
             complex_faces.emplace_back(v0, v1, v2);
-            complex_face_region.push_back(region_of(m_face_attribute[f_id].tags));
             edge_in_closure[simplex::Edge(v0, v1)] = true;
             edge_in_closure[simplex::Edge(v1, v2)] = true;
             edge_in_closure[simplex::Edge(v0, v2)] = true;
@@ -569,19 +638,12 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
 
     // collect edges in input complex that are not contained in a face
     std::vector<simplex::Edge> complex_edges;
-    std::vector<int64_t> complex_edge_region;
     for (const Tuple& e : edges) {
         simplex::Edge e_simp = simplex_from_edge(e);
         if (!edge_in_closure[e_simp] && m_edge_extra[e.eid(*this)].label == 1) {
             size_t v0 = e.vid(*this);
             size_t v1 = e.switch_vertex(*this).vid(*this);
             complex_edges.emplace_back(v0, v1);
-            {
-                int64_t r = region_of(m_face_attribute[e.fid(*this)].tags);
-                const std::optional<Tuple> opp = e.switch_face(*this);
-                if (r < 0 && opp) r = region_of(m_face_attribute[opp->fid(*this)].tags);
-                complex_edge_region.push_back(r);
-            }
             edge_in_closure[e_simp] = true;
             vertex_in_closure[v0] = true;
             vertex_in_closure[v1] = true;
@@ -590,19 +652,10 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
 
     // collect vertices in input complex not contained in an edge or face
     std::vector<size_t> complex_verts;
-    std::vector<int64_t> complex_vert_region;
     for (const Tuple& v : verts) {
         size_t v_id = v.vid(*this);
         if (!vertex_in_closure[v_id] && m_vertex_extra[v_id].label == 1) {
             complex_verts.push_back(v_id);
-            {
-                int64_t r = -1;
-                for (const size_t fid : get_one_ring_fids_for_vertex(v_id)) {
-                    r = region_of(m_face_attribute[fid].tags);
-                    if (r >= 0) break;
-                }
-                complex_vert_region.push_back(r);
-            }
             vertex_in_closure[v_id] = true;
         }
     }
@@ -648,6 +701,58 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
         index++;
     }
 
+    // ONE REGION PER CONNECTED PIECE OF THE INPUT COMPLEX -- see m_n_regions and
+    // m_region_potentials. A region used to be one TAG of the selection expression, which is
+    // wrong whenever one tag covers two pieces that never touch: they then shared a field, and
+    // for the smooth potential the two barriers add wherever the pieces are closer than dhat,
+    // so the level set bridges the gap between them and there is none to place a front on.
+    // Measured on two disks of radius 1 with a gap of 0.2, target_distance 0.08, dhat 3.5 delta:
+    // one tag put a front vertex at 1.243x delta in the gap, two tags at 1.006x.
+    //
+    // A piece is a connected component under VERTEX connectivity: pieces that meet at a single
+    // point share one offset there, so they must share one field. Connectivity is read off the
+    // captured complex itself (F and E in the new index space), not the live mesh, so the
+    // numbering is fixed for the whole run -- the fields are built once and every later lookup
+    // is against these indices.
+    std::vector<int> comp_of(size_t(V.rows()), -1);
+    {
+        std::vector<int> parent(size_t(V.rows()));
+        for (size_t i = 0; i < parent.size(); ++i) parent[i] = int(i);
+        const std::function<int(int)> find = [&](int x) {
+            while (parent[size_t(x)] != x) {
+                parent[size_t(x)] = parent[size_t(parent[size_t(x)])];
+                x = parent[size_t(x)];
+            }
+            return x;
+        };
+        const auto unite = [&](const int a, const int b) {
+            const int ra = find(a), rb = find(b);
+            if (ra != rb) parent[size_t(ra)] = rb;
+        };
+        for (int i = 0; i < F.rows(); ++i) {
+            unite(F(i, 0), F(i, 1));
+            unite(F(i, 1), F(i, 2));
+        }
+        for (int i = 0; i < E.rows(); ++i) unite(E(i, 0), E(i, 1));
+        std::map<int, int> root_to_region;
+        for (int i = 0; i < V.rows(); ++i) {
+            const int r = find(i);
+            const auto it = root_to_region.find(r);
+            if (it == root_to_region.end()) {
+                comp_of[size_t(i)] = int(root_to_region.size());
+                root_to_region[r] = comp_of[size_t(i)];
+            } else {
+                comp_of[size_t(i)] = it->second;
+            }
+        }
+        m_n_regions = int(root_to_region.size());
+    }
+    m_phi_vert_region.assign(comp_of.begin(), comp_of.end());
+    logger().info(
+        "\tInput complex: {} connected piece(s), one offset field each ({} complex vertices)",
+        m_n_regions,
+        V.rows());
+
     // THE BOUNDARY CURVE, derived before the BVH so the ONE retained structure can carry it.
     //
     // Phi's 2D primitives are segments and points; there is no 2D area primitive. A solid input
@@ -658,7 +763,6 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     // level set in there; it is unreachable, because the band is grown outward and the runaway
     // guard would catch a vertex that crossed the complex.)
     std::map<simplex::Edge, int> boundary_count;
-    std::map<simplex::Edge, int64_t> boundary_region; // a boundary edge has exactly one face
     for (size_t fi = 0; fi < complex_faces.size(); ++fi) {
         const auto vs = complex_faces[fi].vertices();
         for (const simplex::Edge e :
@@ -666,21 +770,21 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
               simplex::Edge(vs[1], vs[2]),
               simplex::Edge(vs[0], vs[2])}) {
             ++boundary_count[e];
-            boundary_region[e] = complex_face_region[fi];
         }
     }
 
+    // Every primitive's region is its own vertices' region: a primitive cannot span two pieces.
     std::vector<Eigen::Vector2i> phi_segs;
     std::vector<int64_t> phi_seg_region;
     for (const auto& [e_simp, count] : boundary_count) {
         if (count != 1) continue; // interior to the complex: carries no boundary geometry
         const auto vs = e_simp.vertices();
         phi_segs.emplace_back(v_index_map[vs[0]], v_index_map[vs[1]]);
-        phi_seg_region.push_back(boundary_region[e_simp]);
+        phi_seg_region.push_back(comp_of[size_t(phi_segs.back()[0])]);
     }
     for (int i = 0; i < E.rows(); ++i) { // isolated edges of the complex
         phi_segs.emplace_back(E(i, 0), E(i, 1));
-        phi_seg_region.push_back(complex_edge_region[size_t(i)]);
+        phi_seg_region.push_back(comp_of[size_t(E(i, 0))]);
     }
 
     MatrixXi E_phi(phi_segs.size(), 2);
@@ -718,8 +822,10 @@ void TopoOffsetTriMesh::init_input_complex_bvh()
     m_phi_F = F;
     m_phi_P = P_phi;
     m_phi_seg_region = phi_seg_region;
-    m_phi_face_region = complex_face_region;
-    m_phi_point_region = complex_vert_region;
+    m_phi_face_region.clear();
+    for (int i = 0; i < F.rows(); ++i) m_phi_face_region.push_back(comp_of[size_t(F(i, 0))]);
+    m_phi_point_region.clear();
+    for (const int p : P_phi) m_phi_point_region.push_back(comp_of[size_t(p)]);
 }
 
 
@@ -793,15 +899,15 @@ void TopoOffsetTriMesh::init_offset_potential()
 
 void TopoOffsetTriMesh::init_region_potentials(const double delta, const double effective_factor)
 {
-    // See m_region_potentials. One selection tag means one region, and that region's field is
-    // the union field itself -- nothing to build, and every lookup falls through to it.
+    // See m_region_potentials. A connected input complex is ONE region, and that region's field
+    // is the union field itself -- nothing to build, and every lookup falls through to it.
     m_region_potentials.clear();
-    if (m_region_tags.size() <= 1) {
+    if (m_n_regions <= 1) {
         assign_band_regions();
         return;
     }
     const bool euclidean = m_offset_params.offset_field == "euclidean";
-    for (size_t r = 0; r < m_region_tags.size(); ++r) {
+    for (size_t r = 0; r < size_t(m_n_regions); ++r) {
         // A primitive whose region is unknown (-1) is given to every field, conservatively.
         std::vector<int> erows, frows, pidx;
         for (int i = 0; i < m_phi_E.rows(); ++i) {
@@ -839,10 +945,10 @@ void TopoOffsetTriMesh::init_region_potentials(const double delta, const double 
                     effective_factor));
         }
         logger().info(
-            "\tOffset field for region {} (tag {}): {} segments, {} faces, {} points -- the band "
-            "grown from this region is placed on this field alone",
+            "\tOffset field for region {} (one connected piece of the input complex): {} "
+            "segments, {} faces, {} points -- the band grown from this piece is placed on this "
+            "field alone",
             r,
-            m_region_tags[r],
             E_r.rows(),
             F_r.rows(),
             P_r.size());

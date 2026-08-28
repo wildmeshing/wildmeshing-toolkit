@@ -92,7 +92,8 @@ void topological_offset(nlohmann::json json_params)
             input_data.T_input_tag,
             input_data.V_envelope,
             input_data.F_envelope,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.envelope_name);
 
         // label input complex
         mesh.m_offset_params.offset_selection =

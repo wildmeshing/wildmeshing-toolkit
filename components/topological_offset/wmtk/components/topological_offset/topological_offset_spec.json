@@ -3,7 +3,10 @@
     "doc": "",
     "pointer": "/",
     "type": "object",
-    "required": ["application", "input"],
+    "required": [
+      "application",
+      "input"
+    ],
     "optional": [
       "output",
       "input_dir",
@@ -69,6 +72,9 @@
       "stuck_refine_gradation",
       "stuck_refine_force_split",
       "phase_b_normal_only",
+      "phase_b_alignment",
+      "alternating_opt",
+      "single_max_turns",
       "pre_optimize_sizing_from_edges",
       "pre_optimize_input",
       "w_amips",
@@ -82,7 +88,9 @@
   {
     "pointer": "/application",
     "type": "string",
-    "options": ["topological_offset"],
+    "options": [
+      "topological_offset"
+    ],
     "doc": "Application name must be topological_offset."
   },
   {
@@ -111,7 +119,9 @@
   {
     "pointer": "/offset_output_tags",
     "type": "list",
-    "default": ["newtag"],
+    "default": [
+      "newtag"
+    ],
     "doc": "Tags to add to elements in the resulting offset region."
   },
   {
@@ -176,7 +186,10 @@
     "pointer": "/offset_field",
     "type": "string",
     "default": "smooth",
-    "options": ["smooth", "euclidean"],
+    "options": [
+      "smooth",
+      "euclidean"
+    ],
     "doc": "WHICH FIELD DEFINES THE OFFSET, and therefore what the boundary is placed on, what the criterion measures and what the sizing field refines by. `smooth` is the offset geometric contact potential Phi, with the boundary on the level set Phi = c: C^2, analytic derivatives, and a level set that BULGES OUTWARD at reentrant features, so it is a smoothed offset rather than the exact one. `euclidean` is the Euclidean distance d to the input complex, with the boundary on d = target_distance: the exact offset, with exact derivatives inside each closest-feature region, a gradient discontinuity across the medial axis, and a genuine crease at every reentrant feature that no refinement resolves. Two consequences of picking `euclidean`: the residual becomes EXACT (|d - delta|, with none of the reference-slope conversion the smooth field needs, which overstates wherever Phi's isolines are packed tighter than on a flat stretch), and offset_dhat_factor together with the outside-the-support guard become meaningless, because d has no compact support. `smooth` is the default and is what every measurement in this component was tuned against."
   },
   {
@@ -195,7 +208,11 @@
     "pointer": "/phase_b_conv_criterion",
     "type": "string",
     "default": "step_size_rel",
-    "options": ["gradient_norm_rel", "step_size_rel", "decrement"],
+    "options": [
+      "gradient_norm_rel",
+      "step_size_rel",
+      "decrement"
+    ],
     "doc": "2D. WHAT 'converged' MEANS for a front vertex, in Phase B's pass stop and in the A/B loop's vertex test, against phase_b_conv_rel. The loop test is this vertex test AND the edge test below; there is no other loop criterion any more (the old convergence_criterion key with 'gradient' and 'dist_and_orient' is gone, dist_and_orient is still logged for information). F is the vertex's Phase B objective (AMIPS + offset term + alignment term), g its gradient, H its (Gauss-Newton) Hessian; under phase_b_normal_only both are taken along the vertex normal n. 'gradient_norm_rel': |n . g| <= rel x reference, the reference being the same max on the band as constructed, measured once. 'step_size_rel' (default): the remaining 1-D Newton step |n . g| / (n^T H n) <= rel x target_distance -- no vertex would still move more than that fraction of the offset distance. 'decrement': the Newton decrement, half of (n . g)^2 / (n^T H n) = the energy the next Newton step would still gain, <= rel x F(x). WHY NOT THE GRADIENT (Uday, 2026-08-25): the gradient is stiffness x remaining displacement. Where two fronts meet, the strip between them is a sliver at the energy's minimum (AMIPS ~50), so a vertex 0.0001 x target_distance from its minimum still reads 13-19x the bar (Euclidean 0.4, rounds 2-4, the mesh visibly converged); the step and the decrement divide the stiffness out. THE EDGE TEST, same under all three: the second difference of (Phi - c)/c along every live front edge, |r(m) - (r(a) + r(b))/2| -- how far the level set curves away from the chord, which halving the edge reduces -- in gradient units against the reference under 'gradient_norm_rel'; under the other two as sagitta <= ab_offset_envelope_rel x target_distance -- the level set resolved to within the tube Phase A already allows the front, so rel governs convergence only and never the mesh size (rel 0.01 with the edge test tied to it over-refined 0.04 to 5906 vertices for 1351). The sizing rule halves an edge whose endpoints pass the vertex test and which fails the edge test."
   },
   {
@@ -232,7 +249,7 @@
     "pointer": "/DEBUG_output",
     "type": "bool",
     "default": false,
-    "doc": "Write debug VTU frames of the evolving mesh. By default only the per-phase timeline is written: one frame after every phase A and every phase B (<output>_phase_{round}{A|B}.vtu), which is what the viewer shows. See DEBUG_output_per_pass for the full per-pass series."
+    "doc": "Write debug VTU frames of the evolving mesh. 2D (since 2026-08-26): one frame after every operation pass and every smoothing pass, as sequential files <output>_NNNNN.vtu so ParaView loads them as one time series, plus <output>_frames.txt with one 'NNNNN<tab>r<turn><phase><pass>_<op>' line per frame, which visualize_offset.py reads for its labels. 3D: only the per-phase timeline, one frame after every phase A and every phase B (<output>_phase_{round}{A|B}.vtu); see DEBUG_output_per_pass for the full per-pass series."
   },
   {
     "pointer": "/DEBUG_output_per_pass",
@@ -299,7 +316,7 @@
     "pointer": "/ab_max_rounds",
     "type": "int",
     "default": 10,
-    "doc": "3D only. Maximum A/B rounds of the alternating optimization. One round is a full Phase A (TetWild, with the offset surface held inside a tolerance-wide envelope) followed by a full Phase B (smoothing to a fixed point, then refining the sizing field wherever the Phi residual is still over tolerance). The loop exits as soon as the residual is inside tolerance, so this is an upper bound; exhausting it is a warning, not an error, because a residual that needs more resolution is a legitimate outcome to inspect."
+    "doc": "Alternating loop (alternating_opt true; 3D always): maximum A/B rounds. Unused by the 2D single-phase mode, whose budget is single_max_turns. Maximum A/B rounds of the alternating optimization. One round is a full Phase A (TetWild, with the offset surface held inside a tolerance-wide envelope) followed by a full Phase B (smoothing to a fixed point, then refining the sizing field wherever the Phi residual is still over tolerance). The loop exits as soon as the residual is inside tolerance, so this is an upper bound; exhausting it is a warning, not an error, because a residual that needs more resolution is a legitimate outcome to inspect."
   },
   {
     "pointer": "/ab_no_collapse_after_first_round",
@@ -311,7 +328,7 @@
     "pointer": "/ab_phase_a_iterations",
     "type": "int",
     "default": 80,
-    "doc": "3D only. Iterations of TetWild's optimization loop inside ONE Phase A. Phase A is required to reach stop_energy: if it has not after this many iterations the run FAILS with an error rather than continuing, because Phase B would then be placing the offset surface on a mesh that cannot carry it. Same default as max_iterations, and for the same reason -- it is an upper bound on a loop that exits when it converges."
+    "doc": "Alternating loop (alternating_opt true; 3D always): iterations of the TetWild/TriWild loop inside ONE Phase A, and of the finishing pass that runs with the front frozen in both modes. Phase A is required to reach stop_energy: if it has not after this many iterations the run FAILS with an error rather than continuing, because Phase B would then be placing the offset on a mesh the improvement pass had given up on. The 2D single-phase mode counts turns instead, in single_max_turns. Phase A is required to reach stop_energy: if it has not after this many iterations the run FAILS with an error rather than continuing, because Phase B would then be placing the offset surface on a mesh that cannot carry it. Same default as max_iterations, and for the same reason -- it is an upper bound on a loop that exits when it converges."
   },
   {
     "pointer": "/ab_smooth_max_passes",
@@ -323,7 +340,7 @@
     "pointer": "/ab_phase_b_iterations",
     "type": "int",
     "default": 20,
-    "doc": "2D. Phase B's GAUSS-SEIDEL pass budget; the convergence criterion is the stop, this is the guard (Euclidean 0.2 on two_circles needs ~30 passes at phase_b_conv_rel 0.01, and 20 cut every round short). Each pass gives every eligible vertex exactly ONE local iteration -- an offset-surface vertex takes one descent step on AMIPS + the offset error term, a background vertex one Newton step on its one-ring AMIPS -- sweeping in place so later vertices see earlier updates. The phase exits early ONLY on the run's own convergence criterion (the max placement gradient over offset vertices, phase_b_conv_rel), otherwise it runs exactly this many passes. WHY: solving each vertex to its own minimum let a vertex race to a fixed point its neighbours had not yet seen, and where two offset fronts approach the same curve that crushed the elements between them into exactly-collinear zero-area triangles which no split or collapse can repair (measured on two_circles at delta 0.1). One step at a time advances the fronts together. The placement step is a damped Newton step with an Armijo line search, so its length comes from the local model rather than a constant; the pass count is therefore the only budget, and a vertex can cover real distance in one pass when the model says so."
+    "doc": "2D, alternating loop only (unused when alternating_opt is false). Phase B's GAUSS-SEIDEL pass budget; the convergence criterion is the stop, this is the guard (Euclidean 0.2 on two_circles needs ~30 passes at phase_b_conv_rel 0.01, and 20 cut every round short). Each pass gives every eligible vertex exactly ONE local iteration -- an offset-surface vertex takes one descent step on AMIPS + the offset error term, a background vertex one Newton step on its one-ring AMIPS -- sweeping in place so later vertices see earlier updates. The phase exits early ONLY on the run's own convergence criterion (the max placement gradient over offset vertices, phase_b_conv_rel), otherwise it runs exactly this many passes. WHY: solving each vertex to its own minimum let a vertex race to a fixed point its neighbours had not yet seen, and where two offset fronts approach the same curve that crushed the elements between them into exactly-collinear zero-area triangles which no split or collapse can repair (measured on two_circles at delta 0.1). One step at a time advances the fronts together. The placement step is a damped Newton step with an Armijo line search, so its length comes from the local model rather than a constant; the pass count is therefore the only budget, and a vertex can cover real distance in one pass when the model says so."
   },
   {
     "pointer": "/ab_smooth_tol",
@@ -341,7 +358,7 @@
     "pointer": "/ab_offset_envelope_rel",
     "type": "float",
     "default": 0.025,
-    "doc": "Half-width of the Phase A offset envelope, AS A FRACTION OF target_distance. 2D: eps = ab_offset_envelope_rel * target_distance, a pure percentage -- the default 0.025 holds the offset boundary to within 2.5% of the offset distance while Phase A (TriWild: split, collapse, swap, smooth) runs, so at target_distance 1 the tube is 0.025 wide. Tighter over-constrains Phase A and starts refusing operations that were not straddling the boundary at all; looser lets Phase A undo placement Phase B had already brought inside tolerance. It is independent of the convergence criterion: that says when the run is done, this says how far Phase A may move the boundary while getting there. It was previously ab_offset_envelope_rel * offset_residual_tolerance() with a default of 0.25, which came to the same 0.025 * target_distance at the default phase_b_conv_rel of 0.2 -- but chained the tube to the criterion, and so, once the criterion became a fraction of a MEASURED reference, to how badly construction happened to place the band. 3D: STILL the old form, ab_offset_envelope_rel * offset_residual_tolerance() (TopoOffsetTetMesh.cpp), so the new default makes the 3D tube 10x tighter than it was. 3D was left alone deliberately; see the note in .claude/CLAUDE.md."
+    "doc": "Half-width of the offset tube, AS A FRACTION OF target_distance -- the corridor the operations must keep the front inside (held while Phase A runs, rebuilt after every smoothing pass in the single-phase mode), and the tolerance the front's resolution is derived from at construction (L = 3/4 sqrt(8 eps delta rho)). 2D: eps = ab_offset_envelope_rel * target_distance, a pure percentage -- the default 0.025 holds the offset boundary to within 2.5% of the offset distance while Phase A (TriWild: split, collapse, swap, smooth) runs, so at target_distance 1 the tube is 0.025 wide. Tighter over-constrains Phase A and starts refusing operations that were not straddling the boundary at all; looser lets Phase A undo placement Phase B had already brought inside tolerance. It is independent of the convergence criterion: that says when the run is done, this says how far Phase A may move the boundary while getting there. It was previously ab_offset_envelope_rel * offset_residual_tolerance() with a default of 0.25, which came to the same 0.025 * target_distance at the default phase_b_conv_rel of 0.2 -- but chained the tube to the criterion, and so, once the criterion became a fraction of a MEASURED reference, to how badly construction happened to place the band. 3D: STILL the old form, ab_offset_envelope_rel * offset_residual_tolerance() (TopoOffsetTetMesh.cpp), so the new default makes the 3D tube 10x tighter than it was. 3D was left alone deliberately; see the note in .claude/CLAUDE.md."
   },
   {
     "pointer": "/interleaved_smoothing",
@@ -446,6 +463,24 @@
     "doc": "2D. Phase B places a front vertex by a ONE-DIMENSIONAL solve along its field normal n = grad Phi/|grad Phi|: the same objective (ring AMIPS + offset terms) restricted to the line x0 + s n, same solver, line search and accept test; the vertex test reads the step along the same n. Measured 2026-08-25 (two_circles, cap 20, rel 0.01): the free 2-D placement also converges everywhere under the step criterion, with 1-2 more rounds and more vertices, since the front slides tangentially while it travels. Until 2026-08-25 19:40 this was a stiff tangential penalty (k = 1e6) in the energy; it is not any more. ORIGINAL DOC: Phase B places a front vertex along the field's normal only (the direction of grad Phi at the visit's start), instead of the free 2-D solve. Where a vertex sits along the front carries no information about the offset; the 2-D solve's tangential motion is driven by AMIPS alone and made fronts slide and fold where two of them meet (measured 2026-08-25). Imposed as a stiff quadratic penalty on tangential displacement inside the front's own energy, so the shared smoother is unchanged; the pass stop and the loop's vertex test then measure |grad F . n|. Spacing along the front is left to Phase A's smoother."
   },
   {
+    "pointer": "/phase_b_alignment",
+    "default": true,
+    "type": "bool",
+    "doc": "2D. Whether Phase B's front objective carries the ALIGNMENT term, sum over the vertex's live front edges of (1 - n_e . ghat(m_e))^2 with n_e the edge normal and ghat the field's unit gradient at the edge midpoint, weighted like the offset term. It is what acts on the edge normals under phase_b_normal_only; measured 2026-08-25 on two_circles without it the worst seam edge angle against the field went 6 -> 17 deg at 0.10, 16 -> 26 at 0.15, 21 -> 39 at 0.20, for 10-15% fewer passes. false drops the term (the objective is then the ring AMIPS and the offset term alone) so its effect can be measured on a case."
+  },
+  {
+    "pointer": "/alternating_opt",
+    "default": false,
+    "type": "bool",
+    "doc": "2D. false (the default since 2026-08-26): ONE phase -- TriWild's own loop, with the front vertices placed by the one-dimensional offset solve inside its smoothing passes and free of the offset tube while they move, so operations and placement interleave at the pass level; the tube is rebuilt after every smoothing pass (only smoothing moves the front, and an operation that would take a front edge out of the tube is refused). Its turn budget is single_max_turns. true: the A/B loop -- a full TriWild pass (Phase A, the front held in its tube and smoothed by AMIPS alone) followed by up to ab_phase_b_iterations Gauss-Seidel sweeps that place the front (Phase B), repeated up to ab_max_rounds times; this is what 3D always runs. Measured 2026-08-26 over 12 cases: single phase uses fewer vertices nearly everywhere (the slot fixture 13741 against 31103, an inward offset 52019 against 103168), is faster in wall-clock on all but the smallest case, and converges one case the alternating loop does not. Convergence is the same test in both: every front vertex's remaining Newton step at most phase_b_conv_rel x target_distance. Quality is then brought to stop_energy by a final pass with the front FROZEN -- while the front is being placed its rings cannot be repaired, since front placement carries no quality veto."
+  },
+  {
+    "pointer": "/single_max_turns",
+    "default": 40,
+    "type": "int",
+    "doc": "2D single-phase mode (alternating_opt false): how many turns the loop may take, one turn being split | collapse | swap with a smoothing pass after each. The loop leaves as soon as the front test passes; this is the guard. Measured 2026-08-26: the front is placed in 1-10 turns on every converging case (25 on two_overlap), so 40 is roughly four times the observed need. The alternating loop's budget is ab_max_rounds x ab_phase_a_iterations instead."
+  },
+  {
     "pointer": "/pre_optimize_sizing_from_edges",
     "default": false,
     "type": "bool",
@@ -453,9 +488,9 @@
   },
   {
     "pointer": "/pre_optimize_input",
-    "default": false,
+    "default": true,
     "type": "bool",
-    "doc": "Run TriWild over the INPUT mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same Phase A parameters (stop_energy, ab_phase_a_iterations) and held only by the per-tag region envelopes, which exist by then. The sizing field is seeded at target_distance / l on the INPUT-COMPLEX BOUNDARY only -- an edge with exactly one incident label-1 face -- and graded outward by gradation_smooth_sizing()'s ring BFS; the complex interior is reached only by that gradation, never seeded. Resolving the complex at the offset's own scale is what makes the marching band one delta-scale cell thick, which is what puts the constructed offset near delta and keeps dhat small. WHY: the marching places the offset on the background triangulation's own cell boundaries, so how far the constructed offset lands from the input complex is a property of the INPUT MESH, and dhat is then sized from that reach. A coarse cell touching the complex therefore inflates dhat, and a dhat several times target_distance merges the level sets of nearby features (measured on two_circles: at 14.76x delta the potential's level sets across a 0.2 gap merge entirely). 2D only. Off by default: it changes the mesh every later stage sees."
+    "doc": "Run TriWild over the INPUT mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same Phase A parameters (stop_energy, ab_phase_a_iterations) and held only by the per-tag region envelopes, which exist by then. The sizing field is seeded at target_distance / l on the INPUT-COMPLEX BOUNDARY only -- an edge with exactly one incident label-1 face -- and graded outward by gradation_smooth_sizing()'s ring BFS; the complex interior is reached only by that gradation, never seeded. Resolving the complex at the offset's own scale is what makes the marching band one delta-scale cell thick, which is what puts the constructed offset near delta and keeps dhat small. WHY: the marching places the offset on the background triangulation's own cell boundaries, so how far the constructed offset lands from the input complex is a property of the INPUT MESH, and dhat is then sized from that reach. A coarse cell touching the complex therefore inflates dhat, and a dhat several times target_distance merges the level sets of nearby features (measured on two_circles: at 14.76x delta the potential's level sets across a 0.2 gap merge entirely). 2D only. ON by default (2026-08-26): without it the band is one input cell thick at construction, and on topological_offset_2d (input cells of 2 delta) that closed the 2-delta-wide slot mouths before the first placement; with it the band starts at 0.125 delta and the fixture converges. Off restores the input mesh as the later stages see it."
   },
   {
     "pointer": "/min_edge_length",
@@ -521,7 +556,10 @@
     "pointer": "/smoothing_mode",
     "type": "string",
     "default": "projected",
-    "options": ["projected", "exact"],
+    "options": [
+      "projected",
+      "exact"
+    ],
     "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
   },
   {

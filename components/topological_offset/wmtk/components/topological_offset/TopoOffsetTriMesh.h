@@ -66,6 +66,10 @@ class EdgeExtra2d
 {
 public:
     int label = 0;
+    /// The edge lies on the input's curve group (within its envelope): selectable as the complex
+    /// by name, held in that group's tube. Set once in init_from_image(), propagated by nothing --
+    /// it is read only before the optimization starts.
+    bool on_curve = false;
 };
 
 
@@ -104,6 +108,26 @@ public:
     int m_vtu_counter = 0;
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
     size_t m_tags_count;
+    /// Tag id of the input's curve group (the .msh line elements), or -1. An OPEN curve has no
+    /// face set whose boundary it is, so it is selectable only through this tag: offset_selection
+    /// naming it makes the curve the complex and the band grows on both of its sides.
+    int64_t m_curve_tag = -1;
+    /// The curve group as loaded, kept because the classification below is redone on demand.
+    MatrixXd m_curve_V;
+    MatrixXi m_curve_E;
+    /**
+     * @brief Mark the mesh edges that lie on the input's curve group (EdgeExtra2d::on_curve).
+     *
+     * GEOMETRIC, against the curve's own tube (the same eps the tag envelopes use), because
+     * triwild writes its curves with their own vertices and there is no index to match on.
+     *
+     * CALLED WHEN THE COMPLEX IS LABELLED, not once at load: the flag is a property of an EDGE
+     * and nothing propagates it through split and collapse, so the pre-optimisation pass shredded
+     * it -- on two_circles as a curve group the band came out in 50 pieces instead of 2, because
+     * the labelled complex was 128 surviving fragments with 178 endpoints. Re-deriving it is
+     * exact and costs one tube query per edge.
+     */
+    void classify_curve_edges();
     /**
      * @brief The input complex as loaded. BUILT ONCE, NEVER REBUILT.
      *
@@ -141,32 +165,48 @@ public:
     std::shared_ptr<OffsetPotential2D> m_offset_potential;
 
     /**
-     * @brief ONE FIELD PER INPUT REGION, and which one each band vertex is placed on.
+     * @brief ONE FIELD PER CONNECTED PIECE OF THE INPUT COMPLEX, and which one each band vertex
+     * is placed on.
      *
      * m_offset_potential above is built over the WHOLE selected complex: for the smooth
-     * potential that is the SUM of every region's barrier, for the Euclidean field the distance
-     * to the NEAREST region. Neither is the field a front should be placed on where two regions
+     * potential that is the SUM of every piece's barrier, for the Euclidean field the distance
+     * to the NEAREST piece. Neither is the field a front should be placed on where two pieces
      * are close. Measured on two_circles at target_distance 0.1 (unit circles, gap 0.2, so the
      * two offsets are exactly tangent): the sum's level set is one merged curve whose neck
      * closes at |y| ~ 0.28, with Phi = 2c across the whole gap -- no level set exists there and
      * both fronts are pushed through the background strip until inversion. At 0.15 the neck is
      * wider still (|y| ~ 0.45, Phi = 8c). The Euclidean min only behaved because a front that
-     * stays on its own side of the medial axis sees its own region as nearest.
+     * stays on its own side of the medial axis sees its own piece as nearest.
      *
-     * A band is grown from ONE input region and its front is that region's offset, so it is
-     * placed on that region's field alone: Phi_A = c for band A, Phi_B = c for band B. Where
-     * the two would overlap, each front is pulled outward by its own field and held by the
-     * strip's quality bar (smooth_offset_vertex_backtracking) -- a symmetric local minimum
-     * with a thin gap of background between the fronts, which is the topological offset.
+     * A REGION IS A CONNECTED PIECE, NOT A TAG (2026-08-27). It was one tag of the selection
+     * expression until then, which is silently wrong whenever one tag covers two pieces that
+     * never touch -- they shared a field and the bridge above came back inside a single tag.
+     * Measured on two disks of radius 1, gap 0.2, target_distance 0.08, dhat 3.5 delta: with the
+     * two disks under one tag a front vertex sat at 1.243x delta in the gap, with a tag each at
+     * 1.006x. Pieces are the connected components of the captured complex under vertex
+     * connectivity (two pieces meeting at a point share an offset there, so they share a field),
+     * computed once in init_input_complex_bvh() so the numbering is fixed for the whole run.
+     * simplicial_embedding() is what makes this correspond to the band: it splits every
+     * background edge whose endpoints are both in the complex, so no background triangle can
+     * touch two disjoint pieces, and the band's connected components are the disjoint offsets.
      *
-     * The map from band to region is assign_band_regions(): a flood fill over the band faces
-     * from the input face each band touches, redone after every Phase A. A face reachable from
-     * two regions (bands that merged) and a vertex on faces of two regions read -2 and fall
-     * back to the union field. m_offset_potential itself is kept for everything that is not
-     * per-vertex: the support (dhat), the potential grid the viewer draws, the report.
+     * A band is grown from ONE piece and its front is that piece's offset, so it is placed on
+     * that piece's field alone: Phi_A = c for band A, Phi_B = c for band B. Where the two would
+     * overlap, each front is pulled outward by its own field and held by the strip's quality bar
+     * (smooth_offset_vertex_backtracking) -- a symmetric local minimum with a thin gap of
+     * background between the fronts, which is the topological offset.
+     *
+     * The map from band to region is assign_band_regions(): a flood fill over the band faces,
+     * seeded from every band face that has a complex vertex, whose piece is read off the
+     * captured complex geometrically (a complex vertex sits on the complex, so the lookup is at
+     * distance 0 from its own piece). A face reachable from two regions (bands that
+     * merged) and a vertex on faces of two regions read -2 and fall back to the union field.
+     * m_offset_potential itself is kept for everything that is not per-vertex: the support
+     * (dhat), the potential grid the viewer draws, the report.
      */
-    std::vector<int64_t> m_region_tags; ///< the input tags that get a field each, index order
-    std::vector<std::shared_ptr<OffsetPotential2D>> m_region_potentials; ///< one per tag
+    int m_n_regions = 0; ///< connected pieces of the input complex; one field each
+    std::vector<std::shared_ptr<OffsetPotential2D>> m_region_potentials; ///< one per piece
+    std::vector<int64_t> m_phi_vert_region; ///< per m_phi_V row: region index
     std::vector<int64_t> m_phi_seg_region; ///< per m_phi_E row: region index, -1 unknown
     std::vector<int64_t> m_phi_face_region; ///< per m_phi_F row: region index, -1 unknown
     std::vector<int64_t> m_phi_point_region; ///< per m_phi_P entry: region index, -1 unknown
@@ -391,7 +431,15 @@ public:
      * refinement on element quality, Phase B through the Phi residual of the faces smoothing
      * could not place.
      */
-    enum class OptPhase { A, B };
+    /// Single is the alternating_opt=false mode: TriWild's own loop with the front placed by
+    /// Phase B's objective inside the smoothing passes. It follows B wherever the SMOOTHER is
+    /// concerned (which objective a front vertex gets, no offset tube while it moves) and A
+    /// everywhere the LOOP is concerned (quality stats and the stop metric are TriWild's).
+    enum class OptPhase { A, B, Single };
+
+    /// Whether the smoother places front vertices against the offset objective: Phase B, and
+    /// the single-phase mode that does the same thing inside TriWild's passes.
+    bool phase_places_front() const { return m_phase != OptPhase::A; }
 
     /// Which phase is running. Read by every hook that differs between them; see OptPhase.
     OptPhase m_phase = OptPhase::A;
@@ -446,6 +494,8 @@ public:
     /// then refine where Phi is stuck), repeated until both criteria are inside tolerance or
     /// ab_max_rounds is reached. Replaces the single mesh_improvement() call.
     void optimize_offset_alternating();
+    /// alternating_opt=false: TriWild's loop, the front placed inside its smoothing passes.
+    void optimize_offset_single_phase();
 
     /// Phase B's smoothing loop. Each pass sweeps every vertex once: offset vertices are placed
     /// on the level set by smooth_offset_vertex_backtracking(), background (interior) vertices
@@ -488,29 +538,6 @@ public:
      */
     double phase_b_band_gradient_linf();
 
-    /**
-     * @brief Per-vertex band sizing update, run after Phase B. Returns the number changed.
-     *
-     * REFINE-ONLY, AND ONLY ON PURE CHORD ERROR. "In tolerance" is ||grad (Phi - c)^2|| <=
-     * offset_gradient_tolerance() -- at band vertices that IS the convergence criterion, and
-     * at edge-interior samples (the one lattice for_each_offset_edge_sample() defines) it is
-     * the same quantity continued into the chords: the diagnostic the criterion reports but
-     * does not gate on, and exactly what refinement can fix.
-     *
-     *  - HALVE when the vertex and every boundary one-ring neighbour are in tolerance but some
-     *    sample inside an incident band edge is not. The boundary passes through the right
-     *    places and the chord between them still cuts the level set: pure resolution error, the
-     *    one thing a finer sizing field can actually fix.
-     *  - Otherwise leave it alone. A vertex that is itself out of tolerance is MISPLACED, not
-     *    under-resolved.
-     *
-     * THIS IS THE ONLY THING THAT REFINES THE SIZING FIELD FOR THE OFFSET. It replaced
-     * refine_sizing_where_phi_is_stuck(), which ranked SEGMENTS by a max-of-three score and
-     * force-split the worst ones' edges; that routine is deleted, exactly as in 3D. Phase A
-     * keeps TriWild's own quality-driven stall response (refine_sizing_around_worst), which
-     * ranks ELEMENTS by AMIPS and is a different question -- the two write the same field.
-     */
-    size_t update_band_sizing_from_tolerance();
 
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -1455,7 +1482,7 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
-        if (m_phase != OptPhase::B || !m_offset_potential) return nullptr;
+        if (!phase_places_front() || !m_offset_potential) return nullptr;
         if (!m_vertex_extra[vid].m_is_on_offset || vertex_boundary_mask(vid) != 0) return nullptr;
         const int r = vertex_region(vid);
         const std::shared_ptr<const OffsetPotential2D> pot =
@@ -1500,7 +1527,8 @@ public:
      */
     double optimization_stop_metric() const override
     {
-        return m_phase == OptPhase::A ? wmtk::TriOptimizerMesh::optimization_stop_metric() : 1.;
+        // Single is TriWild's loop, so its stop metric is TriWild's.
+        return m_phase != OptPhase::B ? wmtk::TriOptimizerMesh::optimization_stop_metric() : 1.;
     }
 
     /// Samples per band edge; see offset_edge_samples(). 0 falls back to a vertex-only
@@ -1774,9 +1802,20 @@ public:
         size_t worst_vid = static_cast<size_t>(-1);
         Vector2d worst_edge_mid = Vector2d::Zero();
         double worst_edge_len = 0.;
+        /// REPORTED ONLY (2026-08-28): the edges over the bar, split by whether BOTH endpoints
+        /// are on the level set (residual within the tube). An edge whose endpoints are on the
+        /// level set and whose chord still misses it is under-resolved -- the state the vertex
+        /// test cannot see; one whose endpoints are off the level set is pressed (a seam), where
+        /// the sag says nothing about resolution. Measured to decide whether the qualified edge
+        /// test should gate and act, see the report's open problems.
+        size_t n_edges_over = 0, n_edges_over_on_level = 0;
+        double max_edge_on_level = 0.;
+        Vector2d worst_on_level_mid = Vector2d::Zero();
         bool vertices_ok() const { return max_vertex <= bar; }
         bool edges_ok() const { return max_edge <= bar; }
-        bool converged() const { return vertices_ok() && edges_ok() && n_unmeasurable == 0; }
+        /// The loop's test: the vertex test alone (2026-08-26). The edge test is reported; the
+        /// front's resolution is set from the tolerance at construction (init_offset_sizing_field).
+        bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_edge) / bar : 0.; }
     };
     EnergyCriterion energy_criterion();
@@ -2158,30 +2197,42 @@ public:
      */
     void write_smoothing_debug_output(const std::string& path) const override
     {
-        std::string name = path;
-        const char ph = (m_phase == OptPhase::A) ? 'A' : 'B';
+        const char ph = (m_phase == OptPhase::A) ? 'A' : (m_phase == OptPhase::B ? 'B' : 'S');
         if (m_ab_round != m_debug_last_round || ph != m_debug_last_phase) {
             m_debug_last_round = m_ab_round;
             m_debug_last_phase = ph;
             m_debug_pass = 0;
         }
+        // WHAT this frame is, as a compact token: round, phase, pass within the phase, and the
+        // operation it follows (from TriOptimizerMesh::m_debug_pass_name -- the shared driver
+        // writes several frames per operation group, so without it a timeline reads as identical
+        // frames in a row). Phase B / the single phase write one per sweep.
+        std::string label = path;
         if (path.rfind("debug_", 0) == 0) {
-            // The pass this frame follows, from TriOptimizerMesh::m_debug_pass_name: the shared
-            // driver writes several frames per operation group (a checkpoint after every group,
-            // even one that ran nothing, plus the group's own frame), and Phase B writes one per
-            // sweep, so without the name a timeline reads as identical frames in a row.
-            name = fmt::format(
-                "step_{:05d}_r{}{}{}{}",
-                m_debug_seq++,
+            label = fmt::format(
+                "r{}{}{}{}",
                 m_ab_round,
                 ph,
                 ++m_debug_pass,
                 m_debug_pass_name.empty() ? std::string() : "_" + m_debug_pass_name);
         } else if (path.rfind("phase_", 0) == 0) {
-            name = fmt::format("step_{:05d}_r{}{}_end", m_debug_seq++, m_ab_round, ph);
+            label = fmt::format("r{}{}_end", m_ab_round, ph);
         }
-        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(m_offset_params.output_path + "_" + name);
+        // THE FILE NAME IS THE SEQUENCE NUMBER AND NOTHING ELSE (Uday, 2026-08-26), so ParaView
+        // groups the frames into one time series -- it needs the digits last, right before the
+        // extension, and every frame of a series to share its prefix. The counter is monotonic
+        // across the whole run, so sorting on it is run order. The label goes to
+        // <output>_frames.txt, one "NNNNN<tab>label" line per frame, which is what the polyscope
+        // viewer reads to put "round 2, phase B, pass 7, after swap" on the slider.
+        const size_t idx = m_debug_seq++;
+        append_frame_label(idx, label);
+        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(
+            m_offset_params.output_path + fmt::format("_{:05d}", idx));
     }
+
+    /// One line of <output>_frames.txt; truncates the file on the first frame. See
+    /// write_smoothing_debug_output().
+    void append_frame_label(size_t idx, const std::string& label) const;
 
     /**
      * @brief initialize TriMesh from vertex, face, tag data
@@ -2197,7 +2248,8 @@ public:
         const MatrixSi& F_tags,
         const MatrixXd& V_env,
         const MatrixXi& F_env,
-        const std::vector<std::string>& tag_names);
+        const std::vector<std::string>& tag_names,
+        const std::string& curve_name = "");
 
     /**
      * @brief ensure ambient tag does not overlap any other tags in mesh.

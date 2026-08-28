@@ -158,6 +158,7 @@ InputData read_image_msh(const std::string& path)
                 }
                 input_data.V_envelope = V;
                 input_data.F_envelope = F;
+                input_data.envelope_name = ph.name;
             } else {
                 Vs.push_back(V);
                 Fs.push_back(F);
@@ -283,6 +284,7 @@ InputData read_image_msh(const std::string& path)
             logger().info("Read 2D input.");
             msh.get_VF(2, ph_vol.value().tag, input_data.V_input, input_data.T_input);
             msh.get_VF(1, ph_env.value().tag, input_data.V_envelope, input_data.F_envelope);
+            input_data.envelope_name = ph_env.value().name;
             auto& Vi = input_data.V_input;
             Vi = Vi.block(0, 0, Vi.rows(), 2).eval();
             auto& Ve = input_data.V_envelope;
