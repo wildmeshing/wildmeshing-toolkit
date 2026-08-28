@@ -225,7 +225,7 @@ public:
      * @brief The tube the offset surface may not leave during Phase A. Null in Phase B.
      *
      * REBUILT AT THE START OF EVERY PHASE A, from the offset surface as Phase B just left it,
-     * with eps = ab_offset_envelope_rel x the Phi tolerance. Rebuilding is what lets the
+     * with eps = offset_envelope_rel x the Phi tolerance. Rebuilding is what lets the
      * surface still travel across rounds: each Phase A pins it near its current position, and
      * each Phase B is free to move it somewhere the next Phase A will then pin.
      *
@@ -245,13 +245,13 @@ public:
 
     /// The A/B driver: Phase A (TetWild + offset envelope), Phase B (smoothing to a fixed point,
     /// then refine where Phi is stuck), repeated until both criteria are inside tolerance or
-    /// ab_max_rounds is reached. Replaces the single mesh_improvement() call.
+    /// max_rounds is reached. Replaces the single mesh_improvement() call.
     void optimize_offset_alternating();
 
     /// Phase B's smoothing loop. Each pass sweeps every vertex once: offset vertices are placed
     /// on the level set by smooth_offset_vertex_backtracking(), background (interior) vertices
     /// minimize their one-ring AMIPS by smooth_interior_vertex_phase_b() -- each visit runs its
-    /// vertex's local solve to ab_vertex_grad_tol_rel of that vertex's own entry gradient.
+    /// vertex's local solve to vertex_grad_tol_rel of that vertex's own entry gradient.
     /// Returns the number of passes run; the natural exit is a pass in which NO offset vertex
     /// was backtracked by its one-ring (m_phase_b_constrained == 0), i.e. every local minimum
     /// is interior. See the definition for the other exits (the run's own convergence bar, the
@@ -271,7 +271,7 @@ public:
      *
      * Reuses the shared smoother (optimization::smooth_vertex_3d) -- pure AMIPS, no envelope
      * terms (an interior vertex has none), exact inversion accept, quality veto -- but with
-     * Phase B's own solver, configured to stop at ab_vertex_grad_tol_rel of the visit's initial
+     * Phase B's own solver, configured to stop at vertex_grad_tol_rel of the visit's initial
      * gradient (polysolve's rel_grad_norm_tol) instead of the base's fixed iteration budget.
      */
     bool smooth_interior_vertex_phase_b(const Tuple& t);
@@ -881,16 +881,16 @@ public:
     /// gradient tolerance, in length units. There is no offset_residual_rel any more.
     ///
     /// WHY IT MATTERS BEYOND REPORTING: this feeds the Phase A offset envelope
-    /// (ab_offset_envelope_rel x this) and the derived min_edge_length floor. While it was its
-    /// own knob it kept its old value when a run loosened phase_b_conv_rel, so Phase A held
+    /// (offset_envelope_rel x this) and the derived min_edge_length floor. While it was its
+    /// own knob it kept its old value when a run loosened front_conv_rel, so Phase A held
     /// the offset surface in a tube far tighter than the accuracy the run was judged by --
-    /// measured on prism at phase_b_conv_rel 0.2: eps 0.00209 against a permitted error of
+    /// measured on prism at front_conv_rel 0.2: eps 0.00209 against a permitted error of
     /// 0.0837, a factor of 40, and 1/2000th of the target edge length. Tying the two together
     /// means loosening the criterion loosens the tube with it.
     double offset_residual_tolerance() const
     {
         return std::max(
-            0.5 * m_offset_params.phase_b_conv_rel * m_offset_params.target_distance,
+            0.5 * m_offset_params.front_conv_rel * m_offset_params.target_distance,
             1e-16);
     }
 
@@ -909,13 +909,13 @@ public:
      * That is what lets a concave input be judged by the same number as a convex one.
      *
      * Not a restatement of the old bound. On a distance-like field the two coincide up to the
-     * factor 2 (see phase_b_conv_rel's default), but where |grad Phi| departs from 1
+     * factor 2 (see front_conv_rel's default), but where |grad Phi| departs from 1
      * -- near a medial axis, at a sharp feature, anywhere ESP's several active primitives compete
      * -- they are different tests and neither implies the other.
      */
     double offset_gradient_tolerance() const
     {
-        // NORMALIZED BY THE FIELD'S SLOPE, so phase_b_conv_rel means the same thing
+        // NORMALIZED BY THE FIELD'S SLOPE, so front_conv_rel means the same thing
         // whichever field is in use. |grad (Phi - c)^2| = 2 |Phi - c| |grad Phi|, and |Phi - c| is
         // a field difference, not a length -- OffsetPotential::level_set_slope() is the conversion.
         // With
@@ -951,7 +951,7 @@ public:
         // geometry being reported, not a placement failure.
         const double s = m_offset_potential ? m_offset_potential->level_set_slope() : 1.;
         return std::max(
-            m_offset_params.phase_b_conv_rel * m_offset_params.target_distance * s * s,
+            m_offset_params.front_conv_rel * m_offset_params.target_distance * s * s,
             1e-16);
     }
 
@@ -1502,7 +1502,7 @@ public:
 
     /// Per-thread Newton solver for Phase B's interior AMIPS solves. Separate from the base's
     /// m_solver because it carries a different stopping rule: polysolve's rel_grad_norm_tol set
-    /// to ab_vertex_grad_tol_rel with a deep iteration budget, against the base's fixed shallow
+    /// to vertex_grad_tol_rel with a deep iteration budget, against the base's fixed shallow
     /// budget with no tolerance. Created on first use.
     mutable wmtk::threading::enumerable_thread_specific<
         std::unique_ptr<polysolve::nonlinear::Solver>>

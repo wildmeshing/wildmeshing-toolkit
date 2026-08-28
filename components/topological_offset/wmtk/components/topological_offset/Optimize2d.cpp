@@ -526,7 +526,7 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     // This used to apply a non-degrading Phi gate to every collapse (refuse if the worst offset
     // face at the survivor got worse), captured per-edge in collapse_before_vertex(). That was
     // load-bearing when the offset boundary had NO envelope holding it. Phase A now holds it in
-    // m_offset_envelope (rebuilt each round, eps = ab_offset_envelope_rel x target_distance
+    // m_offset_envelope (rebuilt each round, eps = offset_envelope_rel x target_distance
     // tolerance), so containment is enforced by the shared pass's surface_segment_is_outside() --
     // the same mechanism, with the same tolerance semantics, that TriWild's input gets. A
     // second, tighter criterion on top of the envelope made Phase A stricter than TriWild in
@@ -1101,7 +1101,7 @@ Vector2d TopoOffsetTriMesh::front_vertex_normal(const size_t vid) const
 double TopoOffsetTriMesh::front_vertex_normal_gradient(const size_t vid) const
 {
     // ||grad F|| at the vertex's current position, F the objective smooth_front_vertex_phase_b()
-    // minimises: stationarity of the 2-D solve. Under phase_b_normal_only the unknown is the
+    // minimises: stationarity of the 2-D solve. Under front_normal_projection the unknown is the
     // position along the normal, so the derivative along it, |grad F . n|.
     const Vector2d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(2);
@@ -1197,7 +1197,7 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
             1,
             opt_logger());
     }
-    if (!m_offset_params.phase_b_normal_only) {
+    if (!m_offset_params.front_normal_projection) {
         return optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
     }
 
@@ -1924,7 +1924,7 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
         before,
         optimization_stop_metric());
 
-    mesh_improvement(std::max(1, m_offset_params.ab_phase_a_iterations));
+    mesh_improvement(std::max(1, m_offset_params.max_iterations));
 
     const double after = std::get<0>(optimization_quality_stats());
     logger().info(
@@ -2058,7 +2058,7 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
     // THE FRONT'S RESOLUTION FOLLOWS FROM THE TOLERANCE AND THE LEVEL SET'S CURVATURE, set once
     // here (Uday, 2026-08-26). A chord of length L over a curve of curvature radius rho misses
     // it by L^2 / (8 rho); the front must stay within the tube eps x delta of the level set
-    // (eps = ab_offset_envelope_rel), so L <= sqrt(8 eps delta rho). The level set's curvature
+    // (eps = offset_envelope_rel), so L <= sqrt(8 eps delta rho). The level set's curvature
     // is known before any placement: on the convex side it never exceeds 1 / delta (a convex
     // input corner becomes an arc of radius exactly delta, and that is the only place the offset
     // needs more resolution than the input has), and where it does exceed it -- a concave crease
@@ -2071,7 +2071,7 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
     // (annots_tag4_in: 103k vertices, edge test 2.7x forever with the vertex test long passed).
     {
         const double delta = m_offset_params.target_distance;
-        const double eps = m_offset_params.ab_offset_envelope_rel;
+        const double eps = m_offset_params.offset_envelope_rel;
         std::vector<size_t> changed;
         double L_min = std::numeric_limits<double>::infinity(), L_max = 0.;
         size_t n_flat = 0;
@@ -2990,7 +2990,7 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::measure_gradient_reference()
     // is a statement about how far out of place the offset STARTED (and a pinned vertex is out
     // of place too, hence both halves). What it scales is then the FULL norm at those same
     // vertices: the convergence criterion and every Phase B local stop compare
-    // ||2 (Phi - c) grad Phi|| against phase_b_conv_rel x this. One reference,
+    // ||2 (Phi - c) grad Phi|| against front_conv_rel x this. One reference,
     // one parameter, one bar.
     const GradientSplit g = gradient_split();
     m_gradient_reference = g.max_normal_aligned;
@@ -3010,9 +3010,9 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::measure_gradient_reference()
         g.max_in_edge,
         g.n_edge_samples);
     logger().info(
-        "\t  => convergence bound {:.6g} = phase_b_conv_rel {} x reference",
+        "\t  => convergence bound {:.6g} = front_conv_rel {} x reference",
         offset_gradient_tolerance(),
-        m_offset_params.phase_b_conv_rel);
+        m_offset_params.front_conv_rel);
 
     if (!(m_gradient_reference > 0.)) {
         logger().warn(
@@ -3055,7 +3055,7 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     // Voronoi-length-weighted vertex normal, offset_surface_normal()). NOT the deciding
     // measure: it is the quantity the REFERENCE is the max of -- measure_gradient_reference()
     // reads max_normal_aligned off the band as constructed, and every full-norm comparison is
-    // against phase_b_conv_rel x that. Only motion along n moves the surface off
+    // against front_conv_rel x that. Only motion along n moves the surface off
     // the level set, so the reference is a statement about how MISPLACED the initial surface
     // was; the running tests are then the full norm, which a local solve can actually zero.
     // The same projection serves the in-edge chord diagnostic, onto the edge's own unit
@@ -3251,7 +3251,7 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
             // On the level set: the vertex's distance from it (residual_length, in length units)
             // is within the tube's half-width, the same bar the sag is held to.
             const double tube =
-                m_offset_params.ab_offset_envelope_rel * m_offset_params.target_distance;
+                m_offset_params.offset_envelope_rel * m_offset_params.target_distance;
             const bool on_level =
                 potential_for(va).residual_length(m_vertex_attribute[va].m_posf) <= tube &&
                 potential_for(vb).residual_length(m_vertex_attribute[vb].m_posf) <= tube;
@@ -3281,7 +3281,7 @@ double TopoOffsetTriMesh::phase_b_front_gradient_linf()
         if (vid < m_placement_pressed.size() && m_placement_pressed[vid])
             continue; // constrained minimum
         const double gn = m_front_gradient_reference > 0. ||
-                                  m_offset_params.phase_b_conv_criterion != "gradient_norm_rel"
+                                  m_offset_params.front_conv_criterion != "gradient_norm_rel"
                               ? front_vertex_conv_ratio(vid)
                               : front_vertex_normal_gradient(vid);
         if (gn > worst) {
@@ -3294,8 +3294,8 @@ double TopoOffsetTriMesh::phase_b_front_gradient_linf()
 
 double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
 {
-    const double rel = m_offset_params.phase_b_conv_rel;
-    const std::string& crit = m_offset_params.phase_b_conv_criterion;
+    const double rel = m_offset_params.front_conv_rel;
+    const std::string& crit = m_offset_params.front_conv_criterion;
     if (crit == "gradient_norm_rel") {
         const double bar = rel * m_front_gradient_reference;
         return bar > 0. ? front_vertex_normal_gradient(vid) / bar
@@ -3326,21 +3326,21 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
 {
     const double r = edge_interpolation_residual(e); // (2 w / c) |r(m) - mean r|, -1 unmeasurable
     if (r < 0.) return r;
-    const double rel = m_offset_params.phase_b_conv_rel;
-    if (m_offset_params.phase_b_conv_criterion == "gradient_norm_rel") {
+    const double rel = m_offset_params.front_conv_rel;
+    if (m_offset_params.front_conv_criterion == "gradient_norm_rel") {
         const double bar = rel * m_front_gradient_reference;
         return bar > 0. ? r / bar : std::numeric_limits<double>::infinity();
     }
     // RESOLUTION IS THE ENVELOPE'S BUSINESS, NOT rel's (Uday, 2026-08-25): the level set is
     // resolved when it stays within the tube Phase A already lets the front wander in,
-    // ab_offset_envelope_rel x target_distance. rel is the convergence tolerance only; tying the
+    // offset_envelope_rel x target_distance. rel is the convergence tolerance only; tying the
     // edge test to it made a safe rel (0.01, needed so a creeping front cannot exit early)
     // over-refine (0.04: 5906 vertices for 1351) and a coarse rel (0.1) exit with the front at
     // 0.22 of 0.40.
     //
     // AS A LENGTH (Uday, 2026-08-26): the sagitta of Phi over the chord, |Phi(m) - mean Phi|,
     // divided by |grad Phi| at the midpoint. The earlier form compared the same second
-    // difference of (Phi - c) / c against ab_offset_envelope_rel, both dimensionless -- which for
+    // difference of (Phi - c) / c against offset_envelope_rel, both dimensionless -- which for
     // the Euclidean field (c = delta) is this length statement, but for the smooth field a
     // fraction of c is c / |grad Phi| = 0.29 delta in length at every delta, so the same number
     // was a 3.4x tighter tolerance there. Since 2026-08-26 this is a reported quantity, not the
@@ -3355,7 +3355,7 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
     const double gn = pot->gradient(m).norm();
     if (!(gn > 0.) || !std::isfinite(gn)) return -1.;
     const double sag = std::abs(pot->value(m) - 0.5 * (pot->value(pa) + pot->value(pb))) / gn;
-    return sag / (m_offset_params.ab_offset_envelope_rel * m_offset_params.target_distance);
+    return sag / (m_offset_params.offset_envelope_rel * m_offset_params.target_distance);
 }
 
 double TopoOffsetTriMesh::phase_b_band_gradient_linf()
@@ -3412,9 +3412,9 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
     }
     // KEPT (measured 2026-08-25): without it the seam is rougher -- worst edge angle against the
     // field 6 -> 17 deg at 0.10, 16 -> 26 at 0.15, 21 -> 39 at 0.20 -- since under
-    // phase_b_normal_only nothing else acts on the edge normals; 10-15% fewer passes is not
+    // front_normal_projection nothing else acts on the edge normals; 10-15% fewer passes is not
     // worth that.
-    if (!edges.empty() && m_offset_params.phase_b_alignment) {
+    if (!edges.empty() && m_offset_params.front_alignment_energy) {
         const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
         sum->add_energy(std::make_shared<AlignEnergy2D>(pot, std::move(edges), sign, w_off));
     }
@@ -3986,11 +3986,11 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
     // brought inside tolerance.
     //
     // A STRAIGHT FRACTION OF target_distance, and nothing else. eps is a distance in model
-    // units, target_distance is one too, so ab_offset_envelope_rel is a pure percentage: 0.025
+    // units, target_distance is one too, so offset_envelope_rel is a pure percentage: 0.025
     // means "hold the boundary to within 2.5% of the offset distance while Phase A runs".
     //
     // IT NO LONGER TRACKS THE CONVERGENCE CRITERION. It used to be
-    // ab_offset_envelope_rel x offset_residual_tolerance(), which chained the tube to whatever
+    // offset_envelope_rel x offset_residual_tolerance(), which chained the tube to whatever
     // the criterion permitted -- and once the criterion became a fraction of a MEASURED
     // reference, that chain made the Phase A tube depend on how bad construction happened to be.
     // A tube whose width is set by the input's initial error is not a tube anyone can reason
@@ -4000,17 +4000,17 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
     // It is NOT envelope_size_rel, which is a fraction of the bounding-box diagonal and is what
     // m_envelope (the input-complex tube) is built from.
     const double eps =
-        std::max(m_offset_params.ab_offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
 
     m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true); // see the tag envelopes
     m_offset_envelope->init(verts, segs, eps);
     logger().info(
         "\t[offset envelope] rebuilt: {} segments, {} (eps {:.6g} = "
-        "ab_offset_envelope_rel {:.4} x target_distance {:.6g})",
+        "offset_envelope_rel {:.4} x target_distance {:.6g})",
         segs.size(),
         m_offset_envelope->use_exact ? "EXACT" : "sampled",
         eps,
-        m_offset_params.ab_offset_envelope_rel,
+        m_offset_params.offset_envelope_rel,
         m_offset_params.target_distance);
 }
 
@@ -4275,7 +4275,7 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
         // the same bar the loop will apply; the gradient is still logged above for comparison. THE
         // PASS STOP IS THE SOLVER'S OWN QUESTION (Uday, 2026-08-25): the max over the placed front
         // vertices of ||grad F||, F the full Phase B objective as the shared smoother assembles it,
-        // against phase_b_conv_rel x ONE reference -- the same max on the band as constructed,
+        // against front_conv_rel x ONE reference -- the same max on the band as constructed,
         // measured once before round 1 (m_front_gradient_reference). Not relative to each Phase B's
         // entry: later rounds enter already close, and a fraction of that is a bar that tightens by
         // accident. Newton drives the gradient to zero; the geometric halves (distance, edge
@@ -4289,7 +4289,7 @@ size_t TopoOffsetTriMesh::phase_b_smooth()
                 "at "
                 "({:.4f}, {:.4f})",
                 pass + 1,
-                m_offset_params.phase_b_conv_criterion,
+                m_offset_params.front_conv_criterion,
                 eg,
                 under_bar ? "under" : "over",
                 wv,
@@ -4347,8 +4347,8 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
     // left to do: no rounds, no pass budget, no driver. The tube still holds the front for the
     // OPERATIONS (surface_envelope_for_edge, which does not read the phase) and is rebuilt after
     // every iteration, so it follows the front rather than capping it.
-    const int rounds = std::max(1, m_offset_params.ab_max_rounds);
-    const int a_iters = std::max(1, m_offset_params.ab_phase_a_iterations);
+    const int rounds = std::max(1, m_offset_params.max_rounds);
+    const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
     log_region_edge_mask_health("construction");
     audit_surface_containment("construction");
@@ -4360,15 +4360,15 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         "\tSINGLE PHASE (alternating_opt false): TriWild's loop with the front placed inside its "
         "smoothing passes | front energy-gradient reference {:.6g}, criterion {} at rel {}",
         m_front_gradient_reference,
-        m_offset_params.phase_b_conv_criterion,
-        m_offset_params.phase_b_conv_rel);
-    // ITS OWN KEY, single_max_turns: one turn here is split | collapse | swap with a smoothing
+        m_offset_params.front_conv_criterion,
+        m_offset_params.front_conv_rel);
+    // ITS OWN KEY, max_rounds: one turn here is split | collapse | swap with a smoothing
     // pass after each, which is neither an A/B round nor a Phase A iteration, and borrowing
-    // either key gave a stuck case a budget meant for something else (ab_max_rounds x
-    // ab_phase_a_iterations was 800). ab_phase_a_iterations still bounds the finishing pass,
+    // either key gave a stuck case a budget meant for something else (max_rounds x
+    // max_iterations was 800). max_iterations still bounds the finishing pass,
     // which is an ordinary TriWild run.
     (void)rounds;
-    const int budget = std::max(1, m_offset_params.single_max_turns);
+    const int budget = std::max(1, m_offset_params.max_rounds);
     // ONE TURN = TriWild's operation groups, run here rather than through mesh_improvement()
     // so the tube can be rebuilt AFTER EVERY SMOOTHING PASS. Only smoothing moves the front;
     // split, collapse and swap are refused if they would take a front edge out of the tube, so
@@ -4478,13 +4478,13 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             return;
         }
     }
-    logger().warn("Single phase did not converge in {} turns (single_max_turns)", budget);
+    logger().warn("Single phase did not converge in {} turns (max_rounds)", budget);
 }
 
 void TopoOffsetTriMesh::optimize_offset_alternating()
 {
-    const int rounds = std::max(1, m_offset_params.ab_max_rounds);
-    const int a_iters = std::max(1, m_offset_params.ab_phase_a_iterations);
+    const int rounds = std::max(1, m_offset_params.max_rounds);
+    const int a_iters = std::max(1, m_offset_params.max_iterations);
 
     // Before anything runs, so a construction defect is reported as one rather than surfacing
     // later as a residual that will not converge.
@@ -4537,15 +4537,15 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
     m_front_gradient_reference = phase_b_front_gradient_linf();
     m_phase = OptPhase::A;
     logger().info(
-        "\tFront energy-gradient reference (band as constructed): {:.6g} | phase_b_conv_criterion "
-        "{} at phase_b_conv_rel {}{}",
+        "\tFront energy-gradient reference (band as constructed): {:.6g} | front_conv_criterion "
+        "{} at front_conv_rel {}{}",
         m_front_gradient_reference,
-        m_offset_params.phase_b_conv_criterion,
-        m_offset_params.phase_b_conv_rel,
-        m_offset_params.phase_b_conv_criterion == "gradient_norm_rel"
+        m_offset_params.front_conv_criterion,
+        m_offset_params.front_conv_rel,
+        m_offset_params.front_conv_criterion == "gradient_norm_rel"
             ? fmt::format(
                   " => bar {:.6g}",
-                  m_offset_params.phase_b_conv_rel * m_front_gradient_reference)
+                  m_offset_params.front_conv_rel * m_front_gradient_reference)
             : std::string());
     // PHASE A RUNS EVERY ROUND. A rule that skipped it when the sizing had not changed and
     // Phase B had not stretched any edge past TriWild's split threshold was measured on
@@ -4596,12 +4596,12 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
                 log_and_throw_error(
                     "Phase A did not converge within {} iterations: max element quality {:.6} "
                     "against "
-                    "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
+                    "stop_energy {}. The offset envelope may be too tight (offset_envelope_rel "
                     "{}), or the mesh has elements no operation can fix.",
                     a_iters,
                     amips,
                     bar,
-                    m_offset_params.ab_offset_envelope_rel);
+                    m_offset_params.offset_envelope_rel);
             }
             logger().info(
                 "\t[phase A] converged: max element quality {:.4} (stop {:.4})",
@@ -4642,7 +4642,7 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
 
         const DistanceSplit r = residual_split();
         report_outside_support("A/B round", r);
-        // THE LOOP'S CONVERGENCE TEST: the vertex test (phase_b_conv_criterion) over the placed
+        // THE LOOP'S CONVERGENCE TEST: the vertex test (front_conv_criterion) over the placed
         // front vertices AND the edge test over every live front edge, one bar (1 = the bar);
         // see energy_criterion(). Both halves: Phase B has just placed every vertex it can;
         // whether the chords BETWEEN those vertices still resolve the level set is the other
@@ -4659,7 +4659,7 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
             "the bar (worst edge length {:.4g}) | {} vertices ({} pressed, skipped), {} edges ({} "
             "touching a pressed vertex, skipped), {} unmeasurable -> {}",
             passes,
-            m_offset_params.phase_b_conv_criterion,
+            m_offset_params.front_conv_criterion,
             ec.max_vertex,
             ec.max_edge,
             ec.worst_edge_len,
@@ -4786,7 +4786,7 @@ void TopoOffsetTriMesh::optimize_offset_alternating()
     }
 
     logger().warn(
-        "A/B did not converge in {} rounds (ab_max_rounds); the offset residual is still above "
+        "A/B did not converge in {} rounds (max_rounds); the offset residual is still above "
         "tolerance",
         rounds);
 }
@@ -4824,12 +4824,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // this function is still building -- so this states the SHAPE of the bound and the
     // reference line that follows it states the value.
     logger().info(
-        "\tOffset criterion: |grad (Phi - c)^2 . n| <= phase_b_conv_rel {} x "
+        "\tOffset criterion: |grad (Phi - c)^2 . n| <= front_conv_rel {} x "
         "max|grad (Phi - c)^2 . n| over the band AS CONSTRUCTED, with n the unit normal from "
         "the offset surface's own normal (Voronoi-weighted at vertices, the edge's own inside "
         "an edge). Measured over every band vertex and {} sample(s) "
         "per band edge; the reference is reported next, before the loop starts.",
-        m_offset_params.phase_b_conv_rel,
+        m_offset_params.front_conv_rel,
         offset_residual_samples());
 
     // Seed the sizing field from the offset's current edge lengths, before any operation runs.
@@ -4920,12 +4920,12 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     const double gtol = offset_gradient_tolerance();
     logger().info(
         "placement gradient (at band vertices): max {} (avg {}) vs tolerance {} "
-        "[phase_b_conv_rel {}] | in-edge diagnostic {} ({} edge samples) | {} "
+        "[front_conv_rel {}] | in-edge diagnostic {} ({} edge samples) | {} "
         "reachable, {} pinned (max {}), {} skipped ({} unrounded, {} inverted ring)",
         g.max_reachable,
         g.avg_reachable,
         gtol,
-        m_offset_params.phase_b_conv_rel,
+        m_offset_params.front_conv_rel,
         g.max_in_edge,
         g.n_edge_samples,
         g.n_reachable,
@@ -4965,17 +4965,17 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
             "{} [energy, {}]{}: vertices max {:.4}x the bar (worst vertex {}), edges max {:.4}x "
-            "the bar (at ({:.6g}, {:.6g})) | phase_b_conv_rel {} | {} vertices, {} edges, {} "
+            "the bar (at ({:.6g}, {:.6g})) | front_conv_rel {} | {} vertices, {} edges, {} "
             "unmeasurable",
             m_converged ? "Converged" : "Optimization did not converge",
-            m_offset_params.phase_b_conv_criterion,
+            m_offset_params.front_conv_criterion,
             m_energy_verdict ? " (measured at convergence, before the final phase A)" : "",
             ec.max_vertex,
             ec.worst_vid,
             ec.max_edge,
             ec.worst_edge_mid.x(),
             ec.worst_edge_mid.y(),
-            m_offset_params.phase_b_conv_rel,
+            m_offset_params.front_conv_rel,
             ec.n_vertices,
             ec.n_edges,
             ec.n_unmeasurable);

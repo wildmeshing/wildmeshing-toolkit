@@ -345,7 +345,7 @@ public:
      * itself being refused whenever it would leave the tube.
      *
      * Why the change (2026-08-23): refusal cannot express "go as far as you may". On
-     * topo_annots_groups at phase_b_conv_rel 1e-3, four junction vertices reported
+     * topo_annots_groups at front_conv_rel 1e-3, four junction vertices reported
      * `EnvelopeBlocked` in EVERY pass of EVERY round -- every trial length along the descent
      * direction left the tube, so they never moved at all, and one of them (v208, Phi/c = 5.6)
      * set max_grad at 3.61 against a bar of 0.0339 for all ten rounds while 115k operations ran
@@ -465,7 +465,7 @@ public:
      *
      * BUILT WHEN THE OFFSET IS, by optimize_offset() right after label_offset_boundary(), and
      * REFRESHED AT THE END OF EVERY PHASE B from the boundary as that phase just left it, with
-     * eps = ab_offset_envelope_rel x target_distance. Refreshing is what lets the boundary still
+     * eps = offset_envelope_rel x target_distance. Refreshing is what lets the boundary still
      * travel across rounds: each Phase A pins it near its current position, and each Phase B is
      * free to move it somewhere the next Phase A will then pin.
      *
@@ -492,7 +492,7 @@ public:
 
     /// The A/B driver: Phase A (TriWild + offset envelope), Phase B (smoothing to a fixed point,
     /// then refine where Phi is stuck), repeated until both criteria are inside tolerance or
-    /// ab_max_rounds is reached. Replaces the single mesh_improvement() call.
+    /// max_rounds is reached. Replaces the single mesh_improvement() call.
     void optimize_offset_alternating();
     /// alternating_opt=false: TriWild's loop, the front placed inside its smoothing passes.
     void optimize_offset_single_phase();
@@ -501,7 +501,7 @@ public:
     /// on the level set by smooth_offset_vertex_backtracking(), background (interior) vertices
     /// minimize their one-ring AMIPS by the shared smoother -- each visit runs its
     /// vertex's local solve under the run's own gradient bar (offset placement) or to
-    /// ab_vertex_grad_tol_rel of its entry gradient (interior AMIPS).
+    /// vertex_grad_tol_rel of its entry gradient (interior AMIPS).
     /// Returns the number of passes run; the natural exit is a pass in which NO offset vertex
     /// was backtracked by its one-ring (m_phase_b_constrained == 0). See the definition for the
     /// other exits (the run's own convergence bar, the no-progress guard, and an optional
@@ -523,7 +523,7 @@ public:
      * surface. Solving the interior alongside the boundary is what opens one-rings that would
      * otherwise force the offset root find to backtrack -- which is the pass loop's exit
      * criterion. Reuses the shared smoother (optimization::smooth_vertex_2d) with Phase B's own
-     * solver, configured to stop at ab_vertex_grad_tol_rel of the visit's initial gradient.
+     * solver, configured to stop at vertex_grad_tol_rel of the visit's initial gradient.
      */
 
     /**
@@ -1110,7 +1110,7 @@ public:
      * about WHICH envelope refused it, and the answer forks the diagnosis completely:
      *
      *   OFFSET-CLASS (mask 0, both endpoints on the offset)  -- refused by m_offset_envelope, the
-     *     Phase A pin at ab_offset_envelope_rel x target_distance. Means Phase A moved the offset
+     *     Phase A pin at offset_envelope_rel x target_distance. Means Phase A moved the offset
      *     boundary out of the tube that is supposed to hold it where Phase B left it.
      *   REGION-CLASS (mask != 0) -- refused by that tag's tube, or by the INTERSECTION of several
      *     tubes at a junction. Means a tag-region boundary has drifted off the input partition,
@@ -1158,7 +1158,7 @@ public:
 
     /// Per-thread Newton solver for Phase B's interior AMIPS solves. Separate from the base's
     /// m_solver because it carries a different stopping rule: polysolve's rel_grad_norm_tol set
-    /// to ab_vertex_grad_tol_rel with a deep iteration budget, against the base's fixed shallow
+    /// to vertex_grad_tol_rel with a deep iteration budget, against the base's fixed shallow
     /// budget with no tolerance. Created on first use.
     mutable wmtk::threading::enumerable_thread_specific<
         std::unique_ptr<polysolve::nonlinear::Solver>>
@@ -1462,10 +1462,10 @@ public:
     /// The line a front vertex is placed along: the field normal, or the boundary tangent where
     /// an input envelope holds it. See the definition.
     Vector2d front_vertex_move_direction(size_t vid) const;
-    /// The vertex's convergence measure divided by its bar, per phase_b_conv_criterion: 1 is the
+    /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. See the spec entry for the three measures. Infinite when unmeasurable.
     double front_vertex_conv_ratio(size_t vid) const;
-    /// The edge test divided by its bar (1 = bar), per phase_b_conv_criterion; -1 unmeasurable.
+    /// The edge test divided by its bar (1 = bar), per front_conv_criterion; -1 unmeasurable.
     double edge_conv_ratio(const Tuple& e) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
@@ -1505,7 +1505,7 @@ public:
      * target, so mesh_improvement() stops exactly when both are met:
      *
      *   - max face AMIPS over stop_energy -- TriWild's, via quality_rel()
-     *   - max Phi residual over (phase_b_conv_rel / 2) * target_distance, over the REACHABLE band
+     *   - max Phi residual over (front_conv_rel / 2) * target_distance, over the REACHABLE band
      *
      * The average returned alongside it is the same expression over the two averages, so both
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
@@ -1542,7 +1542,7 @@ public:
     /// half the gradient tolerance, in length units. There is no offset_residual_rel any more.
     ///
     /// WHY IT MATTERS BEYOND REPORTING: this feeds the Phase A offset envelope
-    /// (ab_offset_envelope_rel x this) and the derived min_edge_length floor, so loosening the
+    /// (offset_envelope_rel x this) and the derived min_edge_length floor, so loosening the
     /// criterion loosens the tube with it. See the 3D twin for the measurement.
     double offset_residual_tolerance() const
     {
@@ -1591,7 +1591,7 @@ public:
         //
         // Zero until measure_gradient_reference() runs, which would make the bound 1e-16 and
         // convergence unreachable rather than free -- see that function.
-        return std::max(m_offset_params.phase_b_conv_rel * m_gradient_reference, 1e-16);
+        return std::max(m_offset_params.front_conv_rel * m_gradient_reference, 1e-16);
     }
 
     /// max |2 (Phi - c) grad Phi . n| over the initial offset-surface vertices; the scale
@@ -1771,7 +1771,7 @@ public:
      * @brief The "energy_gradient" criterion (Uday, 2026-08-25): the front is at a critical point
      * of Phase B's energy, and every edge resolves the pull that drives it there.
      *
-     * One bar for everything, B = phase_b_conv_rel x m_front_gradient_reference:
+     * One bar for everything, B = front_conv_rel x m_front_gradient_reference:
      *  - VERTICES: max over the placed front vertices of ||grad F||, F the vertex's full Phase B
      *    objective (AMIPS + the two offset terms, as the shared smoother assembles it) -- the same
      *    quantity and bar as the Phase B pass stop.
@@ -1780,7 +1780,7 @@ public:
      *    (2 w / c) |r(m) - (r(a) + r(b)) / 2| <= B, w = 1 - w_amips. That is the second
      *    difference of the offset residual along the edge, in the units of the offset term's
      *    gradient (2 w / c) r grad Phi: how far the level set curves away from the chord, which
-     *    halving the edge reduces; the bar is ab_offset_envelope_rel x c under step_size_rel and
+     *    halving the edge reduces; the bar is offset_envelope_rel x c under step_size_rel and
      *    decrement (see edge_conv_ratio()). It was first the gradient's own interpolation error,
      *    ||g(m) - (g(a) + g(b)) / 2||; that is r x (change of grad Phi) and at a pressed seam
      *    (r ~ 0.3-0.5) it read the press, not the resolution -- see
@@ -1795,7 +1795,7 @@ public:
         double
             max_vertex = 0.,
             max_edge =
-                0.; ///< RATIOS to the bar (1 = bar): the vertex measure per phase_b_conv_criterion; the edge test
+                0.; ///< RATIOS to the bar (1 = bar): the vertex measure per front_conv_criterion; the edge test
         double bar = 1.; ///< the ratios' bar, 1
         size_t n_vertices = 0, n_edges = 0, n_unmeasurable = 0;
         size_t n_pressed = 0, n_edges_pressed = 0; ///< skipped: pressed (see m_placement_pressed)
@@ -1907,7 +1907,7 @@ public:
         // gradient is not a statement about the offset's quality -- it is a statement about the
         // constraint -- and leaving it in max_reachable makes convergence impossible by
         // construction. Measured on topo_annots_groups (tag_0 & tag_2, delta 1.2,
-        // phase_b_conv_rel 1e-3): FOUR such vertices held max_grad at 3.6 against a
+        // front_conv_rel 1e-3): FOUR such vertices held max_grad at 3.6 against a
         // bar of 0.0339 for all ten rounds while 115k operations ran around them, one of them at
         // Phi/c = 5.6. At the default rel of 0.2 the same run converges in one round, because the
         // bar sits above the conflict and it is invisible -- which is exactly why this needs to

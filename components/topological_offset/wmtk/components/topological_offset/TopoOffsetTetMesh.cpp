@@ -1340,7 +1340,7 @@ void TopoOffsetTetMesh::rebuild_offset_envelope()
         return;
     }
 
-    // ONE WIDTH, EVERY ROUND: eps = ab_offset_envelope_rel x the Phi tolerance. Phase A is
+    // ONE WIDTH, EVERY ROUND: eps = offset_envelope_rel x the Phi tolerance. Phase A is
     // pinned to the same tube whether the surface is far from the level set or nearly on it.
     //
     // This replaces a trust region that scaled eps from the previous Phase B's max residual.
@@ -1356,7 +1356,7 @@ void TopoOffsetTetMesh::rebuild_offset_envelope()
     // Cannot be 0: refinement moves the surface by about the local chord error when a split
     // lands, and an envelope tighter than that refuses Phase A's operations outright.
     const double tol = offset_residual_tolerance();
-    const double eps = std::max(m_offset_params.ab_offset_envelope_rel * tol, 1e-12);
+    const double eps = std::max(m_offset_params.offset_envelope_rel * tol, 1e-12);
 
     m_offset_envelope = std::make_shared<SampleEnvelope>();
     m_offset_envelope->use_exact = true;
@@ -1781,8 +1781,8 @@ size_t TopoOffsetTetMesh::update_band_sizing_from_tolerance()
 
 void TopoOffsetTetMesh::optimize_offset_alternating()
 {
-    const int rounds = std::max(1, m_offset_params.ab_max_rounds);
-    const int a_iters = std::max(1, m_offset_params.ab_phase_a_iterations);
+    const int rounds = std::max(1, m_offset_params.max_rounds);
+    const int a_iters = std::max(1, m_offset_params.max_iterations);
 
     // Before anything runs, so a construction defect is reported as one rather than surfacing
     // later as a residual that will not converge.
@@ -1861,12 +1861,12 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
             log_worst_tet("phase A gave up");
             log_and_throw_error(
                 "Phase A did not converge within {} iterations: max element quality {:.6} against "
-                "stop_energy {}. The offset envelope may be too tight (ab_offset_envelope_rel "
+                "stop_energy {}. The offset envelope may be too tight (offset_envelope_rel "
                 "{}), or the mesh has elements no operation can fix.",
                 a_iters,
                 amips,
                 bar,
-                m_offset_params.ab_offset_envelope_rel);
+                m_offset_params.offset_envelope_rel);
         }
         logger().info("\t[phase A] converged: max element quality {:.4} (stop {:.4})", amips, bar);
         // Phase A collapses can merge an offset vertex into an input one, and
@@ -2014,7 +2014,7 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
     }
 
     logger().warn(
-        "A/B did not converge in {} rounds (ab_max_rounds); the offset residual is still above "
+        "A/B did not converge in {} rounds (max_rounds); the offset residual is still above "
         "tolerance",
         rounds);
 }
@@ -3249,17 +3249,17 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // Spelled out including the slope^2 factor, so the line reproduces its own number. Without it
     // the criterion reads as rel x target_distance, which is only what it is on a distance field.
     logger().info(
-        "\tOffset criterion: |grad (Phi - c)^2| <= {} = phase_b_conv_rel {} x "
+        "\tOffset criterion: |grad (Phi - c)^2| <= {} = front_conv_rel {} x "
         "target_distance "
         "{} x level-set slope^2 {:.6} -- i.e. residual <= {} ({} x target_distance) | diagnostic "
         "Phi residual bar {} (= half the gradient bound, in model units) | level c {:.6}, dhat "
         "{:.6}, {} interior samples per offset face",
         offset_gradient_tolerance(),
-        m_offset_params.phase_b_conv_rel,
+        m_offset_params.front_conv_rel,
         m_offset_params.target_distance,
         m_offset_potential->level_set_slope() * m_offset_potential->level_set_slope(),
-        0.5 * m_offset_params.phase_b_conv_rel * m_offset_params.target_distance,
-        0.5 * m_offset_params.phase_b_conv_rel,
+        0.5 * m_offset_params.front_conv_rel * m_offset_params.target_distance,
+        0.5 * m_offset_params.front_conv_rel,
         offset_residual_tolerance(),
         m_offset_potential->target_level(),
         m_offset_potential->dhat(),
@@ -3390,7 +3390,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         g.max_reachable,
         g.avg_reachable,
         gtol,
-        m_offset_params.phase_b_conv_rel,
+        m_offset_params.front_conv_rel,
         g.max_at_vertex,
         g.max_in_face,
         g.n_face_samples,
@@ -3432,7 +3432,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     m_converged = g.max_reachable <= gtol;
     if (m_converged) {
         logger().info(
-            "Converged ([max placement gradient] {} <= {} [phase_b_conv_rel x "
+            "Converged ([max placement gradient] {} <= {} [front_conv_rel x "
             "target_distance]); worst term {} (at-vertex {}, in-face {})",
             g.max_reachable,
             gtol,
@@ -3470,7 +3470,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         if (g.max_in_face > g.max_at_vertex) {
             logger().warn(
                 "Optimization did not converge ([max placement gradient] {} > {} "
-                "[phase_b_conv_rel x target_distance]); worst term is IN-FACE ({} vs "
+                "[front_conv_rel x target_distance]); worst term is IN-FACE ({} vs "
                 "{} at "
                 "vertices) -- the band is too coarse to represent the level set, which wants "
                 "refinement rather than smoothing",
@@ -3481,7 +3481,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         } else {
             logger().warn(
                 "Optimization did not converge ([max placement gradient] {} > {} "
-                "[phase_b_conv_rel x target_distance]); worst term is AT-VERTEX, at "
+                "[front_conv_rel x target_distance]); worst term is AT-VERTEX, at "
                 "vertex {} "
                 "({} vs {} inside faces)",
                 g.max_reachable,

@@ -235,7 +235,7 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     //
     // TO THIS VERTEX'S OWN MINIMUM, not a fixed handful of steps. The visit ends when the
     // gradient of the quadratic error E = (Phi - c)^2, |grad E| = 2 |Phi - c| |grad Phi|,
-    // falls below ab_vertex_grad_tol_rel of ITS OWN value at the visit's start -- the
+    // falls below vertex_grad_tol_rel of ITS OWN value at the visit's start -- the
     // per-vertex tolerance, deliberately separate from the run's convergence bar, which is
     // checked once per A/B round. The iteration cap is a guard against a cycling Newton, not
     // the intended stop; the step floor below it is the numerical one.
@@ -263,7 +263,7 @@ bool TopoOffsetTetMesh::smooth_offset_vertex_backtracking(const Tuple& t)
     constexpr double kLmInit = 1e-8; ///< mu/s^2 at entry: effectively undamped Gauss-Newton
     constexpr double kLmMin = 1e-12;
     constexpr double kLmMax = 1e8;
-    const double vertex_tol_rel = m_offset_params.ab_vertex_grad_tol_rel;
+    const double vertex_tol_rel = m_offset_params.vertex_grad_tol_rel;
     const double s_ref = m_offset_potential->level_set_slope();
     const double mu_scale = (s_ref > 0. && std::isfinite(s_ref)) ? s_ref * s_ref : 1.;
     double mu_rel = kLmInit;
@@ -457,12 +457,12 @@ bool TopoOffsetTetMesh::smooth_interior_vertex_phase_b(const Tuple& t)
     if (!solver) {
         // The base solver's twin, with the stopping rule this phase is about: polysolve's
         // rel_grad_norm_tol is exactly gradNorm / initial_grad_norm, so the solve stops at
-        // ab_vertex_grad_tol_rel of the visit's initial gradient, and the iteration budget is
+        // vertex_grad_tol_rel of the visit's initial gradient, and the iteration budget is
         // deep enough that the tolerance is what actually fires (the base runs a fixed 10
         // with no tolerance at all).
         polysolve::json params = optimization::basic_nonlinear_solver_params;
         params["max_iterations"] = 50;
-        params["rel_grad_norm_tol"] = m_offset_params.ab_vertex_grad_tol_rel;
+        params["rel_grad_norm_tol"] = m_offset_params.vertex_grad_tol_rel;
         solver = polysolve::nonlinear::Solver::create(
             params,
             optimization::basic_linear_solver_params,

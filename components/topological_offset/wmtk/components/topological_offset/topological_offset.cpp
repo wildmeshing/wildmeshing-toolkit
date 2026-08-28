@@ -76,7 +76,7 @@ void topological_offset(nlohmann::json json_params)
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
-        logger().info("phase_b_conv_rel: {}", params.phase_b_conv_rel);
+        logger().info("front_conv_rel: {}", params.front_conv_rel);
         logger().info("===============================");
     }
 

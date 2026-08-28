@@ -161,7 +161,7 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // surface 1172 -> 326 faces with every surviving vertex sitting at 0.95% of delta.
     //
     // Phase A now holds the offset surface in m_offset_envelope (rebuilt each round, eps =
-    // ab_offset_envelope_rel x the residual tolerance), so containment is enforced by the
+    // offset_envelope_rel x the residual tolerance), so containment is enforced by the
     // shared pass's surface_triangle_is_outside() -- the same mechanism, with the same
     // tolerance semantics, that TetWild's input surface gets. A second, tighter criterion on
     // top of the envelope made Phase A stricter than TetWild in exactly the phase that is
