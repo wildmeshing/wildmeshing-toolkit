@@ -3327,7 +3327,8 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                 const double s_floor = std::max(
                     m_offset_params.min_sizing_scalar,
                     m_offset_params.min_edge_length / l);
-                const double target = std::min(0.75 * len * std::sqrt(s.tube / (gn * s.tube)), 0.625 * len);
+                // The cap mirrors refine_front_from_sag(): L/2, the hysteresis fixed point.
+                const double target = std::min(0.75 * len * std::sqrt(s.tube / (gn * s.tube)), 0.5 * len);
                 const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 const double have = std::max(
                     m_vertex_attribute[va].m_sizing_scalar,
@@ -3711,13 +3712,19 @@ size_t TopoOffsetTriMesh::refine_front_from_sag(
     std::vector<size_t> changed;
     for (const EnergyCriterion::Refinable& r : edges) {
         if (!(r.sag > 0.) || !(r.len > 0.)) continue;
-        // 4/3 AND 4/5 DO NOT COMPOSE (see Collapse.cpp): a split's children are L/2, and the
-        // collapse pass removes an edge shorter than 4/5 of its target, so a target above
-        // L/2 / (4/5) = 0.625 L hands the children straight back to the collapse -- measured:
-        // the refinable set never emptied (annots 180 edges, tag4_in 27, for 40 turns). The
-        // sag rule alone asks for that between 1x and 1.44x the tube; capped here so a split
-        // always sticks.
-        const double target = std::min(0.75 * r.len * std::sqrt(tube / r.sag), 0.625 * r.len);
+        // THE CAP IS L/2: THE CHILDREN LAND ON THEIR OWN TARGET (2026-08-31). The old cap was
+        // 0.625 L, from "children L/2 must clear the 4/5 collapse band, 4/5 x 0.625 = 0.5" --
+        // non-strict reasoning that put the children EXACTLY ON the band's boundary, where the
+        // collapse gate (strictly longer survives) offers them and a hair of smoothing decides
+        // every turn. Measured at front_conv_rel 0.05: the steady-state edges sit in the
+        // 1-1.44x sag window where the cap always binds, and ~27 of them cycled split<->
+        // collapse for 22 turns (recurring length 0.059, sn 0.625 L / l = 0.0104, fresh vertex
+        // ids each turn) -- the whole "looser accuracy converges slower" defect. At L/2 the
+        // children sit 25% above the collapse band (4/5 x L/2 = 0.4 L) and 25% below their own
+        // split threshold (4/3 x L/2) -- the fixed point of the 4/3-4/5 hysteresis, symmetric
+        // margin, no boundary. The original 0.625 measurement stands as the reason a cap must
+        // exist at all (uncapped: annots 180 refinable edges, tag4_in 27, for 40 turns).
+        const double target = std::min(0.75 * r.len * std::sqrt(tube / r.sag), 0.5 * r.len);
         const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
         for (const size_t v : {r.a, r.b}) {
             double& sc = m_vertex_attribute[v].m_sizing_scalar;
