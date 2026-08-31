@@ -115,7 +115,9 @@ struct Parameters : public wmtk::OptimizerParameters
     bool sizing_collapse_min = false;
     /// 2D. Other input regions (no input-complex face, no wall contact) deform under smoothing
     /// against their rest shape instead of being envelope-held. See the spec doc.
-    bool deform_others = false;
+    bool deform_others = true;
+    /// DIAGNOSTIC: ignore the convergence test; run the single-phase loop to max_rounds.
+    bool front_conv_disable = false;
     /// 2D: false (the default) is the single phase -- TriWild's loop with the front placed inside
     /// its smoothing passes; true is the A/B loop, which is also what 3D always runs.
     bool alternating_opt = false;
@@ -303,6 +305,7 @@ struct Parameters : public wmtk::OptimizerParameters
         front_alignment_energy = json_params["front_alignment_energy"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         deform_others = json_params["deform_others"];
+        front_conv_disable = json_params["front_conv_disable"];
         alternating_opt = json_params["alternating_opt"];
         max_rounds = json_params["max_rounds"];
         pre_optimize_input = json_params["pre_optimize_input"];

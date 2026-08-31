@@ -1535,6 +1535,24 @@ public:
     /// A face deforms when it is background (label 0), tagged, and EVERY tag it carries was
     /// released -- a face shared with a held region must not deform freely.
     bool face_is_deformable(size_t fid) const;
+    /// PLASTIC MEDIUM (Uday, 2026-08-31): under deform_others, every background face -- ambient
+    /// and the other objects alike -- is plastic: its rest shape is re-stamped before every
+    /// operation group, so smoothing resists only the increment since the group started and the
+    /// medium flows instead of behaving as an elastic solid glued to the walls (measured: with
+    /// equilateral AMIPS as the medium, a full-budget run moved circle_b's contact edge by
+    /// 0.002 and froze -- the equilateral reference is a permanent shape preference). The band
+    /// (label 2) and the complex (label 1) are not plastic; element quality in the medium is
+    /// the operation passes' job.
+    bool m_plastic_active = false; ///< set in optimize_offset() when deform_others
+    bool face_is_plastic(size_t fid) const
+    {
+        return m_plastic_active && m_face_extra[fid].label == 0;
+    }
+    /// Stamp rest := current for every plastic face; called before every operation group.
+    void stamp_plastic_rests();
+    /// The plastic vertex's smoothing: rest-shape AMIPS over its ring, nothing else -- no
+    /// equilateral term, no quality veto, exact inversion as the only accept test.
+    bool smooth_plastic_vertex(const Tuple& t);
     /// Stamp rest := the face's current corner positions (oriented order). No-op for
     /// non-deformable faces.
     void stamp_rest_face(size_t fid);

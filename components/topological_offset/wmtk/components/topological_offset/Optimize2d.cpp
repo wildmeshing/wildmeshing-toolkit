@@ -358,11 +358,89 @@ bool TopoOffsetTriMesh::face_is_deformable(const size_t fid) const
 
 void TopoOffsetTriMesh::stamp_rest_face(const size_t fid)
 {
-    if (!face_is_deformable(fid)) return;
+    if (!face_is_plastic(fid) && !face_is_deformable(fid)) return;
     const auto vs = oriented_tri_vids(fid);
     FaceExtra2d& x = m_face_extra[fid];
     for (int i = 0; i < 3; ++i) x.rest_pos[i] = m_vertex_attribute[vs[i]].m_posf;
     x.rest_valid = true;
+}
+
+void TopoOffsetTriMesh::stamp_plastic_rests()
+{
+    if (!m_plastic_active) return;
+    size_t n = 0;
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        if (!face_is_plastic(fid)) continue;
+        const auto vs = oriented_tri_vids(fid);
+        FaceExtra2d& x = m_face_extra[fid];
+        for (int i = 0; i < 3; ++i) x.rest_pos[i] = m_vertex_attribute[vs[i]].m_posf;
+        x.rest_valid = true;
+        ++n;
+    }
+    (void)n;
+}
+
+bool TopoOffsetTriMesh::smooth_plastic_vertex(const Tuple& t)
+{
+    // The plastic medium's smoothing: rest-shape AMIPS over the one-ring and nothing else.
+    // Rest is the shape at the group's start (stamp_plastic_rests), so the term resists only
+    // the increment; no equilateral term (that is the elastic solid this replaces -- quality
+    // in the medium belongs to the operation passes) and no quality veto (a veto would freeze
+    // the flow exactly as the solid did). Accept: exact inversion of the ring, as everywhere.
+    const size_t vid = t.vid(*this);
+    const std::vector<size_t>& ring = get_one_ring_fids_for_vertex(t);
+    for (const size_t fid : ring) {
+        if (is_inverted_f(fid)) {
+            ++m_smooth_rejects.already_inverted;
+            return false;
+        }
+    }
+    std::vector<RestAMIPSEnergy2D::Cell> cells;
+    for (const size_t fid : ring) {
+        const FaceExtra2d& fx = m_face_extra[fid];
+        if (!face_is_plastic(fid) || !fx.rest_valid) continue;
+        const auto vs = oriented_tri_vids(fid);
+        int k = 0;
+        while (k < 3 && vs[k] != vid) ++k;
+        if (k == 3) continue;
+        RestAMIPSEnergy2D::Cell c;
+        c.q1 = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
+        c.q2 = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
+        Eigen::Matrix2d R;
+        R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
+        R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
+        const double det = R.determinant();
+        if (!(det > 0.)) continue;
+        c.rest_inv = R.inverse();
+        cells.push_back(c);
+    }
+    if (cells.empty()) return false;
+    auto energy = std::make_shared<RestAMIPSEnergy2D>(std::move(cells), 1.0);
+    auto& solver = m_phase_b_solver.local();
+    if (!solver) {
+        solver = polysolve::nonlinear::Solver::create(
+            optimization::basic_nonlinear_solver_params,
+            optimization::basic_linear_solver_params,
+            1,
+            opt_logger());
+    }
+    const Vector2d x0 = smoothing_position(vid);
+    Eigen::VectorXd x = x0;
+    try {
+        solver->minimize(*energy, x);
+    } catch (const std::exception&) {
+    }
+    set_smoothing_position(vid, Vector2d(x));
+    for (const size_t fid : ring) {
+        if (is_inverted(fid)) {
+            set_smoothing_position(vid, x0);
+            ++m_smooth_rejects.inverted;
+            return false;
+        }
+    }
+    ++m_smooth_rejects.accepted;
+    return true;
 }
 
 void TopoOffsetTriMesh::release_deformable_regions()
@@ -378,8 +456,24 @@ void TopoOffsetTriMesh::release_deformable_regions()
     std::set<int64_t> kept;
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
-        if (m_face_extra[fid].label == 1) {
-            for (const int64_t t : m_face_attribute[fid].tags) kept.insert(t);
+        // A SOURCE tag has a complex face exclusively its own. "Any complex face carries it"
+        // held every object that merely OVERLAPS the complex (two_overlap: Q shares its
+        // crossing with P, so Q never released and the wall behaviour survived unchanged).
+        // With exclusivity, the overlap faces (carrying both tags) keep the source held and
+        // the overlapper's outside part is released; its crossing with the complex boundary
+        // stays held on its own, because that interface's symmetric difference is the source
+        // tag. A selection that is a pure intersection (every complex face multi-tagged) would
+        // release its own sources under this rule -- guarded below by falling back.
+        if (m_face_extra[fid].label == 1 && m_face_attribute[fid].tags.size() == 1) {
+            kept.insert(*m_face_attribute[fid].tags.begin());
+        }
+    }
+    if (kept.empty()) { // pure-intersection selection: fall back to the conservative rule
+        for (const Tuple& f : get_faces()) {
+            const size_t fid = f.fid(*this);
+            if (m_face_extra[fid].label == 1) {
+                for (const int64_t t : m_face_attribute[fid].tags) kept.insert(t);
+            }
         }
     }
     for (const Tuple& e : get_edges()) {
@@ -387,6 +481,12 @@ void TopoOffsetTriMesh::release_deformable_regions()
         for (const int64_t t : m_face_attribute[e.fid(*this)].tags) kept.insert(t);
     }
     if (m_curve_tag >= 0) kept.insert(m_curve_tag);
+    // protected_tags is the config's explicit "keep this object rigid": honored before any
+    // release heuristic, which is also how a fixture opts a region out of deform_others.
+    for (const std::string& name : m_offset_params.protected_tags) {
+        const auto it = m_tag_name_to_id.find(name);
+        if (it != m_tag_name_to_id.end()) kept.insert(it->second);
+    }
 
     m_deform_tags.clear();
     for (const auto& [tag, env] : m_tag_envelopes) {
@@ -397,11 +497,82 @@ void TopoOffsetTriMesh::release_deformable_regions()
         return;
     }
 
+    // THE INTERFACE IS FREED ON BOTH SIDES. A region-boundary edge enters BOTH incident tags'
+    // envelope buckets, so erasing the released tag's envelope alone left its boundary held by
+    // the KEPT neighbour's envelope -- measured 2026-08-31: circle_b's boundary vertices,
+    // carrying the ambient bit, took the held path every pass and were frozen to six decimals
+    // while the plastic medium waited for them. A segment bordering a released region leaves
+    // the kept envelopes too, and the vertex masks are recomputed so freed vertices carry no
+    // bits at all.
+    // ANCHORED SEMANTICS (Uday, 2026-08-31): a released object's boundary INSIDE the complex
+    // stays held -- it is the object's attachment, and left free it crumples into noise inside
+    // held material (measured on two_overlap: Q's internal arc degraded to a zigzag). A
+    // released tag therefore keeps a REDUCED envelope of exactly its inside-the-complex
+    // segments; only its outside segments are freed. Inside/outside by even-odd parity of the
+    // segment midpoint against the complex boundary polyline.
+    const auto inside_complex = [&](const Eigen::Vector2d& q) {
+        int crossings = 0;
+        for (int e = 0; e < m_phi_E.rows(); ++e) {
+            const Eigen::Vector2d a = m_phi_V.row(m_phi_E(e, 0)).head<2>();
+            const Eigen::Vector2d b = m_phi_V.row(m_phi_E(e, 1)).head<2>();
+            if ((a.y() > q.y()) == (b.y() > q.y())) continue;
+            const double xhit = a.x() + (q.y() - a.y()) / (b.y() - a.y()) * (b.x() - a.x());
+            if (xhit > q.x()) ++crossings;
+        }
+        return crossings % 2 == 1;
+    };
+    std::set<std::pair<int, int>> freed_segments; // input-polyline indexing, both orders
+    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
     std::string released;
     for (const int64_t t : m_deform_tags) {
         released += " " + m_tag_id_to_name.at(t);
-        m_tag_envelopes.erase(t);
-        m_tag_polyline.erase(t);
+        const auto it = m_tag_polyline.find(t);
+        if (it == m_tag_polyline.end()) {
+            m_tag_envelopes.erase(t);
+            continue;
+        }
+        std::vector<Eigen::Vector2i> anchored_E;
+        for (const auto& e : it->second.E) {
+            const Eigen::Vector2d mid =
+                0.5 * (m_env_polyline_V[e[0]] + m_env_polyline_V[e[1]]);
+            if (inside_complex(mid)) {
+                anchored_E.push_back(e);
+            } else {
+                freed_segments.insert({e[0], e[1]});
+                freed_segments.insert({e[1], e[0]});
+            }
+        }
+        if (anchored_E.empty()) {
+            m_tag_envelopes.erase(t);
+            m_tag_polyline.erase(t);
+        } else {
+            auto env = std::make_shared<SampleEnvelope>(exact_ok);
+            env->init(m_env_polyline_V, anchored_E, m_envelope_eps);
+            m_tag_envelopes[t] = env;
+            it->second.E = anchored_E;
+            it->second.at_vertex.assign(m_env_polyline_V.size(), {});
+            for (int i = 0; i < int(anchored_E.size()); ++i) {
+                it->second.at_vertex[anchored_E[i][0]].push_back(i);
+                it->second.at_vertex[anchored_E[i][1]].push_back(i);
+            }
+        }
+    }
+    for (auto& [tag, env] : m_tag_envelopes) {
+        auto it = m_tag_polyline.find(tag);
+        if (it == m_tag_polyline.end()) continue;
+        std::vector<Eigen::Vector2i> kept_E;
+        for (const auto& e : it->second.E) {
+            if (freed_segments.count({e[0], e[1]}) == 0) kept_E.push_back(e);
+        }
+        if (kept_E.size() == it->second.E.size()) continue; // nothing of this tag was freed
+        env = std::make_shared<SampleEnvelope>(exact_ok);
+        env->init(m_env_polyline_V, kept_E, m_envelope_eps);
+        it->second.E = kept_E;
+        it->second.at_vertex.assign(m_env_polyline_V.size(), {});
+        for (int i = 0; i < int(kept_E.size()); ++i) {
+            it->second.at_vertex[kept_E[i][0]].push_back(i);
+            it->second.at_vertex[kept_E[i][1]].push_back(i);
+        }
     }
     {
         std::lock_guard<std::mutex> lock(m_isect_mutex);
@@ -411,6 +582,43 @@ void TopoOffsetTriMesh::release_deformable_regions()
     std::vector<std::shared_ptr<SampleEnvelope>> members;
     for (const auto& [tag, env] : m_tag_envelopes) members.push_back(env);
     m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
+
+    // Recompute every vertex's boundary mask from the CURRENT edges, counting only interfaces
+    // that stay held: an edge whose tag symmetric difference touches a released tag is free and
+    // seeds no bits. (Band-tag bits are harmless dangling bits, as everywhere.)
+    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        if (!m_edge_attribute[eid].m_is_surface_fs) continue;
+        CellTag edge_tags;
+        const std::optional<Tuple> f_opp = e.switch_face(*this);
+        if (f_opp) {
+            const auto& t0 = m_face_attribute[e.fid(*this)].tags;
+            const auto& t1 = m_face_attribute[f_opp->fid(*this)].tags;
+            std::set_symmetric_difference(
+                t0.begin(), t0.end(), t1.begin(), t1.end(),
+                std::inserter(edge_tags, edge_tags.begin()));
+        } else {
+            edge_tags = m_face_attribute[e.fid(*this)].tags;
+        }
+        bool free_edge = false;
+        for (const int64_t t : edge_tags) {
+            if (m_deform_tags.count(t)) {
+                free_edge = true;
+                break;
+            }
+        }
+        // Anchored: an interface between two COMPLEX faces is the released object's attachment
+        // and stays held (its bits dispatch to the tag's reduced, inside-only envelope).
+        if (free_edge && f_opp && m_face_extra[e.fid(*this)].label == 1 &&
+            m_face_extra[f_opp->fid(*this)].label == 1) {
+            free_edge = false;
+        }
+        if (free_edge) continue;
+        const uint64_t bits = tag_bits(edge_tags);
+        m_vertex_extra[e.vid(*this)].m_boundary_mask |= bits;
+        m_vertex_extra[e.switch_vertex(*this).vid(*this)].m_boundary_mask |= bits;
+    }
 
     size_t n_faces = 0;
     for (const Tuple& f : get_faces()) {
@@ -1054,6 +1262,25 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
         ++m_smooth_trace.interior_attempted;
     }
 
+    // THE PLASTIC MEDIUM: a vertex whose whole ring is plastic and which no envelope holds
+    // flows under rest-shape AMIPS alone (see smooth_plastic_vertex). Wall vertices keep their
+    // envelope and the standard path; vertices touching the band or the complex keep the
+    // standard path too, so the interfaces stay under the usual rules.
+    if (m_plastic_active && !ve.m_is_on_offset && !smoothing_containment_envelope(vid)) {
+        bool all_plastic = true;
+        for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
+            if (!face_is_plastic(fid)) {
+                all_plastic = false;
+                break;
+            }
+        }
+        if (all_plastic) {
+            const bool okp = smooth_plastic_vertex(t);
+            ++m_smooth_trace.interior_attempted;
+            return okp;
+        }
+    }
+
     // PHASE B: a front vertex goes through the SHARED smoother -- same solver, line search and
     // accept tests as every other vertex -- with the offset's options: its objective carries the
     // offset terms (smoothing_extra_energy), and no quality veto (a front vertex has to be able
@@ -1173,6 +1400,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
     // differentiates with respect to), weighted as the shared smoother weights it, plus the offset
     // terms on the vertex's own region's field.
     std::vector<std::array<double, 6>> cells;
+    std::vector<RestAMIPSEnergy2D::Cell> plastic_cells; // deform_others: increments only
     for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
         const std::array<size_t, 3> vs = oriented_tri_vids(fid);
         int k = 0;
@@ -1180,12 +1408,32 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
         if (k == 3) continue;
         const Vector2d& a = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
         const Vector2d& b = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
+        // A PLASTIC ring face brakes the front only by its increment since the group started
+        // (rest-shape AMIPS on the group-start rest); judged equilateral it is the permanent
+        // brake that parked the front at an elastic equilibrium (0.176 of a 0.30 target,
+        // static from turn 3 whatever ran afterwards). Band faces stay equilateral.
+        const FaceExtra2d& fx = m_face_extra[fid];
+        if (face_is_plastic(fid) && fx.rest_valid) {
+            Eigen::Matrix2d R;
+            R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
+            R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
+            if (R.determinant() > 0.) {
+                RestAMIPSEnergy2D::Cell c;
+                c.q1 = a;
+                c.q2 = b;
+                c.rest_inv = R.inverse();
+                plastic_cells.push_back(c);
+                continue;
+            }
+        }
         cells.push_back({{x.x(), x.y(), a.x(), a.y(), b.x(), b.y()}});
     }
     const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     auto sum = std::make_shared<optimization::EnergySum>();
-    if (m_params.w_amips > 0)
+    if (m_params.w_amips > 0 && !cells.empty())
         sum->add_energy(std::make_shared<optimization::AMIPSEnergy2D>(cells, amips_w));
+    if (!plastic_cells.empty())
+        sum->add_energy(std::make_shared<RestAMIPSEnergy2D>(std::move(plastic_cells), amips_w));
     const int r = vertex_region(vid);
     const std::shared_ptr<const OffsetPotential2D> pot =
         (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
@@ -4739,6 +4987,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         }
         rebuild_offset_envelope();
         for (const auto& ops : groups) {
+            stamp_plastic_rests(); // plastic: each group resists only its own increment
             local_operations(ops);
             rebuild_offset_envelope(); // the smoothing in this group moved the front
         }
@@ -4809,7 +5058,11 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         // TERMINATION: every front vertex placed or pressed, none travelling or stuck, no chord
         // left to resolve -- then quality with the front FROZEN (below). The vertex test's
         // number is still logged, the alternating loop still exits on it.
-        if (ec.converged_single()) {
+        // DIAGNOSTIC: front_conv_disable runs the loop to its full budget regardless of the
+        // test, to watch how the iterations proceed past the would-be exit (2026-08-31, for
+        // the deform_others contact question: stationary-at-contact reads converged while the
+        // obstacle is still yielding).
+        if (ec.converged_single() && !m_offset_params.front_conv_disable) {
             m_energy_verdict = ec;
             m_converged = true;
             logger().info(
@@ -5184,7 +5437,9 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // After the labels (the held/released decision reads them), before the offset envelope and
     // the sizing seed, so the whole optimization sees one consistent world.
     if (m_offset_params.deform_others) {
+        m_plastic_active = true; // ambient is plastic even when no region qualifies for release
         release_deformable_regions();
+        stamp_plastic_rests();
     }
 
     // THE OFFSET ENVELOPE IS BORN HERE, with the offset itself, and from then on it always
