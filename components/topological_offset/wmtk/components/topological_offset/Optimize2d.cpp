@@ -3215,7 +3215,11 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
-    s.tube = m_offset_params.offset_envelope_rel * m_offset_params.target_distance;
+    // THE CONVERGENCE LENGTH, front_conv_rel x delta (since 2026-08-31; it was the envelope's
+    // tube): what "placed" means for a vertex and "resolved" for a chord. See edge_conv_ratio()
+    // for the role split -- offset_envelope_rel is the leash on the operations, this is the
+    // accuracy, and startup requires leash <= accuracy. The field keeps its old name.
+    s.tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const auto placed = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
@@ -3328,7 +3332,7 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                 const double have = std::max(
                     m_vertex_attribute[va].m_sizing_scalar,
                     m_vertex_attribute[vb].m_sizing_scalar);
-                if (sn < have) {
+if (sn < have) {
                     s.refinable.push_back({va, vb, gn * s.tube, len});
                 } else {
                     ++s.n_at_floor;
@@ -3407,12 +3411,17 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
         const double bar = rel * m_front_gradient_reference;
         return bar > 0. ? r / bar : std::numeric_limits<double>::infinity();
     }
-    // RESOLUTION IS THE ENVELOPE'S BUSINESS, NOT rel's (Uday, 2026-08-25): the level set is
-    // resolved when it stays within the tube Phase A already lets the front wander in,
-    // offset_envelope_rel x target_distance. rel is the convergence tolerance only; tying the
-    // edge test to it made a safe rel (0.01, needed so a creeping front cannot exit early)
-    // over-refine (0.04: 5906 vertices for 1351) and a coarse rel (0.1) exit with the front at
-    // 0.22 of 0.40.
+    // RESOLUTION IS rel's BUSINESS AGAIN (Uday, 2026-08-31, reversing his 2026-08-25 call):
+    // front_conv_rel is THE accuracy -- the vertex bar and this resolution threshold alike --
+    // and offset_envelope_rel is only the leash on the operation passes. The 08-25 fear
+    // (rel 0.01 over-refining, 0.04: 5906 vertices for 1351) belonged to the OLD vertex test,
+    // which needed a tiny rel so a creeping front could not exit early; the step_size_rel test
+    // does not, so rel can sit at the resolution the user actually wants. The startup check
+    // requires offset_envelope_rel <= front_conv_rel: accuracy finer than the leash is
+    // unreachable -- ops licensed to dent the front by more than the sag threshold mint new
+    // refinable edges every turn (measured 2026-08-31 with the roles swapped: tube 0.05 against
+    // sag threshold 0.025, annots alignment-on 8 -> 19 turns, refinable count bouncing 1 -> 5
+    // as late as turn 18).
     //
     // AS A LENGTH (Uday, 2026-08-26): the sagitta of Phi over the chord, |Phi(m) - mean Phi|,
     // divided by |grad Phi| at the midpoint. The earlier form compared the same second
@@ -3431,7 +3440,7 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
     const double gn = pot->gradient(m).norm();
     if (!(gn > 0.) || !std::isfinite(gn)) return -1.;
     const double sag = std::abs(pot->value(m) - 0.5 * (pot->value(pa) + pot->value(pb))) / gn;
-    return sag / (m_offset_params.offset_envelope_rel * m_offset_params.target_distance);
+    return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
 }
 
 double TopoOffsetTriMesh::phase_b_band_gradient_linf()
@@ -3694,7 +3703,9 @@ size_t TopoOffsetTriMesh::refine_front_from_sag(
     // 3/4 is the split pass's own slack (it splits at 4/3 of the target), so an edge is asked
     // to split exactly when its sag is over the tube. Only lowers; the standard gradation.
     const double l = std::max(m_params.l, 1e-300);
-    const double tube = m_offset_params.offset_envelope_rel * m_offset_params.target_distance;
+    // front_conv_rel, not the envelope: the accuracy the refinement serves (2026-08-31), the
+    // same length energy_criterion() measures sag against.
+    const double tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
     std::vector<size_t> changed;
@@ -5195,7 +5206,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             logger().log(
                 m_converged ? spdlog::level::info : spdlog::level::warn,
                 "{}{}: front vertices placed {} / pressed {} / travelling {} / stuck {} | "
-                "chords to resolve {} (at the sizing floor {}) | tolerance offset_envelope_rel {} "
+                "chords to resolve {} (at the sizing floor {}) | accuracy front_conv_rel {} "
                 "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar)",
                 m_converged ? "Converged" : "Optimization did not converge",
                 m_energy_verdict ? " (measured at convergence, before the finishing pass)" : "",
@@ -5205,7 +5216,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
                 ec.n_stuck,
                 ec.refinable.size(),
                 ec.n_at_floor,
-                m_offset_params.offset_envelope_rel,
+                m_offset_params.front_conv_rel,
                 ec.tube,
                 ec.max_vertex);
         } else

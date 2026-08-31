@@ -83,6 +83,23 @@ void topological_offset(nlohmann::json json_params)
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
 
+        // THE TWO LENGTHS' ROLES IN 2D (Uday, 2026-08-31): front_conv_rel is THE accuracy --
+        // the vertex bar and the chord-resolution threshold alike, tighter = more turns and a
+        // finer front -- and offset_envelope_rel is only the leash on the operation passes.
+        // Accuracy finer than the leash is unreachable: operations licensed to dent the front
+        // by more than the sag threshold mint new refinable edges every turn (measured with
+        // the roles swapped: leash 0.05 over threshold 0.025, annots 8 -> 19 turns, refinable
+        // count bouncing 1 -> 5 at turn 18). Hence the hard requirement, not a warning.
+        if (params.offset_envelope_rel > params.front_conv_rel) {
+            log_and_throw_error(
+                "offset_envelope_rel {} must be <= front_conv_rel {}: the operation corridor "
+                "(the leash) cannot be wider than the convergence accuracy, or the operations "
+                "keep denting the front past the resolution threshold and the loop chases the "
+                "damage forever",
+                params.offset_envelope_rel,
+                params.front_conv_rel);
+        }
+
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
         wmtk::set_preallocation_factor_from_json(mesh, json_params);
