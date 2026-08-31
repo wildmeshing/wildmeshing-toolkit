@@ -533,8 +533,7 @@ void TopoOffsetTriMesh::release_deformable_regions()
         }
         std::vector<Eigen::Vector2i> anchored_E;
         for (const auto& e : it->second.E) {
-            const Eigen::Vector2d mid =
-                0.5 * (m_env_polyline_V[e[0]] + m_env_polyline_V[e[1]]);
+            const Eigen::Vector2d mid = 0.5 * (m_env_polyline_V[e[0]] + m_env_polyline_V[e[1]]);
             if (inside_complex(mid)) {
                 anchored_E.push_back(e);
             } else {
@@ -596,7 +595,10 @@ void TopoOffsetTriMesh::release_deformable_regions()
             const auto& t0 = m_face_attribute[e.fid(*this)].tags;
             const auto& t1 = m_face_attribute[f_opp->fid(*this)].tags;
             std::set_symmetric_difference(
-                t0.begin(), t0.end(), t1.begin(), t1.end(),
+                t0.begin(),
+                t0.end(),
+                t1.begin(),
+                t1.end(),
                 std::inserter(edge_tags, edge_tags.begin()));
         } else {
             edge_tags = m_face_attribute[e.fid(*this)].tags;
@@ -1474,8 +1476,8 @@ Vector2d TopoOffsetTriMesh::front_vertex_move_direction(const size_t vid) const
     // Euclidean, one vertex at (-13.76, -6.24), 3.1x the bar in every round. The polyline's own
     // (Voronoi-weighted) normal was tried instead on 2026-08-25 and rejected: around a CONVEX
     // corner the front moves inward along converging normals, two vertices slid into each other
-    // (edge 0.088 -> 0.0026 in six passes) and deadlocked worse. Open: see the 2026-08-31 session -- a
-    // detect-and-2-D-solve escape was measured and REJECTED (it exposes a corner residual the
+    // (edge 0.088 -> 0.0026 in six passes) and deadlocked worse. Open: see the 2026-08-31 session
+    // -- a detect-and-2-D-solve escape was measured and REJECTED (it exposes a corner residual the
     // 2-D solve cannot take below the bar; both annots configs stopped converging), and the
     // passing runs rest partly on this measure being blind along the flat direction.
     return front_vertex_normal(vid);
@@ -3616,7 +3618,8 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         const Vector2d p = m_vertex_attribute[vid].m_posf;
         const double rho = potential_for(vid).residual_length(p);
         const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
-        const double newton_len = gn * m_offset_params.front_conv_rel * m_offset_params.target_distance;
+        const double newton_len =
+            gn * m_offset_params.front_conv_rel * m_offset_params.target_distance;
         if (!std::isfinite(rho) || !std::isfinite(gn)) {
             ++s.n_unmeasurable;
         } else if (rho <= s.tube) {
@@ -3706,12 +3709,14 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                     m_offset_params.min_sizing_scalar,
                     m_offset_params.min_edge_length / l);
                 // The cap mirrors refine_front_from_sag(): L/2, the hysteresis fixed point.
-                const double target = std::min(0.75 * len * std::sqrt(s.tube / (gn * s.tube)), 0.5 * len);
-                const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
+                const double target =
+                    std::min(0.75 * len * std::sqrt(s.tube / (gn * s.tube)), 0.5 * len);
+                const double sn =
+                    std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 const double have = std::max(
                     m_vertex_attribute[va].m_sizing_scalar,
                     m_vertex_attribute[vb].m_sizing_scalar);
-if (sn < have) {
+                if (sn < have) {
                     s.refinable.push_back({va, vb, gn * s.tube, len});
                 } else {
                     ++s.n_at_floor;
@@ -5003,7 +5008,8 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
             "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})), edges max {:.4}x (reported) | {} "
             "vertices, {} edges | edges over the tube: {}, of which {} with both ends on the "
-            "level set (worst {:.4}x at ({:.4}, {:.4})) | states: placed {} pressed {} travelling {} "
+            "level set (worst {:.4}x at ({:.4}, {:.4})) | states: placed {} pressed {} travelling "
+            "{} "
             "stuck {} | refinable edges {} (at the sizing floor {}) ========",
             it + 1,
             budget,
@@ -5619,23 +5625,24 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
                 ec.tube,
                 ec.max_vertex);
         } else
-        logger().log(
-            m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{} [energy, {}]{}: vertices max {:.4}x the bar (worst vertex {}), edges max {:.4}x "
-            "the bar (at ({:.6g}, {:.6g})) | front_conv_rel {} | {} vertices, {} edges, {} "
-            "unmeasurable",
-            m_converged ? "Converged" : "Optimization did not converge",
-            m_offset_params.front_conv_criterion,
-            m_energy_verdict ? " (measured at convergence, before the final phase A)" : "",
-            ec.max_vertex,
-            ec.worst_vid,
-            ec.max_edge,
-            ec.worst_edge_mid.x(),
-            ec.worst_edge_mid.y(),
-            m_offset_params.front_conv_rel,
-            ec.n_vertices,
-            ec.n_edges,
-            ec.n_unmeasurable);
+            logger().log(
+                m_converged ? spdlog::level::info : spdlog::level::warn,
+                "{} [energy, {}]{}: vertices max {:.4}x the bar (worst vertex {}), edges max "
+                "{:.4}x "
+                "the bar (at ({:.6g}, {:.6g})) | front_conv_rel {} | {} vertices, {} edges, {} "
+                "unmeasurable",
+                m_converged ? "Converged" : "Optimization did not converge",
+                m_offset_params.front_conv_criterion,
+                m_energy_verdict ? " (measured at convergence, before the final phase A)" : "",
+                ec.max_vertex,
+                ec.worst_vid,
+                ec.max_edge,
+                ec.worst_edge_mid.x(),
+                ec.worst_edge_mid.y(),
+                m_offset_params.front_conv_rel,
+                ec.n_vertices,
+                ec.n_edges,
+                ec.n_unmeasurable);
     }
 
     // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log
