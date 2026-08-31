@@ -108,7 +108,11 @@ struct Parameters : public wmtk::OptimizerParameters
     // displacement, see phase_b_front_energy), so the shared smoother is untouched; the pass stop
     // and the loop's vertex test then measure |grad F . n|, the derivative along the only unknown.
     bool front_normal_projection = false;
-    bool front_alignment_energy = true;
+    bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
+    /// What a collapse's surviving vertex keeps as its sizing scalar. false (the default, the
+    /// behaviour until 2026-08-27): its own. true: the smaller of the two, the shared engine's rule
+    /// since upstream 52315d39e2 -- refinement then never relaxes behind a travelling front.
+    bool sizing_collapse_min = false;
     /// 2D: false (the default) is the single phase -- TriWild's loop with the front placed inside
     /// its smoothing passes; true is the A/B loop, which is also what 3D always runs.
     bool alternating_opt = false;
@@ -294,6 +298,7 @@ struct Parameters : public wmtk::OptimizerParameters
         stuck_refine_force_split = json_params["stuck_refine_force_split"];
         front_normal_projection = json_params["front_normal_projection"];
         front_alignment_energy = json_params["front_alignment_energy"];
+        sizing_collapse_min = json_params["sizing_collapse_min"];
         alternating_opt = json_params["alternating_opt"];
         max_rounds = json_params["max_rounds"];
         pre_optimize_input = json_params["pre_optimize_input"];

@@ -90,6 +90,8 @@ public:
     double level_set_slope() const { return m_grad_ref; }
 
     virtual double value(const VecD& p) const = 0;
+    /// The Euclidean field: value() is the distance, so a distance residual is the plain one.
+    virtual bool is_euclidean() const { return false; }
     virtual VecD gradient(const VecD& p) const = 0;
     virtual MatD hessian(const VecD& p) const = 0;
 
@@ -326,6 +328,7 @@ class EuclideanOffsetPotential : public OffsetPotential<DIM>
     static_assert(DIM == 2 || DIM == 3, "the offset potential exists in 2D and 3D only");
 
 public:
+    bool is_euclidean() const override { return true; }
     using VecD = typename OffsetPotential<DIM>::VecD;
     using MatD = typename OffsetPotential<DIM>::MatD;
 
@@ -428,10 +431,19 @@ public:
     using VecD = Eigen::Matrix<double, DIM, 1>;
     using MatD = Eigen::Matrix<double, DIM, DIM>;
 
+    /// distance_residual (2D, 2026-08-28): the residual is the SIGNED DISTANCE from x to the level
+    /// set Phi = c along the field's normal, over delta -- what (d - delta)/delta is for the
+    /// Euclidean field -- instead of the value ratio (Phi - c)/c, which for the smooth field is
+    /// a barrier-value ratio and not a length: at a pressed seam it pulled 130x harder than the
+    /// Euclidean residual (5.2 x 48 against 0.77 x 2.5 on two_circles at delta 0.4) and crushed
+    /// the strip between the fronts to AMIPS 2943 against 53. Same level set, same normal, same
+    /// root; only the charge for not being on the level set changes. The Euclidean field is
+    /// unchanged either way. 3D keeps the value ratio (false).
     OffsetEnergy(
         const std::shared_ptr<const OffsetPotential<DIM>>& potential,
         double weight = 1.,
-        bool gauss_newton = true);
+        bool gauss_newton = true,
+        bool distance_residual = false);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -447,6 +459,19 @@ private:
     std::shared_ptr<const OffsetPotential<DIM>> m_potential;
     double m_weight;
     bool m_gauss_newton;
+    bool m_distance_residual;
+    /// The signed distance s from p to the level set along the field's normal n at p (n points
+    /// toward the input; s > 0: the level set lies outward of p). Safeguarded Newton. false
+    /// when no root brackets within 2 dhat, e.g. outside the support.
+    bool root_distance(const VecD& p, double& s, VecD& n) const;
+    /// r and its gradient under either residual (see the constructor). The last point's
+    /// answer is cached: value, gradient and Hessian are asked at the same x in one iteration.
+    void residual(const VecD& p, double& r, VecD& dr) const;
+    mutable double m_last_root = 0.; ///< warm start for root_distance(), see there
+    mutable bool m_cache_valid = false;
+    mutable VecD m_cache_p;
+    mutable double m_cache_r = 0.;
+    mutable VecD m_cache_dr;
 };
 
 using OffsetEnergy2D = OffsetEnergy<2>;

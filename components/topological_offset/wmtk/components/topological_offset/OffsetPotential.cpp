@@ -680,10 +680,12 @@ template <int DIM>
 OffsetEnergy<DIM>::OffsetEnergy(
     const std::shared_ptr<const OffsetPotential<DIM>>& potential,
     const double weight,
-    const bool gauss_newton)
+    const bool gauss_newton,
+    const bool distance_residual)
     : m_potential(potential)
     , m_weight(weight)
     , m_gauss_newton(gauss_newton)
+    , m_distance_residual(distance_residual)
 {}
 
 
@@ -765,37 +767,160 @@ void AlignEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 }
 
 template <int DIM>
-double OffsetEnergy<DIM>::value(const TVector& x)
+bool OffsetEnergy<DIM>::root_distance(const VecD& p, double& s, VecD& n) const
 {
-    // NORMALISED BY THE LEVEL (Uday, 2026-08-25): r = (Phi - c) / c, so the term is O(1) for
-    // every field and every target_distance. The Euclidean field has c = 1 and is unchanged; the
-    // smooth potential's c ranges 0.19-2.4 across the two_circles deltas, which scaled this term
-    // by up to 6x against AMIPS and the alignment term. Gradient and Hessian below carry 1/c.
-    const double c = std::max(m_potential->target_level(), 1e-300);
-    const double r = (m_potential->value(VecD(x.head(DIM))) - c) / c;
-    return m_weight * r * r;
+    // The signed distance from p to the level set Phi = c along the field's normal at p:
+    // the root of g(t) = Phi(p - t n) - c, t > 0 outward. Safeguarded Newton: the step is
+    // Newton's whenever it stays inside the bracket, a bisection of the bracket otherwise, so
+    // it converges in a handful of evaluations where Phi is smooth and cannot escape. Until this
+    // (2026-08-28) the root was bisected from a doubling bracket, ~90 evaluations per call, and
+    // a smoothing pass cost 2.0 s against 0.46 s -- the residual is asked for three times per
+    // Newton iteration of the placement, tens of iterations per vertex.
+    const double c = m_potential->target_level();
+    const VecD g0 = m_potential->gradient(p);
+    const double gn0 = g0.norm();
+    if (!std::isfinite(gn0) || !(gn0 > 0.)) return false;
+    n = g0 / gn0; // toward the input: Phi grows that way
+    const double delta = std::max(m_potential->delta(), 1e-300);
+    const double reach = 2. * std::max(m_potential->dhat(), delta);
+    const double tol = 1e-8 * delta;
+    const auto f = [&](const double t) { return m_potential->value(p - t * n) - c; };
+    const auto fprime = [&](const double t) { return -m_potential->gradient(p - t * n).dot(n); };
+    // WARM START from this vertex's previous root: the placement moves the vertex toward the
+    // level set, so the root of the next call is near 0 -- and near the last root minus the
+    // step taken. Plain Newton from there converges in 2-4 evaluations; the bracket below is
+    // only built when it does not (measured 2026-08-28 on two_circles at delta 0.01: cold
+    // bracketing cost 25 s in the first turn against 1.2 s).
+    double t = std::isfinite(m_last_root) ? m_last_root : 0., ft = f(t);
+    if (!std::isfinite(ft)) {
+        t = 0.;
+        ft = f(0.);
+        if (!std::isfinite(ft)) return false;
+    }
+    if (ft == 0.) {
+        s = t;
+        m_last_root = t;
+        return true;
+    }
+    for (int it = 0; it < 8; ++it) {
+        const double fp = fprime(t);
+        if (!std::isfinite(fp) || fp == 0.) break;
+        const double tn = t - ft / fp;
+        if (!std::isfinite(tn) || std::abs(tn) > reach) break;
+        const double ftn = f(tn);
+        if (!std::isfinite(ftn) || std::abs(ftn) > std::abs(ft)) break; // not converging: bracket
+        const bool done = std::abs(tn - t) < tol || ftn == 0.;
+        t = tn;
+        ft = ftn;
+        if (done) {
+            s = t;
+            m_last_root = t;
+            return true;
+        }
+    }
+    // Bracket [lo, hi] with f(lo) > 0 (too close, inside the level set) and f(hi) < 0.
+    t = 0.;
+    ft = f(0.);
+    if (!std::isfinite(ft)) return false;
+    double lo, hi;
+    if (ft > 0.) {
+        lo = 0.;
+        hi = 0.125 * delta;
+        while (hi < reach && f(hi) > 0.) hi *= 2.;
+        if (!(f(hi) < 0.)) return false;
+    } else {
+        hi = 0.;
+        lo = -0.125 * delta;
+        while (lo > -reach && f(lo) < 0.) lo *= 2.;
+        if (!(f(lo) > 0.)) return false;
+    }
+    for (int it = 0; it < 60; ++it) {
+        const double fp = fprime(t);
+        double tn = (std::isfinite(fp) && fp != 0.) ? t - ft / fp : 0.5 * (lo + hi);
+        if (!(tn > lo && tn < hi)) tn = 0.5 * (lo + hi); // Newton left the bracket: bisect
+        const double ftn = f(tn);
+        if (!std::isfinite(ftn)) return false;
+        if (ftn > 0.) {
+            lo = tn;
+        } else {
+            hi = tn;
+        }
+        const bool done = std::abs(tn - t) < tol || ftn == 0. || (hi - lo) < tol;
+        t = tn;
+        ft = ftn;
+        if (done) break;
+    }
+    s = t;
+    m_last_root = t;
+    return true;
 }
 
+template <int DIM>
+void OffsetEnergy<DIM>::residual(const VecD& p, double& r, VecD& dr) const
+{
+    const double c = std::max(m_potential->target_level(), 1e-300);
+    if (m_distance_residual && !m_potential->is_euclidean()) {
+        const double delta = std::max(m_potential->delta(), 1e-300);
+        if (m_cache_valid && (p - m_cache_p).squaredNorm() == 0.) {
+            r = m_cache_r;
+            dr = m_cache_dr;
+            return;
+        }
+        double s;
+        VecD n;
+        if (root_distance(p, s, n)) {
+            // r = -s/delta: negative when p is too close, like (d - delta)/delta. Moving p
+            // outward by t shrinks s by t, so dr/dp = (outward unit)/delta = -n/delta.
+            r = -s / delta;
+            dr = -n / delta;
+        } else {
+            // No root within reach (outside the support, or a vanishing gradient): the
+            // monotone length (Phi - c)/grad_ref, still in units of delta.
+            const double g_ref = std::max(m_potential->level_set_slope(), 1e-300);
+            r = (m_potential->value(p) - c) / (g_ref * delta);
+            dr = m_potential->gradient(p) / (g_ref * delta);
+        }
+        m_cache_p = p;
+        m_cache_r = r;
+        m_cache_dr = dr;
+        m_cache_valid = true;
+        return;
+    }
+    // NORMALISED BY THE LEVEL (Uday, 2026-08-25): r = (Phi - c) / c, so the term is O(1) for
+    // every field and every target_distance at the level set. For the Euclidean field this is
+    // (d - delta)/delta exactly, and it stays the Euclidean residual under either flag.
+    r = (m_potential->value(p) - c) / c;
+    dr = m_potential->gradient(p) / c;
+}
+
+template <int DIM>
+double OffsetEnergy<DIM>::value(const TVector& x)
+{
+    double r;
+    VecD dr;
+    residual(VecD(x.head(DIM)), r, dr);
+    return m_weight * r * r;
+}
 
 template <int DIM>
 void OffsetEnergy<DIM>::gradient(const TVector& x, TVector& gradv)
 {
-    const VecD p = x.head(DIM);
-    const double c = std::max(m_potential->target_level(), 1e-300);
-    const double r = (m_potential->value(p) - c) / c;
-    gradv = 2. * m_weight * r * m_potential->gradient(p) / c;
+    double r;
+    VecD dr;
+    residual(VecD(x.head(DIM)), r, dr);
+    gradv = 2. * m_weight * r * dr;
 }
-
 
 template <int DIM>
 void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 {
     const VecD p = x.head(DIM);
-    const double c = std::max(m_potential->target_level(), 1e-300);
-    const VecD g = m_potential->gradient(p) / c;
-    MatD H = 2. * m_weight * g * g.transpose();
-    if (!m_gauss_newton) {
-        const double r = (m_potential->value(p) - c) / c;
+    double r;
+    VecD dr;
+    residual(p, r, dr);
+    MatD H = 2. * m_weight * dr * dr.transpose();
+    if (!m_gauss_newton && !(m_distance_residual && !m_potential->is_euclidean())) {
+        const double c = std::max(m_potential->target_level(), 1e-300);
         H += 2. * m_weight * r * m_potential->hessian(p) / c;
     }
     hessian = H;

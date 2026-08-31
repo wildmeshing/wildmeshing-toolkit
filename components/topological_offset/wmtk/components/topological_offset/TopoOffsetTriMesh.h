@@ -40,6 +40,14 @@ public:
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset boundary itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
+    /// Where this vertex stood at the start of the turn (single phase), so the convergence
+    /// states can read its NET movement over the turn -- a vertex jiggling back and forth in
+    /// a pressed seam has a large summed motion and a small net one, and it is the net one
+    /// that says whether the seam has settled (measured 2026-08-28: the summed motion left
+    /// a straight seam 'travelling' for 8 turns). Copied by a split to its new vertex, which
+    /// therefore reads as moved for the turn it was born in.
+    Vector2d m_turn_start = Vector2d::Zero();
+    bool m_turn_start_valid = false;
 
     /**
      * @brief WHICH tag boundaries this vertex lies on -- one bit per input tag, ambient
@@ -214,6 +222,8 @@ public:
     std::vector<int> m_vertex_region; ///< per vertex: region of its band faces, -1 / -2 as above
     void init_region_potentials(double delta, double effective_factor);
     void assign_band_regions();
+    /// Diagnostic: the front objective of one vertex along its normal, offset term vs total.
+    void log_front_profile(size_t vid);
     int vertex_region(const size_t vid) const
     {
         return vid < m_vertex_region.size() ? m_vertex_region[vid] : -1;
@@ -1069,6 +1079,9 @@ public:
     static constexpr double kFlatThreshold = 1e-3;
     /// The flattest face in the collapse's ring before it ran, for record_flatness().
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_parent_flatness;
+    /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
+    /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
+    mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
     void log_smooth_trace() const;
 
 
@@ -1811,14 +1824,57 @@ public:
         size_t n_edges_over = 0, n_edges_over_on_level = 0;
         double max_edge_on_level = 0.;
         Vector2d worst_on_level_mid = Vector2d::Zero();
+        /// THE SINGLE PHASE'S STATES (2026-08-28), all in the one tolerance the pipeline has, the
+        /// tube half-width `tube` = offset_envelope_rel x target_distance. For a front vertex with
+        /// rho = its distance from its level set and step = how far placement moved it this turn:
+        ///   placed      rho <= tube
+        ///   travelling  not placed, and the objective still wants to move it: its remaining
+        ///               1-D Newton step along the normal, in length, is over the tube
+        ///   pressed     not placed, stationary: held short of its level set by a crushed ring --
+        ///               a seam or a wall. `n_pressed_touching` counts those whose ring reaches
+        ///               another front, the input or a region boundary directly; the rest press
+        ///               through a strip more than one cell thick.
+        ///   stuck       not placed, stationary, touching nothing, WITH the alignment term on --
+        ///               the term's own bias holding the vertex (with it off nothing but a crushed
+        ///               ring can). Named in the log; never counted as converged.
+        /// A front edge with both ends placed whose chord sags over the tube is `refinable`: the
+        /// resolution rule refines it (refine_front_from_sag). Convergence is "placed or pressed,
+        /// nothing travelling or stuck, nothing refinable": refinement and convergence read the
+        /// same field, as TriWild's do.
+        double tube = 0.;
+        size_t n_placed = 0, n_travelling = 0, n_pressed_on = 0, n_stuck = 0;
+        size_t n_pressed_touching = 0; ///< of the pressed, those touching another front or a wall
+        size_t n_at_floor = 0; ///< chords over the tube whose ends are already at the sizing floor
+        size_t worst_stuck_vid = static_cast<size_t>(-1);
+        double worst_stuck_rho = 0.;
+        struct Refinable
+        {
+            size_t a, b;
+            double sag, len;
+        };
+        std::vector<Refinable> refinable;
         bool vertices_ok() const { return max_vertex <= bar; }
         bool edges_ok() const { return max_edge <= bar; }
-        /// The loop's test: the vertex test alone (2026-08-26). The edge test is reported; the
-        /// front's resolution is set from the tolerance at construction (init_offset_sizing_field).
+        /// The alternating loop's test (and 3D's): the vertex test alone.
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
+        /// The single phase's test (2026-08-29): the vertex test -- every front vertex's remaining
+        /// Newton step along its normal at most front_conv_rel x target_distance -- AND nothing
+        /// left to refine. The states above are reported, not gated on: gating on "placed within
+        /// the tube" made pressed seams (whose vertices are stationary off the level set by
+        /// definition) and objective-biased vertices run to the budget, doubling the front and
+        /// crushing the strip (two_circles Euclidean 0.4 at stop_energy 100: 442 front vertices,
+        /// AMIPS 633, seam spread 0.011 against 218 / 53 / 0.003 under the vertex test).
+        bool converged_single() const { return converged() && refinable.empty(); }
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_edge) / bar : 0.; }
     };
     EnergyCriterion energy_criterion();
+    /// Whether a front vertex touches another front, the input or a region boundary through a
+    /// background triangle -- the topological fact behind the `pressed` state.
+    bool front_vertex_touches_other(size_t vid) const;
+    /// The resolution rule: for each refinable edge, the target length at its ends becomes
+    /// 3/4 L sqrt(tube / sag) -- the construction rule L = 3/4 sqrt(8 eps delta rho) with the
+    /// curvature read off the measured sag -- graded outward. Returns the vertices changed.
+    size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& edges);
     /// The energy criterion as measured when the A/B loop converged; the final Phase A runs
     /// after it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;

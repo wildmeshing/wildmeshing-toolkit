@@ -521,6 +521,10 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::collapse_edge_after(t)) {
         return false;
     }
+    if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
+        m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar =
+            m_collapse_survivor_sizing.local();
+    }
     // TRIWILD PARITY: no offset-criterion acceptance test in the loop.
     //
     // This used to apply a non-degrading Phi gate to every collapse (refuse if the worst offset
@@ -564,6 +568,11 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     if (!TriOptimizerMesh::collapse_edge_before(t)) {
         return false;
     }
+    // The survivor's own sizing scalar, for sizing_collapse_min = false: the base collapse
+    // overwrites it with the min of the two (upstream 52315d39e2), and collapse_edge_after()
+    // puts it back. collapse_cache is the base's, filled by the call above; v2 survives.
+    m_collapse_survivor_sizing.local() =
+        m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar;
     // Unconditionally, not just when both endpoints are already on a tracked simplex -- see
     // the declaration. substructure_link_condition() evaluates the condition for the mesh and
     // for every substructure, which is what a topological offset needs preserved.
@@ -3044,8 +3053,8 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     // measured against the field it is placed on. See potential_for().
     std::vector<std::unique_ptr<OffsetEnergy2D>> energies;
     for (const auto& rp : m_region_potentials)
-        energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0));
-    OffsetEnergy2D union_energy(m_offset_potential, 1.0);
+        energies.push_back(std::make_unique<OffsetEnergy2D>(rp, 1.0, true, true));
+    OffsetEnergy2D union_energy(m_offset_potential, 1.0, true, true);
     const auto energy_for = [&](const int region) -> OffsetEnergy2D& {
         return (region >= 0 && size_t(region) < energies.size()) ? *energies[size_t(region)]
                                                                  : union_energy;
@@ -3203,21 +3212,56 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
+    s.tube = m_offset_params.offset_envelope_rel * m_offset_params.target_distance;
     const auto placed = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
+    std::vector<char> on_level(vert_capacity(), 0);
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!placed(vid)) continue;
+        // THE SINGLE PHASE'S STATES -- see EnergyCriterion. rho is the reference-slope length
+        // residual_length(), the same measure the sag test qualifies its ends with. "Stopped" is
+        // the objective's stationarity -- the remaining 1-D Newton step along the normal, in
+        // length, at most the tube -- not the net displacement: at a pressed seam the two fronts
+        // take turns pushing the one-cell strip and every vertex drifts a little every turn
+        // for ever (measured 2026-08-28: the net-displacement rule held two_circles Euclidean
+        // 0.4 at 36+ turns with 12 "travelling" seam vertices), while the objective is stationary
+        // there from turn 4 and the seam is straight (spread 0.003).
+        const Vector2d p = m_vertex_attribute[vid].m_posf;
+        const double rho = potential_for(vid).residual_length(p);
+        const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
+        const double newton_len = gn * m_offset_params.front_conv_rel * m_offset_params.target_distance;
+        if (!std::isfinite(rho) || !std::isfinite(gn)) {
+            ++s.n_unmeasurable;
+        } else if (rho <= s.tube) {
+            ++s.n_placed;
+            on_level[vid] = 1;
+        } else if (newton_len > s.tube) {
+            ++s.n_travelling;
+        } else if (front_vertex_touches_other(vid) || !m_offset_params.front_alignment_energy) {
+            // Stationary off its level set. With the alignment term off the objective is the
+            // offset term and w x AMIPS alone, and the only thing that can hold a vertex short
+            // of its level set is a crushed ring -- a press, whether the far vertex is another
+            // front (touching) or the interior of a strip two cells thick (measured 2026-08-28:
+            // 43 such vertices on two_circles Euclidean 0.4 at stop_energy 100, called stuck
+            // under the touching rule alone, and the loop never exited). With the alignment
+            // term on, a stationary vertex touching nothing is the term's own bias: stuck.
+            ++s.n_pressed_on;
+            if (front_vertex_touches_other(vid)) ++s.n_pressed_touching;
+        } else {
+            ++s.n_stuck;
+            if (rho > s.worst_stuck_rho) {
+                s.worst_stuck_rho = rho;
+                s.worst_stuck_vid = vid;
+            }
+        }
+        // The alternating loop's vertex test, kept for it and for the log.
         if (vid < m_placement_pressed.size() && m_placement_pressed[vid]) {
             ++s.n_pressed; // constrained minimum: grad F is the constraint force, not a residual
             continue;
         }
-        const double gn = front_vertex_conv_ratio(vid);
-        if (!std::isfinite(gn)) {
-            ++s.n_unmeasurable;
-            continue;
-        }
+        if (!std::isfinite(gn)) continue;
         ++s.n_vertices;
         if (gn > s.max_vertex) {
             s.max_vertex = gn;
@@ -3233,7 +3277,7 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
             ++s.n_edges_pressed; // the seam: a constrained pair, not a resolution question
             continue;
         }
-        const double gn = edge_conv_ratio(e);
+        const double gn = edge_conv_ratio(e); // sag / tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
             continue;
@@ -3248,15 +3292,28 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         }
         if (gn > s.bar) {
             ++s.n_edges_over;
-            // On the level set: the vertex's distance from it (residual_length, in length units)
-            // is within the tube's half-width, the same bar the sag is held to.
-            const double tube =
-                m_offset_params.offset_envelope_rel * m_offset_params.target_distance;
-            const bool on_level =
-                potential_for(va).residual_length(m_vertex_attribute[va].m_posf) <= tube &&
-                potential_for(vb).residual_length(m_vertex_attribute[vb].m_posf) <= tube;
-            if (on_level) {
+            if (on_level[va] && on_level[vb]) {
                 ++s.n_edges_over_on_level;
+                const double len =
+                    (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
+                // Refinable only if the rule can still lower a target: at the sizing floor
+                // (min_sizing_scalar, min_edge_length) the chord cannot be resolved within the
+                // tube at this resolution -- a crease of the Euclidean level set, an inward
+                // offset meeting itself -- and it is reported as at-floor, not looped on.
+                const double l = std::max(m_params.l, 1e-300);
+                const double s_floor = std::max(
+                    m_offset_params.min_sizing_scalar,
+                    m_offset_params.min_edge_length / l);
+                const double target = std::min(0.75 * len * std::sqrt(s.tube / (gn * s.tube)), 0.625 * len);
+                const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
+                const double have = std::min(
+                    m_vertex_attribute[va].m_sizing_scalar,
+                    m_vertex_attribute[vb].m_sizing_scalar);
+                if (sn < have) {
+                    s.refinable.push_back({va, vb, gn * s.tube, len});
+                } else {
+                    ++s.n_at_floor;
+                }
                 if (gn > s.max_edge_on_level) {
                     s.max_edge_on_level = gn;
                     s.worst_on_level_mid =
@@ -3386,7 +3443,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
     auto sum = std::make_shared<optimization::EnergySum>();
     // Gauss-Newton Hessian (the default). Measured 2026-08-25: the exact Hessian (adds
     // r grad^2 Phi) changed nothing on two_circles at 0.04-0.2, same passes, same meshes.
-    sum->add_energy(std::make_shared<OffsetEnergy2D>(pot, w_off));
+    sum->add_energy(std::make_shared<OffsetEnergy2D>(pot, w_off, true, true));
     // One alignment residual per incident live front edge. sigma orients the edge's normal
     // away from its band face, read off the face centroid exactly as distance_criterion() does.
     std::vector<AlignEnergy2D::Edge> edges;
@@ -3529,6 +3586,110 @@ void TopoOffsetTriMesh::assign_band_regions()
     } else {
         logger().info("\t[regions] band faces per region {}", per);
     }
+}
+
+void TopoOffsetTriMesh::log_front_profile(const size_t vid)
+{
+    // DIAGNOSTIC (2026-08-28): the front objective of one vertex along its normal, its offset
+    // term alone against the total, at 21 points across +-delta/2 -- to see whether a vertex
+    // that will not place is at a minimum the alignment/AMIPS terms create (the total has a
+    // minimum where the offset term has none) or is blocked by the line search (no minimum at
+    // all where it sits). Logged once, on non-convergence, for the worst vertex.
+    if (vid == static_cast<size_t>(-1) || vid >= m_vertex_attribute.size() || !m_offset_potential)
+        return;
+    const int region = vertex_region(vid);
+    const std::shared_ptr<const OffsetPotential2D> pot =
+        (region >= 0 && size_t(region) < m_region_potentials.size())
+            ? m_region_potentials[size_t(region)]
+            : m_offset_potential;
+    const Vector2d x0 = m_vertex_attribute[vid].m_posf;
+    Vector2d g = pot->gradient(x0);
+    if (!(g.norm() > 0.) || !g.allFinite()) return;
+    const Vector2d n = g / g.norm(); // toward the input for the smooth field, away for Euclidean
+    const OptPhase saved = m_phase;
+    m_phase = OptPhase::B;
+    auto total = phase_b_front_energy(vid, pot);
+    OffsetEnergy2D offset_only(pot, 1. - m_params.w_amips, true, true);
+    const double delta = m_offset_params.target_distance;
+    logger().info(
+        "[front profile] worst vertex {} at ({:.5}, {:.5}), region {}, along the field direction "
+        "n = ({:.4}, {:.4}); columns: s/delta | offset term | rest (alignment + w AMIPS) | total",
+        vid,
+        x0.x(),
+        x0.y(),
+        region,
+        n.x(),
+        n.y());
+    for (int k = -10; k <= 10; ++k) {
+        const double sd = 0.05 * k;
+        const Vector2d x = x0 + sd * delta * n;
+        Eigen::VectorXd xv(2);
+        xv << x.x(), x.y();
+        const double F = total->value(xv);
+        const double Fo = offset_only.value(xv);
+        logger().info("[front profile] {:+.2f} | {:.6g} | {:.6g} | {:.6g}", sd, Fo, F - Fo, F);
+    }
+    m_phase = saved;
+}
+
+bool TopoOffsetTriMesh::front_vertex_touches_other(const size_t vid) const
+{
+    // Through a BACKGROUND triangle (the strip between two fronts, or between a front and a
+    // wall), one of whose other vertices is on the input, on a region boundary, or on a front
+    // this vertex is not joined to by a front edge -- another band's front, or this band's own
+    // front across a slot. A neighbour along the same front does not count: the triangle behind
+    // a front edge is the band's own.
+    std::set<size_t> along;
+    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+        if (!edge_is_offset(e.eid(*this))) continue;
+        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+        along.insert(va == vid ? vb : va);
+    }
+    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
+        if (m_face_extra[fid].label != 0) continue; // band or input: not the strip
+        for (const size_t u : oriented_tri_vids(fid)) {
+            if (u == vid) continue;
+            const VertexExtra2d& ue = m_vertex_extra[u];
+            if (ue.m_is_on_input || ue.m_is_on_region) return true;
+            if (ue.m_is_on_offset && along.count(u) == 0) return true;
+        }
+    }
+    return false;
+}
+
+size_t TopoOffsetTriMesh::refine_front_from_sag(
+    const std::vector<EnergyCriterion::Refinable>& edges)
+{
+    // See EnergyCriterion. sag = L^2 / (8 rho) for a chord of length L on curvature radius rho,
+    // and the construction rule allows L = 3/4 sqrt(8 eps delta rho); substituting rho gives the
+    // target 3/4 L sqrt(tube / sag) -- the same rule with the curvature read off the mesh. The
+    // 3/4 is the split pass's own slack (it splits at 4/3 of the target), so an edge is asked
+    // to split exactly when its sag is over the tube. Only lowers; the standard gradation.
+    const double l = std::max(m_params.l, 1e-300);
+    const double tube = m_offset_params.offset_envelope_rel * m_offset_params.target_distance;
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    std::vector<size_t> changed;
+    for (const EnergyCriterion::Refinable& r : edges) {
+        if (!(r.sag > 0.) || !(r.len > 0.)) continue;
+        // 4/3 AND 4/5 DO NOT COMPOSE (see Collapse.cpp): a split's children are L/2, and the
+        // collapse pass removes an edge shorter than 4/5 of its target, so a target above
+        // L/2 / (4/5) = 0.625 L hands the children straight back to the collapse -- measured:
+        // the refinable set never emptied (annots 180 edges, tag4_in 27, for 40 turns). The
+        // sag rule alone asks for that between 1x and 1.44x the tube; capped here so a split
+        // always sticks.
+        const double target = std::min(0.75 * r.len * std::sqrt(tube / r.sag), 0.625 * r.len);
+        const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
+        for (const size_t v : {r.a, r.b}) {
+            double& sc = m_vertex_attribute[v].m_sizing_scalar;
+            if (sn < sc) {
+                sc = sn;
+                changed.push_back(v);
+            }
+        }
+    }
+    if (!changed.empty()) gradation_smooth_sizing(m_offset_params.sizing_gradation, changed);
+    return changed.size();
 }
 
 void TopoOffsetTriMesh::check_offset_within_support(const char* when) const
@@ -4381,7 +4542,13 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
     // checks, quality stats included); what is left out of mesh_improvement() on purpose is its
     // stall response, which refines around the worst elements -- a travelling front stretches
     // cells by design, and that is not a stall.
-    const int k = std::max(1, m_params.num_smoothing_passes);
+    // THE SMOOTHING COUNT IS interleaved_smoothing_passes, the key the shared loop reads for the
+    // same thing -- smoothing passes after each operation group -- so one key sets it for the
+    // pre-optimisation pass, the finishing pass and this loop alike. Until 2026-08-28 this read
+    // num_smoothing_passes (2), the count the shared loop uses only when interleaved_smoothing
+    // is OFF, so the single phase smoothed twice per group while the passes around it smoothed
+    // once, and no one key changed both.
+    const int k = std::max(1, m_params.interleaved_smoothing_passes);
     const std::array<std::array<int, 4>, 3> groups = {
         {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
     partition_mesh_morton();
@@ -4389,6 +4556,11 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         m_ab_round = it + 1;
         m_iterations_used = it + 1;
         m_phase = OptPhase::Single;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
+            m_vertex_extra[vid].m_turn_start_valid = true;
+        }
         rebuild_offset_envelope();
         for (const auto& ops : groups) {
             local_operations(ops);
@@ -4406,7 +4578,8 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
             "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})), edges max {:.4}x (reported) | {} "
             "vertices, {} edges | edges over the tube: {}, of which {} with both ends on the "
-            "level set (worst {:.4}x at ({:.4}, {:.4})) ========",
+            "level set (worst {:.4}x at ({:.4}, {:.4})) | states: placed {} pressed {} travelling {} "
+            "stuck {} | refinable edges {} (at the sizing floor {}) ========",
             it + 1,
             budget,
             amips,
@@ -4422,19 +4595,45 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.n_edges_over_on_level,
             ec.max_edge_on_level,
             ec.worst_on_level_mid.x(),
-            ec.worst_on_level_mid.y());
+            ec.worst_on_level_mid.y(),
+            ec.n_placed,
+            ec.n_pressed_on,
+            ec.n_travelling,
+            ec.n_stuck,
+            ec.refinable.size(),
+            ec.n_at_floor);
         if (m_offset_params.debug_output) {
             write_smoothing_debug_output(fmt::format("phase_{}S", it + 1));
         }
-        // TERMINATION IS THE FRONT TEST ALONE, and then quality with the front FROZEN.
-        // Measured 2026-08-26 on two_circles: the front reaches the level set in a couple of
-        // iterations (100% of front vertices within 5% of delta) while max AMIPS sits at 17.8,
-        // and the elements over stop_energy are exactly the front's own rings -- front placement
-        // carries no quality veto by design, so as long as it keeps running they cannot be
-        // repaired. Requiring both at once therefore never terminates: it spent all 800
-        // iterations of the old budget at AMIPS 17.8 with the front long since placed. The
-        // alternating driver has always finished the same way (final Phase A, front frozen).
-        if (ec.converged()) {
+        // THE RESOLUTION RULE, every turn: see EnergyCriterion and refine_front_from_sag().
+        if (!ec.refinable.empty()) {
+            const size_t n = refine_front_from_sag(ec.refinable);
+            logger().info(
+                "\t[resolution] turn {}: {} front edge(s) with both ends on the level set sag over "
+                "the tube (worst {:.4}x at ({:.4}, {:.4})) -> target lowered at {} vertices",
+                it + 1,
+                ec.refinable.size(),
+                ec.max_edge_on_level,
+                ec.worst_on_level_mid.x(),
+                ec.worst_on_level_mid.y(),
+                n);
+        }
+        if (ec.n_stuck > 0) {
+            const Vector2d sp = m_vertex_attribute[ec.worst_stuck_vid].m_posf;
+            logger().info(
+                "\t[stuck] turn {}: {} front vertex(es) stopped short of the level set touching "
+                "nothing; worst v{} at ({:.4}, {:.4}), {:.4} x delta off",
+                it + 1,
+                ec.n_stuck,
+                ec.worst_stuck_vid,
+                sp.x(),
+                sp.y(),
+                ec.worst_stuck_rho / m_offset_params.target_distance);
+        }
+        // TERMINATION: every front vertex placed or pressed, none travelling or stuck, no chord
+        // left to resolve -- then quality with the front FROZEN (below). The vertex test's
+        // number is still logged, the alternating loop still exits on it.
+        if (ec.converged_single()) {
             m_energy_verdict = ec;
             m_converged = true;
             logger().info(
@@ -4479,6 +4678,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         }
     }
     logger().warn("Single phase did not converge in {} turns (max_rounds)", budget);
+    log_front_profile(energy_criterion().worst_vid);
 }
 
 void TopoOffsetTriMesh::optimize_offset_alternating()
@@ -4961,7 +5161,26 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     {
         // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
-        m_converged = ec.converged();
+        const bool single = !m_offset_params.alternating_opt;
+        m_converged = single ? ec.converged_single() : ec.converged();
+        if (single) {
+            logger().log(
+                m_converged ? spdlog::level::info : spdlog::level::warn,
+                "{}{}: front vertices placed {} / pressed {} / travelling {} / stuck {} | "
+                "chords to resolve {} (at the sizing floor {}) | tolerance offset_envelope_rel {} "
+                "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar)",
+                m_converged ? "Converged" : "Optimization did not converge",
+                m_energy_verdict ? " (measured at convergence, before the finishing pass)" : "",
+                ec.n_placed,
+                ec.n_pressed_on,
+                ec.n_travelling,
+                ec.n_stuck,
+                ec.refinable.size(),
+                ec.n_at_floor,
+                m_offset_params.offset_envelope_rel,
+                ec.tube,
+                ec.max_vertex);
+        } else
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
             "{} [energy, {}]{}: vertices max {:.4}x the bar (worst vertex {}), edges max {:.4}x "
