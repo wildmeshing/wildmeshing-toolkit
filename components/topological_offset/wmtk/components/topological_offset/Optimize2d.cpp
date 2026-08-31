@@ -344,6 +344,121 @@ bool TopoOffsetTriMesh::project_into_containment(const size_t vid, Vector2d& x) 
     return true;
 }
 
+bool TopoOffsetTriMesh::face_is_deformable(const size_t fid) const
+{
+    if (m_deform_tags.empty()) return false;
+    if (m_face_extra[fid].label != 0) return false;
+    const auto& tags = m_face_attribute[fid].tags;
+    if (tags.empty()) return false;
+    for (const int64_t t : tags) {
+        if (m_deform_tags.count(t) == 0) return false;
+    }
+    return true;
+}
+
+void TopoOffsetTriMesh::stamp_rest_face(const size_t fid)
+{
+    if (!face_is_deformable(fid)) return;
+    const auto vs = oriented_tri_vids(fid);
+    FaceExtra2d& x = m_face_extra[fid];
+    for (int i = 0; i < 3; ++i) x.rest_pos[i] = m_vertex_attribute[vs[i]].m_posf;
+    x.rest_valid = true;
+}
+
+void TopoOffsetTriMesh::release_deformable_regions()
+{
+    // WHICH TAGS STAY HELD: a tag on any input-complex face (label 1) is the geometry the
+    // offset measures from; a tag on any wall face holds the domain boundary (ambient, mostly);
+    // the curve group is input geometry. Everything else with an envelope is an object the
+    // offset merely shares the scene with, and deform_others releases it: its envelope is
+    // dropped, its faces get a rest shape (see FaceExtra2d::rest_valid for the tracking
+    // contract), and from here on smoothing deforms it against RestAMIPSEnergy2D instead of a
+    // tube refusing every move. Dangling mask bits are already the envelope machinery's normal
+    // case ("a bit whose tag never got an envelope"), so the queries need no change.
+    std::set<int64_t> kept;
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        if (m_face_extra[fid].label == 1) {
+            for (const int64_t t : m_face_attribute[fid].tags) kept.insert(t);
+        }
+    }
+    for (const Tuple& e : get_edges()) {
+        if (e.switch_face(*this)) continue; // wall edges only
+        for (const int64_t t : m_face_attribute[e.fid(*this)].tags) kept.insert(t);
+    }
+    if (m_curve_tag >= 0) kept.insert(m_curve_tag);
+
+    m_deform_tags.clear();
+    for (const auto& [tag, env] : m_tag_envelopes) {
+        if (kept.count(tag) == 0) m_deform_tags.insert(tag);
+    }
+    if (m_deform_tags.empty()) {
+        logger().info("[deform_others] nothing to release: every tagged region is held");
+        return;
+    }
+
+    std::string released;
+    for (const int64_t t : m_deform_tags) {
+        released += " " + m_tag_id_to_name.at(t);
+        m_tag_envelopes.erase(t);
+        m_tag_polyline.erase(t);
+    }
+    {
+        std::lock_guard<std::mutex> lock(m_isect_mutex);
+        m_isect_cache.clear();
+        m_offset_isect_cache.clear();
+    }
+    std::vector<std::shared_ptr<SampleEnvelope>> members;
+    for (const auto& [tag, env] : m_tag_envelopes) members.push_back(env);
+    m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
+
+    size_t n_faces = 0;
+    for (const Tuple& f : get_faces()) {
+        const size_t fid = f.fid(*this);
+        if (face_is_deformable(fid)) {
+            stamp_rest_face(fid);
+            ++n_faces;
+        }
+    }
+    logger().info(
+        "[deform_others] released:{} | {} deformable faces stamped with their rest shape; "
+        "held: {} envelopes",
+        released,
+        n_faces,
+        m_tag_envelopes.size());
+}
+
+std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::rest_energy_for_vertex(
+    const size_t vid) const
+{
+    if (m_deform_tags.empty()) return nullptr;
+    std::vector<RestAMIPSEnergy2D::Cell> cells;
+    for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(vid))) {
+        if (!face_is_deformable(fid)) continue;
+        const FaceExtra2d& fx = m_face_extra[fid];
+        if (!fx.rest_valid) continue;
+        const auto vs = oriented_tri_vids(fid);
+        int k = 0;
+        while (k < 3 && vs[k] != vid) ++k;
+        if (k == 3) continue;
+        RestAMIPSEnergy2D::Cell c;
+        c.q1 = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
+        c.q2 = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
+        Eigen::Matrix2d R;
+        R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
+        R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
+        const double det = R.determinant();
+        if (!(det > 0.)) continue; // a degenerate or inverted rest holds no shape to preserve
+        c.rest_inv = R.inverse();
+        cells.push_back(c);
+    }
+    if (cells.empty()) return nullptr;
+    // The shared smoother's own AMIPS factor, so the rest term and the equilateral quality
+    // term it sums with sit at 1:1. Deliberately not a spec key.
+    const double w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
+    return std::make_shared<RestAMIPSEnergy2D>(std::move(cells), w);
+}
+
 int64_t TopoOffsetTriMesh::tangent_curve_tag(const size_t vid, const Vector2d& x) const
 {
     const uint64_t mask = vertex_boundary_mask(vid);
@@ -512,6 +627,9 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
     // already checked both new segments against their envelopes (see swap_edge_before()); a
     // second criterion on top of that is what this used to be, and it is gone with the collapse
     // one -- see collapse_edge_after().
+    // deform_others: a swap rewires exactly these two faces; their rest is stale.
+    stamp_rest_face(t.fid(*this));
+    if (const std::optional<Tuple> opp = t.switch_face(*this)) stamp_rest_face(opp->fid(*this));
     ++iter_cnt_swap;
     return true;
 }
@@ -551,6 +669,11 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
             ++iter_cnt_collapse_offset_reject;
             return false;
         }
+    }
+    // deform_others: every surviving face at the survivor changed shape (v1 became v2);
+    // their rest is stale.
+    for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
+        stamp_rest_face(fid);
     }
     return true;
 }
@@ -730,6 +853,13 @@ void TopoOffsetTriMesh::split_after_vertex(const size_t v_id)
 
     // The children's region labels are NOT set here -- see split_adjust_position(), which the
     // base calls early enough for the split's own containment check to see them.
+
+    // deform_others: every face at the midpoint was created by this split, and the snapshot
+    // copy gave each the PARENT's rest -- re-stamp, or a child measures itself against a
+    // triangle twice its size (see FaceExtra2d::rest_valid).
+    for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(v_id))) {
+        stamp_rest_face(fid);
+    }
 }
 
 bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
@@ -5049,6 +5179,13 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // label the offset boundary, and with it the vertices the optimization places
     logger().info("\tLabel offset edges...");
     label_offset_boundary();
+
+    // deform_others: from here on, other input regions deform instead of being envelope-held.
+    // After the labels (the held/released decision reads them), before the offset envelope and
+    // the sizing seed, so the whole optimization sees one consistent world.
+    if (m_offset_params.deform_others) {
+        release_deformable_regions();
+    }
 
     // THE OFFSET ENVELOPE IS BORN HERE, with the offset itself, and from then on it always
     // exists -- refreshed at the end of every Phase B, around wherever that phase left the

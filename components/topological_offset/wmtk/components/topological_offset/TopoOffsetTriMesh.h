@@ -87,6 +87,20 @@ class FaceExtra2d
 {
 public:
     int label = 0;
+    /**
+     * REST SHAPE (deform_others): this face's corner positions when it last changed
+     * topologically, in the face's oriented corner ORDER -- which consolidate_mesh() preserves
+     * (it renames ids in place), so the correspondence survives renumbering and only actual
+     * operations invalidate it. The tracking contract: stamped for every deformable face at
+     * release time (release_deformable_regions()), re-stamped by the op after-hooks for every
+     * face an accepted split / collapse / swap changed (the localized plastic reset -- a face
+     * no operation touches keeps its rest for the whole run, which is the elastic memory), and
+     * NEVER re-stamped by smoothing. Snapshot copies carry a parent's rest into a child, which
+     * is exactly why the after-hooks must re-stamp: a child measuring itself against its
+     * parent's rest would read det F ~ 1/2 and fight to regrow.
+     */
+    bool rest_valid = false;
+    std::array<Eigen::Vector2d, 3> rest_pos;
 };
 
 
@@ -1489,20 +1503,48 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_objective(
         size_t vid,
         const Vector2d& x) const;
-    /// Phase B's offset terms, handed to the shared smoother for a front vertex it is placing.
-    /// Null in Phase A (the front is held by m_offset_envelope and carries no term) and for a
-    /// front vertex an input envelope also pins.
+    /// Phase B's offset terms, handed to the shared smoother for a front vertex it is placing
+    /// (null in Phase A and for a front vertex an input envelope also pins) -- plus, under
+    /// deform_others, the rest-shape AMIPS of the deformable faces in the vertex's ring, in
+    /// every phase. Whichever apply are summed; null when neither does.
     std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
         const size_t vid) const override
     {
-        if (!phase_places_front() || !m_offset_potential) return nullptr;
-        if (!m_vertex_extra[vid].m_is_on_offset || vertex_boundary_mask(vid) != 0) return nullptr;
-        const int r = vertex_region(vid);
-        const std::shared_ptr<const OffsetPotential2D> pot =
-            (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
-                                                               : m_offset_potential;
-        return phase_b_front_energy(vid, pot);
+        std::shared_ptr<polysolve::nonlinear::Problem> front;
+        if (phase_places_front() && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
+            vertex_boundary_mask(vid) == 0) {
+            const int r = vertex_region(vid);
+            const std::shared_ptr<const OffsetPotential2D> pot =
+                (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
+                                                                   : m_offset_potential;
+            front = phase_b_front_energy(vid, pot);
+        }
+        const std::shared_ptr<polysolve::nonlinear::Problem> rest = rest_energy_for_vertex(vid);
+        if (!front) return rest;
+        if (!rest) return front;
+        auto sum = std::make_shared<optimization::EnergySum>();
+        sum->add_energy(front);
+        sum->add_energy(rest);
+        return sum;
     }
+
+    // ------- deform_others: other input regions deform instead of being envelope-held -------
+
+    /// The released tags. Filled by release_deformable_regions(); empty = feature inactive.
+    std::set<int64_t> m_deform_tags;
+    /// A face deforms when it is background (label 0), tagged, and EVERY tag it carries was
+    /// released -- a face shared with a held region must not deform freely.
+    bool face_is_deformable(size_t fid) const;
+    /// Stamp rest := the face's current corner positions (oriented order). No-op for
+    /// non-deformable faces.
+    void stamp_rest_face(size_t fid);
+    /// Drop the released tags' envelopes and stamp every deformable face's rest. Called once
+    /// from optimize_offset() when deform_others is set; see the FaceExtra2d::rest_valid doc
+    /// for the tracking contract.
+    void release_deformable_regions();
+    /// The rest-shape AMIPS over the deformable faces of vid's one-ring, weighted like the
+    /// shared smoother weights its AMIPS term; null when the ring has none.
+    std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
     /// The two offset terms for a front vertex, see smooth_front_vertex_phase_b(): the zeroth-order
     /// (OffsetEnergy2D) and the first-order one (AlignEnergy2D, one residual per incident live
     /// front edge). Defined in Optimize2d.cpp, next to the criterion that measures the same

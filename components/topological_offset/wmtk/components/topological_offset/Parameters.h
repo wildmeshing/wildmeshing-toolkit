@@ -113,6 +113,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// behaviour until 2026-08-27): its own. true: the smaller of the two, the shared engine's rule
     /// since upstream 52315d39e2 -- refinement then never relaxes behind a travelling front.
     bool sizing_collapse_min = false;
+    /// 2D. Other input regions (no input-complex face, no wall contact) deform under smoothing
+    /// against their rest shape instead of being envelope-held. See the spec doc.
+    bool deform_others = false;
     /// 2D: false (the default) is the single phase -- TriWild's loop with the front placed inside
     /// its smoothing passes; true is the A/B loop, which is also what 3D always runs.
     bool alternating_opt = false;
@@ -299,6 +302,7 @@ struct Parameters : public wmtk::OptimizerParameters
         front_normal_projection = json_params["front_normal_projection"];
         front_alignment_energy = json_params["front_alignment_energy"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
+        deform_others = json_params["deform_others"];
         alternating_opt = json_params["alternating_opt"];
         max_rounds = json_params["max_rounds"];
         pre_optimize_input = json_params["pre_optimize_input"];

@@ -81,7 +81,8 @@
       "project_line_search_steps",
       "project_line_search_nested_steps",
       "smooth_quality_veto",
-      "perform_sanity_checks"
+      "perform_sanity_checks",
+      "deform_others"
     ]
   },
   {
@@ -566,5 +567,11 @@
     "type": "bool",
     "default": false,
     "doc": "Check after every operation pass that no tet is inverted and no tracked-surface triangle left its envelope. Slow; for debugging (only used if optimize is true)."
+  },
+  {
+    "pointer": "/deform_others",
+    "default": false,
+    "type": "bool",
+    "doc": "2D. Whether the OTHER objects in the scene -- tagged regions with no input-complex face and no domain-wall contact -- deform when the optimization pushes them, instead of being held by their per-tag envelopes. false (the default while the feature is parked; Uday's eventual intent is true): the pre-existing behaviour, every region boundary held in its tube. true: at the top of optimize_offset() their envelopes are dropped and every face of theirs is stamped with its REST SHAPE; smoothing then carries a rest-shape AMIPS term for those faces (tr(F^T F)/det F against the rest Jacobian -- polyfem's AMIPSEnergy with use_rest_pose, followed deliberately; det<=0 is invalid, so the line search cannot invert them), weighted like the smoother's own AMIPS term. A face keeps its rest for as long as no operation touches it (elastic memory); an accepted split, collapse or swap re-stamps the faces it changed to their shape at that moment (a localized plastic reset), which is also what makes the scheme indifferent to remeshing. The offset's own complex, the domain wall and the curve group are always held."
   }
 ]

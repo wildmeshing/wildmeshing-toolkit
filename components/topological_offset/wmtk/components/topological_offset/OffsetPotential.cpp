@@ -1134,4 +1134,104 @@ template class EuclideanOffsetPotential<3>;
 template class OffsetEnergy<2>;
 template class OffsetEnergy<3>;
 
+RestAMIPSEnergy2D::RestAMIPSEnergy2D(std::vector<Cell> cells, const double weight)
+    : m_cells(std::move(cells))
+    , m_weight(weight)
+{}
+
+bool RestAMIPSEnergy2D::cell_F(
+    const Eigen::Vector2d& x,
+    const Cell& c,
+    Eigen::Matrix2d& F,
+    double& d) const
+{
+    Eigen::Matrix2d A;
+    A.col(0) = c.q1 - x;
+    A.col(1) = c.q2 - x;
+    F = A * c.rest_inv;
+    d = F.determinant();
+    return d > 0.;
+}
+
+double RestAMIPSEnergy2D::value(const TVector& x)
+{
+    double E = 0.;
+    Eigen::Matrix2d F;
+    double d;
+    for (const Cell& c : m_cells) {
+        if (!cell_F(x.head(2), c, F, d)) return std::nan("");
+        E += m_weight * F.squaredNorm() / d;
+    }
+    return E;
+}
+
+void RestAMIPSEnergy2D::gradient(const TVector& x, TVector& gradv)
+{
+    // dE/dF = 2F/d - (e/d) F^-T, in closed form for 2x2; dF/dx_k = -e_k * r^T with
+    // r = Rinv^T (1,1)^T, so grad_x = -(dE/dF) r summed over cells.
+    Eigen::Vector2d G = Eigen::Vector2d::Zero();
+    Eigen::Matrix2d F;
+    double d;
+    for (const Cell& c : m_cells) {
+        if (!cell_F(x.head(2), c, F, d)) {
+            gradv = Eigen::Vector2d::Zero(); // invalid point: the line search never accepts it
+            return;
+        }
+        const double e = F.squaredNorm();
+        Eigen::Matrix2d FinvT;
+        FinvT << F(1, 1), -F(1, 0), -F(0, 1), F(0, 0);
+        FinvT /= d;
+        const Eigen::Matrix2d dEdF = 2. / d * F - (e / d) * FinvT;
+        const Eigen::Vector2d r = c.rest_inv.transpose() * Eigen::Vector2d::Ones();
+        G += -m_weight * (dEdF * r);
+    }
+    gradv = G;
+}
+
+void RestAMIPSEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
+{
+    // F is affine in x, so H_x = M^T H_F M exactly, with M the constant 4x2 dvecF/dx
+    // (column-major vec) and H_F the closed-form Hessian of e/d in F:
+    //   dE = e'/d - e d'/d^2,  d2E = e''/d - (e' d'^T + d' e'^T)/d^2 - e d''/d^2
+    //        + 2 e (d' d'^T)/d^3,
+    // e' = 2 vecF, e'' = 2I, d' = (F11, -F01, -F10, F00), d'' = the constant K.
+    Eigen::Matrix2d Hx = Eigen::Matrix2d::Zero();
+    Eigen::Matrix2d F;
+    double d;
+    Eigen::Matrix4d K = Eigen::Matrix4d::Zero();
+    K(0, 3) = K(3, 0) = 1.;
+    K(1, 2) = K(2, 1) = -1.;
+    for (const Cell& c : m_cells) {
+        if (!cell_F(x.head(2), c, F, d)) continue; // invalid point: contribute nothing
+        const double e = F.squaredNorm();
+        Eigen::Vector4d vF(F(0, 0), F(1, 0), F(0, 1), F(1, 1));
+        Eigen::Vector4d dd(F(1, 1), -F(0, 1), -F(1, 0), F(0, 0));
+        const Eigen::Vector4d de = 2. * vF;
+        Eigen::Matrix4d HF = (2. / d) * Eigen::Matrix4d::Identity();
+        HF -= (de * dd.transpose() + dd * de.transpose()) / (d * d);
+        HF += (2. * e / (d * d * d)) * (dd * dd.transpose());
+        HF -= (e / (d * d)) * K;
+        const Eigen::Vector2d r = c.rest_inv.transpose() * Eigen::Vector2d::Ones();
+        Eigen::Matrix<double, 4, 2> M = Eigen::Matrix<double, 4, 2>::Zero();
+        // dF(i,j)/dx_k = -Rinv row-sum of column j when k == i: vec index 2j + i.
+        for (int j = 0; j < 2; ++j) {
+            for (int i = 0; i < 2; ++i) {
+                M(2 * j + i, i) = -r(j);
+            }
+        }
+        Hx += m_weight * (M.transpose() * HF * M);
+    }
+    hessian = Hx;
+}
+
+bool RestAMIPSEnergy2D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
+{
+    Eigen::Matrix2d F;
+    double d;
+    for (const Cell& c : m_cells) {
+        if (!cell_F(x1.head(2), c, F, d)) return false;
+    }
+    return true;
+}
+
 } // namespace wmtk::components::topological_offset

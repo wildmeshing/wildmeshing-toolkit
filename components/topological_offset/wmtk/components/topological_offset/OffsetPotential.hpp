@@ -540,4 +540,53 @@ private:
 };
 using OffsetEnergy3D = OffsetEnergy<3>;
 
+/**
+ * @brief AMIPS AGAINST A REST SHAPE, for deform_others: the smoothing term of a deformable
+ * region's faces.
+ *
+ *     E(x) = w * sum over cells of tr(F^T F) / det F,   F = A(x) * Rinv
+ *
+ * A(x) = [q1 - x, q2 - x] is the cell's current Jacobian with the moving vertex first (the
+ * shared smoother's convention), Rinv the inverse of the cell's REST Jacobian, captured when
+ * the face last changed topologically. det F <= 0 is invalid: value NaN and is_step_valid
+ * false, so the line search cannot cross an inversion -- polyfem's AMIPSEnergy convention
+ * (assembler/AMIPSEnergy.hpp, use_rest_pose_ true: identity reference, power 1 in 2D), which
+ * this follows deliberately for consistency. The equilateral quality AMIPS is the special
+ * case where R is the unit equilateral triangle; polyfem's non-rest branch divides by det^2
+ * in 2D, which is not scale-invariant and disagrees with TriWild's kernel -- the rest branch,
+ * followed here, has the correct scale-invariant power.
+ *
+ * F is AFFINE in x (dF/dx_k = -e_k * (row-sum of Rinv)), so gradient and Hessian in x are the
+ * exact chain through closed-form d/dF of e/d: no Gauss-Newton truncation needed.
+ */
+class RestAMIPSEnergy2D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    struct Cell
+    {
+        Eigen::Vector2d q1, q2; ///< the fixed endpoints, current positions
+        Eigen::Matrix2d rest_inv; ///< inverse rest Jacobian [r1-r0, r2-r0]^-1, same corner order
+    };
+    RestAMIPSEnergy2D(std::vector<Cell> cells, double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    /// e = tr(F^T F), d = det F at x for one cell; false when d <= 0.
+    bool cell_F(const Eigen::Vector2d& x, const Cell& c, Eigen::Matrix2d& F, double& d) const;
+    std::vector<Cell> m_cells;
+    double m_weight;
+};
+
 } // namespace wmtk::components::topological_offset
