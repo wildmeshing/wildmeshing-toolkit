@@ -738,7 +738,7 @@ double AlignEnergy2D::value(const TVector& x)
     Eigen::Vector2d J;
     for (const Edge& e : m_edges) {
         residual(x.head(2), e, r, J);
-        E += m_weight * r * r;
+        E += m_weight * e.agree * r * r;
     }
     return E;
 }
@@ -749,7 +749,7 @@ void AlignEnergy2D::gradient(const TVector& x, TVector& gradv)
     double r;
     for (const Edge& e : m_edges) {
         residual(x.head(2), e, r, J);
-        G += 2. * m_weight * r * J;
+        G += 2. * m_weight * e.agree * r * J;
     }
     gradv = G;
 }
@@ -761,7 +761,7 @@ void AlignEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
     double r;
     for (const Edge& e : m_edges) {
         residual(x.head(2), e, r, J);
-        Hs += 2. * m_weight * J * J.transpose();
+        Hs += 2. * m_weight * e.agree * J * J.transpose();
     }
     hessian = Hs;
 }

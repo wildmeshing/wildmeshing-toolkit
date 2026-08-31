@@ -1096,7 +1096,10 @@ Vector2d TopoOffsetTriMesh::front_vertex_move_direction(const size_t vid) const
     // Euclidean, one vertex at (-13.76, -6.24), 3.1x the bar in every round. The polyline's own
     // (Voronoi-weighted) normal was tried instead on 2026-08-25 and rejected: around a CONVEX
     // corner the front moves inward along converging normals, two vertices slid into each other
-    // (edge 0.088 -> 0.0026 in six passes) and deadlocked worse. Open.
+    // (edge 0.088 -> 0.0026 in six passes) and deadlocked worse. Open: see the 2026-08-31 session -- a
+    // detect-and-2-D-solve escape was measured and REJECTED (it exposes a corner residual the
+    // 2-D solve cannot take below the bar; both annots configs stopped converging), and the
+    // passing runs rest partly on this measure being blind along the flat direction.
     return front_vertex_normal(vid);
 }
 
@@ -3300,13 +3303,29 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                 // (min_sizing_scalar, min_edge_length) the chord cannot be resolved within the
                 // tube at this resolution -- a crease of the Euclidean level set, an inward
                 // offset meeting itself -- and it is reported as at-floor, not looped on.
+                //
+                // AGAINST THE MAX OF THE TWO SCALARS, NOT THE MIN (2026-08-31). The split and
+                // collapse passes both judge an edge by the MEAN of its endpoint scalars, so a
+                // chord with one coarse end keeps splitting and having its children collapsed
+                // back -- a limit cycle -- while the min-based test here excused it as at-floor
+                // the moment its FINE end reached sn (annots Euclidean 0.25, alignment off,
+                // stop 10: chord at (8.25, 19.25), scalars 0.180 / 0.023, sag 6x the tube in
+                // the "converged" output; three such sites burned turns 2-14 of a run placed
+                // at turn 6). Judged by the max, the edge stays refinable while EITHER end is
+                // coarser than the sag demands; the write below is already per-vertex and
+                // only-if-lower, so the coarse end comes down, the means follow, the split
+                // sticks. Seam edges have both ends at the floor, max == min, still excused.
+                // The two rules measured and rejected for this same cycle, both 2026-08-31:
+                // sizing_collapse_min true (front 1729 -> 2681 and climbing, nonconvergence),
+                // and min instead of mean in the shared collapse length gate (starved the
+                // quality collapses; max AMIPS 51 against stop 10, nonconvergence).
                 const double l = std::max(m_params.l, 1e-300);
                 const double s_floor = std::max(
                     m_offset_params.min_sizing_scalar,
                     m_offset_params.min_edge_length / l);
                 const double target = std::min(0.75 * len * std::sqrt(s.tube / (gn * s.tube)), 0.625 * len);
                 const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
-                const double have = std::min(
+                const double have = std::max(
                     m_vertex_attribute[va].m_sizing_scalar,
                     m_vertex_attribute[vb].m_sizing_scalar);
                 if (sn < have) {
@@ -3465,7 +3484,16 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
         const Vector2d n_plus(-d.y(), d.x()); // R90 (q - x)
         const Vector2d mid = 0.5 * (x + m_vertex_attribute[q].m_posf);
         const double sigma = n_plus.dot(mid - c) >= 0. ? 1. : -1.;
-        edges.push_back({m_vertex_attribute[q].m_posf, sigma});
+        // The agreement weight: see AlignEnergy2D::Edge::agree. The two endpoint gradients;
+        // the field's outward sign squares away in the dot product. Either one degenerate
+        // (a corner of the level set itself, or outside the support) means no consistent
+        // target for this edge: weight 0, not a guess.
+        const Vector2d ga = pot->gradient(x);
+        const Vector2d gb = pot->gradient(m_vertex_attribute[q].m_posf);
+        const double na = ga.norm(), nb = gb.norm();
+        const bool ok = std::isfinite(na) && na > 0. && std::isfinite(nb) && nb > 0.;
+        const double agree = ok ? std::max(0., ga.dot(gb) / (na * nb)) : 0.;
+        edges.push_back({m_vertex_attribute[q].m_posf, sigma, agree});
     }
     // KEPT (measured 2026-08-25): without it the seam is rougher -- worst edge angle against the
     // field 6 -> 17 deg at 0.10, 16 -> 26 at 0.15, 21 -> 39 at 0.20 -- since under

@@ -504,6 +504,18 @@ public:
     {
         Eigen::Vector2d q; ///< the other endpoint
         double sigma; ///< +-1: sigma * R90 (q - x) points away from the band
+        /// GRADIENT AGREEMENT at the edge's two ENDPOINTS: max(0, ghat(x) . ghat(q)), frozen
+        /// for the visit. The term's target direction is only meaningful where the field's
+        /// gradient is consistent along the edge; at a concave corner of the Euclidean field
+        /// the gradient flips 90 degrees across the corner's bisector, and an edge spanning
+        /// the flip was given a target it cannot meet -- the objective jumped 0.16 -> 2.8
+        /// either side of the axis (a cliff, not a minimum), which held both walls straight
+        /// through the corner and froze a needle of trapped band there (annots Euclidean 0.25,
+        /// pre_optimize_sizing_from_edges false, stop_energy 10, 2026-08-31). ~1 on smooth
+        /// stretches (the seam behaviour is unchanged), 0 at a right-angle flip. A frozen
+        /// scalar, not a frozen direction: the residual below keeps both x-dependences, so
+        /// the fold sensitivity that killed the frozen-normal version is intact.
+        double agree = 1.;
     };
     AlignEnergy2D(
         const std::shared_ptr<const OffsetPotential2D>& potential,
