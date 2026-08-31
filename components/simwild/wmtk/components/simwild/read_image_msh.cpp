@@ -150,7 +150,12 @@ InputData read_image_msh(const std::string& path)
             MatrixXd V;
             MatrixXi F;
             msh.get_VF(ph, V, F);
-            tag_names.push_back(ph.name);
+            // The name goes with the FACES, in the non-envelope branch below. It used to be
+            // pushed here for every group, envelope included, while Vs/Fs skip the envelope --
+            // so whenever the envelope group is not last in file order (gmsh sorts physicals
+            // dim-first, putting a dim-1 EnvelopeSurface first), every region's name shifted
+            // by one and the last region's name vanished (c_shape.msh, 2026-08-31: shape_c's
+            // faces reported as a second 'ambient', offset_selection 'shape_c' unresolvable).
             if ((has_tets && ph.dim == 2) || (ph.dim == 1)) {
                 // this must be the envelope surface
                 if (V_envelope.size() != 0) {
@@ -160,6 +165,7 @@ InputData read_image_msh(const std::string& path)
                 input_data.F_envelope = F;
                 input_data.envelope_name = ph.name;
             } else {
+                tag_names.push_back(ph.name);
                 Vs.push_back(V);
                 Fs.push_back(F);
             }
