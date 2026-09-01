@@ -1367,7 +1367,21 @@ public:
         // offset where Phase B left it; Phase B is what moves it, so it contributes nothing
         // there -- and null when there is no offset envelope yet, which is the pre-pass, before
         // the offset exists at all.
-        return containment_for(mask, all_offset);
+        const std::shared_ptr<SampleEnvelope> base = containment_for(mask, all_offset);
+        if (base || m_deform_tags.empty()) return base;
+        // deform_others' OPS-ONLY TUBE: a released boundary is held by no mask (its vertices
+        // were freed so smoothing can carry the object), which left the operations free too --
+        // and the collapse pass was measured decimating and repositioning it (see
+        // rebuild_released_envelope()). A segment the masks and the offset class do not claim,
+        // but which lies on a released boundary by its incident faces' CURRENT tags, is held to
+        // the tube around the boundary's current shape. A fresh split child can misread its
+        // recycled face slots for this one check -- at worst that child is skipped or
+        // over-held once; the measured damage is the collapse pass, whose checked segments
+        // exist with written attributes.
+        if (const auto found = try_tuple_from_edge(vids)) {
+            if (edge_borders_released_boundary(std::get<0>(*found))) return released_envelope();
+        }
+        return nullptr;
     }
 
     /**
@@ -1532,6 +1546,25 @@ public:
 
     /// The released tags. Filled by release_deformable_regions(); empty = feature inactive.
     std::set<int64_t> m_deform_tags;
+    /// The source tags (offset_selection's tags_involved), stored at release so the ops-only
+    /// tube's edge classification applies the same never-freed rule the release did.
+    std::set<int64_t> m_source_tags;
+    /// The released boundaries' OPS-ONLY tube: a SampleEnvelope around the CURRENT deformed
+    /// boundaries. Consulted only by surface_envelope_for_edge(), the dispatch every operation
+    /// containment check goes through and no smoothing path does -- so operations preserve the
+    /// current shape through remeshing while smoothing stays free to carry the object. Rebuilt
+    /// LAZILY by released_envelope() when m_released_tube_dirty says a smoothing accept may
+    /// have moved the boundary; see that definition for the measurements that forced both the
+    /// tube and the laziness.
+    mutable std::shared_ptr<SampleEnvelope> m_released_envelope;
+    mutable std::atomic<bool> m_released_tube_dirty{false};
+    mutable std::mutex m_released_mutex;
+    /// The current released-boundary tube, rebuilt first if dirty. Null when nothing is
+    /// released or no released-boundary segment exists.
+    std::shared_ptr<SampleEnvelope> released_envelope() const;
+    /// Whether this edge lies on a released region's boundary, by the incident faces' CURRENT
+    /// tag symmetric difference -- the same test the release freed vertices by.
+    bool edge_borders_released_boundary(const Tuple& e) const;
     /// A face deforms when it is background (label 0), tagged, and EVERY tag it carries was
     /// released -- a face shared with a held region must not deform freely.
     bool face_is_deformable(size_t fid) const;
@@ -1546,6 +1579,12 @@ public:
     bool m_plastic_active = false; ///< set in optimize_offset() when deform_others
     bool face_is_plastic(size_t fid) const
     {
+        // EVERY background face, objects included (Uday, 2026-09-01). Excluding released
+        // objects so they could keep a release-time rest was tried the same day and bought
+        // nothing measurable -- two_overlap: Q's radius spread 0.048 -> 0.045, its untouched
+        // far side 0.017 either way, the outline exact either way -- because an object's rest
+        // is re-stamped by every operation that touches it, and operations fire constantly
+        // exactly where the band presses. One material for the medium and the objects.
         return m_plastic_active && m_face_extra[fid].label == 0;
     }
     /// Stamp rest := current for every plastic face; called before every operation group.
@@ -1553,6 +1592,10 @@ public:
     /// The plastic vertex's smoothing: rest-shape AMIPS over its ring, nothing else -- no
     /// equilateral term, no quality veto, exact inversion as the only accept test.
     bool smooth_plastic_vertex(const Tuple& t);
+    /// A band cell that is a released object's material: every non-output tag released, at
+    /// least one present. Read by the front placement objective and the rest stamping only --
+    /// see the definition for why the band's interior smoothing is left equilateral.
+    bool face_is_released_band(size_t fid) const;
     /// Stamp rest := the face's current corner positions (oriented order). No-op for
     /// non-deformable faces.
     void stamp_rest_face(size_t fid);

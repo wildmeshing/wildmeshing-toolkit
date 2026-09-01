@@ -356,9 +356,31 @@ bool TopoOffsetTriMesh::face_is_deformable(const size_t fid) const
     return true;
 }
 
+bool TopoOffsetTriMesh::face_is_released_band(const size_t fid) const
+{
+    // A band cell that is RELEASED MATERIAL: every tag it carries besides the offset output
+    // tag belongs to a released object, and there is at least one such tag (a pure band cell
+    // carries only the output tag and stays the front's freely-reshaped working material; a
+    // cell shared with a HELD object must not flow and is excluded because that tag is not
+    // released). Consumed ONLY by the front placement objective and the rest stamping
+    // (Uday, 2026-09-01): the front does work against a released object's material where it
+    // pushes through the overlap, by the same per-group increment brake the plastic medium
+    // uses -- while the band's interior smoothing stays equilateral, because the band is the
+    // numerical working layer the front's solves need well-shaped.
+    if (m_deform_tags.empty()) return false;
+    if (m_face_extra[fid].label != 2) return false;
+    bool has_released = false;
+    for (const int64_t t : m_face_attribute[fid].tags) {
+        if (m_offset_output_tag_ids.count(t)) continue;
+        if (m_deform_tags.count(t) == 0) return false;
+        has_released = true;
+    }
+    return has_released;
+}
+
 void TopoOffsetTriMesh::stamp_rest_face(const size_t fid)
 {
-    if (!face_is_plastic(fid) && !face_is_deformable(fid)) return;
+    if (!face_is_plastic(fid) && !face_is_deformable(fid) && !face_is_released_band(fid)) return;
     const auto vs = oriented_tri_vids(fid);
     FaceExtra2d& x = m_face_extra[fid];
     for (int i = 0; i < 3; ++i) x.rest_pos[i] = m_vertex_attribute[vs[i]].m_posf;
@@ -371,7 +393,7 @@ void TopoOffsetTriMesh::stamp_plastic_rests()
     size_t n = 0;
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
-        if (!face_is_plastic(fid)) continue;
+        if (!face_is_plastic(fid) && !face_is_released_band(fid)) continue;
         const auto vs = oriented_tri_vids(fid);
         FaceExtra2d& x = m_face_extra[fid];
         for (int i = 0; i < 3; ++i) x.rest_pos[i] = m_vertex_attribute[vs[i]].m_posf;
@@ -440,6 +462,7 @@ bool TopoOffsetTriMesh::smooth_plastic_vertex(const Tuple& t)
         }
     }
     ++m_smooth_rejects.accepted;
+    m_released_tube_dirty.store(true, std::memory_order_release); // the boundary may have moved
     return true;
 }
 
@@ -488,106 +511,76 @@ void TopoOffsetTriMesh::release_deformable_regions()
     for (const auto& [tag, env] : m_tag_envelopes) {
         if (kept.count(tag) == 0) m_deform_tags.insert(tag);
     }
+    m_source_tags = source_tags; // the ops-only tube's classification applies the same rule
     if (m_deform_tags.empty()) {
         logger().info("[deform_others] nothing to release: every tagged region is held");
         return;
     }
 
-    // THE INTERFACE IS FREED ON BOTH SIDES. A region-boundary edge enters BOTH incident tags'
-    // envelope buckets, so erasing the released tag's envelope alone left its boundary held by
-    // the KEPT neighbour's envelope -- measured 2026-08-31: circle_b's boundary vertices,
-    // carrying the ambient bit, took the held path every pass and were frozen to six decimals
-    // while the plastic medium waited for them. A segment bordering a released region leaves
-    // the kept envelopes too, and the vertex masks are recomputed so freed vertices carry no
-    // bits at all.
-    // A released tag keeps only the SOURCE's own segments in its envelope: an interface edge
-    // sits in both incident tags' buckets, so releasing an object must not leave its boundary
-    // pinned by the source's tube, while the source's own boundary is never freed.
-    std::set<std::pair<int, int>> freed_segments; // input-polyline indexing, both orders
-    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
+    // NO TUBE IS EVER EDITED. Releasing a boundary is a property of its VERTICES' masks
+    // (the loop below); every tag's envelope, released tags included, keeps its as-loaded
+    // segments. Both alternatives were tried and measured wrong the same way -- a tube that no
+    // longer covers geometry whose bits some vertex still carries measures that vertex against
+    // the far side of the scene: dropping a released object's segments from KEPT tags' tubes
+    // broke the curve group (64 edges "OUT BY 2.2", 2026-08-31, and again 2026-09-01 when the
+    // block survived a refactor), and reducing the released tag's OWN tube to its shared-source
+    // segments left the object's inside-the-complex boundary dangling once those vertices kept
+    // their bit (2026-09-01). A whole tube held by nobody constrains nothing: the freed
+    // exterior's vertices end at mask 0 and never query it, while the inside-the-complex
+    // boundary keeps its bit and is held to the curve it lies on -- which is the point, since
+    // the front cannot enter the complex and that part of a released boundary must simply stay
+    // where it was loaded instead of drifting under plain quality smoothing (Q's arc inside P,
+    // 2026-09-01).
     std::string released;
     for (const int64_t t : m_deform_tags) {
         released += " " + m_tag_id_to_name.at(t);
-        const auto it = m_tag_polyline.find(t);
-        if (it == m_tag_polyline.end()) {
-            m_tag_envelopes.erase(t);
-            continue;
-        }
-        std::set<std::pair<int, int>> source_segments; // never freed: the complex's boundary
-        for (const int64_t st : source_tags) {
-            const auto sit = m_tag_polyline.find(st);
-            if (sit == m_tag_polyline.end()) continue;
-            for (const auto& e : sit->second.E) {
-                source_segments.insert({e[0], e[1]});
-                source_segments.insert({e[1], e[0]});
-            }
-        }
-        std::vector<Eigen::Vector2i> anchored_E;
-        for (const auto& e : it->second.E) {
-            const Eigen::Vector2d mid = 0.5 * (m_env_polyline_V[e[0]] + m_env_polyline_V[e[1]]);
-            if (source_segments.count({e[0], e[1]})) {
-                anchored_E.push_back(e); // the source's own boundary, never freed
-            } else {
-                freed_segments.insert({e[0], e[1]});
-                freed_segments.insert({e[1], e[0]});
-            }
-        }
-        if (anchored_E.empty()) {
-            m_tag_envelopes.erase(t);
-            m_tag_polyline.erase(t);
-        } else {
-            auto env = std::make_shared<SampleEnvelope>(exact_ok);
-            env->init(m_env_polyline_V, anchored_E, m_envelope_eps);
-            m_tag_envelopes[t] = env;
-            it->second.E = anchored_E;
-            it->second.at_vertex.assign(m_env_polyline_V.size(), {});
-            for (int i = 0; i < int(anchored_E.size()); ++i) {
-                it->second.at_vertex[anchored_E[i][0]].push_back(i);
-                it->second.at_vertex[anchored_E[i][1]].push_back(i);
-            }
-        }
     }
-    // KEPT ENVELOPES ARE NEVER REBUILT. Dropping a released object's segments from the tubes
-    // of tags that are KEPT unheld geometry whose bits the vertices still carry: the curve
-    // group's tube lost circle_b's arc while circle_b's vertices kept the curve bit, so every
-    // containment query measured them against the far side of the scene -- 64 edges "OUT BY
-    // 2.2" and a flood of sanity errors (2026-08-31, and again 2026-09-01 when this block
-    // survived a refactor). Releasing a boundary is a property of its VERTICES' masks, done
-    // below; no tube is ever edited.
-    {
-        std::lock_guard<std::mutex> lock(m_isect_mutex);
-        m_isect_cache.clear();
-        m_offset_isect_cache.clear();
-    }
-    std::vector<std::shared_ptr<SampleEnvelope>> members;
-    for (const auto& [tag, env] : m_tag_envelopes) members.push_back(env);
-    m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
 
-    // CLEAR THE RELEASED BITS, DO NOT RECOMPUTE THE MASK. A vertex's mask is SEEDED at
+    // EDIT THE MASKS IN PLACE, DO NOT RECOMPUTE THEM. A vertex's mask is SEEDED at
     // construction and PROPAGATED by every operation since (a split ANDs its endpoints, a
     // collapse ORs them), so it carries history that no rebuild from the current edge set can
     // reproduce: rebuilding it dropped the bits of every edge that is no longer flagged as a
     // tracked surface -- 620 of 906 region-boundary edges ended up contained by nothing on
     // annots (2026-09-01, the envelope-health check), including the complex's own boundary,
-    // which must stay held whatever borders it. Clearing exactly the released tags' bits frees
-    // what the release frees and touches nothing else; a vertex left with mask 0 was held by
-    // released geometry alone, which is the point.
+    // which must stay held whatever borders it. The loop below reduces a freed vertex's mask
+    // to its SOURCE bits: a vertex held by released geometry alone ends at 0, which is the
+    // point, while a junction vertex where the released boundary crosses the source keeps the
+    // source's hold -- freeing those wholly left the source's own edges at the crossings
+    // contained by nothing (4 such on two_overlap, the envelope-health warning, 2026-09-01).
     uint64_t released_bits = 0;
     for (const int64_t t : m_deform_tags) {
         const auto it = m_tag_bit.find(t);
         if (it != m_tag_bit.end()) released_bits |= (uint64_t(1) << it->second);
     }
     if (released_bits) {
-        // FREE THE VERTICES WHOLLY, AND EDIT NO TUBE. A released object's boundary vertex must
-        // end up held by NOTHING, so clearing just the released tag's bit is not enough: an
-        // interface edge contributes bits for BOTH of its sides, so circle_b's vertices kept
-        // ambient's bit and stayed pinned in ambient's tube -- the push froze at 0.178 of a
-        // 0.30 target with the object not moving at all (measured 2026-09-01, a regression of
-        // the working 0.300 push). Editing the kept tags' tubes instead is the other wrong
+        // FREE THE VERTICES DOWN TO THEIR SOURCE BITS, AND EDIT NO TUBE. A released object's
+        // boundary vertex must end up held by nothing OF ITS OWN: clearing just the released
+        // tag's bit is not enough -- an interface edge contributes bits for BOTH of its sides,
+        // so circle_b's vertices kept ambient's bit and stayed pinned in ambient's tube (the
+        // push froze at 0.178 of a 0.30 target, 2026-09-01) -- and clearing the source bits
+        // too was one step over: a junction vertex where the released boundary crosses the
+        // source sits ON the source, and wholly freeing it left the source's own crossing
+        // edges contained by nothing. Editing the kept tags' tubes instead is the other wrong
         // answer: it unholds geometry whose bits other vertices still carry (see above).
         //
         // Guards: an edge that also borders a SOURCE tag is the source's own boundary and is
-        // never freed, and a wall vertex keeps its bbox constraint.
+        // never freed; an edge BOTH of whose faces carry a source tag is a complex-internal
+        // interface -- the front cannot enter the complex, so that part of a released boundary
+        // can never be pushed, and freeing it only let plain quality smoothing drift it (Q's
+        // arc inside P, 2026-09-01) -- never freed either, and held by the anchored segments
+        // the envelope reduction above kept for exactly this; a wall vertex keeps its bbox
+        // constraint.
+        uint64_t source_bits = 0;
+        for (const int64_t t : source_tags) {
+            const auto it = m_tag_bit.find(t);
+            if (it != m_tag_bit.end()) source_bits |= (uint64_t(1) << it->second);
+        }
+        const auto face_has_source = [&](const size_t fid) {
+            for (const int64_t t : m_face_attribute[fid].tags) {
+                if (source_tags.count(t)) return true;
+            }
+            return false;
+        };
         size_t n_freed = 0;
         for (const Tuple& e : get_edges()) {
             const size_t eid = e.eid(*this);
@@ -609,13 +602,19 @@ void TopoOffsetTriMesh::release_deformable_regions()
                 if (source_tags.count(t)) touches_source = true;
             }
             if (!released_here || touches_source) continue;
+            if (face_has_source(e.fid(*this)) && face_has_source(f_opp->fid(*this))) {
+                continue; // complex-internal: anchored, never freed
+            }
             for (const size_t v : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
                 if (!m_vertex_attribute[v].on_bbox_faces.empty()) continue; // wall stays held
-                if (m_vertex_extra[v].m_boundary_mask != 0) ++n_freed;
-                m_vertex_extra[v].m_boundary_mask = 0;
+                const uint64_t kept = m_vertex_extra[v].m_boundary_mask & source_bits;
+                if (m_vertex_extra[v].m_boundary_mask != kept) ++n_freed;
+                m_vertex_extra[v].m_boundary_mask = kept;
             }
         }
-        logger().info("[deform_others] {} boundary vertices freed of every tube", n_freed);
+        logger().info(
+            "[deform_others] {} boundary vertices freed down to their source bits",
+            n_freed);
     }
 
     size_t n_faces = 0;
@@ -632,6 +631,8 @@ void TopoOffsetTriMesh::release_deformable_regions()
         released,
         n_faces,
         m_tag_envelopes.size());
+    m_released_tube_dirty.store(true, std::memory_order_release);
+    released_envelope(); // built here, at a consistent moment, not at some mid-pass first query
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::rest_energy_for_vertex(
@@ -640,7 +641,13 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::rest_energy_fo
     if (m_deform_tags.empty()) return nullptr;
     std::vector<RestAMIPSEnergy2D::Cell> cells;
     for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(vid))) {
-        if (!face_is_deformable(fid)) continue;
+        // Released-band cells too (Uday, 2026-09-01): a released object's boundary INSIDE the
+        // band had no shape input in ordinary smoothing -- its object-side ring cells are
+        // band-labeled, so face_is_deformable() skipped them and the boundary was smoothed by
+        // pure triangle quality. Accepting them here gives that boundary the SAME treatment
+        // the object's boundary outside the band always had: quality term kept, rest term
+        // summed at the same 1:1 weight below.
+        if (!face_is_deformable(fid) && !face_is_released_band(fid)) continue;
         const FaceExtra2d& fx = m_face_extra[fid];
         if (!fx.rest_valid) continue;
         const auto vs = oriented_tri_vids(fid);
@@ -1263,7 +1270,16 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     // THE PLASTIC MEDIUM: a vertex whose whole ring is plastic and which no envelope holds
     // flows under rest-shape AMIPS alone (see smooth_plastic_vertex). Wall vertices keep their
     // envelope and the standard path; vertices touching the band or the complex keep the
-    // standard path too, so the interfaces stay under the usual rules.
+    // standard path too, so the interfaces stay under the usual rules. ROUTING A RELEASED
+    // BOUNDARY'S VERTICES THROUGH THE PLASTIC PATH WAS TRIED AND REVERTED UNPROVEN
+    // (2026-09-01): the A/B was confounded (the fixture's config changed mid-measurement);
+    // on the config both binaries did run, the final boundary was identical to 4 decimals and
+    // the routed version emitted 27 needle-smooth warnings against 0. What stands on theory:
+    // the plastic rest is re-stamped every group, so this path cannot preserve a boundary's
+    // shape ACROSS the run, and it drops the quality term, the boundary's only
+    // regularization. Shape preservation for a released boundary (Uday's open ask) needs
+    // cross-group memory -- an elastic rest pinned at release for boundary-adjacent cells, or
+    // a term on the boundary curve itself; unmeasured.
     if (m_plastic_active && !ve.m_is_on_offset && !smoothing_containment_envelope(vid)) {
         bool all_plastic = true;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
@@ -1409,9 +1425,13 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
         // A PLASTIC ring face brakes the front only by its increment since the group started
         // (rest-shape AMIPS on the group-start rest); judged equilateral it is the permanent
         // brake that parked the front at an elastic equilibrium (0.176 of a 0.30 target,
-        // static from turn 3 whatever ran afterwards). Band faces stay equilateral.
+        // static from turn 3 whatever ran afterwards). Band faces stay equilateral -- EXCEPT
+        // a band cell that is a released object's material (face_is_released_band): the front
+        // pushing through the overlap must do work against that material too, or the object's
+        // tag rides along on cells the front reflows for free (Uday, 2026-09-01). Only the
+        // front placement reads this; the band's interior smoothing stays equilateral.
         const FaceExtra2d& fx = m_face_extra[fid];
-        if (face_is_plastic(fid) && fx.rest_valid) {
+        if ((face_is_plastic(fid) || face_is_released_band(fid)) && fx.rest_valid) {
             Eigen::Matrix2d R;
             R.col(0) = fx.rest_pos[(k + 1) % 3] - fx.rest_pos[k];
             R.col(1) = fx.rest_pos[(k + 2) % 3] - fx.rest_pos[k];
@@ -1586,7 +1606,9 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
             opt_logger());
     }
     if (!m_offset_params.front_normal_projection) {
-        return optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
+        return ok;
     }
 
     // NORMAL-ONLY = A ONE-DIMENSIONAL SOLVE (Uday, 2026-08-25). The same objective the 2-D path
@@ -1641,6 +1663,7 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
     }
     for (const size_t fid : locs) m_face_attribute[fid].m_quality = get_quality(fid);
     ++m_smooth_rejects.accepted;
+    m_released_tube_dirty.store(true, std::memory_order_release); // the boundary may have moved
     return true;
 }
 
@@ -4589,8 +4612,101 @@ void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
         both.size() > n_show ? ", ..." : "");
 }
 
+bool TopoOffsetTriMesh::edge_borders_released_boundary(const Tuple& e) const
+{
+    // The same test release_deformable_regions() freed vertices by: the incident faces' CURRENT
+    // tag symmetric difference contains a released tag and no source tag. Kept here rather than
+    // cached on the edge so the classification always reflects tags as they are now.
+    const std::optional<Tuple> opp = e.switch_face(*this);
+    if (!opp) return false; // the domain wall
+    CellTag edge_tags;
+    const auto& t0 = m_face_attribute[e.fid(*this)].tags;
+    const auto& t1 = m_face_attribute[opp->fid(*this)].tags;
+    std::set_symmetric_difference(
+        t0.begin(),
+        t0.end(),
+        t1.begin(),
+        t1.end(),
+        std::inserter(edge_tags, edge_tags.begin()));
+    bool released_here = false;
+    for (const int64_t t : edge_tags) {
+        if (m_source_tags.count(t)) return false;
+        if (m_deform_tags.count(t)) released_here = true;
+    }
+    return released_here;
+}
+
+std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::released_envelope() const
+{
+    // deform_others' OPS-ONLY TUBE (Uday's design, 2026-09-01): a tube around the CURRENT
+    // released boundaries, consulted by surface_envelope_for_edge() -- the dispatch every
+    // operation containment check comes through and no smoothing path does. Releasing an
+    // object freed its boundary of every envelope so smoothing can carry it, but that left the
+    // operations free too, and the collapse pass was measured doing the damage on two_overlap:
+    // circle Q's boundary radius spread about its centroid 0.013 -> 0.075 in turn 1's collapse
+    // group alone (boundary vertices 39 -> 25, survivors repositioned at will), the plastic
+    // re-stamp making each distortion the new rest -- a ratchet. Smoothing was measured NOT to
+    // be the offender: it carries the push. eps is the offset tube's: an operation may not
+    // degrade a tracked boundary by more than the accuracy tube, released or not.
+    //
+    // LAZY, ON A DIRTY FLAG THE SMOOTHING ACCEPTS SET, not rebuilt on a fixed cadence. The
+    // boundary this tube holds is one smoothing is SUPPOSED to move, so any fixed rebuild
+    // schedule leaves a window where the tube lags the boundary it was built from -- and the
+    // engine's sanity sweep runs inside local_operations right after the smoothing passes,
+    // before any per-group rebuild can happen: with a per-group eager rebuild, two_circles
+    // (deform_others, sanity checks on) reported 65 "Edge is outside!" false alarms as the
+    // push carried circle_b out of the previous group's tube (2026-09-01). Rebuilding on
+    // first query after a smoothing accept makes every consumer -- each operation's
+    // containment check and every sanity sweep -- judge against the boundary as it is NOW.
+    // Operations never set the flag: within an op pass the tube stays pinned where the pass
+    // began, so op-by-op drift cannot recenter its own container.
+    if (m_deform_tags.empty()) return nullptr;
+    std::lock_guard<std::mutex> lock(m_released_mutex);
+    if (!m_released_tube_dirty.load(std::memory_order_acquire)) return m_released_envelope;
+    // NEVER REBUILD MID-OPERATION. A containment query can arrive between an operation's
+    // before- and after-hooks -- a split child's check runs before its attributes are written,
+    // a collapse's between tentative state and the rollback decision -- and a tube built from
+    // that mesh reads recycled slots and tentative geometry. Measured on two_overlap (sanity
+    // checks off, so the first post-smoothing query IS mid-operation): needles flooded the
+    // input complex -- 112 label-1 faces over AMIPS 1e6, 505 coincident vertex pairs, faces at
+    // the 1e50 sentinel -- none of which the consistent-rebuild version produced (2026-09-01).
+    // Deferring keeps the group-start tube for the whole operation, which is the semantics
+    // anyway: an operation is judged against the shape as of the moment no operation was in
+    // flight. `recording` is the engine's rollback-protection flag, thread-local, true exactly
+    // inside an operation.
+    // const_cast: enumerable_thread_specific::local() has no const overload; this is a read.
+    if (const_cast<TopoOffsetTriMesh*>(this)->m_vertex_attribute.recording.local()) {
+        return m_released_envelope;
+    }
+    std::vector<Eigen::Vector2i> segs;
+    for (const Tuple& e : get_edges()) {
+        if (!m_edge_attribute[e.eid(*this)].m_is_surface_fs) continue;
+        if (!edge_borders_released_boundary(e)) continue;
+        segs.emplace_back(int(e.vid(*this)), int(e.switch_vertex(*this).vid(*this)));
+    }
+    if (segs.empty()) {
+        m_released_envelope = nullptr;
+    } else {
+        std::vector<Eigen::Vector2d> verts(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            verts[i] = m_vertex_attribute[i].m_posf;
+        }
+        const double eps =
+            std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+        m_released_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+        m_released_envelope->init(verts, segs, eps);
+    }
+    m_released_tube_dirty.store(false, std::memory_order_release);
+    return m_released_envelope;
+}
+
 void TopoOffsetTriMesh::rebuild_offset_envelope()
 {
+    // The released boundaries' ops-only tube: mark and rebuild NOW, at this consistent moment
+    // (this function is only called between passes), so op passes that follow judge against
+    // the current shape even when no sanity sweep runs to consume the dirty flag first.
+    m_released_tube_dirty.store(true, std::memory_order_release);
+    released_envelope();
     // FIRST, AND ON EVERY PATH OUT OF HERE INCLUDING THE EMPTY ONE. Each entry is an
     // IntersectionEnvelope holding a shared_ptr to the tube this call is about to replace, so a
     // surviving entry would hold a simplex to where the offset boundary was one round ago -- a
