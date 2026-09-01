@@ -89,25 +89,26 @@ struct Parameters : public wmtk::OptimizerParameters
     // identical test. Edge-interior samples are a chord diagnostic in 2D: reported, never
     // gating.
     double front_conv_rel;
-    // WHICH CONVERGENCE CRITERION GATES THE RUN. "gradient" (default): the measured-reference
-    // gradient bar above, byte-identical to before this key existed. "dist_and_orient": a geometric
-    // criterion in units of target_distance -- see the two keys below and
-    // TopoOffsetTriMesh::distance_criterion(). 2D only; 3D reads only "gradient".
+    // WHICH CONVERGENCE TEST GATES THE RUN -- the same test in the loop's vertex test and in
+    // Phase B's pass stop. Three values, all measured against front_conv_rel; F is the vertex's
+    // Phase B objective, g its gradient, H its Gauss-Newton Hessian, n its move direction. See
+    // front_vertex_conv_ratio() and the spec doc for which one to pick and why.
+    //   "step_size_rel" (the DEFAULT): the remaining 1-D Newton step, |n.g| / (n^T H n), against
+    //     rel x target_distance -- no vertex would still move more than that fraction of the
+    //     offset distance.
+    //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n) -- the energy that step
+    //     would still gain -- against rel x F.
+    //   "gradient_norm_rel": |n.g| against rel x the reference gradient described above, measured
+    //     once on the band as constructed.
+    // 2D only; 3D never reads this key and always uses the gradient bar described above.
     std::string front_conv_criterion; ///< 2D: gradient_norm_rel | step_size_rel | decrement
-    // "dist_and_orient" only. Every reachable offset vertex AND every edge-interior sample must lie
-    // within this fraction of target_distance of the level set, first order:
-    // |Phi - c| / |grad Phi|. Vertices are the placement half, samples the resolution half.
-    // "dist_and_orient" only. Largest angle, in degrees, between an offset edge's OUTWARD normal
-    // and the field's own outward direction at the edge midpoint. Signed: a folded edge, whose
-    // outward normal points into the band by the field's reckoning, fails outright.
-    // PHASE B NORMAL-ONLY PLACEMENT (Uday, 2026-08-25): a front vertex moves only along the field's
-    // normal at its visit's start. Where a vertex sits along the front carries no information about
-    // the offset (a free gauge, redistributed by Phase A's smoother); the 2-D solve's tangential
-    // component is the AMIPS step alone, which made fronts slide and fold where two of them meet.
-    // Imposed through the front's own energy (a stiff quadratic penalty on tangential
-    // displacement, see phase_b_front_energy), so the shared smoother is untouched; the pass stop
-    // and the loop's vertex test then measure |grad F . n|, the derivative along the only unknown.
-    bool front_normal_projection = false;
+    // PHASE B NORMAL-ONLY PLACEMENT. A front vertex is placed by a ONE-DIMENSIONAL solve along its
+    // field normal n = grad Phi / |grad Phi| -- the same objective, solver and accept test,
+    // restricted to the line x0 + s n -- instead of the free 2-D solve. Where a vertex sits ALONG
+    // the front carries no information about the offset (a free gauge, redistributed by Phase A's
+    // smoother), and in the 2-D solve that tangential motion is the AMIPS step alone, which made
+    // fronts slide and fold where two of them meet (measured 2026-08-25).
+    bool front_normal_projection = true;
     bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
     /// What a collapse's surviving vertex keeps as its sizing scalar. false (the default, the
     /// behaviour until 2026-08-27): its own. true: the smaller of the two, the shared engine's rule
@@ -124,27 +125,22 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The outer loop's budget: turns of the 2D single phase, A/B rounds of the alternating loop
     /// and of 3D. The loop leaves on the front test; this is the guard. One key since 2026-08-28.
     int max_rounds = 40;
-    // Points sampled in the INTERIOR of each band edge when measuring the offset's residual;
-    // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to
-    // a band whose vertices sit on the level set while its edges cut across it.
+    // Points sampled in the INTERIOR of each band simplex when measuring the offset's residual;
+    // k = 1 is the midpoint. 0 falls back to measuring only at band vertices, which is blind to a
+    // band whose vertices sit on the level set while its simplices cut across it. 2D samples each
+    // band EDGE, k points at i/(k+1); 3D samples each offset-surface FACE, where k is the density
+    // and the counts are 1, 3, 6, 10 for k = 1..4. See TopoOffsetTriMesh::offset_edge_samples and
+    // TopoOffsetTetMesh::offset_face_samples.
     int offset_residual_samples;
     bool sorted_marching;
     std::string output_path; // no extension
     bool save_vtu;
-    // Points sampled in the INTERIOR of each offset-surface face when measuring the residual in
-    // 3D; offset_residual_samples is the density and the counts are 1, 3, 6, 10 for k = 1..4.
-    // (2D samples edges instead, k points at i/(k+1); see TopoOffsetTriMesh::offset_edge_samples
-    // and TopoOffsetTetMesh::offset_face_samples.)
 
     // Samples per side of the grid the smooth offset potential is written on, beside the result,
     // for the viewer. 0 disables it. 2D only.
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /**
-     * The alternating optimization. See TopoOffsetTetMesh::OptPhase for why the two criteria are
-     * optimized in turn rather than jointly. 3D only for now; 2D still runs the joint loop.
-     */
     bool ab_no_collapse_after_first_round; ///< DIAGNOSTIC: refuse all collapses from round 2
     /// Cap of the shared TriWild/TetWild loop wherever it runs: the pre-optimisation pass, one
     /// Phase A, the frozen-front finishing pass. TriWild's name and default (2026-08-28).
@@ -168,7 +164,7 @@ struct Parameters : public wmtk::OptimizerParameters
     double vertex_grad_tol_rel;
     /// Run TriWild over the INPUT mesh before the simplicial embedding and the marching, held
     /// only by the per-tag region envelopes. 2D only; see TopoOffsetTriMesh::pre_optimize_input_mesh().
-    bool pre_optimize_input = false;
+    bool pre_optimize_input = true;
     /// See the spec: which sizing field pre_optimize_input runs against. false = seed
     /// target_distance on the input-complex boundary; true = seed every vertex from its own
     /// incident edge lengths, so target_distance never enters the field.

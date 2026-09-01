@@ -2472,9 +2472,6 @@ public:
     //// overriden splits/invariants
 
     /**
-     * @brief entry point for offset procedure
-     */
-    /**
      * @brief TriWild over the INPUT mesh, before any of the offset exists.
      *
      * Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point in
