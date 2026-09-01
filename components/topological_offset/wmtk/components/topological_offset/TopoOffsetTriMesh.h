@@ -1503,6 +1503,11 @@ public:
     /// The line a front vertex is placed along: the field normal, or the boundary tangent where
     /// an input envelope holds it. See the definition.
     Vector2d front_vertex_move_direction(size_t vid) const;
+    /// Whether the 1-D placement at vid is trapped by the alignment term: a live front edge at
+    /// or past perpendicular to the field AND the alignment term's 1-D gradient opposing the
+    /// placement term's along the move direction. See the definition and the use in
+    /// smooth_front_vertex_phase_b() for the two failed simpler rules this replaced.
+    bool front_vertex_alignment_traps_1d_solve(size_t vid) const;
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. See the spec entry for the three measures. Infinite when unmeasurable.
     double front_vertex_conv_ratio(size_t vid) const;

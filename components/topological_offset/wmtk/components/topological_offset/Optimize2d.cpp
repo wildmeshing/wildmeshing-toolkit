@@ -1621,7 +1621,31 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
     const size_t vid = t.vid(*this);
     const Vector2d n = front_vertex_move_direction(vid);
     if (!(n.squaredNorm() > 0.)) { // no direction here: the 2-D solve is the fallback
-        return optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+        const bool ok = optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
+        return ok;
+    }
+    // WIDEN THE MOTION WHERE THE ALIGNMENT TERM TRAPS THE 1-D SOLVE. At a jog of the outline
+    // (a live front edge at or past perpendicular to the field), the alignment residual's
+    // fixing motion is TANGENTIAL -- exactly what the radial line projects away -- and along
+    // that line the term's only reachable optimum is "exactly perpendicular", so where it
+    // opposes the placement pull it cancels it and the jog freezes (two_overlap smooth 0.25:
+    // three outline vertices frozen at radii 1.317/1.252/1.189 of target 1.25, the alignment
+    // term's tangential gradient ~33 amputated by the projection, its radial part cancelling
+    // ~85% of placement's ~2; with this fallback the outline is 1.250 exact, 2026-09-01).
+    // The trap is the FIGHT, not the perpendicular edge itself: on a travelling staircase the
+    // same radial stretching preference points WITH placement and is a travel engine. Every
+    // rule that cut in on edge orientation alone -- weighting the alignment edge by
+    // max(0, n.g), proportionally or as a step, and the unconditional 2-D fallback at
+    // past-perpendicular vertices -- stalled c_shape Euclidean 1.0 with the whole free front
+    // at distance 0.80-0.95 and nothing within 0.01 of the level set, against 112 of 161
+    // within 0.01 untouched (same day). Hence both conditions in the predicate. Seam edges run
+    // parallel to the field, so a pressed seam never takes this path and the fold/slide
+    // behavior normal projection exists for is untouched.
+    if (m_offset_params.front_alignment_energy && front_vertex_alignment_traps_1d_solve(vid)) {
+        const bool ok = optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
+        if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
+        return ok;
     }
     const std::shared_ptr<SampleEnvelope> hold = smoothing_containment_envelope(vid);
     const std::vector<size_t>& locs = get_one_ring_fids_for_vertex(t);
@@ -3865,6 +3889,88 @@ double TopoOffsetTriMesh::phase_b_band_gradient_linf()
 }
 
 namespace {} // namespace
+
+bool TopoOffsetTriMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) const
+{
+    // TWO CONDITIONS, both required -- see the use in smooth_front_vertex_phase_b().
+    //
+    // (1) An incident live front edge at or past perpendicular to the field. Only there does the
+    //     alignment residual sit on its plateau (r ~ 1), where its fixing motion is tangential
+    //     and its along-the-line preference is pure radial stretching. Edge normal n (sigma from
+    //     the band-face centroid) EXACTLY as phase_b_front_energy() builds it, so this predicate
+    //     and the energy cannot disagree.
+    // (2) The alignment term's 1-D gradient OPPOSES the placement term's along the vertex's move
+    //     direction. On a travelling staircase both point outward -- the radial stretching is a
+    //     travel engine, not a trap -- and cutting in there stalled c_shape Euclidean 1.0 with
+    //     the whole free front at 0.80-0.95 (nothing within 0.01 of the level set, against
+    //     112 of 161 ungated, 2026-09-01). The trap is specifically the FIGHT: alignment
+    //     cancelling the pull toward the level set.
+    const int r = vertex_region(vid);
+    const std::shared_ptr<const OffsetPotential2D> pot =
+        (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
+                                                           : m_offset_potential;
+    if (!pot) return false;
+    const Vector2d x = m_vertex_attribute[vid].m_posf;
+    // (3) AND STATIONARY OFF THE LEVEL SET: residual over the tube while the remaining 1-D
+    //     step is under the vertex test's bar (checked last, it is the expensive one). This is
+    //     what separates a frozen jog from a travelling staircase vertex: mid-travel the true
+    //     agree-weighted alignment gradient ALSO opposes placement at staircase vertices --
+    //     weakly, and the 1-D solve drives through it -- so conditions (1)+(2) alone cut in
+    //     there and stalled c_shape exactly like the term gates did (measured 2026-09-01,
+    //     same histogram). A trapped vertex is one the 1-D solve has finished with, at a
+    //     position that is not on the level set.
+    const double rho = pot->residual_length(x);
+    const double tube =
+        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+    if (!std::isfinite(rho) || rho <= tube) return false;
+    const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
+    bool past_perpendicular = false;
+    std::vector<AlignEnergy2D::Edge> edges;
+    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+        const size_t q = (va == vid) ? vb : va;
+        const std::optional<Tuple> opp = e.switch_face(*this);
+        if (!opp) continue;
+        const size_t fa = e.fid(*this), fb = opp->fid(*this);
+        const size_t band_f = face_is_offset_band(fa) ? fa : fb;
+        const auto vs = oriented_tri_vids(band_f);
+        const Vector2d c = (m_vertex_attribute[vs[0]].m_posf + m_vertex_attribute[vs[1]].m_posf +
+                            m_vertex_attribute[vs[2]].m_posf) /
+                           3.;
+        const Vector2d d = m_vertex_attribute[q].m_posf - x;
+        if (!(d.norm() > 0.)) continue;
+        const Vector2d n_plus(-d.y(), d.x()); // R90 (q - x)
+        const Vector2d mid = 0.5 * (x + m_vertex_attribute[q].m_posf);
+        const double sigma = n_plus.dot(mid - c) >= 0. ? 1. : -1.;
+        const Vector2d g = pot->gradient(mid);
+        const double gn = g.norm();
+        if (!std::isfinite(gn) || gn <= 0.) continue;
+        // The TRUE weights, so the probe gradient is the term's own: an edge the agreement
+        // weight silences (a Euclidean crease) exerts no force and must neither count as
+        // past-perpendicular nor pollute the conflict sign.
+        const Vector2d ga_e = pot->gradient(x);
+        const Vector2d gb_e = pot->gradient(m_vertex_attribute[q].m_posf);
+        const double na = ga_e.norm(), nb = gb_e.norm();
+        const bool ok = std::isfinite(na) && na > 0. && std::isfinite(nb) && nb > 0.;
+        const double agree = ok ? std::max(0., ga_e.dot(gb_e) / (na * nb)) : 0.;
+        if (agree > 0. && (sigma / d.norm()) * n_plus.dot(s * g / gn) <= 0.)
+            past_perpendicular = true;
+        edges.push_back({m_vertex_attribute[q].m_posf, sigma, agree});
+    }
+    if (!past_perpendicular || edges.empty()) return false;
+    const Vector2d n_dir = front_vertex_move_direction(vid);
+    if (!(n_dir.squaredNorm() > 0.)) return false;
+    const double w_off = 1. - m_params.w_amips;
+    AlignEnergy2D align(pot, std::move(edges), s, w_off);
+    OffsetEnergy2D place(pot, w_off, true, true);
+    Eigen::VectorXd xv(2), ga(2), gp(2);
+    xv << x.x(), x.y();
+    align.gradient(xv, ga);
+    place.gradient(xv, gp);
+    if (!((ga.dot(n_dir)) * (gp.dot(n_dir)) < 0.)) return false;
+    return front_vertex_conv_ratio(vid) <= 1.;
+}
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_energy(
     const size_t vid,
