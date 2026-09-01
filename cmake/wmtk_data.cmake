@@ -32,8 +32,11 @@ ExternalProject_Add(
     # distance) and are kept as regression fixtures, not as converging cases. The three 3D cases
     # stay parked. Keys the spec no longer has (pre_optimize_sizing_from_edges as a default,
     # sizing_propagate_min, the old phase_b_conv_rel default) were dropped from the fixtures.
+    # At 0514682 (2026-09-01) _annots_tag4_in drops its front_conv_rel 0.001 override -- it predates
+    # the rule that offset_envelope_rel may not exceed front_conv_rel, and the run refused to start;
+    # with the default accuracy 0.025 the case converges.
     #
-    GIT_TAG 99c36d42e654b3cecb086b3321ced2d4b5ae3ea9
+    GIT_TAG 0514682dee2e0229f38638e00cefb535c15f8fc9
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
