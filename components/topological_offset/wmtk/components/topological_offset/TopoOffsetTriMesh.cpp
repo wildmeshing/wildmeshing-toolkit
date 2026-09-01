@@ -56,7 +56,8 @@ void TopoOffsetTriMesh::init_from_image(
     // add any new tags to map
     for (const std::string& tag : m_offset_params.offset_output_tag) {
         if (std::find(tag_names.begin(), tag_names.end(), tag) == tag_names.end()) {
-            logger().warn("Tag '{}' does not exist. Adding to mesh.", tag);
+            // INFO: creating the requested output tag is the normal path, not a defect.
+            logger().info("Tag '{}' does not exist. Adding to mesh.", tag);
             int64_t new_id = m_tag_id_to_name.size();
             m_tag_id_to_name[new_id] = tag;
             m_tag_name_to_id[tag] = new_id;

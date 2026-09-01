@@ -1240,7 +1240,9 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
             if (after < kNeedleQuality) ++m_needle_smooth_fixed;
             if (moved < 1e-12) ++m_needle_smooth_stationary;
             if (m_needle_smooth_reports.fetch_add(1) < 8) {
-                logger().warn(
+                // Per-event forensic detail at INFO, like report_needle(); needle-scan populations
+                // alarm.
+                logger().info(
                     "[needle-smooth #{}] vid {} ring max {:.6g} -> {:.6g} ({:.3g}x) | moved "
                     "{:.6g} | input {} offset {} region {} mask 0x{:x} | pos ({:.17g}, {:.17g})",
                     m_needle_smooth_reports.load(),
@@ -1874,7 +1876,7 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
     // face the band grows through, so edge_boundary_bits() -- the CURRENT symmetric difference
     // -- is empty across any region edge the band swallowed. Counted as information, because it
     // is the reason the masks must be propagated rather than rederived, not a defect itself.
-    int n_region = 0, n_unmasked = 0, n_live_dead = 0, n_wall = 0;
+    int n_region = 0, n_unmasked = 0, n_released = 0, n_live_dead = 0, n_wall = 0;
     int n_band = 0, n_outside = 0, n_mixed = 0, n_ends_offset = 0, n_ends_input = 0;
     size_t worst = size_t(-1);
     for (const Tuple& e : get_edges()) {
@@ -1885,6 +1887,37 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         if (edge_boundary_bits(e) == 0) ++n_live_dead;
         const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
         if (edge_mask({va, vb}) != 0) continue;
+        // A QUIET edge bounds nothing any more: the band retagged both its sides (counted in
+        // n_live_dead above), so there is no boundary left to hold and a zero mask on it is
+        // moot, not a violation -- seen when an unprotected object's boundary is swallowed by
+        // the band while the release frees its vertices (two_overlap without protected_tags,
+        // 2 such edges at the crossings, 2026-09-01).
+        if (edge_boundary_bits(e) == 0) continue;
+        // A RELEASED boundary is freed on purpose: deform_others zeroes its endpoint masks
+        // (release_deformable_regions, same symmetric-difference test), so a zero mask across
+        // a released tag's boundary is the feature, not a propagation hole. Everything else
+        // still violates the invariant and is counted below.
+        if (!m_deform_tags.empty()) {
+            if (const std::optional<Tuple> opp0 = e.switch_face(*this)) {
+                CellTag edge_tags;
+                const auto& t0 = m_face_attribute[e.fid(*this)].tags;
+                const auto& t1 = m_face_attribute[opp0->fid(*this)].tags;
+                std::set_symmetric_difference(
+                    t0.begin(),
+                    t0.end(),
+                    t1.begin(),
+                    t1.end(),
+                    std::inserter(edge_tags, edge_tags.begin()));
+                bool released_here = false;
+                for (const int64_t t : edge_tags) {
+                    if (m_deform_tags.count(t)) released_here = true;
+                }
+                if (released_here) {
+                    ++n_released;
+                    continue;
+                }
+            }
+        }
         ++n_unmasked;
         if (worst == size_t(-1)) worst = eid;
         // The first few, in full: what IS an uncontained region edge? Endpoint masks say which
@@ -1936,12 +1969,14 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         if (m_vertex_extra[a].m_is_on_input && m_vertex_extra[b].m_is_on_input) ++n_ends_input;
     }
     logger().info(
-        "\t[envelope health @ {}] {} region-boundary edges tracked ({} on the wall) | {} with a "
-        "ZERO stored mask (the invariant; must be 0) | {} with quiet LIVE bits (expected once the "
-        "band retags the faces it grew through)",
+        "\t[envelope health @ {}] {} region-boundary edges tracked ({} on the wall) | {} freed "
+        "by deform_others (released boundaries; expected) | {} with a ZERO stored mask (the "
+        "invariant; must be 0) | {} with quiet LIVE bits (expected once the band retags the "
+        "faces it grew through)",
         when,
         n_region,
         n_wall,
+        n_released,
         n_unmasked,
         n_live_dead);
 
@@ -1978,9 +2013,10 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
     if (n_unmasked > 0) {
         logger().warn(
             "\t[envelope health @ {}] {} of {} tracked region-boundary edges ({:.1f}%) are "
-            "contained by NOTHING: their endpoints' stored masks AND to zero, so "
-            "surface_envelope_for_edge() has no envelope to hold them to. The masks are seeded "
-            "at init and propagated, so this is a propagation hole, not a retag effect.",
+            "contained by NOTHING (released boundaries already excluded): their endpoints' "
+            "stored masks AND to zero, so surface_envelope_for_edge() has no envelope to hold "
+            "them to. Either a propagation hole, or collateral of deform_others' vertex freeing "
+            "(a freed vertex shared with a KEPT boundary takes that boundary's edges with it).",
             when,
             n_unmasked,
             n_region,
@@ -2710,7 +2746,8 @@ void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const d
     for (int v = 0; v < kNVerdict; ++v) {
         const Ex& e = ex[v];
         if (e.q < 0.) continue;
-        logger().warn(
+        // INFO like the census headlines above: this is diagnostic detail, not a defect claim.
+        logger().info(
             "\t  worst [{}]: f{} q {:.4g}{} label {} at ({:.6g}, {:.6g}) | dist to complex {:.6g} "
             "= {:.4g}x delta | Phi/c {:.6g} | min sizing {:.6g} = {:.4g}x l | edges "
             "len/gate {:.4g}/{:.4g} [{}], {:.4g}/{:.4g} [{}], {:.4g}/{:.4g} [{}]",
@@ -3009,7 +3046,10 @@ void TopoOffsetTriMesh::report_needle(const char* op, const size_t fid, const do
             m_vertex_attribute[v].m_is_rounded,
             m_vertex_attribute[v].m_sizing_scalar);
     }
-    logger().warn(
+    // PER-EVENT FORENSIC DETAIL AT INFO: a warning is reserved for a defect that exists when
+    // it is reported -- the needle-scan population sweeps do that; these lines only narrate
+    // births for the hunt (Uday's rule, 2026-09-01).
+    logger().info(
         "[needle #{}] created at {} | fid {} label {} | area {:.6g} | edges {:.6g} {:.6g} {:.6g} "
         "| parent AMIPS {} | is_inverted {} is_inverted_f {} | epoch {}{}",
         m_needle_reports.load(),
@@ -3066,7 +3106,7 @@ void TopoOffsetTriMesh::needle_scan(const char* when) const
         worst_area,
         worst_fid);
     needle_forensics();
-    logger().warn(
+    logger().info(
         "[needle-smooth] cumulative: {} visits with a needle in the ring | {} produced a "
         "candidate | {} actually repaired it | {} did not move the vertex at all",
         m_needle_smooth_offered.load(),
@@ -3133,7 +3173,9 @@ void TopoOffsetTriMesh::record_flatness(
                 x.m_is_on_region,
                 x.m_boundary_mask);
         }
-        logger().warn(
+        // Per-event forensic detail at INFO -- see report_needle(); the flat-population sweep
+        // in log_flat_face_forensics() is the warning when flat faces exist now.
+        logger().info(
             "[genesis #{}] {} turned a HEALTHY face into a flat one: flatness {:.6g} -> {:.6g} "
             "(threshold {:g}) | fid {} label {} | AMIPS {:.6g}{}",
             m_flat_genesis_reports.load(),
@@ -3163,13 +3205,19 @@ void TopoOffsetTriMesh::needle_forensics() const
         if (f < kFlatThreshold) flat.emplace_back(f, fid);
     }
     std::sort(flat.begin(), flat.end());
-    logger().warn(
-        "[forensics] {} faces flatter than {:g} | gates: collapse 4/5*l = {:.6g}, split 4/3*l = "
-        "{:.6g}, both scaled by the edge's mean sizing scalar",
-        flat.size(),
-        kFlatThreshold,
-        coll_c,
-        split_c);
+    if (flat.empty()) {
+        logger().info("[forensics] 0 faces flatter than {:g}", kFlatThreshold);
+    }
+    // A nonempty population is a defect that exists NOW: warn. Empty is the healthy report.
+    if (!flat.empty())
+        logger().warn(
+            "[forensics] {} faces flatter than {:g} | gates: collapse 4/5*l = {:.6g}, split 4/3*l "
+            "= "
+            "{:.6g}, both scaled by the edge's mean sizing scalar",
+            flat.size(),
+            kFlatThreshold,
+            coll_c,
+            split_c);
 
     const size_t show = std::min<size_t>(flat.size(), 4);
     for (size_t i = 0; i < show; ++i) {
@@ -3248,14 +3296,19 @@ void TopoOffsetTriMesh::needle_forensics() const
             }
         }
     }
-    logger().warn(
-        "[forensics] coincident vertices (closer than {:.3g}): {} pairs, {} of them NOT joined "
-        "by an edge (no collapse can reach those). {}",
-        eps,
-        n_pairs,
-        n_pairs_no_edge,
-        first.empty() ? "none" : first);
-    logger().warn(
+    if (n_pairs == 0) {
+        logger().info("[forensics] coincident vertices (closer than {:.3g}): none", eps);
+    }
+    // Coincident pairs are a defect that exists NOW: warn. None is the healthy report.
+    if (n_pairs > 0)
+        logger().warn(
+            "[forensics] coincident vertices (closer than {:.3g}): {} pairs, {} of them NOT joined "
+            "by an edge (no collapse can reach those). {}",
+            eps,
+            n_pairs,
+            n_pairs_no_edge,
+            first.empty() ? "none" : first);
+    logger().info(
         "[forensics] genesis tally: flat faces made from a HEALTHY parent -- split {}, collapse "
         "{} | flat-from-flat (multiplication) {}",
         m_flat_created_split.load(),
