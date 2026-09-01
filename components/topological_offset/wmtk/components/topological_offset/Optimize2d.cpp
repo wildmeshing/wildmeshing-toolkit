@@ -453,27 +453,22 @@ void TopoOffsetTriMesh::release_deformable_regions()
     // contract), and from here on smoothing deforms it against RestAMIPSEnergy2D instead of a
     // tube refusing every move. Dangling mask bits are already the envelope machinery's normal
     // case ("a bit whose tag never got an envelope"), so the queries need no change.
+    // WHICH TAGS ARE SOURCES, AND SO NEVER RELEASED: the tags the offset_selection expression
+    // names, plus protected_tags. The complex is DEFINED by that expression, so every tag in it
+    // is the geometry the offset measures from, whether or not it also has faces of its own --
+    // annots selects (tag_0 | tag_2 | tag_3) & tag_1, and releasing tag_2/tag_3 (they carry no
+    // exclusively-their-own complex face) reduced the envelopes of curves that ARE the complex
+    // boundary: vertices pinned to a tube that no longer covers them froze, the medium tore
+    // around them, and the run arrived at max AMIPS 1e50 with needles already inverted
+    // (2026-09-01). The earlier heuristics -- "a tag on any complex face" (held two_overlap's
+    // Q, which merely overlaps) and "a tag with an exclusive complex face" (released annots'
+    // constituents) -- were both proxies for this; the expression states it exactly.
     std::set<int64_t> kept;
-    for (const Tuple& f : get_faces()) {
-        const size_t fid = f.fid(*this);
-        // A SOURCE tag has a complex face exclusively its own. "Any complex face carries it"
-        // held every object that merely OVERLAPS the complex (two_overlap: Q shares its
-        // crossing with P, so Q never released and the wall behaviour survived unchanged).
-        // With exclusivity, the overlap faces (carrying both tags) keep the source held and
-        // the overlapper's outside part is released; its crossing with the complex boundary
-        // stays held on its own, because that interface's symmetric difference is the source
-        // tag. A selection that is a pure intersection (every complex face multi-tagged) would
-        // release its own sources under this rule -- guarded below by falling back.
-        if (m_face_extra[fid].label == 1 && m_face_attribute[fid].tags.size() == 1) {
-            kept.insert(*m_face_attribute[fid].tags.begin());
-        }
-    }
-    if (kept.empty()) { // pure-intersection selection: fall back to the conservative rule
-        for (const Tuple& f : get_faces()) {
-            const size_t fid = f.fid(*this);
-            if (m_face_extra[fid].label == 1) {
-                for (const int64_t t : m_face_attribute[fid].tags) kept.insert(t);
-            }
+    std::set<int64_t> source_tags;
+    if (m_offset_params.offset_selection) {
+        for (const int64_t t : m_offset_params.offset_selection->tags_involved()) {
+            kept.insert(t);
+            source_tags.insert(t);
         }
     }
     for (const Tuple& e : get_edges()) {
@@ -481,12 +476,13 @@ void TopoOffsetTriMesh::release_deformable_regions()
         for (const int64_t t : m_face_attribute[e.fid(*this)].tags) kept.insert(t);
     }
     if (m_curve_tag >= 0) kept.insert(m_curve_tag);
-    // protected_tags is the config's explicit "keep this object rigid": honored before any
-    // release heuristic, which is also how a fixture opts a region out of deform_others.
-    for (const std::string& name : m_offset_params.protected_tags) {
-        const auto it = m_tag_name_to_id.find(name);
-        if (it != m_tag_name_to_id.end()) kept.insert(it->second);
-    }
+    // protected_tags is NOT consulted here (Uday, 2026-09-01). The two keys are orthogonal:
+    // protected_tags is a CONSTRUCCTION/tagging decision -- whether a band cell overwrites the
+    // object's tag or carries both (set_offset_tri_tags) -- and deform_others is a GEOMETRY
+    // decision -- whether other objects may deform. Using protected_tags as a "stay rigid"
+    // opt-out entangled them: the overlap fixture's protected run released nothing at all, so
+    // "protected vs not" was really "tags kept, rigid" against "tags overwritten, deformable",
+    // two changes at once, and the comparison was meaningless.
 
     m_deform_tags.clear();
     for (const auto& [tag, env] : m_tag_envelopes) {
@@ -504,23 +500,9 @@ void TopoOffsetTriMesh::release_deformable_regions()
     // while the plastic medium waited for them. A segment bordering a released region leaves
     // the kept envelopes too, and the vertex masks are recomputed so freed vertices carry no
     // bits at all.
-    // ANCHORED SEMANTICS (Uday, 2026-08-31): a released object's boundary INSIDE the complex
-    // stays held -- it is the object's attachment, and left free it crumples into noise inside
-    // held material (measured on two_overlap: Q's internal arc degraded to a zigzag). A
-    // released tag therefore keeps a REDUCED envelope of exactly its inside-the-complex
-    // segments; only its outside segments are freed. Inside/outside by even-odd parity of the
-    // segment midpoint against the complex boundary polyline.
-    const auto inside_complex = [&](const Eigen::Vector2d& q) {
-        int crossings = 0;
-        for (int e = 0; e < m_phi_E.rows(); ++e) {
-            const Eigen::Vector2d a = m_phi_V.row(m_phi_E(e, 0)).head<2>();
-            const Eigen::Vector2d b = m_phi_V.row(m_phi_E(e, 1)).head<2>();
-            if ((a.y() > q.y()) == (b.y() > q.y())) continue;
-            const double xhit = a.x() + (q.y() - a.y()) / (b.y() - a.y()) * (b.x() - a.x());
-            if (xhit > q.x()) ++crossings;
-        }
-        return crossings % 2 == 1;
-    };
+    // A released tag keeps only the SOURCE's own segments in its envelope: an interface edge
+    // sits in both incident tags' buckets, so releasing an object must not leave its boundary
+    // pinned by the source's tube, while the source's own boundary is never freed.
     std::set<std::pair<int, int>> freed_segments; // input-polyline indexing, both orders
     const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
     std::string released;
@@ -531,11 +513,20 @@ void TopoOffsetTriMesh::release_deformable_regions()
             m_tag_envelopes.erase(t);
             continue;
         }
+        std::set<std::pair<int, int>> source_segments; // never freed: the complex's boundary
+        for (const int64_t st : source_tags) {
+            const auto sit = m_tag_polyline.find(st);
+            if (sit == m_tag_polyline.end()) continue;
+            for (const auto& e : sit->second.E) {
+                source_segments.insert({e[0], e[1]});
+                source_segments.insert({e[1], e[0]});
+            }
+        }
         std::vector<Eigen::Vector2i> anchored_E;
         for (const auto& e : it->second.E) {
             const Eigen::Vector2d mid = 0.5 * (m_env_polyline_V[e[0]] + m_env_polyline_V[e[1]]);
-            if (inside_complex(mid)) {
-                anchored_E.push_back(e);
+            if (source_segments.count({e[0], e[1]})) {
+                anchored_E.push_back(e); // the source's own boundary, never freed
             } else {
                 freed_segments.insert({e[0], e[1]});
                 freed_segments.insert({e[1], e[0]});
@@ -556,23 +547,13 @@ void TopoOffsetTriMesh::release_deformable_regions()
             }
         }
     }
-    for (auto& [tag, env] : m_tag_envelopes) {
-        auto it = m_tag_polyline.find(tag);
-        if (it == m_tag_polyline.end()) continue;
-        std::vector<Eigen::Vector2i> kept_E;
-        for (const auto& e : it->second.E) {
-            if (freed_segments.count({e[0], e[1]}) == 0) kept_E.push_back(e);
-        }
-        if (kept_E.size() == it->second.E.size()) continue; // nothing of this tag was freed
-        env = std::make_shared<SampleEnvelope>(exact_ok);
-        env->init(m_env_polyline_V, kept_E, m_envelope_eps);
-        it->second.E = kept_E;
-        it->second.at_vertex.assign(m_env_polyline_V.size(), {});
-        for (int i = 0; i < int(kept_E.size()); ++i) {
-            it->second.at_vertex[kept_E[i][0]].push_back(i);
-            it->second.at_vertex[kept_E[i][1]].push_back(i);
-        }
-    }
+    // KEPT ENVELOPES ARE NEVER REBUILT. Dropping a released object's segments from the tubes
+    // of tags that are KEPT unheld geometry whose bits the vertices still carry: the curve
+    // group's tube lost circle_b's arc while circle_b's vertices kept the curve bit, so every
+    // containment query measured them against the far side of the scene -- 64 edges "OUT BY
+    // 2.2" and a flood of sanity errors (2026-08-31, and again 2026-09-01 when this block
+    // survived a refactor). Releasing a boundary is a property of its VERTICES' masks, done
+    // below; no tube is ever edited.
     {
         std::lock_guard<std::mutex> lock(m_isect_mutex);
         m_isect_cache.clear();
@@ -582,16 +563,38 @@ void TopoOffsetTriMesh::release_deformable_regions()
     for (const auto& [tag, env] : m_tag_envelopes) members.push_back(env);
     m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
 
-    // Recompute every vertex's boundary mask from the CURRENT edges, counting only interfaces
-    // that stay held: an edge whose tag symmetric difference touches a released tag is free and
-    // seeds no bits. (Band-tag bits are harmless dangling bits, as everywhere.)
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
-    for (const Tuple& e : get_edges()) {
-        const size_t eid = e.eid(*this);
-        if (!m_edge_attribute[eid].m_is_surface_fs) continue;
-        CellTag edge_tags;
-        const std::optional<Tuple> f_opp = e.switch_face(*this);
-        if (f_opp) {
+    // CLEAR THE RELEASED BITS, DO NOT RECOMPUTE THE MASK. A vertex's mask is SEEDED at
+    // construction and PROPAGATED by every operation since (a split ANDs its endpoints, a
+    // collapse ORs them), so it carries history that no rebuild from the current edge set can
+    // reproduce: rebuilding it dropped the bits of every edge that is no longer flagged as a
+    // tracked surface -- 620 of 906 region-boundary edges ended up contained by nothing on
+    // annots (2026-09-01, the envelope-health check), including the complex's own boundary,
+    // which must stay held whatever borders it. Clearing exactly the released tags' bits frees
+    // what the release frees and touches nothing else; a vertex left with mask 0 was held by
+    // released geometry alone, which is the point.
+    uint64_t released_bits = 0;
+    for (const int64_t t : m_deform_tags) {
+        const auto it = m_tag_bit.find(t);
+        if (it != m_tag_bit.end()) released_bits |= (uint64_t(1) << it->second);
+    }
+    if (released_bits) {
+        // FREE THE VERTICES WHOLLY, AND EDIT NO TUBE. A released object's boundary vertex must
+        // end up held by NOTHING, so clearing just the released tag's bit is not enough: an
+        // interface edge contributes bits for BOTH of its sides, so circle_b's vertices kept
+        // ambient's bit and stayed pinned in ambient's tube -- the push froze at 0.178 of a
+        // 0.30 target with the object not moving at all (measured 2026-09-01, a regression of
+        // the working 0.300 push). Editing the kept tags' tubes instead is the other wrong
+        // answer: it unholds geometry whose bits other vertices still carry (see above).
+        //
+        // Guards: an edge that also borders a SOURCE tag is the source's own boundary and is
+        // never freed, and a wall vertex keeps its bbox constraint.
+        size_t n_freed = 0;
+        for (const Tuple& e : get_edges()) {
+            const size_t eid = e.eid(*this);
+            if (!m_edge_attribute[eid].m_is_surface_fs) continue;
+            const std::optional<Tuple> f_opp = e.switch_face(*this);
+            if (!f_opp) continue; // the domain wall
+            CellTag edge_tags;
             const auto& t0 = m_face_attribute[e.fid(*this)].tags;
             const auto& t1 = m_face_attribute[f_opp->fid(*this)].tags;
             std::set_symmetric_difference(
@@ -600,26 +603,19 @@ void TopoOffsetTriMesh::release_deformable_regions()
                 t1.begin(),
                 t1.end(),
                 std::inserter(edge_tags, edge_tags.begin()));
-        } else {
-            edge_tags = m_face_attribute[e.fid(*this)].tags;
-        }
-        bool free_edge = false;
-        for (const int64_t t : edge_tags) {
-            if (m_deform_tags.count(t)) {
-                free_edge = true;
-                break;
+            bool released_here = false, touches_source = false;
+            for (const int64_t t : edge_tags) {
+                if (m_deform_tags.count(t)) released_here = true;
+                if (source_tags.count(t)) touches_source = true;
+            }
+            if (!released_here || touches_source) continue;
+            for (const size_t v : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
+                if (!m_vertex_attribute[v].on_bbox_faces.empty()) continue; // wall stays held
+                if (m_vertex_extra[v].m_boundary_mask != 0) ++n_freed;
+                m_vertex_extra[v].m_boundary_mask = 0;
             }
         }
-        // Anchored: an interface between two COMPLEX faces is the released object's attachment
-        // and stays held (its bits dispatch to the tag's reduced, inside-only envelope).
-        if (free_edge && f_opp && m_face_extra[e.fid(*this)].label == 1 &&
-            m_face_extra[f_opp->fid(*this)].label == 1) {
-            free_edge = false;
-        }
-        if (free_edge) continue;
-        const uint64_t bits = tag_bits(edge_tags);
-        m_vertex_extra[e.vid(*this)].m_boundary_mask |= bits;
-        m_vertex_extra[e.switch_vertex(*this).vid(*this)].m_boundary_mask |= bits;
+        logger().info("[deform_others] {} boundary vertices freed of every tube", n_freed);
     }
 
     size_t n_faces = 0;
@@ -3708,9 +3704,9 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                 const double s_floor = std::max(
                     m_offset_params.min_sizing_scalar,
                     m_offset_params.min_edge_length / l);
-                // The cap mirrors refine_front_from_sag(): L/2, the hysteresis fixed point.
-                const double target =
-                    std::min(0.75 * len * std::sqrt(s.tube / (gn * s.tube)), 0.5 * len);
+                // The same rule refine_front_from_sag() applies, so the classification and
+                // the refinement cannot disagree about what this chord needs.
+                const double target = front_chord_target(va, vb, len, gn * s.tube, s.tube);
                 const double sn =
                     std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 const double have = std::max(
@@ -4078,6 +4074,59 @@ bool TopoOffsetTriMesh::front_vertex_touches_other(const size_t vid) const
     return false;
 }
 
+double TopoOffsetTriMesh::front_chord_target(
+    const size_t va,
+    const size_t vb,
+    const double len,
+    const double sag,
+    const double tube) const
+{
+    // THE LENGTH THAT RESOLVES THIS CHORD. Same rule as before -- 3/4 L (tube / sag)^(1/p),
+    // capped at L/2 -- with the exponent p MEASURED rather than assumed. p is how fast the sag
+    // falls when the chord is halved: sag = L^2 / (8 rho) on a smooth level set gives p = 2,
+    // which is what the rule assumed everywhere.
+    //
+    // IT IS 1, NOT 2, WHERE THE CHORD STRADDLES A KINK OF THE LEVEL SET (2026-09-01). For the
+    // Euclidean field a kink sits on the medial axis of every input corner: the two endpoints'
+    // closest input features differ, so the turn between their gradients is a fixed jump that
+    // halving the chord does not shrink, and the sag falls only like L. Measured on the annots
+    // fixture (Euclidean 0.25, defaults): every at-floor chord of the run had the two endpoint
+    // gradients EXACTLY perpendicular (ghat_a . ghat_b = 0, a right-angle input corner), and
+    // under p = 2 the demand landed a hair above the sizing floor, so each site spent three
+    // turns walking its scalar down (0.0177 -> 0.0102 -> 0.0100) instead of arriving at once.
+    // Nine turns for a front placed at turn 3.
+    //
+    // p FROM THE TURN, NO THRESHOLD: phi is the turn between the endpoint gradients, phi_a and
+    // phi_b the turns each half would carry (the midpoint gradient splits it). A smooth arc
+    // splits the turn evenly, so a half carries phi/2 and its sag is a quarter; a kink puts the
+    // whole jump in one half, whose sag is a half. ratio = (max(phi_a, phi_b) / phi) / 2 is that
+    // predicted sag fraction, in [1/4, 1/2], and p = -1 / log2(ratio) maps it back to the
+    // exponent: 1/4 -> 2 (the old rule exactly), 1/2 -> 1. Anything degenerate falls back to 2.
+    double p = 2.;
+    const int rg = edge_region(va, vb);
+    const std::shared_ptr<const OffsetPotential2D> pot =
+        (rg >= 0 && size_t(rg) < m_region_potentials.size()) ? m_region_potentials[size_t(rg)]
+                                                             : m_offset_potential;
+    const Vector2d pa = m_vertex_attribute[va].m_posf, pb = m_vertex_attribute[vb].m_posf;
+    const Vector2d ga = pot->gradient(pa), gb = pot->gradient(pb),
+                   gm = pot->gradient(0.5 * (pa + pb));
+    const double na = ga.norm(), nb = gb.norm(), nm = gm.norm();
+    if (std::isfinite(na) && na > 0. && std::isfinite(nb) && nb > 0. && std::isfinite(nm) &&
+        nm > 0.) {
+        const Vector2d ua = ga / na, ub = gb / nb, um = gm / nm;
+        const auto turn = [](const Vector2d& u, const Vector2d& v) {
+            return std::atan2(std::abs(u.x() * v.y() - u.y() * v.x()), u.dot(v));
+        };
+        const double phi = turn(ua, ub);
+        if (phi > 0.) {
+            const double ratio =
+                std::clamp(0.5 * std::max(turn(ua, um), turn(um, ub)) / phi, 0.25, 0.5);
+            p = -1. / std::log2(ratio);
+        }
+    }
+    return std::min(0.75 * len * std::pow(tube / sag, 1. / p), 0.5 * len);
+}
+
 size_t TopoOffsetTriMesh::refine_front_from_sag(
     const std::vector<EnergyCriterion::Refinable>& edges)
 {
@@ -4107,7 +4156,7 @@ size_t TopoOffsetTriMesh::refine_front_from_sag(
         // split threshold (4/3 x L/2) -- the fixed point of the 4/3-4/5 hysteresis, symmetric
         // margin, no boundary. The original 0.625 measurement stands as the reason a cap must
         // exist at all (uncapped: annots 180 refinable edges, tag4_in 27, for 40 turns).
-        const double target = std::min(0.75 * r.len * std::sqrt(tube / r.sag), 0.5 * r.len);
+        const double target = front_chord_target(r.a, r.b, r.len, r.sag, tube);
         const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
         for (const size_t v : {r.a, r.b}) {
             double& sc = m_vertex_attribute[v].m_sizing_scalar;
@@ -4981,6 +5030,16 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
     const std::array<std::array<int, 4>, 3> groups = {
         {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
     partition_mesh_morton();
+    // ONE TURN OF GRACE AFTER A TARGET IS LOWERED (2026-09-01). refine_front_from_sag() writes a
+    // sizing target; the split pass that realizes it does not run until the NEXT turn, so a turn
+    // that classifies every chord as at-floor may be looking at a mesh that has not yet been
+    // refined to the targets already written for it. Exiting there ends the run with the last
+    // write unspent: measured on annots (Euclidean 0.25, defaults) once the kink exponent made
+    // the demand reach the floor at first sight -- 6 turns but the worst chord 0.0245 against
+    // the 9-turn run's 0.0157, the refinement simply not performed. Terminates for the same
+    // reason the rule itself does: the scalars only ever fall and stop at the floor, so a turn
+    // that writes nothing always comes.
+    size_t lowered_last_turn = 0;
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;
         m_iterations_used = it + 1;
@@ -5037,8 +5096,11 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             write_smoothing_debug_output(fmt::format("phase_{}S", it + 1));
         }
         // THE RESOLUTION RULE, every turn: see EnergyCriterion and refine_front_from_sag().
+        const size_t lowered_prev = lowered_last_turn;
+        lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
             const size_t n = refine_front_from_sag(ec.refinable);
+            lowered_last_turn = n;
             logger().info(
                 "\t[resolution] turn {}: {} front edge(s) with both ends on the level set sag over "
                 "the tube (worst {:.4}x at ({:.4}, {:.4})) -> target lowered at {} vertices",
@@ -5068,7 +5130,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         // test, to watch how the iterations proceed past the would-be exit (2026-08-31, for
         // the deform_others contact question: stationary-at-contact reads converged while the
         // obstacle is still yielding).
-        if (ec.converged_single() && !m_offset_params.front_conv_disable) {
+        if (ec.converged_single() && lowered_prev == 0 && !m_offset_params.front_conv_disable) {
             m_energy_verdict = ec;
             m_converged = true;
             logger().info(
@@ -5443,9 +5505,18 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // After the labels (the held/released decision reads them), before the offset envelope and
     // the sizing seed, so the whole optimization sees one consistent world.
     if (m_offset_params.deform_others) {
-        m_plastic_active = true; // ambient is plastic even when no region qualifies for release
         release_deformable_regions();
-        stamp_plastic_rests();
+        // PLASTIC ONLY WHERE THERE IS SOMETHING TO PUSH. The medium is made plastic so a
+        // released object can be carried out of the front's way; with nothing released it buys
+        // nothing and costs real quality -- a plastic ambient has no shape preference, so a
+        // pressed seam's strip crushes instead of holding (two_circles Euclidean 0.4, both
+        // circles selected so nothing releases: max AMIPS 9.9 before the feature, 2.2e4 with
+        // ambient plastic anyway). Released set empty => the feature is inert, which is what a
+        // scene with no other objects should get.
+        if (!m_deform_tags.empty()) {
+            m_plastic_active = true;
+            stamp_plastic_rests();
+        }
     }
 
     // THE OFFSET ENVELOPE IS BORN HERE, with the offset itself, and from then on it always

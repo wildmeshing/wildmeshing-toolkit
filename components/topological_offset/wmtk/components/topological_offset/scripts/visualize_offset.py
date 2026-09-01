@@ -833,7 +833,20 @@ def load_phi_grid(meshes):
 
 
 def main():
-    meshes, cfg, stride, lazy, tags_on, input_ref = resolve(sys.argv[1:])
+    # --video out.mp4 [--fps N]: render every frame offscreen and assemble a video instead of
+    # opening the interactive window. Parsed here, before resolve(), so resolve() stays the
+    # viewer's own argument grammar.
+    argv = list(sys.argv[1:])
+    video_out, video_fps = None, 10
+    if "--video" in argv:
+        i = argv.index("--video")
+        video_out = argv[i + 1]
+        del argv[i:i + 2]
+    if "--fps" in argv:
+        i = argv.index("--fps")
+        video_fps = int(argv[i + 1])
+        del argv[i:i + 2]
+    meshes, cfg, stride, lazy, tags_on, input_ref = resolve(argv)
     frame_labels = read_frame_labels(meshes[0].parent) if meshes else {}
     for m in meshes:
         if not m.is_file():
@@ -1209,6 +1222,37 @@ def main():
                     psim.TextUnformatted(
                         "  threshold %.4g   ->  %d / %d tris bad (%d degenerate/inverted)"
                         % (state["bad threshold"], n_bad, len(q), n_deg))
+
+    if video_out:
+        # Every frame through the same show_frame() the slider uses, screenshotted, then
+        # assembled with ffmpeg (imageio as the fallback when ffmpeg is not installed).
+        import os
+        import shutil
+        import subprocess
+        import tempfile
+
+        d = tempfile.mkdtemp(prefix="offset_video_")
+        for k in range(n_frames):
+            show_frame(k)
+            ps.screenshot(os.path.join(d, "f%05d.png" % k), transparent_bg=False)
+        ffmpeg = shutil.which("ffmpeg")
+        if ffmpeg:
+            subprocess.run(
+                [ffmpeg, "-y", "-framerate", str(video_fps),
+                 "-i", os.path.join(d, "f%05d.png"),
+                 # even dimensions, or yuv420p refuses
+                 "-vf", "crop=trunc(iw/2)*2:trunc(ih/2)*2",
+                 "-pix_fmt", "yuv420p", video_out],
+                check=True, capture_output=True)
+        else:
+            import imageio.v2 as imageio
+
+            with imageio.get_writer(video_out, fps=video_fps) as w:
+                for k in range(n_frames):
+                    w.append_data(imageio.imread(os.path.join(d, "f%05d.png" % k)))
+        shutil.rmtree(d)
+        print("wrote %s (%d frames at %d fps)" % (video_out, n_frames, video_fps))
+        return
 
     ps.set_user_callback(callback)
     ps.show()

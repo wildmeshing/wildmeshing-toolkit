@@ -1934,6 +1934,12 @@ public:
     /// The resolution rule: for each refinable edge, the target length at its ends becomes
     /// 3/4 L sqrt(tube / sag) -- the construction rule L = 3/4 sqrt(8 eps delta rho) with the
     /// curvature read off the measured sag -- graded outward. Returns the vertices changed.
+    /// The edge length that would bring a front chord's sag under the tube: 3/4 L
+    /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
+    /// turns across the chord (2 where it is smooth, 1 where the chord straddles a kink).
+    /// See the definition; energy_criterion() and refine_front_from_sag() both use it.
+    double front_chord_target(size_t va, size_t vb, double len, double sag, double tube) const;
+
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& edges);
     /// The energy criterion as measured when the A/B loop converged; the final Phase A runs
     /// after it and the verdict must not be re-measured on that mesh.
