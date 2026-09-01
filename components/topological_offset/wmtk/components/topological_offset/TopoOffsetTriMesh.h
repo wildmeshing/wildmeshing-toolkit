@@ -763,7 +763,8 @@ public:
     mutable int m_debug_pass = 0;
     mutable int m_debug_last_round = -1;
     mutable char m_debug_last_phase = '?';
-    /// See offset_gradient_tolerance(). Set once by measure_gradient_reference().
+    /// See offset_gradient_tolerance(). Nothing sets it since the alternating driver was
+    /// deleted (its measurement ran once before the A/B loop); it stays 0.
     double m_gradient_reference = 0.;
     bool m_converged = false;
 
@@ -1647,13 +1648,15 @@ public:
         // the same intent through an analytic estimate of the field's steepness. The measured
         // reference needs no such estimate and no per-field calibration.
         //
-        // Zero until measure_gradient_reference() runs, which would make the bound 1e-16 and
-        // convergence unreachable rather than free -- see that function.
+        // m_gradient_reference is never measured on the single-phase path (the measurement
+        // belonged to the deleted alternating driver), so this sits at the 1e-16 floor; the
+        // single-phase convergence bar uses m_front_gradient_reference instead.
         return std::max(m_offset_params.front_conv_rel * m_gradient_reference, 1e-16);
     }
 
     /// max |2 (Phi - c) grad Phi . n| over the initial offset-surface vertices; the scale
-    /// offset_gradient_tolerance() is a fraction of. Zero before measure_gradient_reference().
+    /// offset_gradient_tolerance() is a fraction of. Always 0 on the single-phase path
+    /// (never measured); kept for the report.
     double gradient_reference() const { return m_gradient_reference; }
 
     /**
@@ -1793,7 +1796,7 @@ public:
      * stops are one test. max_in_edge is the EDGE-INTERIOR half of the criterion and GATES
      * alongside the vertex half (2026-08-23) -- see gradient_split() for why the earlier
      * "diagnostic only" reading was wrong. max_normal_aligned is |grad E . n| at vertices over
-     * reachable AND pinned -- the quantity measure_gradient_reference() takes its max of.
+     * reachable AND pinned.
      */
     struct GradientSplit
     {
@@ -1808,8 +1811,7 @@ public:
         /// The same edge measure over edges with an unreachable endpoint. Reported, never gating
         /// -- the pinned twin of max_pinned.
         double max_in_edge_pinned = 0.;
-        /// max |2 (Phi - c) grad Phi . n| at band vertices, reachable AND pinned: the quantity
-        /// the reference is the max of. See measure_gradient_reference().
+        /// max |2 (Phi - c) grad Phi . n| at band vertices, reachable AND pinned.
         double max_normal_aligned = 0.;
         /// Edge-interior samples measured into max_in_edge (not part of n_reachable).
         size_t n_edge_samples = 0;
@@ -1950,11 +1952,6 @@ public:
      */
     Vector2d offset_vertex_normal(const size_t vid) const;
 
-    /// Measure m_gradient_reference -- max |2 (Phi - c) grad Phi . n| over the INITIAL
-    /// offset-surface vertices, reachable and pinned alike -- and return the split it was
-    /// measured from so the caller can report it without a second pass. Called once, before
-    /// the A/B loop; see offset_gradient_tolerance().
-    GradientSplit measure_gradient_reference();
 
     /// Turn a residual_split()'s outside-support tally into the hard error. Separate from
     /// check_offset_within_support() so the per-round check can reuse a split it already has.

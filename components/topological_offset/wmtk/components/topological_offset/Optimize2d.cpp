@@ -3245,52 +3245,6 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
     return s;
 }
 
-TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::measure_gradient_reference()
-{
-    // THE SCALE THE CRITERION IS A FRACTION OF, measured once on the band as constructed and
-    // never again -- a moving reference would be a moving bar.
-    //
-    // THE REFERENCE IS THE NORMAL-ALIGNED MAX AT VERTICES: max |2 (Phi - c) grad Phi . n| over
-    // every initial offset-surface vertex, reachable and pinned alike, with n the surface's
-    // own Voronoi-length-weighted normal. The normal component is what "misplaced" means -- it
-    // is the part of the gradient that moves the surface off the level set -- so the reference
-    // is a statement about how far out of place the offset STARTED (and a pinned vertex is out
-    // of place too, hence both halves). What it scales is then the FULL norm at those same
-    // vertices: the convergence criterion and every Phase B local stop compare
-    // ||2 (Phi - c) grad Phi|| against front_conv_rel x this. One reference,
-    // one parameter, one bar.
-    const GradientSplit g = gradient_split();
-    m_gradient_reference = g.max_normal_aligned;
-
-    logger().info(
-        "\tGradient reference (band as constructed): {:.6g} = max |2 (Phi - c) grad Phi . n| "
-        "over {} offset vertices ({} reachable + {} pinned)",
-        m_gradient_reference,
-        g.n_reachable + g.n_pinned,
-        g.n_reachable,
-        g.n_pinned);
-    logger().info(
-        "\t  full-norm max: reachable {:.6g}, pinned {:.6g} | in-edge diagnostic {:.6g} "
-        "({} samples)",
-        g.max_reachable,
-        g.max_pinned,
-        g.max_in_edge,
-        g.n_edge_samples);
-    logger().info(
-        "\t  => convergence bound {:.6g} = front_conv_rel {} x reference",
-        offset_gradient_tolerance(),
-        m_offset_params.front_conv_rel);
-
-    if (!(m_gradient_reference > 0.)) {
-        logger().warn(
-            "Gradient reference measured as {} -- the convergence bound falls back to its 1e-16 "
-            "floor, which no run will meet. The band as constructed is already stationary, or "
-            "nothing on it was measurable.",
-            m_gradient_reference);
-    }
-    return g;
-}
-
 TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     const bool include_edge_samples) const
 {
@@ -3319,12 +3273,9 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     };
 
     // THE NORMAL-ALIGNED COMPANION, |grad E . n| with n the offset vertex normal
-    // (offset_vertex_normal()). NOT the deciding
-    // measure: it is the quantity the REFERENCE is the max of -- measure_gradient_reference()
-    // reads max_normal_aligned off the band as constructed, and every full-norm comparison is
-    // against front_conv_rel x that. Only motion along n moves the surface off
-    // the level set, so the reference is a statement about how MISPLACED the initial surface
-    // was; the running tests are then the full norm, which a local solve can actually zero.
+    // (offset_vertex_normal()). NOT the deciding measure: only motion along n moves the
+    // surface off the level set, so it says how MISPLACED the surface is; the running tests
+    // are the full norm, which a local solve can actually zero.
     // The same projection serves the in-edge chord diagnostic, onto the edge's own unit
     // normal (inside an edge the discrete surface IS the chord).
     //
@@ -4701,7 +4652,7 @@ void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& 
 
 void TopoOffsetTriMesh::optimize_offset_single_phase()
 {
-    // ONE PHASE (alternating_opt = false, Uday, 2026-08-26). Phase A is already TriWild's
+    // ONE PHASE (Uday, 2026-08-26). Phase A is already TriWild's
     // mesh_improvement -- split / smooth / collapse / smooth / swap / smooth -- so operations and
     // smoothing interleave there already; the only things Phase B adds are WHICH objective a
     // front vertex is smoothed against and that it is not caged in the offset tube while it
@@ -4719,7 +4670,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
     m_phase = OptPhase::B; // the reference is measured with the offset terms present
     m_front_gradient_reference = phase_b_front_gradient_linf();
     logger().info(
-        "\tSINGLE PHASE (alternating_opt false): TriWild's loop with the front placed inside its "
+        "\tSINGLE PHASE: TriWild's loop with the front placed inside its "
         "smoothing passes | front energy-gradient reference {:.6g}, criterion {} at rel {}",
         m_front_gradient_reference,
         m_offset_params.front_conv_criterion,
