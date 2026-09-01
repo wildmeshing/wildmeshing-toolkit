@@ -455,7 +455,7 @@ public:
      * refinement on element quality, Phase B through the Phi residual of the faces smoothing
      * could not place.
      */
-    /// Single is the alternating_opt=false mode: TriWild's own loop with the front placed by
+    /// Single is the mode the 2D run uses: TriWild's own loop with the front placed by
     /// Phase B's objective inside the smoothing passes. It follows B wherever the SMOOTHER is
     /// concerned (which objective a front vertex gets, no offset tube while it moves) and A
     /// everywhere the LOOP is concerned (quality stats and the stop metric are TriWild's).
@@ -473,9 +473,6 @@ public:
     // the shared smoother, in mesh order -- see smooth_before(). It replaced two
     // ordered sub-sweeps (front first, then interior), measured to reach the same fixed point.
 
-    /// DIAGNOSTIC: set by the driver after the first round when
-    /// ab_no_collapse_after_first_round is on, and read by collapse_edge_before().
-    bool m_ab_collapses_disabled = false;
     /// The final Phase A: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
 
@@ -514,23 +511,8 @@ public:
     /// for why a collapse can create it out of two individually fine vertices.
     void check_no_vertex_on_both_surfaces(const char* when) const;
 
-    /// The A/B driver: Phase A (TriWild + offset envelope), Phase B (smoothing to a fixed point,
-    /// then refine where Phi is stuck), repeated until both criteria are inside tolerance or
-    /// max_rounds is reached. Replaces the single mesh_improvement() call.
-    void optimize_offset_alternating();
-    /// alternating_opt=false: TriWild's loop, the front placed inside its smoothing passes.
+    /// TriWild's loop, the front placed inside its smoothing passes.
     void optimize_offset_single_phase();
-
-    /// Phase B's smoothing loop. Each pass sweeps every vertex once: offset vertices are placed
-    /// on the level set by smooth_offset_vertex_backtracking(), background (interior) vertices
-    /// minimize their one-ring AMIPS by the shared smoother -- each visit runs its
-    /// vertex's local solve under the run's own gradient bar (offset placement) or to
-    /// vertex_grad_tol_rel of its entry gradient (interior AMIPS).
-    /// Returns the number of passes run; the natural exit is a pass in which NO offset vertex
-    /// was backtracked by its one-ring (m_phase_b_constrained == 0). See the definition for the
-    /// other exits (the run's own convergence bar, the no-progress guard, and an optional
-    /// ab_smooth_max_passes cap).
-    size_t phase_b_smooth();
 
     /// Max over the front vertices Phase B places of ||grad F||, F the vertex's full Phase B
     /// objective (AMIPS + the offset terms, as the shared smoother assembles it). The pass stop.
@@ -549,19 +531,6 @@ public:
      * criterion. Reuses the shared smoother (optimization::smooth_vertex_2d) with Phase B's own
      * solver, configured to stop at vertex_grad_tol_rel of the visit's initial gradient.
      */
-
-    /**
-     * @brief L-inf over offset vertices of |grad (Phi - c)^2| -- the gradient of the same
-     * objective Phase B's sweeps minimize. Exactly 0 at the Gauss-Seidel fixed point, whatever
-     * the residual, so it distinguishes "placement finished" from "placement blocked": a vertex
-     * whose move is refused contributes zero DISPLACEMENT but full gradient.
-     *
-     * VERTICES ONLY, exactly as the convergence test itself is: the criterion gates on the
-     * variables the optimizer owns, and the edge-interior samples are a resolution
-     * diagnostic. See gradient_split().
-     */
-    double phase_b_band_gradient_linf();
-
 
     EdgeSplitMode m_edge_split_mode = EdgeSplitMode::Midpoint;
 
@@ -1100,23 +1069,6 @@ public:
 
 
     /**
-     * @brief AUDIT THE PHASE B CONTRACT: no offset-boundary vertex may be envelope-held there.
-     *
-     * Phase B releases the offset envelope and keeps the region envelopes, so a vertex that is
-     * ONLY on the offset is free and a vertex that is also on a region boundary is held -- and
-     * smooth_before() skips the held ones outright, because placing one needs the envelope's
-     * pull and containment together with the offset term. On a model whose offset never
-     * coincides with a region boundary that set must be EMPTY.
-     *
-     * The audit is not the same test as the dispatch: it re-derives "on a region boundary" from
-     * the vertex's own incident edges (edge_is_region), which is ground truth, and compares it
-     * against the stored m_is_on_region / on_bbox_faces the dispatch reads. A vertex held by the
-     * stored flag with no live region edge under it is a STALE flag -- the offset vertex is being
-     * frozen by bookkeeping rather than by geometry.
-     */
-    void audit_phase_b_offset_envelope_holds() const;
-
-    /**
      * @brief Are the tracked region boundaries actually CONTAINED by anything?
      *
      * A class-0 edge is dispatched to an envelope by its boundary MASK, and the mask is the
@@ -1153,13 +1105,6 @@ public:
      */
     void audit_surface_containment(const std::string& when) const;
 
-    /// How many offset placements this pass could not take to their own minimum -- the visit
-    /// entered its one-ring bisection, was refused outright by inversion, or found the ring
-    /// already float-inverted on entry. Reset by phase_b_smooth() before each pass; a pass that
-    /// ends with this at zero is the loop's natural exit.
-    mutable std::atomic<int> m_phase_b_constrained{0};
-
-
     /// How many Phase B offset placements found the vertex ALREADY outside its own envelope on
     /// entry. Since 2026-08-23 this disables nothing -- the post-step projection pulls such a
     /// vertex back in -- but it is still the number to read first: the invariant is 0, and a
@@ -1182,14 +1127,6 @@ public:
     /// off by an incident chord leaving its tube -- i.e. the mesh wanting a vertex at a corner.
     /// Never reset -- a run total.
     mutable std::atomic<int> m_placement_tangential{0};
-
-    /// Per-thread Newton solver for Phase B's interior AMIPS solves. Separate from the base's
-    /// m_solver because it carries a different stopping rule: polysolve's rel_grad_norm_tol set
-    /// to vertex_grad_tol_rel with a deep iteration budget, against the base's fixed shallow
-    /// budget with no tolerance. Created on first use.
-    mutable wmtk::threading::enumerable_thread_specific<
-        std::unique_ptr<polysolve::nonlinear::Solver>>
-        m_phase_b_solver;
 
     ////// wmtk::TriOptimizerMesh hooks
 
@@ -1883,9 +1820,8 @@ public:
         /// vertex is measured.
         size_t worst_vid = static_cast<size_t>(-1);
     };
-    /// @param include_edge_samples false skips the edge-interior half (the expensive one). Only
-    /// Phase B's own per-pass stop passes false, because placement cannot reduce a chord term;
-    /// every convergence decision passes true. See phase_b_band_gradient_linf().
+    /// @param include_edge_samples false skips the edge-interior half (the expensive one).
+    /// Every convergence decision passes true.
     GradientSplit gradient_split(bool include_edge_samples = true) const;
 
     /**
@@ -1996,50 +1932,21 @@ public:
     double edge_interpolation_residual(const Tuple& e) const;
 
     /**
-     * @brief Unit normal of the OFFSET SURFACE at band vertex `vid`, Voronoi-length weighted.
-     *
-     * The 2D analogue of an area-weighted vertex normal: the offset boundary is a polyline, so
-     * each incident offset edge contributes its own unit normal weighted by HALF ITS LENGTH --
-     * the part of the edge whose nearest boundary vertex is this one, which is exactly the
-     * vertex's Voronoi cell along the curve. Normalised at the end, so only the weights' ratio
-     * matters.
-     *
-     * This is the DISCRETE SURFACE's own normal, and it is what the REFERENCE is measured
-     * along: measure_gradient_reference() takes max |2 (Phi - c) grad Phi . n| over the
-     * initial offset vertices with this n, and the convergence bar is a fraction of that. (The
-     * running tests -- the criterion and the Phase B local stops -- are the FULL gradient
-     * norm; the in-edge chord diagnostic projects onto the edge's own unit normal.) It
-     * replaced a projection back to the input complex, which measured against the INPUT's
-     * geometry rather than the surface's own -- and flips discontinuously across the medial
-     * axis where two offsets merge, exactly where this model family is interesting.
-     *
-     * Each edge normal is oriented OUTWARD -- away from the incident offset-band face -- so the
-     * two contributions at a vertex reinforce instead of cancelling. Returns the zero vector for
-     * a vertex with no live offset edge, or where the incident edges are degenerate.
-     */
-    Vector2d offset_surface_normal(const size_t vid) const;
-
-    /**
      * @brief THE normal for an offset vertex. Every caller that needs one goes through here.
      *
      * There is exactly one definition of "the normal at an offset vertex" in the component, and
      * this is it -- so switching the definition is a one-line edit here rather than a hunt
-     * through the call sites. Two implementations live in the body, selected at runtime by
-     * WMTK_OFFSET_NORMAL so one build can measure both.
+     * through the call sites.
      *
-     *  - DEFAULT (unset): project to the INPUT COMPLEX. n is the unit vector from the nearest point
+     * Project to the INPUT COMPLEX. n is the unit vector from the nearest point
      * on the complex to the vertex, i.e. the direction the offset grew along. It is a property of
      * the input geometry alone, so it does not move as the offset mesh is re-triangulated, and it
      * is defined for every band vertex whether or not it has live offset edges. Known weakness, and
      * the reason it was removed once before: it flips discontinuously across the MEDIAL AXIS, i.e.
      * exactly where two offset fronts approach each other -- which is where this model family is
      * interesting.
-     *  - WMTK_OFFSET_NORMAL=surface: offset_surface_normal(), the Voronoi-length-weighted mean of
-     * the incident offset edges' outward normals. Continuous across the medial axis, but a property
-     * of the current triangulation rather than of the geometry, and it returns zero for a vertex
-     * with no live offset edge.
      *
-     * @return unit vector, or the zero vector where neither definition can produce one.
+     * @return unit vector, or the zero vector where the definition cannot produce one.
      */
     Vector2d offset_vertex_normal(const size_t vid) const;
 
@@ -2063,13 +1970,6 @@ public:
     /// hid it from the metric that decides convergence. Same change as 3D.
     bool band_vertex_is_reachable(const size_t vid) const
     {
-        // INTERFERENCE-PINNED vertices are the second disqualification, and unlike the domain
-        // wall it is MEASURED rather than structural: the vertex's own Gauss-Seidel step found
-        // no descent, and Phi around it says the level set it is chasing does not exist there
-        // (see pin_interference_stalled_vertices). Opt-in through WMTK_OFFSET_INTERFERENCE_PIN;
-        // the flag is only ever set when that is on, so this test costs nothing when it is off.
-        if (vid < m_interference_pinned.size() && m_interference_pinned[vid]) return false;
-
         // ENVELOPE-HELD OFFSET VERTICES ARE PINNED, and this is the default as of 2026-08-23.
         // A vertex on the offset front that a region envelope also holds must stay within
         // envelope_size of the input region boundary AND sit on Phi = c, which is
@@ -2098,71 +1998,11 @@ public:
         return !vertex_is_on_domain_boundary(vid);
     }
 
-    /**
-     * @brief Book offset vertices that stalled against ANOTHER offset front as unreachable.
-     *
-     * Called after every Phase B pass, and only when WMTK_OFFSET_INTERFERENCE_PIN is set.
-     *
-     * THE PROBLEM. Where two offset fronts approach the same curve, Phi in the corridor between
-     * them never falls to c -- on two_circles at delta 0.1 the gap midpoint sits at Phi = 2c --
-     * so there is no level set for those vertices to reach. They are not under-resolved and they
-     * are not badly placed; their target does not exist. Left in max_reachable they make
-     * convergence impossible by construction, and every round answers the residual by refining,
-     * which cannot help: Phi is a function of the INPUT COMPLEX, not of the mesh, so no amount
-     * of refinement moves the level set.
-     *
-     * THE TEST IS PURELY GEOMETRIC, and all three must hold. There WAS a fourth, first: that the
-     * vertex's own placement had reported PlacementStop::MidStationary. It never fired once --
-     * the damped Newton step's Armijo test (c1 = 1e-4) always admits some tiny length near a
-     * ridge, so the vertex crawls instead of reporting no-descent, and the whole rule was inert
-     * (measured on two_circles at delta 0.1: 231 of 231 visits `moved`, every pass, every round).
-     * It was redundant anyway -- conditions 1-3 below already say the level set is not there,
-     * whatever the solver reports -- and tying the rule to a stop reason tied it to a solver
-     * detail. If a measured stall is ever wanted as corroboration, use the ACCEPTED DISPLACEMENT
-     * against the local edge length, which no change of solver can invalidate.
-     *
-     *   1. Phi(x) > c. It is strictly inside the offset region, so it cannot be on the level set;
-     *      a vertex outside is a different situation and is left alone.
-     *   2. |grad Phi . n| <= kInterferenceTangentialRel * |grad Phi|. The field's gradient is
-     *      essentially TANGENTIAL to the offset direction, i.e. no progress is available along n.
-     *   3. n^T grad^2 Phi n > 0. Phi has a genuine local MINIMUM along n -- which is what makes
-     *      this an interference ridge rather than the flat far field (where grad Phi vanishes
-     *      identically and the second derivative with it) or an inflection.
-     *
-     * Condition 3 is the one that earns the design. Without it the test also matches the region
-     * beyond dhat, where Phi == 0 and grad Phi == 0 -- exactly the spurious minimum that the
-     * {Phi >= c} constraint was added to exclude from the placement.
-     *
-     * IT NEVER THROWS, by instruction. A large pinned count is reported loudly -- count, share of
-     * the surface, and the worst Phi/c excess -- because this lets a run converge by declaring
-     * part of the surface impossible. That is correct where the offset genuinely self-intersects
-     * and would mask a real failure where it does not, so the number has to be read, not trusted.
-     *
-     * @return how many vertices are pinned after this pass (recomputed from scratch each time --
-     *         a vertex that stalls in one pass may move in the next).
-     */
-    size_t pin_interference_stalled_vertices(size_t pass);
-
-    /// See pin_interference_stalled_vertices(). Indexed by vid; empty when the feature is off.
-    /// Cleared at the top of each round's Phase A so a stale flag never rides a recycled slot
-    /// through a topology change, and recomputed from scratch after every Phase B pass.
-    std::vector<char> m_interference_pinned;
-
-    /// Which offset vertices reported PlacementStop::MidStationary in the pass just finished.
-    /// Written once per vertex per pass by smooth_offset_vertex_backtracking(), so parallel
-    /// sweeps do not race on an index.
-    std::vector<char> m_placement_stalled;
     /// Set by the placement when a vertex's last visit stopped on QualityBound, cleared when it
     /// moved. distance_criterion() counts such a vertex as placed -- its level set is
     /// unreachable by construction -- and drops edges touching one from the resolution and
     /// orientation halves; update_band_sizing_from_tolerance() does not refine such edges.
     std::vector<char> m_placement_pressed;
-    std::atomic<int> m_phase_b_pressed{0}; ///< per pass: placements the clearance guard stopped
-
-    /// |grad Phi . n| / |grad Phi| below which the field's gradient counts as TANGENTIAL to the
-    /// offset direction. Hard-coded rather than a spec key: it is a near-degeneracy test, not a
-    /// tuning knob, and the measured value is reported per vertex so a wrong choice is visible.
-    static constexpr double kInterferenceTangentialRel = 0.1;
 
     /**
      * @brief TriWild's stall-driven sizing refinement, verbatim.

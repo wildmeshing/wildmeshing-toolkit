@@ -117,11 +117,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// 2D. Other input regions (no input-complex face, no wall contact) deform under smoothing
     /// against their rest shape instead of being envelope-held. See the spec doc.
     bool deform_others = true;
-    /// DIAGNOSTIC: ignore the convergence test; run the single-phase loop to max_rounds.
-    bool front_conv_disable = false;
-    /// 2D: false (the default) is the single phase -- TriWild's loop with the front placed inside
-    /// its smoothing passes; true is the A/B loop, which is also what 3D always runs.
-    bool alternating_opt = false;
     /// The outer loop's budget: turns of the 2D single phase, A/B rounds of the alternating loop
     /// and of 3D. The loop leaves on the front test; this is the guard. One key since 2026-08-28.
     int max_rounds = 40;
@@ -141,18 +136,10 @@ struct Parameters : public wmtk::OptimizerParameters
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    bool ab_no_collapse_after_first_round; ///< DIAGNOSTIC: refuse all collapses from round 2
     /// Cap of the shared TriWild/TetWild loop wherever it runs: the pre-optimisation pass, one
     /// Phase A, the frozen-front finishing pass. TriWild's name and default (2026-08-28).
     int max_iterations;
     int ab_smooth_max_passes; ///< cap on Phase B smoothing passes; negative = uncapped (default)
-    /// Phase B's GAUSS-SEIDEL pass budget. Each pass gives every eligible vertex exactly ONE
-    /// local iteration -- offset vertices one descent step on AMIPS + the offset term, background
-    /// vertices one Newton step on their one-ring AMIPS, both line-searched -- and stops early only when
-    /// the run's own convergence criterion is met. This replaced solving each vertex to its own
-    /// minimum, which let a vertex race to a fixed point its neighbours had not seen yet; where
-    /// two offset fronts approach, that is what crushed the elements between them.
-    int ab_phase_b_iterations;
     double ab_smooth_tol;
     /// Phase B's INTERIOR (background AMIPS) per-vertex Newton tolerance: polysolve's
     /// rel_grad_norm_tol, the fraction of the visit's own entry gradient the solve stops at.
@@ -197,9 +184,6 @@ struct Parameters : public wmtk::OptimizerParameters
     // bounds for VertexAttributes::m_sizing_scalar
     double min_sizing_scalar;
     double max_sizing_scalar;
-    // mean ratio metric strictly below this is "bad" (refine); strictly above is "good"
-    // (coarsen), matching the reference's compute_target_edge_length()
-    double sizing_mrm_threshold;
     // gradation cap: neighboring vertices' sizing scalars may differ by at most this factor,
     // enforced by propagating the refinement outward (monotone, only ever lowers a
     // neighbor's scalar). <= 1 disables gradation entirely.
@@ -247,10 +231,8 @@ struct Parameters : public wmtk::OptimizerParameters
         phi_grid_resolution = json_params["phi_grid_resolution"];
 
         num_threads = json_params["num_threads"];
-        ab_no_collapse_after_first_round = json_params["ab_no_collapse_after_first_round"];
         max_iterations = json_params["max_iterations"];
         ab_smooth_max_passes = json_params["ab_smooth_max_passes"];
-        ab_phase_b_iterations = json_params["ab_phase_b_iterations"];
         ab_smooth_tol = json_params["ab_smooth_tol"];
         vertex_grad_tol_rel = json_params["vertex_grad_tol_rel"];
         offset_envelope_rel = json_params["offset_envelope_rel"];
@@ -260,7 +242,6 @@ struct Parameters : public wmtk::OptimizerParameters
 
         min_sizing_scalar = json_params["min_sizing_scalar"];
         max_sizing_scalar = json_params["max_sizing_scalar"];
-        sizing_mrm_threshold = json_params["sizing_mrm_threshold"];
         sizing_gradation = json_params["sizing_gradation"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
@@ -301,8 +282,6 @@ struct Parameters : public wmtk::OptimizerParameters
         front_alignment_energy = json_params["front_alignment_energy"];
         sizing_collapse_min = json_params["sizing_collapse_min"];
         deform_others = json_params["deform_others"];
-        front_conv_disable = json_params["front_conv_disable"];
-        alternating_opt = json_params["alternating_opt"];
         max_rounds = json_params["max_rounds"];
         pre_optimize_input = json_params["pre_optimize_input"];
         pre_optimize_sizing_from_edges = json_params["pre_optimize_sizing_from_edges"];

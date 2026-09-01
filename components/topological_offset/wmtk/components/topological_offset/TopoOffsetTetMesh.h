@@ -216,11 +216,6 @@ public:
     enum class PhaseBSub { Offset, Background };
     PhaseBSub m_phase_b_sub = PhaseBSub::Offset;
 
-
-    /// DIAGNOSTIC: set by the driver after the first round when
-    /// ab_no_collapse_after_first_round is on, and read by collapse_edge_before().
-    bool m_ab_collapses_disabled = false;
-
     /**
      * @brief The tube the offset surface may not leave during Phase A. Null in Phase B.
      *
@@ -323,15 +318,6 @@ public: // mode for splitting in marching tets
         Midpoint = 0, // construction: simplicial embedding AND marching_tets
         Optimization = 5 // this is used in the optimization phase of the algorithm
     };
-
-    /**
-     * @brief Skip optimize_offset() entirely -- set WMTK_OFFSET_SKIP_OPTIMIZE=1.
-     *
-     * With this on, what gets written is the offset exactly as construction left it --
-     * simplicial embedding plus midpoint marching, nothing more -- optimization_metrics stays
-     * empty and the report omits that section. Read once from the environment, warns once.
-     */
-    static bool skip_optimization();
 
 
 public:

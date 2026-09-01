@@ -1150,27 +1150,6 @@ std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::get_faces_by_condition(
 }
 
 
-bool TopoOffsetTetMesh::skip_optimization()
-{
-    static const bool on = [] {
-        const char* v = std::getenv("WMTK_OFFSET_SKIP_OPTIMIZE");
-        const bool enabled = (v != nullptr) && (std::string(v) == "1");
-        if (enabled) {
-            logger().warn(
-                "WMTK_OFFSET_SKIP_OPTIMIZE=1: optimize_offset() will NOT run. What gets written "
-                "is the offset exactly as construction left it -- simplicial embedding plus "
-                "midpoint marching_tets(), with no growth pass and no target_distance anywhere "
-                "in the placement -- so the offset surface sits on the input "
-                "tetrahedralization's own cell boundaries at whatever distance those happen to "
-                "be. optimization_metrics stays empty and the report omits that section. "
-                "DIAGNOSTIC ONLY; do not read the written distances as an offset.");
-        }
-        return enabled;
-    }();
-    return on;
-}
-
-
 void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 {
     // make embedding simplicial (split components per Alg 1)
@@ -1827,13 +1806,6 @@ void TopoOffsetTetMesh::optimize_offset_alternating()
         // ---- PHASE A: TetWild, with the offset held inside its envelope ----
         logger().info("======== A/B round {} / {}: phase A ========", round + 1, rounds);
         m_phase = OptPhase::A;
-        // DIAGNOSTIC; see ab_no_collapse_after_first_round. Round 1 keeps its collapses because
-        // the mesh as constructed genuinely needs them -- it is the ROUNDS AFTER, where every
-        // split of the band is matched by a collapse removing a band vertex, that this probes.
-        m_ab_collapses_disabled = m_offset_params.ab_no_collapse_after_first_round && round > 0;
-        if (m_ab_collapses_disabled) {
-            logger().warn("\t[phase A] COLLAPSES DISABLED (ab_no_collapse_after_first_round)");
-        }
         rebuild_offset_envelope();
         mesh_improvement(a_iters);
 

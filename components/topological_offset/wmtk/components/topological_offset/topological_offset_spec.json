@@ -38,9 +38,7 @@
       "num_smoothing_passes",
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
-      "ab_no_collapse_after_first_round",
       "max_iterations",
-      "ab_phase_b_iterations",
       "ab_smooth_max_passes",
       "ab_smooth_tol",
       "vertex_grad_tol_rel",
@@ -52,7 +50,6 @@
       "min_edge_length_rel",
       "min_sizing_scalar",
       "max_sizing_scalar",
-      "sizing_mrm_threshold",
       "sizing_gradation",
       "split_high_valence_threshold",
       "coarsen_pass",
@@ -72,7 +69,6 @@
       "front_normal_projection",
       "front_alignment_energy",
       "sizing_collapse_min",
-      "alternating_opt",
       "max_rounds",
       "pre_optimize_sizing_from_edges",
       "pre_optimize_input",
@@ -82,8 +78,7 @@
       "project_line_search_nested_steps",
       "smooth_quality_veto",
       "perform_sanity_checks",
-      "deform_others",
-      "front_conv_disable"
+      "deform_others"
     ]
   },
   {
@@ -308,12 +303,6 @@
     "doc": "Target AMIPS quality for tets. Default 100, matching the tetwild component -- Phase A is TetWild and stops where TetWild stops. Measured on prism: 100 converges in minutes; 10 pushes Phase A past what its operation set can deliver and the split pass becomes an unbounded refiner. Edge collapse will not push an already-on-target region's quality back above this."
   },
   {
-    "pointer": "/ab_no_collapse_after_first_round",
-    "type": "bool",
-    "default": false,
-    "doc": "3D only, DIAGNOSTIC. Refuse every edge collapse from the second A/B round onwards. The offset band is in a one-for-one stalemate on topological_offset_3d_convex -- 3010 splits produced an on-offset vertex and 3063 collapses removed one, net -53 over six rounds -- so the band cannot be refined however much the sizing field is lowered. This switches the collapse half off to establish whether the stalemate is what holds the residual up, at the cost of every guarantee coarsening provides. Not a fix and not for production use."
-  },
-  {
     "pointer": "/max_iterations",
     "type": "int",
     "default": 80,
@@ -324,12 +313,6 @@
     "type": "int",
     "default": -1,
     "doc": "Cap on Phase B's smoothing passes per round; negative (the default) means UNCAPPED. Phase B now runs passes until one completes with NO offset vertex backtracked by its one-ring (every local minimum interior), which is its natural fixed point: the potential is a frozen field, so offset placements couple only through the ring constraint, and the interior AMIPS solves that run in the same passes are what open those rings. A no-progress guard stops the phase with a warning if neither the constrained count nor the placement gradient improves over 10 consecutive passes; the run's own convergence bar (front_conv_rel) also ends the phase early. Set a positive cap only as a diagnostic override. HISTORY: the previous default of 2 was the mitigation for the Phase A dead-band ratchet seeded by the OLD placement-only B's front-loaded displacement (5/5 vs 3/5 on prism raw-construction, 2026-08-20); that B moved only offset vertices and relied on Phase A to repair the background, which is the design this replaces. NOTE: the 2D pipeline reads this cap too (negative = uncapped there as well, exiting on its displacement test)."
-  },
-  {
-    "pointer": "/ab_phase_b_iterations",
-    "type": "int",
-    "default": 20,
-    "doc": "2D, alternating loop only (unused when alternating_opt is false). Phase B's GAUSS-SEIDEL pass budget; the convergence criterion is the stop, this is the guard (Euclidean 0.2 on two_circles needs ~30 passes at front_conv_rel 0.01, and 20 cut every round short). Each pass gives every eligible vertex exactly ONE local iteration -- an offset-surface vertex takes one descent step on AMIPS + the offset error term, a background vertex one Newton step on its one-ring AMIPS -- sweeping in place so later vertices see earlier updates. The phase exits early ONLY on the run's own convergence criterion (the max placement gradient over offset vertices, front_conv_rel), otherwise it runs exactly this many passes. WHY: solving each vertex to its own minimum let a vertex race to a fixed point its neighbours had not yet seen, and where two offset fronts approach the same curve that crushed the elements between them into exactly-collinear zero-area triangles which no split or collapse can repair (measured on two_circles at delta 0.1). One step at a time advances the fronts together. The placement step is a damped Newton step with an Armijo line search, so its length comes from the local model rather than a constant; the pass count is therefore the only budget, and a vertex can cover real distance in one pass when the model says so."
   },
   {
     "pointer": "/ab_smooth_tol",
@@ -464,12 +447,6 @@
     "doc": "2D. What the surviving vertex of a collapse keeps as its sizing scalar. false (default): its OWN scalar, the behaviour of the shared engine until 2026-08-27. true: the SMALLER of the two, the shared engine's rule since upstream 52315d39e2 ('unify the sizing field after collapsing'), applied here by restoring the survivor's scalar after the base collapse when false. Measured 2026-08-28 on the report matrix, same code otherwise: the min rule carries 16-93% more vertices on every case (two_circles Euclidean 0.4: 2186 -> 3696, the slot fixture 13741 -> 16451, two_overlap 687 -> 1323) and lengthens the placement loop where the front travels (Euclidean 0.4 at stop_energy 100: 4 turns -> 6; the slot fixture 2 -> 3; two_circles smooth 0.1: 7 -> 9). The offset's sizing follows a moving front and has to relax behind it; a scalar that only ever falls cannot. TriWild's convergence argument wants a sizing field that only refines (Daniele), which is what true gives; false reproduces the 2026-08-26 results to the digit."
   },
   {
-    "pointer": "/alternating_opt",
-    "default": false,
-    "type": "bool",
-    "doc": "2D. false (the default since 2026-08-26): ONE phase -- TriWild's own loop, with the front vertices placed by the one-dimensional offset solve inside its smoothing passes and free of the offset tube while they move, so operations and placement interleave at the pass level; the tube is rebuilt after every smoothing pass (only smoothing moves the front, and an operation that would take a front edge out of the tube is refused). Its turn budget is max_rounds. true: the A/B loop -- a full TriWild pass (Phase A, the front held in its tube and smoothed by AMIPS alone) followed by up to ab_phase_b_iterations Gauss-Seidel sweeps that place the front (Phase B), repeated up to max_rounds times; this is what 3D always runs. Measured 2026-08-26 over 12 cases: single phase uses fewer vertices nearly everywhere (the slot fixture 13741 against 31103, an inward offset 52019 against 103168), is faster in wall-clock on all but the smallest case, and converges one case the alternating loop does not. Convergence is the same test in both: every front vertex's remaining Newton step at most front_conv_rel x target_distance. Quality is then brought to stop_energy by a final pass with the front FROZEN -- while the front is being placed its rings cannot be repaired, since front placement carries no quality veto."
-  },
-  {
     "pointer": "/max_rounds",
     "default": 40,
     "type": "int",
@@ -510,12 +487,6 @@
     "type": "float",
     "default": 1.0,
     "doc": "Upper bound for the per-vertex sizing field, a multiplier on the target edge length (splitting_l2/collapsing_l2) refined/coarsened once per optimize_offset() iteration based on the mean ratio metric of the offset triangulation (see sizing_mrm_threshold). 1.0 means never coarser than the base target length."
-  },
-  {
-    "pointer": "/sizing_mrm_threshold",
-    "type": "float",
-    "default": 0.5,
-    "doc": "Mean ratio metric threshold used to update the sizing field once per optimize_offset() iteration: for each offset-surface vertex, the sizing scalar is halved (refine) if the worst incident offset triangle's mean ratio metric is below this, or multiplied by 1.5 (coarsen) if above."
   },
   {
     "pointer": "/sizing_gradation",
@@ -574,11 +545,5 @@
     "default": true,
     "type": "bool",
     "doc": "2D. Whether the OTHER objects in the scene -- tagged regions with no input-complex face and no domain-wall contact -- deform when the optimization pushes them, instead of being held by their per-tag envelopes. true (the default, 2026-08-31): other objects deform. protected_tags opts a region out (kept rigid in its envelope). false: the pre-existing behaviour, every region boundary held in its tube. true: at the top of optimize_offset() their envelopes are dropped and every face of theirs is stamped with its REST SHAPE; smoothing then carries a rest-shape AMIPS term for those faces (tr(F^T F)/det F against the rest Jacobian -- polyfem's AMIPSEnergy with use_rest_pose, followed deliberately; det<=0 is invalid, so the line search cannot invert them), weighted like the smoother's own AMIPS term. A face keeps its rest for as long as no operation touches it (elastic memory); an accepted split, collapse or swap re-stamps the faces it changed to their shape at that moment (a localized plastic reset), which is also what makes the scheme indifferent to remeshing. The offset's own complex, the domain wall and the curve group are always held."
-  },
-  {
-    "pointer": "/front_conv_disable",
-    "default": false,
-    "type": "bool",
-    "doc": "DIAGNOSTIC, 2D single phase. true: ignore the convergence test and run the loop to max_rounds, logging every turn as usual. For watching how the iterations proceed past the would-be exit -- added 2026-08-31 for the deform_others contact question, where a front vertex stationary against a still-yielding object reads converged by the step-size test."
   }
 ]

@@ -209,14 +209,7 @@ void topological_offset(nlohmann::json json_params)
         // boundaries, so skipping the optimization does not yield a coarser offset, it yields
         // one whose defining property is simply unmet at an error set by the input mesh's
         // resolution rather than by anything the user asked for.
-        //
-        // ...unless WMTK_OFFSET_SKIP_OPTIMIZE=1, which is exactly a request for that
-        // un-optimized output. The caveat above still holds and is then the POINT.
-        if (TopoOffsetTetMesh::skip_optimization()) {
-            logger().warn("[skip-optimize] optimize_offset() SKIPPED");
-        } else {
-            mesh.optimize_offset(output_filename);
-        }
+        mesh.optimize_offset(output_filename);
 
         // As in 3D: the check above ran on the offset as constructed, and optimization
         // re-triangulates it, so the property has to be re-established afterwards.
@@ -455,17 +448,7 @@ void topological_offset(nlohmann::json json_params)
         // does not yield a coarser offset, it yields one whose defining property is simply unmet
         // at an error set by the input mesh's resolution rather than by anything the user asked
         // for. See the corresponding note in .claude/CLAUDE.md.
-        //
-        // ...unless WMTK_OFFSET_SKIP_OPTIMIZE=1, which is exactly a request for that
-        // un-optimized output. The caveat above still holds and is then the POINT, and it is a
-        // strong one now that construction is midpoint marching with no growth pass: the offset
-        // is wherever the input tetrahedralization put it. See
-        // TopoOffsetTetMesh::skip_optimization().
-        if (TopoOffsetTetMesh::skip_optimization()) {
-            logger().warn("[skip-optimize] optimize_offset() SKIPPED");
-        } else {
-            mesh.optimize_offset(output_filename);
-        }
+        mesh.optimize_offset(output_filename);
 
         // The manifoldness check above ran on the offset as constructed. Optimization
         // then re-triangulates it -- splits, collapses and four kinds of swap all touch
