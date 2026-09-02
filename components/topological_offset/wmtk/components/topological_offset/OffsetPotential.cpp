@@ -20,13 +20,11 @@
 namespace wmtk::components::topological_offset {
 
 namespace {
-/// Quadrature order is irrelevant on this path -- Phi is a POINT evaluation against a cached
-/// collision set, with no quadrature anywhere in it -- but HighOrderContactParameters requires
-/// one and logs a warning for order 1. 2 is the smallest value it accepts silently.
+/// Unread on this path -- Phi is a point evaluation against a cached collision set, with no
+/// quadrature in it -- but HighOrderContactParameters requires an order and warns about 1.
 constexpr int UNUSED_QUAD_ORDER = 2;
 
-/// dbar_factor, likewise unread by the vertex path (it feeds the near/far barrier split, which
-/// this does not use). 1.0 is upstream's default.
+/// Also unread by the vertex path (it feeds the near/far barrier split). Upstream's default.
 constexpr double UNUSED_DBAR_FACTOR = 1.0;
 
 /// The query point in the row form ipc::ArbitraryPointPotential takes. 3D only -- ESP at an
@@ -46,10 +44,9 @@ using VertexDict = ipc::HighOrderCollisionDict<ipc::PointType::VERTEX, DIM>;
 /**
  * @brief Everything that mentions ipc-toolkit.
  *
- * The collision mesh carries the complex's vertices plus ONE extra row for the query point,
- * which is the pattern the upstream API is written around ("with the point q appended to the
- * last row"). Its topology never changes, so it is built once; an evaluation only writes the
- * last row and rebuilds the small collision set around it.
+ * The collision mesh carries the complex's vertices plus one extra row for the query point, the
+ * pattern the upstream API is written around. Its topology never changes, so it is built once; an
+ * evaluation only writes the last row and rebuilds the small collision set around it.
  */
 template <int DIM>
 struct SmoothOffsetPotential<DIM>::Impl
@@ -58,16 +55,12 @@ struct SmoothOffsetPotential<DIM>::Impl
     ipc::HighOrderContactParameters params;
     size_t n_complex_v = 0; ///< index of the query vertex, one past the complex's own
 
-    /// Broad phase. ipc's own Candidates::build sweeps the WHOLE mesh and pairs its primitives
-    /// with each other, neither of which suits a single moving query point against a fixed
-    /// complex. So the broad phase is ours: one box query per evaluation, against the complex as
-    /// loaded.
-    ///
-    /// 3D indexes the TRIANGLES and derives their edges and vertices from a hit, which is
-    /// complete: a primitive within dhat of q lies inside the AABB of every triangle containing
-    /// it, and that AABB therefore meets the query box. 2D has no triangles and indexes the
-    /// segments instead. Isolated edges (a wire, which belongs to no triangle) and isolated
-    /// points can only be reached by their own trees.
+    /// Broad phase. ipc's own Candidates::build pairs a whole mesh's primitives with each other,
+    /// which does not suit one moving query point against a fixed complex, so this is one box
+    /// query per evaluation against the complex as loaded. 3D indexes the triangles and derives
+    /// their edges and vertices from a hit, which is complete because a primitive within dhat of q
+    /// lies inside the AABB of every triangle containing it. Segments in no triangle and isolated
+    /// points are reachable only through their own trees.
     SimpleBVH::BVH face_bvh; ///< 3D only: the complex's triangles
     bool has_faces = false;
     SimpleBVH::BVH edge_bvh; ///< 2D: every segment. 3D: only the segments in no triangle.
@@ -77,16 +70,13 @@ struct SmoothOffsetPotential<DIM>::Impl
     bool has_points = false;
     std::vector<int> isolated; ///< complex vertex ids with no incident segment
 
-    /// 3D ONLY: the ESP evaluator, which subsumes everything above. It owns its own broad phase
-    /// and does its own feature classification, so on this path `mesh` is the ONLY thing built
-    /// -- no scratch, no candidate sets, and none of the four BVHs.
+    /// 3D only: the ESP evaluator, which owns its own broad phase and feature classification.
     ///
-    /// `V_complex` is kept because every call takes the vertex configuration as an argument, and
-    /// it must contain the complex and NOTHING ELSE: ArbitraryPointBVH indexes every row of it as
-    /// a vertex primitive, so a padding row would be a real point of the complex sitting at
-    /// whatever coordinates it happened to hold.
-    /// The 2-manifold sub-complex, compacted and padded; NOT the same mesh as `mesh` above,
-    /// which the OGC part needs in the complex's own indexing.
+    /// `V_complex` is kept because every call takes the vertex configuration as an argument, and it
+    /// must contain the complex and nothing else: ArbitraryPointBVH indexes every row of it as a
+    /// vertex primitive, so a padding row would be a real point of the complex at whatever
+    /// coordinates it happened to hold. `mesh_esp` is the 2-manifold sub-complex, compacted and
+    /// padded -- not `mesh` above, which the OGC part needs in the complex's own indexing.
     ipc::CollisionMesh mesh_esp;
     Eigen::MatrixXd V_complex;
     std::unique_ptr<ipc::ArbitraryPointPotential> esp; ///< null when the complex has no triangles
@@ -101,9 +91,8 @@ struct SmoothOffsetPotential<DIM>::Impl
     };
     mutable wmtk::threading::enumerable_thread_specific<Scratch> scratch;
 
-    /// ogc_collisions tracks which builder this dimension uses. Neither path actually READS it
-    /// -- 2D calls build_collisions_at_vertex_ogc_2d() by name, and ArbitraryPointPotential
-    /// never consults it -- so it is documentation that happens to be a field.
+    /// ogc_collisions records which builder this dimension uses; neither path reads it, since 2D
+    /// calls build_collisions_at_vertex_ogc_2d() by name and ArbitraryPointPotential ignores it.
     Impl(const double dhat)
         : params(dhat, UNUSED_DBAR_FACTOR, UNUSED_QUAD_ORDER, /*ogc_collisions=*/DIM == 2)
     {}
@@ -136,12 +125,10 @@ struct SmoothOffsetPotential<DIM>::Impl
         std::vector<unsigned int> hits;
 
         if (has_faces) {
-            // 3D. vf_set, ve_set and vv_set are read INDEPENDENTLY by the 3D builder -- unlike
-            // 2D, where Candidates::vv_set() derives the vertex candidates from the endpoints of
-            // the edge candidates -- so a triangle's edges and vertices have to be seeded here
-            // too. Missing one is silent and wrong in the direction that looks fine: a convex
-            // feature whose vertex is never a candidate contributes nothing and the level set
-            // has a hole where it should have a spherical cap.
+            // The 3D builder reads vf_set, ve_set and vv_set independently, so a triangle's edges
+            // and vertices must be seeded here too. Missing one fails silently: a convex feature
+            // whose vertex is never a candidate contributes nothing, leaving the level set with a
+            // hole where it should have a spherical cap.
             face_bvh.intersect_box(lo, hi, hits);
             if (!hits.empty()) {
                 std::set<ipc::index_t>& vf = s.candidates.m_vf_set[q];
@@ -164,10 +151,10 @@ struct SmoothOffsetPotential<DIM>::Impl
                     const auto ei = static_cast<ipc::index_t>(edge_ids[e]);
                     ve.insert(ei);
                     if constexpr (DIM == 3) {
-                        // 2D gets its vertex candidates for free: Candidates::vv_set() derives
+                        // 2D gets its vertex candidates for free -- Candidates::vv_set() derives
                         // them from the endpoints of the edge candidates, which is what makes a
-                        // convex corner work at all, since there no edge claims the point and
-                        // only the vertex does. 3D has no such derivation.
+                        // convex corner work, since there only the vertex claims the point. 3D
+                        // has no such derivation.
                         std::set<ipc::index_t>& vv = s.candidates.m_vv_set[q];
                         vv.insert(mesh.edges()(ei, 0));
                         vv.insert(mesh.edges()(ei, 1));
@@ -191,9 +178,8 @@ struct SmoothOffsetPotential<DIM>::Impl
             return nullptr;
         }
 
-        // Upstream decides which of those candidates actually contribute: the OGC
-        // feasible-region rule, the interiority tests and the dhat cut. Deliberately not
-        // reimplemented here.
+        // Upstream decides which candidates actually contribute -- the OGC feasible-region rule,
+        // the interiority tests and the dhat cut. Deliberately not reimplemented here.
         const ipc::PointPotential pp(mesh, s.candidates, params, nullptr);
         size_t n_pairs = 0;
         std::unique_ptr<VertexDict<DIM>> dict;
@@ -231,9 +217,9 @@ SmoothOffsetPotential<DIM>::SmoothOffsetPotential(
         log_and_throw_error("OffsetPotential: target_distance must be positive, got {}", delta);
     }
     if (!(dhat_factor > 1.)) {
-        // At dhat_factor == 1 the offset sits exactly ON the support boundary, where Phi and its
-        // gradient are both zero: a vertex there is given no direction to move in and the level
-        // set Phi = c does not exist. Below 1 there is no level set at all.
+        // At dhat_factor == 1 the offset sits exactly on the support boundary, where Phi and its
+        // gradient are both zero: a vertex there gets no direction to move in and the level set
+        // Phi = c does not exist. Below 1 there is no level set at all.
         log_and_throw_error(
             "OffsetPotential: offset_dhat_factor must be > 1 (the offset distance has to lie "
             "strictly inside the potential's support), got {}",
@@ -242,9 +228,9 @@ SmoothOffsetPotential<DIM>::SmoothOffsetPotential(
 
     build(V, E, F, P);
 
-    // CALIBRATION, through this same code path rather than from a closed form. Phi at
-    // perpendicular distance delta from one large flat primitive: one active pair, no feature
-    // interaction, so this is the level the offset takes on any flat stretch of the input.
+    // Calibration runs through this same code path rather than a closed form: Phi at perpendicular
+    // distance delta from one large flat primitive, i.e. the level the offset takes on any flat
+    // stretch of the input.
     const SmoothOffsetPotential reference(delta, dhat_factor, 0);
     VecD probe = VecD::Zero();
     probe[DIM - 1] = delta;
@@ -280,9 +266,9 @@ template <int DIM>
 SmoothOffsetPotential<DIM>::SmoothOffsetPotential(const double delta, const double dhat_factor, int)
     : OffsetPotential<DIM>(delta, dhat_factor * delta)
 {
-    // One primitive large enough that the probe at perpendicular distance delta projects into
-    // its interior and every one of its boundary features is far outside the support, so exactly
-    // one pair is active -- which is the definition of "a flat stretch of input".
+    // One primitive large enough that the probe at perpendicular distance delta projects into its
+    // interior and all of its boundary features lie outside the support, so exactly one pair is
+    // active -- the definition of a flat stretch of input.
     const double L = 100. * m_dhat;
     if constexpr (DIM == 2) {
         MatrixXd V(2, 2);
@@ -328,30 +314,27 @@ void SmoothOffsetPotential<DIM>::build(
     m_impl = std::make_unique<Impl>(m_dhat);
     m_impl->n_complex_v = static_cast<size_t>(V.rows());
 
-    // ---- 3D: ESP over the 2-MANIFOLD part of the complex ----
+    // ---- 3D: ESP over the 2-manifold part of the complex ----
     //
-    // ESP's alternating sum (Eq. 6: +faces -edges +vertices) is inclusion-exclusion over a CLOSED
-    // SURFACE. Every -1 edge term exists to cancel the +1 the incident faces contribute when the
-    // query's closest point on them lands on that shared edge; the net over a genuine surface is
-    // exactly one +b(d) at the true closest feature. A primitive with NO incident face has
-    // nothing to cancel against, so the sum inverts: measured on the wire fixture (one segment,
-    // no triangles), Phi = -b(d) exactly -- a barrier with the wrong sign, unbounded BELOW as the
-    // query approaches the segment.
+    // ESP's alternating sum (+faces -edges +vertices) is inclusion-exclusion over a closed surface:
+    // each -1 edge term cancels the +1 its incident faces contribute when the closest point lands
+    // on that shared edge, netting exactly one +b(d) at the true closest feature. A primitive with
+    // no incident face has nothing to cancel against, so the sum inverts to -b(d) -- a barrier with
+    // the wrong sign, unbounded below as the query approaches it.
     //
-    // So the complex is split by what ESP is defined on. Triangles, their edges and their
-    // vertices go to ArbitraryPointPotential. Segments in no triangle (wires) and isolated points
-    // stay on the OGC vertex builder below, which weights every active primitive +1 and is
-    // therefore right for a sub-manifold piece. The two sums add, which is the same superposition
-    // the potential already applies wherever two features both claim a point.
+    // The complex is therefore split by what ESP is defined on. Triangles, their edges and their
+    // vertices go to ArbitraryPointPotential; segments in no triangle and isolated points stay on
+    // the OGC vertex builder below, which weights every active primitive +1 and is right for a
+    // sub-manifold piece. The two sums add.
     if constexpr (DIM == 3) {
         if (F.rows() > 0) {
             std::map<std::pair<int, int>, int> edge_of;
             for (int i = 0; i < E.rows(); ++i) {
                 edge_of[{std::min(E(i, 0), E(i, 1)), std::max(E(i, 0), E(i, 1))}] = i;
             }
-            // COMPACTED to the face-incident vertices. ipc::LBVH indexes every row it is given as
-            // a vertex primitive, so carrying a wire or isolated vertex here would give it a +1
-            // term in the surface sum on top of the one the OGC part already gives it.
+            // Compacted to the face-incident vertices: ipc::LBVH indexes every row it is given as a
+            // vertex primitive, so carrying a wire or isolated vertex here would add a +1 term in
+            // the surface sum on top of the one the OGC part already gives it.
             std::vector<int> to_surf(V.rows(), -1);
             std::vector<int> surf_v;
             const auto claim = [&](const int v) {
@@ -382,17 +365,10 @@ void SmoothOffsetPotential<DIM>::build(
                 }
             }
 
-            // A LONE PRIMITIVE IS COUNTED TWICE, so pad until no tree has exactly one leaf.
-            //
-            // ipc::LBVH sizes a tree as 2N-1 nodes, so with N == 1 the ROOT IS THE LEAF, while
-            // ArbitraryPointBVH::query_point() starts at node 0 asserting it is inner and reads
-            // node.left / node.right. A leaf's union puts primitive_id where `left` is and the
-            // (zero) inner-marker where `right` is, so for the single primitive -- whose id is
-            // necessarily 0 -- both children resolve to the node itself, both are leaves, both
-            // intersect, and it is pushed TWICE. insert_pair() then accumulates its weight to 2
-            // and the term enters doubled. Measured: the flat calibration reference, one
-            // triangle, gave c = 0.346574 = 2 x b(delta) instead of 0.173287.
-            //
+            // No ESP tree may have exactly one leaf: ipc::LBVH sizes a tree as 2N-1 nodes, so with
+            // N == 1 the root is the leaf, while ArbitraryPointBVH::query_point() starts at node 0
+            // assuming it is inner and reads node.left / node.right, both of which resolve back to
+            // the node itself. The lone primitive is then pushed twice and its term enters doubled.
             // Three vertices, three segments and one triangle, far enough out that nothing within
             // dhat of the real complex can see them, take all three trees to N >= 2.
             const int n_sv = static_cast<int>(surf_v.size());
@@ -424,19 +400,17 @@ void SmoothOffsetPotential<DIM>::build(
     }
 
     // ---- 2D: the OGC vertex builder, which needs a real mesh vertex to measure from ----
-    // The collision mesh: the complex, plus one trailing row that every evaluation overwrites
-    // with the query point. It belongs to no segment and no triangle, so it never appears as a
-    // contact PRIMITIVE -- only as the point the primitives are measured from.
+    // The collision mesh is the complex plus one trailing row that every evaluation overwrites with
+    // the query point. That row belongs to no segment and no triangle, so it never appears as a
+    // contact primitive, only as the point the primitives are measured from.
     //
-    // A COMPLEX WITH NO SEGMENTS AT ALL (topological_offset_2d_vertex_input is exactly this, a
-    // set of isolated points) needs one more row still. ipc::CollisionMesh's
-    // are_adjacencies_initialized() requires all three adjacency tables to be non-empty, and the
-    // edge-vertex table is sized by the EDGE count -- so with no edges it reads as "not
-    // initialized" and every accessor throws, including the one the OGC feasible-region test
-    // calls. A single sentinel segment, placed far outside the complex, makes the table
-    // non-empty. It is unreachable by construction: the only source of collision CANDIDATES is
-    // our own BVHs below, which do not index it. No sentinel TRIANGLE is ever needed, because a
-    // complex with triangles necessarily has their edges.
+    // A complex with no segments at all needs one row more. ipc::CollisionMesh's
+    // are_adjacencies_initialized() requires all three adjacency tables to be non-empty and sizes
+    // the edge-vertex table by the edge count, so with no edges every accessor throws, including
+    // the one the OGC feasible-region test calls. One sentinel segment far outside the complex
+    // makes the table non-empty, and it is unreachable because the only source of candidates is
+    // our own BVHs below, which do not index it. No sentinel triangle is needed: a complex with
+    // triangles necessarily has their edges.
     const bool needs_sentinel = (E.rows() == 0);
     const int n_extra = needs_sentinel ? 3 : 1;
 
@@ -463,16 +437,16 @@ void SmoothOffsetPotential<DIM>::build(
     V3.setZero();
     V3.leftCols(DIM) = V;
 
-    // 2D ONLY. In 3D the triangles (and their edges and vertices) belong to the ESP sum above,
-    // so seeding them as OGC candidates as well would count the surface twice.
+    // 2D only. In 3D the triangles, and their edges and vertices, belong to the ESP sum above, so
+    // seeding them as OGC candidates as well would count the surface twice.
     if constexpr (DIM == 2) {
         (void)V3;
     } else {
         // has_faces stays false: nothing here indexes F.
     }
 
-    // WHAT THE OGC PART OWNS. In 2D that is every segment. In 3D it is only the segments in no
-    // triangle -- the complex's wires -- because the rest went to ESP above.
+    // What the OGC part owns: in 2D every segment, in 3D only the segments in no triangle, since
+    // the rest went to ESP above.
     std::vector<int> tree_edges;
     if constexpr (DIM == 3) {
         std::set<std::pair<int, int>> in_face;
@@ -517,9 +491,9 @@ void SmoothOffsetPotential<DIM>::build(
 template <int DIM>
 double SmoothOffsetPotential<DIM>::value(const VecD& p) const
 {
-    // THE TWO SUMS ADD: ESP over the triangles, the OGC vertex builder over the wires and
-    // isolated points. Either may be empty -- a closed surface uses only the first, a point
-    // cloud or a 2D complex only the second. See build() for why the complex is split.
+    // The two sums add: ESP over the triangles, the OGC vertex builder over the segments in no
+    // triangle and the isolated points. Either may be empty -- a closed surface uses only the
+    // first, a point cloud or a 2D complex only the second. See build() for the split.
     double phi = 0.;
     if constexpr (DIM == 3) {
         if (m_impl->esp) phi += (*m_impl->esp)(m_impl->V_complex, esp_query(p));
@@ -580,11 +554,10 @@ typename SmoothOffsetPotential<DIM>::VecD SmoothOffsetPotential<DIM>::gradient(c
 template <int DIM>
 typename SmoothOffsetPotential<DIM>::MatD SmoothOffsetPotential<DIM>::hessian(const VecD& p) const
 {
-    // PSDProjectionMethod::NONE: the TRUE Hessian, projected (or not) by the caller. The
-    // smoothing energy squares the residual and takes its own Gauss-Newton approximation, which
-    // is a different and better-motivated way to reach a PSD matrix than clamping this one. ESP
-    // could not be projected per-term in any case -- its -1 weights make that invalid, which is
-    // why upstream's own projection block in quadrature_potential.cpp is commented out.
+    // PSDProjectionMethod::NONE returns the true Hessian, for the caller to project or not: the
+    // smoothing energy squares the residual and takes its own Gauss-Newton approximation, which is
+    // a better-motivated route to a PSD matrix than clamping this one. ESP could not be projected
+    // per term in any case, because its -1 weights make that invalid.
     MatD H_total = MatD::Zero();
     if constexpr (DIM == 3) {
         if (m_impl->esp) H_total += m_impl->esp->hessian(m_impl->V_complex, esp_query(p));
@@ -620,10 +593,10 @@ std::string SmoothOffsetPotential<DIM>::describe_active(const VecD& p) const
 {
     std::string out;
     if constexpr (DIM == 3) {
-        // ESP builds its collision dict inside ArbitraryPointPotential and does not hand it
-        // back, so the per-pair breakdown the OGC part prints is not available for the surface.
-        // Report the field instead: what a discontinuity investigation reads off this is whether
-        // Phi or |grad Phi| jumps between neighbouring samples, and both are here.
+        // ESP builds its collision dict inside ArbitraryPointPotential and does not hand it back,
+        // so the per-pair breakdown the OGC part prints is not available for the surface; report
+        // Phi and |grad Phi| instead, which is what a discontinuity investigation compares between
+        // neighbouring samples.
         if (m_impl->esp) {
             const auto [v, g, h] = m_impl->esp->evaluate(m_impl->V_complex, esp_query(p));
             out += fmt::format(
@@ -653,22 +626,12 @@ std::string SmoothOffsetPotential<DIM>::describe_active(const VecD& p) const
 template <int DIM>
 double SmoothOffsetPotential<DIM>::residual_length(const VecD& p) const
 {
-    // |Phi(p) - c| divided by the REFERENCE gradient magnitude -- the slope of Phi at the level
-    // set on a flat stretch of input -- rather than by the local |grad Phi(p)|.
-    //
-    // The local form is the textbook Newton distance to a level set and is the more accurate of
-    // the two NEAR the level set, where the two agree anyway. It is badly wrong everywhere else,
-    // in the direction that matters most: as p approaches the input complex, Phi ~ -log(d) and
-    // |grad Phi| ~ 1/d, so |Phi - c|/|grad Phi| ~ d log(1/d) -> 0. A vertex sitting ON the
-    // complex would report a residual of zero and the loop would call it converged, when it is
-    // in fact the worst-placed vertex in the mesh.
-    //
-    // Dividing by the fixed reference slope keeps the quantity MONOTONE in Phi, hence monotone
-    // in distance wherever one pair is active: it is a length, it agrees with |d - delta| to
-    // first order at the level set, it goes to infinity on the complex, and it saturates at
-    // c / |grad_ref| ~ 0.29*delta outside the support -- which is above any sane tolerance, and
-    // in any case the runaway guard turns "outside the support" into a hard error before this
-    // number is ever the thing deciding.
+    // Divide by the reference slope -- the slope of Phi at the level set on a flat stretch -- and
+    // never by the local |grad Phi(p)|: as p approaches the complex, Phi ~ -log(d) and
+    // |grad Phi| ~ 1/d, so the local ratio tends to 0 and a vertex sitting on the complex would
+    // report a residual of zero and be called converged. The fixed slope keeps the quantity
+    // monotone in Phi, hence in distance wherever one pair is active; it saturates outside the
+    // support, which the runaway guard turns into a hard error before this number decides anything.
     return std::abs(value(p) - m_c) / m_grad_ref;
 }
 
@@ -769,13 +732,11 @@ void AlignEnergy2D::hessian(const TVector& x, MatrixXd& hessian)
 template <int DIM>
 bool OffsetEnergy<DIM>::root_distance(const VecD& p, double& s, VecD& n) const
 {
-    // The signed distance from p to the level set Phi = c along the field's normal at p:
-    // the root of g(t) = Phi(p - t n) - c, t > 0 outward. Safeguarded Newton: the step is
-    // Newton's whenever it stays inside the bracket, a bisection of the bracket otherwise, so
-    // it converges in a handful of evaluations where Phi is smooth and cannot escape. Until this
-    // (2026-08-28) the root was bisected from a doubling bracket, ~90 evaluations per call, and
-    // a smoothing pass cost 2.0 s against 0.46 s -- the residual is asked for three times per
-    // Newton iteration of the placement, tens of iterations per vertex.
+    // The signed distance from p to the level set Phi = c along the field's normal at p: the root
+    // of g(t) = Phi(p - t n) - c, t > 0 outward. Safeguarded Newton -- the step is Newton's while
+    // it stays inside the bracket and a bisection of the bracket otherwise, so it converges in a
+    // handful of evaluations where Phi is smooth and cannot escape. Evaluation count matters: the
+    // residual is asked for three times per Newton iteration of the placement.
     const double c = m_potential->target_level();
     const VecD g0 = m_potential->gradient(p);
     const double gn0 = g0.norm();
@@ -786,11 +747,9 @@ bool OffsetEnergy<DIM>::root_distance(const VecD& p, double& s, VecD& n) const
     const double tol = 1e-8 * delta;
     const auto f = [&](const double t) { return m_potential->value(p - t * n) - c; };
     const auto fprime = [&](const double t) { return -m_potential->gradient(p - t * n).dot(n); };
-    // WARM START from this vertex's previous root: the placement moves the vertex toward the
-    // level set, so the root of the next call is near 0 -- and near the last root minus the
-    // step taken. Plain Newton from there converges in 2-4 evaluations; the bracket below is
-    // only built when it does not (measured 2026-08-28 on two_circles at delta 0.01: cold
-    // bracketing cost 25 s in the first turn against 1.2 s).
+    // Warm start from this vertex's previous root: the placement moves the vertex toward the level
+    // set, so the next call's root is near the last one minus the step taken. Plain Newton from
+    // there converges in a few evaluations, and the bracket below is only built when it does not.
     double t = std::isfinite(m_last_root) ? m_last_root : 0., ft = f(t);
     if (!std::isfinite(ft)) {
         t = 0.;
@@ -886,9 +845,9 @@ void OffsetEnergy<DIM>::residual(const VecD& p, double& r, VecD& dr) const
         m_cache_valid = true;
         return;
     }
-    // NORMALISED BY THE LEVEL (Uday, 2026-08-25): r = (Phi - c) / c, so the term is O(1) for
-    // every field and every target_distance at the level set. For the Euclidean field this is
-    // (d - delta)/delta exactly, and it stays the Euclidean residual under either flag.
+    // Normalised by the level: r = (Phi - c) / c, so the term is O(1) for every field and every
+    // target_distance at the level set. For the Euclidean field this is exactly (d - delta)/delta,
+    // and it stays the Euclidean residual under either flag.
     r = (m_potential->value(p) - c) / c;
     dr = m_potential->gradient(p) / c;
 }
@@ -935,9 +894,9 @@ template <int DIM>
 EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     const std::shared_ptr<SampleEnvelope>& envelope,
     const double delta)
-    // NO SUPPORT LIMIT. d is defined and informative everywhere, so the runaway guard that exists
-    // for Phi's compact support has nothing to catch here; infinity says so rather than implying
-    // it with a large finite number that something might later compare against.
+    // No support limit: d is defined everywhere, so the runaway guard that exists for Phi's compact
+    // support has nothing to catch. Infinity says so, rather than a large finite number something
+    // might later compare against.
     : OffsetPotential<DIM>(delta, std::numeric_limits<double>::infinity())
     , m_envelope(envelope)
 {
@@ -949,16 +908,14 @@ EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     if (!m_envelope) {
         log_and_throw_error("EuclideanOffsetPotential: needs an envelope to query");
     }
-    // NO CALIBRATION. The level IS the offset distance -- that is the entire content of "the
-    // Euclidean offset" -- where the smooth potential has to discover its own level by evaluating
-    // Phi at distance delta from a flat reference.
-    // IN UNITS OF target_distance: value = d / delta, level c = 1, so |grad| = 1 / delta.
-    // The raw distance made the placement's pull, 2 (d - delta) |grad d|, ~1/delta^2 weaker
-    // than the smooth potential's at the same misplacement (measured on two_circles at 0.1:
-    // 0.023 against the smooth field's ~86), so the 1e-4 AMIPS term was no longer negligible
-    // and construction zigzags 12% off the offset survived as exact balance points. Every
-    // consumer works in ratios of value to c or divides by level_set_slope(), so nothing else
-    // changes: the dist_and_orient distance |value - c| / |grad| is still d - delta.
+    // No calibration: the level is the offset distance, where the smooth potential has to discover
+    // its own level by evaluating Phi at distance delta from a flat reference.
+    //
+    // In units of target_distance: value = d / delta, level c = 1, so |grad| = 1 / delta. The raw
+    // distance made the placement's pull ~1/delta^2 weaker than the smooth potential's at the same
+    // misplacement, weak enough for the small AMIPS term to hold a misplaced vertex at a balance
+    // point. Every consumer works in ratios of value to c or divides by level_set_slope(), so
+    // |value - c| / |grad| is still d - delta.
     m_c = 1.;
     m_grad_ref = 1. / delta;
 }
@@ -983,13 +940,8 @@ EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     if (!m_bvh) {
         log_and_throw_error("EuclideanOffsetPotential: needs a BVH to query");
     }
-    // IN UNITS OF target_distance: value = d / delta, level c = 1, so |grad| = 1 / delta.
-    // The raw distance made the placement's pull, 2 (d - delta) |grad d|, ~1/delta^2 weaker
-    // than the smooth potential's at the same misplacement (measured on two_circles at 0.1:
-    // 0.023 against the smooth field's ~86), so the 1e-4 AMIPS term was no longer negligible
-    // and construction zigzags 12% off the offset survived as exact balance points. Every
-    // consumer works in ratios of value to c or divides by level_set_slope(), so nothing else
-    // changes: the dist_and_orient distance |value - c| / |grad| is still d - delta.
+    // In units of target_distance: value = d / delta, level c = 1, so |grad| = 1 / delta. See the
+    // envelope-backed constructor above for why the raw distance is not used.
     m_c = 1.;
     m_grad_ref = 1. / delta;
 }
@@ -1002,15 +954,14 @@ void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, i
         bool on_corner = false;
         int feature_id = -1;
         Eigen::Vector2d seg_normal;
-        // Same query, either engine; the algorithm and its results are identical (the BVH's
-        // copy of it was lifted verbatim from the envelope's).
+        // Same query, either engine: the two implementations of it are identical.
         if (m_bvh) {
             m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
         } else {
             m_envelope->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
         }
-        // The 2D query reports the segment NORMAL; the Hessian below is cased on the direction
-        // ALONG the feature, so a segment interior is dim 1 with the tangent, obtained by
+        // The 2D query reports the segment normal, while the Hessian below is cased on the
+        // direction along the feature: a segment interior is dim 1 with the tangent, obtained by
         // rotating the normal a quarter turn.
         dim = on_corner ? 0 : 1;
         dir = on_corner ? VecD::Zero().eval() : VecD(-seg_normal.y(), seg_normal.x());
@@ -1019,12 +970,10 @@ void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, i
         m_envelope->nearest_point_feature(p, foot, dim, dir, feature_id);
     }
 
-    // A DEGENERATE SEGMENT IS A POINT, not an edge. Both SimplicialComplexBVH and the envelope
+    // A degenerate segment is a point, not an edge: both SimplicialComplexBVH and the envelope
     // carry an isolated input vertex as the pseudo-edge (i, i), so a query near one comes back as
-    // an edge-interior hit whose direction is whatever normalising a zero vector produced. The
-    // edge Hessian would then subtract a meaningless t t^T. Demote it to the vertex case, which
-    // is what the geometry actually is. topological_offset_2d_vertex_input is a point cloud and
-    // is made entirely of these.
+    // an edge-interior hit whose direction is whatever normalising a zero vector produced, and the
+    // edge Hessian would subtract a meaningless t t^T. Demote it to the vertex case.
     if (dim == 1 && !(dir.norm() > 0.5)) {
         dim = 0;
         dir = VecD::Zero();
@@ -1036,11 +985,10 @@ double EuclideanOffsetPotential<DIM>::value(const VecD& p) const
 {
     if constexpr (DIM == 2) {
         if (m_bvh) {
-            // THE CURVE'S distance, through the feature query, exactly as the envelope-backed
-            // path measured it -- NOT squared_dist(), which is the distance to the SOLID
-            // complex and is identically zero inside a solid region. The two agree everywhere
-            // the offset lives (outside), but value() should not silently change meaning
-            // inside.
+            // The distance to the complex's curve, through the feature query -- never
+            // squared_dist(), which measures the solid complex and is identically zero inside a
+            // solid region. The two agree everywhere the offset lives, but value() must not
+            // silently change meaning inside.
             Eigen::Vector2d foot;
             bool on_corner = false;
             Eigen::Vector2d seg_normal;
@@ -1063,11 +1011,10 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
 
     const VecD r = p - foot;
     const double d = r.norm();
-    // ON the complex the gradient of d does not exist -- every direction increases it equally.
-    // Zero is the honest answer and the one the smoother handles: it contributes no offset force,
-    // so the vertex is moved by the quality term alone. Such a vertex is excluded from the offset
-    // term anyway (smooth_before refuses an input-complex vertex in Phase B) and from the criterion
-    // (band_vertex_is_reachable books it as pinned), so this is a belt-and-braces case.
+    // On the complex the gradient of d does not exist, since every direction increases it equally.
+    // Zero contributes no offset force, so such a vertex is moved by the quality term alone. Phase
+    // B excludes input-complex vertices from the offset term and the criterion books them as
+    // pinned, so this case is a backstop.
     if (!(d > 1e-14)) {
         return VecD::Zero();
     }
@@ -1093,7 +1040,7 @@ typename EuclideanOffsetPotential<DIM>::MatD EuclideanOffsetPotential<DIM>::hess
     // Hessian of d^2; grad^2(d^2) = 2 (grad d grad d^T + d grad^2 d) converts one to the other.
     // See the class comment for the table.
     if (dim == DIM - 1) {
-        // Face interior in 3D, segment interior in 2D: d is LINEAR in p there, so no curvature.
+        // Face interior in 3D, segment interior in 2D: d is linear in p there, so no curvature.
         return MatD::Zero();
     }
     if (dim == 1) {

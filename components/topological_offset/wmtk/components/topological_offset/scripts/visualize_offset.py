@@ -368,7 +368,7 @@ def read_frame_labels(d):
 # The 2D offset's own timeline: <output>_step_<NNNNN>_r<round><A|B><pass>[_<op>] or [_end].
 # <op> is the pass the frame follows ("split", "smooth", "collapse-skipped", "B-offset", ...).
 # See TopoOffsetTriMesh::write_smoothing_debug_output, which is what names these.
-# S is the single-phase mode (alternating_opt false): one loop, so its frames are r<it>S<pass>.
+# A and B are the 3D phases; S is the 2D single phase, one loop, so its frames are r<it>S<pass>.
 STEP_RE = re.compile(r"step_(\d+)_r(\d+)([ABS])(?:(\d+)(?:_([A-Za-z][A-Za-z-]*))?|_end)$")
 
 

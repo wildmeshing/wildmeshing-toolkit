@@ -1,20 +1,11 @@
-// Python bindings for the 2D offset potentials.
+// Python bindings for the 2D offset potentials, so a viewer draws E = (Phi - c)^2 from the same
+// C++ object a run uses. For `offset_field: "smooth"`, the default, Phi is the ipc-toolkit
+// high_order_contact (OGC) potential: a sum over primitives selected by feasible-region tests,
+// which cannot be reimplemented in numpy -- anything Python computed instead would be a different
+// field wearing the same name. Both fields are exposed so a script can compare them.
 //
-// WHY THIS EXISTS. visualize_error_field.py draws the field E = (Phi - c)^2 that the offset
-// optimization descends. For `offset_field: "euclidean"` Phi is the distance to the input
-// complex and Python can compute it in a few lines of numpy. For `offset_field: "smooth"` --
-// which is the DEFAULT -- Phi is the ipc-toolkit high_order_contact (OGC) potential, and there
-// is no reimplementing that in Python: it is a sum over primitives selected by feasible-region
-// tests, with its own smoothing parameters. Anything Python computed instead would be a
-// different field wearing the same name, which for a diagnostic is worse than nothing.
-//
-// So the viewer calls the SAME C++ object the run does. Both fields are exposed, so a script
-// can switch between them and compare, and the euclidean one doubles as a check that the
-// binding agrees with the numpy path it replaces.
-//
-// THE BATCH ENTRY POINTS ARE THE POINT. A grid is 10^5 samples; crossing the language boundary
-// per sample costs more than evaluating the potential. values()/gradients() take an (n, 2)
-// array and return (n,) / (n, 2), evaluating in C++ with the GIL released.
+// The batch entry points evaluate in C++ with the GIL released, because a grid is 10^5 samples
+// and crossing the language boundary per sample costs more than the potential does.
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
@@ -65,9 +56,9 @@ Eigen::MatrixXd gradients_of(const Potential& p, const Eigen::MatrixXd& Q)
     return out;
 }
 
-/// The input-complex BVH EuclideanOffsetPotential queries -- the SAME structure the mesh
-/// retains as its one description of the input complex (isolated points enter as the pseudo-
-/// edge (i, i), which SimplicialComplexBVH::init builds from P itself).
+/// The input-complex BVH EuclideanOffsetPotential queries -- the same structure the mesh retains
+/// as its one description of the input complex. Isolated points enter as the pseudo-edge (i, i),
+/// which SimplicialComplexBVH::init builds from P itself.
 std::shared_ptr<SimplicialComplexBVH>
 make_query_bvh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E, const std::vector<int>& P)
 {

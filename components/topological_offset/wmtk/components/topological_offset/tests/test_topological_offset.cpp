@@ -155,9 +155,9 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
 TEST_CASE("per_tag_envelopes_init", "[3d][envelope]")
 {
     // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
-    // boundary, every outer face is a wall face of its tet's tag. One envelope per tag with
-    // boundary faces, junction vertices carrying both bits, and the multi-bit dispatch
-    // answering an intersection composite -- the init contract of the per-tag scheme.
+    // boundary, every outer face is a wall face of its tet's tag. Asserts the per-tag init
+    // contract -- one envelope per tag with boundary faces, junction vertices carrying both
+    // bits, and multi-bit dispatch answering with an intersection composite.
     Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
     V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
     Eigen::MatrixXi T(2, 4);
@@ -196,12 +196,10 @@ TEST_CASE("per_tag_envelopes_init", "[3d][envelope]")
         REQUIRE(mesh.m_vertex_extra[v].m_boundary_mask == (bit_a | bit_b));
     }
 
-    // THE GATE. vertex_boundary_mask() is the raw mask AND'd with "is this vertex region
-    // geometry at all", and only the shared face is two-sided here, so only its vertices are
-    // m_is_on_region -- the apexes sit on wall faces the fixture never labels. Without the gate
-    // a raw mask survives onto geometry that has drifted off the boundary (measured on prism:
-    // 506 offset faces carrying the ambient bit from a split's endpoint AND, each routed into
-    // a tube a full target_distance away), so the two must not agree for the apexes.
+    // The gate: vertex_boundary_mask() is the raw mask AND'd with "is this vertex region geometry
+    // at all". Only the shared face is two-sided here, so only its vertices are m_is_on_region --
+    // the apexes must gate to 0 even though their raw mask is nonzero, or a stale mask would
+    // route geometry that has drifted off the boundary into the wrong tube.
     REQUIRE(mesh.vertex_boundary_mask(0) == 0);
     REQUIRE(mesh.vertex_boundary_mask(4) == 0);
     for (const size_t v : {size_t(1), size_t(2), size_t(3)}) {
@@ -389,7 +387,7 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     mesh.m_face_extra[3].label = F3_LABEL;
     mesh.m_tet_attribute[0].label = T0_LABEL;
 
-    // split face
+    // split tet
     TetMesh::Tuple ttup = mesh.tuple_from_tet(0);
     std::vector<TetMesh::Tuple> garbage;
     mesh.split_tet(ttup, garbage);

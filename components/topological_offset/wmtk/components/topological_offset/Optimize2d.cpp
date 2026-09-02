@@ -36,35 +36,14 @@ bool TopoOffsetTriMesh::edge_is_on_surface(const std::array<size_t, 2>& vids) co
     if (eid == static_cast<size_t>(-1) || !t.is_valid(*this)) {
         return false;
     }
-    // THE EDGE'S OWN TRACKING RECORD, not a comparison of the incident faces' RAW TAG SETS.
-    //
-    // The tag comparison this replaced (2026-08-23) was the last functional reader of the input
-    // tag sets left in the optimization phase, and it disagreed with the tracking in exactly the
-    // place that matters. execute_offset() REPLACES the tags of every face the band grows
-    // through, so a region boundary the band swallowed ends up with identical tag sets on both
-    // sides -- the comparison then answers "not on a surface" for an edge that
-    // init_surfaces_and_boundaries() classified, that carries m_is_surface_fs, and that is held
-    // in its tags' envelopes. substructure_link_condition() was therefore evaluating the
-    // collapse pass against a substructure missing those edges. Measured on two_circles: 81 of
-    // 257 tracked region edges had an empty live tag difference by the time the optimization
-    // started, which is the same divergence log_region_edge_mask_health() counts.
-    //
-    // m_is_surface_fs does not have that failure mode: it is assigned once from the INPUT
-    // partition and then propagated by every operation -- the split copies the parent onto both
-    // children and resets its cross edges (TriOptimizerMeshSplit.cpp:305-309), the collapse
-    // merges and migrates (TriOptimizerMeshCollapse.cpp:227, :338), and the swap restores the
-    // ring and resets the new diagonal (TriOptimizerMesh.cpp:336-341). The base's own
-    // is_edge_on_surface() already asks exactly this question, so delegating also stops the two
-    // from being able to disagree.
-    //
-    // The domain wall keeps its answer: init_surfaces_and_boundaries() tracks a wall edge like
-    // any other region boundary, so the `!opp` short-circuit above is now belt-and-braces rather
-    // than the only thing that classified it.
+    // The edge's own tracking record, never a comparison of the incident faces' tag sets: the
+    // band replaces the tags of every face it grows through, so a region boundary the band
+    // swallowed has identical tags on both sides and a tag comparison would call it untracked.
+    // m_is_surface_fs cannot go quiet that way -- it is assigned once from the input partition
+    // and propagated by split, collapse and swap alike.
     //
     // Spelled out rather than delegating to is_edge_on_surface(vids) so the tuple lookup the
-    // guard above already paid for is reused; the base additionally demands both endpoints'
-    // m_is_on_surface, which is implied here -- every operation that sets m_is_surface_fs on an
-    // edge sets that flag on both its ends.
+    // guard above already paid for is reused.
     return m_edge_attribute[eid].m_is_surface_fs;
 }
 
@@ -90,17 +69,12 @@ bool TopoOffsetTriMesh::face_is_input_complex(const size_t fid) const
 
 void TopoOffsetTriMesh::label_offset_boundary()
 {
-    // ONCE, AT THE TOP OF THE OPTIMIZATION, and never again -- exactly the 3D flow. This used to
-    // run at the start of every iteration and re-derive ALL THREE tracked classes plus the bbox
-    // flags from the face labels, clearing them first. Two things were wrong with that. The
-    // labels are CONSTRUCTION data the optimization does not propagate, so re-reading them after
-    // an operation pass reads stale values; and the region boundaries and the wall are now
-    // classified once from the INPUT partition in init_surfaces_and_boundaries(), so clearing
-    // them here would throw away the only classification the per-tag envelopes are keyed on.
-    //
-    // What is left is what 3D does here: upgrade the OFFSET boundary to its own class. The
-    // region/input edges keep the primary class 0, so they are envelope-checked by the shared
-    // operations exactly as in triwild and simwild.
+    // Runs once at the top of the optimization, never again -- as in 3D. It only upgrades the
+    // offset boundary to its own class: the face labels are construction data the optimization
+    // does not propagate, and init_surfaces_and_boundaries() classifies the region boundaries and
+    // the wall once from the input partition, which is what the per-tag envelopes are keyed on.
+    // Region and input edges keep class 0 and are envelope-checked by the shared operations
+    // exactly as in triwild and simwild.
 
     // Face quality, which the shared operations read and keep up to date from here on.
     for (const Tuple& f : get_faces()) {
@@ -116,11 +90,9 @@ void TopoOffsetTriMesh::label_offset_boundary()
         }
         const std::optional<Tuple> opp = e.switch_face(*this);
         if (!opp) {
-            // The band ran into the domain wall. There is no second face to compare against, so
-            // this cannot be classified as offset boundary -- and it must not be, or the wall
-            // segment would lose the per-tag containment that keeps the box a box. Counted so a
-            // clipped band is visible here as well as in
-            // warn_if_offset_reaches_domain_boundary().
+            // The band ran into the domain wall. With no second face this cannot be classified
+            // as offset boundary -- and must not be, or the wall segment would lose the per-tag
+            // containment that keeps the box a box.
             ++n_wall_band;
             continue;
         }
@@ -134,7 +106,7 @@ void TopoOffsetTriMesh::label_offset_boundary()
 
         for (const size_t vid : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
             m_vertex_extra[vid].m_is_on_offset = true;
-            // The base's UNION flag, and the one the shared operations actually read.
+            // The base's union flag, and the one the shared operations actually read.
             m_vertex_attribute[vid].m_is_on_surface = true;
         }
     }
@@ -156,19 +128,15 @@ void TopoOffsetTriMesh::label_offset_boundary()
 
 bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
 {
-    // TRIWILD PARITY: no offset-criterion capture here and no comparison in the `after` hook.
-    // A second criterion on top of the envelope made Phase A stricter than TriWild in exactly
-    // the phase documented as "Phase A is TriWild"; the envelope is the constraint and the
-    // criterion belongs to Phase B. Same removal as 3D -- see Swap.cpp.
+    // No offset criterion here and none in the `after` hook: the envelope is Phase A's
+    // constraint and the offset criterion belongs to Phase B. Same as 3D -- see Swap.cpp.
     if (!TriOptimizerMesh::swap_edge_before(t)) {
         return false;
     }
 
-    // No special wall handling: a wall edge is m_is_surface_fs-tracked (the base refuses
-    // tracked-surface edges), has no second face (the `!opp` test below refuses the flip
-    // structurally), and its endpoints' mask differs from any interior apex pair (the junction
-    // rule at the bottom refuses again). Three independent reasons it cannot flip, none of
-    // them a bbox special case.
+    // A wall edge needs no special case: it is m_is_surface_fs-tracked (the base refuses those),
+    // has no second face (the `!opp` test below), and its endpoints' mask differs from any
+    // interior apex pair (the junction rule at the bottom).
 
     // The flip replaces (a,b) with (c,d), the two apexes of the incident triangles.
     const std::optional<Tuple> opp = t.switch_face(*this);
@@ -183,8 +151,8 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
         if (nb == d) return false;
     }
 
-    // A flip across a JUNCTION would detach the new diagonal from one of the boundaries the old
-    // edge lay on: refuse when the endpoints' masks differ from the apexes'. The 3D twin is the
+    // A flip across a junction would detach the new diagonal from one of the boundaries the old
+    // edge lay on: refuse when the endpoints' masks differ from the apexes'. 3D twin: the
     // face_mask comparison in swap_before_surface().
     if (edge_mask({{t.vid(*this), t.switch_vertex(*this).vid(*this)}}) != edge_mask({{c, d}})) {
         return false;
@@ -275,17 +243,15 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::containment_for(
     // deadlocks. Nothing here re-enters it after the lock is taken.
     const std::shared_ptr<SampleEnvelope> region = envelope_for_mask(region_mask);
 
-    // The offset side. PHASE A ONLY -- Phase B is the pass that has to move the boundary, and a
-    // tube around where it currently sits would cap how far it can travel. Null before the
-    // first rebuild, which is the pre-pass, when there is no offset yet.
+    // The offset side, Phase A only: Phase B has to move the front, and a tube around where it
+    // currently sits would cap how far it can travel. Null before the first rebuild.
     const bool hold_offset = on_offset && m_phase == OptPhase::A && m_offset_envelope != nullptr;
 
     if (!hold_offset) return region; // may itself be null: nothing contains this simplex
     if (!region) return m_offset_envelope;
 
-    // ON BOTH: the intersection, inside every tube it lies on. Memoized per region mask because
-    // the second member is the same object for all of them; rebuild_offset_envelope() clears
-    // the map, so an entry can never outlive the tube it was built around.
+    // On both: the intersection, inside every tube it lies on. Memoized per region mask;
+    // rebuild_offset_envelope() clears the map, so an entry can never outlive its tube.
     {
         std::lock_guard<std::mutex> lock(m_isect_mutex);
         const auto it = m_offset_isect_cache.find(region_mask);
@@ -302,7 +268,7 @@ bool TopoOffsetTriMesh::project_into_containment(const size_t vid, Vector2d& x) 
     const uint64_t mask = vertex_boundary_mask(vid);
     if (mask == 0) return true; // nothing holds this vertex; any position is valid
 
-    // THE REAL MEMBERS, never envelope_for_mask()'s composite -- see the declaration for why
+    // The real members, never envelope_for_mask()'s composite -- see the declaration for why
     // nearest_point() on an IntersectionEnvelope dereferences a null BVH.
     std::vector<const SampleEnvelope*> members;
     for (const auto& [tag, env] : m_tag_envelopes) {
@@ -313,9 +279,9 @@ bool TopoOffsetTriMesh::project_into_containment(const size_t vid, Vector2d& x) 
     }
     if (members.empty()) return true; // every bit dangled: no tube was ever built for them
 
-    // ALTERNATING PROJECTION, worst violation first. A single tube needs one round, because
-    // nearest_point() lands x ON the curve and the tube contains its own curve; a junction needs
-    // a few, and converges toward the point where its curves meet.
+    // Alternating projection, worst violation first. A single tube needs one round, since
+    // nearest_point() lands x on the curve and the tube contains its own curve; a junction needs
+    // a few, converging toward the point where its curves meet.
     constexpr int kMaxRounds = 8;
     for (int round = 0; round < kMaxRounds; ++round) {
         const SampleEnvelope* worst = nullptr;
@@ -335,9 +301,9 @@ bool TopoOffsetTriMesh::project_into_containment(const size_t vid, Vector2d& x) 
         x = proj;
     }
 
-    // Did not settle in kMaxRounds. Two tubes that do not actually intersect near x would do
-    // this, which is a construction question, not something to paper over by committing the last
-    // iterate: the caller keeps the entry position instead.
+    // Did not settle: two tubes that do not actually intersect near x. A construction question,
+    // not something to paper over by committing the last iterate -- the caller keeps the entry
+    // position instead.
     for (const SampleEnvelope* e : members) {
         if (e->is_outside(x)) return false;
     }
@@ -358,15 +324,12 @@ bool TopoOffsetTriMesh::face_is_deformable(const size_t fid) const
 
 bool TopoOffsetTriMesh::face_is_released_band(const size_t fid) const
 {
-    // A band cell that is RELEASED MATERIAL: every tag it carries besides the offset output
-    // tag belongs to a released object, and there is at least one such tag (a pure band cell
-    // carries only the output tag and stays the front's freely-reshaped working material; a
-    // cell shared with a HELD object must not flow and is excluded because that tag is not
-    // released). Consumed ONLY by the front placement objective and the rest stamping
-    // (Uday, 2026-09-01): the front does work against a released object's material where it
-    // pushes through the overlap, by the same per-group increment brake the plastic medium
-    // uses -- while the band's interior smoothing stays equilateral, because the band is the
-    // numerical working layer the front's solves need well-shaped.
+    // A band cell that is released material: every tag besides the offset output tag belongs to
+    // a released object, and there is at least one such tag. A pure band cell carries only the
+    // output tag and stays the front's freely-reshaped working material; a cell shared with a
+    // held object is excluded. Read only by the front placement objective and the rest stamping,
+    // so the front does work against released material where it pushes through the overlap while
+    // the band's interior smoothing stays equilateral.
     if (m_deform_tags.empty()) return false;
     if (m_face_extra[fid].label != 2) return false;
     bool has_released = false;
@@ -405,11 +368,10 @@ void TopoOffsetTriMesh::stamp_plastic_rests()
 
 bool TopoOffsetTriMesh::smooth_plastic_vertex(const Tuple& t)
 {
-    // The plastic medium's smoothing: rest-shape AMIPS over the one-ring and nothing else.
-    // Rest is the shape at the group's start (stamp_plastic_rests), so the term resists only
-    // the increment; no equilateral term (that is the elastic solid this replaces -- quality
-    // in the medium belongs to the operation passes) and no quality veto (a veto would freeze
-    // the flow exactly as the solid did). Accept: exact inversion of the ring, as everywhere.
+    // The plastic medium's smoothing: rest-shape AMIPS over the one-ring and nothing else. Rest
+    // is the shape at the group's start (stamp_plastic_rests), so the term resists only the
+    // increment. No equilateral term -- quality in the medium belongs to the operation passes --
+    // and no quality veto, which would freeze the flow. Accept on exact inversion of the ring.
     const size_t vid = t.vid(*this);
     const std::vector<size_t>& ring = get_one_ring_fids_for_vertex(t);
     for (const size_t fid : ring) {
@@ -468,24 +430,16 @@ bool TopoOffsetTriMesh::smooth_plastic_vertex(const Tuple& t)
 
 void TopoOffsetTriMesh::release_deformable_regions()
 {
-    // WHICH TAGS STAY HELD: a tag on any input-complex face (label 1) is the geometry the
-    // offset measures from; a tag on any wall face holds the domain boundary (ambient, mostly);
-    // the curve group is input geometry. Everything else with an envelope is an object the
-    // offset merely shares the scene with, and deform_others releases it: its envelope is
-    // dropped, its faces get a rest shape (see FaceExtra2d::rest_valid for the tracking
-    // contract), and from here on smoothing deforms it against RestAMIPSEnergy2D instead of a
-    // tube refusing every move. Dangling mask bits are already the envelope machinery's normal
-    // case ("a bit whose tag never got an envelope"), so the queries need no change.
-    // WHICH TAGS ARE SOURCES, AND SO NEVER RELEASED: the tags the offset_selection expression
-    // names, plus protected_tags. The complex is DEFINED by that expression, so every tag in it
-    // is the geometry the offset measures from, whether or not it also has faces of its own --
-    // annots selects (tag_0 | tag_2 | tag_3) & tag_1, and releasing tag_2/tag_3 (they carry no
-    // exclusively-their-own complex face) reduced the envelopes of curves that ARE the complex
-    // boundary: vertices pinned to a tube that no longer covers them froze, the medium tore
-    // around them, and the run arrived at max AMIPS 1e50 with needles already inverted
-    // (2026-09-01). The earlier heuristics -- "a tag on any complex face" (held two_overlap's
-    // Q, which merely overlaps) and "a tag with an exclusive complex face" (released annots'
-    // constituents) -- were both proxies for this; the expression states it exactly.
+    // Held: any tag on an input-complex face or on a wall face, and the curve group. Everything
+    // else with an envelope is an object the offset merely shares the scene with, and
+    // deform_others releases it -- tube dropped, faces given a rest shape, smoothing deforming it
+    // against RestAMIPSEnergy2D instead of a tube refusing every move. Dangling mask bits are
+    // already the envelope machinery's normal case, so the queries need no change.
+    //
+    // Never released, whatever else it touches: every tag the offset_selection expression names.
+    // The complex is defined by that expression, so those tags are the geometry the offset
+    // measures from, faces of their own or not. Do not go back to a heuristic over complex faces;
+    // measured worse -- see git history of this file.
     std::set<int64_t> kept;
     std::set<int64_t> source_tags;
     if (m_offset_params.offset_selection) {
@@ -499,13 +453,9 @@ void TopoOffsetTriMesh::release_deformable_regions()
         for (const int64_t t : m_face_attribute[e.fid(*this)].tags) kept.insert(t);
     }
     if (m_curve_tag >= 0) kept.insert(m_curve_tag);
-    // protected_tags is NOT consulted here (Uday, 2026-09-01). The two keys are orthogonal:
-    // protected_tags is a CONSTRUCCTION/tagging decision -- whether a band cell overwrites the
-    // object's tag or carries both (set_offset_tri_tags) -- and deform_others is a GEOMETRY
-    // decision -- whether other objects may deform. Using protected_tags as a "stay rigid"
-    // opt-out entangled them: the overlap fixture's protected run released nothing at all, so
-    // "protected vs not" was really "tags kept, rigid" against "tags overwritten, deformable",
-    // two changes at once, and the comparison was meaningless.
+    // protected_tags is not consulted here, and the two keys must stay orthogonal: protected_tags
+    // is a tagging decision (whether a band cell overwrites the object's tag or carries both) and
+    // deform_others is a geometry decision (whether other objects may deform).
 
     m_deform_tags.clear();
     for (const auto& [tag, env] : m_tag_envelopes) {
@@ -517,59 +467,37 @@ void TopoOffsetTriMesh::release_deformable_regions()
         return;
     }
 
-    // NO TUBE IS EVER EDITED. Releasing a boundary is a property of its VERTICES' masks
-    // (the loop below); every tag's envelope, released tags included, keeps its as-loaded
-    // segments. Both alternatives were tried and measured wrong the same way -- a tube that no
-    // longer covers geometry whose bits some vertex still carries measures that vertex against
-    // the far side of the scene: dropping a released object's segments from KEPT tags' tubes
-    // broke the curve group (64 edges "OUT BY 2.2", 2026-08-31, and again 2026-09-01 when the
-    // block survived a refactor), and reducing the released tag's OWN tube to its shared-source
-    // segments left the object's inside-the-complex boundary dangling once those vertices kept
-    // their bit (2026-09-01). A whole tube held by nobody constrains nothing: the freed
-    // exterior's vertices end at mask 0 and never query it, while the inside-the-complex
-    // boundary keeps its bit and is held to the curve it lies on -- which is the point, since
-    // the front cannot enter the complex and that part of a released boundary must simply stay
-    // where it was loaded instead of drifting under plain quality smoothing (Q's arc inside P,
-    // 2026-09-01).
+    // No tube is ever edited: releasing a boundary is a property of its vertices' masks (the loop
+    // below), and every tag's envelope, released tags included, keeps its as-loaded segments. A
+    // tube held by nobody constrains nothing, while a tube that no longer covers geometry whose
+    // bits some vertex still carries measures that vertex against the far side of the scene. Do
+    // not re-add either edit -- dropping released segments from kept tags' tubes, or reducing a
+    // released tag's own tube; both measured worse -- see git history of this file.
     std::string released;
     for (const int64_t t : m_deform_tags) {
         released += " " + m_tag_id_to_name.at(t);
     }
 
-    // EDIT THE MASKS IN PLACE, DO NOT RECOMPUTE THEM. A vertex's mask is SEEDED at
-    // construction and PROPAGATED by every operation since (a split ANDs its endpoints, a
-    // collapse ORs them), so it carries history that no rebuild from the current edge set can
-    // reproduce: rebuilding it dropped the bits of every edge that is no longer flagged as a
-    // tracked surface -- 620 of 906 region-boundary edges ended up contained by nothing on
-    // annots (2026-09-01, the envelope-health check), including the complex's own boundary,
-    // which must stay held whatever borders it. The loop below reduces a freed vertex's mask
-    // to its SOURCE bits: a vertex held by released geometry alone ends at 0, which is the
-    // point, while a junction vertex where the released boundary crosses the source keeps the
-    // source's hold -- freeing those wholly left the source's own edges at the crossings
-    // contained by nothing (4 such on two_overlap, the envelope-health warning, 2026-09-01).
+    // Edit the masks in place, never recompute them: a mask is seeded at construction and
+    // propagated by every operation since (a split ANDs its endpoints, a collapse ORs them), so
+    // it carries history no rebuild from the current edge set can reproduce. The loop below
+    // reduces a freed vertex's mask to its source bits -- held by released geometry alone it ends
+    // at 0, while a junction vertex where the released boundary crosses the source keeps the
+    // source's hold, so the source's own crossing edges stay contained.
     uint64_t released_bits = 0;
     for (const int64_t t : m_deform_tags) {
         const auto it = m_tag_bit.find(t);
         if (it != m_tag_bit.end()) released_bits |= (uint64_t(1) << it->second);
     }
     if (released_bits) {
-        // FREE THE VERTICES DOWN TO THEIR SOURCE BITS, AND EDIT NO TUBE. A released object's
-        // boundary vertex must end up held by nothing OF ITS OWN: clearing just the released
-        // tag's bit is not enough -- an interface edge contributes bits for BOTH of its sides,
-        // so circle_b's vertices kept ambient's bit and stayed pinned in ambient's tube (the
-        // push froze at 0.178 of a 0.30 target, 2026-09-01) -- and clearing the source bits
-        // too was one step over: a junction vertex where the released boundary crosses the
-        // source sits ON the source, and wholly freeing it left the source's own crossing
-        // edges contained by nothing. Editing the kept tags' tubes instead is the other wrong
-        // answer: it unholds geometry whose bits other vertices still carry (see above).
+        // Free a released boundary's vertices down to their source bits. Clearing only the
+        // released tag's bit leaves them pinned in the other side's tube (an interface edge
+        // contributes bits for both of its sides); clearing the source bits too leaves the
+        // source's own crossing edges contained by nothing.
         //
-        // Guards: an edge that also borders a SOURCE tag is the source's own boundary and is
-        // never freed; an edge BOTH of whose faces carry a source tag is a complex-internal
-        // interface -- the front cannot enter the complex, so that part of a released boundary
-        // can never be pushed, and freeing it only let plain quality smoothing drift it (Q's
-        // arc inside P, 2026-09-01) -- never freed either, and held by the anchored segments
-        // the envelope reduction above kept for exactly this; a wall vertex keeps its bbox
-        // constraint.
+        // Never freed: an edge that also borders a source tag (it is the source's own boundary),
+        // an edge both of whose faces carry a source tag (complex-internal, and the front cannot
+        // enter the complex, so it must stay where it was loaded), or a wall vertex.
         uint64_t source_bits = 0;
         for (const int64_t t : source_tags) {
             const auto it = m_tag_bit.find(t);
@@ -641,12 +569,10 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::rest_energy_fo
     if (m_deform_tags.empty()) return nullptr;
     std::vector<RestAMIPSEnergy2D::Cell> cells;
     for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(vid))) {
-        // Released-band cells too (Uday, 2026-09-01): a released object's boundary INSIDE the
-        // band had no shape input in ordinary smoothing -- its object-side ring cells are
-        // band-labeled, so face_is_deformable() skipped them and the boundary was smoothed by
-        // pure triangle quality. Accepting them here gives that boundary the SAME treatment
-        // the object's boundary outside the band always had: quality term kept, rest term
-        // summed at the same 1:1 weight below.
+        // Released-band cells too: a released object's boundary inside the band has band-labeled
+        // ring cells, which face_is_deformable() skips, so without this the boundary is smoothed
+        // by pure triangle quality instead of getting the same treatment as the object's boundary
+        // outside the band.
         if (!face_is_deformable(fid) && !face_is_released_band(fid)) continue;
         const FaceExtra2d& fx = m_face_extra[fid];
         if (!fx.rest_valid) continue;
@@ -750,10 +676,9 @@ bool TopoOffsetTriMesh::walk_along_curve(
     if (env_it == m_tag_envelopes.end() || pl_it == m_tag_polyline.end()) return false;
     const TagPolyline2d& pl = pl_it->second;
 
-    // START ON THE CURVE. The foot, not x itself: the vertex is inside a tube of half-width eps,
-    // so it is generally a little off the polyline, and arclength is only defined on it. This is
-    // also what makes the walk idempotent -- a vertex already placed by a previous pass returns
-    // to the same foot.
+    // Start on the curve, at the foot rather than at x: the vertex sits inside a tube of
+    // half-width eps, so it is generally a little off the polyline, and arclength is defined only
+    // on it. This is also what makes the walk idempotent.
     Vector2d foot;
     bool on_corner = false;
     Vector2d seg_normal = Vector2d::Zero();
@@ -790,11 +715,10 @@ bool TopoOffsetTriMesh::walk_along_curve(
         if (seg < 0 || seg >= int(pl.E.size())) return false;
     }
 
-    // MARCH. At each step, walk to the end of the current segment in `dir`; if the budget runs
-    // out first, land inside it and stop. Otherwise step onto the shared vertex and pick the
-    // continuation. A vertex with exactly two incident segments has one; anything else -- an
-    // open end, or three curves meeting -- is where the walk stops, because there is no
-    // unambiguous continuation and guessing one would slide the vertex onto a different curve.
+    // March: walk to the end of the current segment in `dir`, or land inside it if the budget
+    // runs out first. A shared vertex with exactly two incident segments has one continuation;
+    // anything else -- an open end, three curves meeting -- stops the walk, because guessing a
+    // continuation would slide the vertex onto a different curve.
     constexpr int kMaxSegments = 4096; // a walk this long is a bug, not a long boundary
     for (int step = 0; step < kMaxSegments; ++step) {
         const int a = pl.E[seg][0], b = pl.E[seg][1];
@@ -836,10 +760,8 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::swap_edge_after(t)) {
         return false;
     }
-    // TRIWILD PARITY: no offset-criterion acceptance for surface flips. The shared swap has
-    // already checked both new segments against their envelopes (see swap_edge_before()); a
-    // second criterion on top of that is what this used to be, and it is gone with the collapse
-    // one -- see collapse_edge_after().
+    // No offset criterion for surface flips: the shared swap has already checked both new
+    // segments against their envelopes (see swap_edge_before()).
     // deform_others: a swap rewires exactly these two faces; their rest is stale.
     stamp_rest_face(t.fid(*this));
     if (const std::optional<Tuple> opp = t.switch_face(*this)) stamp_rest_face(opp->fid(*this));
@@ -856,23 +778,13 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
         m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar =
             m_collapse_survivor_sizing.local();
     }
-    // TRIWILD PARITY: no offset-criterion acceptance test in the loop.
+    // No offset criterion in the loop: Phase A holds the front in m_offset_envelope, so the
+    // shared pass's containment check enforces it with the tolerance semantics TriWild's input
+    // gets, and Phase B re-places the front every round. Same as 3D.
     //
-    // This used to apply a non-degrading Phi gate to every collapse (refuse if the worst offset
-    // face at the survivor got worse), captured per-edge in collapse_before_vertex(). That was
-    // load-bearing when the offset boundary had NO envelope holding it. Phase A now holds it in
-    // m_offset_envelope (rebuilt each round, eps = offset_envelope_rel x target_distance
-    // tolerance), so containment is enforced by the shared pass's surface_segment_is_outside() --
-    // the same mechanism, with the same tolerance semantics, that TriWild's input gets. A
-    // second, tighter criterion on top of the envelope made Phase A stricter than TriWild in
-    // exactly the phase that is documented as "Phase A is TriWild". Phase B, which owns the Phi
-    // criterion, re-places the boundary every round. Same removal as 3D.
-    //
-    // COARSENING keeps an ABSOLUTE bar. It runs after the loop has finished and trades elements
-    // for nothing except the promise that the result is still good: a collapse that leaves any
-    // offset face over tolerance afterwards is not a saving, it is a regression with fewer
-    // elements. face_criterion_rel() is the max of both criteria (AMIPS and the offset
-    // residual), each normalized so 1.0 is its own tolerance.
+    // Coarsening keeps an absolute bar: it runs after the loop, so a collapse leaving any offset
+    // face over tolerance is a regression with fewer elements, not a saving. face_criterion_rel()
+    // is the max of AMIPS and the offset residual, each over its own tolerance.
     if (m_coarsen_mode && m_offset_potential) {
         double after = 0.;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
@@ -897,13 +809,12 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
         return false;
     }
     // The survivor's own sizing scalar, for sizing_collapse_min = false: the base collapse
-    // overwrites it with the min of the two (upstream 52315d39e2), and collapse_edge_after()
-    // puts it back. collapse_cache is the base's, filled by the call above; v2 survives.
+    // overwrites it with the min of the two, and collapse_edge_after() puts it back.
+    // collapse_cache is the base's, filled by the call above; v2 survives.
     m_collapse_survivor_sizing.local() =
         m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar;
-    // Unconditionally, not just when both endpoints are already on a tracked simplex -- see
-    // the declaration. substructure_link_condition() evaluates the condition for the mesh and
-    // for every substructure, which is what a topological offset needs preserved.
+    // Unconditionally, not just when both endpoints are already on a tracked simplex: a
+    // topological offset needs the link condition preserved for the mesh AND every substructure.
     if (!substructure_link_condition(t)) {
         return false;
     }
@@ -912,8 +823,8 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
 
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
 {
-    // GENESIS BOOKKEEPING (diagnostic): the flattest face this collapse is about to reshape,
-    // read back by record_flatness() in collapse_after_vertex().
+    // Diagnostic: the flattest face this collapse is about to reshape, read back by
+    // record_flatness() in collapse_after_vertex().
     {
         double f = 1.;
         for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(v1_id))) {
@@ -924,28 +835,18 @@ bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t 
 
     const auto& VE = m_vertex_extra;
 
-    // v1 is the vertex the collapse REMOVES (it merges into v2, which keeps its position).
-    //
-    // A vertex on ANY tracked boundary -- input complex, region boundary, domain wall alike --
-    // may be removed, provided it merges onto a vertex of the same class (the per-class rules
-    // below for the flags; the base's on_bbox_faces SUBSET rule for the wall,
-    // TriOptimizerMeshCollapse.cpp, which also keeps corners), the result stays inside its
-    // tags' envelopes (the shared collapse's containment check), and the substructure topology
-    // survives (substructure_link_condition, applied unconditionally in collapse_edge_before).
-    // That is TriWild's rule for its input surface, applied uniformly. The wall used to be
-    // refused outright here -- "the box is not something to be coarsened" -- which was a
-    // special case the envelope accounting makes redundant, contradicted the contract stated
-    // in init_surfaces_and_boundaries(), and had no 3D counterpart.
+    // v1 is the vertex the collapse removes; it merges into v2, which keeps its position. A
+    // vertex on any tracked boundary -- input complex, region boundary, domain wall alike -- may
+    // be removed provided it merges onto a vertex of the same class (the per-class rules below;
+    // the base's on_bbox_faces subset rule for the wall), the result stays inside its tags'
+    // envelopes, and the substructure link condition survives. That is TriWild's rule for its
+    // input surface, applied uniformly; the wall gets no special refusal.
 
-    // THE INVARIANT: never both surfaces on one vertex. Construction cannot make such a vertex,
-    // and a collapse is the only thing that could manufacture one -- it merges v1 into v2 and
-    // collapse_after_vertex() ORs the flags, so an offset vertex merged into an input-complex
-    // one (or the reverse) would come out carrying both. Such a vertex sits at distance 0 from
-    // the complex and is asked to sit at target_distance from it at the same time; no placement
-    // satisfies that, so the offset boundary through it can never converge.
-    //
-    // Refused here rather than repaired afterwards, and asserted independently by
-    // check_no_vertex_on_both_surfaces() after construction and after every Phase A.
+    // Never both surfaces on one vertex: such a vertex sits at distance 0 from the input complex
+    // and is asked to sit at target_distance from it at once, so the front through it can never
+    // converge. Construction cannot make one; a collapse can, since collapse_after_vertex() ORs
+    // the flags. Refused here, and asserted independently by check_no_vertex_on_both_surfaces()
+    // after construction and after every Phase A.
     {
         const bool input = VE[v1_id].m_is_on_input || VE[v2_id].m_is_on_input;
         const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
@@ -954,27 +855,18 @@ bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t 
         }
     }
 
-    // THE OFFSET BOUNDARY IS ALWAYS LENGTH-LIMITED, whatever the pass says.
-    //
-    // Every other tracked surface here is held by its tags' envelopes, which bound how far it
-    // can be decimated no matter what the length gate is doing. The offset boundary deliberately
-    // has no envelope in Phase B -- it is the surface the optimization exists to MOVE -- so its
-    // sizing field is the only thing bounding its resolution, and a pass that switches the
-    // length gate off removes that too. mesh_improvement() runs exactly such a pass twice,
-    // `it pre` and `it post`.
-    //
-    // Measured on topological_offset_2d_vertex_input: `it pre` alone took the mesh from 2619 to
-    // 462 vertices and the band's max distance error from 0.125 to 0.25 -- exactly
-    // target_distance, i.e. a band vertex had been collapsed onto the input complex.
+    // The front is always length-limited, whatever the pass says. Every other tracked surface is
+    // held by its tags' envelopes, which bound how far it can be decimated whatever the length
+    // gate does; the front deliberately has no envelope in Phase B -- it is the surface the
+    // optimization exists to move -- so its sizing field is the only thing bounding its
+    // resolution, and a pass with the length gate off would remove that too.
     if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
         return false;
     }
 
-    // The base only knows that both endpoints are on SOME tracked surface. A vertex may not
-    // leave the particular surface it belongs to: an input-complex vertex carries input
-    // geometry, an offset-boundary vertex carries the offset, and a region-boundary vertex
-    // carries the outline of a tag region the output is built from. Each is checked separately
-    // because a vertex can be on more than one, and satisfying the union is not enough.
+    // The base only knows that both endpoints are on SOME tracked surface. A vertex may not leave
+    // the particular surface it belongs to, and each class is checked separately because a vertex
+    // can be on more than one: satisfying the union is not enough.
     if (VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
         return false;
     }
@@ -994,19 +886,17 @@ void TopoOffsetTriMesh::collapse_pass_begin()
 
 void TopoOffsetTriMesh::collapse_after_vertex(const size_t v1_id, const size_t v2_id)
 {
-    // NEEDLE TRIPWIRE (diagnostic). Runs after the collapse is committed, so what it sees is
-    // real; the survivor's ring is every face the collapse reshaped. No parent quality to quote
-    // -- collapse_quality_allowed() already carries that accounting.
+    // Diagnostic. Runs after the collapse is committed, so what it sees is real; the survivor's
+    // ring is every face the collapse reshaped.
     for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(v2_id))) {
         if (get_quality(fid) >= kNeedleQuality) report_needle("COLLAPSE", fid, -1.);
         record_flatness("COLLAPSE", m_collapse_parent_flatness.local(), fid);
     }
 
     if (m_vertex_extra.at(v1_id).m_is_on_offset) ++iter_cnt_collapse_offset_removed;
-    // CHURN: v1 is the vertex being REMOVED. If a split created it, this collapse is undoing
-    // that split. Same epoch means the collapse pass that immediately follows its own split
-    // pass took it straight back out -- work the mesh never got to keep. A larger age means it
-    // survived at least one further iteration before something decided against it.
+    // Churn: v1 is the vertex being removed, so if a split created it this collapse undoes that
+    // split. Same epoch means the collapse pass immediately following its own split pass took it
+    // straight back out.
     {
         const uint32_t born = m_vertex_extra.at(v1_id).m_born_epoch;
         if (born != 0) {
@@ -1026,27 +916,25 @@ void TopoOffsetTriMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     // boundaries. See VertexExtra2d::m_boundary_mask.
     m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
 
-    // The base calls this only once a collapse has actually gone through, so it is the 2D
-    // equivalent of the 3D counter's home in collapse_edge_after().
+    // The base calls this only once a collapse has actually gone through: the 2D equivalent of
+    // the 3D counter's home in collapse_edge_after().
     ++iter_cnt_collapse;
 }
 
 void TopoOffsetTriMesh::split_after_vertex(const size_t v_id)
 {
-    // THE NEW VERTEX'S CLASSIFICATION IS NOT SET HERE ANY MORE -- see split_adjust_position(),
-    // which the base calls BEFORE its own containment check. This hook runs after it, and the
-    // check dispatches on exactly those bits, so setting them here left the check reading a
-    // recycled slot. Only the birth epoch is left, which nothing upstream reads.
+    // The new vertex's classification is set in split_adjust_position(), which the base calls
+    // BEFORE its own containment check; this hook runs after it, and the check dispatches on
+    // exactly those bits. Only the birth epoch is set here.
     //
-    // CHURN INSTRUMENTATION, read only by collapse_after_vertex(). Assigned rather than OR'd
+    // Churn instrumentation, read only by collapse_after_vertex(). Assigned rather than OR'd
     // because v_id may be a recycled slot carrying a dead vertex's bits.
     m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
     if (m_op_epoch != 0) ++iter_cnt_split_born;
 
-    // DEGENERACY ATTRIBUTION (diagnostic, see the header). Every face incident to the midpoint
-    // was created by this split -- the base replaced the parents outright -- so a MAX_ENERGY
-    // face here is one this split just manufactured. A split is never refused on quality, so
-    // nothing upstream would have stopped it.
+    // Diagnostic, see the header. Every face incident to the midpoint was created by this split,
+    // so a MAX_ENERGY face here is one this split manufactured; a split is never refused on
+    // quality, so nothing upstream would have stopped it.
     const auto& sc = m_opt_split_cache.local();
     const double parent_q = sc.parent_q_max;
     for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(v_id))) {
@@ -1056,12 +944,12 @@ void TopoOffsetTriMesh::split_after_vertex(const size_t v_id)
         record_flatness("SPLIT", sc.parent_flatness, fid);
     }
 
-    // The children's region labels are NOT set here -- see split_adjust_position(), which the
-    // base calls early enough for the split's own containment check to see them.
+    // The children's region labels are set in split_adjust_position(), early enough for the
+    // split's own containment check to see them.
 
-    // deform_others: every face at the midpoint was created by this split, and the snapshot
-    // copy gave each the PARENT's rest -- re-stamp, or a child measures itself against a
-    // triangle twice its size (see FaceExtra2d::rest_valid).
+    // deform_others: every face at the midpoint was created by this split and the snapshot copy
+    // gave each the parent's rest -- re-stamp, or a child measures itself against a triangle
+    // twice its size (see FaceExtra2d::rest_valid).
     for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(v_id))) {
         stamp_rest_face(fid);
     }
@@ -1069,44 +957,23 @@ void TopoOffsetTriMesh::split_after_vertex(const size_t v_id)
 
 bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
 {
-    // Carry each parent's construction label onto the two children it became.
+    // Carry each parent's construction label onto its two children. Not automatic, because the
+    // children land in fresh fid slots, whose m_face_extra defaults to label 0 (or, for a
+    // recycled slot, to the previous occupant's label). split_edge_before() records the parents'
+    // labels keyed by APEX -- the vertex opposite the split edge, shared by both children of a
+    // parent and by no other parent -- the same key TriOptimizerMesh::split_edge_after resolves
+    // its own FaceAttributes cache with, so the label cannot land anywhere the tags did not.
     //
-    // A split is the only operation that creates faces, and a child is geometrically inside its
-    // parent, so it belongs to whatever region the parent did -- there is no ambiguity to
-    // resolve. What made this necessary rather than automatic is that the children land in
-    // FRESH fid slots, whose m_face_extra defaults to label 0 (or, for a slot recycled from an
-    // earlier collapse, to the previous occupant's label). Neither is the parent's.
-    //
-    // split_edge_before() records the parents' labels keyed by APEX -- the vertex opposite the
-    // split edge, which both children of the same parent share and which no other parent has.
-    //
-    // Resolved here the way TriOptimizerMesh::split_edge_after resolves its OWN FaceAttributes
-    // cache, which is keyed identically: walk the children of each new edge (v1,v_new) and
-    // (v2,v_new) and take the vertex opposite THAT edge. Scanning a child's three vertices for
-    // any key instead happens to give the same answer on a manifold mesh, but it is a search
-    // rather than the map the base uses, and it silently does nothing when it finds no key.
-    // Going through the same expression as the tags means the label cannot land anywhere the
-    // tags did not.
-    //
-    // Writing before the base's own checks is safe: m_face_extra is registered with
-    // m_face_attr_group, so a refused split rolls it back. It is also idempotent -- two of the
-    // four children reuse their parent's fid, and get written the value already there.
+    // Safe before the base's own checks: m_face_extra is registered with m_face_attr_group, so a
+    // refused split rolls it back. Idempotent too, since two children reuse their parent's fid.
     const auto& c = m_opt_split_cache.local();
     if (c.face_label.empty()) return true; // a marching-mode split; those set labels themselves
 
-    // THE NEW VERTEX'S CLASSIFICATION, AND IT HAS TO BE HERE. The base's split_edge_after()
-    // asks surface_segment_is_outside() about both new segments (TriOptimizerMeshSplit.cpp:297
-    // and :300) and that reaches surface_envelope_for_edge(), which dispatches on the
-    // ENDPOINTS' own bits: edge_mask() reads m_is_on_region and m_boundary_mask, the offset
-    // branch reads m_is_on_offset. Those used to be written in split_after_vertex(), which the
-    // base calls at :339 -- AFTER the check. So the check ran against whatever the recycled
-    // vertex slot happened to hold, which for a fresh slot is all-false: both branches fell
-    // through, the dispatch returned nullptr, and surface_segment_is_outside() answers FALSE
-    // for a null envelope. The containment check on a split was therefore a NO-OP, silently,
-    // and a split was free to put a tracked segment outside its tube. Measured on two_circles
-    // (ESP, pre-optimized input): one offset edge left the Phase A tube in round 2 and the
-    // sanity check reported it as "Edge [...] is outside!" -- the split that created it had
-    // been asked and had said yes.
+    // The new vertex's classification, and it must be set here. The base's split_edge_after()
+    // asks surface_segment_is_outside() about both new segments BEFORE it calls
+    // split_after_vertex(), and that dispatch reads the endpoints' own bits, so setting them in
+    // the later hook leaves the check reading a recycled slot -- all-false for a fresh one, which
+    // makes the dispatch return nullptr and the containment check a silent no-op.
     //
     // Same rollback safety as the face labels below: m_vertex_extra is registered with
     // m_vertex_attr_group (see the constructor), so a refused split undoes these too.
@@ -1118,15 +985,14 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     // only if the whole edge was, which is the same AND rule the boundary mask follows.
     m_vertex_extra[v_id].m_is_on_input =
         m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input;
-    // ... but m_is_on_region is the SPLIT EDGE'S OWN class, not an endpoint AND: a bare AND
-    // over-claims on a chord whose two ends happen to share a region, which is what the mask
-    // gate exists to prevent. The 3D twin reads is_edge_on_region() for the same reason.
+    // ... but m_is_on_region is the split edge's own class, not an endpoint AND: a bare AND
+    // over-claims on a chord whose two ends happen to share a region, which is what the mask gate
+    // exists to prevent. 3D reads is_edge_on_region() for the same reason.
     m_vertex_extra[v_id].m_is_on_region =
         e.m_is_surface_fs && e.m_surface_class != OFFSET_SURFACE_CLASS;
-    // ASSIGNED, not OR'd -- v_id may be a recycled slot carrying a dead vertex's bits. The bits
-    // are the ENDPOINTS' mask AND, captured in split_edge_before() (OptSplitCache2d::edge_bits);
-    // the class gate right above is what keeps a chord's midpoint maskless. Zero when the new
-    // vertex is on no region: the mask is inert there.
+    // Assigned, not OR'd -- v_id may be a recycled slot carrying a dead vertex's bits. The bits
+    // are the endpoints' mask AND, captured in split_edge_before(); the class gate right above is
+    // what keeps a chord's midpoint maskless, and the mask is inert on a vertex with no region.
     m_vertex_extra[v_id].m_boundary_mask =
         m_vertex_extra[v_id].m_is_on_region ? c.edge_bits : uint64_t(0);
 
@@ -1146,27 +1012,23 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
 {
     ++m_smooth_trace.attempted;
     const size_t vid = t.vid(*this);
-    // THE FINAL PHASE A DOES NOT MOVE THE FRONT (Uday, 2026-08-25). Its smoothing is AMIPS
-    // alone with the front free anywhere inside the offset tube (0.025 x target_distance), and
-    // no Phase B follows to put the front back: measured on Euclidean 0.4, the front's turn
-    // angle per vertex went from 3.1 deg (a smooth circle: 2.6) before the final Phase A to
-    // 10.2 deg after it, max 17 -> 41 deg. The front is converged; the final pass may split,
-    // collapse and swap around it and smooth everything else.
+    // The final Phase A does not move the front: it is converged by then, its smoothing there
+    // would be AMIPS alone with the front free anywhere inside the offset tube, and no Phase B
+    // follows to put it back. The pass may still split, collapse and swap around the front and
+    // smooth everything else.
     if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
 
-    // NEEDLE/SMOOTHING INSTRUMENTATION (diagnostic). Recorded for every visit; only visits whose
-    // ring already holds a needle are counted, and smooth_after() reads this back.
+    // Diagnostic, recorded for every visit; only visits whose ring already holds a needle are
+    // counted, and smooth_after() reads this back.
     auto& pre = m_needle_pre.local();
     pre = {ring_max_quality(vid), m_vertex_attribute[vid].m_posf};
     if (pre.first >= kNeedleQuality) ++m_needle_smooth_offered;
 
-    // THE BASE'S smooth_before MINUS ITS BOUNDING-BOX REFUSAL, which is why this does not call
-    // it. The base rounds the vertex and then refuses outright any vertex with a non-empty
-    // on_bbox_faces, i.e. it FREEZES the domain wall. Here the wall is a region boundary held in
-    // ambient's tag envelope like every other one, so its vertices are smoothed and the
-    // containment check decides whether the move survives -- exactly the contract the input
-    // complex already gets. What keeps the wall a wall is that check, not immobility. Same
-    // change as 3D; see TopoOffsetTetMesh::smooth_before() for the degeneracy it fixed.
+    // The base's smooth_before minus its bounding-box refusal, which is why this does not call
+    // it. The base freezes the domain wall; here the wall is a region boundary held in ambient's
+    // tag envelope like any other, so its vertices are smoothed and the containment check decides
+    // whether the move survives. What keeps the wall a wall is that check, not immobility. Same
+    // as 3D -- see TopoOffsetTetMesh::smooth_before().
     //
     // Rounding still has to happen, and its failure still refuses the move.
     const bool rounded_now = round(t);
@@ -1175,7 +1037,6 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
         return false;
     }
 
-    // The 3D twin (Smooth.cpp) still computes and uses these; removed here as dead.
     return true;
 }
 
@@ -1184,7 +1045,7 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     const size_t vid = t.vid(*this);
     const auto& ve = m_vertex_extra[vid];
 
-    // NEEDLE/SMOOTHING INSTRUMENTATION (diagnostic), the other half of smooth_before()'s record.
+    // Diagnostic, the other half of smooth_before()'s record.
     {
         const auto& pre = m_needle_pre.local();
         if (pre.first >= kNeedleQuality) {
@@ -1194,8 +1055,8 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
             if (after < kNeedleQuality) ++m_needle_smooth_fixed;
             if (moved < 1e-12) ++m_needle_smooth_stationary;
             if (m_needle_smooth_reports.fetch_add(1) < 8) {
-                // Per-event forensic detail at INFO, like report_needle(); needle-scan populations
-                // alarm.
+                // Per-event forensic detail at INFO, like report_needle(); the population sweep
+                // is what warns.
                 logger().info(
                     "[needle-smooth #{}] vid {} ring max {:.6g} -> {:.6g} ({:.3g}x) | moved "
                     "{:.6g} | input {} offset {} region {} mask 0x{:x} | pos ({:.17g}, {:.17g})",
@@ -1223,19 +1084,13 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
         ++m_smooth_trace.interior_attempted;
     }
 
-    // THE PLASTIC MEDIUM: a vertex whose whole ring is plastic and which no envelope holds
-    // flows under rest-shape AMIPS alone (see smooth_plastic_vertex). Wall vertices keep their
-    // envelope and the standard path; vertices touching the band or the complex keep the
-    // standard path too, so the interfaces stay under the usual rules. ROUTING A RELEASED
-    // BOUNDARY'S VERTICES THROUGH THE PLASTIC PATH WAS TRIED AND REVERTED UNPROVEN
-    // (2026-09-01): the A/B was confounded (the fixture's config changed mid-measurement);
-    // on the config both binaries did run, the final boundary was identical to 4 decimals and
-    // the routed version emitted 27 needle-smooth warnings against 0. What stands on theory:
-    // the plastic rest is re-stamped every group, so this path cannot preserve a boundary's
-    // shape ACROSS the run, and it drops the quality term, the boundary's only
-    // regularization. Shape preservation for a released boundary (Uday's open ask) needs
-    // cross-group memory -- an elastic rest pinned at release for boundary-adjacent cells, or
-    // a term on the boundary curve itself; unmeasured.
+    // The plastic medium: a vertex whose whole ring is plastic and which no envelope holds flows
+    // under rest-shape AMIPS alone (see smooth_plastic_vertex). Wall vertices, and vertices
+    // touching the band or the complex, keep the standard path so the interfaces stay under the
+    // usual rules -- a released boundary included: the plastic rest is re-stamped every group, so
+    // this path cannot preserve a boundary's shape across the run, and it drops the quality term,
+    // the boundary's only regularization. Preserving a released boundary's shape needs
+    // cross-group memory, which does not exist yet.
     if (m_plastic_active && !ve.m_is_on_offset && !smoothing_containment_envelope(vid)) {
         bool all_plastic = true;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
@@ -1251,18 +1106,18 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
         }
     }
 
-    // PHASE B: a front vertex goes through the SHARED smoother -- same solver, line search and
+    // Phase B: a front vertex goes through the shared smoother -- same solver, line search and
     // accept tests as every other vertex -- with the offset's options: its objective carries the
-    // offset terms (smoothing_extra_energy), and no quality veto (a front vertex has to be able
-    // to worsen its ring on its way to the level set; shape is Phase A's job). Every other
-    // vertex, in both phases, is TriWild's smooth_after() unchanged. Uday, 2026-08-25.
+    // offset terms (smoothing_extra_energy) and there is no quality veto, since a front vertex
+    // must be able to worsen its ring on the way to the level set. Shape is Phase A's job, and
+    // every other vertex in both phases is TriWild's smooth_after() unchanged.
     if (phase_places_front() && ve.m_is_on_offset) {
         const bool ok = smooth_front_vertex_phase_b(t);
         if (ok) ++m_smooth_trace.offset_accepted;
         return ok;
     }
-    // PHASE A is TriWild: the shared smoother, with the offset boundary held by
-    // m_offset_envelope and carrying no offset term of its own.
+    // Phase A is TriWild: the shared smoother, with the front held by m_offset_envelope and
+    // carrying no offset term of its own.
     const double before = ve.m_is_on_offset ? band_vertex_residual(vid) : 0.;
     const bool ok = TriOptimizerMesh::smooth_after(t);
     if (!ve.m_is_on_offset) {
@@ -1271,10 +1126,9 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     const double after = band_vertex_residual(vid);
     if (ok) ++m_smooth_trace.offset_accepted;
 
-    // NOTE the residuals are read BEFORE the caller's rollback, so `after` is the position the
-    // smoother proposed, not necessarily the one kept. That is deliberate -- it separates "the
-    // solver could not find a better place" from "it found one and the accept checks refused
-    // it" -- but it means the two numbers must always be read next to the accepted count.
+    // The residuals are read BEFORE the caller's rollback, so `after` is the position the
+    // smoother proposed rather than the one kept -- which separates "no better place" from "found
+    // one, refused by the accept checks". Read the two numbers next to the accepted count.
     const auto nano = [](double x) { return static_cast<long long>(std::min(x, 1e9) * 1e9); };
     m_smooth_trace.res_before_nano += nano(before);
     m_smooth_trace.res_after_nano += nano(after);
@@ -1285,13 +1139,10 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
 
 Vector2d TopoOffsetTriMesh::offset_vertex_normal(const size_t vid) const
 {
-    // See the declaration: the single definition of an offset vertex's normal.
-    //
-    // Project to the input complex.
-    // The direction the offset grew along, taken from the geometry rather than from the mesh.
-    // The BVH is the same structure Phi queries, so the foot point is the exact nearest point on
-    // the complex as loaded. Flips discontinuously across the medial axis, where the nearest
-    // feature changes.
+    // See the declaration: the single definition of an offset vertex's normal. The direction the
+    // offset grew along, taken from the geometry rather than the mesh -- the BVH is the same
+    // structure Phi queries, so the foot point is the exact nearest point on the complex as
+    // loaded. Flips discontinuously across the medial axis, where the nearest feature changes.
     if (m_input_complex_bvh) {
         const Vector2d x = m_vertex_attribute[vid].m_posf;
         const Vector3d foot = m_input_complex_bvh->nearest_point(x);
@@ -1307,8 +1158,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
     const Vector2d& x) const
 {
     // The one-ring's AMIPS with the vertex first in every cell (what AMIPS2D_jacobian
-    // differentiates with respect to), weighted as the shared smoother weights it, plus the offset
-    // terms on the vertex's own region's field.
+    // differentiates against), weighted as the shared smoother weights it, plus the offset terms
+    // on the vertex's own region's field.
     std::vector<std::array<double, 6>> cells;
     std::vector<RestAMIPSEnergy2D::Cell> plastic_cells; // deform_others: increments only
     for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
@@ -1318,13 +1169,11 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
         if (k == 3) continue;
         const Vector2d& a = m_vertex_attribute[vs[(k + 1) % 3]].m_posf;
         const Vector2d& b = m_vertex_attribute[vs[(k + 2) % 3]].m_posf;
-        // A PLASTIC ring face brakes the front only by its increment since the group started
-        // (rest-shape AMIPS on the group-start rest); judged equilateral it is the permanent
-        // brake that parked the front at an elastic equilibrium (0.176 of a 0.30 target,
-        // static from turn 3 whatever ran afterwards). Band faces stay equilateral -- EXCEPT
-        // a band cell that is a released object's material (face_is_released_band): the front
-        // pushing through the overlap must do work against that material too, or the object's
-        // tag rides along on cells the front reflows for free (Uday, 2026-09-01). Only the
+        // A plastic ring face brakes the front only by its increment since the group started
+        // (rest-shape AMIPS on the group-start rest); judged equilateral it becomes a permanent
+        // brake that parks the front at an elastic equilibrium. Band faces stay equilateral,
+        // except a band cell that is a released object's material (face_is_released_band): the
+        // front pushing through the overlap must do work against that material too. Only the
         // front placement reads this; the band's interior smoothing stays equilateral.
         const FaceExtra2d& fx = m_face_extra[fid];
         if ((face_is_plastic(fid) || face_is_released_band(fid)) && fx.rest_valid) {
@@ -1360,9 +1209,9 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
 Vector2d TopoOffsetTriMesh::front_vertex_move_direction(const size_t vid) const
 {
     // A front vertex held by an input envelope (it sits on a tag-region boundary or the domain
-    // wall) may only move ALONG that boundary: its direction is the boundary's tangent at the
-    // vertex, the mean of its region-class surface edges' unit directions. Every other front
-    // vertex moves along the field normal. Zero when neither is defined.
+    // wall) may only move ALONG that boundary: its direction is the boundary's tangent, the mean
+    // of its region-class surface edges' unit directions. Every other front vertex moves along
+    // the field normal. Zero when neither is defined.
     if (smoothing_containment_envelope(vid)) {
         const Vector2d x = m_vertex_attribute[vid].m_posf;
         Vector2d t = Vector2d::Zero();
@@ -1382,16 +1231,10 @@ Vector2d TopoOffsetTriMesh::front_vertex_move_direction(const size_t vid) const
         if (n > 0 && t.norm() > 0.) return t / t.norm();
     }
     // The field normal. Its known failure: on the input's medial axis grad Phi is undefined, and a
-    // front vertex at a CONCAVE corner of the input sits exactly there (equidistant from two
-    // walls); along either wall's normal the distance to the other wall does not change, so the
-    // line solve cannot reach the level set's corner point and oscillates -- topological_offset_2d,
-    // Euclidean, one vertex at (-13.76, -6.24), 3.1x the bar in every round. The polyline's own
-    // (Voronoi-weighted) normal was tried instead on 2026-08-25 and rejected: around a CONVEX
-    // corner the front moves inward along converging normals, two vertices slid into each other
-    // (edge 0.088 -> 0.0026 in six passes) and deadlocked worse. Open: see the 2026-08-31 session
-    // -- a detect-and-2-D-solve escape was measured and REJECTED (it exposes a corner residual the
-    // 2-D solve cannot take below the bar; both annots configs stopped converging), and the
-    // passing runs rest partly on this measure being blind along the flat direction.
+    // front vertex at a concave input corner sits exactly there, equidistant from two walls, so
+    // the line solve cannot reach the level set's corner point and oscillates. Do not replace it
+    // with the polyline's own (Voronoi-weighted) normal, and do not add a detect-and-2-D-solve
+    // escape at such vertices; both measured worse -- see git history of this file.
     return front_vertex_normal(vid);
 }
 
@@ -1411,11 +1254,9 @@ double TopoOffsetTriMesh::front_vertex_normal_gradient(const size_t vid) const
     Eigen::VectorXd xv = x, g(2);
     phase_b_front_objective(vid, x)->gradient(xv, g);
     if (!g.allFinite()) return std::numeric_limits<double>::infinity();
-    // ALONG THE FIELD NORMAL WHATEVER THE PLACEMENT MODE (Uday, 2026-08-25): the test asks whether
-    // the front is where the field wants it. Tangential motion is the flat direction of the
-    // energy (only w x AMIPS acts along the front) -- a tiny gradient there is a large Newton
-    // step, and the free 2-D placement never passed a test that counted it while producing the
-    // smoothest front of all (turn 2.2 deg per vertex against a circle's 2.25 at 0.4).
+    // Along the field normal whatever the placement mode: the test asks whether the front is where
+    // the field wants it. Tangential motion is the flat direction of the energy -- only w x AMIPS
+    // acts along the front -- where a tiny gradient means a large Newton step.
     const Vector2d n = front_vertex_move_direction(vid);
     if (n.squaredNorm() > 0.) return std::abs(n.dot(Vector2d(g)));
     return g.norm();
@@ -1482,10 +1323,10 @@ private:
 
 bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
 {
-    // See the header: the shared smoother with the offset's options. The objective's offset
-    // terms arrive through smoothing_extra_energy(); AMIPS is weighted as in TriOptimizerMesh::
-    // smooth_after(); a front vertex has no envelope in Phase B, so neither the projected path
-    // nor the containment check applies -- solve, exact inversion test, done.
+    // See the header: the shared smoother with the offset's options. The offset terms arrive
+    // through smoothing_extra_energy(), AMIPS is weighted as in TriOptimizerMesh::smooth_after(),
+    // and a front vertex has no envelope in Phase B, so neither the projected path nor the
+    // containment check applies -- solve, exact inversion test, done.
     optimization::SmoothVertexOptions opts;
     opts.w_amips = m_params.w_amips;
     opts.w_envelope = m_params.w_envelope;
@@ -1507,13 +1348,12 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
         return ok;
     }
 
-    // NORMAL-ONLY = A ONE-DIMENSIONAL SOLVE (Uday, 2026-08-25). The same objective the 2-D path
-    // minimises (phase_b_front_objective: the ring's AMIPS + the offset terms), restricted to the
-    // line through the vertex along n = grad Phi / |grad Phi|, solved by the same solver with the
-    // same line search, then the same accept test as the shared smoother's no-envelope path (exact
-    // inversion of the ring; no envelope, no veto). Nothing is added to the energy. It replaces a
-    // stiff tangential penalty (k = 1e6) that had been standing in for the restriction -- that
-    // made the Hessian's condition number 1e6 and was never what "along the normal" meant.
+    // Normal-only placement is a one-dimensional solve: the same objective the 2-D path minimises
+    // (phase_b_front_objective), restricted to the line along n = grad Phi / |grad Phi|, with the
+    // same solver, the same line search and the same accept test as the shared smoother's
+    // no-envelope path (exact inversion of the ring; no envelope, no veto). Nothing is added to
+    // the energy -- do not re-add a stiff tangential penalty standing in for the restriction; it
+    // wrecks the Hessian's conditioning and was never what "along the normal" meant.
     const size_t vid = t.vid(*this);
     const Vector2d n = front_vertex_move_direction(vid);
     if (!(n.squaredNorm() > 0.)) { // no direction here: the 2-D solve is the fallback
@@ -1521,23 +1361,13 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
         return ok;
     }
-    // WIDEN THE MOTION WHERE THE ALIGNMENT TERM TRAPS THE 1-D SOLVE. At a jog of the outline
-    // (a live front edge at or past perpendicular to the field), the alignment residual's
-    // fixing motion is TANGENTIAL -- exactly what the radial line projects away -- and along
-    // that line the term's only reachable optimum is "exactly perpendicular", so where it
-    // opposes the placement pull it cancels it and the jog freezes (two_overlap smooth 0.25:
-    // three outline vertices frozen at radii 1.317/1.252/1.189 of target 1.25, the alignment
-    // term's tangential gradient ~33 amputated by the projection, its radial part cancelling
-    // ~85% of placement's ~2; with this fallback the outline is 1.250 exact, 2026-09-01).
-    // The trap is the FIGHT, not the perpendicular edge itself: on a travelling staircase the
-    // same radial stretching preference points WITH placement and is a travel engine. Every
-    // rule that cut in on edge orientation alone -- weighting the alignment edge by
-    // max(0, n.g), proportionally or as a step, and the unconditional 2-D fallback at
-    // past-perpendicular vertices -- stalled c_shape Euclidean 1.0 with the whole free front
-    // at distance 0.80-0.95 and nothing within 0.01 of the level set, against 112 of 161
-    // within 0.01 untouched (same day). Hence both conditions in the predicate. Seam edges run
-    // parallel to the field, so a pressed seam never takes this path and the fold/slide
-    // behavior normal projection exists for is untouched.
+    // Widen the motion where the alignment term traps the 1-D solve: at a jog of the outline the
+    // alignment residual's fixing motion is tangential, which the radial line projects away, so
+    // where it opposes the placement pull it cancels it and the jog freezes. The trap is the
+    // fight, not the perpendicular edge -- on a travelling staircase the same radial stretching
+    // preference points with placement and is a travel engine -- hence both conditions in the
+    // predicate. Do not gate on edge orientation alone; measured worse -- see git history of this
+    // file. Seam edges run parallel to the field, so a pressed seam never takes this path.
     if (m_offset_params.front_alignment_energy && front_vertex_alignment_traps_1d_solve(vid)) {
         const bool ok = optimization::smooth_vertex_2d(*this, t, opts, solver, &m_smooth_rejects);
         if (ok) m_released_tube_dirty.store(true, std::memory_order_release);
@@ -1612,10 +1442,9 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
         if (!m_edge_attribute[eid].m_is_surface_fs) continue;
         ++n_tracked;
         const std::array<size_t, 2> vids = {{e.vid(*this), e.switch_vertex(*this).vid(*this)}};
-        // THE EDGE'S OWN STORED CLASS, which is ground truth here: this sweep runs between
-        // operations, so no attribute slot is mid-write. It used to classify by `mask != 0`
-        // alone, which is the endpoint-AND the dispatch itself over-claimed on -- so the audit
-        // agreed with the bug it was written to find and filed offset edges under "region".
+        // The edge's own stored class is ground truth here: this sweep runs between operations,
+        // so no attribute slot is mid-write. Classifying by `mask != 0` instead repeats the
+        // endpoint-AND over-claim and files offset edges under "region".
         const bool is_offset = edge_is_offset(eid);
         const uint64_t mask = is_offset ? uint64_t(0) : edge_mask(vids);
         if (is_offset)
@@ -1625,7 +1454,7 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
         else
             ++n_other;
 
-        // EXACTLY the dispatch the sanity check uses, so this cannot disagree with it.
+        // Exactly the dispatch the sanity check uses, so this cannot disagree with it.
         if (!surface_segment_is_outside(vids[0], vids[1])) continue;
 
         Bad r;
@@ -1641,13 +1470,10 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
         else
             ++bad_other;
 
-        // How far outside, per REAL member. Never ask the composite -- walk the tags instead.
-        //
-        // SAMPLED ALONG THE SEGMENT, not just at the endpoints, because that is what
-        // is_outside(edge) does and it is the whole distinction being drawn here: endpoints at
-        // distance 0 with a large interior maximum is a CHORD spanning boundary the tube follows
-        // around (a corner, a neck), not a boundary edge that has drifted. Endpoint distance is
-        // kept separately so the two read side by side.
+        // How far outside, per real member -- never the composite. Sampled along the segment and
+        // not just at the endpoints, because that is what is_outside(edge) does and it is the
+        // distinction being drawn: endpoints at distance 0 with a large interior maximum is a
+        // chord spanning boundary the tube follows around, not a boundary edge that has drifted.
         const auto probe = [&](const std::shared_ptr<SampleEnvelope>& env, int tag) {
             if (!env) return;
             for (const size_t v : vids) {
@@ -1728,9 +1554,9 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
             r.worst_u,
             r.worst_end_d,
             r.worst_tag >= 0 ? fmt::format(" (tag {})", r.worst_tag) : std::string());
-        // WHY it is tracked and why it claims that mask: the per-endpoint bits the AND is taken
+        // Why it is tracked and why it claims that mask: the per-endpoint bits the AND is taken
         // over, and the edge's own stored class. A chord over-claim shows as two endpoints that
-        // each legitimately carry the bit joined by an edge whose own class is not region.
+        // each legitimately carry the bit, joined by an edge whose own class is not region.
         const auto& ea = m_vertex_extra[r.a];
         const auto& eb = m_vertex_extra[r.b];
         const auto [tup, eid] = tuple_from_edge({{r.a, r.b}});
@@ -1758,18 +1584,11 @@ void TopoOffsetTriMesh::audit_surface_containment(const std::string& when) const
 
 void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) const
 {
-    // TWO DIFFERENT COUNTS, one invariant and one expectation.
-    //
-    // The INVARIANT is on the stored masks: every tracked region edge must dispatch to an
-    // envelope, i.e. edge_mask() of its endpoints -- the very expression
-    // surface_envelope_for_edge() uses -- must be nonzero. The masks are seeded once from the
-    // input partition and propagated (endpoint AND at splits, OR at collapses), so a zero here
-    // is a propagation hole: the edge is tracked as a region boundary and contained by nothing.
-    //
-    // The LIVE bits going quiet is the EXPECTATION: execute_offset() replaces the tags of every
-    // face the band grows through, so edge_boundary_bits() -- the CURRENT symmetric difference
-    // -- is empty across any region edge the band swallowed. Counted as information, because it
-    // is the reason the masks must be propagated rather than rederived, not a defect itself.
+    // Two counts, one invariant and one expectation. The invariant is on the stored masks: every
+    // tracked region edge must dispatch to an envelope, so edge_mask() of its endpoints -- the
+    // expression surface_envelope_for_edge() uses -- must be nonzero, and a zero is a propagation
+    // hole. The expectation is that the LIVE bits go quiet: the band replaces the tags of every
+    // face it grows through, which is why the masks must be propagated, not rederived.
     int n_region = 0, n_unmasked = 0, n_released = 0, n_live_dead = 0, n_wall = 0;
     int n_band = 0, n_outside = 0, n_mixed = 0, n_ends_offset = 0, n_ends_input = 0;
     size_t worst = size_t(-1);
@@ -1781,16 +1600,12 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         if (edge_boundary_bits(e) == 0) ++n_live_dead;
         const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
         if (edge_mask({va, vb}) != 0) continue;
-        // A QUIET edge bounds nothing any more: the band retagged both its sides (counted in
-        // n_live_dead above), so there is no boundary left to hold and a zero mask on it is
-        // moot, not a violation -- seen when an unprotected object's boundary is swallowed by
-        // the band while the release frees its vertices (two_overlap without protected_tags,
-        // 2 such edges at the crossings, 2026-09-01).
+        // A quiet edge bounds nothing any more: the band retagged both its sides, so there is no
+        // boundary left to hold and a zero mask on it is moot, not a violation.
         if (edge_boundary_bits(e) == 0) continue;
-        // A RELEASED boundary is freed on purpose: deform_others zeroes its endpoint masks
-        // (release_deformable_regions, same symmetric-difference test), so a zero mask across
-        // a released tag's boundary is the feature, not a propagation hole. Everything else
-        // still violates the invariant and is counted below.
+        // A released boundary is freed on purpose -- deform_others zeroes its endpoint masks by
+        // this same symmetric-difference test -- so a zero mask there is the feature, not a
+        // propagation hole. Everything else still violates the invariant and is counted below.
         if (!m_deform_tags.empty()) {
             if (const std::optional<Tuple> opp0 = e.switch_face(*this)) {
                 CellTag edge_tags;
@@ -1814,8 +1629,8 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         }
         ++n_unmasked;
         if (worst == size_t(-1)) worst = eid;
-        // The first few, in full: what IS an uncontained region edge? Endpoint masks say which
-        // end lost the chain; positions say where it sits (on the complex, at the front, ...).
+        // The first few in full: what is an uncontained region edge? Endpoint masks say which end
+        // lost the chain; positions say where it sits (on the complex, at the front, ...).
         if (n_unmasked <= 6) {
             const auto& A = m_vertex_attribute[va];
             const auto& B = m_vertex_attribute[vb];
@@ -1846,7 +1661,7 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
                 m_face_extra[e.fid(*this)].label,
                 opp2 ? std::to_string(m_face_extra[opp2->fid(*this)].label) : std::string("-"));
         }
-        // WHERE the unmasked ones sit, which is what says who created them.
+        // Where the unmasked ones sit, which is what says who created them.
         const size_t f0 = e.fid(*this);
         const std::optional<Tuple> opp = e.switch_face(*this);
         const bool b0 = face_is_offset_band(f0);
@@ -1874,8 +1689,8 @@ void TopoOffsetTriMesh::log_region_edge_mask_health(const std::string& when) con
         n_unmasked,
         n_live_dead);
 
-    // WHAT THE TAGS ACTUALLY ARE, band versus not. If band faces have been retagged, a region
-    // boundary swallowed by the band loses its tag difference -- and its envelope with it.
+    // What the tags actually are, band versus not: a region boundary swallowed by the band loses
+    // its tag difference, and its envelope with it.
     {
         std::map<std::string, std::pair<int, int>> hist; // tag set -> (band faces, other faces)
         for (const Tuple& f : get_faces()) {
@@ -1947,10 +1762,9 @@ void TopoOffsetTriMesh::log_smooth_trace() const
         s.interior_attempted.load(),
         s.region_attempted.load(),
         m_smooth_rejects.to_string());
-    // The envelope-held offset vertices, which this scheme does not place at all. WARNED, not
-    // merely counted: they are left where Phase A put them, and the only reason that is not a
-    // silent degradation is that band_vertex_is_reachable() also books them PINNED, so they stop
-    // gating convergence and are reported separately in every band measure.
+    // The envelope-held offset vertices, which this scheme does not place at all. Warned, not
+    // merely counted: they are left where Phase A put them, and band_vertex_is_reachable() books
+    // them PINNED, so they stop gating convergence and are reported separately.
     if (s.before_phase_b_enveloped_offset.load() > 0) {
         logger().warn(
             "\t{} Phase B offset visits were SKIPPED AND PINNED: the vertex is on the offset "
@@ -1964,8 +1778,7 @@ void TopoOffsetTriMesh::log_smooth_trace() const
             s.before_phase_b_enveloped_offset.load());
     }
     // The one thing here that IS a defect: a vertex outside the envelope that is supposed to
-    // contain it. The projection pulls it back, so it is no longer a behavioural exception --
-    // but it should not have been outside in the first place.
+    // contain it. The projection pulls it back, but it should not have been outside.
     if (m_placement_env_entry_outside.load() > 0) {
         logger().warn(
             "\t{} constrained placements found the vertex ALREADY outside its own envelope on "
@@ -1994,31 +1807,24 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
     const OptPhase saved_phase = m_phase;
     const EdgeSplitMode saved_mode = m_edge_split_mode;
 
-    // PHASE A'S UNITS. optimization_quality_stats() and optimization_stop_metric() both branch
-    // on m_phase, and they have to agree: Phase A is absolute AMIPS against stop_energy, which
-    // is what refine_sizing_around_worst() derives its filter from. Phase B's normalized pair
-    // would also dereference m_offset_potential, which does not exist yet.
+    // Phase A's units. optimization_quality_stats() and optimization_stop_metric() both branch on
+    // m_phase and must agree: Phase A is absolute AMIPS against stop_energy, which is what
+    // refine_sizing_around_worst() derives its filter from. Phase B's normalized pair would also
+    // dereference m_offset_potential, which does not exist yet.
     m_phase = OptPhase::A;
-    // THE SPLIT HOOK BRANCHES ON THIS. Midpoint is the construction path (simplicial embedding
+    // The split hook branches on this. Midpoint is the construction path (simplicial embedding
     // and marching, which carry their own labels); the shared engine's splits must take the
     // Optimization path or they would be treated as marching splits.
     m_edge_split_mode = EdgeSplitMode::Optimization;
 
-    // THE SIZING FIELD: target_distance ON THE INPUT-COMPLEX BOUNDARY, graded outward.
-    //
-    // That boundary is the curve Phi measures from and the curve the marching wraps the band
-    // around, so it is the only place the mesh has to resolve at the offset's own scale. Asking
-    // for delta THERE makes the band the marching builds one delta-scale cell thick, which is
-    // what puts the constructed offset near delta from the complex -- and dhat is sized from
-    // exactly that reach. Everything else is left to a few sweeps of one-ring averaging, so the
-    // mesh is fine at the complex, coarse at the domain wall, with no jump in between.
-    //
-    // The BOUNDARY, not the complex: a filled complex (two_circles' disks are solid) has
-    // interior vertices whose label is also 1, and resolving a disk's interior at delta would
+    // The sizing field: target_distance on the input-complex BOUNDARY, graded outward. That
+    // boundary is the curve Phi measures from and the curve the marching wraps the band around,
+    // so asking for delta there makes the band one delta-scale cell thick, which is what puts the
+    // constructed offset near delta from the complex. The boundary and not the whole complex: a
+    // filled complex's interior vertices carry the same label, and resolving them at delta would
     // multiply the mesh for geometry the offset never measures against. An edge is on that
-    // boundary when exactly one of its incident faces carries the input-complex label -- the
-    // same rule that produced m_phi_E. The interior is reached only by the averaging, at
-    // whatever value diffusion carries in, like any other off-complex vertex.
+    // boundary when exactly one incident face carries the input-complex label -- the rule that
+    // produced m_phi_E.
     const double l_target = std::max(m_params.l, 1e-16);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l_target);
@@ -2026,35 +1832,12 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
         m_offset_params.target_distance / l_target,
         s_floor,
         m_offset_params.max_sizing_scalar);
-    // GRADED IN DISTANCE, NOT IN MESH RINGS.
-    //
-    // This used to seed the boundary vertices and hand them to gradation_smooth_sizing(), the
-    // shared ring BFS: it walks the one-ring, multiplies the scalar by sizing_gradation each
-    // ring, and stops once the cap reaches 1. From delta/l = 0.152 at grade 2 that is exactly
-    // TWO rings -- and a ring is one EDGE of whatever mesh happens to be standing when it runs.
-    // On a coarse input mesh those two rings are geometrically enormous. Measured on
-    // two_circles: a ring is ~0.32 long, so the seed's footprint came out ~0.64 = 13 delta,
-    // which reaches the centre of a disk of radius 1. The complex INTERIOR was never seeded and
-    // was refined anyway, because the ramp is indexed by connectivity rather than by length.
-    //
-    // The continuous form of the same rule has no such dependence:
-    //
-    //     h(x) = target_distance + (grade - 1) * dist(x, input complex)
-    //
-    // Lipschitz with constant grade - 1 by construction -- which is the property the ring BFS
-    // is trying to approximate -- equal to delta ON the complex and nowhere else, and reaching
-    // the background target l at a fixed DISTANCE (l - delta) / (grade - 1) no matter how the
-    // mesh is discretised. Symmetric in dist, so it grades INTO the complex on the same ramp it
-    // grades out of it; the clamp caps it at l so nothing is ever asked to be coarser than the
-    // background. m_input_complex_bvh is the same structure Phi queries, built by the driver
-    // before execute_offset(), so the distance here is the exact one.
-    // WHICH SIZING FIELD THIS PASS RUNS AGAINST -- see pre_optimize_sizing_from_edges.
+    // Which sizing field this pass runs against -- see pre_optimize_sizing_from_edges.
     if (m_offset_params.pre_optimize_sizing_from_edges) {
-        // "KEEP THE RESOLUTION YOU HAVE": every vertex takes the mean of its own incident edge
-        // lengths, exactly the rule init_offset_sizing_field() uses on the offset surface.
-        // target_distance never enters, so this pass improves element QUALITY without refining
-        // anything toward delta -- and the constructed offset therefore lands wherever the input
-        // mesh's own scale puts it, with dhat sized from that reach.
+        // "Keep the resolution you have": every vertex takes the mean of its own incident edge
+        // lengths, the rule init_offset_sizing_field() uses on the front. target_distance never
+        // enters, so this pass improves element quality without refining anything toward delta
+        // and the constructed offset lands wherever the input mesh's own scale puts it.
         size_t n_set = 0;
         double sum_h = 0.;
         for (const Tuple& v : get_vertices()) {
@@ -2080,31 +1863,11 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
             n_set ? (sum_h / double(n_set)) / l_target : 0.,
             m_offset_params.target_distance);
     } else {
-        // THE GRADATION: gradation_smooth_sizing(), the shared ring BFS, and nothing else.
-        //
-        // Five forms have been measured on two_circles and this is the only one that converges. Do
-        // not re-litigate them:
-        //  - Lipschitz ramp in distance, h = delta + (grade-1)*dist: first cell layer twice too
-        //    coarse, band twice as thick, dhat 2.66 -> 6.64 delta, level sets nearly merge.
-        //  - the same with a plateau to 2*delta: barely moved it (6.37 delta).
-        //  - one-ring Jacobi averaging, seeds pinned: dhat fine (2.68) but 35% of edges violated
-        //  the
-        //    gradation cap right after seeding, and the run stalled at 1e50.
-        //  - the tetwild component's init_sizing_field() distance BFS to R = 1.8*l: its min is
-        //  taken
-        //    against the SEED's scalar, so the ramp is dead code and the behaviour is a flat ball
-        //    at
-        //    the seed value. Fed delta/l it refines nearly the whole domain; the pre-pass never
-        //    finished (165k vertices and climbing).
-        //  - the triwild component's own recipe (grow_vertex_region + apply_sizing_refinement's
-        //    MULTIPLICATIVE x stuck_refine_factor + gradation): relative, so from 1.0 it lands at
-        //    scalar 0.5, nowhere near delta/l. The pre-pass barely refined (259 -> 305 vertices),
-        //    the constructed offset landed at 6.16 delta, dhat came out 12.32 delta -- back in the
-        //    regime where the level sets merge -- and the run died with 681 1e50 lines.
-        //
-        // The ring BFS's wart is real: its footprint is indexed by CONNECTIVITY, so it scales with
-        // how coarse the input mesh happens to be rather than with a length. It stands anyway until
-        // something beats it ON A RUN.
+        // The gradation: gradation_smooth_sizing(), the shared ring BFS, and nothing else. Do not
+        // re-add the rejected alternatives -- a Lipschitz ramp in distance (with or without a
+        // plateau), one-ring Jacobi averaging, tetwild's init_sizing_field() distance BFS, or
+        // triwild's multiplicative grow-and-refine recipe; all measured worse -- see git history
+        // of this file.
         std::vector<size_t> seeds;
         for (const Tuple& e : get_edges()) {
             const std::optional<Tuple> opp = e.switch_face(*this);
@@ -2117,19 +1880,12 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
                 seeds.push_back(vid);
             }
         }
-        // A CURVE COMPLEX HAS NO LABEL-1 FACES (Uday, 2026-08-25). The edge test above sees the
-        // complex only where it bounds a label-1 REGION; a complex that is a curve between two
-        // regions -- topological_offset_2d's "(tag_0 | tag_2 | tag_3) & tag_1" -- has none, the
-        // seed found 0 vertices and the pre-pass was a silent no-op ("max element quality 0 ->
-        // 0"), so the band was built one coarse input cell thick (front at 0.5 = 2 delta) and the
-        // 1-wide slots were squeezed at their mouths from the first placement on. The complex's
-        // vertices themselves carry the label, whatever its dimension: seed those too -- BUT ONLY
-        // WHERE THE COMPLEX IS A CURVE. A region source labels every vertex of its cells 1, its
-        // interior included, and seeding those refined the whole region: on
-        // topological_offset_2d_annots_tag4_in (tag_4 is a region, delta 0.1 on a 50-wide domain)
-        // the seed took 2594 of the mesh's 2601 vertices and the pre-pass grew the input to
-        // 319k vertices, 1.28M after construction (2026-08-26). A vertex with a label-1 face in
-        // its ring belongs to a region, whose boundary the edge loop above already seeded.
+        // A curve complex has no label-1 faces, so the edge test above seeds nothing on it and the
+        // pre-pass would be a silent no-op, leaving the band one coarse input cell thick. The
+        // complex's vertices carry the label whatever its dimension: seed those too, but ONLY
+        // where the complex is a curve -- a region labels its interior vertices as well, and
+        // seeding those refines the whole region. A vertex with a label-1 face in its ring belongs
+        // to a region, whose boundary the edge loop above already seeded.
         for (const Tuple& v : get_vertices()) {
             const size_t vid = v.vid(*this);
             if (m_vertex_extra[vid].label != 1) continue;
@@ -2159,8 +1915,7 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
             m_offset_params.sizing_gradation);
     }
 
-    // The SEEDED field, before a single operation runs -- the middle frame of the sizing story
-    // (uniform as loaded, seeded here, whatever propagation makes of it by the end).
+    // The seeded field, before a single operation runs.
     if (m_offset_params.debug_output) {
         write_vtu(m_offset_params.output_path + "_seeded");
     }
@@ -2188,69 +1943,41 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
     m_phase = saved_phase;
     consolidate_mesh();
 
-    // RE-DERIVE THE CONSTRUCTION LABELS, because the optimization does not maintain them.
+    // Re-derive the construction labels, because the optimization does not maintain them. No
+    // operation propagates VertexExtra2d::label, and marching_tris() decides which edges to split
+    // from exactly that label -- this pass is the first optimization that runs BEFORE the
+    // marching, so leaving it stale gives a wrong crossing set and a band with holes.
     //
-    // split_after_vertex() propagates every per-vertex record a split has to carry -- the two
-    // surface flags, m_is_on_region, the boundary mask, the birth epoch -- but NOT
-    // VertexExtra2d::label, and neither collapse nor swap touches it either. That was harmless
-    // for as long as optimization splits could only run AFTER marching_tris(), because nothing
-    // reads the vertex label past that point: the band is tagged by then and the later stages
-    // read m_face_extra[].label, which split_adjust_position() does carry.
-    //
-    // This pass breaks that assumption -- it is the first optimization that runs BEFORE the
-    // marching -- and marching_tris() decides which edges to split from exactly this label
-    // ((label == 0) != (label == 0) across an edge). Left stale, the crossing set comes out
-    // wrong, the frontier is wrong, and the band it grows has HOLES: measured on two_circles,
-    // 254 of 382 complex-boundary vertices ended up on the offset boundary as well as the input
-    // complex, with ambient faces sitting directly against the complex, which is the
-    // construction defect check_no_vertex_on_both_surfaces() then reports.
-    //
-    // Re-derived rather than propagated: the label is a function of the FACE TAGS
-    // (expr->eval over the incident faces), the base does propagate tags through split and
-    // collapse, and label_input_complex() is the authority on that function. Cleared first
-    // because it only ever WRITES 1 -- it has no path back to 0, so a stale 1 on a vertex the
-    // optimization moved out of the complex would survive a second call.
+    // Re-derived rather than propagated: the label is a function of the FACE TAGS, which the base
+    // does propagate through split and collapse, and label_input_complex() is the authority on
+    // that function. Cleared first because it only ever writes 1 and has no path back to 0.
     for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
     for (const Tuple& e : get_edges()) m_edge_extra[e.eid(*this)].label = 0;
     for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
     label_input_complex();
 
-    // THE INPUT COMPLEX IS NOT RE-EXTRACTED. The driver builds m_input_complex_bvh -- and with
-    // it m_phi_V/E/P, the arrays init_offset_potential() later hands to Phi -- once, before
-    // execute_offset(), and that ONE extraction is used for the whole run.
+    // The input complex is NOT re-extracted: the driver builds m_input_complex_bvh -- and with it
+    // m_phi_V/E/P, the arrays init_offset_potential() hands to Phi -- once before
+    // execute_offset(), and that one extraction serves the whole run. Do not re-extract here;
+    // init_input_complex_bvh() collects the closure of the label-1 faces, so the interior vertices
+    // this pass created would enter m_phi_V and move Phi. Measured worse -- see git history.
     //
-    // Re-extracting here was tried and it is what broke the run. init_input_complex_bvh()
-    // collects every vertex in the CLOSURE OF THE LABEL-1 FACES, i.e. the input region's
-    // interior, not just its boundary curve. On the input mesh that is 160 vertices; after this
-    // pass has refined the region it is 2643, and those ~2400 interior vertices enter m_phi_V
-    // and move Phi -- measured on two_circles, level c 0.379816 -> 0.384728 with a bit-identical
-    // pre-pass mesh (2722 V / 5371 F / quality 8.132 either way). With the re-extraction the run
-    // stalls at max energy 1e50; without it, it converges in 2 rounds. The function is written
-    // to run once on the coarse input mesh and does not survive being called on a refined one.
-    //
-    // The cost of leaving it out is that Phi measures the polygon the mesh had ON LOAD while the
-    // mesh carries the refined one -- a chord sagitta, 0.098^2/8 = 0.0012 = 2.4% of delta here.
-    // Systematic, and it grows with the input's coarseness and curvature, so if it ever has to be
-    // fixed the fix is to re-extract the BOUNDARY CURVE ONLY, not the closure.
+    // The cost is that Phi measures the polygon the mesh had on load while the mesh carries the
+    // refined one: a systematic chord sagitta, growing with the input's coarseness and curvature.
+    // The fix, if it is ever needed, is to re-extract the boundary curve only, not the closure.
     needle_scan("after the pre-pass");
 }
 
 void TopoOffsetTriMesh::init_offset_sizing_field()
 {
     // Paper Sec. 5.3.3, Step 1: the sizing field "is defined on each edge of the offset mesh and
-    // is INITIALIZED WITH THE CURRENT LENGTH OF EACH EDGE."
+    // is initialized with the current length of each edge."
     //
-    // This is not a detail. The base's m_sizing_scalar defaults to 1, i.e. a target length of
-    // m_params.l everywhere -- and l is a fraction of the bounding box diagonal, which on any
-    // reasonable configuration is far longer than the offset polyline's own edges (7.2x on the
-    // dragon rectangle). Starting there makes every single offset edge a collapse candidate on
-    // the first pass, and the offset is decimated before the metrics below ever get to speak.
-    // The per-operation normal-deviation guard cannot save it either: each individual collapse
-    // of a well-resolved curve barely moves the angle, so they pass one at a time.
-    //
-    // Starting from the current lengths says instead: keep the resolution you have, and change
-    // it only where the sizing update below finds a reason to. The field is per-vertex here
-    // rather than per-edge, so a vertex takes the mean of its incident offset-surface edges.
+    // The base's default scalar of 1 means a target of m_params.l, a fraction of the bounding box
+    // diagonal and far longer than the front's own edges, so starting there makes every front edge
+    // a collapse candidate on the first pass and the front is decimated before the metrics below
+    // get to speak. Starting from the current lengths keeps the resolution the mesh has. The field
+    // is per-vertex here, so a vertex takes the mean of its incident front edges.
     const double l = std::max(m_params.l, 1e-16);
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
@@ -2268,16 +1995,11 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
             sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
             ++n;
         }
-        // EVERY vertex is seeded, not just the offset boundary's. A vertex with no incident
-        // offset edge falls back to its whole one-ring -- the same rule applied to whatever scale
-        // it happens to sit at.
-        //
-        // Leaving the background at the base target -- a fraction of the bounding box, which on
-        // any reasonable configuration is far coarser than the mesh the construction produced --
-        // is what makes a bare collapse pass destructive. The gate is edge length against the
-        // target at its endpoints, so a background target of l against actual edges a fraction of
-        // that marks essentially every interior edge as collapsible. Seeding from the mesh as
-        // built says "keep the resolution you have" everywhere.
+        // Every vertex is seeded, not just the front's: a vertex with no incident front edge falls
+        // back to its whole one-ring. Leaving the background at the base target -- far coarser
+        // than the mesh construction produced -- is what makes a bare collapse pass destructive,
+        // since the gate is edge length against the target at its endpoints and would then mark
+        // essentially every interior edge as collapsible.
         if (n == 0) {
             for (const size_t nb : get_one_ring_vids_for_vertex_duplicate(vid)) {
                 sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
@@ -2305,20 +2027,12 @@ void TopoOffsetTriMesh::init_offset_sizing_field()
         m_offset_params.target_distance,
         s_floor);
 
-    // THE FRONT'S RESOLUTION FOLLOWS FROM THE TOLERANCE AND THE LEVEL SET'S CURVATURE, set once
-    // here (Uday, 2026-08-26). A chord of length L over a curve of curvature radius rho misses
-    // it by L^2 / (8 rho); the front must stay within the tube eps x delta of the level set
-    // (eps = offset_envelope_rel), so L <= sqrt(8 eps delta rho). The level set's curvature
-    // is known before any placement: on the convex side it never exceeds 1 / delta (a convex
-    // input corner becomes an arc of radius exactly delta, and that is the only place the offset
-    // needs more resolution than the input has), and where it does exceed it -- a concave crease
-    // at the input's medial axis, a seam between two fronts -- no chord resolves it and the
-    // vertex test already decides. Hence rho is floored at delta: the finest the field asks for
-    // is sqrt(8 eps) delta = 0.45 delta, and the loop no longer refines against a convergence
-    // test. This replaces update_band_sizing_from_tolerance(), which halved edges whose
-    // endpoints had converged while the level set still curved away from the chord -- a test of
-    // the field's shape, not of what a split could fix, and at a crease it fired every round
-    // (annots_tag4_in: 103k vertices, edge test 2.7x forever with the vertex test long passed).
+    // The front's resolution follows from the tolerance and the level set's curvature, set once
+    // here. A chord of length L over curvature radius rho misses it by L^2 / (8 rho) and the front
+    // must stay within eps x delta of the level set (eps = offset_envelope_rel), so
+    // L <= sqrt(8 eps delta rho). rho is floored at delta: on the convex side the level set's
+    // curvature never exceeds 1 / delta, and where it does -- a concave crease at the input's
+    // medial axis, a seam between two fronts -- no chord resolves it and the vertex test decides.
     {
         const double delta = m_offset_params.target_distance;
         const double eps = m_offset_params.offset_envelope_rel;
@@ -2582,10 +2296,10 @@ void TopoOffsetTriMesh::log_stuck_refine_census(const double max_metric, const d
 
         const auto vs = oriented_tri_vids(fid);
 
-        // WHY it scores MAX_ENERGY. is_inverted() is exact for the coordinates the vertices
-        // actually carry; is_inverted_f() uses m_posf alone. A face that is inverted in float
-        // but not exactly is a valid triangle whose double area underflowed -- refining it
-        // produces two more of the same, which is the distinction this whole census exists for.
+        // Why it scores MAX_ENERGY. is_inverted() is exact for the coordinates the vertices
+        // actually carry; is_inverted_f() uses m_posf alone. A face inverted in float but not
+        // exactly is a valid triangle whose double area underflowed -- refining it produces two
+        // more of the same, which is the distinction this census exists for.
         const bool exact_bad = is_inverted(fid);
         const bool float_bad = is_inverted_f(fid);
         if (exact_bad)
@@ -2608,7 +2322,7 @@ void TopoOffsetTriMesh::log_stuck_refine_census(const double max_metric, const d
         shortest.push_back(lo);
         aspects.push_back(lo > 0. ? hi / lo : std::numeric_limits<double>::infinity());
 
-        // CAN the next pass even split it? The base's gate is length^2 > (l * sbar)^2 * 16/9,
+        // Can the next pass even split it? The base's gate is length^2 > (l * sbar)^2 * 16/9,
         // sbar the mean of the endpoints' scalars, so a face whose longest edge is already under
         // that is not a split candidate however far the sizing field is driven down.
         double sbar_hi = 0.;
@@ -2644,8 +2358,8 @@ void TopoOffsetTriMesh::log_stuck_refine_census(const double max_metric, const d
         return v[v.size() / 2];
     };
 
-    // Connected clusters among the MAX_ENERGY faces, by shared edge. Union-find over the set
-    // only -- "seemingly random regions" is exactly the question of how many clumps there are.
+    // Connected clusters among the MAX_ENERGY faces, by shared edge. Union-find over that set
+    // only: the question being asked is how many clumps there are.
     std::unordered_map<size_t, size_t> idx_of;
     for (size_t i = 0; i < max_fids.size(); ++i) idx_of[max_fids[i]] = i;
     std::vector<size_t> parent(max_fids.size());
@@ -2760,21 +2474,11 @@ bool TopoOffsetTriMesh::collapse_quality_allowed(
     const double q,
     const double ring_max) const
 {
-    // Pure instrumentation: the base's rule -- TriWild's -- is returned unchanged, so Phase A
-    // is TriWild's mesh_improvement() with no offset-specific admission. See the header for why
-    // the `q <= ring_max` clause is the one to watch.
-    //
-    // HISTORY. 2026-08-24 this returned 3D's rule instead, `q <= ring_max` alone, dropping the
-    // base's extra "any result under stop_energy" clause (original TriWild had it,
-    // EdgeCollapsing.cpp:189 before cb9b81a66c; original TetWild never did). The reason was the
-    // length-blind opening collapse sweep, which the A/B loop ran at the top of every Phase A and
-    // which "under 10 is fine" let demolish the mesh each round (two_circles 0.02: 1939 -> 476
-    // vertices). That sweep is now switched off instead (optimization_bare_coarsen_passes), which
-    // is the targeted fix and keeps Phase A pure TriWild. Measured 2026-08-25 with the base rule
-    // and the sweep off: 0.02 and 0.04 converge; the two overlap cases (target_distance 0.15,
-    // smooth and Euclidean) do NOT -- 110 / 141 deg folds at the seam that 3D's rule prevented
-    // (it refuses a collapse that worsens a ring sitting under the bar; the strip's short edges
-    // are exactly such collapses). A separate issue, kept open deliberately.
+    // Pure instrumentation: the base's rule -- TriWild's -- is returned unchanged, so Phase A is
+    // TriWild's mesh_improvement() with no offset-specific admission. See the header for why the
+    // `q <= ring_max` clause is the one to watch. Do not swap in 3D's rule (`q <= ring_max` alone,
+    // without the base's "any result under stop_energy" clause); measured worse -- see git history
+    // of this file. Seam folds that 3D's rule would refuse remain a known open issue.
     const bool allowed = TriOptimizerMesh::collapse_quality_allowed(v1, v2, q, ring_max);
     if (q >= MAX_ENERGY) {
         ++m_deg_collapse_offered;
@@ -2825,9 +2529,8 @@ void TopoOffsetTriMesh::report_needle(const char* op, const size_t fid, const do
             m_vertex_attribute[v].m_is_rounded,
             m_vertex_attribute[v].m_sizing_scalar);
     }
-    // PER-EVENT FORENSIC DETAIL AT INFO: a warning is reserved for a defect that exists when
-    // it is reported -- the needle-scan population sweeps do that; these lines only narrate
-    // births for the hunt (Uday's rule, 2026-09-01).
+    // Per-event forensic detail at INFO: a warning is reserved for a defect that exists when it is
+    // reported. These lines only narrate births; the needle-scan population sweeps do the warning.
     logger().info(
         "[needle #{}] created at {} | fid {} label {} | area {:.6g} | edges {:.6g} {:.6g} {:.6g} "
         "| parent AMIPS {} | is_inverted {} is_inverted_f {} | epoch {}{}",
@@ -2934,8 +2637,8 @@ void TopoOffsetTriMesh::record_flatness(
     } else {
         ++m_flat_worsened_split;
     }
-    // Only the CREATIONS are logged: a flat child of a flat parent is the multiplication we
-    // already understand, a flat child of a healthy parent is the event we are hunting.
+    // Only the creations are logged: a flat child of a flat parent is understood multiplication,
+    // a flat child of a healthy parent is the event being hunted.
     if (from_healthy && m_flat_genesis_reports.fetch_add(1) < 10) {
         const auto vs = oriented_tri_vids(child_fid);
         std::string vtx;
@@ -2952,8 +2655,8 @@ void TopoOffsetTriMesh::record_flatness(
                 x.m_is_on_region,
                 x.m_boundary_mask);
         }
-        // Per-event forensic detail at INFO -- see report_needle(); the flat-population sweep
-        // in log_flat_face_forensics() is the warning when flat faces exist now.
+        // Per-event forensic detail at INFO -- see report_needle(); the flat-population sweep is
+        // the warning when flat faces exist now.
         logger().info(
             "[genesis #{}] {} turned a HEALTHY face into a flat one: flatness {:.6g} -> {:.6g} "
             "(threshold {:g}) | fid {} label {} | AMIPS {:.6g}{}",
@@ -3103,35 +2806,24 @@ bool TopoOffsetTriMesh::face_is_offset_band(const size_t fid) const
 
 std::vector<bool> TopoOffsetTriMesh::band_vertex_mask() const
 {
-    // Read from the TAGS, not from m_vertex_extra[].m_is_on_offset. The flag is only refreshed
-    // by label_offset_boundary() once per iteration, while the shared operations maintain the
-    // tags continuously; and the band is exactly where a face carrying an offset output tag
-    // meets one that does not, which the tags say directly.
-    // Only the OUTER surface of the band, the one that is supposed to sit at target_distance.
-    // The band has two boundaries: this one, and the inner interface where it wraps the input
-    // complex -- and that inner one is by construction at distance 0, so including it makes the
-    // max error identically target_distance on every input and the test can never pass. 3D
-    // draws the same line: it marks a face on-offset only when `label + other.label == 2`, i.e.
-    // the offset region (2) meeting a face that is neither offset nor input complex (0).
+    // Read from the TAGS, not from m_vertex_extra[].m_is_on_offset: the flag is refreshed by
+    // label_offset_boundary() only once per iteration, while the shared operations maintain the
+    // tags continuously. Only the OUTER surface of the band, the one that is supposed to sit at
+    // target_distance -- the inner interface where the band wraps the complex is by construction
+    // at distance 0, so including it makes the max error identically target_distance on every
+    // input and the test can never pass. 3D draws the same line.
     std::vector<bool> on_band(vert_capacity(), false);
     for (const Tuple& e : get_edges()) {
         const std::optional<Tuple> opp = e.switch_face(*this);
         if (!opp) {
-            // A band edge on the DOMAIN BOUNDARY is still the band's outer surface, and its
-            // vertices are still offset-boundary vertices that are supposed to sit at
-            // target_distance. The rule below is a comparison between two incident faces and
-            // there is only one here, but the missing side is outside the domain, which is
-            // trivially neither band nor input complex -- so the test resolves, it just cannot
-            // be written as a comparison.
+            // A band edge on the domain boundary is still the band's outer surface, and its
+            // vertices are still supposed to sit at target_distance. The rule below compares two
+            // incident faces and there is only one here, but the missing side is outside the
+            // domain, which is trivially neither band nor input complex.
             //
-            // Skipping these is what let a clipped offset report a healthy error while half the
-            // target distance was missing: where target_distance exceeds the clearance to the
-            // bounding box the band is clipped, and exactly the clipped vertices -- the ones
-            // that are frozen and cannot be fixed -- were the ones dropped from the measurement.
-            // On the dragon rectangle at target_distance 0.1 the true error there reached 52% of
-            // target while the report said 4.8%, and at target_distance_rel 1 the entire band
-            // boundary lay on the box, leaving NO measured edges at all: max_dist_err 0.0 and
-            // "converged" on the first iteration, having measured nothing.
+            // Skipping these let a clipped offset report a healthy error: exactly the clipped
+            // vertices -- the frozen ones nothing can fix -- were the ones dropped from the
+            // measurement, and a wholly clipped band left no measured edges at all.
             if (face_is_offset_band(e.fid(*this))) {
                 on_band[e.vid(*this)] = true;
                 on_band[e.switch_vertex(*this).vid(*this)] = true;
@@ -3158,12 +2850,10 @@ double TopoOffsetTriMesh::band_vertex_distance_error(const size_t vid) const
     return std::abs(m_input_complex_bvh->dist(VectorXd(p)) - m_offset_params.target_distance);
 }
 
-// returns max_dist_err, avg_dist_err over the WHOLE band, pinned vertices included -- see
-// distance_deviation_split() for why the loop uses a different number than the report does.
 double TopoOffsetTriMesh::band_vertex_residual(const size_t vid) const
 {
-    // How far this vertex is from the level set Phi = c, as a LENGTH. The offset's own error,
-    // as opposed to band_vertex_distance_error()'s Euclidean diagnostic.
+    // How far this vertex is from the level set Phi = c, as a LENGTH: the offset's own error, as
+    // opposed to band_vertex_distance_error()'s Euclidean diagnostic.
     return potential_for(vid).residual_length(m_vertex_attribute[vid].m_posf);
 }
 
@@ -3190,13 +2880,11 @@ TopoOffsetTriMesh::EdgeSamples TopoOffsetTriMesh::offset_edge_samples(const Tupl
 
 TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
 {
-    // The band's Phi residual. EVERY offset-boundary vertex and every edge sample counts toward
-    // the driving max -- including pinned ones (on the domain wall), which used to be excluded.
-    // A pinned vertex far from the level set is a real error in the offset the run returns, so
-    // hiding it reported convergence for a boundary that was not at target distance. The
-    // reachable/pinned split is kept as ATTRIBUTION: when the max comes from a pinned vertex,
-    // the report says so, and the remedy is construction (domain size), not more optimization.
-    // Same change as 3D.
+    // The band's Phi residual. Every front vertex and every edge sample counts toward the driving
+    // max, pinned ones (on the domain wall) included: a pinned vertex far from the level set is a
+    // real error in the offset the run returns. The reachable/pinned split is kept as attribution
+    // -- when the max comes from a pinned vertex the remedy is construction (domain size), not
+    // more optimization. Same as 3D.
     const std::vector<bool> on_band = band_vertex_mask();
 
     DistanceSplit s;
@@ -3211,9 +2899,9 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
         sum_reachable += err;
         ++s.n_reachable;
         if (band_vertex_is_reachable(vid)) {
-            // THE RUNAWAY GUARD's measurement, taken here rather than in its own traversal:
-            // this loop already visits exactly the vertices it cares about, and Phi is the
-            // expensive part. report_outside_support() turns this into the error.
+            // The runaway guard's measurement, taken here rather than in its own traversal: this
+            // loop already visits exactly the vertices it cares about, and Phi is the expensive
+            // part. report_outside_support() turns this into the error.
             if (!potential_for(vid).within_support(p)) {
                 ++s.n_outside_support;
                 const double d = m_input_complex_bvh->dist(VectorXd(p));
@@ -3248,18 +2936,12 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
 TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
     const bool include_edge_samples) const
 {
-    // THE CONVERGENCE CRITERION: ||grad (Phi(x) - c)^2|| AT EVERY BAND VERTEX -- the full norm
-    // of the gradient of the SAME objective Phase B's local solves minimize,
-    // || 2 (Phi - c) grad Phi ||, measured at the variables the optimizer owns and compared
-    // against offset_gradient_tolerance().
-    //
-    // IDENTICAL TO THE PHASE B LOCAL STOP BY CONSTRUCTION. Each visit terminates once its own
-    // ||grad E|| is under the same bar, so "every visit finishes immediately" and "the run has
-    // converged" are one statement; any drift between the two would measure a different fixed
-    // point than the one the sweeps converge to.
-    //
-    // WEIGHT 1, deliberately: this is an ABSOLUTE bound in length units, so a tuning weight
-    // would scale the bar.
+    // The convergence criterion: ||grad (Phi(x) - c)^2|| at every band vertex -- the full norm of
+    // the gradient of the same objective Phase B's local solves minimise, measured at the
+    // variables the optimizer owns and compared against offset_gradient_tolerance(). Identical to
+    // the Phase B local stop by construction, so "every visit finishes immediately" and "the run
+    // has converged" are one statement. Weight 1 deliberately: an absolute bound in length units,
+    // which a tuning weight would scale.
     const std::vector<bool> on_band = band_vertex_mask();
     // One energy per region field, plus the union for a vertex with no region: a vertex is
     // measured against the field it is placed on. See potential_for().
@@ -3272,15 +2954,11 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
                                                                  : union_energy;
     };
 
-    // THE NORMAL-ALIGNED COMPANION, |grad E . n| with n the offset vertex normal
-    // (offset_vertex_normal()). NOT the deciding measure: only motion along n moves the
-    // surface off the level set, so it says how MISPLACED the surface is; the running tests
-    // are the full norm, which a local solve can actually zero.
-    // The same projection serves the in-edge chord diagnostic, onto the edge's own unit
-    // normal (inside an edge the discrete surface IS the chord).
-    //
-    // A degenerate site (no live offset edge at a vertex, a zero-length edge) has no normal;
-    // there the full norm stands in, which is the conservative reading since |g . n| <= |g|.
+    // The normal-aligned companion, |grad E . n| with n the offset vertex normal. NOT the deciding
+    // measure: only motion along n moves the surface off the level set, so it says how misplaced
+    // the surface is, while the running tests are the full norm, which a local solve can zero. The
+    // same projection serves the in-edge chord diagnostic on the edge's own normal. A degenerate
+    // site has no normal; there the full norm stands in, conservative since |g . n| <= |g|.
     const auto project = [](const Eigen::VectorXd& g, const Vector2d& n) -> double {
         return (n.squaredNorm() > 0.) ? std::abs(g.head<2>().dot(n)) : g.norm();
     };
@@ -3292,9 +2970,9 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
         if (!on_band[vid]) continue;
         if (!m_vertex_extra[vid].m_is_on_offset) continue;
 
-        // SKIPPED, not measured: a vertex the smoother declines to place this pass has a
-        // gradient that is not part of the fixed point. Counted so a run cannot report
-        // convergence over a band it never fully measured.
+        // Skipped, not measured: a vertex the smoother declines to place this pass has a gradient
+        // that is not part of the fixed point. Counted so a run cannot report convergence over a
+        // band it never fully measured.
         if (!m_vertex_attribute[vid].m_is_rounded) {
             ++s.n_skipped_unrounded;
             continue;
@@ -3320,10 +2998,10 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
         s.max_normal_aligned =
             std::max(s.max_normal_aligned, project(g, offset_vertex_normal(vid)));
 
-        // PINNED VERTICES ARE REPORTED, NOT GATED -- and this is the one place the gradient
-        // criterion deliberately parts company with residual_split(). A residual is a statement
-        // about the BOUNDARY; a gradient is a statement about the ITERATION, and folding in a
-        // vertex no sweep can move would make convergence unreachable by construction.
+        // Pinned vertices are reported, not gated -- the one place this criterion deliberately
+        // parts company with residual_split(). A residual is a statement about the BOUNDARY; a
+        // gradient is a statement about the ITERATION, and folding in a vertex no sweep can move
+        // would make convergence unreachable by construction.
         if (!band_vertex_is_reachable(vid)) {
             s.max_pinned = std::max(s.max_pinned, gn);
             ++s.n_pinned;
@@ -3339,31 +3017,14 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
         ++s.n_reachable;
     }
 
-    // ... AND ALONG THE BAND'S EDGES, which since 2026-08-23 is the OTHER HALF OF THE CRITERION
-    // rather than a diagnostic beside it.
+    // ... and along the band's edges, which is the OTHER HALF of the criterion, not a diagnostic
+    // beside it. A sample is not a variable, so no placement reduces it -- but refinement does,
+    // and excluding the samples let a run declare convergence with a visibly polygonal front.
     //
-    // THE ARGUMENT FOR EXCLUDING THEM WAS WRONG, and it is worth stating why because it sounds
-    // right. It ran: a sample is not a variable, so no placement can reduce it, so gating on it
-    // would gate the run on a number the iteration cannot change. True of PLACEMENT and false of
-    // the LOOP -- refinement changes it, that is precisely what
-    // update_band_sizing_from_tolerance() exists to do, and Phase A then acts on the field it
-    // writes. Excluding them made the sizing rule the only consumer of the chord term, so the
-    // loop refined on a quantity it then refused to be judged by: measured on topo_annots_groups
-    // (tag_0 & tag_2, delta 1.2, rel 1e-3), a run declared CONVERGED at max_grad 0.0338 against
-    // a bar of 0.0339 while its chord term stood at 8.33 -- 246x the same bar. The offset was
-    // visibly polygonal and the verdict said it was done.
-    //
-    // TWO CHANGES CAME WITH THE PROMOTION, both required for the comparison to mean anything:
-    //  - THE SAME QUANTITY. The full norm ||2 (Phi - c) grad Phi||, as at the vertices. It used
-    //    to be the NORMAL PROJECTION project(g, n_e), which is <= the full norm, so it was being
-    //    compared against a bar calibrated for a different measure -- and the sizing rule was
-    //    already using the full norm at the same sample points, so the two disagreed about what
-    //    "this sample is out of tolerance" meant.
-    //  - REACHABILITY. Only edges whose BOTH endpoints are reachable can gate. A chord to a
-    //    PINNED vertex inherits that vertex's error, and no refinement fixes it: splitting the
-    //    edge just puts a new vertex next to the one that cannot be placed. Gating on those
-    //    would re-create exactly the unconvergeable-by-construction state pinning was introduced
-    //    to remove. They are measured into max_in_edge_pinned and reported.
+    // Two things make the comparison mean anything: the same quantity as at the vertices (the full
+    // norm, not the smaller normal projection, which would face a bar calibrated for something
+    // else), and reachability -- only edges with BOTH ends reachable may gate, since a chord to a
+    // pinned vertex inherits an error no refinement fixes. The rest go to max_in_edge_pinned.
     if (include_edge_samples) {
         for (const Tuple& e : get_edges()) {
             if (!edge_is_offset_surface_live(e)) continue;
@@ -3396,18 +3057,12 @@ double TopoOffsetTriMesh::edge_interpolation_residual(const Tuple& e) const
                                                            : m_offset_potential;
     const double c = pot->target_level();
     if (!(c > 0.)) return -1.;
-    // THE VALUE, NOT THE GRADIENT (Uday, 2026-08-25). The gradient of ((Phi - c) / c)^2 is
-    // (2 / c) r grad Phi with r = (Phi - c) / c, so interpolating it across an edge measured
-    // r x (the change of grad Phi's direction). On a free stretch r ~ 0.005 and that is the
-    // geometry; at a seam the strip is pressed off the level set, r ~ 0.3-0.5, and the same
-    // change of direction -- for the Euclidean field a kink at every input polygon vertex that
-    // no refinement shrinks -- read 60-100x larger: Euclidean 0.2 measured 2.7x the bar at the
-    // seam against 0.74x for the value form, identical on the free part (0.93x both). The
-    // sizing rule then halved the seam every round, the strip thinned with its edges (0.0069
-    // -> 0.0017 -> 0.0008) and Phase B slowed with the sliver (29, 162, >200 passes to the bar).
-    // The second difference of r along the edge cancels a uniform press and keeps only how far
-    // the level set curves away from the chord, which halving the edge does reduce (~L^2).
-    // The factor 2 w / c puts it in the gradient's units, so the vertex bar applies unchanged.
+    // The value, not the gradient: the gradient of ((Phi - c) / c)^2 is (2 / c) r grad Phi with
+    // r = (Phi - c) / c, so interpolating it across an edge measures r x (the turn of grad Phi),
+    // which at a pressed seam reads far larger than the geometry warrants. The second difference
+    // of r cancels a uniform press and keeps only how far the level set curves away from the
+    // chord, which halving the edge does reduce (~L^2). The factor 2 w / c puts it in the
+    // gradient's units, so the vertex bar applies unchanged.
     const auto r_at = [&](const Vector2d& p) { return (pot->value(p) - c) / c; };
     const Vector2d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
     const double ra = r_at(pa), rb = r_at(pb), rm = r_at(0.5 * (pa + pb));
@@ -3421,10 +3076,9 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
-    // THE CONVERGENCE LENGTH, front_conv_rel x delta (since 2026-08-31; it was the envelope's
-    // tube): what "placed" means for a vertex and "resolved" for a chord. See edge_conv_ratio()
-    // for the role split -- offset_envelope_rel is the leash on the operations, this is the
-    // accuracy, and startup requires leash <= accuracy. The field keeps its old name.
+    // The convergence length, front_conv_rel x delta: what "placed" means for a vertex and
+    // "resolved" for a chord. See edge_conv_ratio() for the role split -- offset_envelope_rel is
+    // the leash on the operations, this is the accuracy, and startup requires leash <= accuracy.
     s.tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const auto placed = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
@@ -3433,14 +3087,12 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!placed(vid)) continue;
-        // THE SINGLE PHASE'S STATES -- see EnergyCriterion. rho is the reference-slope length
-        // residual_length(), the same measure the sag test qualifies its ends with. "Stopped" is
-        // the objective's stationarity -- the remaining 1-D Newton step along the normal, in
-        // length, at most the tube -- not the net displacement: at a pressed seam the two fronts
-        // take turns pushing the one-cell strip and every vertex drifts a little every turn
-        // for ever (measured 2026-08-28: the net-displacement rule held two_circles Euclidean
-        // 0.4 at 36+ turns with 12 "travelling" seam vertices), while the objective is stationary
-        // there from turn 4 and the seam is straight (spread 0.003).
+        // The single phase's states -- see EnergyCriterion. rho is the reference-slope length
+        // residual_length(), the measure the sag test qualifies its ends with. "Stopped" is the
+        // objective's stationarity -- the remaining 1-D Newton step along the normal, in length,
+        // at most the tube -- not the net displacement: at a pressed seam the two fronts take
+        // turns pushing the one-cell strip and every vertex drifts a little for ever, while the
+        // objective is stationary there.
         const Vector2d p = m_vertex_attribute[vid].m_posf;
         const double rho = potential_for(vid).residual_length(p);
         const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
@@ -3455,12 +3107,10 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
             ++s.n_travelling;
         } else if (front_vertex_touches_other(vid) || !m_offset_params.front_alignment_energy) {
             // Stationary off its level set. With the alignment term off the objective is the
-            // offset term and w x AMIPS alone, and the only thing that can hold a vertex short
-            // of its level set is a crushed ring -- a press, whether the far vertex is another
-            // front (touching) or the interior of a strip two cells thick (measured 2026-08-28:
-            // 43 such vertices on two_circles Euclidean 0.4 at stop_energy 100, called stuck
-            // under the touching rule alone, and the loop never exited). With the alignment
-            // term on, a stationary vertex touching nothing is the term's own bias: stuck.
+            // offset term and w x AMIPS alone, so only a press can hold a vertex short of its
+            // level set -- another front (touching), or the interior of a strip two cells thick.
+            // With the alignment term on, a stationary vertex touching nothing is the term's own
+            // bias: stuck.
             ++s.n_pressed_on;
             if (front_vertex_touches_other(vid)) ++s.n_pressed_touching;
         } else {
@@ -3512,24 +3162,18 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                     (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
                 // Refinable only if the rule can still lower a target: at the sizing floor
                 // (min_sizing_scalar, min_edge_length) the chord cannot be resolved within the
-                // tube at this resolution -- a crease of the Euclidean level set, an inward
-                // offset meeting itself -- and it is reported as at-floor, not looped on.
+                // tube at this resolution -- a crease of the Euclidean level set, an inward offset
+                // meeting itself -- so it is reported at-floor, not looped on.
                 //
-                // AGAINST THE MAX OF THE TWO SCALARS, NOT THE MIN (2026-08-31). The split and
-                // collapse passes both judge an edge by the MEAN of its endpoint scalars, so a
-                // chord with one coarse end keeps splitting and having its children collapsed
-                // back -- a limit cycle -- while the min-based test here excused it as at-floor
-                // the moment its FINE end reached sn (annots Euclidean 0.25, alignment off,
-                // stop 10: chord at (8.25, 19.25), scalars 0.180 / 0.023, sag 6x the tube in
-                // the "converged" output; three such sites burned turns 2-14 of a run placed
-                // at turn 6). Judged by the max, the edge stays refinable while EITHER end is
-                // coarser than the sag demands; the write below is already per-vertex and
-                // only-if-lower, so the coarse end comes down, the means follow, the split
-                // sticks. Seam edges have both ends at the floor, max == min, still excused.
-                // The two rules measured and rejected for this same cycle, both 2026-08-31:
-                // sizing_collapse_min true (front 1729 -> 2681 and climbing, nonconvergence),
-                // and min instead of mean in the shared collapse length gate (starved the
-                // quality collapses; max AMIPS 51 against stop 10, nonconvergence).
+                // Against the MAX of the two scalars, not the min: split and collapse both judge
+                // an edge by the MEAN of its endpoint scalars, so a min-based test excuses a chord
+                // as at-floor the moment its fine end reaches sn while its coarse end keeps
+                // splitting and having the children collapsed back. Judged by the max the edge
+                // stays refinable while either end is coarser than the sag demands, so the coarse
+                // end comes down and the split sticks; seam edges have both ends at the floor, so
+                // max == min and they are still excused. Do not attack this cycle with
+                // sizing_collapse_min or with min in the shared collapse length gate; both
+                // measured worse -- see git history of this file.
                 const double l = std::max(m_params.l, 1e-300);
                 const double s_floor = std::max(
                     m_offset_params.min_sizing_scalar,
@@ -3621,25 +3265,16 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
         const double bar = rel * m_front_gradient_reference;
         return bar > 0. ? r / bar : std::numeric_limits<double>::infinity();
     }
-    // RESOLUTION IS rel's BUSINESS AGAIN (Uday, 2026-08-31, reversing his 2026-08-25 call):
-    // front_conv_rel is THE accuracy -- the vertex bar and this resolution threshold alike --
-    // and offset_envelope_rel is only the leash on the operation passes. The 08-25 fear
-    // (rel 0.01 over-refining, 0.04: 5906 vertices for 1351) belonged to the OLD vertex test,
-    // which needed a tiny rel so a creeping front could not exit early; the step_size_rel test
-    // does not, so rel can sit at the resolution the user actually wants. The startup check
-    // requires offset_envelope_rel <= front_conv_rel: accuracy finer than the leash is
-    // unreachable -- ops licensed to dent the front by more than the sag threshold mint new
-    // refinable edges every turn (measured 2026-08-31 with the roles swapped: tube 0.05 against
-    // sag threshold 0.025, annots alignment-on 8 -> 19 turns, refinable count bouncing 1 -> 5
-    // as late as turn 18).
+    // Resolution is front_conv_rel's business: it is THE accuracy -- the vertex bar and this
+    // resolution threshold alike -- while offset_envelope_rel is only the leash on the operation
+    // passes. The startup check requires offset_envelope_rel <= front_conv_rel, since an accuracy
+    // finer than the leash is unreachable: operations free to dent the front by more than the sag
+    // threshold mint new refinable edges every turn.
     //
-    // AS A LENGTH (Uday, 2026-08-26): the sagitta of Phi over the chord, |Phi(m) - mean Phi|,
-    // divided by |grad Phi| at the midpoint. The earlier form compared the same second
-    // difference of (Phi - c) / c against offset_envelope_rel, both dimensionless -- which for
-    // the Euclidean field (c = delta) is this length statement, but for the smooth field a
-    // fraction of c is c / |grad Phi| = 0.29 delta in length at every delta, so the same number
-    // was a 3.4x tighter tolerance there. Since 2026-08-26 this is a reported quantity, not the
-    // loop's gate: the front's resolution is set from the tolerance in init_offset_sizing_field().
+    // As a LENGTH: the sagitta of Phi over the chord, |Phi(m) - mean Phi|, divided by |grad Phi|
+    // at the midpoint. The dimensionless form this replaced meant a tighter tolerance for the
+    // smooth field than for the Euclidean one at the same number. Reported, not gated -- the
+    // front's resolution is set from the tolerance in init_offset_sizing_field().
     const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
     const int reg = edge_region(a, b);
     const std::shared_ptr<const OffsetPotential2D> pot =
@@ -3657,33 +3292,26 @@ namespace {} // namespace
 
 bool TopoOffsetTriMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) const
 {
-    // TWO CONDITIONS, both required -- see the use in smooth_front_vertex_phase_b().
+    // Three conditions, all required -- see the use in smooth_front_vertex_phase_b().
     //
     // (1) An incident live front edge at or past perpendicular to the field. Only there does the
-    //     alignment residual sit on its plateau (r ~ 1), where its fixing motion is tangential
-    //     and its along-the-line preference is pure radial stretching. Edge normal n (sigma from
-    //     the band-face centroid) EXACTLY as phase_b_front_energy() builds it, so this predicate
-    //     and the energy cannot disagree.
+    //     alignment residual sit on its plateau, where its fixing motion is tangential. The edge
+    //     normal is built exactly as phase_b_front_energy() builds it, so this predicate and the
+    //     energy cannot disagree.
     // (2) The alignment term's 1-D gradient OPPOSES the placement term's along the vertex's move
-    //     direction. On a travelling staircase both point outward -- the radial stretching is a
-    //     travel engine, not a trap -- and cutting in there stalled c_shape Euclidean 1.0 with
-    //     the whole free front at 0.80-0.95 (nothing within 0.01 of the level set, against
-    //     112 of 161 ungated, 2026-09-01). The trap is specifically the FIGHT: alignment
-    //     cancelling the pull toward the level set.
+    //     direction. On a travelling staircase both point outward and the radial stretching is a
+    //     travel engine, not a trap; the trap is specifically the fight.
     const int r = vertex_region(vid);
     const std::shared_ptr<const OffsetPotential2D> pot =
         (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
                                                            : m_offset_potential;
     if (!pot) return false;
     const Vector2d x = m_vertex_attribute[vid].m_posf;
-    // (3) AND STATIONARY OFF THE LEVEL SET: residual over the tube while the remaining 1-D
-    //     step is under the vertex test's bar (checked last, it is the expensive one). This is
-    //     what separates a frozen jog from a travelling staircase vertex: mid-travel the true
-    //     agree-weighted alignment gradient ALSO opposes placement at staircase vertices --
-    //     weakly, and the 1-D solve drives through it -- so conditions (1)+(2) alone cut in
-    //     there and stalled c_shape exactly like the term gates did (measured 2026-09-01,
-    //     same histogram). A trapped vertex is one the 1-D solve has finished with, at a
-    //     position that is not on the level set.
+    // (3) And stationary off the level set: residual over the tube while the remaining 1-D step
+    //     is under the vertex test's bar (checked last, it is the expensive one). Mid-travel the
+    //     alignment gradient opposes placement too, weakly, and the 1-D solve drives through it,
+    //     so (1)+(2) alone would cut in at travelling staircase vertices as well. A trapped
+    //     vertex is one the 1-D solve has finished with, at a position off the level set.
     const double rho = pot->residual_length(x);
     const double tube =
         std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
@@ -3711,8 +3339,8 @@ bool TopoOffsetTriMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
         const Vector2d g = pot->gradient(mid);
         const double gn = g.norm();
         if (!std::isfinite(gn) || gn <= 0.) continue;
-        // The TRUE weights, so the probe gradient is the term's own: an edge the agreement
-        // weight silences (a Euclidean crease) exerts no force and must neither count as
+        // The true weights, so the probe gradient is the term's own: an edge the agreement weight
+        // silences (a Euclidean crease) exerts no force and must neither count as
         // past-perpendicular nor pollute the conflict sign.
         const Vector2d ga_e = pot->gradient(x);
         const Vector2d gb_e = pot->gradient(m_vertex_attribute[q].m_posf);
@@ -3743,8 +3371,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
 {
     const double w_off = 1. - m_params.w_amips;
     auto sum = std::make_shared<optimization::EnergySum>();
-    // Gauss-Newton Hessian (the default). Measured 2026-08-25: the exact Hessian (adds
-    // r grad^2 Phi) changed nothing on two_circles at 0.04-0.2, same passes, same meshes.
+    // Gauss-Newton Hessian (the default); the exact Hessian adds r grad^2 Phi and buys nothing.
     sum->add_energy(std::make_shared<OffsetEnergy2D>(pot, w_off, true, true));
     // One alignment residual per incident live front edge. sigma orients the edge's normal
     // away from its band face, read off the face centroid exactly as distance_criterion() does.
@@ -3767,10 +3394,9 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
         const Vector2d n_plus(-d.y(), d.x()); // R90 (q - x)
         const Vector2d mid = 0.5 * (x + m_vertex_attribute[q].m_posf);
         const double sigma = n_plus.dot(mid - c) >= 0. ? 1. : -1.;
-        // The agreement weight: see AlignEnergy2D::Edge::agree. The two endpoint gradients;
-        // the field's outward sign squares away in the dot product. Either one degenerate
-        // (a corner of the level set itself, or outside the support) means no consistent
-        // target for this edge: weight 0, not a guess.
+        // The agreement weight: see AlignEnergy2D::Edge::agree. The two endpoint gradients; the
+        // field's outward sign squares away in the dot product. Either one degenerate means no
+        // consistent target for this edge: weight 0, not a guess.
         const Vector2d ga = pot->gradient(x);
         const Vector2d gb = pot->gradient(m_vertex_attribute[q].m_posf);
         const double na = ga.norm(), nb = gb.norm();
@@ -3778,10 +3404,8 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_
         const double agree = ok ? std::max(0., ga.dot(gb) / (na * nb)) : 0.;
         edges.push_back({m_vertex_attribute[q].m_posf, sigma, agree});
     }
-    // KEPT (measured 2026-08-25): without it the seam is rougher -- worst edge angle against the
-    // field 6 -> 17 deg at 0.10, 16 -> 26 at 0.15, 21 -> 39 at 0.20 -- since under
-    // front_normal_projection nothing else acts on the edge normals; 10-15% fewer passes is not
-    // worth that.
+    // Kept: without it the seam is rougher, since under front_normal_projection nothing else acts
+    // on the edge normals. The few percent of passes it costs is not worth that.
     if (!edges.empty() && m_offset_params.front_alignment_energy) {
         const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
         sum->add_energy(std::make_shared<AlignEnergy2D>(pot, std::move(edges), sign, w_off));
@@ -3798,11 +3422,11 @@ void TopoOffsetTriMesh::assign_band_regions()
     m_face_region.assign(tri_capacity(), -1);
     m_vertex_region.assign(vert_capacity(), -1);
     if (m_n_regions <= 1 || m_region_potentials.empty()) return;
-    // WHICH PIECE the seed belongs to, read GEOMETRICALLY off the captured complex. The shared
+    // Which piece the seed belongs to, read geometrically off the captured complex: the shared
     // edge lies on the input complex, so its midpoint is at distance 0 from its own piece and at
-    // the pieces' separation from any other -- there is nothing to get wrong. It has to be
-    // re-derived rather than carried, because nothing propagates a region index through split
-    // and collapse; the same reason classify_curve_edges() re-derives on_curve.
+    // the pieces' separation from any other. Re-derived rather than carried, because nothing
+    // propagates a region index through split and collapse -- the same reason
+    // classify_curve_edges() re-derives on_curve.
     const auto region_at = [&](const Vector2d& p) -> int {
         Vector2d foot, seg_normal;
         bool on_corner = false;
@@ -3813,16 +3437,12 @@ void TopoOffsetTriMesh::assign_band_regions()
         return size_t(feature) < src.size() ? int(src[size_t(feature)]) : -1;
     };
     std::vector<size_t> queue;
-    // THE SEED IS A COMPLEX VERTEX (label 1) ON A BAND FACE -- not, as before, a band face across
-    // an edge from a complex FACE. The face rule seeded nothing on a curve complex, which has no
-    // faces, nor on a point complex, which has no edges either: on the slot fixture, the annots
-    // configurations and the vertex-input fixture every band face read "reached from none" and
-    // the whole band fell back to the union field, with the per-piece fields built and unused.
-    // A band face on a region's boundary edge is incident to that edge's endpoints, so for a
-    // region complex the vertex rule seeds exactly the faces the face rule did. The vertex sits
-    // ON the complex (held there by its envelope), so the query below is at distance 0 from its
-    // own piece; a vertex where two pieces meet belongs to both, and vertex connectivity has
-    // already made those one region.
+    // The seed is a complex VERTEX (label 1) on a band face, not a band face across an edge from
+    // a complex FACE: the face rule seeds nothing on a curve or point complex, which has no
+    // faces, so the whole band would fall back to the union field. For a region complex the
+    // vertex rule seeds exactly the same faces, since a band face on a region's boundary edge is
+    // incident to that edge's endpoints. The vertex sits ON the complex, so the query below is at
+    // distance 0 from its own piece.
     std::vector<int> piece_of_vertex(vert_capacity(), -3); // -3: not looked up yet
     for (const Tuple& f : get_faces()) {
         const size_t fid = f.fid(*this);
@@ -3901,11 +3521,10 @@ void TopoOffsetTriMesh::assign_band_regions()
 
 void TopoOffsetTriMesh::log_front_profile(const size_t vid)
 {
-    // DIAGNOSTIC (2026-08-28): the front objective of one vertex along its normal, its offset
-    // term alone against the total, at 21 points across +-delta/2 -- to see whether a vertex
-    // that will not place is at a minimum the alignment/AMIPS terms create (the total has a
-    // minimum where the offset term has none) or is blocked by the line search (no minimum at
-    // all where it sits). Logged once, on non-convergence, for the worst vertex.
+    // Diagnostic: the front objective of one vertex along its normal, its offset term alone
+    // against the total, at 21 points across +-delta/2 -- to see whether a vertex that will not
+    // place sits at a minimum the alignment/AMIPS terms create or is blocked by the line search.
+    // Logged once, on non-convergence, for the worst vertex.
     if (vid == static_cast<size_t>(-1) || vid >= m_vertex_attribute.size() || !m_offset_potential)
         return;
     const int region = vertex_region(vid);
@@ -3975,27 +3594,19 @@ double TopoOffsetTriMesh::front_chord_target(
     const double sag,
     const double tube) const
 {
-    // THE LENGTH THAT RESOLVES THIS CHORD. Same rule as before -- 3/4 L (tube / sag)^(1/p),
-    // capped at L/2 -- with the exponent p MEASURED rather than assumed. p is how fast the sag
-    // falls when the chord is halved: sag = L^2 / (8 rho) on a smooth level set gives p = 2,
-    // which is what the rule assumed everywhere.
+    // The length that resolves this chord: 3/4 L (tube / sag)^(1/p), capped at L/2, with the
+    // exponent p measured rather than assumed. p is how fast the sag falls when the chord is
+    // halved -- 2 on a smooth level set, where sag = L^2 / (8 rho), but 1 where the chord
+    // straddles a kink of the level set (for the Euclidean field, the medial axis of an input
+    // corner): there the turn between the endpoint gradients is a fixed jump halving does not
+    // shrink, so the sag falls only like L.
     //
-    // IT IS 1, NOT 2, WHERE THE CHORD STRADDLES A KINK OF THE LEVEL SET (2026-09-01). For the
-    // Euclidean field a kink sits on the medial axis of every input corner: the two endpoints'
-    // closest input features differ, so the turn between their gradients is a fixed jump that
-    // halving the chord does not shrink, and the sag falls only like L. Measured on the annots
-    // fixture (Euclidean 0.25, defaults): every at-floor chord of the run had the two endpoint
-    // gradients EXACTLY perpendicular (ghat_a . ghat_b = 0, a right-angle input corner), and
-    // under p = 2 the demand landed a hair above the sizing floor, so each site spent three
-    // turns walking its scalar down (0.0177 -> 0.0102 -> 0.0100) instead of arriving at once.
-    // Nine turns for a front placed at turn 3.
-    //
-    // p FROM THE TURN, NO THRESHOLD: phi is the turn between the endpoint gradients, phi_a and
-    // phi_b the turns each half would carry (the midpoint gradient splits it). A smooth arc
-    // splits the turn evenly, so a half carries phi/2 and its sag is a quarter; a kink puts the
-    // whole jump in one half, whose sag is a half. ratio = (max(phi_a, phi_b) / phi) / 2 is that
-    // predicted sag fraction, in [1/4, 1/2], and p = -1 / log2(ratio) maps it back to the
-    // exponent: 1/4 -> 2 (the old rule exactly), 1/2 -> 1. Anything degenerate falls back to 2.
+    // p from the turn, with no threshold: phi is the turn between the endpoint gradients, phi_a
+    // and phi_b the turns each half would carry (the midpoint gradient splits it). A smooth arc
+    // splits the turn evenly, so a half's sag is a quarter; a kink puts the whole jump in one
+    // half, whose sag is a half. So ratio = (max(phi_a, phi_b) / phi) / 2 is the predicted sag
+    // fraction, in [1/4, 1/2], and p = -1 / log2(ratio) maps it back: 1/4 -> 2, 1/2 -> 1.
+    // Anything degenerate falls back to 2.
     double p = 2.;
     const int rg = edge_region(va, vb);
     const std::shared_ptr<const OffsetPotential2D> pot =
@@ -4030,26 +3641,20 @@ size_t TopoOffsetTriMesh::refine_front_from_sag(
     // 3/4 is the split pass's own slack (it splits at 4/3 of the target), so an edge is asked
     // to split exactly when its sag is over the tube. Only lowers; the standard gradation.
     const double l = std::max(m_params.l, 1e-300);
-    // front_conv_rel, not the envelope: the accuracy the refinement serves (2026-08-31), the
-    // same length energy_criterion() measures sag against.
+    // front_conv_rel, not the envelope: the accuracy the refinement serves, the same length
+    // energy_criterion() measures sag against.
     const double tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
     std::vector<size_t> changed;
     for (const EnergyCriterion::Refinable& r : edges) {
         if (!(r.sag > 0.) || !(r.len > 0.)) continue;
-        // THE CAP IS L/2: THE CHILDREN LAND ON THEIR OWN TARGET (2026-08-31). The old cap was
-        // 0.625 L, from "children L/2 must clear the 4/5 collapse band, 4/5 x 0.625 = 0.5" --
-        // non-strict reasoning that put the children EXACTLY ON the band's boundary, where the
-        // collapse gate (strictly longer survives) offers them and a hair of smoothing decides
-        // every turn. Measured at front_conv_rel 0.05: the steady-state edges sit in the
-        // 1-1.44x sag window where the cap always binds, and ~27 of them cycled split<->
-        // collapse for 22 turns (recurring length 0.059, sn 0.625 L / l = 0.0104, fresh vertex
-        // ids each turn) -- the whole "looser accuracy converges slower" defect. At L/2 the
-        // children sit 25% above the collapse band (4/5 x L/2 = 0.4 L) and 25% below their own
-        // split threshold (4/3 x L/2) -- the fixed point of the 4/3-4/5 hysteresis, symmetric
-        // margin, no boundary. The original 0.625 measurement stands as the reason a cap must
-        // exist at all (uncapped: annots 180 refinable edges, tag4_in 27, for 40 turns).
+        // The cap is L/2, so the children land on their own target: 25% above the collapse band
+        // (4/5 x L/2) and 25% below their own split threshold (4/3 x L/2), the fixed point of the
+        // 4/3-4/5 hysteresis, with a symmetric margin and no boundary. Do not raise it to
+        // 0.625 L, which puts the children exactly ON the collapse band's boundary and cycles
+        // them split<->collapse; measured worse -- see git history of this file. A cap of some
+        // kind is required: uncapped, the refinable set never empties.
         const double target = front_chord_target(r.a, r.b, r.len, r.sag, tube);
         const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
         for (const size_t v : {r.a, r.b}) {
@@ -4138,28 +3743,24 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::distance_deviation_split() c
 
 std::tuple<double, double> TopoOffsetTriMesh::optimization_quality_stats()
 {
-    // PHASE A IS TRIWILD, so its metric is TriWild's: element quality alone, in ABSOLUTE AMIPS
+    // Phase A is TriWild, so its metric is TriWild's: element quality alone, in absolute AMIPS
     // against optimization_stop_metric() = stop_energy, with no Phi term in the stop test, the
-    // stall test or the refinement ranking. The offset is not unattended there --
-    // m_offset_envelope holds it -- and mixing Phi back in is what made the two criteria fight.
-    //
-    // DELEGATED, not reimplemented, and the units are the whole reason. See
-    // optimization_stop_metric() for what returning a normalized number here instead did to the
-    // 3D Phase A: filter 100 against a worst element of 97, no refinement, 20 bit-identical
-    // iterations.
+    // stall test or the refinement ranking. The front is not unattended there -- m_offset_envelope
+    // holds it -- and mixing Phi back in makes the two criteria fight. Delegated rather than
+    // reimplemented, and the units are the reason: returning a normalized number here instead
+    // starves refinement, since the filter is compared against the same absolute scale.
     if (m_phase != OptPhase::B) { // A, and Single, which runs TriWild's loop
         return wmtk::TriOptimizerMesh::optimization_quality_stats();
     }
 
-    // The engine's "quality" is the offset's own criterion: (max, avg) PHI RESIDUAL over the
+    // The engine's "quality" is the offset's own criterion: (max, avg) Phi residual over the
     // band, normalized so 1.0 is the tolerance, maxed with AMIPS on the same scale.
     const DistanceSplit r = residual_split();
 
-    // THE RUNAWAY GUARD, before anything reports a number derived from Phi. A vertex outside the
+    // The runaway guard, before anything reports a number derived from Phi. A vertex outside the
     // support has a residual that saturates rather than growing, so the numbers below would
-    // under-report it, and no smoothing move can bring it back. Checked here because this is
-    // what the driver calls every iteration, and because residual_split() has already paid for
-    // the measurement.
+    // under-report it, and no smoothing move can bring it back. Checked here because the driver
+    // calls this every iteration and residual_split() has already paid for the measurement.
     report_outside_support("Optimization iteration", r);
 
     const double tol = offset_residual_tolerance();
@@ -4187,8 +3788,8 @@ double TopoOffsetTriMesh::face_criterion_rel(const size_t fid) const
             if (!band_vertex_is_reachable(vid)) continue;
             score = std::max(score, band_vertex_residual(vid) / tol);
         }
-        // ALONG the edge as well, so a face carrying a stretch of band too coarse to represent
-        // the offset is refined -- which is the mechanism that keeps the band resolved at all.
+        // Along the edge as well, so a face carrying a stretch of band too coarse to represent
+        // the offset is refined -- the mechanism that keeps the band resolved at all.
         score = std::max(score, offset_edge_samples(e).max / tol);
     }
     return score;
@@ -4196,22 +3797,16 @@ double TopoOffsetTriMesh::face_criterion_rel(const size_t fid) const
 
 size_t TopoOffsetTriMesh::refine_sizing_around_worst(const double max_metric)
 {
-    // TriWildMesh::refine_sizing_around_worst verbatim -- ranked by
-    // m_face_attribute[].m_quality, filtered against stop_energy, seeding the same force-split
-    // edges. Phase A is TriWild, and that includes how it responds to a stall; the field it
-    // writes is the same field Phase B's update_band_sizing_from_tolerance() writes, so the
-    // refinement each phase asks for accumulates rather than competing.
+    // TriWildMesh::refine_sizing_around_worst verbatim -- ranked by m_face_attribute[].m_quality,
+    // filtered against stop_energy, seeding the same force-split edges. Phase A is TriWild, and
+    // that includes how it responds to a stall.
     //
-    // PHASE A ONLY, by construction: mesh_improvement() is this function's one caller, and the
-    // alternating driver only ever runs that as Phase A. A second branch used to live here for
-    // a Phase B stall, scored by face_criterion_rel() in normalized units; it was unreachable
-    // in the alternating driver and is deleted -- Phase B's refinement question belongs to
-    // update_band_sizing_from_tolerance().
+    // Phase A only, by construction: mesh_improvement() is this function's one caller, and the
+    // driver only ever runs that as Phase A.
     //
-    // NOTE THE UNITS: max_metric arrives from mesh_improvement() as whatever
-    // optimization_quality_stats() returned, which in Phase A is ABSOLUTE AMIPS, and the score
-    // it is compared against is absolute too. Mixing units is the bug that cost 3D twenty
-    // iterations.
+    // Note the units: max_metric arrives from mesh_improvement() as whatever
+    // optimization_quality_stats() returned, which in Phase A is absolute AMIPS, and the score it
+    // is compared against is absolute too. Mixing units here is a standing hazard.
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
 
     // Clamped above exactly as TriWild does: without it a single degenerate face (quality
@@ -4231,7 +3826,7 @@ size_t TopoOffsetTriMesh::refine_sizing_around_worst(const double max_metric)
     }
 
     log_stuck_refine_census(max_metric, filter_energy);
-    // WHAT IS BLOCKING THE FIX, next to WHAT IS BROKEN. Same filter, so the two censuses cover
+    // What is blocking the fix, next to what is broken. Same filter, so the two censuses cover
     // the same element set and can be read together.
     log_refine_block_census(fmt::format("stuck call {}", m_stuck_calls), filter_energy);
 
@@ -4279,11 +3874,11 @@ size_t TopoOffsetTriMesh::refine_sizing_around_worst(const double max_metric)
 
 void TopoOffsetTriMesh::log_worst_dist_vertex() const
 {
-    // The band split, first: how much of the error is the optimizer's to fix. The loop and the
-    // sizing field only ever see the reachable half, so a run whose reported max looks bad but
-    // whose reachable max is fine is a construction problem, not an optimization one. Both
-    // quantities are reported -- the Phi residual, which the loop converges on, and the
-    // Euclidean distance, which says how far the smoothed offset ended up from the exact one.
+    // The band split first: how much of the error is the optimizer's to fix. The loop and the
+    // sizing field only see the reachable half, so a run whose reported max looks bad but whose
+    // reachable max is fine is a construction problem, not an optimization one. Both quantities
+    // are reported -- the Phi residual the loop converges on, and the Euclidean distance, which
+    // says how far the smoothed offset ended up from the exact one.
     {
         const DistanceSplit r = residual_split();
         const DistanceSplit d = distance_deviation_split();
@@ -4358,10 +3953,9 @@ void TopoOffsetTriMesh::log_worst_dist_vertex() const
     }
     logger().info("\t  smoothing fate: {}", fate);
 
-    // Every incident edge, with the tag sets of the two faces across it. This is the ground
-    // truth the classification is derived from: label is a 3-way coarsening of these sets, so
-    // the pair of sets says exactly why an edge landed in the class it did, and whether a curve
-    // that looks like it should continue through this vertex actually does.
+    // Every incident edge, with the tag sets of the two faces across it: the ground truth the
+    // classification is derived from. label is a 3-way coarsening of these sets, so the pair says
+    // exactly why an edge landed in the class it did.
     const auto tags_to_string = [](const CellTag& tags) {
         std::string s = "{";
         for (const int64_t t : tags) {
@@ -4406,8 +4000,8 @@ bool TopoOffsetTriMesh::edge_is_offset_surface_live(const Tuple& e) const
 {
     // The band's OUTER surface, recomputed from the tags on every call for the same reason
     // edge_is_region_boundary_live() is: the operations that ask this run between one
-    // label_offset_boundary() and the next. Same rule compute_distance_deviation() applies --
-    // a band face meeting a face that is neither band nor input complex.
+    // label_offset_boundary() and the next. Same rule as band_vertex_mask() -- a band face
+    // meeting a face that is neither band nor input complex.
     const std::optional<Tuple> opp = e.switch_face(*this);
     if (!opp) return false;
     const size_t fa = e.fid(*this), fb = opp->fid(*this);
@@ -4418,41 +4012,29 @@ bool TopoOffsetTriMesh::edge_is_offset_surface_live(const Tuple& e) const
 
 void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
 {
-    // A VERTEX ON BOTH SURFACES IS UNSATISFIABLE, not merely awkward. It sits at distance 0 from
-    // the input complex, where Phi diverges, and is simultaneously required to sit on the level
-    // set at target_distance from it. No placement satisfies both, so no amount of smoothing or
-    // refinement can fix it -- which is why the rest of the component quietly steps around it:
-    // smooth_before() refuses it in Phase B, band_vertex_is_reachable() drops it from the
-    // gradient metric, and residual_split() books it under max_pinned. Stepping around it is right
-    // for the measurement and wrong as a response: a construction defect can otherwise sit in the
-    // mesh contributing nothing but a boundary that cannot be placed, and never say so.
+    // A vertex on both surfaces is unsatisfiable: it sits at distance 0 from the input complex,
+    // where Phi diverges, and is at the same time required to sit at target_distance from it, so
+    // no placement, no smoothing and no refinement can fix it. The rest of the component steps
+    // around such a vertex (refused in Phase B, dropped from the gradient metric, booked under
+    // max_pinned), which is right for the measurement and wrong as the only response -- hence
+    // this check.
     //
-    // ON THE DOMAIN BOUNDARY IS DIFFERENT and deliberately not checked here. Such a vertex is
-    // constrained but not contradictory, and it is a legitimate outcome of growth meeting the
-    // edge of the domain.
-    //
-    // Checked after every phase, not only at construction: collapse_after_vertex() ORs the flags
-    // onto the surviving vertex, so a collapse that merges an offset vertex into an input one
-    // CREATES this state out of two individually fine vertices.
+    // On the domain boundary is different and deliberately not checked: constrained, not
+    // contradictory. Checked after every phase and not only at construction, because
+    // collapse_after_vertex() ORs the flags and can create the state from two fine vertices.
     std::vector<size_t> both;
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_extra[vid].m_is_on_input) {
             continue;
         }
-        // THE GEOMETRY DECIDES, NOT THE FLAGS. m_is_on_input is over-broad: the split
-        // propagates it onto new vertices and the collapse ORs it onto survivors, so a
-        // vertex can carry it while sitting a full target_distance from the complex --
-        // which is to say sitting exactly where the offset wants it. Erroring on the flag
-        // pair alone failed topological_offset_3d and _3d_edge_input at CONSTRUCTION, on
-        // 134 and 119 vertices whose real distances were 0.11 to 0.20 against a
-        // target_distance of 0.2: the message asserted they were at distance 0 while
-        // printing distances that plainly were not.
-        //
-        // Unsatisfiable is a GEOMETRIC fact. smoothing_position_is_allowed() holds an
-        // input-complex vertex within envelope_size of the complex, and the offset asks it
-        // to reach target_distance; those two demands contradict each other only when the
-        // vertex really is on the complex.
+        // The geometry decides, not the flags. m_is_on_input is over-broad -- the split propagates
+        // it onto new vertices and the collapse ORs it onto survivors -- so a vertex can carry it
+        // while sitting a full target_distance from the complex, which is exactly where the offset
+        // wants it. Unsatisfiable is a geometric fact: smoothing_position_is_allowed() holds an
+        // input-complex vertex within envelope_size of the complex and the offset asks it to reach
+        // target_distance, and those two demands contradict each other only when the vertex really
+        // is on the complex.
         if (m_input_complex_bvh->dist(VectorXd(m_vertex_attribute[vid].m_posf)) >
             m_offset_params.envelope_size) {
             continue;
@@ -4509,42 +4091,30 @@ bool TopoOffsetTriMesh::edge_borders_released_boundary(const Tuple& e) const
 
 std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::released_envelope() const
 {
-    // deform_others' OPS-ONLY TUBE (Uday's design, 2026-09-01): a tube around the CURRENT
-    // released boundaries, consulted by surface_envelope_for_edge() -- the dispatch every
-    // operation containment check comes through and no smoothing path does. Releasing an
-    // object freed its boundary of every envelope so smoothing can carry it, but that left the
-    // operations free too, and the collapse pass was measured doing the damage on two_overlap:
-    // circle Q's boundary radius spread about its centroid 0.013 -> 0.075 in turn 1's collapse
-    // group alone (boundary vertices 39 -> 25, survivors repositioned at will), the plastic
-    // re-stamp making each distortion the new rest -- a ratchet. Smoothing was measured NOT to
-    // be the offender: it carries the push. eps is the offset tube's: an operation may not
-    // degrade a tracked boundary by more than the accuracy tube, released or not.
+    // deform_others' ops-only tube: a tube around the CURRENT released boundaries, consulted by
+    // surface_envelope_for_edge() -- the dispatch every operation containment check comes through
+    // and no smoothing path does. Releasing an object frees its boundary of every envelope so
+    // smoothing can carry it; without this the operations would be free too, and the collapse pass
+    // distorts a released boundary at will while the plastic re-stamp makes each distortion the
+    // new rest. eps is the offset tube's: no operation may degrade a tracked boundary by more than
+    // the accuracy tube, released or not.
     //
-    // LAZY, ON A DIRTY FLAG THE SMOOTHING ACCEPTS SET, not rebuilt on a fixed cadence. The
-    // boundary this tube holds is one smoothing is SUPPOSED to move, so any fixed rebuild
-    // schedule leaves a window where the tube lags the boundary it was built from -- and the
-    // engine's sanity sweep runs inside local_operations right after the smoothing passes,
-    // before any per-group rebuild can happen: with a per-group eager rebuild, two_circles
-    // (deform_others, sanity checks on) reported 65 "Edge is outside!" false alarms as the
-    // push carried circle_b out of the previous group's tube (2026-09-01). Rebuilding on
-    // first query after a smoothing accept makes every consumer -- each operation's
-    // containment check and every sanity sweep -- judge against the boundary as it is NOW.
-    // Operations never set the flag: within an op pass the tube stays pinned where the pass
-    // began, so op-by-op drift cannot recenter its own container.
+    // Lazy, on a dirty flag the smoothing accepts set, never rebuilt on a fixed cadence: this tube
+    // holds a boundary smoothing is SUPPOSED to move, so any fixed schedule leaves a window where
+    // the tube lags the boundary it was built from and the engine's sanity sweep reports false
+    // alarms. Rebuilding on first query after a smoothing accept makes every consumer judge
+    // against the boundary as it is now. Operations never set the flag, so op-by-op drift cannot
+    // recenter its own container.
     if (m_deform_tags.empty()) return nullptr;
     std::lock_guard<std::mutex> lock(m_released_mutex);
     if (!m_released_tube_dirty.load(std::memory_order_acquire)) return m_released_envelope;
-    // NEVER REBUILD MID-OPERATION. A containment query can arrive between an operation's
-    // before- and after-hooks -- a split child's check runs before its attributes are written,
-    // a collapse's between tentative state and the rollback decision -- and a tube built from
-    // that mesh reads recycled slots and tentative geometry. Measured on two_overlap (sanity
-    // checks off, so the first post-smoothing query IS mid-operation): needles flooded the
-    // input complex -- 112 label-1 faces over AMIPS 1e6, 505 coincident vertex pairs, faces at
-    // the 1e50 sentinel -- none of which the consistent-rebuild version produced (2026-09-01).
-    // Deferring keeps the group-start tube for the whole operation, which is the semantics
-    // anyway: an operation is judged against the shape as of the moment no operation was in
-    // flight. `recording` is the engine's rollback-protection flag, thread-local, true exactly
-    // inside an operation.
+    // Never rebuild mid-operation: a containment query can arrive between an operation's before-
+    // and after-hooks -- a split child's check runs before its attributes are written, a
+    // collapse's between tentative state and the rollback decision -- and a tube built from that
+    // mesh reads recycled slots and tentative geometry. Deferring keeps the group-start tube for
+    // the whole operation, which is the semantics anyway: an operation is judged against the shape
+    // as of the moment no operation was in flight. `recording` is the engine's
+    // rollback-protection flag, thread-local, true exactly inside an operation.
     // const_cast: enumerable_thread_specific::local() has no const overload; this is a read.
     if (const_cast<TopoOffsetTriMesh*>(this)->m_vertex_attribute.recording.local()) {
         return m_released_envelope;
@@ -4578,11 +4148,10 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
     // the current shape even when no sanity sweep runs to consume the dirty flag first.
     m_released_tube_dirty.store(true, std::memory_order_release);
     released_envelope();
-    // FIRST, AND ON EVERY PATH OUT OF HERE INCLUDING THE EMPTY ONE. Each entry is an
-    // IntersectionEnvelope holding a shared_ptr to the tube this call is about to replace, so a
-    // surviving entry would hold a simplex to where the offset boundary was one round ago -- a
-    // constraint tightening silently with every round, against geometry Phase B has already
-    // moved on from. See m_offset_isect_cache.
+    // First, and on every path out of here including the empty one: each entry is an
+    // IntersectionEnvelope holding the tube this call is about to replace, so a survivor would
+    // hold a simplex to where the front was one round ago -- a constraint tightening silently
+    // every round. See m_offset_isect_cache.
     {
         std::lock_guard<std::mutex> lock(m_isect_mutex);
         m_offset_isect_cache.clear();
@@ -4606,25 +4175,17 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
         verts[i] = m_vertex_attribute[i].m_posf;
     }
 
-    // ONE PHI TOLERANCE by default, so Phase A may move the offset by exactly as much as the
+    // One Phi tolerance by default, so Phase A may move the front by exactly as much as the
     // convergence test is willing to ignore. Tighter and Phase A cannot improve the elements
-    // straddling the boundary at all; looser and it can undo a Phi that Phase B had already
-    // brought inside tolerance.
+    // straddling the front at all; looser and it can undo a Phi that Phase B had already brought
+    // inside tolerance.
     //
-    // A STRAIGHT FRACTION OF target_distance, and nothing else. eps is a distance in model
-    // units, target_distance is one too, so offset_envelope_rel is a pure percentage: 0.025
-    // means "hold the boundary to within 2.5% of the offset distance while Phase A runs".
-    //
-    // IT NO LONGER TRACKS THE CONVERGENCE CRITERION. It used to be
-    // offset_envelope_rel x offset_residual_tolerance(), which chained the tube to whatever
-    // the criterion permitted -- and once the criterion became a fraction of a MEASURED
-    // reference, that chain made the Phase A tube depend on how bad construction happened to be.
-    // A tube whose width is set by the input's initial error is not a tube anyone can reason
-    // about, so the two are now independent: the criterion says when the run is done, this says
-    // how far Phase A may move the boundary while getting there.
-    //
-    // It is NOT envelope_size_rel, which is a fraction of the bounding-box diagonal and is what
-    // m_envelope (the input-complex tube) is built from.
+    // A straight fraction of target_distance and nothing else: both are distances in model units,
+    // so offset_envelope_rel is a pure percentage. Deliberately independent of the convergence
+    // criterion -- chaining it to a criterion that is itself a fraction of a measured reference
+    // would make the Phase A tube depend on how bad construction happened to be. And it is NOT
+    // envelope_size_rel, a fraction of the bounding-box diagonal, which is what m_envelope (the
+    // input-complex tube) is built from.
     const double eps =
         std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
 
@@ -4652,14 +4213,13 @@ void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& 
 
 void TopoOffsetTriMesh::optimize_offset_single_phase()
 {
-    // ONE PHASE (Uday, 2026-08-26). Phase A is already TriWild's
-    // mesh_improvement -- split / smooth / collapse / smooth / swap / smooth -- so operations and
-    // smoothing interleave there already; the only things Phase B adds are WHICH objective a
-    // front vertex is smoothed against and that it is not caged in the offset tube while it
-    // moves. Give A's smoothing passes both (OptPhase::Single) and the second phase has nothing
-    // left to do: no rounds, no pass budget, no driver. The tube still holds the front for the
-    // OPERATIONS (surface_envelope_for_edge, which does not read the phase) and is rebuilt after
-    // every iteration, so it follows the front rather than capping it.
+    // One phase. Phase A is already TriWild's mesh_improvement -- split / smooth / collapse /
+    // smooth / swap / smooth -- so operations and smoothing interleave there already; the only
+    // things Phase B adds are WHICH objective a front vertex is smoothed against and that it is
+    // not caged in the offset tube while it moves. Give A's smoothing passes both
+    // (OptPhase::Single) and the second phase has nothing left to do. The tube still holds the
+    // front for the OPERATIONS (surface_envelope_for_edge, which does not read the phase) and is
+    // rebuilt after every iteration, so it follows the front rather than capping it.
     const int rounds = std::max(1, m_offset_params.max_rounds);
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
@@ -4675,44 +4235,31 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         m_front_gradient_reference,
         m_offset_params.front_conv_criterion,
         m_offset_params.front_conv_rel);
-    // ITS OWN KEY, max_rounds: one turn here is split | collapse | swap with a smoothing
-    // pass after each, which is neither an A/B round nor a Phase A iteration, and borrowing
-    // either key gave a stuck case a budget meant for something else (max_rounds x
-    // max_iterations was 800). max_iterations still bounds the finishing pass,
-    // which is an ordinary TriWild run.
+    // Its own key, max_rounds: one turn here is split | collapse | swap with a smoothing pass
+    // after each, which is neither an A/B round nor a Phase A iteration, so borrowing either key
+    // gives a stuck case a budget meant for something else. max_iterations still bounds the
+    // finishing pass, which is an ordinary TriWild run.
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
-    // ONE TURN = TriWild's operation groups, run here rather than through mesh_improvement()
-    // so the tube can be rebuilt AFTER EVERY SMOOTHING PASS. Only smoothing moves the front;
-    // split, collapse and swap are refused if they would take a front edge out of the tube, so
-    // after an accepted operation the front is still inside it -- the tube goes stale only
-    // across a smooth. With one rebuild per turn (the first version, 2026-08-26), collapse and
-    // swap judged the front against the tube from before the turn's first smooth; the front
-    // travels ~0.1 delta per turn early on, four times the tube's half-width, so every collapse
-    // and swap touching the front was refused and the front's neighbourhood was re-meshed by
-    // the split pass alone. local_operations() is the engine's own pass driver (frames, sanity
-    // checks, quality stats included); what is left out of mesh_improvement() on purpose is its
-    // stall response, which refines around the worst elements -- a travelling front stretches
-    // cells by design, and that is not a stall.
-    // THE SMOOTHING COUNT IS interleaved_smoothing_passes, the key the shared loop reads for the
-    // same thing -- smoothing passes after each operation group -- so one key sets it for the
-    // pre-optimisation pass, the finishing pass and this loop alike. Until 2026-08-28 this read
-    // num_smoothing_passes (2), the count the shared loop uses only when interleaved_smoothing
-    // is OFF, so the single phase smoothed twice per group while the passes around it smoothed
-    // once, and no one key changed both.
+    // One turn is TriWild's operation groups, run here rather than through mesh_improvement() so
+    // the tube can be rebuilt AFTER EVERY SMOOTHING PASS. Only smoothing moves the front -- an
+    // accepted split, collapse or swap cannot take a front edge out of the tube -- so the tube
+    // goes stale only across a smooth, and one rebuild per turn leaves collapse and swap judging
+    // the front against a tube it has already left. local_operations() is the engine's own pass
+    // driver; what mesh_improvement() adds and is left out here on purpose is its stall response,
+    // which refines around the worst elements: a travelling front stretches cells by design.
+    // The smoothing count is interleaved_smoothing_passes, the key the shared loop reads for the
+    // same thing, so one key sets it for the pre-optimisation pass, the finishing pass and here.
     const int k = std::max(1, m_params.interleaved_smoothing_passes);
     const std::array<std::array<int, 4>, 3> groups = {
         {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
     partition_mesh_morton();
-    // ONE TURN OF GRACE AFTER A TARGET IS LOWERED (2026-09-01). refine_front_from_sag() writes a
-    // sizing target; the split pass that realizes it does not run until the NEXT turn, so a turn
-    // that classifies every chord as at-floor may be looking at a mesh that has not yet been
-    // refined to the targets already written for it. Exiting there ends the run with the last
-    // write unspent: measured on annots (Euclidean 0.25, defaults) once the kink exponent made
-    // the demand reach the floor at first sight -- 6 turns but the worst chord 0.0245 against
-    // the 9-turn run's 0.0157, the refinement simply not performed. Terminates for the same
-    // reason the rule itself does: the scalars only ever fall and stop at the floor, so a turn
-    // that writes nothing always comes.
+    // One turn of grace after a target is lowered: refine_front_from_sag() writes a sizing target
+    // and the split pass that realizes it does not run until the NEXT turn, so a turn that
+    // classifies every chord as at-floor may be looking at a mesh not yet refined to the targets
+    // already written for it, and exiting there would end the run with the last write unspent.
+    // Terminates for the same reason the rule itself does: the scalars only ever fall and stop at
+    // the floor, so a turn that writes nothing always comes.
     size_t lowered_last_turn = 0;
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;
@@ -4769,7 +4316,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         if (m_offset_params.debug_output) {
             write_smoothing_debug_output(fmt::format("phase_{}S", it + 1));
         }
-        // THE RESOLUTION RULE, every turn: see EnergyCriterion and refine_front_from_sag().
+        // The resolution rule, every turn: see EnergyCriterion and refine_front_from_sag().
         const size_t lowered_prev = lowered_last_turn;
         lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
@@ -4797,9 +4344,8 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 sp.y(),
                 ec.worst_stuck_rho / m_offset_params.target_distance);
         }
-        // TERMINATION: every front vertex placed or pressed, none travelling or stuck, no chord
-        // left to resolve -- then quality with the front FROZEN (below). The vertex test's
-        // number is still logged, the alternating loop still exits on it.
+        // Termination: every front vertex placed or pressed, none travelling or stuck, and no
+        // chord left to resolve -- then quality with the front frozen (below).
         if (ec.converged_single() && lowered_prev == 0) {
             m_energy_verdict = ec;
             m_converged = true;
@@ -4818,13 +4364,11 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                     m_params.stop_energy);
                 m_ab_round = it + 2;
                 m_phase = OptPhase::A;
-                // THE TUBE FIRST. Only smoothing moves the front -- the operations are checked
-                // against the tube and an accepted one cannot leave it -- so one rebuild after
-                // the smoothing passes is enough, which the loop above does at the top of every
-                // iteration. This pass is the exception: it starts after the last iteration's
-                // smoothing, and without this it judged the front against the tube from before
-                // that smoothing. Measured on two_circles Euclidean 0.4: 8 tracked edges reported
-                // outside in every sanity check of the frozen pass, none with this.
+                // The tube first. Only smoothing moves the front -- an accepted operation cannot
+                // leave the tube -- so one rebuild after the smoothing passes is enough, which
+                // the loop above does at the top of every iteration. This pass is the exception:
+                // it starts after the last iteration's smoothing, so without this it would judge
+                // the front against a stale tube.
                 rebuild_offset_envelope();
                 m_freeze_front = true;
                 mesh_improvement(a_iters);
@@ -4866,37 +4410,32 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // the sizing seed, so the whole optimization sees one consistent world.
     if (m_offset_params.deform_others) {
         release_deformable_regions();
-        // PLASTIC ONLY WHERE THERE IS SOMETHING TO PUSH. The medium is made plastic so a
-        // released object can be carried out of the front's way; with nothing released it buys
-        // nothing and costs real quality -- a plastic ambient has no shape preference, so a
-        // pressed seam's strip crushes instead of holding (two_circles Euclidean 0.4, both
-        // circles selected so nothing releases: max AMIPS 9.9 before the feature, 2.2e4 with
-        // ambient plastic anyway). Released set empty => the feature is inert, which is what a
-        // scene with no other objects should get.
+        // Plastic only where there is something to push. The medium is made plastic so a released
+        // object can be carried out of the front's way; with nothing released it buys nothing and
+        // costs real quality, since a plastic ambient has no shape preference and a pressed seam's
+        // strip crushes instead of holding. An empty released set leaves the feature inert, which
+        // is what a scene with no other objects should get.
         if (!m_deform_tags.empty()) {
             m_plastic_active = true;
             stamp_plastic_rests();
         }
     }
 
-    // THE OFFSET ENVELOPE IS BORN HERE, with the offset itself, and from then on it always
-    // exists -- refreshed at the end of every Phase B, around wherever that phase left the
-    // boundary. It used to be built at the top of each Phase A and set back to null on entering
-    // Phase B, which left the pointer null for the whole of construction and the whole of every
-    // Phase B; anything that reached for it in those windows silently got "no constraint"
-    // instead of "not applicable in this phase". The phase test now lives in exactly one place
-    // (containment_for()), so the pointer's lifetime and the constraint's applicability are
-    // separate questions, which is what they always were.
+    // The offset envelope is born here, with the offset itself, and always exists from then on,
+    // refreshed around wherever the last pass left the front. Its lifetime and the constraint's
+    // applicability are separate questions -- the phase test lives in exactly one place,
+    // containment_for() -- so nothing can silently read "no constraint" for "not applicable in
+    // this phase".
     rebuild_offset_envelope();
 
-    // The offset boundary as CONSTRUCTED must already be inside the potential's support, or
-    // nothing the optimization does can move it. Checked before any operation runs so that a
-    // construction defect is reported as one.
+    // The front as constructed must already be inside the potential's support, or nothing the
+    // optimization does can move it. Checked before any operation runs so a construction defect
+    // is reported as one.
     check_offset_within_support("Offset as constructed");
 
-    // Spelled out so the line reproduces its own number. The reference itself is not known
-    // yet -- it is measured on the band this function is still building -- so this states the
-    // SHAPE of the bound and the reference line that follows it states the value.
+    // Spelled out so the line reproduces its own number. The reference is measured on the band
+    // this function is still building, so this states the shape of the bound and the line that
+    // follows states the value.
     logger().info(
         "\tOffset criterion: |grad (Phi - c)^2 . n| <= front_conv_rel {} x "
         "max|grad (Phi - c)^2 . n| over the band AS CONSTRUCTED, with n the unit normal from "
@@ -4910,29 +4449,25 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // Must come after the offset edges are classified above, since it reads them.
     init_offset_sizing_field();
 
-    // UNCONDITIONAL, and it must stay that way: write_vtu() calls consolidate_mesh(), which
-    // renumbers the mesh, which changes the order every subsequent pass enumerates operations
-    // in, which changes the run. With the debug write below being the only consolidate here,
-    // turning DEBUG_output on silently produced a DIFFERENT numerical result -- measured on the
-    // dragon rectangle as converged-in-7 versus not-converged-in-10, identical in every other
-    // parameter.
+    // Unconditional, and it must stay that way: write_vtu() calls consolidate_mesh(), which
+    // renumbers the mesh, which changes the order every subsequent pass enumerates operations in,
+    // which changes the run. With the debug write below the only consolidate here, turning debug
+    // output on silently produced a different numerical result.
     consolidate_mesh();
     if (m_offset_params.debug_output) {
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
     }
 
-    // THE SHARED ENGINE'S OWN LOOP, driven ALTERNATELY rather than jointly -- see OptPhase. Each
+    // The shared engine's own loop, driven alternately rather than jointly -- see OptPhase. Each
     // Phase A is one mesh_improvement() with a TriWild criterion; each Phase B is smoothing to a
-    // fixed point. Phase B used to end with a sizing update read off the convergence criterion;
-    // that was update_band_sizing_from_tolerance(), deleted when the front's resolution became a
-    // function of the tolerance set once in init_offset_sizing_field().
+    // fixed point.
     //
     // The offset plugs into mesh_improvement() through the same virtuals simwild uses:
     //   - optimization_quality_stats(): per phase -- TriWild's own in A, the max of AMIPS and the
     //     offset residual in B;
     //   - optimization_stop_metric(): per phase, in the SAME units as the line above;
     //   - refine_sizing_around_worst(): TriWild's, fired only on a stall.
-    // Placement is not among them: the offset boundary is placed by Phase B's own local solve.
+    // Placement is not among them: the front is placed by Phase B's own local solve.
     iter_cnt_split = 0;
     iter_cnt_split_born = 0;
     iter_cnt_recollapsed = 0;
@@ -4945,9 +4480,9 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     op_counts.clear();
     churn_counts.clear();
 
-    // FRAME 0 IS THE MESH AS CONSTRUCTED, before the optimization touches it. The shared driver
-    // only writes a frame after each operation pass, so without this the timeline starts at the
-    // end of the first split and there is nothing to compare against.
+    // Frame 0 is the mesh as constructed, before the optimization touches it: the shared driver
+    // only writes a frame after each operation pass, so without this there is nothing to compare
+    // the timeline against.
     if (m_params.debug_output) {
         m_debug_pass_name = "construction";
         write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
@@ -4970,18 +4505,14 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    // NO push_back HERE. op_counts is a per-A/B-round series now, recorded inside the driver
-    // loop; appending the run totals as a final element would make the last entry mean something
-    // different from every other one. The run total is the sum of the series.
+    // No push_back here: op_counts is a per-round series recorded inside the driver loop, so
+    // appending the run totals would make the last entry mean something different from every
+    // other one. The run total is the sum of the series.
 
-    // Final metrics and the convergence verdict. One entry, for the whole run.
-    //
-    // THREE MEASURES, ONE CRITERION. Convergence is max_grad and nothing else -- the full
-    // placement-gradient norm at band vertices, the same test every Phase B visit stopped on,
-    // and the same statement for any potential. The in-edge samples are a chord diagnostic,
-    // the Phi residual is the criterion's own quantity in length units, and the Euclidean
-    // error says how far the smoothed offset ended up from the exact one -- all diagnostics,
-    // none a criterion.
+    // Final metrics and the convergence verdict, one entry for the whole run. Convergence is
+    // max_grad and nothing else -- the full placement-gradient norm at band vertices, the same
+    // test every Phase B visit stopped on, and the same statement for any potential. The in-edge
+    // samples, the Phi residual and the Euclidean error are all diagnostics.
     assign_band_regions();
     const auto [max_dist, avg_dist] = compute_distance_deviation();
     const DistanceSplit r = residual_split();
@@ -5060,10 +4591,10 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             m_offset_params.max_iterations);
     }
 
-    // The tracked surfaces are deliberately NOT re-derived here. From the moment they are
-    // tagged, it is the shared operations that maintain those tags -- the face LABELS they were
-    // derived from are construction data the optimization does not propagate, so re-deriving now
-    // would read stale labels and mislabel the result.
+    // The tracked surfaces are deliberately NOT re-derived here. From the moment they are tagged
+    // the shared operations maintain those tags; the face labels they were derived from are
+    // construction data the optimization does not propagate, so re-deriving now would read stale
+    // labels and mislabel the result.
 }
 
 } // namespace wmtk::components::topological_offset

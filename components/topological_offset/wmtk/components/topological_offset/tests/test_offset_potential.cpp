@@ -17,27 +17,16 @@ using namespace wmtk;
 using namespace wmtk::components::topological_offset;
 
 /**
- * The calibration gate for the smooth offset potential.
- *
- * Nothing downstream of Phi means anything until these pass: the offset is DEFINED as the level
- * set Phi = c, so if Phi is not what we think it is, every distance the component reports is a
- * measurement of the wrong thing. The suite answers three separate questions.
- *
- *   1. Are the derivatives the derivatives? Central finite differences against grad Phi and
- *      hess Phi. These are ipc-toolkit's analytic expressions reached through our wrapper, so
- *      what is really under test is the wrapper -- the collision-set construction, the query
- *      row, and the block extraction.
- *
- *   2. Is the calibration self-consistent? Phi = c must recover exactly delta on a straight
- *      edge, since that is how c is defined.
- *
- *   3. HOW FAR IS THE SMOOTHED OFFSET FROM THE EUCLIDEAN ONE? This is the question the whole
- *      idea rests on, and the answer is deliberately not "zero": Phi sums the contributions of
+ * The calibration gate for the smooth offset potential. The offset is defined as the level set
+ * Phi = c, so nothing downstream means anything until these pass. Three questions:
+ *   1. Are the derivatives the derivatives? Central finite differences; the analytic expressions
+ *      are ipc-toolkit's, so what is really under test is our wrapper around it.
+ *   2. Is the calibration self-consistent? Phi = c must recover exactly delta on a straight edge,
+ *      since that is how c is defined.
+ *   3. How far is the smoothed offset from the Euclidean one? Deliberately not zero -- Phi sums
  *      every feasible primitive, so a reentrant corner gets two barriers where the Euclidean
- *      distance gets one, and the level set bulges. The tests below pin the deviation on the
- *      four shapes where the exact Euclidean offset is known in closed form, so that a change
- *      to the potential, its parameters, or the upstream pin shows up as a number moving rather
- *      than as a mesh looking slightly different.
+ *      distance gets one. Pinned on the shapes whose exact offset is known in closed form, so a
+ *      change shows up as a number moving rather than as a mesh looking slightly different.
  */
 
 namespace {
@@ -82,14 +71,11 @@ Polyline open_polyline(const std::vector<Vector2d>& pts)
 }
 
 /**
- * @brief Points inside the support, in the INTERIOR of a single primitive's feasible region.
+ * @brief Points inside the support, in the interior of a single primitive's feasible region.
  *
- * Both halves of that matter for a finite-difference test. Inside the support, or Phi is
- * identically zero and there is nothing to differentiate; away from a region boundary by more
- * than the FD step, or the two sides of the difference are evaluated against different active
- * sets and the comparison is meaningless. Sampling perpendicular to the middle of each segment
- * gives both: the projection is interior by construction, and the perpendicular offsets stay
- * within the support as long as they are under dhat.
+ * Both halves matter for a finite-difference test: outside the support Phi is identically zero,
+ * and within an FD step of a region boundary the two sides of the difference see different active
+ * sets. Sampling perpendicular to the middle of each segment gives both.
  */
 std::vector<Vector2d> segment_normal_samples(const Polyline& p, const double dhat)
 {
@@ -124,7 +110,7 @@ Polyline circle_polyline(const double R, const int n)
 /**
  * @brief Where the ray from `origin` in direction `dir` crosses Phi = c, by bisection.
  *
- * The level set is what the offset IS, so every geometric comparison below goes through here.
+ * The level set is what the offset is, so every geometric comparison below goes through here.
  * Phi decreases monotonically outward along a ray leaving a convex shape, so a sign change
  * brackets a unique crossing.
  */
@@ -158,10 +144,10 @@ double level_set_radius(
 // 3D helpers
 // ---------------------------------------------------------------------------------------------
 
-/// A triangle soup as OffsetPotential<3> takes it. `E` is not optional and not a convenience:
-/// ipc derives faces_to_edges from it and throws if an edge of a face is missing, and the OGC
-/// feasible-region test for a VERTEX reads that vertex's edge neighbours -- so an incomplete
-/// edge list would silently widen every Voronoi region.
+/// A triangle soup as OffsetPotential<3> takes it. `E` is not optional: ipc derives
+/// faces_to_edges from it and throws if a face's edge is missing, and the OGC feasible-region
+/// test for a vertex reads that vertex's edge neighbours, so an incomplete edge list would
+/// silently widen every Voronoi region.
 struct TriSoup
 {
     MatrixXd V;
@@ -211,7 +197,7 @@ TriSoup cube(const double h)
 }
 
 /// UV sphere. Convex, so every point outside is claimed by exactly one primitive and the level
-/// set is the Euclidean offset of the POLYHEDRON -- which is what the test measures against.
+/// set is the Euclidean offset of the polyhedron -- which is what the test measures against.
 TriSoup uv_sphere(const double R, const int n_theta, const int n_phi)
 {
     std::vector<Vector3d> pts;
@@ -262,11 +248,9 @@ Vector3d tri_normal(const TriSoup& s, const int f)
     return (b - a).cross(c - a).normalized();
 }
 
-/// Points inside the support and inside ONE primitive's feasible region, for finite differences.
-/// Perpendicular to the interior of each triangle: the projection is interior by construction,
-/// and the perpendicular offsets stay within the support as long as they are under dhat. Both
-/// halves matter -- outside the support there is nothing to differentiate, and near a region
-/// boundary the two sides of the difference see different active sets.
+/// Points inside the support and inside one primitive's feasible region, for finite differences:
+/// outside the support there is nothing to differentiate, and near a region boundary the two
+/// sides of the difference see different active sets.
 std::vector<Vector3d> face_normal_samples(const TriSoup& s, const double dhat)
 {
     std::vector<Vector3d> out;
@@ -345,9 +329,9 @@ TEST_CASE("offset-potential-hessian-fd", "[offset][potential]")
 
 TEST_CASE("offset-potential-straight-edge", "[offset][potential]")
 {
-    // The calibration itself, restated as a test on a DIFFERENT straight edge from the one the
-    // constructor calibrates on. c is defined as Phi at distance delta from a long straight
-    // edge, so a flat stretch of any input must put the level set at exactly delta.
+    // The calibration restated on a different straight edge from the one the constructor
+    // calibrates on: c is defined as Phi at distance delta from a long straight edge, so a flat
+    // stretch of any input must put the level set at exactly delta.
     const double delta = 0.05;
     const Polyline p = open_polyline({Vector2d(-10., 3.), Vector2d(10., 3.)});
     const SmoothOffsetPotential2D phi(p.V, p.E, MatrixXi(0, 3), {}, delta, DHAT_FACTOR);
@@ -368,7 +352,7 @@ TEST_CASE("offset-potential-straight-edge", "[offset][potential]")
         CHECK(r == Catch::Approx(delta).epsilon(1e-9));
     }
 
-    // ... and the residual is a LENGTH that agrees with the true one to first order.
+    // ... and the residual is a length that agrees with the true one to first order.
     CHECK(phi.residual_length(Vector2d(0., 3. + delta)) == Catch::Approx(0.).margin(1e-12));
     for (const double e : {0.05 * delta, 0.1 * delta, -0.1 * delta}) {
         const double r = phi.residual_length(Vector2d(0., 3. + delta + e));
@@ -405,10 +389,9 @@ TEST_CASE("offset-potential-isolated-point", "[offset][potential]")
 
 TEST_CASE("offset-potential-vs-euclidean-circle", "[offset][potential]")
 {
-    // A convex closed curve. Every point outside is in exactly one primitive's feasible region
-    // (the polyline is convex, so no two contributions overlap), which means the level set is
-    // the Euclidean offset of the POLYLINE -- and the polyline is inscribed in the circle, so
-    // the residual measured here is the polygonal discretisation, not the potential.
+    // A convex closed curve: every point outside is in exactly one primitive's feasible region,
+    // so the level set is the Euclidean offset of the polyline. The polyline is inscribed in the
+    // circle, so the residual measured here is the polygonal discretisation, not the potential.
     const double R = 1.0;
     const double delta = 0.1;
     const SmoothOffsetPotential2D phi(
@@ -445,9 +428,8 @@ TEST_CASE("offset-potential-vs-euclidean-circle", "[offset][potential]")
 TEST_CASE("offset-potential-vs-euclidean-square", "[offset][potential]")
 {
     // Straight sides and convex corners. The exact Euclidean offset of a square is the square
-    // grown by delta with quarter-circle corners of radius delta, and both halves of that are
-    // single-primitive regions -- a side's interior for the flats, a corner vertex for the
-    // arcs -- so the smoothed offset should reproduce it closely.
+    // grown by delta with quarter-circle corners of radius delta, and both halves are
+    // single-primitive regions, so the smoothed offset must reproduce it closely.
     const double h = 1.0; // half-side
     const double delta = 0.1;
     const Polyline p =
@@ -491,26 +473,17 @@ TEST_CASE("offset-potential-vs-euclidean-square", "[offset][potential]")
 
 TEST_CASE("offset-potential-vs-euclidean-wedge", "[offset][potential]")
 {
-    // THE CASE WHERE THE TWO OFFSETS GENUINELY DIFFER, and the reason this suite reports
-    // numbers rather than only asserting.
-    //
-    // Outside a REENTRANT corner both adjacent segments claim the point (it projects into the
-    // interior of each), so Phi is the SUM of two barriers where the Euclidean distance is the
-    // min of two distances. Phi is therefore larger than the single-pair value at the same
-    // distance, and since Phi decreases outward the level set sits FURTHER OUT than delta. The
-    // effect is largest on the corner's bisector, where the two contributions are equal, and
-    // dies away along each arm as the second contribution leaves the support.
-    //
-    // This is the smoothing, not an error: it is what rounds the offset's own concave corner
-    // instead of leaving the crease the Euclidean offset has there.
+    // The case where the two offsets genuinely differ. Outside a reentrant corner both adjacent
+    // segments claim the point, so Phi is the sum of two barriers where the Euclidean distance is
+    // the min of two; Phi decreases outward, so the level set sits further out than delta. That
+    // is the smoothing, not an error: it rounds the offset's own concave corner instead of
+    // leaving the crease the Euclidean offset has there.
     const double delta = 0.1;
     const double half_angle = M_PI / 4.; // arms 45 degrees either side of +y: a right-angle notch
 
-    // Two arms meeting at the origin and opening UPWARD, so a point on the +y bisector sits in
-    // the notch between them and projects into the INTERIOR of both -- which is what makes the
-    // corner reentrant as seen from that point, and what puts two barriers in the sum. (Arms
-    // opening the other way give a convex corner, where only the corner vertex is feasible and
-    // the level set is the exact circular arc -- that case is covered by the square above.)
+    // Arms opening upward, so a point on the +y bisector sits in the notch and projects into the
+    // interior of both, which is what puts two barriers in the sum. Arms opening the other way
+    // give a convex corner, covered by the square above.
     const double arm = 2.;
     const Polyline p = open_polyline(
         {Vector2d(-arm * std::sin(half_angle), arm * std::cos(half_angle)),
@@ -527,13 +500,13 @@ TEST_CASE("offset-potential-vs-euclidean-wedge", "[offset][potential]")
         << euclid_bisector << " vs delta " << delta << " -> "
         << 100. * (euclid_bisector - delta) / delta << "% further out");
 
-    // Pushed OUTWARD, never inward. The bound is documentation of a measurement, not a
-    // tolerance anyone tuned: it is what summing two nearly equal barriers does.
+    // Pushed outward, never inward. The 1.5 bound documents what summing two nearly equal
+    // barriers does; it is not a tuned tolerance.
     CHECK(euclid_bisector > delta);
     CHECK(euclid_bisector <= 1.5 * delta);
 
-    // Far along one arm, only that arm is within the support and the offset is exact again --
-    // so the smoothing is LOCAL to the feature, which is the property that makes it usable.
+    // Far along one arm, only that arm is within the support and the offset is exact again: the
+    // smoothing is local to the feature, which is the property that makes it usable.
     const Vector2d dir(std::sin(half_angle), std::cos(half_angle)); // along the +x arm
     const Vector2d nrm(dir[1], -dir[0]); // outward normal of that arm
     const double d_far = level_set_radius(phi, 1.5 * dir, nrm, 0.05 * delta, 0.999 * phi.dhat());
@@ -596,10 +569,9 @@ TEST_CASE("offset-energy-derivatives", "[offset][potential]")
         }
 
         // The Gauss-Newton Hessian is the outer product alone, so it is PSD by construction --
-        // which is the whole reason it is the default. Up to roundoff, RELATIVE to the matrix:
-        // its scale is 2 w |grad Phi|^2 / c^2 (the energy is ((Phi - c)/c)^2 since 2026-08-25),
-        // and the exact zero eigenvalue lands a few ulps of that on either side of zero. An
-        // absolute 1e-12 failed at c ~ 0.17 for exactly that reason.
+        // the whole reason it is the default. The bound must be relative to the matrix scale:
+        // the exact zero eigenvalue lands a few ulps of it either side of zero, so an absolute
+        // bound fails at small c.
         MatrixXd H;
         energy.hessian(xv, H);
         const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
@@ -613,12 +585,10 @@ TEST_CASE("offset-energy-derivatives", "[offset][potential]")
 
 TEST_CASE("offset-energy-lands-on-the-level-set", "[offset][potential]")
 {
-    // THE END-TO-END QUESTION THIS WHOLE DESIGN RESTS ON: does minimising w (Phi - c)^2 with
-    // the solver the smoother actually uses put a vertex on the level set? Everything above
-    // tests the field; this tests that the field is USABLE as an objective.
-    //
-    // Run without the mesh, so nothing here can be blamed on inversion, the quality veto or the
-    // envelope: one free point, one energy, the same DenseNewton the smoother builds.
+    // The end-to-end question: does minimising w (Phi - c)^2 with the solver the smoother uses
+    // put a vertex on the level set? Everything above tests the field; this tests that it is
+    // usable as an objective. Run without the mesh, so nothing here can be blamed on inversion,
+    // the quality veto or the envelope.
     const double delta = 0.25;
     MatrixXd V(1, 2);
     V << 0., 0.;
@@ -651,24 +621,18 @@ TEST_CASE("offset-energy-lands-on-the-level-set", "[offset][potential]")
 
 
 // =============================================================================================
-// 3D. The same three questions, plus one that only exists in 3D: does the broad phase seed all
-// THREE candidate sets?
-//
-// In 2D, ipc's Candidates::vv_set() derives the vertex candidates from the endpoints of the edge
-// candidates, so seeding the edge set alone is enough. The 3D builder reads vf_set, ve_set and
-// vv_set independently and derives nothing. A missing set is silent and looks harmless: the
-// pairs it would have contributed simply do not appear, Phi is SMALLER than it should be, and
-// the level set has a hole exactly at the feature that primitive represents. The cube below is
-// the cheapest thing that catches it -- its three probes (face interior, edge, corner) are
-// claimed by exactly one FACE, one EDGE and one VERTEX respectively, so each of the three sets
-// is separately load-bearing for one of the three CHECKs.
+// 3D. The same three questions, plus one only 3D has: does the broad phase seed all three
+// candidate sets? In 2D ipc derives the vertex candidates from the edge candidates; the 3D
+// builder reads vf_set, ve_set and vv_set independently and derives nothing, and a missing set is
+// silent -- Phi is simply smaller and the level set has a hole at that feature. The cube below is
+// the cheapest thing that catches it.
 // =============================================================================================
 
 
 TEST_CASE("offset-potential-3d-calibration", "[offset][potential]")
 {
-    // c is DEFINED as Phi at perpendicular distance delta from one large flat primitive, and the
-    // barrier only ever sees a distance -- so the level a 3D run places its offset on must be the
+    // c is defined as Phi at perpendicular distance delta from one large flat primitive, and the
+    // barrier only ever sees a distance, so the level a 3D run places its offset on must be the
     // same number a 2D run does, and both must be the closed form of the barrier.
     const double delta = 0.05;
     const Polyline seg = open_polyline({Vector2d(-10., 3.), Vector2d(10., 3.)});
@@ -687,14 +651,14 @@ TEST_CASE("offset-potential-3d-calibration", "[offset][potential]")
     CHECK(phi3.target_level() == Catch::Approx(phi2.target_level()).epsilon(1e-12));
     CHECK(phi3.dhat() == Catch::Approx(DHAT_FACTOR * delta));
 
-    // ... and a flat stretch of a DIFFERENT input puts the level set at exactly delta.
+    // ... and a flat stretch of a different input puts the level set at exactly delta.
     for (const Vector3d& o : {Vector3d(0., 0., 3.), Vector3d(1., -2., 3.), Vector3d(-3., 1., 3.)}) {
         const double r =
             level_set_radius<3>(phi3, o, Vector3d(0., 0., 1.), 0.05 * delta, 0.999 * phi3.dhat());
         CHECK(r == Catch::Approx(delta).epsilon(1e-9));
     }
 
-    // The residual is a LENGTH, agreeing with the true one to first order at the level set.
+    // The residual is a length, agreeing with the true one to first order at the level set.
     CHECK(phi3.residual_length(Vector3d(0., 0., 3. + delta)) == Catch::Approx(0.).margin(1e-12));
     for (const double e : {0.05 * delta, 0.1 * delta, -0.1 * delta}) {
         CHECK(
@@ -754,23 +718,17 @@ TEST_CASE("offset-potential-3d-hessian-fd", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential]")
 {
-    // THE BROAD-PHASE TEST (see the section note above). Outside a convex cube every point is
-    // claimed by exactly ONE primitive, and which one depends only on where it is:
-    //
-    //   above a face interior -> that triangle    (needs vf_set)
-    //   beside an edge        -> that edge        (needs ve_set)
-    //   beyond a corner       -> that vertex      (needs vv_set)
-    //
-    // so the exact Euclidean offset of the cube -- flat panels, quarter-cylinders along the
-    // edges, eighth-spheres at the corners -- is also the level set, to machine precision. A
-    // candidate set that is never seeded shows up here as a CHECK that cannot even bracket the
-    // level set, because Phi is identically zero along that probe.
+    // The broad-phase test (see the section note above). Outside a convex cube every point is
+    // claimed by exactly one primitive: above a face interior -> that triangle (needs vf_set);
+    // beside an edge -> that edge (needs ve_set); beyond a corner -> that vertex (needs vv_set).
+    // So the exact Euclidean offset of the cube is also the level set, to machine precision, and
+    // an unseeded candidate set shows up as a CHECK that cannot even bracket the level set.
     const double h = 1.0;
     const double delta = 0.1;
     const TriSoup s = cube(h);
     const SmoothOffsetPotential3D phi(s.V, s.E, s.F, {}, delta, DHAT_FACTOR);
 
-    // FACES. Straight out of every triangle's centroid, which is interior by construction.
+    // Faces. Straight out of every triangle's centroid, which is interior by construction.
     double face_err = 0.;
     for (int f = 0; f < s.F.rows(); ++f) {
         const double r = level_set_radius<3>(
@@ -786,7 +744,7 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
                                              << "% of delta)");
     CHECK(face_err <= 1e-9 * delta);
 
-    // EDGES. Out of the middle of each of the 12 cube edges, along the diagonal of the two faces
+    // Edges. Out of the middle of each of the 12 cube edges, along the diagonal of the two faces
     // that meet there: the exact offset is the quarter-cylinder of radius delta about the edge.
     double edge_err = 0.;
     for (int axis = 0; axis < 3; ++axis) {
@@ -807,9 +765,9 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
                                              << "% of delta)");
     CHECK(edge_err <= 1e-9 * delta);
 
-    // CORNERS. Out along the body diagonal from each of the 8 corners: the exact offset is the
-    // eighth-sphere of radius delta about the corner. This is the probe the 2D code gets for
-    // free and 3D does not.
+    // Corners. Out along the body diagonal from each of the 8 corners: the exact offset is the
+    // eighth-sphere of radius delta about the corner -- the probe 2D gets for free and 3D does
+    // not.
     double corner_err = 0.;
     for (const double sx : {-1., 1.}) {
         for (const double sy : {-1., 1.}) {
@@ -834,16 +792,11 @@ TEST_CASE("offset-potential-3d-cube-three-feasible-regions", "[offset][potential
 
 TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
 {
-    // A convex closed surface. Every point outside is in exactly one primitive's feasible region,
-    // so the level set is the Euclidean offset of the POLYHEDRON -- which is INSCRIBED in the
-    // sphere, so measuring it against the sphere charges the potential for the triangulation.
-    //
-    // The 2D circle test can ignore that (a 256-gon's sagitta is 0.08% of delta); a UV sphere's
-    // is not negligible, so the test refines instead of loosening. A face's worst point is its
-    // centroid, at circumradius^2 / 2R inside the sphere, which is QUADRATIC in the edge length --
-    // so quadrupling the resolution must cut the deviation by far more than the 4x asserted
-    // below, and does (measured 3.83% -> 0.24% of delta). That convergence is the actual claim:
-    // what is left is the mesh, not Phi.
+    // A convex closed surface, so the level set is the Euclidean offset of the polyhedron, which
+    // is inscribed in the sphere -- measuring against the sphere charges the potential for the
+    // triangulation. A face's worst point is its centroid, at circumradius^2 / 2R inside the
+    // sphere, quadratic in the edge length, so refining must cut the deviation by far more than
+    // the 4x asserted below: what is left is the mesh, not Phi.
     const double R = 1.0;
     const double delta = 0.1;
 
@@ -889,13 +842,10 @@ TEST_CASE("offset-potential-3d-vs-euclidean-sphere", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-wire", "[offset][potential]")
 {
-    // A 1-DIMENSIONAL input in 3D: one segment, no triangles. Nothing derives its candidates
-    // from anything, so this exercises the edge tree and the isolated-edge branch directly.
-    //
-    // The exact offset of a segment is a capsule: a cylinder of radius delta along its length,
-    // capped by hemispheres. Both halves are single-primitive regions here -- ipc's edge
-    // feasible-region test degenerates to "the projection is interior" when the edge has no
-    // incident triangle, and the endpoints claim everything beyond.
+    // A 1-dimensional input in 3D: one segment, no triangles, which exercises the edge tree and
+    // the isolated-edge branch directly. The exact offset is a capsule, and both halves are
+    // single-primitive regions here: with no incident triangle the edge's feasible-region test
+    // degenerates to "the projection is interior", and the endpoints claim everything beyond.
     const double delta = 0.1;
     MatrixXd V(2, 3);
     V << -1., 0., 0., 1., 0., 0.;
@@ -939,9 +889,9 @@ TEST_CASE("offset-potential-3d-wire", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-isolated-point", "[offset][potential]")
 {
-    // A 0-DIMENSIONAL input in 3D. Besides the geometry, this is what exercises the SENTINEL
-    // segment: ipc's are_adjacencies_initialized() is false when the mesh has no edges at all,
-    // and every accessor the feasible-region test calls then throws.
+    // A 0-dimensional input in 3D. Besides the geometry, this exercises the sentinel segment:
+    // ipc's are_adjacencies_initialized() is false when the mesh has no edges at all, and every
+    // accessor the feasible-region test calls then throws.
     const double delta = 0.2;
     MatrixXd V(1, 3);
     V << 0.4, -0.7, 0.2;
@@ -966,15 +916,10 @@ TEST_CASE("offset-potential-3d-isolated-point", "[offset][potential]")
 
 TEST_CASE("offset-potential-3d-vs-euclidean-reentrant", "[offset][potential]")
 {
-    // THE CASE WHERE THE TWO OFFSETS GENUINELY DIFFER, in 3D: a right-angle notch between two
-    // quads meeting along the y axis. A point on the bisector projects into the INTERIOR of both,
-    // so Phi is the SUM of two barriers where the Euclidean distance is the min of two distances,
-    // and since Phi decreases outward the level set sits FURTHER OUT than delta.
-    //
-    // This is the smoothing, not an error: it is what rounds the offset's own concave crease
-    // instead of leaving the kink the Euclidean offset has there. Far from the crease only one
-    // quad is within the support and the offset is exact again -- the effect is LOCAL to the
-    // feature, which is the property that makes it usable.
+    // The case where the two offsets genuinely differ, in 3D: at a right-angle notch between two
+    // quads, a point on the bisector projects into the interior of both, so Phi sums two barriers
+    // and the level set sits further out than delta. Far from the crease only one quad is within
+    // the support and the offset is exact again -- the smoothing is local to the feature.
     const double delta = 0.1;
     const double L = 2.;
     MatrixXd V(6, 3);
@@ -993,8 +938,8 @@ TEST_CASE("offset-potential-3d-vs-euclidean-reentrant", "[offset][potential]")
         "reentrant dihedral, on the bisector: level set at Euclidean distance "
         << euclid << " vs delta " << delta << " -> " << 100. * (euclid - delta) / delta
         << "% further out");
-    // Pushed OUTWARD, never inward. The bound documents a measurement, not a tuned tolerance:
-    // it is what summing two nearly equal barriers does.
+    // Pushed outward, never inward. The 1.5 bound documents what summing two nearly equal
+    // barriers does; it is not a tuned tolerance.
     CHECK(euclid > delta);
     CHECK(euclid <= 1.5 * delta);
 
@@ -1038,10 +983,9 @@ TEST_CASE("offset-potential-3d-support", "[offset][potential]")
 
 TEST_CASE("offset-energy-3d-lands-on-the-level-set", "[offset][potential]")
 {
-    // THE END-TO-END QUESTION, in 3D: does minimising w (Phi - c)^2 with the solver the smoother
-    // actually uses put a vertex on the level set? Run without the mesh, so nothing here can be
-    // blamed on inversion, the quality veto or the envelope: one free point, one energy, the same
-    // DenseNewton the smoother builds.
+    // The end-to-end question, in 3D: does minimising w (Phi - c)^2 with the solver the smoother
+    // uses put a vertex on the level set? Run without the mesh, so nothing here can be blamed on
+    // inversion, the quality veto or the envelope.
     const double delta = 0.25;
     MatrixXd V(1, 3);
     V << 0., 0., 0.;
