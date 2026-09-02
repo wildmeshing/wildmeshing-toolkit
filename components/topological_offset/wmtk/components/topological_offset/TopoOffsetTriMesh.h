@@ -1341,7 +1341,7 @@ public:
     std::shared_ptr<polysolve::nonlinear::Problem> rest_energy_for_vertex(size_t vid) const;
     /// The two offset terms for a front vertex, see smooth_front_vertex_phase_b(): the
     /// zeroth-order OffsetEnergy2D and the first-order AlignEnergy2D (one residual per incident
-    /// live front edge). Defined in Optimize2d.cpp, next to the criterion measuring the same
+    /// live front edge). Defined in FrontSmooth2d.cpp, next to the criterion measuring the same
     /// quantities.
     std::shared_ptr<polysolve::nonlinear::Problem> phase_b_front_energy(
         size_t vid,
