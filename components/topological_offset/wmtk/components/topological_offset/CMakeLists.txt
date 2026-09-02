@@ -18,6 +18,7 @@ set(SRC_FILES
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp
+	FrontSmooth2d.cpp
 
 	Parameters.h
 

@@ -227,6 +227,14 @@ public:
     {
         return potential_for_region(vertex_region(vid));
     }
+    /// The same selection as potential_for(), as the pointer the energies take a share of. Null
+    /// only when m_offset_potential is, which the front placement paths test for.
+    std::shared_ptr<const OffsetPotential2D> potential_ptr_for(const size_t vid) const
+    {
+        const int r = vertex_region(vid);
+        return (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
+                                                                  : m_offset_potential;
+    }
     const OffsetPotential2D& potential_for_edge(const size_t va, const size_t vb) const
     {
         return potential_for_region(edge_region(va, vb));
@@ -1264,11 +1272,7 @@ public:
         std::shared_ptr<polysolve::nonlinear::Problem> front;
         if (phase_places_front() && m_offset_potential && m_vertex_extra[vid].m_is_on_offset &&
             vertex_boundary_mask(vid) == 0) {
-            const int r = vertex_region(vid);
-            const std::shared_ptr<const OffsetPotential2D> pot =
-                (r >= 0 && size_t(r) < m_region_potentials.size()) ? m_region_potentials[size_t(r)]
-                                                                   : m_offset_potential;
-            front = phase_b_front_energy(vid, pot);
+            front = phase_b_front_energy(vid, potential_ptr_for(vid));
         }
         const std::shared_ptr<polysolve::nonlinear::Problem> rest = rest_energy_for_vertex(vid);
         if (!front) return rest;
