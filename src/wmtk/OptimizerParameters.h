@@ -175,6 +175,12 @@ struct OptimizerParameters
     int project_line_search_steps = 12;
     /// Partial-projection bisections tried after it gives up; 0 disables that pass.
     int project_line_search_nested_steps = 0;
+
+    /// Whether smoothing refuses a move that raises the worst incident element's quality. True
+    /// is TriWild's and SimWild's behaviour; see optimization::SmoothVertexOptions::quality_veto
+    /// for the objective it stops being the right rule for.
+    /// This is used in topological_offset to allow the offset surface to move even if it reduces quality.
+    bool smooth_quality_veto = true;
     double w_envelope = 1. - 1e-4; // derived; not read from json
 
     /// Number and placement of smoothing passes in the shared Wild optimization driver.

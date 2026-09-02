@@ -75,13 +75,27 @@ void topological_offset(nlohmann::json json_params)
     if (params.debug_output) {
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
-        logger().info("relative_ball_threshold: {}", params.relative_ball_threshold);
-        logger().info("edge_search_term_len: {}", params.edge_search_term_len);
+        logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
+        logger().info("front_conv_rel: {}", params.front_conv_rel);
         logger().info("===============================");
     }
 
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
+
+        // front_conv_rel is the accuracy -- the vertex bar and the chord-resolution threshold
+        // alike -- and offset_envelope_rel is only the leash on the operation passes. Accuracy
+        // finer than the leash is unreachable: operations licensed to dent the front by more than
+        // the threshold mint new refinable edges every turn. Hence a hard requirement.
+        if (params.offset_envelope_rel > params.front_conv_rel) {
+            log_and_throw_error(
+                "offset_envelope_rel {} must be <= front_conv_rel {}: the operation corridor "
+                "(the leash) cannot be wider than the convergence accuracy, or the operations "
+                "keep denting the front past the resolution threshold and the loop chases the "
+                "damage forever",
+                params.offset_envelope_rel,
+                params.front_conv_rel);
+        }
 
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
@@ -92,7 +106,8 @@ void topological_offset(nlohmann::json json_params)
             input_data.T_input_tag,
             input_data.V_envelope,
             input_data.F_envelope,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.envelope_name);
 
         // label input complex
         mesh.m_offset_params.offset_selection =
@@ -121,7 +136,9 @@ void topological_offset(nlohmann::json json_params)
         }
         tris_before.clear();
 
-        // initialize BVH
+        // The BVH is needed by construction; the potential is not -- execute_offset() and
+        // everything it calls reference m_offset_potential zero times, since marching places
+        // vertices at plain edge midpoints. So the potential is built after the offset exists.
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
@@ -136,20 +153,19 @@ void topological_offset(nlohmann::json json_params)
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
-        // Capture the region-boundary envelope while the region tags are still the input's own.
-        // execute_offset() replaces the tags of every face the band grows through, which cuts
-        // each region's boundary curve short at the band; an envelope built afterwards is a tube
-        // around the truncated curve and pins the junction where region meets offset.
-        if (mesh.m_offset_params.region_envelope_from_input) {
-            mesh.init_region_boundary_envelope_from_input();
-        }
+        // The per-tag containment envelopes must be captured in init_from_image(), while the
+        // region tags are still the input's own: execute_offset() replaces the tags of every face
+        // the band grows through, and a tube built afterwards would pin the junction where a
+        // region meets the offset. See TopoOffsetTriMesh::init_surfaces_and_boundaries().
 
         // execute offset
         igl::Timer timer;
         timer.start();
         mesh.execute_offset(output_filename);
-        double time = timer.getElapsedTime();
-        wmtk::logger().info("total time {}s", time);
+
+        // Now that the offset exists, the potential can be built against it.
+        mesh.init_offset_potential();
+        mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
         // inversion check
         auto tris = mesh.get_faces();
@@ -168,8 +184,8 @@ void topological_offset(nlohmann::json json_params)
         }
 
         // Did conservative growth run out of room? Reported here, not inside the optimization,
-        // because it is a property of the offset as constructed -- the optimization cannot move
-        // vertices off the frozen bounding box, so a band clipped here stays clipped.
+        // because it is a property of the offset as constructed: the optimization cannot move
+        // vertices off the bounding box, so a band clipped here stays clipped.
         mesh.warn_if_offset_reaches_domain_boundary();
 
         // offset region manifoldness check
@@ -182,12 +198,9 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        // Unconditional -- 2D has no un-optimized output. `optimize` is not read here: after
-        // conservative growth the band's boundary sits on background-mesh cell boundaries, so
-        // its distance to the input complex is only accurate to the local cell size, and moving
-        // it onto target_distance is entirely this call's job. Skipping it does not produce a
-        // coarser offset, it produces one whose defining property is unmet. The parameter is
-        // still honoured by the 3D branch below, which has its own distance-field insertion.
+        // Unconditional, matching 3D: construction leaves the band boundary on background-cell
+        // boundaries, so skipping the optimization does not yield a coarser offset but one whose
+        // defining property is unmet at an error set by the input mesh's resolution.
         mesh.optimize_offset(output_filename);
 
         // As in 3D: the check above ran on the offset as constructed, and optimization
@@ -199,6 +212,9 @@ void topological_offset(nlohmann::json json_params)
                 logger().error("Offset region is NOT manifold after optimization!");
             }
         }
+
+        double time = timer.getElapsedTime();
+        wmtk::logger().info("total time {}s", time);
 
         // report
         const std::string report_file = json_params["report"];
@@ -214,17 +230,31 @@ void topological_offset(nlohmann::json json_params)
             report["threads"] = NUM_THREADS;
             report["time"] = time;
             if (!mesh.optimization_metrics.empty()) {
-                std::vector<double> max_dist_err, avg_dist_err, max_norm_dev, avg_norm_dev;
+                // Convergence is max_grad and nothing else: the placement gradient
+                // |grad (Phi - c)^2| over the front, at band vertices and at interior samples of
+                // band edges; the at_vertex / in_edge split says whether a failing run wants
+                // smoothing or refinement. The two error series are reported facts, not criteria
+                // -- the full argument is written out in the 3D block below.
+                std::vector<double> max_dist_err, avg_dist_err, max_residual, avg_residual,
+                    max_grad, avg_grad, max_grad_at_vertex, max_grad_in_edge;
                 for (const auto& m : mesh.optimization_metrics) {
                     max_dist_err.push_back(m[0]);
                     avg_dist_err.push_back(m[1]);
-                    max_norm_dev.push_back(m[2]);
-                    avg_norm_dev.push_back(m[3]);
+                    max_residual.push_back(m[2]);
+                    avg_residual.push_back(m[3]);
+                    max_grad.push_back(m[4]);
+                    avg_grad.push_back(m[5]);
+                    max_grad_at_vertex.push_back(m[6]);
+                    max_grad_in_edge.push_back(m[7]);
                 }
-                report["optimization_metrics"]["max_dist_err"] = max_dist_err;
-                report["optimization_metrics"]["avg_dist_err"] = avg_dist_err;
-                report["optimization_metrics"]["max_norm_dev"] = max_norm_dev;
-                report["optimization_metrics"]["avg_norm_dev"] = avg_norm_dev;
+                report["optimization_metrics"]["max_l2_dist_err"] = max_dist_err;
+                report["optimization_metrics"]["avg_l2_dist_err"] = avg_dist_err;
+                report["optimization_metrics"]["max_phi_residual"] = max_residual;
+                report["optimization_metrics"]["avg_phi_residual"] = avg_residual;
+                report["optimization_metrics"]["max_grad"] = max_grad;
+                report["optimization_metrics"]["avg_grad"] = avg_grad;
+                report["optimization_metrics"]["max_grad_at_vertex"] = max_grad_at_vertex;
+                report["optimization_metrics"]["max_grad_in_edge"] = max_grad_in_edge;
 
                 std::vector<int> splits, collapses, swaps;
                 for (const auto& c : mesh.op_counts) {
@@ -235,15 +265,29 @@ void topological_offset(nlohmann::json json_params)
                 report["op_counts"]["splits"] = splits;
                 report["op_counts"]["collapses"] = collapses;
                 report["op_counts"]["swaps"] = swaps;
-                // Both criteria, matching optimize_offset()'s own test: MAX for distance, AVERAGE
-                // for normal deviation (see the reasoning there). convergence_normal_deviation
-                // <= 0 disables the angular half.
-                const double nd_target = mesh.m_offset_params.convergence_normal_deviation;
-                report["converged"] =
-                    max_dist_err.back() <= mesh.m_offset_params.convergence_target &&
-                    (nd_target <= 0. || avg_norm_dev.back() <= nd_target);
-                report["convergence_target"] = mesh.m_offset_params.convergence_target;
-                report["convergence_normal_deviation"] = nd_target;
+
+                std::vector<int> born, recollapsed, recollapsed_same_pass;
+                for (const auto& c : mesh.churn_counts) {
+                    born.push_back(c[0]);
+                    recollapsed.push_back(c[1]);
+                    recollapsed_same_pass.push_back(c[2]);
+                }
+                report["churn"]["split_born"] = born;
+                report["churn"]["recollapsed"] = recollapsed;
+                report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
+
+                // Read from the run, never recomputed from the arrays: optimize_offset() breaks
+                // out of the loop the moment it converges, so its own verdict cannot drift from
+                // the criterion it applied.
+                report["converged"] = mesh.m_converged;
+                report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
+                // The measured scale that tolerance is a fraction of; without it the tolerance is
+                // an unreadable absolute number. 2D only -- 3D normalizes analytically and has no
+                // measured reference to report.
+                report["gradient_reference"] = mesh.gradient_reference();
+                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
+                report["offset_level"] = mesh.m_offset_potential->target_level();
+                report["offset_dhat"] = mesh.m_offset_potential->dhat();
             }
             f_out << std::setw(4) << report;
             f_out.close();
@@ -300,7 +344,9 @@ void topological_offset(nlohmann::json json_params)
         size_t initial_num_comps = mesh.flood_fill();
         mesh.reset_connected_components();
 
-        // initialize BVH
+        // The BVH is needed by construction; the potential is not -- execute_offset() and
+        // everything it calls reference m_offset_potential zero times, since marching places
+        // vertices at plain edge midpoints. So the potential is built after the offset exists.
         mesh.init_input_complex_bvh();
         mesh.consolidate_mesh();
 
@@ -321,6 +367,11 @@ void topological_offset(nlohmann::json json_params)
         timer.start();
         mesh.execute_offset(output_filename);
 
+        // Now that the offset exists, dhat can be sized to contain it: max(offset_dhat_factor x
+        // delta, 2 x the furthest any offset-surface vertex ended up from the input complex).
+        mesh.init_offset_potential();
+        mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+
         // checks
         {
             // inversion check
@@ -338,6 +389,12 @@ void topological_offset(nlohmann::json json_params)
                 // mesh.write_msh_groups(output_filename.string()); // DEBUG write .msh anyway
                 log_and_throw_error("INVERSION DURING OFFSET! bad tet ids: {}", bad_tets_str);
             }
+
+            // Did conservative growth run out of room? Reported here, not inside the
+            // optimization, because it is a property of the offset as constructed: the
+            // optimization cannot move vertices off the bounding box, so a band clipped here
+            // stays clipped.
+            mesh.warn_if_offset_reaches_domain_boundary();
 
             // offset region manifoldness check
             if (check_manifoldness) {
@@ -364,19 +421,20 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        if (mesh.m_offset_params.optimize) {
-            mesh.optimize_offset(output_filename);
+        // Unconditional, matching 2D; `optimize` is not read here. Conservative growth leaves the
+        // band boundary on background-cell boundaries, so skipping the optimization does not
+        // yield a coarser offset but one whose defining property is unmet at an error set by the
+        // input mesh's resolution.
+        mesh.optimize_offset(output_filename);
 
-            // The manifoldness check above ran on the offset as constructed. Optimization
-            // then re-triangulates it -- splits, collapses and four kinds of swap all touch
-            // the offset boundary -- so the property has to be re-established afterwards, not
-            // assumed to survive.
-            if (check_manifoldness) {
-                if (mesh.offset_is_manifold()) {
-                    logger().info("Offset region manifold check passed after optimization.");
-                } else {
-                    logger().error("Offset region is NOT manifold after optimization!");
-                }
+        // The manifoldness check above ran on the offset as constructed. Optimization then
+        // re-triangulates it -- splits, collapses and four kinds of swap all touch the offset
+        // surface -- so the property has to be re-established afterwards, not assumed to survive.
+        if (check_manifoldness) {
+            if (mesh.offset_is_manifold()) {
+                logger().info("Offset region manifold check passed after optimization.");
+            } else {
+                logger().error("Offset region is NOT manifold after optimization!");
             }
         }
 
@@ -416,6 +474,68 @@ void topological_offset(nlohmann::json json_params)
             report["after #t"] = mesh.tet_size();
             report["threads"] = NUM_THREADS;
             report["time"] = time;
+            if (!mesh.optimization_metrics.empty()) {
+                // Three measures, one criterion. Convergence is max_grad and nothing else -- the
+                // placement gradient |grad (Phi - c)^2| over the offset surface, at band vertices
+                // and at interior samples of band faces; the at_vertex / in_face split says
+                // whether a failing run wants smoothing or refinement. The two error series are
+                // reported facts, never criteria: max_l2_dist_err is the true Euclidean error,
+                // max_phi_residual the same miss measured in Phi and divided by the level-set
+                // slope. Where several primitives are active the level set Phi = c may not exist,
+                // the surface correctly settles at the nearest local minimum of (Phi - c)^2, and
+                // a converged run reports a nonzero residual. Do not add a bar to either.
+                std::vector<double> max_dist_err, avg_dist_err, max_residual, avg_residual,
+                    max_grad, avg_grad, max_grad_at_vertex, max_grad_in_face;
+                for (const auto& m : mesh.optimization_metrics) {
+                    max_dist_err.push_back(m[0]);
+                    avg_dist_err.push_back(m[1]);
+                    max_residual.push_back(m[2]);
+                    avg_residual.push_back(m[3]);
+                    max_grad.push_back(m[4]);
+                    avg_grad.push_back(m[5]);
+                    max_grad_at_vertex.push_back(m[6]);
+                    max_grad_in_face.push_back(m[7]);
+                }
+                report["optimization_metrics"]["max_l2_dist_err"] = max_dist_err;
+                report["optimization_metrics"]["avg_l2_dist_err"] = avg_dist_err;
+                report["optimization_metrics"]["max_phi_residual"] = max_residual;
+                report["optimization_metrics"]["avg_phi_residual"] = avg_residual;
+                report["optimization_metrics"]["max_grad"] = max_grad;
+                report["optimization_metrics"]["avg_grad"] = avg_grad;
+                report["optimization_metrics"]["max_grad_at_vertex"] = max_grad_at_vertex;
+                report["optimization_metrics"]["max_grad_in_face"] = max_grad_in_face;
+
+                std::vector<int> splits, collapses, swaps;
+                for (const auto& c : mesh.op_counts) {
+                    splits.push_back(c[0]);
+                    collapses.push_back(c[1]);
+                    swaps.push_back(c[2]);
+                }
+                report["op_counts"]["splits"] = splits;
+                report["op_counts"]["collapses"] = collapses;
+                report["op_counts"]["swaps"] = swaps;
+
+                std::vector<int> born, recollapsed, recollapsed_same_pass;
+                for (const auto& c : mesh.churn_counts) {
+                    born.push_back(c[0]);
+                    recollapsed.push_back(c[1]);
+                    recollapsed_same_pass.push_back(c[2]);
+                }
+                report["churn"]["split_born"] = born;
+                report["churn"]["recollapsed"] = recollapsed;
+                report["churn"]["recollapsed_same_pass"] = recollapsed_same_pass;
+
+                // Read from the run, never recomputed from the arrays: optimize_offset() breaks
+                // out of the loop the moment it converges, so its own verdict cannot drift from
+                // the criterion it applied.
+                report["converged"] = mesh.m_converged;
+                // Both bars: the one the verdict used, and the one the diagnostic residual is
+                // normalized by. A consumer plotting either series needs the matching bar.
+                report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
+                report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
+                report["offset_level"] = mesh.m_offset_potential->target_level();
+                report["offset_dhat"] = mesh.m_offset_potential->dhat();
+            }
             f_out << std::setw(4) << report;
             f_out.close();
         }

@@ -166,11 +166,6 @@ public:
     /**
      * @brief Verify that every interface between unlike tags carries a surface face.
      *
-     * A SimWild surface IS the interface between unlike cell tags, so for any two adjacent tets
-     * whose `tags` differ, the face they share must be marked `m_is_surface_fs`. The operations
-     * re-derive that flag as they go (see SimWildMesh::collapse_after_vertex), and this is the
-     * post-condition they are meant to maintain.
-     *
      * Checks that direction only: an interface face that is not tagged is a violation, while a
      * tagged face between like-tagged tets is not reported here.
      *
@@ -227,7 +222,6 @@ protected:
         size_t v1,
         size_t v2,
         const std::vector<std::array<size_t, 2>>& boundary_edges) override;
-    void collapse_after_vertex(size_t v1, size_t v2) override;
 
     bool split_before_cells(const Tuple& edge, const std::vector<Tuple>& parents) override;
     bool split_after_cells(size_t v1, size_t v2, size_t v_new, const std::vector<Tuple>& children)

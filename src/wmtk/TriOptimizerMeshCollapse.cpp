@@ -325,6 +325,8 @@ bool TriOptimizerMesh::collapse_edge_after(const Tuple& loc)
     }
     // vertex attr
     VA[v2_id].m_is_on_surface = VA.at(v1_id).m_is_on_surface || VA.at(v2_id).m_is_on_surface;
+    VA[v2_id].m_sizing_scalar =
+        std::min(VA.at(v1_id).m_sizing_scalar, VA.at(v2_id).m_sizing_scalar);
     // no need to update on_bbox_faces
     // face attr
     for (auto& info : cache.changed_edges) {
@@ -508,6 +510,7 @@ size_t TriOptimizerMesh::coarsen_mesh()
         m_coarsen_mode = false;
         total += accepted;
 
+        m_debug_pass_name = "coarsen-smooth";
         smooth_all_vertices(size_t(m_params.coarsen_global_smoothing_passes));
         if (m_params.coarsen_global_smoothing_passes > 0) {
             round_all_vertices();

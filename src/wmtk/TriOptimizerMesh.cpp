@@ -40,11 +40,14 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
     partition_mesh_morton();
 
     if (m_params.debug_output) {
+        m_debug_pass_name = "improve-entry";
         write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
-    logger().info("========it pre========");
-    local_operations({{0, 1, 0, 0}}, false);
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it pre========");
+        local_operations({{0, 1, 1, 0}}, false);
+    }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
@@ -107,8 +110,7 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_metric > optimization_stop_metric() &&
-            (pre_max_metric - max_metric) <=
-                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");
@@ -117,12 +119,19 @@ void TriOptimizerMesh::mesh_improvement(int max_its)
         pre_max_metric = max_metric;
     }
 
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it post========");
+        local_operations({{0, 1, 1, 0}});
+    }
 
     // Removing what the mesh does not need is the last thing to do, not something to
-    // interleave: it trades vertices for nothing but the guarantee that the max energy does
-    // not rise, which is only worth taking once the energy is where it is going to end up.
+    // interleave: it trades vertices for nothing but the guarantee that the max energy does not
+    // rise, which is only worth taking once the energy is where it is going to end up.
+    //
+    // NOT gated with the bare passes above. Those are unguarded collapse sweeps; this one runs
+    // in m_coarsen_mode, which an application can use to demand more of an operation than the
+    // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
+    // afterwards, so coarsening can only ever trade elements for a result that is still good.
     coarsen_mesh();
 }
 
@@ -165,9 +174,11 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
                 retry_count);
         }
         timer.start();
+        m_debug_pass_name = ops[i] > 0 ? std::string(names[i]) : std::string(names[i]) + "-skipped";
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
                 logger().info("==splitting {}==", n);
+                ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 split_all_edges();
                 logger().info(
                     "#V = {}, #F = {} after split",
@@ -193,6 +204,11 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             if (ops[i] > 0) round_all_vertices();
         }
 
+        // No checkpoint frame here. For split/collapse/swap the group writes its own frame just
+        // below, and smooth_all_vertices() writes one per sweep, so a checkpoint after the group
+        // duplicated the frame before it -- and a group with ops[i] == 0 wrote a frame of a mesh
+        // nothing had touched. Measured on the 2D offset: 18 frames per phase-A iteration where
+        // 6 passes ran.
         if (ops[i] > 0) {
             if (m_params.debug_output && i < 3) {
                 // no need to print debug output for smoothing, since it prints already internally

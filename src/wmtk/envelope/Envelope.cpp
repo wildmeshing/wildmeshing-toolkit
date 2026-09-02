@@ -143,7 +143,19 @@ void SampleEnvelope::init(
     m_kind = Kind::Triangles3d;
     m_v3 = V;
     m_f3 = F;
-    exact_envelope.init(V, F, _eps);
+    // THE SAME ZERO-WIDTH TRAP init_exact_edges REFUSES, reached the other way. This overload
+    // builds the exact structure unconditionally, so it cannot lean on use_exact to skip a
+    // meaningless build the way the edge overloads do -- and a caller asking for a triangle
+    // envelope with eps <= 0 wants the BVH, not containment (isotropic_remeshing does exactly
+    // that, with use_exact true and m_has_envelope false). Building it anyway would leave a
+    // zero-width FastEnvelope that answers "outside" for every point not exactly on the input:
+    // not a crash, just an optimization that silently cannot move. So skip the build and let
+    // m_exact_built refuse the query instead.
+    m_exact_built = false;
+    if (_eps > 0) {
+        exact_envelope.init(V, F, _eps);
+        m_exact_built = true;
+    }
 
     // sampleTriangle lays samples on a triangular lattice of spacing `sampling_dist`, whose
     // covering radius is sampling_dist / sqrt(3): every point of the triangle is within that
@@ -295,12 +307,17 @@ void SampleEnvelope::require_exact_3d(const char* query) const
 
 void SampleEnvelope::require_exact_built(const char* query) const
 {
-    // The edge and 2D overloads only build their exact structure when use_exact was already
-    // set at init time, so a flag flipped afterwards would otherwise query an empty envelope.
-    if (m_kind != Kind::Triangles3d && !m_exact_built) {
+    // Two ways to arrive with no exact structure, both silent without this check. The edge and
+    // 2D overloads only build theirs when use_exact was already set at init time, so a flag
+    // flipped afterwards would query an empty envelope; and any overload given eps <= 0 skips
+    // the build, because a zero-width exact envelope rejects everything. Triangles3d used to be
+    // exempt here -- it builds unconditionally -- but that exemption stopped being true once the
+    // eps guard applied to it too.
+    if (!m_exact_built) {
         log_and_throw_error(
-            "Exact {} query, but use_exact was set after init() built only the sampled "
-            "envelope. Re-init the envelope after changing the flag.",
+            "Exact {} query against an envelope with no exact structure: init() was given a "
+            "non-positive epsilon, or use_exact was set after an init() that built only the "
+            "sampled envelope. Re-init with a positive epsilon and the flag already set.",
             query);
     }
 }

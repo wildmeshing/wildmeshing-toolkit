@@ -93,6 +93,11 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
     REQUIRE(mesh.m_vertex_extra[2].label == V2_LABEL);
     REQUIRE(mesh.m_vertex_extra[3].label == V3_LABEL);
     REQUIRE(mesh.m_vertex_extra[4].label == E1_LABEL);
+    // the split vertex's boundary mask is the AND of its edge's endpoints
+    REQUIRE(
+        mesh.m_vertex_extra[4].m_boundary_mask ==
+        (mesh.m_vertex_extra[1].m_boundary_mask & mesh.m_vertex_extra[2].m_boundary_mask));
+    REQUIRE(mesh.m_vertex_extra[4].m_boundary_mask != 0); // all faces here are wall faces
 
     // edges
     std::array<std::array<size_t, 3>, 9> edges = {
@@ -144,6 +149,83 @@ TEST_CASE("edge_split_3d", "[split_op][3d]")
         }
         REQUIRE(tags == T0_TAGS);
     }
+}
+
+
+TEST_CASE("per_tag_envelopes_init", "[3d][envelope]")
+{
+    // Two tets sharing a face, one tagged a and one tagged b: the shared face is the a/b
+    // boundary, every outer face is a wall face of its tet's tag. Asserts the per-tag init
+    // contract -- one envelope per tag with boundary faces, junction vertices carrying both
+    // bits, and multi-bit dispatch answering with an intersection composite.
+    Eigen::Matrix<double, Eigen::Dynamic, 3> V(5, 3);
+    V << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1;
+    Eigen::MatrixXi T(2, 4);
+    T << 0, 1, 2, 3, 4, 1, 2, 3;
+
+    MatrixSi Tags(2, 2);
+    Tags.coeffRef(0, 0) = 1; // tet 0 -> a
+    Tags.coeffRef(1, 1) = 1; // tet 1 -> b
+    std::vector<std::string> tag_names = {"a", "b"};
+
+    Parameters param;
+    param.envelope_size = 1e-3; // tests skip Parameters::init(); give the builds a real eps
+    TopoOffsetTetMesh mesh(param, 0);
+    MatrixXd V_env_dummy;
+    MatrixXi F_env_dummy;
+    mesh.init_from_image(V, T, Tags, V_env_dummy, F_env_dummy, tag_names);
+
+    const int64_t id_a = mesh.m_tag_name_to_id.at("a");
+    const int64_t id_b = mesh.m_tag_name_to_id.at("b");
+
+    // every input tag has a bit, ambient included; only tags with boundary faces get envelopes
+    REQUIRE(mesh.m_tag_bit.count(0) == 1);
+    REQUIRE(mesh.m_tag_bit.count(id_a) == 1);
+    REQUIRE(mesh.m_tag_bit.count(id_b) == 1);
+    REQUIRE(mesh.m_tag_envelopes.count(id_a) == 1);
+    REQUIRE(mesh.m_tag_envelopes.count(id_b) == 1);
+    REQUIRE(mesh.m_tag_envelopes.count(0) == 0); // no ambient tets in this mesh
+
+    const uint64_t bit_a = uint64_t(1) << mesh.m_tag_bit.at(id_a);
+    const uint64_t bit_b = uint64_t(1) << mesh.m_tag_bit.at(id_b);
+
+    // apex vertices see only their own tet's boundary; shared-face vertices see both
+    REQUIRE(mesh.m_vertex_extra[0].m_boundary_mask == bit_a);
+    REQUIRE(mesh.m_vertex_extra[4].m_boundary_mask == bit_b);
+    for (const size_t v : {size_t(1), size_t(2), size_t(3)}) {
+        REQUIRE(mesh.m_vertex_extra[v].m_boundary_mask == (bit_a | bit_b));
+    }
+
+    // The gate: vertex_boundary_mask() is the raw mask AND'd with "is this vertex region geometry
+    // at all". Only the shared face is two-sided here, so only its vertices are m_is_on_region --
+    // the apexes must gate to 0 even though their raw mask is nonzero, or a stale mask would
+    // route geometry that has drifted off the boundary into the wrong tube.
+    REQUIRE(mesh.vertex_boundary_mask(0) == 0);
+    REQUIRE(mesh.vertex_boundary_mask(4) == 0);
+    for (const size_t v : {size_t(1), size_t(2), size_t(3)}) {
+        REQUIRE(mesh.vertex_boundary_mask(v) == (bit_a | bit_b));
+    }
+    REQUIRE(mesh.face_mask({{1, 2, 3}}) == (bit_a | bit_b));
+    REQUIRE(mesh.face_mask({{0, 1, 2}}) == 0); // an apex corner gates the whole face out
+
+    // dispatch: single bit answers the member itself, multi-bit an intersection composite
+    REQUIRE(mesh.envelope_for_mask(0) == nullptr);
+    REQUIRE(mesh.envelope_for_mask(bit_a) == mesh.m_tag_envelopes.at(id_a));
+    REQUIRE(mesh.envelope_for_mask(bit_b) == mesh.m_tag_envelopes.at(id_b));
+    const auto isect = mesh.envelope_for_mask(bit_a | bit_b);
+    REQUIRE(isect != nullptr);
+    REQUIRE(isect != mesh.m_tag_envelopes.at(id_a));
+    REQUIRE(isect != mesh.m_tag_envelopes.at(id_b));
+    REQUIRE(mesh.envelope_for_mask(bit_a | bit_b) == isect); // memoized
+
+    // intersection semantics: a point on the shared face is inside both tubes; the a-apex is
+    // inside E_a only, so the intersection rejects it
+    const Eigen::Vector3d on_junction = (V.row(1) + V.row(2) + V.row(3)).transpose() / 3.;
+    REQUIRE(!isect->is_outside(on_junction));
+    const Eigen::Vector3d apex_a = V.row(0).transpose();
+    REQUIRE(!mesh.m_tag_envelopes.at(id_a)->is_outside(apex_a));
+    REQUIRE(mesh.m_tag_envelopes.at(id_b)->is_outside(apex_a));
+    REQUIRE(isect->is_outside(apex_a));
 }
 
 
@@ -305,7 +387,7 @@ TEST_CASE("tet_split_3d", "[split_op][3d]")
     mesh.m_face_extra[3].label = F3_LABEL;
     mesh.m_tet_attribute[0].label = T0_LABEL;
 
-    // split face
+    // split tet
     TetMesh::Tuple ttup = mesh.tuple_from_tet(0);
     std::vector<TetMesh::Tuple> garbage;
     mesh.split_tet(ttup, garbage);
@@ -791,11 +873,11 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     mesh.m_vertex_extra[0].label = 1;
     mesh.init_input_complex_bvh();
     Vector2d q(1.0, 1.0);
-    double dist = mesh.m_input_complex_bvh.dist(q);
+    double dist = mesh.m_input_complex_bvh->dist(q);
     REQUIRE(fabs(dist - sqrt(2.0)) < pow(10, -6));
 
     Vector2d q0(0.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q0);
+    dist = mesh.m_input_complex_bvh->dist(q0);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     // label edges and vertices as input
@@ -806,15 +888,15 @@ TEST_CASE("dist_to_trimesh", "[dist_growth][2d]")
     mesh.init_input_complex_bvh();
 
     Vector2d q1(1.0, 1.0);
-    dist = mesh.m_input_complex_bvh.dist(q1);
+    dist = mesh.m_input_complex_bvh->dist(q1);
     REQUIRE(fabs(dist - (sqrt(2) / 2.0)) < pow(10, -6));
 
     Vector2d q2(0.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q2);
+    dist = mesh.m_input_complex_bvh->dist(q2);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     Vector2d q3(10.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q3);
+    dist = mesh.m_input_complex_bvh->dist(q3);
     REQUIRE(fabs(dist - 9.0) < pow(10, -6));
 }
 

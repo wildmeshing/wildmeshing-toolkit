@@ -137,9 +137,17 @@ public:
     void init(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, const double eps);
     bool is_outside(const std::array<Eigen::Vector3d, 3>& tris) const;
     bool is_outside(const std::array<Eigen::Vector3d, 2>& edge) const;
-    bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
+    /**
+     * The 2D pair is VIRTUAL where the 3D edge query is not, so a containment-only composite
+     * over several envelopes can answer them. wmtk::Envelope declares virtual is_outside only
+     * for the 3D triangle and the 3D point -- which is all a 3D composite needs -- and 2D's
+     * containment path asks these two instead. See the composites in
+     * components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a
+     * composite must never reach the NON-virtual queries below, whose BVH it does not have.
+     */
+    virtual bool is_outside(const std::array<Eigen::Vector2d, 2>& edge) const;
     bool is_outside(const Eigen::Vector3d& pts) const;
-    bool is_outside(const Eigen::Vector2d& pts) const;
+    virtual bool is_outside(const Eigen::Vector2d& pts) const;
     double nearest_point(const Eigen::Vector3d& pts, Eigen::Vector3d& result) const;
     double nearest_point(const Eigen::Vector2d& pts, Eigen::Vector2d& result) const;
 

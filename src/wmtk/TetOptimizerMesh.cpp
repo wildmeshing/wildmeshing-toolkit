@@ -40,9 +40,10 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
 
     compute_vertex_partition_morton();
 
-    logger().info("========it pre========");
-    // Performing swaps after the initial collapse improves quality and convergence.
-    local_operations({{0, 1, 1, 0}}, false);
+    if (optimization_bare_coarsen_passes()) {
+        // Performing swaps after the initial collapse improves quality and convergence.
+        local_operations({{0, 1, 1, 0}}, false);
+    }
 
     double pre_max_metric = std::get<0>(optimization_quality_stats());
     logger().info("max energy {:.6} | stop {:.6}", pre_max_metric, optimization_stop_metric());
@@ -105,8 +106,7 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
             --refine_cooldown;
         } else if (
             it > 0 && max_metric > optimization_stop_metric() &&
-            (pre_max_metric - max_metric) <=
-                m_params.stuck_refine_stall_eps * (max_metric - optimization_stop_metric())) {
+            optimization_stalled(pre_max_metric, max_metric)) {
             logger().info(">>>>stuck-refine (maxE {:.6} stalled)...", max_metric);
             refine_sizing_around_worst(max_metric);
             logger().info(">>>>stuck-refine finished...");
@@ -115,12 +115,19 @@ void TetOptimizerMesh::mesh_improvement(int max_its)
         pre_max_metric = max_metric;
     }
 
-    logger().info("========it post========");
-    local_operations({{0, 1, 0, 0}});
+    if (optimization_bare_coarsen_passes()) {
+        logger().info("========it post========");
+        local_operations({{0, 1, 1, 0}});
+    }
 
     // Removing what the mesh does not need is the last thing to do, not something to
     // interleave: it trades cells for nothing but the guarantee that the max energy does not
     // rise, which is only worth taking once the energy is where it is going to end up.
+    //
+    // NOT gated with the bare passes above. Those are unguarded collapse sweeps; this one runs
+    // in m_coarsen_mode, which an application can use to demand more of an operation than the
+    // main loop does -- topological_offset requires BOTH criteria to be inside tolerance
+    // afterwards, so coarsening can only ever trade elements for a result that is still good.
     coarsen_mesh();
 }
 
@@ -167,6 +174,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         timer.start();
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
+                ++m_op_epoch; // see m_op_epoch: one epoch per split pass
                 logger().info("==splitting {}==", n);
                 split_all_edges();
                 logger().info(
@@ -349,6 +357,7 @@ bool TetOptimizerMesh::smooth_after(const Tuple& t)
                               : optimization::SmoothVertexOptions::SmoothingMode::Projected;
     opts.project_line_search_steps = m_params.project_line_search_steps;
     opts.project_line_search_nested_steps = m_params.project_line_search_nested_steps;
+    opts.quality_veto = m_params.smooth_quality_veto;
 
     return optimization::smooth_vertex_3d(*this, t, opts, m_solver.local(), &m_smooth_rejects);
 }

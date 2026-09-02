@@ -38,9 +38,10 @@ bool wmtk::TetMesh::split_edge(const Tuple& loc0, std::vector<Tuple>& new_edges)
     for (size_t v_id : n12_v_ids) old_vertices.emplace_back(v_id, m_vertex_connectivity[v_id]);
 
     /// update connectivity
-    const size_t v_id = get_next_empty_slot_v();
-    // out of preallocated vertex slots: abort before mutating
-    if (v_id == INVALID_SLOT) return false;
+    int v_id = get_next_empty_slot_v();
+    if (v_id == INVALID_SLOT) {
+        return false; // out of preallocated vertex slots: abort before mutating
+    }
     std::vector<TetrahedronConnectivity> old_tets_conn;
     std::vector<std::array<size_t, 4>> new_tet_conn;
     auto num = n12_t_ids.size();

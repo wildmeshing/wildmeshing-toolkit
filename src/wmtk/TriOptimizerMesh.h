@@ -10,6 +10,7 @@
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/threading/enumerable_thread_specific.hpp>
 
+#include <spdlog/fmt/bundled/format.h>
 #include <polysolve/nonlinear/Problem.hpp>
 
 #include <atomic>
@@ -150,6 +151,11 @@ public:
 
     bool m_collapse_limit_length = true;
     int m_debug_print_counter = 0;
+    /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
+    /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer
+    /// before it writes, so an application that renames frames (the 2D offset) can carry the
+    /// pass name into the file name; the base's own "debug_<N>" names are unchanged.
+    std::string m_debug_pass_name;
 
     size_t m_tags_count = 0;
     std::map<int64_t, std::string> m_tag_id_to_name;
@@ -299,6 +305,54 @@ public:
     void set_smoothing_position(size_t vid, const Vector2d& p);
     virtual bool smoothing_position_is_allowed(size_t vid, const Vector2d& p) const = 0;
 
+    /**
+     * @brief The envelope this vertex is PULLED TOWARD while smoothing, and the one it is
+     * CONTAINED BY afterwards. Split, as in wmtk::TetOptimizerMesh.
+     *
+     * Null means "no envelope for this vertex", which the smoother handles by minimising AMIPS
+     * (plus whatever smoothing_extra_energy() adds) with no pull and no containment check.
+     *
+     * The default of both is what TriWild and SimWild do -- one envelope, applied to every
+     * vertex on the tracked surface -- so overriding nothing leaves their behaviour untouched.
+     * An application tracking more than one surface overrides them: topological_offset returns
+     * null for a vertex that is ONLY on the offset boundary, because that is the surface the
+     * optimization exists to move, and a tube around its initial position caps how far it can
+     * ever travel.
+     *
+     * WHY TWO HOOKS AND NOT ONE. The pull calls the NON-virtual SampleEnvelope queries --
+     * nearest_point and the ExactDistanceEnergy2D trio -- so whatever it returns must be a real
+     * envelope with a built BVH. Containment asks only is_outside(), which is virtual, so it
+     * may be answered by a composite over several envelopes (topological_offset holds a
+     * junction simplex in the INTERSECTION of its tags' tubes). Answering both from one hook
+     * would statically bind a composite's null BVH the moment a junction vertex was pulled.
+     */
+    virtual std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const
+    {
+        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
+    }
+    virtual std::shared_ptr<SampleEnvelope> smoothing_containment_envelope(const size_t vid) const
+    {
+        return m_vertex_attribute.at(vid).m_is_on_surface ? m_envelope : nullptr;
+    }
+
+    /**
+     * @brief An extra term the application adds to this vertex's smoothing objective, or null.
+     *
+     * The extension point that lets an application place a vertex by MINIMISING something
+     * rather than by computing a position and then defending it. topological_offset uses it for
+     * the offset boundary: the term is w (Phi - c)^2, whose minimum is the offset itself, so an
+     * offset-boundary vertex goes through this same smoother -- the same line search, the same
+     * inversion test, the same quality veto -- as every other vertex, instead of through a
+     * hand-rolled projection that bypassed all three.
+     *
+     * Null by default, so TriWild and SimWild compose exactly the energy they composed before.
+     */
+    virtual std::shared_ptr<polysolve::nonlinear::Problem> smoothing_extra_energy(
+        const size_t vid) const
+    {
+        return nullptr;
+    }
+
     double active_quality_threshold() const
     {
         return m_params.skip_good_regions_margin * m_params.stop_energy;
@@ -335,7 +389,69 @@ protected:
     virtual std::tuple<double, double> optimization_quality_stats();
     virtual double optimization_stop_metric() const { return m_params.stop_energy; }
     virtual size_t refine_sizing_around_worst(double max_metric) = 0;
+
+    /**
+     * @brief Whether the loop opens and closes with BARE collapse passes.
+     *
+     * mesh_improvement() brackets the loop with local_operations({{0,1,0,0}}) -- collapse alone,
+     * not interleaved with splits or smoothing, and the opening one with collapse_limit_length
+     * FALSE so no length gate applies at all. For TriWild and SimWild that is right: it strips
+     * the redundancy left by insertion, and their tracked surface is held by an envelope.
+     *
+     * It is wrong for an application whose tracked surface is what the optimization exists to
+     * PLACE, and which therefore has no envelope holding it. See the 3D twin,
+     * TetOptimizerMesh::optimization_bare_coarsen_passes, for the measurement that found it.
+     */
+    virtual bool optimization_bare_coarsen_passes() const { return true; }
+    /// CHURN INSTRUMENTATION. Bumped at the start of every split pass in local_operations(), so
+    /// the pass a vertex was born in can be compared against the pass a collapse removes it in.
+    /// Zero until the first split pass runs, which is what lets a construction-era vertex be
+    /// told apart from an optimization-split one. Never reset -- only differences mean anything.
+    /// The 3D twin is wmtk::TetOptimizerMesh::m_op_epoch.
+    uint32_t m_op_epoch = 0;
     virtual bool optimization_stop_at_float() const { return false; }
+
+    /**
+     * @brief Whether an iteration that moved the metric from @p prev to @p cur is stalled, and
+     * the sizing refinement should therefore fire.
+     *
+     * Exactly the expression mesh_improvement() used inline: the improvement is small next to
+     * the distance the metric still has to cover, i.e. the mesh is not on course to reach the
+     * target within about 1/stall_eps more iterations.
+     *
+     * It is a virtual because the scalar the driver has is a MAX over criteria, and for an
+     * application with more than one criterion that max only ever reports on whichever is
+     * currently worst -- so a run whose worst criterion is stuck refines every iteration even
+     * while the others are improving. An application that knows its criteria apart overrides
+     * this to ask the question of each of them.
+     */
+    virtual bool optimization_stalled(double prev, double cur)
+    {
+        return (prev - cur) <= m_params.stuck_refine_stall_eps * (cur - optimization_stop_metric());
+    }
+
+    /**
+     * @brief Called at every pass boundary, whether or not debug output is on.
+     *
+     * The default writes a debug frame when m_params.debug_output is set and does nothing
+     * otherwise, and NOTHING AN OVERRIDE DOES HERE MAY CHANGE THE MESH. Debug output has to be
+     * observational: if writing a frame renumbers or compacts anything, then turning
+     * DEBUG_output on changes the run it is supposed to be showing you, and under kPartition it
+     * changes it substantively, since get_partition_id() is keyed on vertex id and renumbering
+     * moves vertices between threads.
+     *
+     * topological_offset used to override this to call consolidate_mesh() unconditionally --
+     * paying that cost on every pass whether or not debug output was on -- because its
+     * write_vtu() consolidated. write_vtu() now packs its output locally instead and mutates
+     * nothing, so the override is gone. If a writer ever needs the mesh compacted, compact it
+     * in the optimization itself, not on the way to a file.
+     */
+    virtual void optimization_debug_checkpoint()
+    {
+        if (m_params.debug_output) {
+            write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        }
+    }
 
     virtual void collapse_pass_begin() {}
     virtual void collapse_pass_end(size_t) {}
