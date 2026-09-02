@@ -116,6 +116,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>s_envelope</b> = 1.
 <tr class="separator:a8e30cf6125b0298d7e109a68092acf1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b30ae2dd123234edaf8f238f5bfb61b" id="r_a7b30ae2dd123234edaf8f238f5bfb61b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#a7b30ae2dd123234edaf8f238f5bfb61b">project_line_search_steps</a> = 12</td></tr>
 <tr class="separator:a7b30ae2dd123234edaf8f238f5bfb61b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad52052e2b3b76abd0c11df589eb39839" id="r_ad52052e2b3b76abd0c11df589eb39839"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#ad52052e2b3b76abd0c11df589eb39839">quality_veto</a> = true</td></tr>
+<tr class="separator:ad52052e2b3b76abd0c11df589eb39839"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf21f58b42013d8a121db52ef78723d2" id="r_abf21f58b42013d8a121db52ef78723d2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#abf21f58b42013d8a121db52ef78723d2">project_line_search_nested_steps</a> = 0</td></tr>
 <tr class="separator:abf21f58b42013d8a121db52ef78723d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -178,6 +180,23 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>s_envelope</b> = 1.
       </table>
 </div><div class="memdoc">
 <p>Backtracking steps tried before the move is abandoned: t = 1, 1/2, ..., 2^-(n-1). Exhausting these without an acceptable candidate is what "the search failed" means. </p>
+
+</div>
+</div>
+<a id="ad52052e2b3b76abd0c11df589eb39839" name="ad52052e2b3b76abd0c11df589eb39839"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad52052e2b3b76abd0c11df589eb39839">&#9670;&#160;</a></span>quality_veto</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::optimization::SmoothVertexOptions::quality_veto = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether a smoothing move that raises the worst incident element's quality is refused at all. True is TriWild's and SimWild's behaviour and the reasoning above applies to it.</p>
+<p>It stops applying when the objective is not the one that reasoning was written for. The veto's premise is that the solver only ever asks for a SMALL move, so refusing costs almost nothing and the next pass retries from the same place: a TriWild surface vertex starts on the input and the envelope term keeps it there. topological_offset's offset boundary is placed by minimising a term (see smoothing_extra_energy) whose minimum can be most of the offset distance away, so a solved position routinely worsens some incident element and would be refused. There the mesh's shape is the topological passes' job and the smoother's job is to place the boundary, so the veto is turned off and the two are left to their own work.</p>
+<p>False disables the check for EVERY vertex; quality_veto_on_surface only ever narrowed it. Read by both smooth_vertex_2d and smooth_vertex_3d. </p>
 
 </div>
 </div>

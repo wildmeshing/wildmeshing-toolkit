@@ -100,6 +100,9 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>dist</b> (const Vec
 <tr class="memitem:ae31e401060d510646fe7c18742f3836f" id="r_ae31e401060d510646fe7c18742f3836f"><td class="memItemLeft" align="right" valign="top">Vector3d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#ae31e401060d510646fe7c18742f3836f">nearest_point</a> (const VectorXd &amp;p) const</td></tr>
 <tr class="memdesc:ae31e401060d510646fe7c18742f3836f"><td class="mdescLeft">&#160;</td><td class="mdescRight">find the nearest point on the complex (triangles and edges) to p  <br /></td></tr>
 <tr class="separator:ae31e401060d510646fe7c18742f3836f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8a48a30c382385a53ec80d2854cdd7d" id="r_af8a48a30c382385a53ec80d2854cdd7d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#af8a48a30c382385a53ec80d2854cdd7d">nearest_point_feature</a> (const Eigen::Vector2d &amp;p, Eigen::Vector2d &amp;result, bool &amp;on_corner, Eigen::Vector2d &amp;seg_normal, int &amp;feature_id) const</td></tr>
+<tr class="memdesc:af8a48a30c382385a53ec80d2854cdd7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">2D: the nearest point of the complex together with which feature it is.  <br /></td></tr>
+<tr class="separator:af8a48a30c382385a53ec80d2854cdd7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83f51a0f3b1bd81f383d1ca84b164a1c" id="r_a83f51a0f3b1bd81f383d1ca84b164a1c"><td class="memItemLeft" align="right" valign="top"><a id="a83f51a0f3b1bd81f383d1ca84b164a1c" name="a83f51a0f3b1bd81f383d1ca84b164a1c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clear</b> ()</td></tr>
 <tr class="separator:a83f51a0f3b1bd81f383d1ca84b164a1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -133,6 +136,11 @@ MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><b>m_V_T</b> = Matri
 <tr class="memitem:aba65c60b8643ca170a012df948aa16ba" id="r_aba65c60b8643ca170a012df948aa16ba"><td class="memItemLeft" align="right" valign="top"><a id="aba65c60b8643ca170a012df948aa16ba" name="aba65c60b8643ca170a012df948aa16ba"></a>
 MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_T_T</b> = MatrixXi(0, 4)</td></tr>
 <tr class="separator:aba65c60b8643ca170a012df948aa16ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00043e089344499a48b485d20fa1bb7e" id="r_a00043e089344499a48b485d20fa1bb7e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Eigen::Vector2d &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#a00043e089344499a48b485d20fa1bb7e">m_v2</a></td></tr>
+<tr class="separator:a00043e089344499a48b485d20fa1bb7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac92010cca68a5197a5b8f0329f2da2d7" id="r_ac92010cca68a5197a5b8f0329f2da2d7"><td class="memItemLeft" align="right" valign="top"><a id="ac92010cca68a5197a5b8f0329f2da2d7" name="ac92010cca68a5197a5b8f0329f2da2d7"></a>
+std::vector&lt; Eigen::Vector2i &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_e2</b></td></tr>
+<tr class="separator:ac92010cca68a5197a5b8f0329f2da2d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="af822ba99ef668bece86239284a77e27d" name="af822ba99ef668bece86239284a77e27d"></a>
@@ -193,7 +201,7 @@ MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_T_T</b> = Matri
     <tr><td class="paramname">V</td><td>Nx2 or Nx3, all vertices contained anywhere in complex </td></tr>
     <tr><td class="paramname">T</td><td>Mx4, tets contained in complex </td></tr>
     <tr><td class="paramname">F</td><td>Lx3, isolated faces contained in complex (ie, faces not in any tet) </td></tr>
-    <tr><td class="paramname">E</td><td>Kx2, isolated edges contained in complex (ie, edges not in any faces or tets) </td></tr>
+    <tr><td class="paramname">E</td><td>Kx2, the complex's edge set: isolated edges (edges not in any faces or tets), plus the boundary segments of F when the caller wants the 2D feature query to answer for a solid complex. Boundary segments lie on the faces, so including them leaves <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#a9d5d282d4f59a94cc60d25c9b28822f0" title="compute distance to complex">squared_dist()</a> unchanged; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#af8a48a30c382385a53ec80d2854cdd7d" title="2D: the nearest point of the complex together with which feature it is.">nearest_point_feature()</a> searches exactly this set. </td></tr>
     <tr><td class="paramname">P</td><td>Jx1, isolated vertices contained in complex (ie, verts not in any edges, faces, or tets) </td></tr>
   </table>
   </dd>
@@ -227,6 +235,88 @@ MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_T_T</b> = Matri
 
 <p>find the nearest point on the complex (triangles and edges) to p </p>
 <dl class="section note"><dt>Note</dt><dd>unlike <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_simplicial_complex_b_v_h.html#a9d5d282d4f59a94cc60d25c9b28822f0" title="compute distance to complex">squared_dist()</a>, this does not special-case points inside a tet of the complex &ndash; for those the returned point is still the nearest surface point, not p itself </dd></dl>
+
+</div>
+</div>
+<a id="af8a48a30c382385a53ec80d2854cdd7d" name="af8a48a30c382385a53ec80d2854cdd7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8a48a30c382385a53ec80d2854cdd7d">&#9670;&#160;</a></span>nearest_point_feature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::SimplicialComplexBVH::nearest_point_feature </td>
+          <td>(</td>
+          <td class="paramtype">const Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>result</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &amp;&#160;</td>
+          <td class="paramname"><em>on_corner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Eigen::Vector2d &amp;&#160;</td>
+          <td class="paramname"><em>seg_normal</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &amp;&#160;</td>
+          <td class="paramname"><em>feature_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>2D: the nearest point of the complex together with which feature it is. </p>
+<p>The same algorithm <a class="el" href="classwmtk_1_1_sample_envelope.html#af9d39f16a034fc45f83cd5b73573a335">SampleEnvelope::nearest_point_feature</a> runs (Envelope.cpp). nearest_facet seeds the search, and the foot is then re-derived on every box candidate from the input arrays, so classification and the returned point come from the same arithmetic &ndash; the BVH's own foot can differ in the last ulp. A hit at t &lt;= 0 or t &gt;= 1 is the endpoint itself: on_corner, with the polyline vertex index as the feature id, canonical across the two segments sharing it. A pseudo-edge (i, i) has len2 == 0 and lands on the corner branch.</p>
+<dl class="section return"><dt>Returns</dt><dd>squared distance to the returned foot point. </dd></dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a00043e089344499a48b485d20fa1bb7e" name="a00043e089344499a48b485d20fa1bb7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00043e089344499a48b485d20fa1bb7e">&#9670;&#160;</a></span>m_v2</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;Eigen::Vector2d&gt; wmtk::components::topological_offset::SimplicialComplexBVH::m_v2</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Input copies backing nearest_point_feature (2D only): the BVH's nearest_facet returns its internal primitive index, so classifying the hit needs the input arrays at hand. m_e2 must stay in the edge BVH's own primitive order &ndash; real edges first, then the pseudo-edges (i, i) that carry isolated vertices &ndash; because intersect_box reports ids in that order. </p>
 
 </div>
 </div>

@@ -81,7 +81,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Why smoothing refused a vertex, one counter per site where it can say no.  
+<p>What smoothing did with each class of vertex, per pass.  
  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a>&gt;</code></p>
@@ -106,127 +106,93 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>b
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_unrounded</b> {0}</td></tr>
 <tr class="memdesc:aecb18f160bbd250230c26d210d7b2e2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">base smooth_before said no: could not round <br /></td></tr>
 <tr class="separator:aecb18f160bbd250230c26d210d7b2e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aadb06bcd56e0eb751b3f2ecec4a42f7d" id="r_aadb06bcd56e0eb751b3f2ecec4a42f7d"><td class="memItemLeft" align="right" valign="top"><a id="aadb06bcd56e0eb751b3f2ecec4a42f7d" name="aadb06bcd56e0eb751b3f2ecec4a42f7d"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_on_input</b> {0}</td></tr>
-<tr class="memdesc:aadb06bcd56e0eb751b3f2ecec4a42f7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">input complex, frozen <br /></td></tr>
-<tr class="separator:aadb06bcd56e0eb751b3f2ecec4a42f7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3532f973c5b990368ed8500d1f64027c" id="r_a3532f973c5b990368ed8500d1f64027c"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a3532f973c5b990368ed8500d1f64027c">before_phase_b_not_offset</a></td></tr>
+<tr class="memdesc:a3532f973c5b990368ed8500d1f64027c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: on an input surface, neither placed nor relaxed.  <br /></td></tr>
+<tr class="separator:a3532f973c5b990368ed8500d1f64027c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7215c00961dcfab69ff10f7f7906e6fe" id="r_a7215c00961dcfab69ff10f7f7906e6fe"><td class="memItemLeft" align="right" valign="top"><a id="a7215c00961dcfab69ff10f7f7906e6fe" name="a7215c00961dcfab69ff10f7f7906e6fe"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_phase_b_enveloped_background</b> {0}</td></tr>
+<tr class="memdesc:a7215c00961dcfab69ff10f7f7906e6fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: envelope-held. <br /></td></tr>
+<tr class="separator:a7215c00961dcfab69ff10f7f7906e6fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af59f2d0b958a584d52fe4df395d79425" id="r_af59f2d0b958a584d52fe4df395d79425"><td class="memItemLeft" align="right" valign="top"><a id="af59f2d0b958a584d52fe4df395d79425" name="af59f2d0b958a584d52fe4df395d79425"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_phase_b_enveloped_offset</b> {0}</td></tr>
+<tr class="memdesc:af59f2d0b958a584d52fe4df395d79425"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: on-offset AND held. <br /></td></tr>
+<tr class="separator:af59f2d0b958a584d52fe4df395d79425"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2135cdeca923a30e24ffe3c094de39af" id="r_a2135cdeca923a30e24ffe3c094de39af"><td class="memItemLeft" align="right" valign="top"><a id="a2135cdeca923a30e24ffe3c094de39af" name="a2135cdeca923a30e24ffe3c094de39af"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_attempted</b> {0}</td></tr>
-<tr class="memdesc:a2135cdeca923a30e24ffe3c094de39af"><td class="mdescLeft">&#160;</td><td class="mdescRight">dispatched to <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ef1069ce8bef8f082ba107712960d8d">project_offset_vertex()</a> <br /></td></tr>
+<tr class="memdesc:a2135cdeca923a30e24ffe3c094de39af"><td class="mdescLeft">&#160;</td><td class="mdescRight">reached the smoother with the offset term <br /></td></tr>
 <tr class="separator:a2135cdeca923a30e24ffe3c094de39af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a71a38f21c1aa6fd2df13c4c0629a86" id="r_a0a71a38f21c1aa6fd2df13c4c0629a86"><td class="memItemLeft" align="right" valign="top"><a id="a0a71a38f21c1aa6fd2df13c4c0629a86" name="a0a71a38f21c1aa6fd2df13c4c0629a86"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_no_neighbours</b> {0}</td></tr>
-<tr class="memdesc:a0a71a38f21c1aa6fd2df13c4c0629a86"><td class="mdescLeft">&#160;</td><td class="mdescRight">no offset-boundary neighbour to average <br /></td></tr>
-<tr class="separator:a0a71a38f21c1aa6fd2df13c4c0629a86"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b524d679a16cab4c01b80c0503863ad" id="r_a8b524d679a16cab4c01b80c0503863ad"><td class="memItemLeft" align="right" valign="top"><a id="a8b524d679a16cab4c01b80c0503863ad" name="a8b524d679a16cab4c01b80c0503863ad"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_on_complex</b> {0}</td></tr>
-<tr class="memdesc:a8b524d679a16cab4c01b80c0503863ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">sits on the complex, no offset direction <br /></td></tr>
-<tr class="separator:a8b524d679a16cab4c01b80c0503863ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd025cd04691a6e72cf45fea93d9e1f0" id="r_afd025cd04691a6e72cf45fea93d9e1f0"><td class="memItemLeft" align="right" valign="top"><a id="afd025cd04691a6e72cf45fea93d9e1f0" name="afd025cd04691a6e72cf45fea93d9e1f0"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_inverted</b> {0}</td></tr>
-<tr class="memdesc:afd025cd04691a6e72cf45fea93d9e1f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">search exhausted, a face still inverts <br /></td></tr>
-<tr class="separator:afd025cd04691a6e72cf45fea93d9e1f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2dbd075abb7bbebcfd17cbaf800fe060" id="r_a2dbd075abb7bbebcfd17cbaf800fe060"><td class="memItemLeft" align="right" valign="top"><a id="a2dbd075abb7bbebcfd17cbaf800fe060" name="a2dbd075abb7bbebcfd17cbaf800fe060"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_envelope</b> {0}</td></tr>
-<tr class="memdesc:a2dbd075abb7bbebcfd17cbaf800fe060"><td class="mdescLeft">&#160;</td><td class="mdescRight">search exhausted, still outside the envelope <br /></td></tr>
-<tr class="separator:a2dbd075abb7bbebcfd17cbaf800fe060"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a046f413cfdda0e3a50c91eec02bdb691" id="r_a046f413cfdda0e3a50c91eec02bdb691"><td class="memItemLeft" align="right" valign="top"><a id="a046f413cfdda0e3a50c91eec02bdb691" name="a046f413cfdda0e3a50c91eec02bdb691"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_accepted</b> {0}</td></tr>
+<tr class="memdesc:a046f413cfdda0e3a50c91eec02bdb691"><td class="mdescLeft">&#160;</td><td class="mdescRight">... and the smoother kept the new position <br /></td></tr>
 <tr class="separator:a046f413cfdda0e3a50c91eec02bdb691"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3680dc21f16088751e0c6f25e80586e4" id="r_a3680dc21f16088751e0c6f25e80586e4"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a3680dc21f16088751e0c6f25e80586e4">offset_clamped</a> {0}</td></tr>
-<tr class="memdesc:a3680dc21f16088751e0c6f25e80586e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">accepted with the search fraction &lt; 0.99  <br /></td></tr>
-<tr class="separator:a3680dc21f16088751e0c6f25e80586e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b84ef4357d1c0b84fcb059a9f531f15" id="r_a0b84ef4357d1c0b84fcb059a9f531f15"><td class="memItemLeft" align="right" valign="top"><a id="a0b84ef4357d1c0b84fcb059a9f531f15" name="a0b84ef4357d1c0b84fcb059a9f531f15"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_clamp_env</b> {0}</td></tr>
-<tr class="memdesc:a0b84ef4357d1c0b84fcb059a9f531f15"><td class="mdescLeft">&#160;</td><td class="mdescRight">... and the envelope is what stopped it <br /></td></tr>
-<tr class="separator:a0b84ef4357d1c0b84fcb059a9f531f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75b52dcf58d484f666fa50a3aa315282" id="r_a75b52dcf58d484f666fa50a3aa315282"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a75b52dcf58d484f666fa50a3aa315282">offset_clamp_inv</a> {0}</td></tr>
-<tr class="separator:a75b52dcf58d484f666fa50a3aa315282"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad63469b8269668b32a209fd19d46f9d2" id="r_ad63469b8269668b32a209fd19d46f9d2"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#ad63469b8269668b32a209fd19d46f9d2">offset_slid</a> {0}</td></tr>
-<tr class="separator:ad63469b8269668b32a209fd19d46f9d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0872b6bdf7158fd05ecd7a49e525b6c9" id="r_a0872b6bdf7158fd05ecd7a49e525b6c9"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a0872b6bdf7158fd05ecd7a49e525b6c9">offset_err_before_nano</a> {0}</td></tr>
-<tr class="separator:a0872b6bdf7158fd05ecd7a49e525b6c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36831ec15b6cc70f5edbdd7162d7939b" id="r_a36831ec15b6cc70f5edbdd7162d7939b"><td class="memItemLeft" align="right" valign="top"><a id="a36831ec15b6cc70f5edbdd7162d7939b" name="a36831ec15b6cc70f5edbdd7162d7939b"></a>
-std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_err_after_nano</b> {0}</td></tr>
-<tr class="separator:a36831ec15b6cc70f5edbdd7162d7939b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8924f7de6acabbb402c3efb52b62779a" id="r_a8924f7de6acabbb402c3efb52b62779a"><td class="memItemLeft" align="right" valign="top"><a id="a8924f7de6acabbb402c3efb52b62779a" name="a8924f7de6acabbb402c3efb52b62779a"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_err_max_before_nano</b> {0}</td></tr>
-<tr class="separator:a8924f7de6acabbb402c3efb52b62779a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa7d06faecfeb4e248a91b7ad00e0b4b" id="r_afa7d06faecfeb4e248a91b7ad00e0b4b"><td class="memItemLeft" align="right" valign="top"><a id="afa7d06faecfeb4e248a91b7ad00e0b4b" name="afa7d06faecfeb4e248a91b7ad00e0b4b"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_err_max_after_nano</b> {0}</td></tr>
-<tr class="separator:afa7d06faecfeb4e248a91b7ad00e0b4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a221c49bd1ed57a6a1192138beecc39ad" id="r_a221c49bd1ed57a6a1192138beecc39ad"><td class="memItemLeft" align="right" valign="top"><a id="a221c49bd1ed57a6a1192138beecc39ad" name="a221c49bd1ed57a6a1192138beecc39ad"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>interior_attempted</b> {0}</td></tr>
-<tr class="memdesc:a221c49bd1ed57a6a1192138beecc39ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">dispatched to the shared AMIPS smoother <br /></td></tr>
+<tr class="memdesc:a221c49bd1ed57a6a1192138beecc39ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">reached it without one <br /></td></tr>
 <tr class="separator:a221c49bd1ed57a6a1192138beecc39ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a536baff935d6ad20587f743b2a92a5df" id="r_a536baff935d6ad20587f743b2a92a5df"><td class="memItemLeft" align="right" valign="top"><a id="a536baff935d6ad20587f743b2a92a5df" name="a536baff935d6ad20587f743b2a92a5df"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>region_attempted</b> {0}</td></tr>
-<tr class="memdesc:a536baff935d6ad20587f743b2a92a5df"><td class="mdescLeft">&#160;</td><td class="mdescRight">... of which sat on another region's boundary <br /></td></tr>
+<tr class="memitem:a536baff935d6ad20587f743b2a92a5df" id="r_a536baff935d6ad20587f743b2a92a5df"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a536baff935d6ad20587f743b2a92a5df">region_attempted</a> {0}</td></tr>
 <tr class="separator:a536baff935d6ad20587f743b2a92a5df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e887e707f1560b9ef27b01a2b00e4fc" id="r_a9e887e707f1560b9ef27b01a2b00e4fc"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a9e887e707f1560b9ef27b01a2b00e4fc">res_before_nano</a> {0}</td></tr>
+<tr class="separator:a9e887e707f1560b9ef27b01a2b00e4fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a210ae73518ee294257f6baf7d32e1228" id="r_a210ae73518ee294257f6baf7d32e1228"><td class="memItemLeft" align="right" valign="top"><a id="a210ae73518ee294257f6baf7d32e1228" name="a210ae73518ee294257f6baf7d32e1228"></a>
+std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>res_after_nano</b> {0}</td></tr>
+<tr class="separator:a210ae73518ee294257f6baf7d32e1228"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac30eab675e6521a38e4b910ea7b1be77" id="r_ac30eab675e6521a38e4b910ea7b1be77"><td class="memItemLeft" align="right" valign="top"><a id="ac30eab675e6521a38e4b910ea7b1be77" name="ac30eab675e6521a38e4b910ea7b1be77"></a>
+std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>res_max_before_nano</b> {0}</td></tr>
+<tr class="separator:ac30eab675e6521a38e4b910ea7b1be77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72cc91d571ef82ce62471dccd66db792" id="r_a72cc91d571ef82ce62471dccd66db792"><td class="memItemLeft" align="right" valign="top"><a id="a72cc91d571ef82ce62471dccd66db792" name="a72cc91d571ef82ce62471dccd66db792"></a>
+std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>res_max_after_nano</b> {0}</td></tr>
+<tr class="separator:a72cc91d571ef82ce62471dccd66db792"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Why smoothing refused a vertex, one counter per site where it can say no. </p>
-<p>The base's SmoothRejectCounters only sees the vertices that reach <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a1094a834a275735b559b01833b0b7644" title="User specified modifications and desideras after an edge smooth.">TriOptimizerMesh::smooth_after()</a>, which for the offset is the INTERIOR ones &ndash; an offset-boundary vertex is placed by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a7ef1069ce8bef8f082ba107712960d8d">project_offset_vertex()</a> and never touches them. So the whole offset boundary, the part that actually carries the distance error, is invisible in the base's "accepted N | rejected: ..." line. These counters cover every site on both paths. </p>
+<div class="textblock"><p>What smoothing did with each class of vertex, per pass. </p>
+<p>The base's SmoothRejectCounters says why a move was refused; it cannot say what kind of vertex was asking. Every vertex takes the same path &ndash; the shared smoother &ndash; so what is worth counting here is the dispatch: how many attempts were on the offset boundary (the ones carrying the offset term), how many on another region's boundary, and how many were turned away before the smoother saw them at all. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="a75b52dcf58d484f666fa50a3aa315282" name="a75b52dcf58d484f666fa50a3aa315282"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75b52dcf58d484f666fa50a3aa315282">&#9670;&#160;</a></span>offset_clamp_inv</h2>
+<a id="a3532f973c5b990368ed8500d1f64027c" name="a3532f973c5b990368ed8500d1f64027c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3532f973c5b990368ed8500d1f64027c">&#9670;&#160;</a></span>before_phase_b_not_offset</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::offset_clamp_inv {0}</td>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::before_phase_b_not_offset</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>... and an inverted face is what stopped it </p>
+<b>Initial value:</b><div class="fragment"><div class="line">{</div>
+<div class="line">            0}</div>
+</div><!-- fragment -->
+<p>Phase B: on an input surface, neither placed nor relaxed. </p>
 
 </div>
 </div>
-<a id="a3680dc21f16088751e0c6f25e80586e4" name="a3680dc21f16088751e0c6f25e80586e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3680dc21f16088751e0c6f25e80586e4">&#9670;&#160;</a></span>offset_clamped</h2>
+<a id="a536baff935d6ad20587f743b2a92a5df" name="a536baff935d6ad20587f743b2a92a5df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a536baff935d6ad20587f743b2a92a5df">&#9670;&#160;</a></span>region_attempted</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::offset_clamped {0}</td>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::region_attempted {0}</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>accepted with the search fraction &lt; 0.99 </p>
-<p>Accepted, but the binary search had to stop short of the blended target. These are invisible in offset_accepted, which is the point: a clamped move reports success while delivering a fraction of the requested correction. </p>
+<p>... of which sat on another region's boundary </p>
 
 </div>
 </div>
-<a id="a0872b6bdf7158fd05ecd7a49e525b6c9" name="a0872b6bdf7158fd05ecd7a49e525b6c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0872b6bdf7158fd05ecd7a49e525b6c9">&#9670;&#160;</a></span>offset_err_before_nano</h2>
+<a id="a9e887e707f1560b9ef27b01a2b00e4fc" name="a9e887e707f1560b9ef27b01a2b00e4fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e887e707f1560b9ef27b01a2b00e4fc">&#9670;&#160;</a></span>res_before_nano</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::atomic&lt;long long&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::offset_err_before_nano {0}</td>
+          <td class="memname">std::atomic&lt;long long&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::res_before_nano {0}</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Distance error over the offset vertices this pass actually touched, before and after the move, in units of 1e-9 so an atomic&lt;int&gt; can accumulate a max/sum. </p>
-
-</div>
-</div>
-<a id="ad63469b8269668b32a209fd19d46f9d2" name="ad63469b8269668b32a209fd19d46f9d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad63469b8269668b32a209fd19d46f9d2">&#9670;&#160;</a></span>offset_slid</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::offset_slid {0}</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>... and sliding along the region curve recovered ground the scaled search could not. A vertex flush against the envelope wall has a scaled search that can only return 0: every positive multiple of a vector pointing even slightly out of the tube is out of the tube. The tangential component of that same vector is legal and is most of it. </p>
+<p>Phi residual over the offset vertices this pass actually touched, before and after, in units of 1e-9 so an integer atomic can accumulate a sum and a max.</p>
+<p>The one number that says whether the offset term is doing anything: an acceptance count cannot, because the quality veto refuses a move outright rather than shortening it, so a pass can accept most of what it tries and still move nothing badly placed. </p>
 
 </div>
 </div>

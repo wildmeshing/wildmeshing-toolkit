@@ -93,18 +93,84 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr
 <tr class="memitem:aac82b0a509c6ebe21dc4539fe4e9b181" id="r_aac82b0a509c6ebe21dc4539fe4e9b181"><td class="memItemLeft" align="right" valign="top"><a id="aac82b0a509c6ebe21dc4539fe4e9b181" name="aac82b0a509c6ebe21dc4539fe4e9b181"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>component_id</b> = 0</td></tr>
 <tr class="separator:aac82b0a509c6ebe21dc4539fe4e9b181"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d6df8d3264d89dc2dcbdac706481753" id="r_a0d6df8d3264d89dc2dcbdac706481753"><td class="memItemLeft" align="right" valign="top"><a id="a0d6df8d3264d89dc2dcbdac706481753" name="a0d6df8d3264d89dc2dcbdac706481753"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_input</b> = false</td></tr>
-<tr class="separator:a0d6df8d3264d89dc2dcbdac706481753"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a2343b8ebd0bcbb0835642fa8ca2dbc" id="r_a6a2343b8ebd0bcbb0835642fa8ca2dbc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a6a2343b8ebd0bcbb0835642fa8ca2dbc">m_is_on_region</a> = false</td></tr>
+<tr class="separator:a6a2343b8ebd0bcbb0835642fa8ca2dbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad26ccab7220b541763ff1d08b27d5b71" id="r_ad26ccab7220b541763ff1d08b27d5b71"><td class="memItemLeft" align="right" valign="top"><a id="ad26ccab7220b541763ff1d08b27d5b71" name="ad26ccab7220b541763ff1d08b27d5b71"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_on_offset</b> = false</td></tr>
 <tr class="separator:ad26ccab7220b541763ff1d08b27d5b71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09d9c7c0b5291c470afd9e8c6cdeb4d1" id="r_a09d9c7c0b5291c470afd9e8c6cdeb4d1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a09d9c7c0b5291c470afd9e8c6cdeb4d1">m_is_on_input_complex</a> = false</td></tr>
+<tr class="separator:a09d9c7c0b5291c470afd9e8c6cdeb4d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa52670bd8895308c2659294b2f184a2f" id="r_aa52670bd8895308c2659294b2f184a2f"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#aa52670bd8895308c2659294b2f184a2f">m_boundary_mask</a> = 0</td></tr>
+<tr class="separator:aa52670bd8895308c2659294b2f184a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3376f4ffa03654803d0315b16ce9a3b4" id="r_a3376f4ffa03654803d0315b16ce9a3b4"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra.html#a3376f4ffa03654803d0315b16ce9a3b4">m_born_epoch</a> = 0</td></tr>
+<tr class="separator:a3376f4ffa03654803d0315b16ce9a3b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Per-vertex data the shared optimizer knows nothing about. </p>
-<p>Position, rounding, bbox membership, order, sizing and partition all live on <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_vertex_attributes.html">wmtk::TetOptimizerMesh::VertexAttributes</a>; this carries only what is the offset's own. Registered with the base's m_vertex_attr_group, so it is resized, protected and rolled back with the shared collection.</p>
-<p>Note m_is_on_input / m_is_on_offset versus the base's m_is_on_surface: the offset tracks TWO surfaces, and the base's flag is their union. These two say which. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+<p>Position, rounding, bbox, order, sizing and partition live on the base's VertexAttributes; this carries only the offset's own, registered with m_vertex_attr_group so it is resized, protected and rolled back with them. The offset tracks two surfaces: the base's m_is_on_surface is their union; m_is_on_region / m_is_on_offset say which. </p>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a3376f4ffa03654803d0315b16ce9a3b4" name="a3376f4ffa03654803d0315b16ce9a3b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3376f4ffa03654803d0315b16ce9a3b4">&#9670;&#160;</a></span>m_born_epoch</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t wmtk::components::topological_offset::VertexExtra::m_born_epoch = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Which split pass created this vertex, 0 if no optimization split did. Churn instrumentation only; nothing reads it to make a decision. Assigned, never OR'd or left alone: v_id may be a recycled slot still carrying a dead vertex's epoch. Zero also covers the construction-era vertices, which predate every split pass. </p>
+
+</div>
+</div>
+<a id="aa52670bd8895308c2659294b2f184a2f" name="aa52670bd8895308c2659294b2f184a2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa52670bd8895308c2659294b2f184a2f">&#9670;&#160;</a></span>m_boundary_mask</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint64_t wmtk::components::topological_offset::VertexExtra::m_boundary_mask = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Which tag-region boundaries this vertex lies on, one bit per input tag (m_tag_bit).</p>
+<p>Seeded at init from the boundary faces; a split midpoint ANDs its edge's endpoints, a collapse survivor ORs in the removed vertex's bits. A face's mask is the AND of its three corners', which is what envelope_for_mask() dispatches on. Never recomputed from current tet tags, so the band's tag rewriting during construction cannot corrupt it. </p>
+
+</div>
+</div>
+<a id="a09d9c7c0b5291c470afd9e8c6cdeb4d1" name="a09d9c7c0b5291c470afd9e8c6cdeb4d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09d9c7c0b5291c470afd9e8c6cdeb4d1">&#9670;&#160;</a></span>m_is_on_input_complex</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::VertexExtra::m_is_on_input_complex = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>On the input complex itself &ndash; the simplices label_input_complex() selected, at every dimension. A vertex is never on the input complex and the offset surface at once; check_no_vertex_on_both_surfaces() asserts it, and collapse_before_vertex() refuses the merge that could manufacture it. Propagated like the flags above: a split midpoint ANDs its edge's endpoints, a collapse ORs onto the survivor. </p>
+
+</div>
+</div>
+<a id="a6a2343b8ebd0bcbb0835642fa8ca2dbc" name="a6a2343b8ebd0bcbb0835642fa8ca2dbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a2343b8ebd0bcbb0835642fa8ca2dbc">&#9670;&#160;</a></span>m_is_on_region</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::VertexExtra::m_is_on_region = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>On a region boundary that is not the offset surface. The whole family &ndash; this flag, is_edge_on_region(), face_is_region() &ndash; means "region boundary"; 3D has no INPUT_SURFACE_CLASS to narrow it with the way 2D does. </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>
 </div><!-- contents -->

@@ -337,6 +337,14 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_positio
 <tr class="memitem:aff6c13e43410189c7d2b42e9635e0230 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_aff6c13e43410189c7d2b42e9635e0230"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_smoothing_position</b> (size_t vid, const Vector2d &amp;p)</td></tr>
 <tr class="separator:aff6c13e43410189c7d2b42e9635e0230 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c4b78cef6291b1a35f30d9f05b9c684 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a6c4b78cef6291b1a35f30d9f05b9c684"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a6c4b78cef6291b1a35f30d9f05b9c684">smoothing_energy_envelope</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:a6c4b78cef6291b1a35f30d9f05b9c684 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">The envelope this vertex is PULLED TOWARD while smoothing, and the one it is CONTAINED BY afterwards. Split, as in <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>.  <br /></td></tr>
+<tr class="separator:a6c4b78cef6291b1a35f30d9f05b9c684 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93478926ed4f5f18d639a6d50425e7bd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a93478926ed4f5f18d639a6d50425e7bd"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a93478926ed4f5f18d639a6d50425e7bd">smoothing_containment_envelope</a> (const size_t vid) const</td></tr>
+<tr class="separator:a93478926ed4f5f18d639a6d50425e7bd inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad53db51377c95f0dfc59f946915e2572 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ad53db51377c95f0dfc59f946915e2572"><td class="memItemLeft" align="right" valign="top">virtual std::shared_ptr&lt; polysolve::nonlinear::Problem &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ad53db51377c95f0dfc59f946915e2572">smoothing_extra_energy</a> (const size_t vid) const</td></tr>
+<tr class="memdesc:ad53db51377c95f0dfc59f946915e2572 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">An extra term the application adds to this vertex's smoothing objective, or null.  <br /></td></tr>
+<tr class="separator:ad53db51377c95f0dfc59f946915e2572 inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a995dc6acee893f8e1ef1c37688f8213a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a995dc6acee893f8e1ef1c37688f8213a"><td class="memItemLeft" align="right" valign="top">
 double&#160;</td><td class="memItemRight" valign="bottom"><b>active_quality_threshold</b> () const</td></tr>
 <tr class="separator:a995dc6acee893f8e1ef1c37688f8213a inherit pub_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -742,6 +750,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_limit_leng
 <tr class="memitem:ad5817add2262a8907dd911191714ea69 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_ad5817add2262a8907dd911191714ea69"><td class="memItemLeft" align="right" valign="top">
 int&#160;</td><td class="memItemRight" valign="bottom"><b>m_debug_print_counter</b> = 0</td></tr>
 <tr class="separator:ad5817add2262a8907dd911191714ea69 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1d8b56f699b79759fefcfe90b6562b9 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_aa1d8b56f699b79759fefcfe90b6562b9"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aa1d8b56f699b79759fefcfe90b6562b9">m_debug_pass_name</a></td></tr>
+<tr class="separator:aa1d8b56f699b79759fefcfe90b6562b9 inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0fccc11aeed0f5e5d84e402f7c9ba0ed inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_a0fccc11aeed0f5e5d84e402f7c9ba0ed"><td class="memItemLeft" align="right" valign="top">
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_tags_count</b> = 0</td></tr>
 <tr class="separator:a0fccc11aeed0f5e5d84e402f7c9ba0ed inherit pub_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -802,15 +812,21 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:ac8913aaf6b8a920a6bb999301bd4ddaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06bc0efbc287ff4fd178ea6167794f16" id="r_a06bc0efbc287ff4fd178ea6167794f16"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a06bc0efbc287ff4fd178ea6167794f16">collapse_quality_allowed</a> (size_t v1, size_t fid, double q, double ring_max) const override</td></tr>
 <tr class="separator:a06bc0efbc287ff4fd178ea6167794f16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a3f67d11af0235bea942401a007a063" id="r_a9a3f67d11af0235bea942401a007a063"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a9a3f67d11af0235bea942401a007a063">collapse_after_vertex</a> (size_t v1, size_t v2) override</td></tr>
-<tr class="separator:a9a3f67d11af0235bea942401a007a063"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f9f3e2e9c30f059c9735bf14dd70dda" id="r_a9f9f3e2e9c30f059c9735bf14dd70dda"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#a9f9f3e2e9c30f059c9735bf14dd70dda">split_adjust_position</a> (size_t v_new, const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;children) override</td></tr>
 <tr class="separator:a9f9f3e2e9c30f059c9735bf14dd70dda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe521e08d954ebbeab27c38aa181acab" id="r_abe521e08d954ebbeab27c38aa181acab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1simwild_1_1tri_1_1_sim_wild_mesh_tri.html#abe521e08d954ebbeab27c38aa181acab">split_after_vertex</a> (size_t v_new) override</td></tr>
 <tr class="separator:abe521e08d954ebbeab27c38aa181acab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
-<tr class="memitem:a93a949f9f218ae0d3364fe739521f1ec inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a93a949f9f218ae0d3364fe739521f1ec"><td class="memItemLeft" align="right" valign="top">
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_pass_begin</b> ()</td></tr>
+<tr class="memitem:abb3fac6de8f558c048177a98319076d1 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_abb3fac6de8f558c048177a98319076d1"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#abb3fac6de8f558c048177a98319076d1">optimization_bare_coarsen_passes</a> () const</td></tr>
+<tr class="memdesc:abb3fac6de8f558c048177a98319076d1 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the loop opens and closes with BARE collapse passes.  <br /></td></tr>
+<tr class="separator:abb3fac6de8f558c048177a98319076d1 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8947c5301bbd688d60b1340fa8f65710 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a8947c5301bbd688d60b1340fa8f65710"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a8947c5301bbd688d60b1340fa8f65710">optimization_stalled</a> (double prev, double cur)</td></tr>
+<tr class="memdesc:a8947c5301bbd688d60b1340fa8f65710 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether an iteration that moved the metric from <code>prev</code> to <code>cur</code> is stalled, and the sizing refinement should therefore fire.  <br /></td></tr>
+<tr class="separator:a8947c5301bbd688d60b1340fa8f65710 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada0181cd372b5d954012381cc19789ab inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_ada0181cd372b5d954012381cc19789ab"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ada0181cd372b5d954012381cc19789ab">optimization_debug_checkpoint</a> ()</td></tr>
+<tr class="memdesc:ada0181cd372b5d954012381cc19789ab inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called at every pass boundary, whether or not debug output is on.  <br /></td></tr>
+<tr class="separator:ada0181cd372b5d954012381cc19789ab inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93a949f9f218ae0d3364fe739521f1ec inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a93a949f9f218ae0d3364fe739521f1ec"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a93a949f9f218ae0d3364fe739521f1ec">collapse_pass_begin</a> ()</td></tr>
 <tr class="separator:a93a949f9f218ae0d3364fe739521f1ec inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ffc221b659331cc60387baf5c3e5782 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a5ffc221b659331cc60387baf5c3e5782"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_pass_end</b> (size_t)</td></tr>
@@ -818,6 +834,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_pass
 <tr class="memitem:aec2171a6a30bac6f96090e28dcfbc740 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_aec2171a6a30bac6f96090e28dcfbc740"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_before_vertex</b> (size_t, size_t)</td></tr>
 <tr class="separator:aec2171a6a30bac6f96090e28dcfbc740 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabe8f5736003e3653b009347cf47abd7 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_aabe8f5736003e3653b009347cf47abd7"><td class="memItemLeft" align="right" valign="top">
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_after_vertex</b> (size_t, size_t)</td></tr>
+<tr class="separator:aabe8f5736003e3653b009347cf47abd7 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19d53d1dc9738efde4715fefda30a4b3 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh" id="r_a19d53d1dc9738efde4715fefda30a4b3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a19d53d1dc9738efde4715fefda30a4b3">all_vertex_ids</a> () const override</td></tr>
 <tr class="memdesc:a19d53d1dc9738efde4715fefda30a4b3 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Every live vertex, in the mesh's own iteration order.  <br /></td></tr>
 <tr class="separator:a19d53d1dc9738efde4715fefda30a4b3 inherit pro_methods_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -853,6 +872,8 @@ Additional Inherited Members</h2></td></tr>
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES_PER_CELL</b> = 3</td></tr>
 <tr class="separator:ab9497bf06e5d322c0b0b3959cc401efc inherit pub_static_attribs_classwmtk_1_1_tri_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classwmtk_1_1_tri_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1_tri_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a></td></tr>
+<tr class="memitem:af07922534cf731f10ac24c0824e26bdf inherit pro_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_af07922534cf731f10ac24c0824e26bdf"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#af07922534cf731f10ac24c0824e26bdf">m_op_epoch</a> = 0</td></tr>
+<tr class="separator:af07922534cf731f10ac24c0824e26bdf inherit pro_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad605d5c8a7f4abcedabcf1893bf1589a inherit pro_attribs_classwmtk_1_1_tri_optimizer_mesh" id="r_ad605d5c8a7f4abcedabcf1893bf1589a"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1_tri_optimizer_mesh_1_1_split_info_cache.html">SplitInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_cache</b></td></tr>
 <tr class="separator:ad605d5c8a7f4abcedabcf1893bf1589a inherit pro_attribs_classwmtk_1_1_tri_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -922,44 +943,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if every interface edge is tagged and no tagged edge sits between like tags. </dd></dl>
-
-</div>
-</div>
-<a id="a9a3f67d11af0235bea942401a007a063" name="a9a3f67d11af0235bea942401a007a063"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a3f67d11af0235bea942401a007a063">&#9670;&#160;</a></span>collapse_after_vertex()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::simwild::tri::SimWildMeshTri::collapse_after_vertex </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v2</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
 
 </div>
 </div>

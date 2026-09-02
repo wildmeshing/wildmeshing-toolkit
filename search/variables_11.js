@@ -1,8 +1,12 @@
 var searchData=
 [
-  ['tags_0',['tags',['../classwmtk_1_1components_1_1simwild_1_1_tet_attributes.html#a81dc989da2de50a56d4d3e1bbce929b0',1,'wmtk::components::simwild::TetAttributes']]],
-  ['target_1',['target',['../structwmtk_1_1components_1_1simwild_1_1_quality_group.html#aa50bf3d6152847a668338b5b431b8595',1,'wmtk::components::simwild::QualityGroup']]],
-  ['tets_2',['tets',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_split_tag_cache.html#aef8b25f1a1bc03b7c7b6e7404d430d80',1,'wmtk::components::simwild::SimWildMesh::SplitTagCache']]],
-  ['triangle_5fgroup_3',['triangle_group',['../structwmtk_1_1utils_1_1_embed_triangles_provenance.html#aac4b3b16d2f3921e1a95a208a1e22c64',1,'wmtk::utils::EmbedTrianglesProvenance']]],
-  ['two_5fstage_4',['two_stage',['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#adc4ff773ab354c4a2496e67fb7341cde',1,'wmtk::optimization::SmoothVertexOptions']]]
+  ['should_5frenew_0',['should_renew',['../structwmtk_1_1_execute_pass.html#addd10a3e42d324239dc3c970580d373f',1,'wmtk::ExecutePass']]],
+  ['sigma_1',['sigma',['../structwmtk_1_1components_1_1topological__offset_1_1_align_energy2_d_1_1_edge.html#acf6ed3065fd1c1031ee28b34a34dc1e7',1,'wmtk::components::topological_offset::AlignEnergy2D::Edge']]],
+  ['sizing_5fcollapse_5fmin_2',['sizing_collapse_min',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a75cefadd552bf38dd047b45d1fdcf7be',1,'wmtk::components::topological_offset::Parameters']]],
+  ['smooth_5fquality_5fveto_3',['smooth_quality_veto',['../structwmtk_1_1_optimizer_parameters.html#aea3b29f9fdf05a585f3ec305d55a7d5c',1,'wmtk::OptimizerParameters']]],
+  ['smoothing_5fmode_4',['smoothing_mode',['../structwmtk_1_1_optimizer_parameters.html#a1a0481012b6c764801ae2d120076c6d3',1,'wmtk::OptimizerParameters']]],
+  ['split_5fhigh_5fvalence_5fthreshold_5',['split_high_valence_threshold',['../structwmtk_1_1_optimizer_parameters.html#a99fbd3031d9726ffa1af82b6977acfae',1,'wmtk::OptimizerParameters']]],
+  ['stopping_5fcriterion_6',['stopping_criterion',['../structwmtk_1_1_execute_pass.html#af20086623771fe01053a53b98a086b9b',1,'wmtk::ExecutePass']]],
+  ['stopping_5fcriterion_5fchecking_5ffrequency_7',['stopping_criterion_checking_frequency',['../structwmtk_1_1_execute_pass.html#a821948f937feea93d9de593b525cde58',1,'wmtk::ExecutePass']]],
+  ['sublink_8',['sublink',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_offset_collapse_refusals.html#ae60f8cc81bec1aa54658038ff88dabd9',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::OffsetCollapseRefusals']]]
 ];

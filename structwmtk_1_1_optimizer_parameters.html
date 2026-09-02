@@ -183,6 +183,8 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>project_line_search_st
 int&#160;</td><td class="memItemRight" valign="bottom"><b>project_line_search_nested_steps</b> = 0</td></tr>
 <tr class="memdesc:a067e06e84d23b9b9579ab63f5a7c46a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Partial-projection bisections tried after it gives up; 0 disables that pass. <br /></td></tr>
 <tr class="separator:a067e06e84d23b9b9579ab63f5a7c46a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea3b29f9fdf05a585f3ec305d55a7d5c" id="r_aea3b29f9fdf05a585f3ec305d55a7d5c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_optimizer_parameters.html#aea3b29f9fdf05a585f3ec305d55a7d5c">smooth_quality_veto</a> = true</td></tr>
+<tr class="separator:aea3b29f9fdf05a585f3ec305d55a7d5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09d8ee5683b9c06a3b291088f9bd873e" id="r_a09d8ee5683b9c06a3b291088f9bd873e"><td class="memItemLeft" align="right" valign="top"><a id="a09d8ee5683b9c06a3b291088f9bd873e" name="a09d8ee5683b9c06a3b291088f9bd873e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>w_envelope</b> = 1. - 1e-4</td></tr>
 <tr class="separator:a09d8ee5683b9c06a3b291088f9bd873e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -410,6 +412,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <p>That headroom is load-bearing: deliberately starving it on tetwild (simplify_envelope_ ratio 0.95, which leaves the simplification free to use nearly the whole tolerance) was enough to turn a converging run into a diverging one on Thingi10K 1368052.</p>
 <p>The cost is elements. Holding the surface within eps/2 of the simplified geometry is stricter than eps of the input wherever the simplification smoothed detail away, so fewer coarsening collapses are allowed: measured on 106838 the output went from 200k to 560k tets and on 116060 from 133k to 267k, at unchanged final quality. Off by default for that reason.</p>
 <p>SimWild's 3D mesh already rebuilds its envelope around the simplified surface; there this flag only narrows the radius to the remaining budget, which is the part it was missing. SimWild's 2D mesh has no simplification stage, so the flag does not apply. </p>
+
+</div>
+</div>
+<a id="aea3b29f9fdf05a585f3ec305d55a7d5c" name="aea3b29f9fdf05a585f3ec305d55a7d5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea3b29f9fdf05a585f3ec305d55a7d5c">&#9670;&#160;</a></span>smooth_quality_veto</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::OptimizerParameters::smooth_quality_veto = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether smoothing refuses a move that raises the worst incident element's quality. True is TriWild's and SimWild's behaviour; see <a class="el" href="structwmtk_1_1optimization_1_1_smooth_vertex_options.html#ad52052e2b3b76abd0c11df589eb39839">optimization::SmoothVertexOptions::quality_veto</a> for the objective it stops being the right rule for. This is used in topological_offset to allow the offset surface to move even if it reduces quality. </p>
 
 </div>
 </div>

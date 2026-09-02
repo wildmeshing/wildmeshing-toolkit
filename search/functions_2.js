@@ -1,5 +1,9 @@
 var searchData=
 [
-  ['begin_5fprotect_0',['begin_protect',['../structwmtk_1_1_attribute_collection.html#ae0505eb2677a9eb03e9a76fe03ccf770',1,'wmtk::AttributeCollection']]],
-  ['boundary_5fedges_1',['boundary_edges',['../namespaceview__offset.html#a1ccaaf955426e363e5bb7537c11c1950',1,'view_offset']]]
+  ['band_5fvertex_5fdistance_5ferror_0',['band_vertex_distance_error',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a10de947de85e264474fdf3a53b6dcf6a',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
+  ['band_5fvertex_5fis_5freachable_1',['band_vertex_is_reachable',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a821b607d443918ea055c75b0502a621d',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::band_vertex_is_reachable()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a297f4c5d253bc5d66a3aa9347007979d',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::band_vertex_is_reachable()']]],
+  ['band_5fvertex_5fmask_2',['band_vertex_mask',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a40cf9e497d8d95323cbbae62eb811110',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::band_vertex_mask()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5d4af791e0eb59472d9eba8b68be419e',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::band_vertex_mask()']]],
+  ['band_5fvertex_5fresidual_3',['band_vertex_residual',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9d0513ff95008b16ee8bca4c410276b7',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::band_vertex_residual()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac204d016d7a87612e36ab75a7b7cf7db',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::band_vertex_residual()']]],
+  ['begin_5fprotect_4',['begin_protect',['../structwmtk_1_1_attribute_collection.html#ae0505eb2677a9eb03e9a76fe03ccf770',1,'wmtk::AttributeCollection']]],
+  ['boundary_5fedges_5',['boundary_edges',['../namespaceview__offset.html#a1ccaaf955426e363e5bb7537c11c1950',1,'view_offset']]]
 ];

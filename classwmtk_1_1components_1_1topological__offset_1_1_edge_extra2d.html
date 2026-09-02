@@ -87,10 +87,28 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a5e9d07ba00c0e16defbef4f15e941a5e" id="r_a5e9d07ba00c0e16defbef4f15e941a5e"><td class="memItemLeft" align="right" valign="top"><a id="a5e9d07ba00c0e16defbef4f15e941a5e" name="a5e9d07ba00c0e16defbef4f15e941a5e"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr>
 <tr class="separator:a5e9d07ba00c0e16defbef4f15e941a5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a915d89d3b7fcf6b9acab20fd9b534bf0" id="r_a915d89d3b7fcf6b9acab20fd9b534bf0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_edge_extra2d.html#a915d89d3b7fcf6b9acab20fd9b534bf0">on_curve</a> = false</td></tr>
+<tr class="separator:a915d89d3b7fcf6b9acab20fd9b534bf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Per-edge construction label; the surface tags themselves are the base's <a class="el" href="classwmtk_1_1_surface_tag_attributes.html" title="Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.">wmtk::SurfaceTagAttributes</a>. Registered with m_edge_attr_group. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a915d89d3b7fcf6b9acab20fd9b534bf0" name="a915d89d3b7fcf6b9acab20fd9b534bf0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a915d89d3b7fcf6b9acab20fd9b534bf0">&#9670;&#160;</a></span>on_curve</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::EdgeExtra2d::on_curve = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The edge lies on the input's curve group (within its envelope): selectable as the complex by name, held in that group's tube. Re-derived by classify_curve_edges(); nothing propagates it through split or collapse, so it is read only before the optimization starts. </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a></li>
 </ul>
 </div><!-- contents -->

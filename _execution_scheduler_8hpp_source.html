@@ -375,262 +375,278 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>        std::atomic&lt;size_t&gt; overflowed(0);</div>
 <div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>        std::vector&lt;double&gt; task_seconds(queues.size(), 0.);</div>
 <div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span> </div>
-<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>        <span class="keyword">auto</span> run_single_queue = [&amp;](<span class="keyword">auto</span>&amp; Q, <span class="keywordtype">int</span> task_id) {</div>
-<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>            <span class="comment">// Per-task tallies folded into the shared counters once, on the way out. The guard</span></div>
-<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>            <span class="comment">// is RAII rather than a line at the bottom because the loop below has early</span></div>
-<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>            <span class="comment">// returns.</span></div>
-<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>            <span class="keyword">struct </span>CountFlusher</div>
-<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>            {</div>
-<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>                std::atomic_int&amp; success_total;</div>
-<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>                std::atomic_int&amp; fail_total;</div>
-<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>                std::atomic&lt;size_t&gt;&amp; lock_failure_total;</div>
-<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>                std::atomic&lt;size_t&gt;&amp; overflow_total;</div>
-<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>                <span class="keywordtype">int</span> success = 0;</div>
-<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>                <span class="keywordtype">int</span> fail = 0;</div>
-<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>                <span class="keywordtype">size_t</span> lock_failure = 0;</div>
-<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>                <span class="keywordtype">size_t</span> overflow = 0;</div>
-<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>                ~CountFlusher()</div>
-<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>                {</div>
-<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>                    success_total.fetch_add(success, std::memory_order_relaxed);</div>
-<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>                    fail_total.fetch_add(fail, std::memory_order_relaxed);</div>
-<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>                    lock_failure_total.fetch_add(lock_failure, std::memory_order_relaxed);</div>
-<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>                    overflow_total.fetch_add(overflow, std::memory_order_relaxed);</div>
-<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>                }</div>
-<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>            } counts{cnt_success, cnt_fail, lock_failures, overflowed};</div>
-<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span> </div>
-<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>            Elem ele_in_queue;</div>
-<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>            <span class="comment">// Operations that lost a race for their ring wait here rather than going straight</span></div>
-<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>            <span class="comment">// back into the live queue. Pushing them back immediately is a spin: the element was</span></div>
-<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>            <span class="comment">// just popped as the queue&#39;s maximum, `retry` is the last tie-break key in Elem, so</span></div>
-<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>            <span class="comment">// the requeued copy compares strictly greater than what was popped and nothing else</span></div>
-<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>            <span class="comment">// was added -- it comes right back off the top and is retried against a conflict that</span></div>
-<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>            <span class="comment">// has had no time to clear. Deferring lets every other operation this task owns run</span></div>
-<div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span>            <span class="comment">// first, which is both useful work and the delay the conflict needs.</span></div>
-<div class="line"><a id="l00421" name="l00421"></a><span class="lineno">  421</span>            std::vector&lt;Elem&gt; second_chance;</div>
-<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>            <span class="comment">// Operations popped since the deferred list was last given back to the queue.</span></div>
-<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>            <span class="comment">// Waiting for the queue to drain completely can mean thousands of operations, by</span></div>
-<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>            <span class="comment">// which time the mesh around a deferred operation has moved and its work has to be</span></div>
-<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>            <span class="comment">// rediscovered. A bounded window gives the conflict time to clear without letting</span></div>
-<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span>            <span class="comment">// the operation go stale. 0 = only when the queue empties.</span></div>
-<div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span>            <span class="keywordtype">size_t</span> since_refill = 0;</div>
-<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span>            <span class="keyword">const</span> <span class="keyword">auto</span> refill = [&amp;] {</div>
-<div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; e : second_chance) {</div>
-<div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span>                    Q.emplace(std::move(e));</div>
-<div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>                }</div>
-<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>                second_chance.clear();</div>
-<div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>                since_refill = 0;</div>
-<div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>            };</div>
-<div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span>            <span class="keywordflow">for</span> (;;) {</div>
-<div class="line"><a id="l00436" name="l00436"></a><span class="lineno">  436</span>                <span class="keywordflow">if</span> (!second_chance.empty() &amp;&amp; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4">deferral_window</a> &gt; 0 &amp;&amp;</div>
-<div class="line"><a id="l00437" name="l00437"></a><span class="lineno">  437</span>                    since_refill &gt;= <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4">deferral_window</a>) {</div>
-<div class="line"><a id="l00438" name="l00438"></a><span class="lineno">  438</span>                    refill();</div>
-<div class="line"><a id="l00439" name="l00439"></a><span class="lineno">  439</span>                }</div>
-<div class="line"><a id="l00440" name="l00440"></a><span class="lineno">  440</span>                <span class="keywordflow">if</span> (!Q.try_pop(ele_in_queue)) {</div>
-<div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span>                    <span class="keywordflow">if</span> (second_chance.empty()) {</div>
-<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>                        <span class="keywordflow">break</span>;</div>
-<div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>                    }</div>
-<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>                    <span class="comment">// Queue exhausted: the deferred operations have now had everything else</span></div>
-<div class="line"><a id="l00445" name="l00445"></a><span class="lineno">  445</span>                    <span class="comment">// run ahead of them, so give them another go. `retry` still increments on</span></div>
-<div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>                    <span class="comment">// each attempt and still overflows to final_queue at max_retry_limit, so</span></div>
-<div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>                    <span class="comment">// this terminates after at most that many rounds.</span></div>
-<div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span>                    refill();</div>
-<div class="line"><a id="l00449" name="l00449"></a><span class="lineno">  449</span>                    std::this_thread::yield();</div>
-<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>                    <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span>                }</div>
-<div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span>                ++since_refill;</div>
-<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>                <span class="keyword">auto</span>&amp; [weight, op, tup, retry] = ele_in_queue;</div>
-<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>                <span class="keywordflow">if</span> (!tup.is_valid(m)) {</div>
-<div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span>                    <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span>                }</div>
-<div class="line"><a id="l00457" name="l00457"></a><span class="lineno">  457</span> </div>
-<div class="line"><a id="l00458" name="l00458"></a><span class="lineno">  458</span>                std::vector&lt;Elem&gt; renewed_elements;</div>
-<div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span>                {</div>
-<div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span>                    <span class="keyword">auto</span> locked_vid = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95">lock_vertices</a>(</div>
-<div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span>                        m,</div>
-<div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>                        tup,</div>
-<div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span>                        task_id); <span class="comment">// Note that returning `Tuples` would be invalid.</span></div>
-<div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>                    <span class="keywordflow">if</span> (!locked_vid) {</div>
-<div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span>                        counts.lock_failure++;</div>
-<div class="line"><a id="l00466" name="l00466"></a><span class="lineno">  466</span>                        retry++;</div>
-<div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>                        <span class="keywordflow">if</span> (retry &lt; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a02a89f6f7fe09f5c6f1d1c2207ed4c58">max_retry_limit</a>) {</div>
-<div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span>                            second_chance.push_back(ele_in_queue);</div>
-<div class="line"><a id="l00469" name="l00469"></a><span class="lineno">  469</span>                        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00470" name="l00470"></a><span class="lineno">  470</span>                            retry = 0;</div>
-<div class="line"><a id="l00471" name="l00471"></a><span class="lineno">  471</span>                            counts.overflow++;</div>
-<div class="line"><a id="l00472" name="l00472"></a><span class="lineno">  472</span>                            final_queue.emplace(ele_in_queue);</div>
-<div class="line"><a id="l00473" name="l00473"></a><span class="lineno">  473</span>                        }</div>
-<div class="line"><a id="l00474" name="l00474"></a><span class="lineno">  474</span>                        <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00475" name="l00475"></a><span class="lineno">  475</span>                    }</div>
-<div class="line"><a id="l00476" name="l00476"></a><span class="lineno">  476</span>                    <span class="keywordflow">if</span> (tup.is_valid(m)) {</div>
-<div class="line"><a id="l00477" name="l00477"></a><span class="lineno">  477</span>                        <span class="keyword">const</span> Op&amp; op_str = *op_name[op];</div>
-<div class="line"><a id="l00478" name="l00478"></a><span class="lineno">  478</span>                        <span class="keywordflow">if</span> (!<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a5fe5a0adce54ae594b2067748e0b2a53">is_weight_up_to_date</a>(</div>
-<div class="line"><a id="l00479" name="l00479"></a><span class="lineno">  479</span>                                m,</div>
-<div class="line"><a id="l00480" name="l00480"></a><span class="lineno">  480</span>                                std::tuple&lt;double, Op, Tuple&gt;(weight, op_str, tup))) {</div>
-<div class="line"><a id="l00481" name="l00481"></a><span class="lineno">  481</span>                            operation_cleanup(m);</div>
-<div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span>                            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>                        } <span class="comment">// this can encode, in qslim, recompute(energy) == weight.</span></div>
-<div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>                        <span class="keyword">auto</span> newtup = (*op_fn[op])(m, tup);</div>
-<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>                        std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt; renewed_tuples;</div>
-<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>                        <span class="keywordflow">if</span> (newtup) {</div>
-<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>                            renewed_tuples = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a76cbf1fcebd336fd5d7afb36f2f1091c">renew_neighbor_tuples</a>(m, op_str, newtup.value());</div>
-<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span>                            counts.success++;</div>
-<div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span>                            <span class="keywordflow">if</span> (track_live_success) {</div>
-<div class="line"><a id="l00490" name="l00490"></a><span class="lineno">  490</span>                                live_success.fetch_add(1, std::memory_order_relaxed);</div>
-<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>                            }</div>
-<div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>                        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>                            <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937">on_fail</a>(m, op_str, tup);</div>
-<div class="line"><a id="l00494" name="l00494"></a><span class="lineno">  494</span>                            counts.fail++;</div>
-<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>                        }</div>
-<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>                        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [o, e] : renewed_tuples) {</div>
-<div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span>                            <span class="keyword">auto</span> val = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc">priority</a>(m, o, e);</div>
-<div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span>                            <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#addd10a3e42d324239dc3c970580d373f">should_renew</a>(val)) {</div>
-<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span>                                renewed_elements.emplace_back(val, id_of(o), e, 0);</div>
-<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span>                            }</div>
-<div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span>                        }</div>
-<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span>                    }</div>
-<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>                    operation_cleanup(m); <span class="comment">// Maybe use RAII</span></div>
-<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>                }</div>
-<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; e : renewed_elements) {</div>
-<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>                    Q.emplace(e);</div>
-<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>                }</div>
-<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span> </div>
-<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span>                <span class="keywordflow">if</span> (stop.load(std::memory_order_acquire)) {</div>
-<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>                    <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>                }</div>
-<div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span>                <span class="keywordflow">if</span> (track_live_success &amp;&amp; live_success.load(std::memory_order_relaxed) &gt;</div>
-<div class="line"><a id="l00513" name="l00513"></a><span class="lineno">  513</span>                                              <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a821948f937feea93d9de593b525cde58">stopping_criterion_checking_frequency</a>) {</div>
-<div class="line"><a id="l00514" name="l00514"></a><span class="lineno">  514</span>                    <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#af20086623771fe01053a53b98a086b9b">stopping_criterion</a>(m)) {</div>
-<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>                        stop.store(<span class="keyword">true</span>);</div>
-<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>                        <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span>                    }</div>
-<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>                }</div>
-<div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>            }</div>
-<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>        };</div>
-<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span> </div>
-<div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>        <span class="keywordflow">if</span> (policy == ExecutionPolicy::kSeq) {</div>
-<div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>            <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
-<div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) {</div>
-<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>                    <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00526" name="l00526"></a><span class="lineno">  526</span>                }</div>
-<div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span>                final_queue.emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc">priority</a>(m, op, e), id_of(op), e, 0);</div>
-<div class="line"><a id="l00528" name="l00528"></a><span class="lineno">  528</span>            }</div>
-<div class="line"><a id="l00529" name="l00529"></a><span class="lineno">  529</span>            run_single_queue(final_queue, 0);</div>
-<div class="line"><a id="l00530" name="l00530"></a><span class="lineno">  530</span>        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00531" name="l00531"></a><span class="lineno">  531</span>            <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
-<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) {</div>
-<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span>                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>        <span class="comment">// Per-task tallies folded into the shared counters once, on the way out. The guard is</span></div>
+<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>        <span class="comment">// RAII rather than a line at the bottom because run_single_queue has early returns.</span></div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>        <span class="comment">//</span></div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span>        <span class="comment">// DECLARED HERE, NOT INSIDE THE LAMBDA, to work around an Apple clang 17 codegen bug.</span></div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>        <span class="comment">// A local class declared inside a GENERIC lambda (one with an `auto` parameter, so its</span></div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>        <span class="comment">// operator() is a template) gets its destructor emitted as an undefined reference and</span></div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>        <span class="comment">// never defined, at every optimization level including -O0. The link then fails with</span></div>
+<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>        <span class="comment">//     Undefined symbols: ... ::&#39;lambda&#39;(auto&amp;, int)::operator()&lt;...&gt;</span></div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>        <span class="comment">//                            ::CountFlusher::~CountFlusher()</span></div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>        <span class="comment">// referenced from every translation unit that instantiates a pass -- 26 references</span></div>
+<div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>        <span class="comment">// across 6 archives, defined nowhere. Homebrew clang 22 compiles the same code</span></div>
+<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>        <span class="comment">// correctly, which is why CI does not see this.</span></div>
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>        <span class="comment">//</span></div>
+<div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>        <span class="comment">// Hoisting the class one scope out is enough: it is still local to operator(), which is</span></div>
+<div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>        <span class="comment">// itself a member of a class template, and that instantiates fine. Nothing else changes</span></div>
+<div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>        <span class="comment">// -- `counts` is still constructed per task inside the lambda, so the RAII flush and its</span></div>
+<div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>        <span class="comment">// ordering are identical.</span></div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>        <span class="keyword">struct </span>CountFlusher</div>
+<div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>        {</div>
+<div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span>            std::atomic_int&amp; success_total;</div>
+<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>            std::atomic_int&amp; fail_total;</div>
+<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>            std::atomic&lt;size_t&gt;&amp; lock_failure_total;</div>
+<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>            std::atomic&lt;size_t&gt;&amp; overflow_total;</div>
+<div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>            <span class="keywordtype">int</span> success = 0;</div>
+<div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span>            <span class="keywordtype">int</span> fail = 0;</div>
+<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>            <span class="keywordtype">size_t</span> lock_failure = 0;</div>
+<div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>            <span class="keywordtype">size_t</span> overflow = 0;</div>
+<div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>            ~CountFlusher()</div>
+<div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>            {</div>
+<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>                success_total.fetch_add(success, std::memory_order_relaxed);</div>
+<div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span>                fail_total.fetch_add(fail, std::memory_order_relaxed);</div>
+<div class="line"><a id="l00421" name="l00421"></a><span class="lineno">  421</span>                lock_failure_total.fetch_add(lock_failure, std::memory_order_relaxed);</div>
+<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>                overflow_total.fetch_add(overflow, std::memory_order_relaxed);</div>
+<div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>            }</div>
+<div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>        };</div>
+<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span> </div>
+<div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span>        <span class="keyword">auto</span> run_single_queue = [&amp;](<span class="keyword">auto</span>&amp; Q, <span class="keywordtype">int</span> task_id) {</div>
+<div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span>            CountFlusher counts{cnt_success, cnt_fail, lock_failures, overflowed};</div>
+<div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span> </div>
+<div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span>            Elem ele_in_queue;</div>
+<div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span>            <span class="comment">// Operations that lost a race for their ring wait here rather than going straight</span></div>
+<div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>            <span class="comment">// back into the live queue. Pushing them back immediately is a spin: the element was</span></div>
+<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>            <span class="comment">// just popped as the queue&#39;s maximum, `retry` is the last tie-break key in Elem, so</span></div>
+<div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>            <span class="comment">// the requeued copy compares strictly greater than what was popped and nothing else</span></div>
+<div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>            <span class="comment">// was added -- it comes right back off the top and is retried against a conflict that</span></div>
+<div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span>            <span class="comment">// has had no time to clear. Deferring lets every other operation this task owns run</span></div>
+<div class="line"><a id="l00436" name="l00436"></a><span class="lineno">  436</span>            <span class="comment">// first, which is both useful work and the delay the conflict needs.</span></div>
+<div class="line"><a id="l00437" name="l00437"></a><span class="lineno">  437</span>            std::vector&lt;Elem&gt; second_chance;</div>
+<div class="line"><a id="l00438" name="l00438"></a><span class="lineno">  438</span>            <span class="comment">// Operations popped since the deferred list was last given back to the queue.</span></div>
+<div class="line"><a id="l00439" name="l00439"></a><span class="lineno">  439</span>            <span class="comment">// Waiting for the queue to drain completely can mean thousands of operations, by</span></div>
+<div class="line"><a id="l00440" name="l00440"></a><span class="lineno">  440</span>            <span class="comment">// which time the mesh around a deferred operation has moved and its work has to be</span></div>
+<div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span>            <span class="comment">// rediscovered. A bounded window gives the conflict time to clear without letting</span></div>
+<div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>            <span class="comment">// the operation go stale. 0 = only when the queue empties.</span></div>
+<div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>            <span class="keywordtype">size_t</span> since_refill = 0;</div>
+<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>            <span class="keyword">const</span> <span class="keyword">auto</span> refill = [&amp;] {</div>
+<div class="line"><a id="l00445" name="l00445"></a><span class="lineno">  445</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; e : second_chance) {</div>
+<div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>                    Q.emplace(std::move(e));</div>
+<div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>                }</div>
+<div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span>                second_chance.clear();</div>
+<div class="line"><a id="l00449" name="l00449"></a><span class="lineno">  449</span>                since_refill = 0;</div>
+<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>            };</div>
+<div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span>            <span class="keywordflow">for</span> (;;) {</div>
+<div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span>                <span class="keywordflow">if</span> (!second_chance.empty() &amp;&amp; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4">deferral_window</a> &gt; 0 &amp;&amp;</div>
+<div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>                    since_refill &gt;= <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#ad528fecedb797a7ebe3b1bb7ac882bf4">deferral_window</a>) {</div>
+<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>                    refill();</div>
+<div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span>                }</div>
+<div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span>                <span class="keywordflow">if</span> (!Q.try_pop(ele_in_queue)) {</div>
+<div class="line"><a id="l00457" name="l00457"></a><span class="lineno">  457</span>                    <span class="keywordflow">if</span> (second_chance.empty()) {</div>
+<div class="line"><a id="l00458" name="l00458"></a><span class="lineno">  458</span>                        <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span>                    }</div>
+<div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span>                    <span class="comment">// Queue exhausted: the deferred operations have now had everything else</span></div>
+<div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span>                    <span class="comment">// run ahead of them, so give them another go. `retry` still increments on</span></div>
+<div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>                    <span class="comment">// each attempt and still overflows to final_queue at max_retry_limit, so</span></div>
+<div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span>                    <span class="comment">// this terminates after at most that many rounds.</span></div>
+<div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>                    refill();</div>
+<div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span>                    std::this_thread::yield();</div>
+<div class="line"><a id="l00466" name="l00466"></a><span class="lineno">  466</span>                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>                }</div>
+<div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span>                ++since_refill;</div>
+<div class="line"><a id="l00469" name="l00469"></a><span class="lineno">  469</span>                <span class="keyword">auto</span>&amp; [weight, op, tup, retry] = ele_in_queue;</div>
+<div class="line"><a id="l00470" name="l00470"></a><span class="lineno">  470</span>                <span class="keywordflow">if</span> (!tup.is_valid(m)) {</div>
+<div class="line"><a id="l00471" name="l00471"></a><span class="lineno">  471</span>                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00472" name="l00472"></a><span class="lineno">  472</span>                }</div>
+<div class="line"><a id="l00473" name="l00473"></a><span class="lineno">  473</span> </div>
+<div class="line"><a id="l00474" name="l00474"></a><span class="lineno">  474</span>                std::vector&lt;Elem&gt; renewed_elements;</div>
+<div class="line"><a id="l00475" name="l00475"></a><span class="lineno">  475</span>                {</div>
+<div class="line"><a id="l00476" name="l00476"></a><span class="lineno">  476</span>                    <span class="keyword">auto</span> locked_vid = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95">lock_vertices</a>(</div>
+<div class="line"><a id="l00477" name="l00477"></a><span class="lineno">  477</span>                        m,</div>
+<div class="line"><a id="l00478" name="l00478"></a><span class="lineno">  478</span>                        tup,</div>
+<div class="line"><a id="l00479" name="l00479"></a><span class="lineno">  479</span>                        task_id); <span class="comment">// Note that returning `Tuples` would be invalid.</span></div>
+<div class="line"><a id="l00480" name="l00480"></a><span class="lineno">  480</span>                    <span class="keywordflow">if</span> (!locked_vid) {</div>
+<div class="line"><a id="l00481" name="l00481"></a><span class="lineno">  481</span>                        counts.lock_failure++;</div>
+<div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span>                        retry++;</div>
+<div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>                        <span class="keywordflow">if</span> (retry &lt; <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a02a89f6f7fe09f5c6f1d1c2207ed4c58">max_retry_limit</a>) {</div>
+<div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>                            second_chance.push_back(ele_in_queue);</div>
+<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>                        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>                            retry = 0;</div>
+<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>                            counts.overflow++;</div>
+<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span>                            final_queue.emplace(ele_in_queue);</div>
+<div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span>                        }</div>
+<div class="line"><a id="l00490" name="l00490"></a><span class="lineno">  490</span>                        <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>                    }</div>
+<div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>                    <span class="keywordflow">if</span> (tup.is_valid(m)) {</div>
+<div class="line"><a id="l00493" name="l00493"></a><span class="lineno">  493</span>                        <span class="keyword">const</span> Op&amp; op_str = *op_name[op];</div>
+<div class="line"><a id="l00494" name="l00494"></a><span class="lineno">  494</span>                        <span class="keywordflow">if</span> (!<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a5fe5a0adce54ae594b2067748e0b2a53">is_weight_up_to_date</a>(</div>
+<div class="line"><a id="l00495" name="l00495"></a><span class="lineno">  495</span>                                m,</div>
+<div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>                                std::tuple&lt;double, Op, Tuple&gt;(weight, op_str, tup))) {</div>
+<div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span>                            operation_cleanup(m);</div>
+<div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span>                            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span>                        } <span class="comment">// this can encode, in qslim, recompute(energy) == weight.</span></div>
+<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span>                        <span class="keyword">auto</span> newtup = (*op_fn[op])(m, tup);</div>
+<div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span>                        std::vector&lt;std::pair&lt;Op, Tuple&gt;&gt; renewed_tuples;</div>
+<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span>                        <span class="keywordflow">if</span> (newtup) {</div>
+<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>                            renewed_tuples = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a76cbf1fcebd336fd5d7afb36f2f1091c">renew_neighbor_tuples</a>(m, op_str, newtup.value());</div>
+<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>                            counts.success++;</div>
+<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span>                            <span class="keywordflow">if</span> (track_live_success) {</div>
+<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>                                live_success.fetch_add(1, std::memory_order_relaxed);</div>
+<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>                            }</div>
+<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span>                        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span>                            <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937">on_fail</a>(m, op_str, tup);</div>
+<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>                            counts.fail++;</div>
+<div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>                        }</div>
+<div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span>                        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [o, e] : renewed_tuples) {</div>
+<div class="line"><a id="l00513" name="l00513"></a><span class="lineno">  513</span>                            <span class="keyword">auto</span> val = <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc">priority</a>(m, o, e);</div>
+<div class="line"><a id="l00514" name="l00514"></a><span class="lineno">  514</span>                            <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#addd10a3e42d324239dc3c970580d373f">should_renew</a>(val)) {</div>
+<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>                                renewed_elements.emplace_back(val, id_of(o), e, 0);</div>
+<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>                            }</div>
+<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span>                        }</div>
+<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>                    }</div>
+<div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>                    operation_cleanup(m); <span class="comment">// Maybe use RAII</span></div>
+<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>                }</div>
+<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; e : renewed_elements) {</div>
+<div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>                    Q.emplace(e);</div>
+<div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>                }</div>
+<div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span> </div>
+<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>                <span class="keywordflow">if</span> (stop.load(std::memory_order_acquire)) {</div>
+<div class="line"><a id="l00526" name="l00526"></a><span class="lineno">  526</span>                    <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span>                }</div>
+<div class="line"><a id="l00528" name="l00528"></a><span class="lineno">  528</span>                <span class="keywordflow">if</span> (track_live_success &amp;&amp; live_success.load(std::memory_order_relaxed) &gt;</div>
+<div class="line"><a id="l00529" name="l00529"></a><span class="lineno">  529</span>                                              <a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a821948f937feea93d9de593b525cde58">stopping_criterion_checking_frequency</a>) {</div>
+<div class="line"><a id="l00530" name="l00530"></a><span class="lineno">  530</span>                    <span class="keywordflow">if</span> (<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#af20086623771fe01053a53b98a086b9b">stopping_criterion</a>(m)) {</div>
+<div class="line"><a id="l00531" name="l00531"></a><span class="lineno">  531</span>                        stop.store(<span class="keyword">true</span>);</div>
+<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span>                        <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span>                    }</div>
 <div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span>                }</div>
-<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span>                queues[get_partition_id(m, e)].emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc">priority</a>(m, op, e), id_of(op), e, 0);</div>
-<div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span>            }</div>
-<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span>            <span class="comment">// Comment out parallel: work on serial first.</span></div>
-<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span>            <span class="keyword">using </span>clock = std::chrono::steady_clock;</div>
-<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span>            <span class="keyword">const</span> <span class="keyword">auto</span> t_parallel = clock::now();</div>
-<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span>            <a class="code hl_class" href="classwmtk_1_1threading_1_1task__group.html">wmtk::threading::task_group</a> tg;</div>
-<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_id = 0; task_id &lt; queues.size(); task_id++) {</div>
-<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span>                tg.run([&amp;run_single_queue, &amp;queues, &amp;task_seconds, task_id] {</div>
-<div class="line"><a id="l00543" name="l00543"></a><span class="lineno">  543</span>                    <span class="keyword">const</span> <span class="keyword">auto</span> t0 = clock::now();</div>
-<div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span>                    run_single_queue(queues[task_id], task_id);</div>
-<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span>                    <span class="comment">// Each task writes only its own slot.</span></div>
-<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>                    task_seconds[task_id] =</div>
-<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>                        std::chrono::duration&lt;double&gt;(clock::now() - t0).count();</div>
-<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span>                });</div>
-<div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span>            }</div>
-<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>            tg.wait();</div>
-<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a> =</div>
-<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span>                std::chrono::duration&lt;double&gt;(clock::now() - t_parallel).count();</div>
-<div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">final_queue_size</a> = final_queue.size();</div>
-<div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span> </div>
-<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>            logger().debug(<span class="stringliteral">&quot;Parallel Complete, remains element {}&quot;</span>, final_queue.size());</div>
-<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span> </div>
-<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>            <span class="keyword">const</span> <span class="keyword">auto</span> t_tail = clock::now();</div>
-<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>            run_single_queue(final_queue, 0);</div>
-<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>            m_stats.serial_tail_seconds =</div>
-<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>                std::chrono::duration&lt;double&gt;(clock::now() - t_tail).count();</div>
-<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>        }</div>
-<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span> </div>
-<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>        m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a> = lock_failures.load(std::memory_order_relaxed);</div>
-<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>        m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">overflowed</a> = overflowed.load(std::memory_order_relaxed);</div>
-<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>        <span class="keywordflow">if</span> (!task_seconds.empty()) {</div>
-<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>            <span class="keyword">const</span> <span class="keyword">auto</span> mm = std::minmax_element(task_seconds.begin(), task_seconds.end());</div>
-<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>            m_stats.idlest_task_seconds = *mm.first;</div>
-<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">busiest_task_seconds</a> = *mm.second;</div>
-<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>        }</div>
+<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span>            }</div>
+<div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span>        };</div>
+<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span> </div>
+<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span>        <span class="keywordflow">if</span> (policy == ExecutionPolicy::kSeq) {</div>
+<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span>            <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
+<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) {</div>
+<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span>                }</div>
+<div class="line"><a id="l00543" name="l00543"></a><span class="lineno">  543</span>                final_queue.emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc">priority</a>(m, op, e), id_of(op), e, 0);</div>
+<div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span>            }</div>
+<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span>            run_single_queue(final_queue, 0);</div>
+<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>            <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [op, e] : operation_tuples) {</div>
+<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span>                <span class="keywordflow">if</span> (!e.is_valid(m)) {</div>
+<div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span>                    <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>                }</div>
+<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>                queues[get_partition_id(m, e)].emplace(<a class="code hl_variable" href="structwmtk_1_1_execute_pass.html#a8862fb195ad95a30e1f99cc13f4855fc">priority</a>(m, op, e), id_of(op), e, 0);</div>
+<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span>            }</div>
+<div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span>            <span class="comment">// Comment out parallel: work on serial first.</span></div>
+<div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span>            <span class="keyword">using </span>clock = std::chrono::steady_clock;</div>
+<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>            <span class="keyword">const</span> <span class="keyword">auto</span> t_parallel = clock::now();</div>
+<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span>            <a class="code hl_class" href="classwmtk_1_1threading_1_1task__group.html">wmtk::threading::task_group</a> tg;</div>
+<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> task_id = 0; task_id &lt; queues.size(); task_id++) {</div>
+<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>                tg.run([&amp;run_single_queue, &amp;queues, &amp;task_seconds, task_id] {</div>
+<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>                    <span class="keyword">const</span> <span class="keyword">auto</span> t0 = clock::now();</div>
+<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>                    run_single_queue(queues[task_id], task_id);</div>
+<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>                    <span class="comment">// Each task writes only its own slot.</span></div>
+<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>                    task_seconds[task_id] =</div>
+<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>                        std::chrono::duration&lt;double&gt;(clock::now() - t0).count();</div>
+<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>                });</div>
+<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>            }</div>
+<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>            tg.wait();</div>
+<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a> =</div>
+<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>                std::chrono::duration&lt;double&gt;(clock::now() - t_parallel).count();</div>
+<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">final_queue_size</a> = final_queue.size();</div>
 <div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span> </div>
-<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span>        logger().info(</div>
-<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span>            <span class="stringliteral">&quot;executed: {} | success / fail: {} / {}&quot;</span>,</div>
-<div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span>            (<span class="keywordtype">int</span>)cnt_success + (<span class="keywordtype">int</span>)cnt_fail,</div>
-<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span>            (<span class="keywordtype">int</span>)cnt_success,</div>
-<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span>            (<span class="keywordtype">int</span>)cnt_fail);</div>
-<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>        <a class="code hl_function" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">log_contention</a>();</div>
-<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span>    }</div>
+<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span>            logger().debug(<span class="stringliteral">&quot;Parallel Complete, remains element {}&quot;</span>, final_queue.size());</div>
+<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span> </div>
+<div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span>            <span class="keyword">const</span> <span class="keyword">auto</span> t_tail = clock::now();</div>
+<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span>            run_single_queue(final_queue, 0);</div>
+<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span>            m_stats.serial_tail_seconds =</div>
+<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>                std::chrono::duration&lt;double&gt;(clock::now() - t_tail).count();</div>
+<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span>        }</div>
+<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span> </div>
+<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>        m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a> = lock_failures.load(std::memory_order_relaxed);</div>
+<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span>        m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">overflowed</a> = overflowed.load(std::memory_order_relaxed);</div>
+<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>        <span class="keywordflow">if</span> (!task_seconds.empty()) {</div>
+<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>            <span class="keyword">const</span> <span class="keyword">auto</span> mm = std::minmax_element(task_seconds.begin(), task_seconds.end());</div>
+<div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span>            m_stats.idlest_task_seconds = *mm.first;</div>
+<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">busiest_task_seconds</a> = *mm.second;</div>
+<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>        }</div>
+<div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span> </div>
+<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span>        logger().info(</div>
+<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span>            <span class="stringliteral">&quot;executed: {} | success / fail: {} / {}&quot;</span>,</div>
+<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>            (<span class="keywordtype">int</span>)cnt_success + (<span class="keywordtype">int</span>)cnt_fail,</div>
+<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>            (<span class="keywordtype">int</span>)cnt_success,</div>
+<div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span>            (<span class="keywordtype">int</span>)cnt_fail);</div>
+<div class="line"><a id="l00592" name="l00592"></a><span class="lineno">  592</span>        <a class="code hl_function" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">log_contention</a>();</div>
+<div class="line"><a id="l00593" name="l00593"></a><span class="lineno">  593</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00594" name="l00594"></a><span class="lineno">  594</span>    }</div>
 </div>
-<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span> </div>
-<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span>    <span class="keywordtype">int</span> get_cnt_success()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_success; }</div>
-<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>    <span class="keywordtype">int</span> get_cnt_fail()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_fail; }</div>
-<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span> </div>
-<div class="foldopen" id="foldopen00589" data-start="{" data-end="};">
-<div class="line"><a id="l00589" name="l00589"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">  589</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a></div>
-<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>    {</div>
-<div class="line"><a id="l00593" name="l00593"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">  593</a></span>        <span class="keywordtype">size_t</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a> = 0;</div>
-<div class="line"><a id="l00595" name="l00595"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">  595</a></span>        <span class="keywordtype">size_t</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">overflowed</a> = 0;</div>
-<div class="line"><a id="l00597" name="l00597"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">  597</a></span>        <span class="keywordtype">size_t</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">final_queue_size</a> = 0;</div>
-<div class="line"><a id="l00600" name="l00600"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">  600</a></span>        <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a> = 0.;</div>
-<div class="line"><a id="l00601" name="l00601"></a><span class="lineno">  601</span>        <span class="keywordtype">double</span> serial_tail_seconds = 0.;</div>
-<div class="line"><a id="l00604" name="l00604"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">  604</a></span>        <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">busiest_task_seconds</a> = 0.;</div>
-<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>        <span class="keywordtype">double</span> idlest_task_seconds = 0.;</div>
-<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>    };</div>
+<div class="line"><a id="l00595" name="l00595"></a><span class="lineno">  595</span> </div>
+<div class="line"><a id="l00596" name="l00596"></a><span class="lineno">  596</span>    <span class="keywordtype">int</span> get_cnt_success()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_success; }</div>
+<div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span>    <span class="keywordtype">int</span> get_cnt_fail()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> cnt_fail; }</div>
+<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span> </div>
+<div class="foldopen" id="foldopen00605" data-start="{" data-end="};">
+<div class="line"><a id="l00605" name="l00605"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">  605</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a></div>
+<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>    {</div>
+<div class="line"><a id="l00609" name="l00609"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">  609</a></span>        <span class="keywordtype">size_t</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a> = 0;</div>
+<div class="line"><a id="l00611" name="l00611"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">  611</a></span>        <span class="keywordtype">size_t</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">overflowed</a> = 0;</div>
+<div class="line"><a id="l00613" name="l00613"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">  613</a></span>        <span class="keywordtype">size_t</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">final_queue_size</a> = 0;</div>
+<div class="line"><a id="l00616" name="l00616"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">  616</a></span>        <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a> = 0.;</div>
+<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>        <span class="keywordtype">double</span> serial_tail_seconds = 0.;</div>
+<div class="line"><a id="l00620" name="l00620"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">  620</a></span>        <span class="keywordtype">double</span> <a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">busiest_task_seconds</a> = 0.;</div>
+<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span>        <span class="keywordtype">double</span> idlest_task_seconds = 0.;</div>
+<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span>    };</div>
 </div>
-<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a>&amp; stats()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_stats; }</div>
-<div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span> </div>
-<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span><span class="keyword">private</span>:</div>
-<div class="foldopen" id="foldopen00612" data-start="{" data-end="}">
-<div class="line"><a id="l00612" name="l00612"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">  612</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">log_contention</a>()<span class="keyword"> const</span></div>
-<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span>        <span class="keywordflow">if</span> (policy == ExecutionPolicy::kSeq || !logger().should_log(spdlog::level::debug)) {</div>
-<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span>        }</div>
-<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>        <span class="keyword">const</span> <span class="keywordtype">int</span> executed = (int)cnt_success + (<span class="keywordtype">int</span>)cnt_fail;</div>
-<div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> total = m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a> + m_stats.serial_tail_seconds;</div>
-<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span>        logger().debug(</div>
-<div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span>            <span class="stringliteral">&quot;  contention: {} ring-acquisition failures over {} executed ops ({:.2f} per op); &quot;</span></div>
-<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span>            <span class="stringliteral">&quot;{} overflowed to the serial queue ({} queued at the barrier)&quot;</span>,</div>
-<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a>,</div>
-<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span>            executed,</div>
-<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span>            executed &gt; 0 ? <span class="keywordtype">double</span>(m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a>) / executed : 0.,</div>
-<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">overflowed</a>,</div>
-<div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">final_queue_size</a>);</div>
-<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span>        logger().debug(</div>
-<div class="line"><a id="l00628" name="l00628"></a><span class="lineno">  628</span>            <span class="stringliteral">&quot;  time: {:.4}s parallel + {:.4}s serial tail ({:.1f}% of the pass); busiest task &quot;</span></div>
-<div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span>            <span class="stringliteral">&quot;{:.4}s, idlest {:.4}s&quot;</span>,</div>
-<div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a>,</div>
-<div class="line"><a id="l00631" name="l00631"></a><span class="lineno">  631</span>            m_stats.serial_tail_seconds,</div>
-<div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span>            total &gt; 0. ? 100. * m_stats.serial_tail_seconds / total : 0.,</div>
-<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">busiest_task_seconds</a>,</div>
-<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span>            m_stats.idlest_task_seconds);</div>
-<div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span>    }</div>
+<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span>    <span class="keyword">const</span> <a class="code hl_struct" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">PassStats</a>&amp; stats()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_stats; }</div>
+<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span> </div>
+<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span><span class="keyword">private</span>:</div>
+<div class="foldopen" id="foldopen00628" data-start="{" data-end="}">
+<div class="line"><a id="l00628" name="l00628"></a><span class="lineno"><a class="line" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">  628</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">log_contention</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>        <span class="keywordflow">if</span> (policy == ExecutionPolicy::kSeq || !logger().should_log(spdlog::level::debug)) {</div>
+<div class="line"><a id="l00631" name="l00631"></a><span class="lineno">  631</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span>        }</div>
+<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>        <span class="keyword">const</span> <span class="keywordtype">int</span> executed = (int)cnt_success + (<span class="keywordtype">int</span>)cnt_fail;</div>
+<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span>        <span class="keyword">const</span> <span class="keywordtype">double</span> total = m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a> + m_stats.serial_tail_seconds;</div>
+<div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span>        logger().debug(</div>
+<div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span>            <span class="stringliteral">&quot;  contention: {} ring-acquisition failures over {} executed ops ({:.2f} per op); &quot;</span></div>
+<div class="line"><a id="l00637" name="l00637"></a><span class="lineno">  637</span>            <span class="stringliteral">&quot;{} overflowed to the serial queue ({} queued at the barrier)&quot;</span>,</div>
+<div class="line"><a id="l00638" name="l00638"></a><span class="lineno">  638</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a>,</div>
+<div class="line"><a id="l00639" name="l00639"></a><span class="lineno">  639</span>            executed,</div>
+<div class="line"><a id="l00640" name="l00640"></a><span class="lineno">  640</span>            executed &gt; 0 ? <span class="keywordtype">double</span>(m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">lock_failures</a>) / executed : 0.,</div>
+<div class="line"><a id="l00641" name="l00641"></a><span class="lineno">  641</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">overflowed</a>,</div>
+<div class="line"><a id="l00642" name="l00642"></a><span class="lineno">  642</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">final_queue_size</a>);</div>
+<div class="line"><a id="l00643" name="l00643"></a><span class="lineno">  643</span>        logger().debug(</div>
+<div class="line"><a id="l00644" name="l00644"></a><span class="lineno">  644</span>            <span class="stringliteral">&quot;  time: {:.4}s parallel + {:.4}s serial tail ({:.1f}% of the pass); busiest task &quot;</span></div>
+<div class="line"><a id="l00645" name="l00645"></a><span class="lineno">  645</span>            <span class="stringliteral">&quot;{:.4}s, idlest {:.4}s&quot;</span>,</div>
+<div class="line"><a id="l00646" name="l00646"></a><span class="lineno">  646</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">parallel_seconds</a>,</div>
+<div class="line"><a id="l00647" name="l00647"></a><span class="lineno">  647</span>            m_stats.serial_tail_seconds,</div>
+<div class="line"><a id="l00648" name="l00648"></a><span class="lineno">  648</span>            total &gt; 0. ? 100. * m_stats.serial_tail_seconds / total : 0.,</div>
+<div class="line"><a id="l00649" name="l00649"></a><span class="lineno">  649</span>            m_stats.<a class="code hl_variable" href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">busiest_task_seconds</a>,</div>
+<div class="line"><a id="l00650" name="l00650"></a><span class="lineno">  650</span>            m_stats.idlest_task_seconds);</div>
+<div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span>    }</div>
 </div>
-<div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span> </div>
-<div class="line"><a id="l00637" name="l00637"></a><span class="lineno">  637</span>    <span class="comment">// Totals for the whole pass. Written once per task, at the end -- see CountFlusher.</span></div>
-<div class="line"><a id="l00638" name="l00638"></a><span class="lineno">  638</span>    std::atomic_int cnt_success = 0;</div>
-<div class="line"><a id="l00639" name="l00639"></a><span class="lineno">  639</span>    std::atomic_int cnt_fail = 0;</div>
-<div class="line"><a id="l00640" name="l00640"></a><span class="lineno">  640</span>    PassStats m_stats;</div>
-<div class="line"><a id="l00641" name="l00641"></a><span class="lineno">  641</span>};</div>
+<div class="line"><a id="l00652" name="l00652"></a><span class="lineno">  652</span> </div>
+<div class="line"><a id="l00653" name="l00653"></a><span class="lineno">  653</span>    <span class="comment">// Totals for the whole pass. Written once per task, at the end -- see CountFlusher.</span></div>
+<div class="line"><a id="l00654" name="l00654"></a><span class="lineno">  654</span>    std::atomic_int cnt_success = 0;</div>
+<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>    std::atomic_int cnt_fail = 0;</div>
+<div class="line"><a id="l00656" name="l00656"></a><span class="lineno">  656</span>    PassStats m_stats;</div>
+<div class="line"><a id="l00657" name="l00657"></a><span class="lineno">  657</span>};</div>
 </div>
-<div class="line"><a id="l00642" name="l00642"></a><span class="lineno">  642</span>} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1threading_1_1concurrent__priority__queue_html"><div class="ttname"><a href="classwmtk_1_1threading_1_1concurrent__priority__queue.html">wmtk::threading::concurrent_priority_queue</a></div><div class="ttdef"><b>Definition</b> concurrent_priority_queue.hpp:14</div></div>
 <div class="ttc" id="aclasswmtk_1_1threading_1_1serial__priority__queue_html"><div class="ttname"><a href="classwmtk_1_1threading_1_1serial__priority__queue.html">wmtk::threading::serial_priority_queue</a></div><div class="ttdef"><b>Definition</b> serial_priority_queue.hpp:23</div></div>
 <div class="ttc" id="aclasswmtk_1_1threading_1_1task__group_html"><div class="ttname"><a href="classwmtk_1_1threading_1_1task__group.html">wmtk::threading::task_group</a></div><div class="ttdef"><b>Definition</b> task_group.hpp:14</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">wmtk::ExecutePass::PassStats</a></div><div class="ttdoc">What the last pass cost in contention, as opposed to in work.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:590</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_a37f12c78e3d4a681ad47ccdca538812e"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">wmtk::ExecutePass::PassStats::final_queue_size</a></div><div class="ttdeci">size_t final_queue_size</div><div class="ttdoc">Size of that queue once every task had finished.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:597</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_aa4d3c5269ae6c722e1a8aa55d5ed643b"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">wmtk::ExecutePass::PassStats::lock_failures</a></div><div class="ttdeci">size_t lock_failures</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:593</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_aac7efe1b77af8e4fd2d37cd5e825006f"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">wmtk::ExecutePass::PassStats::parallel_seconds</a></div><div class="ttdeci">double parallel_seconds</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:600</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_aca2a7fb616a224d4d5ebf0222fcde75c"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">wmtk::ExecutePass::PassStats::overflowed</a></div><div class="ttdeci">size_t overflowed</div><div class="ttdoc">Operations that exhausted max_retry_limit and were pushed to the post-barrier queue.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:595</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_adb56418f061237d47be787f218d8f8e2"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">wmtk::ExecutePass::PassStats::busiest_task_seconds</a></div><div class="ttdeci">double busiest_task_seconds</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:604</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html">wmtk::ExecutePass::PassStats</a></div><div class="ttdoc">What the last pass cost in contention, as opposed to in work.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:606</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_a37f12c78e3d4a681ad47ccdca538812e"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#a37f12c78e3d4a681ad47ccdca538812e">wmtk::ExecutePass::PassStats::final_queue_size</a></div><div class="ttdeci">size_t final_queue_size</div><div class="ttdoc">Size of that queue once every task had finished.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:613</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_aa4d3c5269ae6c722e1a8aa55d5ed643b"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aa4d3c5269ae6c722e1a8aa55d5ed643b">wmtk::ExecutePass::PassStats::lock_failures</a></div><div class="ttdeci">size_t lock_failures</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:609</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_aac7efe1b77af8e4fd2d37cd5e825006f"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aac7efe1b77af8e4fd2d37cd5e825006f">wmtk::ExecutePass::PassStats::parallel_seconds</a></div><div class="ttdeci">double parallel_seconds</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:616</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_aca2a7fb616a224d4d5ebf0222fcde75c"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#aca2a7fb616a224d4d5ebf0222fcde75c">wmtk::ExecutePass::PassStats::overflowed</a></div><div class="ttdeci">size_t overflowed</div><div class="ttdoc">Operations that exhausted max_retry_limit and were pushed to the post-barrier queue.</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:611</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_1_1_pass_stats_html_adb56418f061237d47be787f218d8f8e2"><div class="ttname"><a href="structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2">wmtk::ExecutePass::PassStats::busiest_task_seconds</a></div><div class="ttdeci">double busiest_task_seconds</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:620</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html">wmtk::ExecutePass</a></div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:34</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a02a89f6f7fe09f5c6f1d1c2207ed4c58"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a02a89f6f7fe09f5c6f1d1c2207ed4c58">wmtk::ExecutePass::max_retry_limit</a></div><div class="ttdeci">size_t max_retry_limit</div><div class="ttdoc">Attempts an operation gets at claiming its ring before it is handed to the serial queue drained after...</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:142</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a3f597bfe79378fcf121e2298fa1aa937"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a3f597bfe79378fcf121e2298fa1aa937">wmtk::ExecutePass::on_fail</a></div><div class="ttdeci">std::function&lt; void(const AppMesh &amp;, Op, const Tuple &amp;t)&gt; on_fail</div><div class="ttdoc">used to collect operations that are not finished and used for later re-execution</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:115</div></div>
-<div class="ttc" id="astructwmtk_1_1_execute_pass_html_a406de64b79dfcc15aa5a1ea627309e18"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">wmtk::ExecutePass::log_contention</a></div><div class="ttdeci">void log_contention() const</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:612</div></div>
+<div class="ttc" id="astructwmtk_1_1_execute_pass_html_a406de64b79dfcc15aa5a1ea627309e18"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a406de64b79dfcc15aa5a1ea627309e18">wmtk::ExecutePass::log_contention</a></div><div class="ttdeci">void log_contention() const</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:628</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a5fe5a0adce54ae594b2067748e0b2a53"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a5fe5a0adce54ae594b2067748e0b2a53">wmtk::ExecutePass::is_weight_up_to_date</a></div><div class="ttdeci">std::function&lt; bool(const AppMesh &amp;, const std::tuple&lt; double, Op, Tuple &gt; &amp;t)&gt; is_weight_up_to_date</div><div class="ttdoc">Should Process drops some Tuple from being processed. For example, if the energy is out-dated....</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:107</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a69daee2667787799dc04e5e24e62cc95"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a69daee2667787799dc04e5e24e62cc95">wmtk::ExecutePass::lock_vertices</a></div><div class="ttdeci">std::function&lt; bool(AppMesh &amp;, const Tuple &amp;, int task_id)&gt; lock_vertices</div><div class="ttdoc">lock the vertices concerned depends on the operation</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:68</div></div>
 <div class="ttc" id="astructwmtk_1_1_execute_pass_html_a76cbf1fcebd336fd5d7afb36f2f1091c"><div class="ttname"><a href="structwmtk_1_1_execute_pass.html#a76cbf1fcebd336fd5d7afb36f2f1091c">wmtk::ExecutePass::renew_neighbor_tuples</a></div><div class="ttdeci">std::function&lt; std::vector&lt; std::pair&lt; Op, Tuple &gt; &gt;(const AppMesh &amp;, Op, const std::vector&lt; Tuple &gt; &amp;)&gt; renew_neighbor_tuples</div><div class="ttdoc">renew neighboring Tuples after each operation depends on the operation</div><div class="ttdef"><b>Definition</b> ExecutionScheduler.hpp:60</div></div>

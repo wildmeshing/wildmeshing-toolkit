@@ -1,6 +1,13 @@
 var searchData=
 [
-  ['allow_5fjunction_5fcleanup_0',['allow_junction_cleanup',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#a37a8f0cf2a46fca6c01bbf93cad53b5a',1,'wmtk::components::triwild::Parameters']]],
-  ['already_5finverted_1',['already_inverted',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a7ee86b9e24d37dc5af641555cbbf6a44',1,'wmtk::optimization::SmoothRejectCounters']]],
-  ['attempted_2',['attempted',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a4f92747f62dc71f5b93bed6e216fea52',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace']]]
+  ['ab_5fsmooth_5fmax_5fpasses_0',['ab_smooth_max_passes',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a76093debf7ee30f3f3ad278d7148590b',1,'wmtk::components::topological_offset::Parameters']]],
+  ['accepted_1',['accepted',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_wall_move_stats.html#aaec957268956149006ea4993f8beb635',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::WallMoveStats']]],
+  ['accepted_5fzero_5ftracked_2',['accepted_zero_tracked',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_wall_move_stats.html#a4a5d99d3aa6495793209b939fe07186a',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::WallMoveStats']]],
+  ['added_5fdev_5fzero_5ftracked_3',['added_dev_zero_tracked',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_wall_move_stats.html#a678fb346f0fb8088a5258260dd24cdaa',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::WallMoveStats']]],
+  ['added_5fdeviation_4',['added_deviation',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_wall_move_stats.html#a49716e0111237bb1e32719ef18fad9c3',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::WallMoveStats']]],
+  ['agree_5',['agree',['../structwmtk_1_1components_1_1topological__offset_1_1_align_energy2_d_1_1_edge.html#a6f622d2fcc963d5a5c8cbab40a6d7c1e',1,'wmtk::components::topological_offset::AlignEnergy2D::Edge']]],
+  ['allow_5fjunction_5fcleanup_6',['allow_junction_cleanup',['../structwmtk_1_1components_1_1triwild_1_1_parameters.html#a37a8f0cf2a46fca6c01bbf93cad53b5a',1,'wmtk::components::triwild::Parameters']]],
+  ['already_5finverted_7',['already_inverted',['../structwmtk_1_1optimization_1_1_smooth_reject_counters.html#a7ee86b9e24d37dc5af641555cbbf6a44',1,'wmtk::optimization::SmoothRejectCounters']]],
+  ['at_5fvertex_8',['at_vertex',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_tag_polyline2d.html#a52267f444e458e9c18399f1e2bb977b7',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::TagPolyline2d']]],
+  ['attempted_9',['attempted',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#a473f69fe4c85b00e5b79d7ea87eccd29',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace::attempted'],['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#a4f92747f62dc71f5b93bed6e216fea52',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::SmoothTrace::attempted']]]
 ];

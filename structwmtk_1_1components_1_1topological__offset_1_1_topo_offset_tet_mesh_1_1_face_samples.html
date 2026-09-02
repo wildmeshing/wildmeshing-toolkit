@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::topological_offset::OffsetSurfaceSample Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::topological_offset::TopoOffsetTetMesh::FaceSamples Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,40 +69,33 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_offset_surface_sample.html">OffsetSurfaceSample</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html">TopoOffsetTetMesh</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_face_samples.html">FaceSamples</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1components_1_1topological__offset_1_1_offset_surface_sample-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::topological_offset::OffsetSurfaceSample Struct Reference</div></div>
+<a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_face_samples-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTetMesh::FaceSamples Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>one sample of the input complex's implicit offset field, taken near a point on an offset-surface face. <code>normal</code> is Vector3d::Zero() if the sample point landed exactly on the input complex, in which case no normal direction could be recovered.  
- <a href="structwmtk_1_1components_1_1topological__offset_1_1_offset_surface_sample.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a5b0c79aadb9df85f4af14ace9cf946af" id="r_a5b0c79aadb9df85f4af14ace9cf946af"><td class="memItemLeft" align="right" valign="top"><a id="a5b0c79aadb9df85f4af14ace9cf946af" name="a5b0c79aadb9df85f4af14ace9cf946af"></a>
-Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>point</b></td></tr>
-<tr class="separator:a5b0c79aadb9df85f4af14ace9cf946af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf4761d049edf2d96f5ae05d317a3b0c" id="r_aaf4761d049edf2d96f5ae05d317a3b0c"><td class="memItemLeft" align="right" valign="top"><a id="aaf4761d049edf2d96f5ae05d317a3b0c" name="aaf4761d049edf2d96f5ae05d317a3b0c"></a>
-Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>nearest</b></td></tr>
-<tr class="separator:aaf4761d049edf2d96f5ae05d317a3b0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2844c56f47361848757472f1842b4be" id="r_ae2844c56f47361848757472f1842b4be"><td class="memItemLeft" align="right" valign="top"><a id="ae2844c56f47361848757472f1842b4be" name="ae2844c56f47361848757472f1842b4be"></a>
-Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>normal</b></td></tr>
-<tr class="separator:ae2844c56f47361848757472f1842b4be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1d6e24688614ffd5ea31a19ba62d72b" id="r_af1d6e24688614ffd5ea31a19ba62d72b"><td class="memItemLeft" align="right" valign="top"><a id="af1d6e24688614ffd5ea31a19ba62d72b" name="af1d6e24688614ffd5ea31a19ba62d72b"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>weight</b></td></tr>
-<tr class="separator:af1d6e24688614ffd5ea31a19ba62d72b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a282aa57966268c117231e657e6fb04bd" id="r_a282aa57966268c117231e657e6fb04bd"><td class="memItemLeft" align="right" valign="top"><a id="a282aa57966268c117231e657e6fb04bd" name="a282aa57966268c117231e657e6fb04bd"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>max</b> = 0.</td></tr>
+<tr class="separator:a282aa57966268c117231e657e6fb04bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6409ad4720a7229e1ecaa6b4b0591e07" id="r_a6409ad4720a7229e1ecaa6b4b0591e07"><td class="memItemLeft" align="right" valign="top"><a id="a6409ad4720a7229e1ecaa6b4b0591e07" name="a6409ad4720a7229e1ecaa6b4b0591e07"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>sum</b> = 0.</td></tr>
+<tr class="separator:a6409ad4720a7229e1ecaa6b4b0591e07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95361093dcb45a193a1b2356110033c1" id="r_a95361093dcb45a193a1b2356110033c1"><td class="memItemLeft" align="right" valign="top"><a id="a95361093dcb45a193a1b2356110033c1" name="a95361093dcb45a193a1b2356110033c1"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n</b> = 0</td></tr>
+<tr class="separator:a95361093dcb45a193a1b2356110033c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>one sample of the input complex's implicit offset field, taken near a point on an offset-surface face. <code>normal</code> is Vector3d::Zero() if the sample point landed exactly on the input complex, in which case no normal direction could be recovered. </p>
-<dl class="section note"><dt>Note</dt><dd>mirrors a single sample of <a href="https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/utils/Quadrics.cpp's">https://github.com/wildmeshing/topological-offsets/blob/main/components/topological_offsets/wmtk/components/topological_offsets/internal/utils/Quadrics.cpp's</a> get_triangle_samples_and_area() </dd></dl>
+<div class="textblock"><p>A quantity sampled at points INSIDE an offset-surface face &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2795cb9f3bc181ccac2d4021b735dc63" title="The Phi residual at offset_residual_samples interior points of offset face f.">offset_face_samples()</a> for the residual and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab8939a6bd1c2fcbb2bd516325fe3988e">gradient_split()</a> for the gradient. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>

@@ -89,7 +89,9 @@ Inheritance diagram for wmtk::SampleEnvelope:</div>
  <div class="center">
   <img src="classwmtk_1_1_sample_envelope.png" usemap="#wmtk::SampleEnvelope_map" alt=""/>
   <map id="wmtk::SampleEnvelope_map" name="wmtk::SampleEnvelope_map">
-<area href="classwmtk_1_1_envelope.html" alt="wmtk::Envelope" shape="rect" coords="0,0,139,24"/>
+<area href="classwmtk_1_1_envelope.html" alt="wmtk::Envelope" shape="rect" coords="175,0,516,24"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html" alt="wmtk::components::topological_offset::IntersectionEnvelope" shape="rect" coords="0,112,341,136"/>
+<area href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html" alt="wmtk::components::topological_offset::UnionEnvelope" shape="rect" coords="351,112,692,136"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -123,13 +125,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (const std::
 <tr class="memitem:a4c3d73ee05a3ae5f9e4fb9cab4e7aa45" id="r_a4c3d73ee05a3ae5f9e4fb9cab4e7aa45"><td class="memItemLeft" align="right" valign="top"><a id="a4c3d73ee05a3ae5f9e4fb9cab4e7aa45" name="a4c3d73ee05a3ae5f9e4fb9cab4e7aa45"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const std::array&lt; Eigen::Vector3d, 2 &gt; &amp;edge) const</td></tr>
 <tr class="separator:a4c3d73ee05a3ae5f9e4fb9cab4e7aa45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b49f04520af04bf69c92feafeb66d6d" id="r_a2b49f04520af04bf69c92feafeb66d6d"><td class="memItemLeft" align="right" valign="top"><a id="a2b49f04520af04bf69c92feafeb66d6d" name="a2b49f04520af04bf69c92feafeb66d6d"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;edge) const</td></tr>
-<tr class="separator:a2b49f04520af04bf69c92feafeb66d6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a951490464dca2ab4f51dbfdbc7a1dac9" id="r_a951490464dca2ab4f51dbfdbc7a1dac9"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#a951490464dca2ab4f51dbfdbc7a1dac9">is_outside</a> (const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;edge) const</td></tr>
+<tr class="separator:a951490464dca2ab4f51dbfdbc7a1dac9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa18a6419b8d68a613796ef1ac62a4faa" id="r_aa18a6419b8d68a613796ef1ac62a4faa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_sample_envelope.html#aa18a6419b8d68a613796ef1ac62a4faa">is_outside</a> (const Eigen::Vector3d &amp;pts) const</td></tr>
 <tr class="separator:aa18a6419b8d68a613796ef1ac62a4faa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae05f30d065d7d04117b679000ffbac2c" id="r_ae05f30d065d7d04117b679000ffbac2c"><td class="memItemLeft" align="right" valign="top"><a id="ae05f30d065d7d04117b679000ffbac2c" name="ae05f30d065d7d04117b679000ffbac2c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const Eigen::Vector2d &amp;pts) const</td></tr>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_outside</b> (const Eigen::Vector2d &amp;pts) const</td></tr>
 <tr class="separator:ae05f30d065d7d04117b679000ffbac2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57f15743108aa5033aff31e825458775" id="r_a57f15743108aa5033aff31e825458775"><td class="memItemLeft" align="right" valign="top"><a id="a57f15743108aa5033aff31e825458775" name="a57f15743108aa5033aff31e825458775"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>nearest_point</b> (const Eigen::Vector3d &amp;pts, Eigen::Vector3d &amp;result) const</td></tr>
@@ -379,7 +380,7 @@ template&lt;typename VertexList &gt; </div>
 </div>
 </div>
 <a id="aa18a6419b8d68a613796ef1ac62a4faa" name="aa18a6419b8d68a613796ef1ac62a4faa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa18a6419b8d68a613796ef1ac62a4faa">&#9670;&#160;</a></span>is_outside() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa18a6419b8d68a613796ef1ac62a4faa">&#9670;&#160;</a></span>is_outside() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -406,8 +407,37 @@ template&lt;typename VertexList &gt; </div>
 
 </div>
 </div>
+<a id="a951490464dca2ab4f51dbfdbc7a1dac9" name="a951490464dca2ab4f51dbfdbc7a1dac9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a951490464dca2ab4f51dbfdbc7a1dac9">&#9670;&#160;</a></span>is_outside() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::SampleEnvelope::is_outside </td>
+          <td>(</td>
+          <td class="paramtype">const std::array&lt; Eigen::Vector2d, 2 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>edge</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The 2D pair is VIRTUAL where the 3D edge query is not, so a containment-only composite over several envelopes can answer them. <a class="el" href="classwmtk_1_1_envelope.html">wmtk::Envelope</a> declares virtual is_outside only for the 3D triangle and the 3D point &ndash; which is all a 3D composite needs &ndash; and 2D's containment path asks these two instead. See the composites in components/topological_offset/.../TagEnvelopes.hpp, and the invariant stated there: a composite must never reach the NON-virtual queries below, whose BVH it does not have. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html#a262922204da02c5d26c3bd8c7f658711">wmtk::components::topological_offset::IntersectionEnvelope</a>, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_union_envelope.html#a91b9cda73c6eae3418145eac7c6fa1eb">wmtk::components::topological_offset::UnionEnvelope</a>.</p>
+
+</div>
+</div>
 <a id="aa85e901527be8ba142c3a71fef7faea0" name="aa85e901527be8ba142c3a71fef7faea0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa85e901527be8ba142c3a71fef7faea0">&#9670;&#160;</a></span>is_outside() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa85e901527be8ba142c3a71fef7faea0">&#9670;&#160;</a></span>is_outside() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

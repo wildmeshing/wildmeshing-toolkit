@@ -93,10 +93,62 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>v1_id</b> = 0</td><
 <tr class="memitem:aaa6575032dc297253e9627fa9403ac9c" id="r_aaa6575032dc297253e9627fa9403ac9c"><td class="memItemLeft" align="right" valign="top"><a id="aaa6575032dc297253e9627fa9403ac9c" name="aaa6575032dc297253e9627fa9403ac9c"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>v2_id</b> = 0</td></tr>
 <tr class="separator:aaa6575032dc297253e9627fa9403ac9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af54a60c04cf67a0286e32057de9a24b1" id="r_af54a60c04cf67a0286e32057de9a24b1"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html#af54a60c04cf67a0286e32057de9a24b1">edge_bits</a> = 0</td></tr>
+<tr class="separator:af54a60c04cf67a0286e32057de9a24b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecb3949f39443b71d2e41da82d917a03" id="r_aecb3949f39443b71d2e41da82d917a03"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html#aecb3949f39443b71d2e41da82d917a03">parent_q_max</a> = -1.</td></tr>
+<tr class="separator:aecb3949f39443b71d2e41da82d917a03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa4672fb9d48165e19a7b0aa4ded2d21" id="r_aaa4672fb9d48165e19a7b0aa4ded2d21"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html#aaa4672fb9d48165e19a7b0aa4ded2d21">parent_flatness</a> = 1.</td></tr>
+<tr class="separator:aaa4672fb9d48165e19a7b0aa4ded2d21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Dispatch: the optimization phase runs the shared split, everything else the marching-triangles one. Parent face labels for an optimization split, keyed by the apex vertex opposite the split edge &ndash; that vertex is shared by both children of the same parent, so it names them afterwards. Keyed and consumed EXACTLY as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac71a215935dfb32d9121f177512de655" title="User specified modifications and desideratas after an edge split.">TriOptimizerMesh::split_edge_after</a> keys and consumes its own FaceAttributes cache, so the label lands wherever the tags do. The endpoints are recorded because the consumer needs the two new edges to resolve each child's apex, and split_after_vertex() is handed only the new vertex. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
+<div class="textblock"><p>Parent face labels for an optimization split, keyed by the apex vertex opposite the split edge &ndash; shared by both children of the same parent, so it names them afterwards. Keyed and consumed exactly as <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#ac71a215935dfb32d9121f177512de655" title="User specified modifications and desideratas after an edge split.">TriOptimizerMesh::split_edge_after</a> does its own FaceAttributes cache, so the label lands wherever the tags do; the endpoints are what resolve each child's apex. </p>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="af54a60c04cf67a0286e32057de9a24b1" name="af54a60c04cf67a0286e32057de9a24b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af54a60c04cf67a0286e32057de9a24b1">&#9670;&#160;</a></span>edge_bits</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint64_t wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d::edge_bits = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The endpoints' mask AND, captured before the split (3D's rule at both of its split sites). Consumed by split_after_vertex() behind the parent edge's own class gate, which keeps a chord's midpoint maskless so the AND cannot over-claim through one. Never derived from the incident faces' current tags: the band retag empties the live symmetric difference on every region edge it swallows. </p>
+
+</div>
+</div>
+<a id="aaa4672fb9d48165e19a7b0aa4ded2d21" name="aaa4672fb9d48165e19a7b0aa4ded2d21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa4672fb9d48165e19a7b0aa4ded2d21">&#9670;&#160;</a></span>parent_flatness</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d::parent_flatness = 1.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Same question in the scale-invariant measure, which keeps resolving after AMIPS has saturated at MAX_ENERGY. Min over the parents: the flattest thing the split inherited. </p>
+
+</div>
+</div>
+<a id="aecb3949f39443b71d2e41da82d917a03" name="aecb3949f39443b71d2e41da82d917a03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aecb3949f39443b71d2e41da82d917a03">&#9670;&#160;</a></span>parent_q_max</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::OptSplitCache2d::parent_q_max = -1.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Diagnostic: the two parent faces' AMIPS before the split, so split_after_vertex() can say whether a needle child came from a healthy parent or an already unscoreable one. </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a></li>
 </ul>
 </div><!-- contents -->
