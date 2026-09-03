@@ -6,6 +6,9 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_edges",
+      "input_points",
+      "input_roles",
       "input_names",
       "input_dir",
       "write_vtu",
@@ -16,6 +19,10 @@
       "simplify_envelope_ratio",
       "optimize_envelope_around_simplified",
       "order2_envelope_ratio",
+      "feature_envelope_ratio",
+      "preserve_feature_points",
+      "allow_junction_cleanup",
+      "DEBUG_feature_retention",
       "use_sample_envelope",
       "use_legacy_code",
       "num_threads",
@@ -81,6 +88,64 @@
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/input_edges",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature EDGE meshes: curve networks forced into the tetrahedralization exactly -- every input edge is represented by a chain of tet edges tiling it, endpoint to endpoint. A vertex of one of these files with no incident edge is treated as a feature point (see /input_points). The edges and points, plus the forcing-triangle apexes the insertion builds for them (offset by up to 0.1 x the edge length), must lie inside the background box; the input bounding box is grown over them automatically. NOTE: inserted and tracked only, for now -- the optimization phase does not yet preserve them."
+  },
+  {
+    "pointer": "/input_edges/*",
+    "type": "string",
+    "doc": "One input feature edge mesh."
+  },
+  {
+    "pointer": "/input_points",
+    "type": "list",
+    "default": [],
+    "doc": "List of input feature POINT files: every vertex of each file is forced into the tetrahedralization as a tet vertex, exactly (edges in these files are ignored, with a warning). NOTE: inserted and tracked only, for now -- the optimization phase does not yet preserve them."
+  },
+  {
+    "pointer": "/input_points/*",
+    "type": "string",
+    "doc": "One input feature point file (only the vertices are used)."
+  },
+  {
+    "pointer": "/input_roles",
+    "type": "list",
+    "default": [],
+    "doc": "For filter='hybrid': one role per /input entry, 'volume' (tetrahedralize its inside, by per-input winding number) or 'surface' (keep as an embedded triangle sheet in the hybrid output). Empty means every input is 'volume'. Curves and points declare their dimension by arriving through /input_edges and /input_points. Ignored (with a warning) by every other filter."
+  },
+  {
+    "pointer": "/input_roles/*",
+    "type": "string",
+    "options": ["volume", "surface"],
+    "doc": "Role of one input mesh."
+  },
+  {
+    "pointer": "/preserve_feature_points",
+    "type": "bool",
+    "default": true,
+    "doc": "Keep the 0-dimensional features -- every /input_points point, and the endpoints of open feature curves (junctions too, when allow_junction_cleanup is off) -- within the feature tube radius of where the input put them. Some output vertex stays within that ball of each anchor, collapses that would break this are refused, and smoothing may move an anchor-carrying vertex only inside its ball. Without this an open feature curve erodes from its own tips: every eroding collapse keeps the surviving chain inside the tube, so no containment test can see it. Mirrors triwild's parameter of the same name."
+  },
+  {
+    "pointer": "/allow_junction_cleanup",
+    "type": "bool",
+    "default": true,
+    "doc": "Anchor only the endpoints of open feature curves, letting junctions (valence >= 3 in the feature network) merge and move within the tube. The erosion the anchor exists for is an ENDPOINT property -- a curve eats its own tip -- and does not apply to a junction, where every curve through it stays constrained. Mirrors triwild."
+  },
+  {
+    "pointer": "/DEBUG_feature_retention",
+    "type": "bool",
+    "default": false,
+    "doc": "Sanity check: count how many feature anchors still have a mesh vertex within the anchor ball, measured BEFORE any /filter discards regions (a feature preserved through the optimization is never reported lost because extraction dropped its region; the feature outputs keep it either way), and report the worst miss in multiples of the ball radius. The invariant preserve_feature_points maintains, measured rather than assumed."
+  },
+  {
+    "pointer": "/feature_envelope_ratio",
+    "type": "float",
+    "default": 0.5,
+    "doc": "Envelope thickness for the feature-curve tube -- the region a tet edge tagged as tiling an input feature edge must stay inside -- as a fraction of the surface envelope's eps. Kept below 1 for the same measured reason as order2_envelope_ratio: on a curve a wider envelope relieves no blockage, it is only freedom for the curve to wander, i.e. more geometry to resolve at the same final quality."
   },
   {
     "pointer": "/output",
@@ -181,9 +246,9 @@
   {
     "pointer": "/filter",
     "type": "string",
-    "options": ["flood", "input", "tracked", "none"],
+    "options": ["flood", "input", "tracked", "hybrid", "none"],
     "default": "none",
-    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
+    "doc": "Remove the outside region based on different criteria. 'flood': flood fill. 'input': winding number w.r.t. the input. 'tracked': winding number w.r.t. the tracked surface. 'hybrid': mixed-dimensional output driven by /input_roles -- tets are kept only inside volume-role inputs, surface-role inputs survive as an embedded triangle sheet and the feature curves as an edge chain, all written together to <output>_hybrid.msh (the plain _final.msh keeps only the volume tets). 'none': Do not filter. Flood fill only works if the input is closed. Otherwise, it results in an empty mesh. Filtering w.r.t. the input might cause wrinkles along the surface as some tets might be falsely tagged. Filtering w.r.t. the tracked surface can lead to missing pieces if the input consists of multiple components."
   },
   {
     "pointer": "/skip_winding_number",

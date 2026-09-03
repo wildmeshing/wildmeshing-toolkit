@@ -23,6 +23,20 @@ class MshData
 {
 public:
     template <typename Fn>
+    void add_point_vertices(size_t num_vertices, const Fn& get_vertex_cb)
+    {
+        add_vertices<0>(num_vertices, get_vertex_cb);
+    }
+
+    /// 0D point elements (gmsh element type 15), one per vertex of the last-added
+    /// (point) vertex block. The callback returns std::array<size_t, 1>.
+    template <typename Fn>
+    void add_points(size_t num_points, const Fn& get_point_cb)
+    {
+        add_simplex_elements<0>(num_points, get_point_cb);
+    }
+
+    template <typename Fn>
     void add_edge_vertices(size_t num_vertices, const Fn& get_vertex_cb)
     {
         add_vertices<1>(num_vertices, get_vertex_cb);
@@ -398,7 +412,7 @@ private:
     template <int DIM, typename Fn>
     void add_vertices(size_t num_vertices, const Fn& get_vertex_cb)
     {
-        static_assert(DIM >= 1 && DIM <= 3, "Only 1,2,3D elements are supported!");
+        static_assert(DIM >= 0 && DIM <= 3, "Only 0,1,2,3D elements are supported!");
         if (num_vertices == 0) {
             logger().trace("Adding empty vertex block.");
         }
@@ -428,9 +442,7 @@ private:
     template <int DIM, typename Fn>
     void add_simplex_elements(size_t num_elements, const Fn& get_element_cb)
     {
-        static_assert(
-            DIM == 1 || DIM == 2 || DIM == 3,
-            "Only 1,2,3D simplex elements are supported");
+        static_assert(DIM >= 0 && DIM <= 3, "Only 0,1,2,3D simplex elements are supported");
         if (num_elements == 0) return;
 
         if (m_spec.nodes.num_nodes == 0) {
@@ -447,7 +459,9 @@ private:
         mshio::ElementBlock block;
         block.entity_dim = DIM;
         block.entity_tag = vertex_block.entity_tag;
-        if constexpr (DIM == 1) {
+        if constexpr (DIM == 0) {
+            block.element_type = 15; // 1-node point.
+        } else if constexpr (DIM == 1) {
             block.element_type = 1; // 2-node line.
         } else if constexpr (DIM == 2) {
             block.element_type = 2; // 3-node triangle.

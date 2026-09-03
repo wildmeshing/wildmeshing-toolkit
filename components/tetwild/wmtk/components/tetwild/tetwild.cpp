@@ -9,9 +9,11 @@
 #include <wmtk/TetMesh.h>
 #include <wmtk/utils/Partitioning.h>
 #include <cstdlib>
+#include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/io/read_triangle_mesh.hpp>
 
 #include <wmtk/components/shortest_edge_collapse/ShortestEdgeCollapse.h>
+#include <functional>
 #include <memory>
 #include <vector>
 #include <wmtk/envelope/Envelope.hpp>
@@ -85,6 +87,50 @@ std::vector<int> compute_euler_characteristics(const MatrixXi& F)
     return euler_characteristics;
 }
 
+/**
+ * @brief Euler characteristic (V - E) of each connected component of an edge network,
+ * sorted. The 1D counterpart of compute_euler_characteristics above, and the same check
+ * triwild runs on its curves: per component, 1 for a tree/open polyline, 0 for one loop,
+ * and so on. Comparing the sorted per-component values of the input feature network against
+ * the output's tagged edges catches exactly what the distance audits cannot -- components
+ * merged, split, or lost outright.
+ */
+std::vector<int> curve_euler_characteristics(const std::vector<std::array<size_t, 2>>& edges)
+{
+    std::map<size_t, size_t> root; // union-find over the vertices that appear
+    std::function<size_t(size_t)> find = [&](size_t v) -> size_t {
+        while (root[v] != v) {
+            root[v] = root[root[v]];
+            v = root[v];
+        }
+        return v;
+    };
+    for (const auto& e : edges) {
+        for (const size_t v : {e[0], e[1]}) {
+            if (root.count(v) == 0) {
+                root[v] = v;
+            }
+        }
+        root[find(e[0])] = find(e[1]);
+    }
+    std::map<size_t, std::pair<int, int>> vc_ec; // component root -> (#V, #E)
+    for (const auto& [v, r] : root) {
+        (void)r;
+        ++vc_ec[find(v)].first;
+    }
+    for (const auto& e : edges) {
+        ++vc_ec[find(e[0])].second;
+    }
+    std::vector<int> ecs;
+    ecs.reserve(vc_ec.size());
+    for (const auto& [r, ve] : vc_ec) {
+        (void)r;
+        ecs.push_back(ve.first - ve.second);
+    }
+    std::sort(ecs.begin(), ecs.end());
+    return ecs;
+}
+
 TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
@@ -107,9 +153,45 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     int max_its = json_params["max_iterations"];
     std::string filter_option = json_params["filter"];
 
+    // Roles for the 'hybrid' filter: one entry per input file, "volume" (tet-fill its
+    // inside) or "surface" (keep as an embedded sheet). Curves and points already declare
+    // their dimension by arriving through input_edges / input_points.
+    std::vector<std::string> input_roles = json_params["input_roles"];
+    std::vector<size_t> volume_input_ids;
+    if (filter_option == "hybrid") {
+        const size_t n_inputs = json_params["input"].size();
+        if (input_roles.empty()) {
+            input_roles.assign(n_inputs, "volume");
+        }
+        if (input_roles.size() != n_inputs) {
+            log_and_throw_error(
+                "input_roles has {} entries for {} inputs",
+                input_roles.size(),
+                n_inputs);
+        }
+        for (size_t k = 0; k < input_roles.size(); ++k) {
+            if (input_roles[k] == "volume") {
+                volume_input_ids.push_back(k);
+            } else if (input_roles[k] != "surface") {
+                log_and_throw_error(
+                    "input_roles[{}] = '{}'; must be 'volume' or 'surface'",
+                    k,
+                    input_roles[k]);
+            }
+        }
+        if (volume_input_ids.empty()) {
+            logger().warn("filter='hybrid' with no volume-role input: no tets will be kept.");
+        }
+    } else if (!input_roles.empty()) {
+        logger().warn("input_roles is only used by filter='hybrid'; ignoring it.");
+    }
+
     params.epsr = json_params["eps_rel"];
     params.lr = json_params["length_rel"];
     params.order2_envelope_ratio = json_params["order2_envelope_ratio"];
+    params.feature_envelope_ratio = json_params["feature_envelope_ratio"];
+    params.preserve_feature_points = json_params["preserve_feature_points"];
+    params.allow_junction_cleanup = json_params["allow_junction_cleanup"];
     params.stop_energy = json_params["stop_energy"];
     params.split_high_valence_threshold = json_params["split_high_valence_threshold"];
     params.num_smoothing_passes = json_params["num_smoothing_passes"];
@@ -174,6 +256,115 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         box_minmax.second = V.colwise().maxCoeff();
         VF_to_vectors(V, F, verts, tris);
     }
+    // Feature inputs: an edge mesh to force into the tetrahedralization as tet edges, and
+    // points to force in as tet vertices. Both join the bounding box BEFORE eps and the
+    // background box derive from it -- they are input geometry, and a feature outside the
+    // surface's box must still land inside the triangulated domain.
+    std::vector<Vector3d> feature_edge_vertices;
+    std::vector<std::array<size_t, 2>> feature_edges;
+    std::vector<Vector3d> feature_points;
+    {
+        std::vector<std::string> edge_paths = json_params["input_edges"];
+        std::vector<std::string> point_paths = json_params["input_points"];
+        for (std::string& p : edge_paths) {
+            p = resolve_path(root, p).string();
+        }
+        for (std::string& p : point_paths) {
+            p = resolve_path(root, p).string();
+        }
+        for (size_t file = 0; file < edge_paths.size(); ++file) {
+            const std::string& path = edge_paths[file];
+            MatrixXd Ve;
+            MatrixXi Ee;
+            io::read_edge_mesh(path, Ve, Ee);
+            logger()
+                .info("Read feature edge mesh {}: #V = {}, #E = {}", path, Ve.rows(), Ee.rows());
+            const size_t base = feature_edge_vertices.size();
+            for (int i = 0; i < Ve.rows(); ++i) {
+                feature_edge_vertices.emplace_back(Ve.row(i));
+            }
+            for (int i = 0; i < Ee.rows(); ++i) {
+                feature_edges.push_back({{base + size_t(Ee(i, 0)), base + size_t(Ee(i, 1))}});
+            }
+            // A vertex of an edge file with no incident edge is a free point, same rule as
+            // triwild's 2D inputs.
+            std::vector<int> valence(Ve.rows(), 0);
+            for (int i = 0; i < Ee.rows(); ++i) {
+                ++valence[Ee(i, 0)];
+                ++valence[Ee(i, 1)];
+            }
+            for (int v = 0; v < Ve.rows(); ++v) {
+                if (valence[v] == 0) {
+                    feature_points.emplace_back(Ve.row(v));
+                }
+            }
+        }
+        for (const std::string& path : point_paths) {
+            MatrixXd Vp;
+            MatrixXi Ep;
+            io::read_edge_mesh(path, Vp, Ep);
+            if (Ep.rows() > 0) {
+                logger().warn(
+                    "input_points file {} has {} edges; only its {} vertices are used",
+                    path,
+                    Ep.rows(),
+                    Vp.rows());
+            }
+            logger().info("Read feature point file {}: #P = {}", path, Vp.rows());
+            for (int i = 0; i < Vp.rows(); ++i) {
+                feature_points.emplace_back(Vp.row(i));
+            }
+        }
+        for (const Vector3d& p : feature_edge_vertices) {
+            box_minmax.first = box_minmax.first.cwiseMin(p);
+            box_minmax.second = box_minmax.second.cwiseMax(p);
+        }
+        for (const Vector3d& p : feature_points) {
+            box_minmax.first = box_minmax.first.cwiseMin(p);
+            box_minmax.second = box_minmax.second.cwiseMax(p);
+        }
+    }
+
+    // The 0-dimensional features to anchor: every input point, and the feature network's
+    // endpoints (valence 1) -- junctions (valence >= 3) too when allow_junction_cleanup is
+    // off. Valence 2 is a curve interior: never anchored, the tube handles it.
+    // Anchors are REGISTERED unconditionally; preserve_feature_points gates only the
+    // collapse and smoothing policy. Same split as triwild, and it keeps the retention
+    // audit honest when the guard is off -- it reports 0/N instead of nothing to check.
+    std::vector<Vector3d> feature_anchors;
+    {
+        feature_anchors = feature_points;
+        std::vector<int> valence(feature_edge_vertices.size(), 0);
+        for (const auto& e : feature_edges) {
+            ++valence[e[0]];
+            ++valence[e[1]];
+        }
+        size_t n_endpoints = 0, n_junctions = 0;
+        for (size_t v = 0; v < feature_edge_vertices.size(); ++v) {
+            if (valence[v] == 0 || valence[v] == 2) {
+                continue;
+            }
+            if (valence[v] == 1) {
+                ++n_endpoints;
+            } else {
+                ++n_junctions;
+                if (params.allow_junction_cleanup) {
+                    continue;
+                }
+            }
+            feature_anchors.push_back(feature_edge_vertices[v]);
+        }
+        if (n_endpoints + n_junctions > 0) {
+            logger().info(
+                "feature anchors: {} curve endpoints, {} junctions; anchoring {} points in "
+                "total (junction cleanup {})",
+                n_endpoints,
+                n_junctions,
+                feature_anchors.size(),
+                params.allow_junction_cleanup ? "on" : "off");
+        }
+    }
+
     t_load = phase_timer.getElapsedTime();
     phase_timer.start(); // surface simplification begins
 
@@ -439,6 +630,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     // Exact arrangement of the simplified surface against a Delaunay background
     // mesh; the remesher's own tets are used directly, so no Steiner points.
+    utils::EmbedFeaturesResult features_out;
     mesh.insertion_by_volumeremesher(
         vsimp,
         fsimp,
@@ -446,7 +638,29 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         facets,
         is_v_on_input,
         tets,
-        tet_face_on_input_surface);
+        tet_face_on_input_surface,
+        feature_edge_vertices,
+        feature_edges,
+        feature_points,
+        &features_out);
+
+    if (!feature_edges.empty() || !feature_points.empty()) {
+        size_t tiling_edges = 0;
+        for (const auto& t : features_out.edge_tiling) {
+            tiling_edges += t.size();
+        }
+        size_t points_found = 0;
+        for (const int64_t v : features_out.point_vertex) {
+            points_found += v >= 0 ? 1 : 0;
+        }
+        logger().info(
+            "features after insertion: {} edges tiled by {} tet edges, {}/{} points are "
+            "output vertices",
+            features_out.edge_tiling.size(),
+            tiling_edges,
+            points_found,
+            features_out.point_vertex.size());
+    }
 
     logger().info("=== finished insertion");
 
@@ -455,12 +669,31 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     wmtk::set_preallocation_factor_from_json(mesh_new, json_params);
     mesh_new.m_input_names = json_params["input_names"].get<std::vector<std::string>>();
 
+    const bool has_features = !feature_edges.empty() || !feature_points.empty();
+    // The feature-curve tube: what the collapse guard checks tagged edges against, and what
+    // curve-vertex smoothing will be pulled toward. Around the ORIGINAL input feature edges,
+    // like every other envelope. Follows the surface envelope's choice of predicate.
+    if (!feature_edges.empty()) {
+        std::vector<Eigen::Vector2i> fe_env(feature_edges.size());
+        for (size_t i = 0; i < feature_edges.size(); ++i) {
+            fe_env[i] = Eigen::Vector2i(int(feature_edges[i][0]), int(feature_edges[i][1]));
+        }
+        mesh_new.m_feature_envelope = std::make_shared<SampleEnvelope>(!use_sample_envelope);
+        mesh_new.m_feature_envelope->init(
+            feature_edge_vertices,
+            fe_env,
+            params.epsr * params.diag_l * params.feature_envelope_ratio);
+    }
+    // The anchor ball has the tube's radius; input_points-only runs need it too.
+    mesh_new.m_feature_eps = params.epsr * params.diag_l * params.feature_envelope_ratio;
     mesh_new.init_from_Volumeremesher(
         v_rational,
         facets,
         is_v_on_input,
         tets,
-        tet_face_on_input_surface);
+        tet_face_on_input_surface,
+        has_features ? &features_out : nullptr,
+        has_features && !feature_anchors.empty() ? &feature_anchors : nullptr);
 
     double insertion_time = insertion_timer.getElapsedTime();
 
@@ -524,6 +757,34 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     // phase, so skip_winding_number lets a caller that does not filter and does not need
     // the annotations opt out of them. When filtering is requested the flag is ignored
     // (the winding number is needed), with a warning.
+    // Feature collections, taken BEFORE any filter deletes tets: explicit features are
+    // user input, and a filter discarding the region they live in must not erase them from
+    // the feature outputs and audits (they do disappear from the tet mesh itself). Same
+    // rule in 2D. With filter='none' nothing is deleted and this equals the final state.
+    std::vector<std::array<Vector3d, 3>> hybrid_sheet_tris; // hybrid filter only
+    std::vector<std::array<Vector3d, 2>> hybrid_curve_segs;
+    std::vector<Vector3d> hybrid_anchor_pts;
+    std::pair<size_t, size_t> hybrid_retention{0, 0};
+    double hybrid_retention_worst = 0;
+    const bool features_present = !feature_edges.empty() || !feature_points.empty();
+    if (features_present) {
+        for (const auto& e : mesh_new.get_edges()) {
+            if (!mesh_new.m_feature_edge_attribute[e.eid(mesh_new)].m_is_feature_edge) {
+                continue;
+            }
+            hybrid_curve_segs.push_back(
+                {{mesh_new.m_vertex_attribute[e.vid(mesh_new)].m_posf,
+                  mesh_new.m_vertex_attribute[e.switch_vertex(mesh_new).vid(mesh_new)].m_posf}});
+        }
+        for (const auto& v : mesh_new.get_vertices()) {
+            const size_t vid = v.vid(mesh_new);
+            if (mesh_new.m_vertex_extra[vid].m_feature_point_id != TetWildMesh::NO_FEATURE) {
+                hybrid_anchor_pts.push_back(mesh_new.m_vertex_attribute[vid].m_posf);
+            }
+        }
+        hybrid_retention = mesh_new.feature_retention(&hybrid_retention_worst);
+    }
+
     const bool skip_winding = json_params["skip_winding_number"] && filter_option == "none";
     if (json_params["skip_winding_number"] && filter_option != "none") {
         logger().warn(
@@ -567,6 +828,44 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         const int num_parts = mesh_new.flood_fill();
         logger().info("flood fill parts {}", num_parts);
         mesh_new.filter_with_flood_fill();
+    } else if (filter_option == "hybrid") {
+        // Collect everything that lives on scaffolding tets BEFORE deleting them: the
+        // surface-role sheets (tracked faces none of whose incident tets stay), every
+        // tagged feature curve, the anchor positions, and the pre-filter retention -- the
+        // audit that means something is the one taken while the features still exist in
+        // the tet mesh.
+        std::vector<bool> keep(mesh_new.tet_capacity(), false);
+        for (const auto& t : mesh_new.get_tets()) {
+            const size_t tid = t.tid(mesh_new);
+            const auto& wn = mesh_new.m_tet_attribute[tid].m_winding_number_per_input;
+            for (const size_t k : volume_input_ids) {
+                if (k < wn.size() && wn[k] > 0.5) {
+                    keep[tid] = true;
+                    break;
+                }
+            }
+        }
+        for (const auto& f : mesh_new.get_faces()) {
+            if (!mesh_new.m_face_attribute[f.fid(mesh_new)].m_is_surface_fs) {
+                continue;
+            }
+            bool any_kept = keep[f.tid(mesh_new)];
+            const auto oppo = f.switch_tetrahedron(mesh_new);
+            if (oppo.has_value()) {
+                any_kept = any_kept || keep[(*oppo).tid(mesh_new)];
+            }
+            if (any_kept) {
+                continue; // a volume boundary (or interior) face; the tets represent it
+            }
+            const size_t v1 = f.vid(mesh_new);
+            const size_t v2 = f.switch_vertex(mesh_new).vid(mesh_new);
+            const size_t v3 = f.switch_edge(mesh_new).switch_vertex(mesh_new).vid(mesh_new);
+            hybrid_sheet_tris.push_back(
+                {{mesh_new.m_vertex_attribute[v1].m_posf,
+                  mesh_new.m_vertex_attribute[v2].m_posf,
+                  mesh_new.m_vertex_attribute[v3].m_posf}});
+        }
+        mesh_new.filter_with_roles(volume_input_ids);
     } else if (filter_option != "none") {
         logger().error("Unknown filter option '{}'. No filtering performed.", filter_option);
     }
@@ -670,6 +969,7 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
     double hausdorff_distance = -1; // d(output -> input), the invariant
     double coverage_distance = -1; // d(input -> output), diagnostic only
     std::vector<int> ecs_output;
+    std::vector<int> ecs_curves_in, ecs_curves_out;
     {
         Eigen::MatrixXd V(verts.size(), 3);
         for (int i = 0; i < verts.size(); ++i) {
@@ -732,6 +1032,63 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
                 coverage_distance);
         }
 
+        // Feature-curve deviation, the 1D counterpart of the surface block above:
+        // containment (tagged edges near the input curves -- the invariant the tube veto
+        // enforces) and coverage (input curves near the tagged edges -- diagnostic, the
+        // direction nothing enforces). Sampled point-to-segment on both sides; feature
+        // networks are small next to surfaces, so brute force over the segments is fine.
+        if (json_params["DEBUG_hausdorff"] && !feature_edges.empty()) {
+            // Collected pre-filter: under a filter the mesh no longer carries them.
+            const std::vector<std::array<Vector3d, 2>>& tagged = hybrid_curve_segs;
+            const auto point_to_segments = [](const Vector3d& p,
+                                              const std::vector<std::array<Vector3d, 2>>& segs) {
+                double best = std::numeric_limits<double>::infinity();
+                for (const auto& s : segs) {
+                    const Vector3d d = s[1] - s[0];
+                    const double dd = d.squaredNorm();
+                    double t = dd > 0 ? (p - s[0]).dot(d) / dd : 0.0;
+                    t = std::clamp(t, 0.0, 1.0);
+                    best = std::min(best, (p - (s[0] + t * d)).squaredNorm());
+                }
+                return best;
+            };
+            std::vector<std::array<Vector3d, 2>> input_segs(feature_edges.size());
+            for (size_t i = 0; i < feature_edges.size(); ++i) {
+                input_segs[i] = {
+                    {feature_edge_vertices[feature_edges[i][0]],
+                     feature_edge_vertices[feature_edges[i][1]]}};
+            }
+            const auto sweep = [&](const std::vector<std::array<Vector3d, 2>>& from,
+                                   const std::vector<std::array<Vector3d, 2>>& to) {
+                double worst = -1;
+                for (const auto& s : from) {
+                    const int n = 32;
+                    for (int i = 0; i <= n; ++i) {
+                        const Vector3d p = s[0] + (double(i) / n) * (s[1] - s[0]);
+                        worst = std::max(worst, point_to_segments(p, to));
+                    }
+                }
+                return worst < 0 ? worst : std::sqrt(worst);
+            };
+            const double feat_containment = tagged.empty() ? -1 : sweep(tagged, input_segs);
+            const double feat_coverage = tagged.empty() ? std::numeric_limits<double>::infinity()
+                                                        : sweep(input_segs, tagged);
+            const double feat_eps = params.epsr * params.diag_l * params.feature_envelope_ratio;
+            logger().info(
+                "feature deviation: {} tagged edges | containment d(tagged->input) = {:.4} | "
+                "tube = {:.4}",
+                tagged.size(),
+                feat_containment,
+                feat_eps);
+            if (feat_containment > feat_eps) {
+                logger().warn("Tagged feature edges left the tube; the veto was violated.");
+            }
+            logger().info(
+                "feature deviation: coverage d(input->tagged) = {:.4} (diagnostic; large "
+                "means part of an input curve is no longer represented)",
+                feat_coverage);
+        }
+
         // The Euler-characteristic check is a topology sanity check. It is expensive on
         // meshes with many components (tens of seconds), so it is off by default and only
         // computed when explicitly requested (DEBUG_euler) or when it is actually needed
@@ -742,6 +1099,53 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
             logger().info("Output euler characteristic: {}", ecs_output);
             if (ecs_input != ecs_output) {
                 logger().warn("Output topology is not the same as the input topology!");
+            }
+        }
+
+        // The same check for the feature curves: input network vs the tagged output edges.
+        // Always computed when features exist (the networks are tiny next to the surface);
+        // the preserve_topology throw is with the other throws below.
+        if (!feature_edges.empty()) {
+            std::vector<std::array<size_t, 2>> tagged_pairs;
+            std::map<std::array<double, 3>, size_t> vid_of;
+            for (const auto& seg : hybrid_curve_segs) {
+                std::array<size_t, 2> pair;
+                for (int j = 0; j < 2; ++j) {
+                    const std::array<double, 3> key = {{seg[j][0], seg[j][1], seg[j][2]}};
+                    pair[j] = vid_of.emplace(key, vid_of.size()).first->second;
+                }
+                tagged_pairs.push_back(pair);
+            }
+            ecs_curves_in = curve_euler_characteristics(feature_edges);
+            ecs_curves_out = curve_euler_characteristics(tagged_pairs);
+            logger().info(
+                "Euler characteristic, feature curves: input {} | tagged output {}",
+                ecs_curves_in,
+                ecs_curves_out);
+            if (ecs_curves_in != ecs_curves_out) {
+                logger().warn("Feature-curve topology is not the same as the input's!");
+            }
+        }
+
+        // The anchor invariant, measured on the finished mesh.
+        if (json_params["DEBUG_feature_retention"]) {
+            double worst_ratio = 0;
+            // Measured pre-filter: the anchors' vertices may have been deleted with a
+            // discarded region, but the features were preserved up to that point and
+            // survive in the feature outputs.
+            auto [kept, total] = hybrid_retention;
+            worst_ratio = hybrid_retention_worst;
+            if (total > 0) {
+                if (kept == total) {
+                    logger().info("feature points retained: {}/{}", kept, total);
+                } else {
+                    logger().warn(
+                        "feature points retained: {}/{} -- the worst is {:.2f} x eps from "
+                        "the nearest vertex",
+                        kept,
+                        total,
+                        worst_ratio);
+                }
             }
         }
     }
@@ -811,6 +1215,9 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
         if (params.preserve_topology && ecs_input != ecs_output) {
             log_and_throw_error("Input topology was not preserved.");
         }
+        if (params.preserve_topology && ecs_curves_in != ecs_curves_out) {
+            log_and_throw_error("Feature-curve topology was not preserved.");
+        }
     }
 
 
@@ -820,7 +1227,46 @@ TetWildMesh::ExportStruct tetwild_with_export(nlohmann::json json_params)
 
     mesh_new.output_mesh(output_path + "_final.msh");
 
+    if (filter_option == "hybrid") {
+        mesh_new.output_hybrid_mesh(
+            output_path + "_hybrid.msh",
+            hybrid_sheet_tris,
+            hybrid_curve_segs,
+            hybrid_anchor_pts);
+    }
+
     igl::write_triangle_mesh(output_path + "_surface.obj", matV, matF);
+
+    // The tracked feature curves, as an edge mesh -- the 1D counterpart of _surface.obj.
+    // Only written when features exist, so featureless runs are byte-identical.
+    if (features_present) {
+        // From the pre-filter collections: a filter must not erase user-supplied features
+        // from the feature outputs (they do leave the tet mesh with their region).
+        std::ofstream fout(output_path + "_features.obj");
+        std::map<std::array<double, 3>, size_t> vid_of;
+        const auto obj_vertex = [&](const Vector3d& p) {
+            const std::array<double, 3> key = {{p[0], p[1], p[2]}};
+            const auto [it, inserted] = vid_of.emplace(key, vid_of.size() + 1);
+            if (inserted) {
+                fout << "v " << p[0] << " " << p[1] << " " << p[2] << "\n";
+            }
+            return it->second;
+        };
+        std::vector<std::array<size_t, 2>> obj_edges;
+        for (const auto& seg : hybrid_curve_segs) {
+            obj_edges.push_back({{obj_vertex(seg[0]), obj_vertex(seg[1])}});
+        }
+        std::vector<size_t> obj_points;
+        for (const Vector3d& p : hybrid_anchor_pts) {
+            obj_points.push_back(obj_vertex(p));
+        }
+        for (const auto& e : obj_edges) {
+            fout << "l " << e[0] << " " << e[1] << "\n";
+        }
+        for (const size_t pid : obj_points) {
+            fout << "p " << pid << "\n";
+        }
+    }
 
     wmtk::logger().info("======= finish =========");
 
