@@ -125,8 +125,8 @@ def read_groups(path):
     groups = {k: np.vstack(v) for k, v in groups.items()}
     # The 2D writer also emits the envelope's segments as an "EnvelopeSurface" line
     # entity -- the region-boundary geometry the envelope was built from, which is the
-    # closest thing in the file to the input geometry itself. (The 3D writer's envelope
-    # block is commented out, so this is empty for tets.)
+    # closest thing in the file to the input geometry itself. (The 3D writer emits its
+    # envelope as a triangle block, which this line-only extraction leaves empty.)
     env = [c.data for c in m.cells if c.type == "line"]
     env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
     return m.points, ncol - 1, groups, env, point_scalar(m, "sizing")
@@ -134,12 +134,15 @@ def read_groups(path):
 
 def point_scalar(m, name):
     """A per-vertex scalar from the file, flattened; None where the writer did not emit it.
-    Both write_vtu() debug/phase frames and .msh result files carry `sizing` (m_sizing_scalar
-    per vertex); older .msh files written before write_msh_groups() emitted it do not, and for
-    those the sizing layer simply is not offered."""
-    if name not in getattr(m, "point_data", {}):
-        return None
-    return np.asarray(m.point_data[name]).reshape(-1)
+    .msh result files carry `sizing` (m_sizing_scalar per vertex) and write_vtu() frames carry
+    it as `sizing_scalar` in both dimensions, so `sizing` falls back to that name; older .msh
+    files written before write_msh_groups() emitted it do not, and for those the sizing layer
+    simply is not offered."""
+    pd = getattr(m, "point_data", {})
+    for n in ((name, name + "_scalar") if name == "sizing" else (name,)):
+        if n in pd:
+            return np.asarray(pd[n]).reshape(-1)
+    return None
 
 
 def read_groups_vtu(path):
@@ -464,10 +467,9 @@ def resolve(args):
         # frames remain the fallback for runs made before the phase naming existed (and
         # frame_key orders both: the round is the stem's last number, the A/B tie breaks
         # lexically).
-        # THE STEP TIMELINE FIRST: one series covering every phase A and phase B sub-iteration
-        # in run order, each frame naming the round and pass it belongs to. That is what the
-        # slider scrubs. With DEBUG_output alone it holds just the `_end` frames (two per round);
-        # with DEBUG_output_per_pass it holds every pass as well.
+        # THE STEP TIMELINE FIRST: one series covering every turn's operation and smoothing
+        # passes in run order, each frame naming the turn and pass it belongs to, in both
+        # dimensions. That is what the slider scrubs.
         # SEQUENTIALLY NAMED FRAMES + their manifest, which is what the writer produces now.
         labels = read_frame_labels(d)
         frames = []

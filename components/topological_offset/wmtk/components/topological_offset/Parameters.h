@@ -11,10 +11,14 @@ namespace wmtk::components::topological_offset {
 /**
  * @brief What the offset needs on top of the parameters every wmtk optimizer shares.
  *
- * The optimization phase reuses wmtk::TetOptimizerMesh, so everything that phase reads -- target
- * edge length, the split/collapse thresholds derived from it, smoothing weights and pass count,
- * the sizing knobs, the debug switch -- comes from wmtk::OptimizerParameters and is not restated
- * here. The bounding box stays here because its type and meaning differ per application.
+ * The optimization phase reuses wmtk::TriOptimizerMesh / wmtk::TetOptimizerMesh, so everything
+ * that phase reads -- target edge length, the split/collapse thresholds derived from it,
+ * smoothing weights and pass count, the sizing knobs, the debug switch -- comes from
+ * wmtk::OptimizerParameters and is not restated here. The bounding box stays here because its
+ * type and meaning differ per application.
+ *
+ * Every key below means the same thing in 2D and 3D; the two pipelines are the same algorithm one
+ * dimension apart, and a key that only one of them read would be a difference in the algorithm.
  */
 struct Parameters : public wmtk::OptimizerParameters
 {
@@ -40,49 +44,38 @@ struct Parameters : public wmtk::OptimizerParameters
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
-    /// Only read when debug_output is set: also write the engine's per-pass debug_{N}
-    /// frames, not just the per-phase timeline. See the spec doc.
-    bool debug_output_per_pass;
-    // Convergence, 3D: the bound on the gradient of the offset energy E = (Phi(x) - c)^2 over
-    // reachable band vertices, as a fraction of target_distance. The gradient rather than the
-    // residual, because it is the stationarity condition of what Phase B minimises and so says the
-    // same thing for any Phi, with no length-scale conversion. It is the component's only residual
-    // scale: offset_residual_tolerance() is half of it times target_distance, and Phase A's offset
-    // envelope is offset_envelope_rel times that. It gates at band vertices and at interior samples
-    // of every band face alike -- a face whose corners sit on the level set can still cut across it
-    // -- and the two are reported separately: at-vertex wants smoothing, in-face wants refinement.
-    //
-    // Convergence, 2D -- same key, deliberately different meaning: this fraction of a measured
-    // reference, tested as the full gradient norm at vertices. The run criterion and every Phase B
-    // placement stop are that one identical test, so the run converges exactly when every visit
-    // stops immediately. Edge-interior samples are a reported diagnostic here and never gate.
+    // The accuracy: this fraction of target_distance is both the vertex bar (the remaining Newton
+    // step of a front vertex along its move direction, under the default criterion) and the chord
+    // resolution threshold (a front edge is refinable while its sag over the level set exceeds
+    // it). The run criterion and every placement stop are the same test, so the run converges
+    // exactly when every visit stops immediately and no chord is left to resolve.
     double front_conv_rel;
-    // Which convergence test gates the run, used identically by the loop's vertex test and Phase
-    // B's pass stop. F is the vertex's Phase B objective, g its gradient, H its Gauss-Newton
-    // Hessian, n its move direction; all three compare against front_conv_rel. 2D only -- 3D never
-    // reads this key and always uses the gradient bound above. See front_vertex_conv_ratio().
+    // Which convergence test gates the run, used identically by the loop's vertex test and the
+    // placement stop. F is the vertex's front objective, g its gradient, H its Gauss-Newton
+    // Hessian, n its move direction; all three compare against front_conv_rel. See
+    // front_vertex_conv_ratio().
     //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
     //     rel x target_distance.
     //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against rel x F.
     //   "gradient_norm_rel": |n.g| against rel x the reference gradient, measured once on the
     //     band as constructed.
-    std::string front_conv_criterion; ///< 2D: gradient_norm_rel | step_size_rel | decrement
-    // Phase B places a front vertex by a one-dimensional solve along its field normal
+    std::string front_conv_criterion; ///< gradient_norm_rel | step_size_rel | decrement
+    // The front is placed by a one-dimensional solve along its field normal
     // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
-    // x0 + s n -- instead of a free 2-D solve. Where a vertex sits along the front carries no
-    // offset information, and in the free solve that tangential motion made fronts slide and fold
-    // where two of them meet.
+    // x0 + s n -- instead of a free solve. Where a vertex sits along the front carries no offset
+    // information, and in the free solve that tangential motion made fronts slide and fold where
+    // two of them meet.
     bool front_normal_projection = true;
     bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
     /// What a collapse's surviving vertex keeps as its sizing scalar. false (the default): its
     /// own. true: the smaller of the two, which is the shared engine's rule -- refinement then
     /// never relaxes behind a travelling front.
     bool sizing_collapse_min = false;
-    /// 2D. Other input regions (no input-complex face, no wall contact) deform under smoothing
+    /// Other input regions (no input-complex simplex, no wall contact) deform under smoothing
     /// against their rest shape instead of being envelope-held. See the spec doc.
     bool deform_others = true;
-    /// The outer loop's budget: turns of the 2D single phase, A/B rounds in 3D. The loop leaves on
-    /// the front test; this is only the guard.
+    /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
+    /// guard.
     int max_rounds = 40;
     // Points sampled in the interior of each band simplex when measuring the offset's residual;
     // k = 1 is the midpoint, and 0 measures only at band vertices, which is blind to a band whose
@@ -96,37 +89,30 @@ struct Parameters : public wmtk::OptimizerParameters
     bool save_vtu;
 
     // Samples per side of the grid the smooth offset potential is written on, beside the result,
-    // for the viewer. 0 disables it. 2D only.
+    // for the viewer. 0 disables it. The whole domain in 2D, one plane through the box in 3D.
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /// Cap of the shared TriWild/TetWild loop wherever it runs: the pre-optimisation pass, one
-    /// Phase A, the frozen-front finishing pass.
+    /// Cap of the shared TriWild/TetWild loop wherever it runs: the pre-optimisation pass and the
+    /// frozen-front finishing pass.
     int max_iterations;
-    int ab_smooth_max_passes; ///< cap on Phase B smoothing passes; negative = uncapped (default)
-    double ab_smooth_tol;
-    /// Phase B's interior (background AMIPS) per-vertex Newton tolerance: polysolve's
-    /// rel_grad_norm_tol, the fraction of the visit's own entry gradient the solve stops at. The
-    /// 2D front placement does not read it -- an entry-relative rule with no absolute floor
-    /// limit-cycles, so that descent stops on offset_gradient_tolerance() and front_conv_rel
-    /// governs local solves and the global criterion alike. 3D reads it for both Phase B solves.
-    double vertex_grad_tol_rel;
-    /// Run TriWild over the INPUT mesh before the simplicial embedding and the marching, held
-    /// only by the per-tag region envelopes. 2D only; see TopoOffsetTriMesh::pre_optimize_input_mesh().
+    /// Run TriWild/TetWild over the INPUT mesh before the simplicial embedding and the marching,
+    /// held only by the per-tag region envelopes. See pre_optimize_input_mesh() in either mesh.
     bool pre_optimize_input = true;
     /// See the spec: which sizing field pre_optimize_input runs against. false = seed
     /// target_distance on the input-complex boundary; true = seed every vertex from its own
     /// incident edge lengths, so target_distance never enters the field.
     bool pre_optimize_sizing_from_edges = false;
-    /// Phase A's offset envelope width, in Phi tolerances -- the same tube every round; see
-    /// rebuild_offset_envelope(). Also feeds the derived sizing floor (min_edge_length_rel < 0).
+    /// The operation passes' offset envelope width, as a fraction of target_distance -- the same
+    /// tube every turn, rebuilt after every smoothing pass; see rebuild_offset_envelope(). Also
+    /// feeds the derived sizing floor (min_edge_length_rel < 0).
     double offset_envelope_rel;
 
     // l_min from the paper: the shortest edge the sizing field may ask for, given as a multiple of
     // target_distance rather than of the bounding box because that is the scale the offset has;
     // min_edge_length is derived from min_edge_length_rel in init() when negative. A floor on
     // refinement, so raising it makes the result coarser. When not given, it falls back to the
-    // Phase A envelope eps, following TetWild: a surface pinned only to within eps cannot buy
+    // offset envelope eps, following TetWild: a surface pinned only to within eps cannot buy
     // fidelity from shorter edges, so this is a runaway rail, not a resolution setting.
     double min_edge_length;
     double min_edge_length_rel;
@@ -183,9 +169,6 @@ struct Parameters : public wmtk::OptimizerParameters
 
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
-        ab_smooth_max_passes = json_params["ab_smooth_max_passes"];
-        ab_smooth_tol = json_params["ab_smooth_tol"];
-        vertex_grad_tol_rel = json_params["vertex_grad_tol_rel"];
         offset_envelope_rel = json_params["offset_envelope_rel"];
 
         min_edge_length = json_params["min_edge_length"];
@@ -197,7 +180,6 @@ struct Parameters : public wmtk::OptimizerParameters
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
-        debug_output_per_pass = json_params["DEBUG_output_per_pass"];
         lr = json_params["length_rel"];
         l = json_params["length"];
         stop_energy = json_params["stop_energy"];

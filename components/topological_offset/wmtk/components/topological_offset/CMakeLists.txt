@@ -11,6 +11,8 @@ set(SRC_FILES
 	TopoOffsetTetMesh.h
 	TagEnvelopes.hpp
 	TopoOffsetTetMesh.cpp
+	Optimize3d.cpp
+	FrontSmooth3d.cpp
 	Optimize2d.cpp
 	Smooth.cpp
 	Collapse.cpp

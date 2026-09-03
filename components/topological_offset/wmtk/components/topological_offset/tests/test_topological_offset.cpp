@@ -922,11 +922,11 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     mesh.m_vertex_extra[0].label = 1;
     mesh.init_input_complex_bvh();
     Vector3d q(1.0, 1.0, 1.0);
-    double dist = mesh.m_input_complex_bvh.dist(q);
+    double dist = mesh.m_input_complex_bvh->dist(q);
     REQUIRE(fabs(dist - sqrt(3.0)) < pow(10, -6));
 
     Vector3d q0(0.0, 0.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q0);
+    dist = mesh.m_input_complex_bvh->dist(q0);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     // label faces, edges, and vertices as input
@@ -942,29 +942,29 @@ TEST_CASE("dist_to_tetmesh", "[dist_growth][3d]")
     mesh.init_input_complex_bvh();
 
     Vector3d q1(1.0, 1.0, 1.0);
-    dist = mesh.m_input_complex_bvh.dist(q1);
+    dist = mesh.m_input_complex_bvh->dist(q1);
     REQUIRE(fabs(dist - (2.0 / sqrt(3.0))) < pow(10, -6));
 
     Vector3d q2(0.0, 0.0, 0.0);
-    dist = mesh.m_input_complex_bvh.dist(q2);
+    dist = mesh.m_input_complex_bvh->dist(q2);
     REQUIRE(fabs(dist) < pow(10, -6));
 
     Vector3d q3(10.0, 2.0, 1.0);
-    dist = mesh.m_input_complex_bvh.dist(q3);
+    dist = mesh.m_input_complex_bvh->dist(q3);
     REQUIRE(fabs(dist - sqrt(86.0)) < pow(10, -6));
 
     Vector3d q4(0.1, 0.2, 0.3);
-    dist = mesh.m_input_complex_bvh.dist(q4);
+    dist = mesh.m_input_complex_bvh->dist(q4);
     REQUIRE(fabs(dist - 0.1) < pow(10, -6));
 
     // label tet as input
     mesh.m_tet_attribute[0].label = 1;
     mesh.init_input_complex_bvh();
 
-    dist = mesh.m_input_complex_bvh.dist(q4);
+    dist = mesh.m_input_complex_bvh->dist(q4);
     REQUIRE(fabs(dist) < pow(10, -6));
 
-    dist = mesh.m_input_complex_bvh.dist(q3);
+    dist = mesh.m_input_complex_bvh->dist(q3);
     REQUIRE(fabs(dist - sqrt(86.0)) < pow(10, -6));
 }
 
