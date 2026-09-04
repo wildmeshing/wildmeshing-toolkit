@@ -16,20 +16,15 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        const bool dbg_on_offset = is_edge_on_offset(t);
-        if (dbg_on_offset) ++iter_cnt_split_offset_before;
+        if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
         // Nothing is frozen against splits: refining a surface is not moving it, so the midpoint
         // is checked against its tags' boundary envelopes like any other tracked geometry -- the
         // input complex and the domain wall alike, the wall being a region boundary like any
-        // other. Do not re-add a wall-split refusal; measured worse -- see git history.
+        // other.
         //
         // Only the Optimization mode is guarded at all: the marching path below is how the offset
         // is constructed, and it has to be able to cut through anything.
-        if (!TetOptimizerMesh::split_edge_before(t)) {
-            if (dbg_on_offset) ++iter_cnt_split_offset_base_reject;
-            return false;
-        }
-        return true;
+        return TetOptimizerMesh::split_edge_before(t);
     }
     return marching_split_edge_before(t);
 }
@@ -139,7 +134,6 @@ bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (!TetOptimizerMesh::split_edge_after(t)) {
-            ++iter_cnt_split_offset_reject; // counts ALL refusals now; see the log line
             return false;
         }
         ++iter_cnt_split;
@@ -518,6 +512,14 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     cache.tets.clear();
     cache.is_edge_on_region = is_edge_on_region(edge);
     cache.is_edge_on_offset = is_edge_on_offset(edge);
+    // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
+    // came from a parent that was already unscoreable, or from a healthy one.
+    cache.parent_q_max = -1.;
+    cache.parent_flatness = 1.;
+    for (const Tuple& tt : parents) {
+        cache.parent_q_max = std::max(cache.parent_q_max, tet_amips(tt.tid(*this)));
+        cache.parent_flatness = std::min(cache.parent_flatness, tet_flatness(tt.tid(*this)));
+    }
 
     // Key each parent by the edge OPPOSITE the one being split: that edge survives the split
     // and is shared by exactly the two children of this parent, so it names them afterwards.
@@ -544,15 +546,12 @@ bool TopoOffsetTetMesh::split_after_cells(
     // here because this is the hook that has the endpoints, and because the AND keeps the
     // never-both invariant true across a split -- an edge running from the complex to the offset
     // surface produces a midpoint on neither, which is what it geometrically is.
-    m_vertex_extra[v_id].m_is_on_input_complex =
-        m_vertex_extra[v1_id].m_is_on_input_complex && m_vertex_extra[v2_id].m_is_on_input_complex;
+    m_vertex_extra[v_id].m_is_on_input =
+        m_vertex_extra[v1_id].m_is_on_input && m_vertex_extra[v2_id].m_is_on_input;
     // Churn instrumentation, read only by collapse_after_vertex(). Assigned, never OR'd: v_id may
     // be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
     m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
     if (m_op_epoch != 0) ++iter_cnt_split_born;
-    if (m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset) {
-        ++iter_cnt_split_offset_endpoints;
-    }
     // The boundary mask follows the same AND rule: the midpoint is on a tag boundary only if the
     // whole edge was. Assigned, not OR'd -- v_id may be a recycled slot carrying a dead vertex's
     // bits. Runs before the shared split's containment check, which reads the mask through
@@ -598,6 +597,24 @@ void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge
     m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     if (is_edge_open_boundary) {
         m_vertex_attribute[v_id].m_order = 2;
+    }
+
+    // Diagnostic, see the header. Every cell incident to the midpoint was created by this split,
+    // so a MAX_ENERGY cell here is one this split manufactured; a split is never refused on
+    // quality, so nothing upstream would have stopped it.
+    const double parent_q = cache.parent_q_max;
+    for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
+        const double q = tet_amips(tid);
+        if (cell_quality(tid) >= MAX_ENERGY) ++m_deg_split_created;
+        if (q >= kNeedleQuality) report_needle("SPLIT", tid, parent_q);
+        record_flatness("SPLIT", cache.parent_flatness, tid);
+    }
+
+    // deform_others: every cell at the midpoint was created by this split and the snapshot copy
+    // gave each the parent's rest -- re-stamp, or a child measures itself against a tet twice
+    // its size (see TetAttributes::rest_valid).
+    for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
+        stamp_rest_cell(tid);
     }
 }
 

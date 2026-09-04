@@ -373,7 +373,7 @@ public:
     /// normal, over delta -- what (d - delta)/delta already is for the Euclidean field -- instead
     /// of the value ratio (Phi - c)/c, which for the smooth field is a barrier value and not a
     /// length, and pulls far harder where two fronts are pressed together. Same level set and same
-    /// root either way; only the charge changes. 3D keeps the value ratio (false).
+    /// root either way; only the charge changes. Both dimensions' front placement passes true.
     OffsetEnergy(
         const std::shared_ptr<const OffsetPotential<DIM>>& potential,
         double weight = 1.,
@@ -471,6 +471,57 @@ private:
 using OffsetEnergy3D = OffsetEnergy<3>;
 
 /**
+ * @brief The 3D twin of AlignEnergy2D: each incident front FACE at the vertex against the field.
+ *
+ *     E(x) = w * sum over the vertex's incident front faces f of agree_f (1 - n_f(x) . g(c_f(x)))^2
+ *
+ * n_f(x) = sigma_f (q1 - x) x (q2 - x) / |...| is the face's outward unit normal (q1, q2 the two
+ * fixed corners; sigma_f = +-1 chosen at construction so the normal points away from the band
+ * tet), g(c) = s grad Phi(c) / |grad Phi(c)| the field's outward unit direction at the face
+ * centroid c_f = (x + q1 + q2) / 3. Zero when the face lies along the level set, 4 w per face
+ * when it points the wrong way. Both dependences on x are differentiated, as in 2D: the normal's
+ * rotation (exact) and the field's turning (through the potential's Hessian); the Hessian block is
+ * the Gauss-Newton 2 w sum J_f J_f^T.
+ */
+class AlignEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    struct Face
+    {
+        Eigen::Vector3d q1, q2; ///< the two other corners, in the band tet's orientation
+        double sigma; ///< +-1: sigma * (q1 - x) x (q2 - x) points away from the band
+        /// Gradient agreement across the face, min over its three corner pairs of
+        /// max(0, ghat_a . ghat_b), frozen for the visit -- the 3D reading of the 2D endpoint
+        /// agreement: the target direction only means something where the field's gradient is
+        /// consistent over the face.
+        double agree = 1.;
+    };
+    AlignEnergy3D(
+        const std::shared_ptr<const OffsetPotential3D>& potential,
+        std::vector<Face> faces,
+        double outward_sign,
+        double weight);
+    /// r_f and its derivative for one face; r = 0 with J = 0 where grad Phi or the face vanishes.
+    void residual(const Eigen::Vector3d& x, const Face& f, double& r, Eigen::Vector3d& J) const;
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    std::shared_ptr<const OffsetPotential3D> m_potential;
+    std::vector<Face> m_faces;
+    double m_sign, m_weight;
+};
+
+/**
  * @brief AMIPS against a rest shape, for deform_others: the smoothing term of a deformable
  * region's faces.
  *
@@ -514,6 +565,48 @@ public:
 private:
     /// e = tr(F^T F), d = det F at x for one cell; false when d <= 0.
     bool cell_F(const Eigen::Vector2d& x, const Cell& c, Eigen::Matrix2d& F, double& d) const;
+    std::vector<Cell> m_cells;
+    double m_weight;
+};
+
+/**
+ * @brief The 3D twin of RestAMIPSEnergy2D: AMIPS of a tet against its rest shape.
+ *
+ *     E(x) = w * sum over cells of tr(F^T F) / det(F)^(2/3),   F = A(x) * Rinv
+ *
+ * A(x) = [q1 - x, q2 - x, q3 - x] with the moving vertex first (the shared smoother's
+ * convention), Rinv the inverse rest Jacobian in the same corner order. det^(2/3) is what makes
+ * the 3D form scale-invariant, as det^1 does in 2D; the minimum is 3 at F = I, the same scale as
+ * the shared AMIPSEnergy3D against the regular tet, so the two terms sum 1:1. det F <= 0 is
+ * invalid: value NaN and is_step_valid false. F is affine in x, so gradient and Hessian are the
+ * exact chain through the closed-form derivatives of e / d^(2/3) in F.
+ */
+class RestAMIPSEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+    struct Cell
+    {
+        Eigen::Vector3d q1, q2, q3; ///< the fixed corners, current positions
+        Eigen::Matrix3d rest_inv; ///< inverse rest Jacobian [r1-r0, r2-r0, r3-r0]^-1
+    };
+    RestAMIPSEnergy3D(std::vector<Cell> cells, double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    /// F and d = det F at x for one cell; false when d <= 0.
+    bool cell_F(const Eigen::Vector3d& x, const Cell& c, Eigen::Matrix3d& F, double& d) const;
     std::vector<Cell> m_cells;
     double m_weight;
 };

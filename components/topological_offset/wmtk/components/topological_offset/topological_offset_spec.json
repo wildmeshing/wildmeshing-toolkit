@@ -30,7 +30,6 @@
       "save_vtu",
       "phi_grid_resolution",
       "DEBUG_output",
-      "DEBUG_output_per_pass",
       "log_file",
       "report",
       "preallocation_factor",
@@ -39,9 +38,6 @@
       "interleaved_smoothing",
       "interleaved_smoothing_passes",
       "max_iterations",
-      "ab_smooth_max_passes",
-      "ab_smooth_tol",
-      "vertex_grad_tol_rel",
       "offset_envelope_rel",
       "length_rel",
       "length",
@@ -92,7 +88,7 @@
   {
     "pointer": "/input",
     "type": "string",
-    "doc": "Tetrahedral input mesh."
+    "doc": "Input mesh, .msh: a triangle mesh for the 2D pipeline, a tetrahedral mesh for the 3D one. The two pipelines are the same algorithm one dimension apart and read every key below the same way."
   },
   {
     "pointer": "/output",
@@ -198,7 +194,7 @@
     "pointer": "/front_conv_rel",
     "default": 0.025,
     "type": "float",
-    "doc": "The convergence tolerance, read differently in each dimension. 2D: the accuracy knob, setting both the vertex bar (the remaining Newton step must be <= rel x target_distance) and the chord resolution threshold (a front edge is refinable while its sag over the level set exceeds rel x target_distance), so tighter means more turns and a finer front. Startup requires offset_envelope_rel <= front_conv_rel; see there. 3D: the convergence tolerance of the vertex test alone (Phase B's pass stop and the A/B loop's vertex half), where what it is a fraction of depends on front_conv_criterion; it does not set the resolution there, the edge test comparing the level set's sagitta with offset_envelope_rel x target_distance. Keep the 3D value small: a per-vertex, per-sweep tolerance cannot tell a slowly travelling front from a converged one."
+    "doc": "The accuracy, as a fraction of target_distance, in both dimensions: it sets the vertex bar (a front vertex is placed when the remaining Newton step of its objective along its move direction is <= rel x target_distance, under the default criterion) and the chord resolution threshold (a front edge is refinable while its sag over the level set exceeds rel x target_distance), so tighter means more turns and a finer front. Startup requires offset_envelope_rel <= front_conv_rel; see there."
   },
   {
     "pointer": "/front_conv_criterion",
@@ -209,13 +205,13 @@
       "step_size_rel",
       "decrement"
     ],
-    "doc": "2D only. What 'converged' means for a front vertex, in Phase B's pass stop and in the loop's vertex test, measured against front_conv_rel. F is the vertex's Phase B objective, g its gradient, H its Gauss-Newton Hessian; under front_normal_projection both are taken along the vertex normal n. 'step_size_rel' (the default): the remaining 1-D Newton step, |n . g| / (n^T H n), against rel x target_distance. 'decrement': the Newton decrement, half of (n . g)^2 / (n^T H n), against rel x F(x). 'gradient_norm_rel': |n . g| against rel x a reference measured once on the band as constructed. Prefer the step or the decrement: the gradient is stiffness times remaining displacement, so the sliver between two meeting fronts reads far above the bar while sitting at its minimum."
+    "doc": "What 'converged' means for a front vertex, in the placement stop and in the loop's vertex test, measured against front_conv_rel. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian; under front_normal_projection both are taken along the vertex's move direction n. 'step_size_rel' (the default): the remaining 1-D Newton step, |n . g| / (n^T H n), against rel x target_distance. 'decrement': the Newton decrement, half of (n . g)^2 / (n^T H n), against rel x F(x). 'gradient_norm_rel': |n . g| against rel x a reference measured once on the band as constructed. Prefer the step or the decrement: the gradient is stiffness times remaining displacement, so the sliver between two meeting fronts reads far above the bar while sitting at its minimum."
   },
   {
     "pointer": "/offset_residual_samples",
     "default": 3,
     "type": "int",
-    "doc": "Sampling density used to measure the offset's residual between its vertices. In 2D, k points in the interior of each band edge at i/(k+1), so k = 1 is the midpoint; in 3D, the interior lattice points of each offset-surface triangle at denominator k+2, so k = 1 is the centroid and the counts are 1, 3, 6, 10 for k = 1..4. 0 measures only at vertices, which is blind to a surface whose vertices sit on the level set while the elements between them cut across it."
+    "doc": "Sampling density used to measure the offset's residual between its vertices, a reported diagnostic. In 2D, k points in the interior of each band edge at i/(k+1), so k = 1 is the midpoint; in 3D, the interior lattice points of each offset-surface triangle at denominator k+2, so k = 1 is the centroid and the counts are 1, 3, 6, 10 for k = 1..4. 0 measures only at vertices, which is blind to a surface whose vertices sit on the level set while the elements between them cut across it."
   },
   {
     "pointer": "/sorted_marching",
@@ -245,13 +241,7 @@
     "pointer": "/DEBUG_output",
     "type": "bool",
     "default": false,
-    "doc": "Write debug VTU frames of the evolving mesh. 2D: one frame after every operation pass and every smoothing pass, as sequential <output>_NNNNN.vtu files so ParaView loads them as one time series, plus <output>_frames.txt carrying one 'NNNNN<tab>r<turn><phase><pass>_<op>' line per frame, which visualize_offset.py reads for its labels. 3D: only the per-phase timeline, one frame after every Phase A and every Phase B (<output>_phase_{round}{A|B}.vtu); see DEBUG_output_per_pass for the full per-pass series."
-  },
-  {
-    "pointer": "/DEBUG_output_per_pass",
-    "type": "bool",
-    "default": false,
-    "doc": "Also write a debug VTU frame after every pass, not just the per-phase timeline: every Phase A local-operations pass and every Phase B smoothing pass, as <output>_debug_{N}.vtu on one shared counter so the two interleave in run order. Expect hundreds of frames and gigabytes on a real model. Observational only: the frames cannot change the run."
+    "doc": "Write debug VTU frames of the evolving mesh, in both dimensions: one frame after every operation pass and every smoothing pass, as sequential <output>_NNNNN.vtu files so ParaView loads them as one time series, plus <output>_frames.txt carrying one 'NNNNN<tab>r<turn><phase><pass>_<op>' line per frame, which the viewer scripts read for their labels. Expect hundreds of frames on a real model; observational only, the frames cannot change the run."
   },
   {
     "pointer": "/log_file",
@@ -300,37 +290,19 @@
     "pointer": "/stop_energy",
     "type": "float",
     "default": 100.0,
-    "doc": "Target AMIPS quality for tets. Default 100, matching the tetwild component -- Phase A is TetWild and stops where TetWild stops. Do not lower it far: a target Phase A's operation set cannot deliver turns the split pass into an unbounded refiner. Edge collapse will not push an already-on-target region's quality back above this."
+    "doc": "Target AMIPS quality for the elements. Default 100, matching the tetwild component -- the frozen-front finishing pass is TriWild/TetWild and stops where they stop. Do not lower it far: a target the operation set cannot deliver turns the split pass into an unbounded refiner. Edge collapse will not push an already-on-target region's quality back above this."
   },
   {
     "pointer": "/max_iterations",
     "type": "int",
     "default": 80,
-    "doc": "Cap on the shared TriWild/TetWild loop wherever that loop runs: the pre-optimisation pass over the input, Phase A, and the finishing pass that runs with the front frozen. The loop exits as soon as max AMIPS is under stop_energy, so this is an upper bound. Where the loop is required to reach stop_energy, failing to within this many iterations is an error rather than a warning, because placing the offset on a mesh the improvement pass gave up on is not a result."
-  },
-  {
-    "pointer": "/ab_smooth_max_passes",
-    "type": "int",
-    "default": -1,
-    "doc": "Cap on Phase B's smoothing passes per round; negative (the default) means uncapped. Phase B runs until a pass completes with no offset vertex backtracked by its one-ring, which is its natural fixed point: the potential is a frozen field, so offset placements couple only through the ring constraint, and the interior AMIPS solves in the same passes are what open those rings. A no-progress guard stops the phase with a warning if neither the constrained count nor the placement gradient improves over 10 consecutive passes. Set a positive cap only as a diagnostic override. Read in both dimensions."
-  },
-  {
-    "pointer": "/ab_smooth_tol",
-    "type": "float",
-    "default": 0.0001,
-    "doc": "3D only. Phase B stops when the largest vertex displacement in a pass falls below this fraction of the target edge length l. Relative rather than absolute so the test means the same thing at any model scale."
-  },
-  {
-    "pointer": "/vertex_grad_tol_rel",
-    "type": "float",
-    "default": 0.01,
-    "doc": "Phase B's per-vertex tolerance for the interior (background AMIPS) Newton solves, in both dimensions: a visit stops when the local energy gradient falls below this fraction of its own value at the visit's start (polysolve's rel_grad_norm_tol). The 2D front placement does not read it -- that descent stops on the run's own bar instead -- so one parameter governs the local offset solves and the global criterion alike. Do not make the front placement entry-relative again: with no absolute floor it limit-cycles. 3D uses this key for both of its Phase B solves."
+    "doc": "Cap on the shared TriWild/TetWild loop wherever that loop runs: the pre-optimisation pass over the input, and the finishing pass that runs with the front frozen. The loop exits as soon as max AMIPS is under stop_energy, so this is an upper bound."
   },
   {
     "pointer": "/offset_envelope_rel",
     "type": "float",
     "default": 0.025,
-    "doc": "Half-width of the corridor the operation passes must keep the front inside, as a fraction of target_distance, rebuilt after every smoothing pass. It is a leash, not an accuracy knob: front_conv_rel alone sets accuracy, and startup requires offset_envelope_rel <= front_conv_rel, because a wider leash lets the operations dent the front past the resolution threshold and mint new refinable edges every turn. Tighter over-constrains the passes and starts refusing operations that were not straddling the boundary at all. 3D applies it to offset_residual_tolerance() rather than to target_distance; that difference is deliberate."
+    "doc": "Half-width of the corridor the operation passes must keep the front inside, as a fraction of target_distance, rebuilt after every smoothing pass. It is a leash, not an accuracy knob: front_conv_rel alone sets accuracy, and startup requires offset_envelope_rel <= front_conv_rel, because a wider leash lets the operations dent the front past the resolution threshold and mint new refinable edges every turn. Tighter over-constrains the passes and starts refusing operations that were not straddling the boundary at all."
   },
   {
     "pointer": "/interleaved_smoothing",
@@ -342,7 +314,7 @@
     "pointer": "/interleaved_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the pre-optimisation pass, Phase A, the frozen-front finishing pass) and in the 2D single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result."
+    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the pre-optimisation pass, the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result."
   },
   {
     "pointer": "/coarsen_pass",
@@ -432,25 +404,25 @@
     "pointer": "/front_normal_projection",
     "default": true,
     "type": "bool",
-    "doc": "2D. Phase B places a front vertex by a one-dimensional solve along its field normal n = grad Phi/|grad Phi|: the same objective restricted to the line x0 + s n, with the same solver, line search and accept test, and the vertex test reads the step along that same n. Where a vertex sits along the front carries no information about the offset, and in the free 2-D solve that tangential motion is driven by AMIPS alone, which made fronts slide and fold where two of them meet. Spacing along the front is left to Phase A's smoother."
+    "doc": "The front is placed by a one-dimensional solve along its field normal n = grad Phi/|grad Phi|: the same objective restricted to the line x0 + s n, with the same solver, line search and accept test, and the vertex test reads the step along that same n. Where a vertex sits along the front carries no information about the offset, and in the free solve that tangential motion is driven by AMIPS alone, which made fronts slide and fold where two of them meet. Spacing along the front is left to the operation passes' smoother. A front vertex an input envelope also holds moves along that boundary instead: its curve's tangent in 2D, the field normal projected into the boundary surface (or onto its crease) in 3D."
   },
   {
     "pointer": "/front_alignment_energy",
     "default": true,
     "type": "bool",
-    "doc": "2D. Whether Phase B's front objective carries the alignment term: the sum over the vertex's live front edges of (1 - n_e . ghat(m_e))^2, with n_e the edge normal and ghat the field's unit gradient at the edge midpoint, weighted like the offset term. It is what acts on the edge normals under front_normal_projection, and what lets a pressed seam settle in a few turns rather than tens. On by default, with a known cost: under normal-only placement it can act only along the normal, so it biases a vertex a few percent of target_distance off its level set on curved fronts. Each edge's term is weighted by the gradient agreement at its endpoints, max(0, ghat_a . ghat_b), frozen per visit, so an edge spanning a concave corner's bisector gets no direction target instead of an impossible one."
+    "doc": "Whether the front objective carries the alignment term: the sum over the vertex's live front edges (2D) or faces (3D) of (1 - n_e . ghat(m_e))^2, with n_e the simplex normal and ghat the field's unit gradient at its midpoint / centroid, weighted like the offset term. It is what acts on the front's normals under front_normal_projection, and what lets a pressed seam settle in a few turns rather than tens. On by default, with a known cost: under normal-only placement it can act only along the normal, so it biases a vertex a few percent of target_distance off its level set on curved fronts. Each term is weighted by the gradient agreement at its corners, max(0, ghat_a . ghat_b) (the minimum over the corner pairs in 3D), frozen per visit, so a simplex spanning a concave corner's bisector gets no direction target instead of an impossible one."
   },
   {
     "pointer": "/sizing_collapse_min",
     "default": false,
     "type": "bool",
-    "doc": "2D. What the surviving vertex of a collapse keeps as its sizing scalar. false (the default): its own scalar, restored after the base collapse. true: the smaller of the two, which is the shared engine's rule. The min rule carries substantially more vertices and lengthens the placement loop where the front travels, because the offset's sizing follows a moving front and has to relax behind it, which a scalar that only ever falls cannot do."
+    "doc": "What the surviving vertex of a collapse keeps as its sizing scalar. false (the default): its own scalar, restored after the base collapse. true: the smaller of the two, which is the shared engine's rule. The min rule carries substantially more vertices and lengthens the placement loop where the front travels, because the offset's sizing follows a moving front and has to relax behind it, which a scalar that only ever falls cannot do."
   },
   {
     "pointer": "/max_rounds",
     "default": 40,
     "type": "int",
-    "doc": "The outer loop's budget, in both dimensions. 2D: the number of turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. 3D: the number of A/B rounds, one round being a full Phase A followed by a full Phase B. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect."
+    "doc": "The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect."
   },
   {
     "pointer": "/pre_optimize_sizing_from_edges",
@@ -462,7 +434,7 @@
     "pointer": "/pre_optimize_input",
     "default": true,
     "type": "bool",
-    "doc": "2D only. Run TriWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same Phase A parameters and held only by the per-tag region envelopes, which exist by then. The sizing field is seeded on the input-complex boundary alone and graded outward, so the complex is resolved at the offset's own scale and the marching band comes out one delta-scale cell thick. That matters because the marching places the offset on the background triangulation's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
+    "doc": "Run TriWild/TetWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same parameters and held only by the per-tag region envelopes, which exist by then. The sizing field is seeded on the input-complex boundary alone and graded outward, so the complex is resolved at the offset's own scale and the marching band comes out one delta-scale cell thick. That matters because the marching places the offset on the background mesh's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
   },
   {
     "pointer": "/min_edge_length",
@@ -498,7 +470,7 @@
     "pointer": "/split_high_valence_threshold",
     "type": "int",
     "default": 0,
-    "doc": "Incident-tet count above which a vertex in a split edge's link accepts only one valence-increasing split per pass, or 0 to disable. Spreads refinement instead of letting it pile onto one vertex (only used if optimize is true)."
+    "doc": "Incident-cell count above which a vertex in a split edge's link accepts only one valence-increasing split per pass, or 0 to disable. Spreads refinement instead of letting it pile onto one vertex."
   },
   {
     "pointer": "/project_line_search_steps",
@@ -516,7 +488,7 @@
     "pointer": "/smooth_quality_veto",
     "type": "bool",
     "default": true,
-    "doc": "Whether smoothing refuses a move that raises the worst incident element's quality. True is TriWild's, SimWild's and TetWild's behaviour and the default here; 3D ignores this key and forces true. Phase B places the front with its own solver and Phase A moves it by AMIPS alone inside the offset envelope, so Phase A is TriWild and takes TriWild's veto. The key stays settable for experiments."
+    "doc": "Whether smoothing refuses a move that raises the worst incident element's quality. True is TriWild's, SimWild's and TetWild's behaviour and the default here. The front is placed by its own solver, which never consults this flag, and every other vertex is smoothed by AMIPS alone inside its envelope, so the operation passes take the shared engines' veto. The key stays settable for experiments."
   },
   {
     "pointer": "/smoothing_mode",
@@ -532,18 +504,18 @@
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,
-    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of non-offset-surface vertices. The envelope weight is derived as 1 - w_amips (only used if optimize is true)."
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of envelope-held vertices, and of the AMIPS term against the offset terms in the front objective. The envelope weight is derived as 1 - w_amips."
   },
   {
     "pointer": "/perform_sanity_checks",
     "type": "bool",
     "default": false,
-    "doc": "Check after every operation pass that no tet is inverted and no tracked-surface triangle left its envelope. Slow; for debugging (only used if optimize is true)."
+    "doc": "Check after every operation pass that no element is inverted and no tracked-surface simplex left its envelope. Slow; for debugging."
   },
   {
     "pointer": "/deform_others",
     "default": true,
     "type": "bool",
-    "doc": "2D. Whether the other objects in the scene -- tagged regions with no input-complex face and no domain-wall contact -- deform when the optimization pushes them, instead of being held by their per-tag envelopes. true (the default): their envelopes are dropped at the top of optimize_offset(), every face of theirs is stamped with its rest shape, and smoothing carries a rest-shape AMIPS term for those faces weighted like the smoother's own. A face keeps that rest shape until an operation touches it; an accepted split, collapse or swap re-stamps the faces it changed, which is what makes the scheme indifferent to remeshing. protected_tags opts a region out, and the offset's own complex, the domain wall and the curve group are always held."
+    "doc": "Whether the other objects in the scene -- tagged regions with no input-complex simplex and no domain-wall contact -- deform when the optimization pushes them, instead of being held by their per-tag envelopes. true (the default): their envelopes are dropped at the top of optimize_offset(), every cell of theirs is stamped with its rest shape, and smoothing carries a rest-shape AMIPS term for those cells weighted like the smoother's own. A cell keeps that rest shape until an operation touches it; an accepted split, collapse or swap re-stamps the cells it changed, which is what makes the scheme indifferent to remeshing. protected_tags opts a region out, and the offset's own complex, the domain wall and the envelope curve / surface group are always held."
   }
 ]

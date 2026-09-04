@@ -97,6 +97,8 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     for (const size_t t : tids) {
         m_tet_attribute[t].tag = tag;
         m_tet_attribute[t].label = label;
+        // deform_others: a swap rewires exactly these cells; their rest is stale.
+        stamp_rest_cell(t);
     }
 
     // No offset-criterion acceptance for surface flips: the shared swap has already checked both
