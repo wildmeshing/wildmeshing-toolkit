@@ -2119,12 +2119,6 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
         return m_vertex_attribute[i].m_posf;
     });
 
-    // The sizing field as node data, so the result file carries what the run asked for and not
-    // only what it produced. Must stay immediately after the vertex block.
-    msh.add_tet_vertex_attribute<1>("sizing", [&](size_t k) {
-        return m_vertex_attribute[verts[k].vid(*this)].m_sizing_scalar;
-    });
-
     auto msh_add_tets = [&]() {
         msh.add_tets(tets_with_tag.size(), [&](size_t k) {
             auto vs = oriented_tet_vids(tets_with_tag[k]);
@@ -2178,6 +2172,8 @@ void TopoOffsetTetMesh::write_msh_groups(const std::string& file)
         msh.add_physical_group("EnvelopeSurface");
     }
 
+    // No node data: the file has the same shape as simwild's output (node and element blocks per
+    // physical group, plus the retained envelope) and nothing else.
     msh.save(file + ".msh", true);
 }
 

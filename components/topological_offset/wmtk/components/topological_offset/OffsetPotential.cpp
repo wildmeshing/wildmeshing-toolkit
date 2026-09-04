@@ -494,20 +494,35 @@ void SmoothOffsetPotential<DIM>::build(
     }
 
     // What the OGC part owns: in both dimensions only what ESP cannot take -- in 3D the segments
-    // in no triangle, in 2D nothing at all (every segment went to ESP; the isolated points below
-    // are its whole remit).
+    // in no triangle, plus the manifold boundary of the surface part (below); in 2D nothing at
+    // all (every segment went to ESP; the isolated points below are its whole remit).
+    //
+    // The 3D reading of the 2D degree-1 rule further down. ESP's edge term is -1 for every
+    // triangle edge, cancelled by the +1 of each incident face whose closest point lands on it. A
+    // rim edge -- exactly ONE incident triangle, the boundary of an open sheet -- has only one +1
+    // to cancel with, so its -1 survives and Phi comes out short by b(dist to it), reaching 0 where
+    // the rim should be the closest feature; a rim vertex nets 0 the same way (k faces, k+1 edges,
+    // +1 vertex). Adding the rim edges to the OGC edge tree restores the missing +1: the OGC
+    // builder seeds their endpoints as vertex candidates and lets exactly one feature claim the
+    // query, so a straight or convex rim vertex is exact too. (A rim vertex whose rim turns back on
+    // itself -- both incident rim edges' slabs covering the query -- over-counts by one, the same
+    // reentrant double barrier the 2D segment path had before it moved to ESP; a closed surface
+    // has no rim and is unaffected.)
     std::vector<int> tree_edges;
     if constexpr (DIM == 3) {
-        std::set<std::pair<int, int>> in_face;
+        std::map<std::pair<int, int>, int> faces_at; // triangle edge -> incident triangle count
         for (int f = 0; f < F.rows(); ++f) {
             for (int j = 0; j < 3; ++j) {
                 const int a0 = F(f, j), b0 = F(f, (j + 1) % 3);
-                in_face.insert({std::min(a0, b0), std::max(a0, b0)});
+                ++faces_at[{std::min(a0, b0), std::max(a0, b0)}];
             }
         }
         for (int i = 0; i < E.rows(); ++i) {
             const int a0 = E(i, 0), b0 = E(i, 1);
-            if (in_face.count({std::min(a0, b0), std::max(a0, b0)}) == 0) tree_edges.push_back(i);
+            const auto it = faces_at.find({std::min(a0, b0), std::max(a0, b0)});
+            const bool wire = (it == faces_at.end());
+            const bool rim = !wire && it->second == 1;
+            if (wire || rim) tree_edges.push_back(i);
         }
     }
 

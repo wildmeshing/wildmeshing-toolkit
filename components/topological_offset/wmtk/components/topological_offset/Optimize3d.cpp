@@ -2967,7 +2967,12 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 m_phase = OptPhase::A;
                 rebuild_offset_envelope();
                 m_freeze_front = true;
+                // Pure TetWild: the pass exists to reach stop_energy, and a rest-shape term pulls
+                // background vertices toward non-equilateral shapes. No plasticity here.
+                const bool plastic_was = m_plastic_active;
+                m_plastic_active = false;
                 mesh_improvement(a_iters);
+                m_plastic_active = plastic_was;
                 m_freeze_front = false;
                 assign_band_regions();
                 const double final_amips = std::get<0>(optimization_quality_stats());
