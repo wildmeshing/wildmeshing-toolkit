@@ -35,8 +35,11 @@ ExternalProject_Add(
     # At 0514682 (2026-09-01) _annots_tag4_in drops its front_conv_rel 0.001 override -- it predates
     # the rule that offset_envelope_rel may not exceed front_conv_rel, and the run refused to start;
     # with the default accuracy 0.025 the case converges.
+    # At 1a130a3 (2026-09-07) _dragon moves from target_distance_rel 0.01 to 0.001: at 0.01 the front
+    # grazes the released tag_0 boundary at the pinch and the final quality pass stalls; at 0.001 the
+    # case converges in 4 turns with max AMIPS under the stop energy.
     #
-    GIT_TAG 0514682dee2e0229f38638e00cefb535c15f8fc9
+    GIT_TAG 1a130a3d91bec719302a09d1f7f921bb4f3f052b
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

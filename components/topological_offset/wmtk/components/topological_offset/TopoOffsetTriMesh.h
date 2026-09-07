@@ -416,6 +416,30 @@ public:
     /// The final Phase A: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
 
+    /**
+     * @brief The final pass's containers, built ONCE when that pass starts and held unchanged
+     * until it ends.
+     *
+     * m_final_pass_envelope is one exact tube, of the per-tag tubes' half-width m_envelope_eps,
+     * around every region-boundary segment as it stands at that moment: tag boundaries whether
+     * held or released by deform_others, and the domain wall. m_offset_envelope, rebuilt once
+     * just before, holds the front. m_final_pass_junction is their intersection, for a segment
+     * that is on both. While m_final_pass_envelope is non-null every containment query answers
+     * from these and nothing else -- surface_envelope_for_edge() for the operations,
+     * smoothing_energy_envelope() and smoothing_containment_envelope() for the smoother -- so
+     * the whole pass is TriWild against one fixed set of envelopes: no per-tag intersection
+     * built from the input, no released tube rebuilt behind the pass's back, no vertex left
+     * free because its mask was cleared. rest_energy_for_vertex() is null for the same span,
+     * so the pass minimises equilateral AMIPS alone. See begin_final_pass_envelope().
+     */
+    std::shared_ptr<SampleEnvelope> m_final_pass_envelope;
+    std::shared_ptr<SampleEnvelope> m_final_pass_junction;
+    /// Rebuild the offset tube, build m_final_pass_envelope from the current region-boundary
+    /// segments, log both. Called once, at the start of the final pass.
+    void begin_final_pass_envelope();
+    /// Drop both; the dispatch falls back to the per-tag machinery. Called once, at its end.
+    void end_final_pass_envelope();
+
     // No Phi test gates collapse and swap: the envelope is the constraint, and the offset
     // criterion belongs to Phase B's own placement. The coarsening bar is applied where 3D
     // applies it -- absolute, and only in m_coarsen_mode.
@@ -1129,6 +1153,17 @@ public:
                 }
             }
         }
+        // The final pass: two fixed tubes and nothing else, see m_final_pass_envelope. The front
+        // (both ends on the offset, no region bit left after the class check above) is held by
+        // the offset tube; every other tracked segment is a region boundary -- held or released,
+        // masked or not -- and is held by the pass-wide region tube; a segment on both is held in
+        // their intersection. Only tracked segments are ever asked about, so there is no third
+        // kind here.
+        if (m_final_pass_envelope) {
+            if (all_offset && mask == 0) return m_offset_envelope;
+            if (!all_offset) return m_final_pass_envelope;
+            return m_final_pass_junction;
+        }
         // Both families compose: whatever holds this segment holds it at once. Phase A holds the
         // offset where Phase B left it; Phase B is what moves it, so it contributes nothing there
         // -- and null before the offset exists at all, which is the pre-pass.
@@ -1178,6 +1213,13 @@ public:
      */
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
     {
+        // The final pass: a region-boundary vertex is pulled to the pass-wide region tube, a real
+        // SampleEnvelope, whatever its mask says (a released boundary's mask was cleared). A
+        // front vertex is frozen there and never reaches the smoother. See
+        // m_final_pass_envelope.
+        if (m_final_pass_envelope) {
+            return vertex_is_on_region(vid) ? m_final_pass_envelope : nullptr;
+        }
         if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return nullptr;
         }
@@ -1226,6 +1268,17 @@ public:
         // out of one expression: pure-offset (mask 0) gives the offset tube in Phase A and null in
         // Phase B, pure-region gives its tubes' intersection in both, and a junction of the two
         // gives the intersection of everything.
+        //
+        // The final pass: the pass-wide region tube for every region-boundary vertex, the
+        // offset tube for a front vertex (frozen, so only diagnostics ask), their intersection
+        // for a vertex on both. See m_final_pass_envelope.
+        if (m_final_pass_envelope) {
+            const bool region = vertex_is_on_region(vid);
+            const bool offset = m_vertex_extra[vid].m_is_on_offset;
+            if (region && offset) return m_final_pass_junction;
+            if (region) return m_final_pass_envelope;
+            return offset ? m_offset_envelope : nullptr;
+        }
         return containment_for(vertex_boundary_mask(vid), m_vertex_extra[vid].m_is_on_offset);
     }
 

@@ -567,6 +567,10 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::rest_energy_fo
     const size_t vid) const
 {
     if (m_deform_tags.empty()) return nullptr;
+    // The final pass minimises equilateral AMIPS alone: the released boundaries it would
+    // otherwise pull toward their last stamped shape are held by the pass-wide tube instead.
+    // See m_final_pass_envelope.
+    if (m_final_pass_envelope) return nullptr;
     std::vector<RestAMIPSEnergy2D::Cell> cells;
     for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(vid))) {
         // Released-band cells too: a released object's boundary inside the band has band-labeled
@@ -1624,8 +1628,14 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
         std::vector<size_t> seeds;
         for (const Tuple& e : get_edges()) {
             const std::optional<Tuple> opp = e.switch_face(*this);
+            // A wall edge is not a complex boundary: with offset_in the whole background carries
+            // label 1, and treating the missing opposite face as "not complex" seeded the entire
+            // domain wall at delta. A wall vertex is seeded only through an interior edge where
+            // the complex meets a non-complex region, i.e. where a complex boundary reaches the
+            // wall; a vertex bordering only the complex and the wall keeps the default scalar.
+            if (!opp) continue;
             const bool in_a = m_face_extra[e.fid(*this)].label == 1;
-            const bool in_b = opp ? (m_face_extra[opp->fid(*this)].label == 1) : false;
+            const bool in_b = m_face_extra[opp->fid(*this)].label == 1;
             if (in_a == in_b) continue; // interior to the complex, or interior to the background
             for (const size_t vid : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
                 double& sc = m_vertex_attribute[vid].m_sizing_scalar;
@@ -3816,6 +3826,56 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
         m_offset_params.target_distance);
 }
 
+void TopoOffsetTriMesh::begin_final_pass_envelope()
+{
+    // The front first, where placement left it: the loop's last rebuild predates the last
+    // smoothing passes.
+    rebuild_offset_envelope();
+
+    // Every tracked segment that is not the front: tag boundaries, held or released, and the
+    // domain wall. Read off the edge attributes, which every operation maintains, not off the
+    // vertex masks, which deform_others clears on released boundaries.
+    std::vector<Eigen::Vector2i> segs;
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        if (!m_edge_attribute[eid].m_is_surface_fs || edge_is_offset(eid)) continue;
+        segs.emplace_back(int(e.vid(*this)), int(e.switch_vertex(*this).vid(*this)));
+    }
+    m_final_pass_envelope = nullptr;
+    m_final_pass_junction = nullptr;
+    if (!segs.empty()) {
+        std::vector<Eigen::Vector2d> verts(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            verts[i] = m_vertex_attribute[i].m_posf;
+        }
+        // The per-tag tubes' half-width, and exact for the same reason they are: the sampled
+        // test can pass a collapse's whole segment and fail a split's half of it.
+        const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
+        m_final_pass_envelope = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        m_final_pass_envelope->init(verts, segs, m_envelope_eps);
+        if (m_offset_envelope) {
+            m_final_pass_junction =
+                std::make_shared<IntersectionEnvelope>(std::vector<std::shared_ptr<SampleEnvelope>>{
+                    m_final_pass_envelope,
+                    m_offset_envelope});
+        } else {
+            m_final_pass_junction = m_final_pass_envelope;
+        }
+    }
+    logger().info(
+        "\t[final pass] envelopes fixed for the whole pass: {} region-boundary segments (eps "
+        "{:.6g} = envelope_size, {}) + the offset tube; rest-shape term off",
+        segs.size(),
+        m_envelope_eps,
+        (m_final_pass_envelope && m_final_pass_envelope->use_exact) ? "EXACT" : "sampled");
+}
+
+void TopoOffsetTriMesh::end_final_pass_envelope()
+{
+    m_final_pass_envelope = nullptr;
+    m_final_pass_junction = nullptr;
+}
+
 void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& label) const
 {
     // See write_smoothing_debug_output(). Truncated on the first frame of the run, appended to
@@ -3979,20 +4039,18 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                     m_params.stop_energy);
                 m_ab_round = it + 2;
                 m_phase = OptPhase::A;
-                // The tube first. Only smoothing moves the front -- an accepted operation cannot
-                // leave the tube -- so one rebuild after the smoothing passes is enough, which
-                // the loop above does at the top of every iteration. This pass is the exception:
-                // it starts after the last iteration's smoothing, so without this it would judge
-                // the front against a stale tube.
-                rebuild_offset_envelope();
+                // One fixed set of envelopes for the whole pass -- the front's tube rebuilt from
+                // where placement left it, and one tube around every region boundary as it
+                // stands now -- and equilateral AMIPS alone: the plastic vertex path and the
+                // rest-shape term are both off. See m_final_pass_envelope.
+                begin_final_pass_envelope();
                 m_freeze_front = true;
-                // Pure TriWild: the pass exists to reach stop_energy, and a rest-shape term pulls
-                // background vertices toward non-equilateral shapes. No plasticity here.
                 const bool plastic_was = m_plastic_active;
                 m_plastic_active = false;
                 mesh_improvement(a_iters);
                 m_plastic_active = plastic_was;
                 m_freeze_front = false;
+                end_final_pass_envelope();
                 assign_band_regions();
                 const double final_amips = std::get<0>(optimization_quality_stats());
                 logger().info(

@@ -85,6 +85,10 @@ TAG_COLORS = [((0.45, 0.16, 0.62), "purple"), ((0.55, 0.27, 0.07), "brown"),
 # The C++ sentinel for "degenerate, do not trust the number" -- wmtk::TriOptimizerMesh::MAX_ENERGY.
 MAX_ENERGY = 1e50
 
+# Per-cell scalars the .vtu writers emit next to the 0/1 tag fields; never memberships, so
+# read_groups_vtu() must not turn them into groups (see there).
+NON_GROUP_CELL_FIELDS = {"amips"}
+
 
 def eval_selection(expr, names):
     """The offset_selection boolean expression, on one cell's group memberships.
@@ -149,16 +153,28 @@ def read_groups_vtu(path):
     differently: write_vtu() emits one CELL FIELD per tag (1 where the cell carries it) plus
     `offset_tag`, which is 1 on the band and is derived from the construction LABEL rather than
     from the tags -- so it is the reliable band marker even where a tag was written elsewhere.
+
+    Only 0/1 INDICATOR fields are groups. The 2D writer also emits the per-cell scalar `amips`,
+    which is not a membership, and reading it as a group drew phantom regions: on the
+    pre-optimize frames only the faces a pass had touched carry a quality yet, so `amips`
+    selected a scattered subset of cells, which then showed up as a "tag boundary: amips" curve
+    and as region-boundary loops around every touched patch, and shifted every real tag's color
+    by one. Skipped by name (NON_GROUP_CELL_FIELDS), and any other cell field that is not
+    exactly 0/1 is skipped too.
     """
     m = meshio.read(str(path))
     kind, ncol = ("tetra", 4) if any(c.type == "tetra" for c in m.cells) else ("triangle", 3)
     cells = np.vstack([c.data for c in m.cells if c.type == kind])
     groups = {}
     for name, arrays in m.cell_data.items():
+        if name in NON_GROUP_CELL_FIELDS:
+            continue
         vals = np.concatenate([
             np.asarray(a).reshape(-1)
             for a, c in zip(arrays, m.cells) if c.type == kind
         ])
+        if not np.all((vals == 0.0) | (vals == 1.0)):
+            continue  # a per-cell scalar, not a membership
         sel = cells[vals > 0.5]
         if len(sel):
             groups[name] = sel
