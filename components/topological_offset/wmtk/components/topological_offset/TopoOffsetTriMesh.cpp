@@ -1354,6 +1354,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
     // last matrix is for offset
     std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tris.size(), 1));
+    VectorXd amips(tris.size());
 
     for (size_t k = 0; k < tris.size(); ++k) {
         const size_t f_id = tris[k].fid(*this);
@@ -1363,6 +1364,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             tags[j](k, 0) = (m_face_attribute[f_id].tags.count(j) == 1) ? 1 : 0;
         }
         tags[m_tags_count](k, 0) = (m_face_extra[f_id].label == 2) ? 1 : 0;
+        amips[k] = m_face_attribute[f_id].m_quality;
     }
 
     for (size_t k = 0; k < tris.size(); ++k) {
@@ -1385,6 +1387,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
+    writer->add_cell_field("amips", amips);
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
