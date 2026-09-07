@@ -242,8 +242,13 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
         m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
         // Guard against a pre-existing inverted incident tet: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path).
-        for (const Tuple& loc : locs) {
-            if (is_inverted(loc)) {
+        for (const Tuple& t : locs) {
+            if (is_inverted(t)) {
+                log_and_throw_error(
+                    "split_edge_after: split of ({},{}) produced inverted triangle {}",
+                    v1_id,
+                    v2_id,
+                    t.fid(*this));
                 return false;
             }
         }
@@ -260,8 +265,8 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
     // A split is never refused on quality. It checks orientation, rounding and (above) the
     // envelope, and that is all: subdividing is the operation the optimizer reaches for when a
     // region is stuck, so it has to be allowed to run even where the result scores badly.
-    for (const Tuple& loc : locs) {
-        set_cell_quality(loc.tid(*this), get_quality(loc));
+    for (const Tuple& t : locs) {
+        set_cell_quality(t.tid(*this), get_quality(t));
     }
 
     /// containment: the new surface triangles must stay inside the envelope
@@ -299,9 +304,17 @@ bool TetOptimizerMesh::split_edge_after(const Tuple& loc)
             }
             if (n_shared != 2) continue; // face does not contain the split edge
             if (surface_triangle_is_outside(v1_id, v_id, other)) {
+                logger().error(
+                    "split of ({},{}) produced a surface segment outside the envelope",
+                    v1_id,
+                    v2_id);
                 return false;
             }
             if (surface_triangle_is_outside(v2_id, v_id, other)) {
+                logger().error(
+                    "split of ({},{}) produced a surface segment outside the envelope",
+                    v1_id,
+                    v2_id);
                 return false;
             }
         }
