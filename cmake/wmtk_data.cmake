@@ -35,8 +35,18 @@ ExternalProject_Add(
     # At 0514682 (2026-09-01) _annots_tag4_in drops its front_conv_rel 0.001 override -- it predates
     # the rule that offset_envelope_rel may not exceed front_conv_rel, and the run refused to start;
     # with the default accuracy 0.025 the case converges.
+    # At 1a130a3 (2026-09-07) _dragon moves from target_distance_rel 0.01 to 0.001: at 0.01 the front
+    # grazes the released tag_0 boundary at the pinch and the final quality pass stalls; at 0.001 the
+    # case converges in 4 turns with max AMIPS under the stop energy.
+    # At ddf5cb1 (2026-09-08) _dragon is back at 0.01 with throw_on_nonconvergence: under the wall +
+    # input-complex envelope setup the final quality pass gets under stop_energy, and the fixture
+    # now asserts convergence (front placed AND final quality) instead of merely running.
+    # At b59e130 (2026-09-08) every case listed in topological_offset_models.json sets the flag.
+    # At 9c2144c (2026-09-08) _two_circles moves to absolute target 0.15 with spec defaults (converges
+    # through a 15-iteration final pass), and _dragon_held is added: the dragon at 1e-3 with
+    # deform_others false, a converging case for the per-tag envelope setup.
     #
-    GIT_TAG 0514682dee2e0229f38638e00cefb535c15f8fc9
+    GIT_TAG 9c2144c3bfb30ff2fe607aa5ad9acb67585c868b
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

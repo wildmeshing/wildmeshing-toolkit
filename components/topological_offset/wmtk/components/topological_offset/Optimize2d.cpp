@@ -312,14 +312,9 @@ bool TopoOffsetTriMesh::project_into_containment(const size_t vid, Vector2d& x) 
 
 bool TopoOffsetTriMesh::face_is_deformable(const size_t fid) const
 {
-    if (m_deform_tags.empty()) return false;
-    if (m_face_extra[fid].label != 0) return false;
-    const auto& tags = m_face_attribute[fid].tags;
-    if (tags.empty()) return false;
-    for (const int64_t t : tags) {
-        if (m_deform_tags.count(t) == 0) return false;
-    }
-    return true;
+    // deform_others: the whole medium outside the band deforms, the input complex's interior
+    // included -- its boundary is what the complex tube holds. Same set as face_is_plastic().
+    return face_is_plastic(fid);
 }
 
 bool TopoOffsetTriMesh::face_is_released_band(const size_t fid) const
@@ -430,143 +425,42 @@ bool TopoOffsetTriMesh::smooth_plastic_vertex(const Tuple& t)
 
 void TopoOffsetTriMesh::release_deformable_regions()
 {
-    // Held: any tag on an input-complex face or on a wall face, and the curve group. Everything
-    // else with an envelope is an object the offset merely shares the scene with, and
-    // deform_others releases it -- tube dropped, faces given a rest shape, smoothing deforming it
-    // against RestAMIPSEnergy2D instead of a tube refusing every move. Dangling mask bits are
-    // already the envelope machinery's normal case, so the queries need no change.
-    //
-    // Never released, whatever else it touches: every tag the offset_selection expression names.
-    // The complex is defined by that expression, so those tags are the geometry the offset
-    // measures from, faces of their own or not. Do not go back to a heuristic over complex faces;
-    // measured worse -- see git history of this file.
-    std::set<int64_t> kept;
+    // deform_others: from here on the only region-class envelopes are the domain wall and the
+    // input complex boundary (EnvelopeSetup::WallComplex), and every other tag region is
+    // released: it deforms as plastic medium, see face_is_plastic(). The released set is every
+    // input tag the selection does not name, ambient included; it drives face_is_released_band()
+    // and the diagnostics. The tubes and the masks come from build_boundary_envelopes().
     std::set<int64_t> source_tags;
     if (m_offset_params.offset_selection) {
         for (const int64_t t : m_offset_params.offset_selection->tags_involved()) {
-            kept.insert(t);
             source_tags.insert(t);
         }
     }
-    for (const Tuple& e : get_edges()) {
-        if (e.switch_face(*this)) continue; // wall edges only
-        for (const int64_t t : m_face_attribute[e.fid(*this)].tags) kept.insert(t);
-    }
-    if (m_curve_tag >= 0) kept.insert(m_curve_tag);
-    // protected_tags is not consulted here, and the two keys must stay orthogonal: protected_tags
-    // is a tagging decision (whether a band cell overwrites the object's tag or carries both) and
-    // deform_others is a geometry decision (whether other objects may deform).
-
+    m_source_tags = source_tags;
     m_deform_tags.clear();
-    for (const auto& [tag, env] : m_tag_envelopes) {
-        if (kept.count(tag) == 0) m_deform_tags.insert(tag);
+    for (const auto& [tag, name] : m_tag_id_to_name) {
+        if (source_tags.count(tag) || m_offset_output_tag_ids.count(tag)) continue;
+        m_deform_tags.insert(tag);
     }
-    m_source_tags = source_tags; // the ops-only tube's classification applies the same rule
-    if (m_deform_tags.empty()) {
-        logger().info("[deform_others] nothing to release: every tagged region is held");
-        return;
-    }
+    build_boundary_envelopes("deform_others", EnvelopeSetup::WallComplex);
+    // No released tube: a released boundary is held by nothing, in the operations too.
+    m_released_envelope = nullptr;
+    m_released_tube_dirty.store(false, std::memory_order_release);
 
-    // No tube is ever edited: releasing a boundary is a property of its vertices' masks (the loop
-    // below), and every tag's envelope, released tags included, keeps its as-loaded segments. A
-    // tube held by nobody constrains nothing, while a tube that no longer covers geometry whose
-    // bits some vertex still carries measures that vertex against the far side of the scene. Do
-    // not re-add either edit -- dropping released segments from kept tags' tubes, or reducing a
-    // released tag's own tube; both measured worse -- see git history of this file.
     std::string released;
-    for (const int64_t t : m_deform_tags) {
-        released += " " + m_tag_id_to_name.at(t);
-    }
-
-    // Edit the masks in place, never recompute them: a mask is seeded at construction and
-    // propagated by every operation since (a split ANDs its endpoints, a collapse ORs them), so
-    // it carries history no rebuild from the current edge set can reproduce. The loop below
-    // reduces a freed vertex's mask to its source bits -- held by released geometry alone it ends
-    // at 0, while a junction vertex where the released boundary crosses the source keeps the
-    // source's hold, so the source's own crossing edges stay contained.
-    uint64_t released_bits = 0;
-    for (const int64_t t : m_deform_tags) {
-        const auto it = m_tag_bit.find(t);
-        if (it != m_tag_bit.end()) released_bits |= (uint64_t(1) << it->second);
-    }
-    if (released_bits) {
-        // Free a released boundary's vertices down to their source bits. Clearing only the
-        // released tag's bit leaves them pinned in the other side's tube (an interface edge
-        // contributes bits for both of its sides); clearing the source bits too leaves the
-        // source's own crossing edges contained by nothing.
-        //
-        // Never freed: an edge that also borders a source tag (it is the source's own boundary),
-        // an edge both of whose faces carry a source tag (complex-internal, and the front cannot
-        // enter the complex, so it must stay where it was loaded), or a wall vertex.
-        uint64_t source_bits = 0;
-        for (const int64_t t : source_tags) {
-            const auto it = m_tag_bit.find(t);
-            if (it != m_tag_bit.end()) source_bits |= (uint64_t(1) << it->second);
-        }
-        const auto face_has_source = [&](const size_t fid) {
-            for (const int64_t t : m_face_attribute[fid].tags) {
-                if (source_tags.count(t)) return true;
-            }
-            return false;
-        };
-        size_t n_freed = 0;
-        for (const Tuple& e : get_edges()) {
-            const size_t eid = e.eid(*this);
-            if (!m_edge_attribute[eid].m_is_surface_fs) continue;
-            const std::optional<Tuple> f_opp = e.switch_face(*this);
-            if (!f_opp) continue; // the domain wall
-            CellTag edge_tags;
-            const auto& t0 = m_face_attribute[e.fid(*this)].tags;
-            const auto& t1 = m_face_attribute[f_opp->fid(*this)].tags;
-            std::set_symmetric_difference(
-                t0.begin(),
-                t0.end(),
-                t1.begin(),
-                t1.end(),
-                std::inserter(edge_tags, edge_tags.begin()));
-            bool released_here = false, touches_source = false;
-            for (const int64_t t : edge_tags) {
-                if (m_deform_tags.count(t)) released_here = true;
-                if (source_tags.count(t)) touches_source = true;
-            }
-            if (!released_here || touches_source) continue;
-            if (face_has_source(e.fid(*this)) && face_has_source(f_opp->fid(*this))) {
-                continue; // complex-internal: anchored, never freed
-            }
-            for (const size_t v : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
-                if (!m_vertex_attribute[v].on_bbox_faces.empty()) continue; // wall stays held
-                const uint64_t kept = m_vertex_extra[v].m_boundary_mask & source_bits;
-                if (m_vertex_extra[v].m_boundary_mask != kept) ++n_freed;
-                m_vertex_extra[v].m_boundary_mask = kept;
-            }
-        }
-        logger().info(
-            "[deform_others] {} boundary vertices freed down to their source bits",
-            n_freed);
-    }
-
-    size_t n_faces = 0;
-    for (const Tuple& f : get_faces()) {
-        const size_t fid = f.fid(*this);
-        if (face_is_deformable(fid)) {
-            stamp_rest_face(fid);
-            ++n_faces;
-        }
-    }
+    for (const int64_t t : m_deform_tags) released += " " + envelope_key_name(t);
     logger().info(
-        "[deform_others] released:{} | {} deformable faces stamped with their rest shape; "
-        "held: {} envelopes",
+        "[deform_others] released:{} | held: the domain wall and the input complex boundary "
+        "({} tubes); every face outside the band is plastic",
         released,
-        n_faces,
         m_tag_envelopes.size());
-    m_released_tube_dirty.store(true, std::memory_order_release);
-    released_envelope(); // built here, at a consistent moment, not at some mid-pass first query
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::rest_energy_for_vertex(
     const size_t vid) const
 {
-    if (m_deform_tags.empty()) return nullptr;
+    // Off with the plastic medium: the final pass minimises equilateral AMIPS alone.
+    if (!m_plastic_active) return nullptr;
     std::vector<RestAMIPSEnergy2D::Cell> cells;
     for (const size_t fid : get_one_ring_fids_for_vertex(tuple_from_vertex(vid))) {
         // Released-band cells too: a released object's boundary inside the band has band-labeled
@@ -1624,8 +1518,14 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
         std::vector<size_t> seeds;
         for (const Tuple& e : get_edges()) {
             const std::optional<Tuple> opp = e.switch_face(*this);
+            // A wall edge is not a complex boundary: with offset_in the whole background carries
+            // label 1, and treating the missing opposite face as "not complex" seeded the entire
+            // domain wall at delta. A wall vertex is seeded only through an interior edge where
+            // the complex meets a non-complex region, i.e. where a complex boundary reaches the
+            // wall; a vertex bordering only the complex and the wall keeps the default scalar.
+            if (!opp) continue;
             const bool in_a = m_face_extra[e.fid(*this)].label == 1;
-            const bool in_b = opp ? (m_face_extra[opp->fid(*this)].label == 1) : false;
+            const bool in_b = m_face_extra[opp->fid(*this)].label == 1;
             if (in_a == in_b) continue; // interior to the complex, or interior to the background
             for (const size_t vid : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
                 double& sc = m_vertex_attribute[vid].m_sizing_scalar;
@@ -3720,6 +3620,8 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::released_envelope() const
     // alarms. Rebuilding on first query after a smoothing accept makes every consumer judge
     // against the boundary as it is now. Operations never set the flag, so op-by-op drift cannot
     // recenter its own container.
+    // WallComplex holds a released boundary with nothing, the operations included.
+    if (envelope_setup() == EnvelopeSetup::WallComplex) return nullptr;
     if (m_deform_tags.empty()) return nullptr;
     std::lock_guard<std::mutex> lock(m_released_mutex);
     if (!m_released_tube_dirty.load(std::memory_order_acquire)) return m_released_envelope;
@@ -3964,6 +3866,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         if (ec.converged_single() && lowered_prev == 0) {
             m_energy_verdict = ec;
             m_converged = true;
+            // Provisional: the final pass below overwrites both when it runs. The verdict at the
+            // end of optimize_offset() requires this AND the front's.
+            m_quality_max_amips = amips;
+            m_quality_converged = amips < bar;
             logger().info(
                 "Single phase: the front is placed after {} iteration(s) (phi {:.4}x); max AMIPS "
                 "{:.4} against stop {:.4}",
@@ -3979,15 +3885,13 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                     m_params.stop_energy);
                 m_ab_round = it + 2;
                 m_phase = OptPhase::A;
-                // The tube first. Only smoothing moves the front -- an accepted operation cannot
-                // leave the tube -- so one rebuild after the smoothing passes is enough, which
-                // the loop above does at the top of every iteration. This pass is the exception:
-                // it starts after the last iteration's smoothing, so without this it would judge
-                // the front against a stale tube.
+                // The whole envelope setup rebuilt fresh from the mesh as placement left it --
+                // the front's tube, and the region-class tubes per envelope_setup() -- and held
+                // for the entire pass; equilateral AMIPS alone: the plastic vertex path and the
+                // rest-shape term are both off.
                 rebuild_offset_envelope();
+                build_boundary_envelopes("final pass", envelope_setup());
                 m_freeze_front = true;
-                // Pure TriWild: the pass exists to reach stop_energy, and a rest-shape term pulls
-                // background vertices toward non-equilateral shapes. No plasticity here.
                 const bool plastic_was = m_plastic_active;
                 m_plastic_active = false;
                 mesh_improvement(a_iters);
@@ -3995,11 +3899,14 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 m_freeze_front = false;
                 assign_band_regions();
                 const double final_amips = std::get<0>(optimization_quality_stats());
-                logger().info(
+                m_quality_max_amips = final_amips;
+                m_quality_converged = final_amips < m_params.stop_energy;
+                logger().log(
+                    m_quality_converged ? spdlog::level::info : spdlog::level::warn,
                     "\t[final pass] max element quality {:.4} (stop {:.4}) -> {}",
                     final_amips,
                     optimization_stop_metric(),
-                    final_amips < m_params.stop_energy ? "ok" : "STILL OVER");
+                    m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
                 if (m_offset_params.debug_output) {
                     write_smoothing_debug_output(fmt::format("phase_{}A", it + 2));
                 }
@@ -4179,17 +4086,23 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
           g.max_in_edge}});
     log_worst_dist_vertex();
 
+    bool front_ok = false;
     {
         // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
-        m_converged = ec.converged_single();
+        // Two criteria, both required: the front placed, and the final quality under
+        // stop_energy (the finishing pass's verdict; see m_quality_converged).
+        front_ok = ec.converged_single();
+        m_converged = front_ok && m_quality_converged;
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front vertices placed {} / pressed {} / travelling {} / stuck {} | "
+            "{}{}: front {} -- vertices placed {} / pressed {} / travelling {} / stuck {} | "
             "chords to resolve {} (at the sizing floor {}) | accuracy front_conv_rel {} "
-            "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar)",
+            "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar) || "
+            "final quality {}: max AMIPS {:.4} vs stop_energy {}",
             m_converged ? "Converged" : "Optimization did not converge",
-            m_energy_verdict ? " (measured at convergence, before the finishing pass)" : "",
+            m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
+            front_ok ? "placed" : "NOT placed",
             ec.n_placed,
             ec.n_pressed_on,
             ec.n_travelling,
@@ -4198,15 +4111,23 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             ec.n_at_floor,
             m_offset_params.front_conv_rel,
             ec.tube,
-            ec.max_vertex);
+            ec.max_vertex,
+            m_quality_converged ? "ok" : "OVER",
+            m_quality_max_amips,
+            m_params.stop_energy);
     }
 
     // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log
     // still names which criterion missed before the throw.
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
         log_and_throw_error(
-            "Optimization did not converge and throw_on_nonconvergence is set. Ran {} of {} "
-            "iterations; see the warnings above for the criterion that failed.",
+            "Optimization did not converge and throw_on_nonconvergence is set: front {}, final "
+            "quality {} (max AMIPS {:.4} vs stop_energy {}). Ran {} of {} iterations; see the "
+            "warnings above.",
+            front_ok ? "placed" : "NOT placed",
+            m_quality_converged ? "ok" : "OVER",
+            m_quality_max_amips,
+            m_params.stop_energy,
             optimization_metrics.size(),
             m_offset_params.max_iterations);
     }
