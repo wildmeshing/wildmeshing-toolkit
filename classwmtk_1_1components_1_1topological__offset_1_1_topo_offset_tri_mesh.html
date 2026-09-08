@@ -147,6 +147,11 @@ Public Types</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:ae7d378d2e069d63e6dda752dec7228b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which half of the alternating optimization is running.  <a href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae7d378d2e069d63e6dda752dec7228b4">More...</a><br /></td></tr>
 <tr class="separator:ae7d378d2e069d63e6dda752dec7228b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae54cc73cecb6e6b6aa2ebaec06b36faf" id="r_ae54cc73cecb6e6b6aa2ebaec06b36faf"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">EnvelopeSetup</a> { <b>PerTag</b>
+, <b>WallComplex</b>
+ }</td></tr>
+<tr class="memdesc:ae54cc73cecb6e6b6aa2ebaec06b36faf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which boundaries the region-class envelopes hold, and how they are built.  <a href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">More...</a><br /></td></tr>
+<tr class="separator:ae54cc73cecb6e6b6aa2ebaec06b36faf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3edbf6bb239b61e262cfb9d13e7282b" id="r_ae3edbf6bb239b61e262cfb9d13e7282b"><td class="memItemLeft" align="right" valign="top"><a id="ae3edbf6bb239b61e262cfb9d13e7282b" name="ae3edbf6bb239b61e262cfb9d13e7282b"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>VertexExtraCol</b> = <a class="el" href="structwmtk_1_1_attribute_collection.html">wmtk::AttributeCollection</a>&lt; <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_vertex_extra2d.html">VertexExtra2d</a> &gt;</td></tr>
 <tr class="separator:ae3edbf6bb239b61e262cfb9d13e7282b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -229,6 +234,17 @@ const <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_off
 <tr class="separator:abe7e3dcb4c866f2c5382afe78f7bf380"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4482d2980cc29c342543ce5043910429" id="r_a4482d2980cc29c342543ce5043910429"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4482d2980cc29c342543ce5043910429">phase_places_front</a> () const</td></tr>
 <tr class="separator:a4482d2980cc29c342543ce5043910429"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d88481f1ff6e1011779e1068adf10e9" id="r_a4d88481f1ff6e1011779e1068adf10e9"><td class="memItemLeft" align="right" valign="top"><a id="a4d88481f1ff6e1011779e1068adf10e9" name="a4d88481f1ff6e1011779e1068adf10e9"></a>
+<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">EnvelopeSetup</a>&#160;</td><td class="memItemRight" valign="bottom"><b>envelope_setup</b> () const</td></tr>
+<tr class="separator:a4d88481f1ff6e1011779e1068adf10e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d25e7d38bd631a659fc99ac3b9d2b00" id="r_a0d25e7d38bd631a659fc99ac3b9d2b00"><td class="memItemLeft" align="right" valign="top"><a id="a0d25e7d38bd631a659fc99ac3b9d2b00" name="a0d25e7d38bd631a659fc99ac3b9d2b00"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>envelope_key_name</b> (int64_t tag) const</td></tr>
+<tr class="memdesc:a0d25e7d38bd631a659fc99ac3b9d2b00"><td class="mdescLeft">&#160;</td><td class="mdescRight">The name a tag or pseudo-tag prints under. <br /></td></tr>
+<tr class="separator:a0d25e7d38bd631a659fc99ac3b9d2b00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae708f34fce4ac719ab65e9059b24fecc" id="r_ae708f34fce4ac719ab65e9059b24fecc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae708f34fce4ac719ab65e9059b24fecc">edge_is_complex_boundary</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
+<tr class="separator:ae708f34fce4ac719ab65e9059b24fecc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a411d31774ee16e586d63d9159f22db19" id="r_a411d31774ee16e586d63d9159f22db19"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a411d31774ee16e586d63d9159f22db19">build_boundary_envelopes</a> (const char *when, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">EnvelopeSetup</a> setup)</td></tr>
+<tr class="separator:a411d31774ee16e586d63d9159f22db19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a052c0d400d7d553206550104e8bcfd11" id="r_a052c0d400d7d553206550104e8bcfd11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a052c0d400d7d553206550104e8bcfd11">rebuild_offset_envelope</a> ()</td></tr>
 <tr class="separator:a052c0d400d7d553206550104e8bcfd11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d224310b5e262ee68702c5e28cf75f1" id="r_a4d224310b5e262ee68702c5e28cf75f1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d224310b5e262ee68702c5e28cf75f1">check_no_vertex_on_both_surfaces</a> (const char *when) const</td></tr>
@@ -412,7 +428,9 @@ Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>front_vertex_norm
 <tr class="separator:a3173b4dc275a4484da598bfc92cdaa6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba349ed25ce26c2bf521d98672aead6f" id="r_aba349ed25ce26c2bf521d98672aead6f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aba349ed25ce26c2bf521d98672aead6f">edge_borders_released_boundary</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="separator:aba349ed25ce26c2bf521d98672aead6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a430c39a73b53fb9eb9f4040e2ec6f00d" id="r_a430c39a73b53fb9eb9f4040e2ec6f00d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a430c39a73b53fb9eb9f4040e2ec6f00d">face_is_deformable</a> (size_t fid) const</td></tr>
+<tr class="memitem:a430c39a73b53fb9eb9f4040e2ec6f00d" id="r_a430c39a73b53fb9eb9f4040e2ec6f00d"><td class="memItemLeft" align="right" valign="top"><a id="a430c39a73b53fb9eb9f4040e2ec6f00d" name="a430c39a73b53fb9eb9f4040e2ec6f00d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>face_is_deformable</b> (size_t fid) const</td></tr>
+<tr class="memdesc:a430c39a73b53fb9eb9f4040e2ec6f00d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Under deform_others the same set as face_is_plastic(): every face outside the band. <br /></td></tr>
 <tr class="separator:a430c39a73b53fb9eb9f4040e2ec6f00d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa25fbd6e80fe417f842ebc28430c787d" id="r_aa25fbd6e80fe417f842ebc28430c787d"><td class="memItemLeft" align="right" valign="top"><a id="aa25fbd6e80fe417f842ebc28430c787d" name="aa25fbd6e80fe417f842ebc28430c787d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>face_is_plastic</b> (size_t fid) const</td></tr>
@@ -1203,9 +1221,13 @@ char&#160;</td><td class="memItemRight" valign="bottom"><b>m_debug_last_phase</b
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_gradient_reference</b> = 0.</td></tr>
 <tr class="memdesc:a322f8b69c926c58682072d17a9b2abec"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6795530b6579f8547bc0f7c8b3ae673c" title="The convergence tolerance: the bound on |grad (Phi - c)^2| at a band vertex.">offset_gradient_tolerance()</a>. Nothing sets it on the single-phase path; it stays 0. <br /></td></tr>
 <tr class="separator:a322f8b69c926c58682072d17a9b2abec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6130175f436be38111153aa29b19ab66" id="r_a6130175f436be38111153aa29b19ab66"><td class="memItemLeft" align="right" valign="top"><a id="a6130175f436be38111153aa29b19ab66" name="a6130175f436be38111153aa29b19ab66"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_converged</b> = false</td></tr>
+<tr class="memitem:a6130175f436be38111153aa29b19ab66" id="r_a6130175f436be38111153aa29b19ab66"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6130175f436be38111153aa29b19ab66">m_converged</a> = false</td></tr>
 <tr class="separator:a6130175f436be38111153aa29b19ab66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3aa7df2debb2983a01acd00d9c39df0" id="r_ae3aa7df2debb2983a01acd00d9c39df0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae3aa7df2debb2983a01acd00d9c39df0">m_quality_converged</a> = true</td></tr>
+<tr class="separator:ae3aa7df2debb2983a01acd00d9c39df0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4117e925d3a12ccaf725281f74a3bf1" id="r_af4117e925d3a12ccaf725281f74a3bf1"><td class="memItemLeft" align="right" valign="top"><a id="af4117e925d3a12ccaf725281f74a3bf1" name="af4117e925d3a12ccaf725281f74a3bf1"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m_quality_max_amips</b> = 0.</td></tr>
+<tr class="separator:af4117e925d3a12ccaf725281f74a3bf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa39b4c6c30e3a3e342e699209c689a14" id="r_aa39b4c6c30e3a3e342e699209c689a14"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa39b4c6c30e3a3e342e699209c689a14">iter_cnt_split_born</a> {0}</td></tr>
 <tr class="separator:aa39b4c6c30e3a3e342e699209c689a14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63b75e9d398b75c828ad5138ded91f60" id="r_a63b75e9d398b75c828ad5138ded91f60"><td class="memItemLeft" align="right" valign="top"><a id="a63b75e9d398b75c828ad5138ded91f60" name="a63b75e9d398b75c828ad5138ded91f60"></a>
@@ -1451,6 +1473,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>NUM_THREADS</b> = 0</t
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
+<tr class="memitem:a8c452bbcd44b1b124c477737d381f209" id="r_a8c452bbcd44b1b124c477737d381f209"><td class="memItemLeft" align="right" valign="top"><a id="a8c452bbcd44b1b124c477737d381f209" name="a8c452bbcd44b1b124c477737d381f209"></a>
+static constexpr int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_wall_tag</b> = -2</td></tr>
+<tr class="memdesc:a8c452bbcd44b1b124c477737d381f209"><td class="mdescLeft">&#160;</td><td class="mdescRight">pseudo-tag: the domain wall's tube <br /></td></tr>
+<tr class="separator:a8c452bbcd44b1b124c477737d381f209"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac50178974602ecbf17cba2e25765a9a7" id="r_ac50178974602ecbf17cba2e25765a9a7"><td class="memItemLeft" align="right" valign="top">static constexpr int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac50178974602ecbf17cba2e25765a9a7">m_complex_tag</a> = -3</td></tr>
+<tr class="separator:ac50178974602ecbf17cba2e25765a9a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85252075d7c9fa381362007746b395de" id="r_a85252075d7c9fa381362007746b395de"><td class="memItemLeft" align="right" valign="top">static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a85252075d7c9fa381362007746b395de">INPUT_SURFACE_CLASS</a> = 0</td></tr>
 <tr class="memdesc:a85252075d7c9fa381362007746b395de"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1_surface_tag_attributes.html#a7125d8d5b7ee4e67ee067e2297d62464" title="Which tracked surface this simplex belongs to, for applications that track more than one.">SurfaceTagAttributes::m_surface_class</a>: which of the two tracked surfaces an edge belongs to. Same scheme as 3D.  <br /></td></tr>
 <tr class="separator:a85252075d7c9fa381362007746b395de"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1547,6 +1575,33 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <p>Mirrors <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html" title="The offset&#39;s tet mesh, on the shared 3D optimizer.">TopoOffsetTetMesh</a>: the construction phase is entirely its own, and the optimization phase that follows is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share.">wmtk::TriOptimizerMesh</a>'s.</p>
 <p>Two surfaces are tracked. Every tag-region boundary (input complex and domain wall included) keeps the primary class 0 and is held in its tags' envelopes, as triwild holds its input; the offset boundary is OFFSET_SURFACE_CLASS, in 2D exactly the edges across which the incident face labels differ, so <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ab7a739e54ba112508dcdd6a00fee1ef8" title="Tag the two tracked surfaces for the optimization phase.">label_offset_boundary()</a> derives it rather than storing it. Class-0 edges may move within their tubes; only the offset one is driven toward target_distance. </p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="ae54cc73cecb6e6b6aa2ebaec06b36faf" name="ae54cc73cecb6e6b6aa2ebaec06b36faf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae54cc73cecb6e6b6aa2ebaec06b36faf">&#9670;&#160;</a></span>EnvelopeSetup</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">wmtk::components::topological_offset::TopoOffsetTriMesh::EnvelopeSetup</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Which boundaries the region-class envelopes hold, and how they are built. </p>
+<p>PerTag (deform_others false): one exact tube per input tag around that tag's boundary segments, the domain wall in the tags of its wall faces. A vertex carries the bit of every tube it lies on and is contained in their intersection, so every region boundary &ndash; the input complex and the wall included &ndash; is held.</p>
+<p>WallComplex (deform_others true): exactly two tubes, the domain wall and the boundary of the input complex (any dimension, any manifoldness: it is a set of segments), under the pseudo-tags m_wall_tag / m_complex_tag. Every other region boundary carries no bit and is held by nothing; the medium around it is plastic, see face_is_plastic().</p>
+<p>Either way <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a411d31774ee16e586d63d9159f22db19">build_boundary_envelopes()</a> derives the masks and tubes from the mesh as it stands when called: at load (PerTag, before the complex is labelled), when deform_others switches the setup at construction, and fresh at the start of the final pass. The offset tube is separate and unchanged. </p>
+
+</div>
+</div>
 <a id="ae7d378d2e069d63e6dda752dec7228b4" name="ae7d378d2e069d63e6dda752dec7228b4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae7d378d2e069d63e6dda752dec7228b4">&#9670;&#160;</a></span>OptPhase</h2>
 
@@ -1712,6 +1767,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
       </table>
 </div><div class="memdoc">
 <p>How far vid is from the level set Phi = c, as a length. This is what the loop converges on and what the sizing field refines by. </p>
+
+</div>
+</div>
+<a id="a411d31774ee16e586d63d9159f22db19" name="a411d31774ee16e586d63d9159f22db19"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a411d31774ee16e586d63d9159f22db19">&#9670;&#160;</a></span>build_boundary_envelopes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::build_boundary_envelopes </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>when</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">EnvelopeSetup</a>&#160;</td>
+          <td class="paramname"><em>setup</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Rebuild every region-class tube and every vertex's boundary mask from the current mesh under <code>setup</code>. PerTag at load (the complex is not labelled yet, and the pre-optimize pass holds every tag boundary as it always did), WallComplex when deform_others switches it at construction, envelope_setup() fresh at the final pass. The tracked-edge flags are left alone: they are the topology the operations maintain. <code>when</code> labels the log line. </p>
 
 </div>
 </div>
@@ -2142,6 +2226,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="ae708f34fce4ac719ab65e9059b24fecc" name="ae708f34fce4ac719ab65e9059b24fecc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae708f34fce4ac719ab65e9059b24fecc">&#9670;&#160;</a></span>edge_is_complex_boundary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::edge_is_complex_boundary </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>e</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Whether this edge lies on the boundary of the input complex: exactly one incident face carries label 1, or the edge itself does while neither face does (a curve or edge piece). </p>
+
+</div>
+</div>
 <a id="ac418862616af445535e9f0303c7c7fb5" name="ac418862616af445535e9f0303c7c7fb5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac418862616af445535e9f0303c7c7fb5">&#9670;&#160;</a></span>edge_is_offset()</h2>
 
@@ -2357,25 +2460,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 <p>Whether face <code>fid</code> belongs to the closed offset region, read from its label. </p>
 <p>The region is the offset band (label 2) plus the input complex it wraps (label 1), both set at construction from geometry rather than tags, and every operation carries the label onto the faces it creates, so this is exact. Tags cannot express the distinction: nothing stops the band's output tag already appearing elsewhere in the input mesh, and such a face would read as offset band, so the offset energy would drag an unrelated region to the level set. </p>
-
-</div>
-</div>
-<a id="a430c39a73b53fb9eb9f4040e2ec6f00d" name="a430c39a73b53fb9eb9f4040e2ec6f00d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a430c39a73b53fb9eb9f4040e2ec6f00d">&#9670;&#160;</a></span>face_is_deformable()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::face_is_deformable </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>fid</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>A face deforms when it is background (label 0), tagged, and every tag it carries was released &ndash; a face shared with a held region must not deform freely. </p>
 
 </div>
 </div>
@@ -4739,6 +4823,44 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="ac50178974602ecbf17cba2e25765a9a7" name="ac50178974602ecbf17cba2e25765a9a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac50178974602ecbf17cba2e25765a9a7">&#9670;&#160;</a></span>m_complex_tag</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int64_t wmtk::components::topological_offset::TopoOffsetTriMesh::m_complex_tag = -3</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>pseudo-tag: the input complex boundary </p>
+
+</div>
+</div>
+<a id="a6130175f436be38111153aa29b19ab66" name="a6130175f436be38111153aa29b19ab66"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6130175f436be38111153aa29b19ab66">&#9670;&#160;</a></span>m_converged</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::m_converged = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The run's verdict: the front placed AND the final quality under stop_energy. Read by the report and by throw_on_nonconvergence. </p>
+
+</div>
+</div>
 <a id="a84af2a2946b15f1d671101608a18b1db" name="a84af2a2946b15f1d671101608a18b1db"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a84af2a2946b15f1d671101608a18b1db">&#9670;&#160;</a></span>m_curve_tag</h2>
 
@@ -5098,6 +5220,21 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 <p>set in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2d2433ad916e327fa9847c3d11965f0d" title="The 2D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a> when deform_others </p>
 <p>Plastic medium: under deform_others every background face &ndash; ambient and the other objects alike &ndash; is plastic, its rest shape re-stamped before every operation group, so smoothing resists only the increment since the group started and the medium flows instead of behaving as an elastic solid glued to the walls. The band (label 2) and the complex (label 1) are not plastic; element quality in the medium is the operation passes' job. </p>
+
+</div>
+</div>
+<a id="ae3aa7df2debb2983a01acd00d9c39df0" name="ae3aa7df2debb2983a01acd00d9c39df0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3aa7df2debb2983a01acd00d9c39df0">&#9670;&#160;</a></span>m_quality_converged</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::m_quality_converged = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The finishing-pass half of the verdict: max AMIPS &lt; stop_energy once the front is placed, after the final pass when one ran. True when no pass was needed; false when the pass ended still over. m_quality_max_amips is the value it was judged on. </p>
 
 </div>
 </div>

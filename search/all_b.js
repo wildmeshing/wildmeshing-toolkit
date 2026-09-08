@@ -16,5 +16,6 @@ var searchData=
   ['bindings_13',['WMTK Python Bindings',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2app_2pywildmeshing_2_r_e_a_d_m_e.html',1,'']]],
   ['bite_20you_14',['Two things that will bite you',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2topological__offs23173da34df1c34d2f33057f9e16043f.html#autotoc_md50',1,'']]],
   ['boundary_5fedges_15',['boundary_edges',['../namespaceview__offset.html#a1ccaaf955426e363e5bb7537c11c1950',1,'view_offset']]],
-  ['busiest_5ftask_5fseconds_16',['busiest_task_seconds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2',1,'wmtk::ExecutePass::PassStats']]]
+  ['build_5fboundary_5fenvelopes_16',['build_boundary_envelopes',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a411d31774ee16e586d63d9159f22db19',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
+  ['busiest_5ftask_5fseconds_17',['busiest_task_seconds',['../structwmtk_1_1_execute_pass_1_1_pass_stats.html#adb56418f061237d47be787f218d8f8e2',1,'wmtk::ExecutePass::PassStats']]]
 ];

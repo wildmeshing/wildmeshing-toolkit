@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['kind_0',['Kind',['../classwmtk_1_1_sample_envelope.html#ac634e11dc6345cf581e3149c03acbea9',1,'wmtk::SampleEnvelope']]]
+  ['envelopesetup_0',['EnvelopeSetup',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]]
 ];

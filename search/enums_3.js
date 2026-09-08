@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['smoothingmode_0',['SmoothingMode',['../structwmtk_1_1optimization_1_1_smooth_vertex_options.html#afdcc39b878c914a0f47eb33a0ade9930',1,'wmtk::optimization::SmoothVertexOptions']]]
+  ['phasebsub_0',['PhaseBSub',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abf53c7007a75ec06554d75aa4ef5a0b4',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]]
 ];

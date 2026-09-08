@@ -145,6 +145,9 @@ tuple&#160;</td><td class="memItemRight" valign="bottom"><b>C_BAND</b> = (0.45, 
 <tr class="memitem:afdc8bad4d6a3650f1f16eb2ff7efaab6" id="r_afdc8bad4d6a3650f1f16eb2ff7efaab6"><td class="memItemLeft" align="right" valign="top"><a id="afdc8bad4d6a3650f1f16eb2ff7efaab6" name="afdc8bad4d6a3650f1f16eb2ff7efaab6"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>MAX_ENERGY</b> = 1e50</td></tr>
 <tr class="separator:afdc8bad4d6a3650f1f16eb2ff7efaab6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeabebd335c1e6d062dcb59ee9827f081" id="r_aeabebd335c1e6d062dcb59ee9827f081"><td class="memItemLeft" align="right" valign="top"><a id="aeabebd335c1e6d062dcb59ee9827f081" name="aeabebd335c1e6d062dcb59ee9827f081"></a>
+dict&#160;</td><td class="memItemRight" valign="bottom"><b>NON_GROUP_CELL_FIELDS</b> = {&quot;amips&quot;}</td></tr>
+<tr class="separator:aeabebd335c1e6d062dcb59ee9827f081"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9cae96d2dd2f6ff7794ec6a5d5754bab" id="r_a9cae96d2dd2f6ff7794ec6a5d5754bab"><td class="memItemLeft" align="right" valign="top"><a id="a9cae96d2dd2f6ff7794ec6a5d5754bab" name="a9cae96d2dd2f6ff7794ec6a5d5754bab"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>FRAME_RE</b> = __import__(&quot;re&quot;).compile(r&quot;(\d+)(?=\D*$)&quot;)</td></tr>
 <tr class="separator:a9cae96d2dd2f6ff7794ec6a5d5754bab"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -573,6 +576,14 @@ The debug frames the optimization writes are .vtu, not .msh, and carry their gro
 differently: write_vtu() emits one CELL FIELD per tag (1 where the cell carries it) plus
 `offset_tag`, which is 1 on the band and is derived from the construction LABEL rather than
 from the tags -- so it is the reliable band marker even where a tag was written elsewhere.
+
+Only 0/1 INDICATOR fields are groups. The 2D writer also emits the per-cell scalar `amips`,
+which is not a membership, and reading it as a group drew phantom regions: on the
+pre-optimize frames only the faces a pass had touched carry a quality yet, so `amips`
+selected a scattered subset of cells, which then showed up as a "tag boundary: amips" curve
+and as region-boundary loops around every touched patch, and shifted every real tag's color
+by one. Skipped by name (NON_GROUP_CELL_FIELDS), and any other cell field that is not
+exactly 0/1 is skipped too.
 </pre> 
 </div>
 </div>
