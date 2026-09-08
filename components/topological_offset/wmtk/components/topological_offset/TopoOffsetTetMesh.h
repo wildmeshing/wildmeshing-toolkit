@@ -332,6 +332,43 @@ public:
     bool m_freeze_front = false;
 
     /**
+     * @brief Which boundaries the region-class envelopes hold, and how they are built.
+     *
+     * PerTag (deform_others false): one exact tube per input tag around that tag's boundary
+     * triangles, the domain wall in the tags of its wall tets. A vertex carries the bit of every
+     * tube it lies on and is contained in their intersection, so every region boundary -- the
+     * input complex and the wall included -- is held.
+     *
+     * WallComplex (deform_others true): exactly two tubes, the domain wall and the boundary of
+     * the input complex (any dimension, any manifoldness: it is a set of triangles), under the
+     * pseudo-tags m_wall_tag / m_complex_tag. Every other region boundary carries no bit and is
+     * held by nothing; the medium around it is plastic, see cell_is_plastic().
+     *
+     * Either way build_boundary_envelopes() derives the masks and tubes from the mesh as it
+     * stands when called: at load (PerTag, before the complex is labelled), when deform_others
+     * switches the setup at construction, and fresh at the start of the final pass. The offset
+     * tube is separate and unchanged.
+     */
+    enum class EnvelopeSetup { PerTag, WallComplex };
+    EnvelopeSetup envelope_setup() const
+    {
+        return m_offset_params.deform_others ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
+    }
+    static constexpr int64_t m_wall_tag = -2; ///< pseudo-tag: the domain wall's tube
+    static constexpr int64_t m_complex_tag = -3; ///< pseudo-tag: the input complex boundary
+    /// The name a tag or pseudo-tag prints under.
+    std::string envelope_key_name(int64_t tag) const;
+    /// Whether this face lies on the boundary of the input complex: exactly one incident tet
+    /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
+    bool face_is_complex_boundary(const Tuple& f) const;
+    /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
+    /// under `setup`. PerTag at load (the complex is not labelled yet, and the pre-optimize pass
+    /// holds every tag boundary as it always did), WallComplex when deform_others switches it at
+    /// construction, envelope_setup() fresh at the final pass. The tracked-face flags are left
+    /// alone: they are the topology the operations maintain. `when` labels the log line.
+    void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
+
+    /**
      * @brief The tube the offset surface may not leave during the operation passes, of
      * half-width offset_envelope_rel x target_distance. Rebuilt after every smoothing pass from
      * the surface as that pass left it, which is what lets the surface travel across turns.
@@ -562,7 +599,14 @@ public:
     mutable char m_debug_last_phase = '?';
     /// See offset_gradient_tolerance(). Nothing sets it on the single-phase path; it stays 0.
     double m_gradient_reference = 0.;
+    /// The run's verdict: the front placed AND the final quality under stop_energy. Read by the
+    /// report and by throw_on_nonconvergence.
     bool m_converged = false;
+    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is placed,
+    /// after the final pass when one ran. True when no pass was needed; false when the pass ended
+    /// still over. m_quality_max_amips is the value it was judged on.
+    bool m_quality_converged = true;
+    double m_quality_max_amips = 0.;
 
     /// Churn: split-born vertices that a collapse later removed, and the subset removed in the
     /// same pass-pair that created them.
@@ -1034,15 +1078,19 @@ public:
     /// Whether this face lies on a released region's boundary, by the incident tets' current
     /// tag symmetric difference -- the same test the release freed vertices by.
     bool face_borders_released_boundary(const Tuple& f) const;
-    /// A cell deforms when it is background (label 0), tagged, and every tag it carries was
-    /// released -- a cell shared with a held region must not deform freely.
+    /// Under deform_others the same set as cell_is_plastic(): every cell outside the band.
     bool cell_is_deformable(size_t tid) const;
-    /// Plastic medium: under deform_others every background cell is plastic, its rest shape
-    /// re-stamped before every operation group. The band and the complex are not plastic.
+    /// Plastic medium: under deform_others every background cell -- ambient and the other objects
+    /// alike -- is plastic, its rest shape re-stamped before every operation group, so smoothing
+    /// resists only the increment since the group started and the medium flows instead of behaving
+    /// as an elastic solid glued to the walls. The band (label 2) and the complex (label 1) are
+    /// not plastic; element quality in the medium is the operation passes' job.
     bool m_plastic_active = false; ///< set in optimize_offset() when deform_others
     bool cell_is_plastic(size_t tid) const
     {
-        return m_plastic_active && m_tet_attribute[tid].label == 0;
+        // Everything outside the band: ambient, the other objects and the input complex's
+        // interior alike -- one material. The complex's boundary is what its tube holds.
+        return m_plastic_active && m_tet_attribute[tid].label != 2;
     }
     /// Stamp rest := current for every plastic cell; called before every operation group.
     void stamp_plastic_rests();

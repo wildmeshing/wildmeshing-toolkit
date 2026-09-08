@@ -14,9 +14,6 @@ set(SRC_FILES
 	Optimize3d.cpp
 	FrontSmooth3d.cpp
 	Optimize2d.cpp
-	Smooth.cpp
-	Collapse.cpp
-	Swap.cpp
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp
@@ -27,7 +24,6 @@ set(SRC_FILES
 	EdgeSplittingTet.cpp
 	EdgeSplittingTri.cpp
 	SimplicialComplexBVH.hpp
-	Spatial.cpp
 	Circle.hpp
 	Sphere.hpp
 

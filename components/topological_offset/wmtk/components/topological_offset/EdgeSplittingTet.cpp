@@ -7,7 +7,6 @@
 
 namespace wmtk::components::topological_offset {
 
-
 //// TetMesh splitting
 
 bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
@@ -129,7 +128,6 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     return true;
 }
 
-
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
@@ -238,7 +236,6 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     return true;
 }
 
-
 bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
 {
     // load and reset cache
@@ -311,7 +308,6 @@ bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
 
     return true;
 }
-
 
 bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
 {
@@ -402,7 +398,6 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
     return true;
 }
 
-
 bool TopoOffsetTetMesh::split_tet_before(const Tuple& t)
 {
     auto& cache = tet_split_cache.local();
@@ -438,7 +433,6 @@ bool TopoOffsetTetMesh::split_tet_before(const Tuple& t)
 
     return true;
 }
-
 
 bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 {
@@ -499,7 +493,6 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 
     return true;
 }
-
 
 /**
  * The shared split places the new vertex, keeps quality and shared attributes, and checks envelope
@@ -572,50 +565,6 @@ bool TopoOffsetTetMesh::split_after_cells(
         }
     }
     return true;
-}
-
-bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
-{
-    // The new vertex's tracked-surface membership must be written before the shared split's own
-    // containment check, which reads m_is_on_region for all three vertices of each new triangle;
-    // an unrecognised triangle yields a null envelope and the check is silently skipped rather
-    // than failed. split_adjust_position() is the last hook the base offers before that check,
-    // which is the only reason this bookkeeping lives in a positioning hook. Safe against a
-    // refused split: m_vertex_extra is in the base's vertex attribute group, so a rollback undoes
-    // it, and the write is idempotent with split_after_vertex()'s own below.
-    const auto& cache = m_opt_split_cache.local();
-    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
-    return true; // the position itself is the base's business, and it is happy with it
-}
-
-void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge_open_boundary)
-{
-    const auto& cache = m_opt_split_cache.local();
-    // The base has already set m_is_on_surface, which is the union; this says which. The offset
-    // half is never rewritten here -- split_after_cells() derived it from the two endpoints, and
-    // that is the authority.
-    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
-    if (is_edge_open_boundary) {
-        m_vertex_attribute[v_id].m_order = 2;
-    }
-
-    // Diagnostic, see the header. Every cell incident to the midpoint was created by this split,
-    // so a MAX_ENERGY cell here is one this split manufactured; a split is never refused on
-    // quality, so nothing upstream would have stopped it.
-    const double parent_q = cache.parent_q_max;
-    for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
-        const double q = tet_amips(tid);
-        if (cell_quality(tid) >= MAX_ENERGY) ++m_deg_split_created;
-        if (q >= kNeedleQuality) report_needle("SPLIT", tid, parent_q);
-        record_flatness("SPLIT", cache.parent_flatness, tid);
-    }
-
-    // deform_others: every cell at the midpoint was created by this split and the snapshot copy
-    // gave each the parent's rest -- re-stamp, or a child measures itself against a tet twice
-    // its size (see TetAttributes::rest_valid).
-    for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
-        stamp_rest_cell(tid);
-    }
 }
 
 } // namespace wmtk::components::topological_offset

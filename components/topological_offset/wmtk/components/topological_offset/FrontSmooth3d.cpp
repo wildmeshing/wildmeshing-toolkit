@@ -77,6 +77,81 @@ private:
 };
 } // namespace
 
+namespace {
+/// The cells of vid's one-ring as AMIPSEnergy3D wants them: the moving vertex first, winding
+/// preserved. Returns the reordered vids per tet as well, so a rest shape can follow the same
+/// permutation.
+struct RingCell
+{
+    size_t tid;
+    std::array<size_t, 4> vs; ///< vid first
+    std::array<int, 4> from; ///< vs[k] == oriented_tet_vids(tid)[from[k]]
+};
+} // namespace
+
+namespace {
+/// One live offset face at x, as the alignment term wants it: the two other corners, the
+/// orientation sign that points the normal away from the band, and the gradient agreement.
+template <typename Mesh>
+bool align_face_at(
+    const Mesh& m,
+    const typename Mesh::Tuple& f,
+    const size_t vid,
+    const OffsetPotential3D& pot,
+    AlignEnergy3D::Face& out,
+    bool& past_perpendicular_out,
+    const double s)
+{
+    const auto vs = m.get_face_vids(f);
+    std::array<size_t, 2> q{{0, 0}};
+    int k = 0;
+    for (const size_t v : vs) {
+        if (v == vid) continue;
+        if (k < 2) q[size_t(k)] = v;
+        ++k;
+    }
+    if (k != 2) return false;
+    const Vector3d x = m.m_vertex_attribute[vid].m_posf;
+    const Vector3d p1 = m.m_vertex_attribute[q[0]].m_posf;
+    const Vector3d p2 = m.m_vertex_attribute[q[1]].m_posf;
+    const Vector3d N = (p1 - x).cross(p2 - x);
+    if (!(N.norm() > 0.)) return false;
+    // sigma orients the normal away from the band tet, read off its centroid exactly as the 2D
+    // term reads the band face's.
+    const size_t ta = f.tid(m);
+    const std::optional<typename Mesh::Tuple> opp = f.switch_tetrahedron(m);
+    const size_t band_t = m.cell_is_offset_band(ta) ? ta : (opp ? opp->tid(m) : ta);
+    Vector3d ct = Vector3d::Zero();
+    for (const size_t v : m.oriented_tet_vids(band_t)) ct += m.m_vertex_attribute[v].m_posf / 4.;
+    const Vector3d cf = (x + p1 + p2) / 3.;
+    const double sigma = N.dot(cf - ct) >= 0. ? 1. : -1.;
+    // The agreement weight: min over the corner pairs of the endpoint gradients' agreement. Any
+    // degenerate gradient means no consistent target for this face: weight 0, not a guess.
+    const Vector3d g0 = pot.gradient(x), g1 = pot.gradient(p1), g2 = pot.gradient(p2);
+    const double n0 = g0.norm(), n1 = g1.norm(), n2 = g2.norm();
+    const bool ok = std::isfinite(n0) && n0 > 0. && std::isfinite(n1) && n1 > 0. &&
+                    std::isfinite(n2) && n2 > 0.;
+    double agree = 0.;
+    if (ok) {
+        const Vector3d u0 = g0 / n0, u1 = g1 / n1, u2 = g2 / n2;
+        agree = std::max(0., std::min({u0.dot(u1), u0.dot(u2), u1.dot(u2)}));
+    }
+    out.q1 = p1;
+    out.q2 = p2;
+    out.sigma = sigma;
+    out.agree = agree;
+    // Past perpendicular: the face's outward normal at or past 90 degrees from the field's
+    // outward direction at its centroid.
+    past_perpendicular_out = false;
+    const Vector3d gc = pot.gradient(cf);
+    const double gcn = gc.norm();
+    if (agree > 0. && std::isfinite(gcn) && gcn > 0.) {
+        past_perpendicular_out = (sigma * N / N.norm()).dot(s * gc / gcn) <= 0.;
+    }
+    return true;
+}
+} // namespace
+
 bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
 {
     // See the header: the shared smoother with the offset's options. The offset terms arrive
@@ -241,17 +316,42 @@ Vector3d TopoOffsetTetMesh::front_vertex_normal(const size_t vid) const
     return (std::isfinite(gn) && gn > 0.) ? Vector3d(g / gn) : Vector3d::Zero();
 }
 
-namespace {
-/// The cells of vid's one-ring as AMIPSEnergy3D wants them: the moving vertex first, winding
-/// preserved. Returns the reordered vids per tet as well, so a rest shape can follow the same
-/// permutation.
-struct RingCell
+bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) const
 {
-    size_t tid;
-    std::array<size_t, 4> vs; ///< vid first
-    std::array<int, 4> from; ///< vs[k] == oriented_tet_vids(tid)[from[k]]
-};
-} // namespace
+    // Three conditions, all required -- see the use in smooth_front_vertex_phase_b() and the 2D
+    // twin: (1) an incident live front face at or past perpendicular to the field, (2) the
+    // alignment term's 1-D gradient opposing the placement term's along the move direction, and
+    // (3) stationary off the level set.
+    const std::shared_ptr<const OffsetPotential3D> pot = potential_ptr_for(vid);
+    if (!pot) return false;
+    const Vector3d x = m_vertex_attribute[vid].m_posf;
+    const double rho = pot->residual_length(x);
+    const double tube =
+        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+    if (!std::isfinite(rho) || rho <= tube) return false;
+    const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
+    bool past_perpendicular = false;
+    std::vector<AlignEnergy3D::Face> faces;
+    for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+        AlignEnergy3D::Face af;
+        bool pp = false;
+        if (!align_face_at(*this, f, vid, *pot, af, pp, s)) continue;
+        past_perpendicular = past_perpendicular || pp;
+        faces.push_back(af);
+    }
+    if (!past_perpendicular || faces.empty()) return false;
+    const Vector3d n_dir = front_vertex_move_direction(vid);
+    if (!(n_dir.squaredNorm() > 0.)) return false;
+    const double w_off = 1. - m_params.w_amips;
+    AlignEnergy3D align(pot, std::move(faces), s, w_off);
+    OffsetEnergy3D place(pot, w_off, true, true);
+    Eigen::VectorXd xv(3), ga(3), gp(3);
+    xv << x.x(), x.y(), x.z();
+    align.gradient(xv, ga);
+    place.gradient(xv, gp);
+    if (!((ga.dot(n_dir)) * (gp.dot(n_dir)) < 0.)) return false;
+    return front_vertex_conv_ratio(vid) <= 1.;
+}
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_objective(
     const size_t vid,
@@ -306,106 +406,6 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
         sum->add_energy(std::make_shared<RestAMIPSEnergy3D>(std::move(plastic_cells), amips_w));
     sum->add_energy(phase_b_front_energy(vid, potential_ptr_for(vid)));
     return sum;
-}
-
-namespace {
-/// One live offset face at x, as the alignment term wants it: the two other corners, the
-/// orientation sign that points the normal away from the band, and the gradient agreement.
-template <typename Mesh>
-bool align_face_at(
-    const Mesh& m,
-    const typename Mesh::Tuple& f,
-    const size_t vid,
-    const OffsetPotential3D& pot,
-    AlignEnergy3D::Face& out,
-    bool& past_perpendicular_out,
-    const double s)
-{
-    const auto vs = m.get_face_vids(f);
-    std::array<size_t, 2> q{{0, 0}};
-    int k = 0;
-    for (const size_t v : vs) {
-        if (v == vid) continue;
-        if (k < 2) q[size_t(k)] = v;
-        ++k;
-    }
-    if (k != 2) return false;
-    const Vector3d x = m.m_vertex_attribute[vid].m_posf;
-    const Vector3d p1 = m.m_vertex_attribute[q[0]].m_posf;
-    const Vector3d p2 = m.m_vertex_attribute[q[1]].m_posf;
-    const Vector3d N = (p1 - x).cross(p2 - x);
-    if (!(N.norm() > 0.)) return false;
-    // sigma orients the normal away from the band tet, read off its centroid exactly as the 2D
-    // term reads the band face's.
-    const size_t ta = f.tid(m);
-    const std::optional<typename Mesh::Tuple> opp = f.switch_tetrahedron(m);
-    const size_t band_t = m.cell_is_offset_band(ta) ? ta : (opp ? opp->tid(m) : ta);
-    Vector3d ct = Vector3d::Zero();
-    for (const size_t v : m.oriented_tet_vids(band_t)) ct += m.m_vertex_attribute[v].m_posf / 4.;
-    const Vector3d cf = (x + p1 + p2) / 3.;
-    const double sigma = N.dot(cf - ct) >= 0. ? 1. : -1.;
-    // The agreement weight: min over the corner pairs of the endpoint gradients' agreement. Any
-    // degenerate gradient means no consistent target for this face: weight 0, not a guess.
-    const Vector3d g0 = pot.gradient(x), g1 = pot.gradient(p1), g2 = pot.gradient(p2);
-    const double n0 = g0.norm(), n1 = g1.norm(), n2 = g2.norm();
-    const bool ok = std::isfinite(n0) && n0 > 0. && std::isfinite(n1) && n1 > 0. &&
-                    std::isfinite(n2) && n2 > 0.;
-    double agree = 0.;
-    if (ok) {
-        const Vector3d u0 = g0 / n0, u1 = g1 / n1, u2 = g2 / n2;
-        agree = std::max(0., std::min({u0.dot(u1), u0.dot(u2), u1.dot(u2)}));
-    }
-    out.q1 = p1;
-    out.q2 = p2;
-    out.sigma = sigma;
-    out.agree = agree;
-    // Past perpendicular: the face's outward normal at or past 90 degrees from the field's
-    // outward direction at its centroid.
-    past_perpendicular_out = false;
-    const Vector3d gc = pot.gradient(cf);
-    const double gcn = gc.norm();
-    if (agree > 0. && std::isfinite(gcn) && gcn > 0.) {
-        past_perpendicular_out = (sigma * N / N.norm()).dot(s * gc / gcn) <= 0.;
-    }
-    return true;
-}
-} // namespace
-
-bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) const
-{
-    // Three conditions, all required -- see the use in smooth_front_vertex_phase_b() and the 2D
-    // twin: (1) an incident live front face at or past perpendicular to the field, (2) the
-    // alignment term's 1-D gradient opposing the placement term's along the move direction, and
-    // (3) stationary off the level set.
-    const std::shared_ptr<const OffsetPotential3D> pot = potential_ptr_for(vid);
-    if (!pot) return false;
-    const Vector3d x = m_vertex_attribute[vid].m_posf;
-    const double rho = pot->residual_length(x);
-    const double tube =
-        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
-    if (!std::isfinite(rho) || rho <= tube) return false;
-    const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
-    bool past_perpendicular = false;
-    std::vector<AlignEnergy3D::Face> faces;
-    for (const Tuple& f : offset_surface_faces_live_at(vid)) {
-        AlignEnergy3D::Face af;
-        bool pp = false;
-        if (!align_face_at(*this, f, vid, *pot, af, pp, s)) continue;
-        past_perpendicular = past_perpendicular || pp;
-        faces.push_back(af);
-    }
-    if (!past_perpendicular || faces.empty()) return false;
-    const Vector3d n_dir = front_vertex_move_direction(vid);
-    if (!(n_dir.squaredNorm() > 0.)) return false;
-    const double w_off = 1. - m_params.w_amips;
-    AlignEnergy3D align(pot, std::move(faces), s, w_off);
-    OffsetEnergy3D place(pot, w_off, true, true);
-    Eigen::VectorXd xv(3), ga(3), gp(3);
-    xv << x.x(), x.y(), x.z();
-    align.gradient(xv, ga);
-    place.gradient(xv, gp);
-    if (!((ga.dot(n_dir)) * (gp.dot(n_dir)) < 0.)) return false;
-    return front_vertex_conv_ratio(vid) <= 1.;
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_energy(

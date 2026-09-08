@@ -8,13 +8,16 @@
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <functional>
 #include <limits>
+#include <map>
 #include <numeric>
 #include <set>
+#include <tuple>
 #include <unordered_map>
 
 namespace wmtk::components::topological_offset {
@@ -49,81 +52,100 @@ inline std::array<size_t, 3> face_corners_from(
 }
 } // namespace
 
-// ---------------------------------------------------------------------------------------------
-// The two tracked surfaces, live.
-// ---------------------------------------------------------------------------------------------
-
-bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
+namespace {
+/// The rest-shape cell of tet `tid` at the moving vertex `vid`, with the same corner
+/// permutation the shared smoother applies (vid first, winding preserved). False when the rest
+/// is degenerate or inverted -- a rest that holds no shape to preserve.
+template <typename Mesh>
+bool rest_cell_at(const Mesh& m, const size_t tid, const size_t vid, RestAMIPSEnergy3D::Cell& c)
 {
-    const size_t ta = f.tid(*this);
-    const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-    if (!opp) {
-        // Domain boundary. A band cell here means the band was clipped by the bounding box, and
-        // that face is offset surface -- its vertices can never reach the target distance, which
-        // is precisely the thing that must be measured rather than hidden.
-        return cell_is_offset_band(ta);
-    }
-    const size_t tb = opp->tid(*this);
-    const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
-    if (a == b) return false; // both in the band, or neither: not the band's surface
-    // The band's inner interface, against the input complex it wraps, sits at distance 0 by
-    // construction and would drag the reported error to target_distance everywhere.
-    return !cell_is_input_complex(a ? tb : ta);
-}
-
-bool TopoOffsetTetMesh::edge_is_offset_surface_live(const size_t a, const size_t b) const
-{
-    for (const size_t tid : get_incident_tids_for_edge(a, b)) {
-        const auto vs = oriented_tet_vids(tid);
-        for (const size_t c : vs) {
-            if (c == a || c == b) continue;
-            const auto found = try_tuple_from_face({{a, b, c}});
-            if (found && face_is_offset_surface_live(std::get<0>(*found))) return true;
+    const auto& ta = m.m_tet_attribute[tid];
+    if (!ta.rest_valid) return false;
+    const std::array<size_t, 4> orig = m.oriented_tet_vids(tid);
+    const std::array<size_t, 4> vs = wmtk::orient_preserve_tet_reorder(orig, vid);
+    std::array<int, 4> from{};
+    for (int k = 0; k < 4; ++k) {
+        for (int j = 0; j < 4; ++j) {
+            if (orig[size_t(j)] == vs[size_t(k)]) from[size_t(k)] = j;
         }
     }
+    Eigen::Matrix3d R;
+    for (int k = 1; k < 4; ++k) {
+        R.col(k - 1) = ta.rest_pos[size_t(from[size_t(k)])] - ta.rest_pos[size_t(from[0])];
+    }
+    if (!(R.determinant() > 0.)) return false;
+    c.q1 = m.m_vertex_attribute[vs[1]].m_posf;
+    c.q2 = m.m_vertex_attribute[vs[2]].m_posf;
+    c.q3 = m.m_vertex_attribute[vs[3]].m_posf;
+    c.rest_inv = R.inverse();
+    return true;
+}
+} // namespace
+
+bool TopoOffsetTetMesh::is_edge_on_region(const Tuple& loc)
+{
+    size_t v1_id = loc.vid(*this);
+    auto loc1 = loc.switch_vertex(*this);
+    size_t v2_id = loc1.vid(*this);
+    if (!m_vertex_extra[v1_id].m_is_on_region || !m_vertex_extra[v2_id].m_is_on_region)
+        return false;
+
+    auto tets = get_incident_tets_for_edge(loc);
+    std::vector<size_t> n_vids;
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id)
+                n_vids.push_back(vs[j].vid(*this));
+        }
+    }
+    wmtk::vector_unique(n_vids);
+
+    for (size_t vid : n_vids) {
+        auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (face_is_region(fid)) return true;
+    }
+
     return false;
 }
 
-std::vector<std::array<size_t, 2>> TopoOffsetTetMesh::offset_surface_edges() const
+bool TopoOffsetTetMesh::is_edge_on_offset(const Tuple& loc)
 {
-    std::set<std::array<size_t, 2>> edges;
-    for (const Tuple& f : get_faces()) {
-        if (!face_is_offset_surface_live(f)) continue;
-        const auto vs = get_face_vids(f);
-        for (int i = 0; i < 3; ++i) {
-            std::array<size_t, 2> e{{vs[i], vs[(i + 1) % 3]}};
-            if (e[0] > e[1]) std::swap(e[0], e[1]);
-            edges.insert(e);
+    size_t v1_id = loc.vid(*this);
+    auto loc1 = loc.switch_vertex(*this);
+    size_t v2_id = loc1.vid(*this);
+    if (!m_vertex_extra[v1_id].m_is_on_offset || !m_vertex_extra[v2_id].m_is_on_offset)
+        return false;
+
+    auto tets = get_incident_tets_for_edge(loc);
+    std::vector<size_t> n_vids;
+    for (auto& t : tets) {
+        auto vs = oriented_tet_vertices(t);
+        for (int j = 0; j < 4; j++) {
+            if (vs[j].vid(*this) != v1_id && vs[j].vid(*this) != v2_id)
+                n_vids.push_back(vs[j].vid(*this));
         }
     }
-    return std::vector<std::array<size_t, 2>>(edges.begin(), edges.end());
-}
+    wmtk::vector_unique(n_vids);
 
-std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_live_at(
-    const size_t vid) const
-{
-    std::vector<Tuple> result;
-    std::set<size_t> seen;
-    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-        const auto tv = oriented_tet_vids(tid);
-        for (int skip = 0; skip < 4; ++skip) {
-            if (tv[size_t(skip)] == vid) continue;
-            const auto [ft, fid] = tuple_from_face(face_corners_from(tv, skip));
-            if (!seen.insert(fid).second) continue;
-            if (face_is_offset_surface_live(ft)) result.push_back(ft);
-        }
+    for (size_t vid : n_vids) {
+        auto [_, fid] = tuple_from_face({{v1_id, v2_id, vid}});
+        if (face_is_offset(fid)) return true;
     }
-    return result;
+
+    return false;
 }
 
-const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) const
+bool TopoOffsetTetMesh::vertex_is_on_surface(const size_t vid) const
 {
-    const size_t ta = f.tid(*this);
-    const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-    size_t band = ta;
-    if (!cell_is_offset_band(ta) && opp && cell_is_offset_band(opp->tid(*this)))
-        band = opp->tid(*this);
-    return potential_for_region(band < m_cell_region.size() ? m_cell_region[band] : -1);
+    // The domain wall must count here, or it drifts: the smoother's containment check walks
+    // exactly the collection this decides.
+    return vertex_is_on_region(vid) || m_vertex_extra.at(vid).m_is_on_offset;
+}
+
+bool TopoOffsetTetMesh::face_is_on_surface(const size_t fid) const
+{
+    return m_face_attribute.at(fid).m_is_surface_fs;
 }
 
 void TopoOffsetTetMesh::label_offset_boundary()
@@ -181,6 +203,81 @@ void TopoOffsetTetMesh::label_offset_boundary()
         n_wall_band);
 }
 
+bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
+{
+    std::map<CellTag, size_t> tag_count;
+    std::set<int> labels;
+    for (const size_t t : tids) {
+        tag_count[m_tet_attribute[t].tag]++;
+        labels.insert(m_tet_attribute[t].label);
+    }
+    // Region membership is read from the construction label, and a swap reuses recycled tet slots
+    // carrying whatever label was there before, so the label must be carried across explicitly. A
+    // ring spanning two labels has a region boundary running through it, and is refused.
+    if (labels.size() > 1) {
+        return false;
+    }
+    m_swap_label.local() = *labels.begin();
+    // A face between differently tagged tets is the offset surface, so a ring spanning two tags
+    // has that surface running through it: refused, because one tag for the whole ring moves it.
+    // Do not re-add "majority tag wins"; measured worse -- see git history of this file.
+    if (tag_count.size() > 1) {
+        return false;
+    }
+
+    size_t max_count = 0;
+    CellTag max_tag;
+    for (const auto& [tag, count] : tag_count) {
+        if (count > max_count) {
+            max_count = count;
+            max_tag = tag;
+        }
+    }
+    m_swap_tag.local() = max_tag;
+    return true;
+}
+
+bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
+{
+    return swap_capture_tag(tids);
+}
+
+bool TopoOffsetTetMesh::swap_before_surface(
+    const std::vector<size_t>& tids,
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const size_t d)
+{
+    if (!swap_capture_tag(tids)) {
+        return false;
+    }
+
+    // The flip replaces surface faces (a,b,c) and (a,b,d) with (a,c,d),(b,c,d). Both must belong
+    // to the same tracked surface: a mixed flip would hand a triangle of the input complex to the
+    // offset surface, or the reverse, moving the line where one meets the other.
+    const size_t fid_abc = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, c}}));
+    const size_t fid_abd = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, d}}));
+    if (fid_abc == static_cast<size_t>(-1) || fid_abd == static_cast<size_t>(-1)) {
+        return false;
+    }
+    if (m_face_attribute[fid_abc].m_surface_class != m_face_attribute[fid_abd].m_surface_class) {
+        return false;
+    }
+    // A flip across a junction would detach the new diagonal from one of the boundaries the old
+    // faces lay on: refuse when the two faces' boundary masks differ.
+    if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
+        return false;
+    }
+
+    // Non-offset surface flips are not refused categorically: the shared swap checks both new
+    // triangles with surface_triangle_is_outside(), which dispatches through the face's boundary
+    // mask to the per-tag envelopes, and that envelope is the geometric constraint. The
+    // class-match and mask-match refusals above are the topology half. No offset criterion is
+    // captured here; placement accuracy belongs to Phase B.
+    return true;
+}
+
 void TopoOffsetTetMesh::warn_if_offset_reaches_domain_boundary() const
 {
     // A band face with no opposite tet lies ON the domain boundary: the band ran out of room
@@ -214,9 +311,44 @@ void TopoOffsetTetMesh::warn_if_offset_reaches_domain_boundary() const
         m_offset_params.target_distance);
 }
 
-// ---------------------------------------------------------------------------------------------
-// Containment.
-// ---------------------------------------------------------------------------------------------
+std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::envelope_for_mask(uint64_t mask) const
+{
+    if (mask == 0) return nullptr;
+    if ((mask & (mask - 1)) == 0) {
+        // Single bit: the member envelope itself -- a real SampleEnvelope, safe on every path
+        // including the pull. Linear scan; the tag count is tiny.
+        for (const auto& [tag, env] : m_tag_envelopes) {
+            const auto it = m_tag_bit.find(tag);
+            if (it != m_tag_bit.end() && (mask >> it->second) == 1) return env;
+        }
+        return nullptr; // a bit whose tag never got an envelope (no boundary faces at init)
+    }
+    // Several bits: the memoized intersection. Lazy and mutex-guarded because containment
+    // queries run concurrently under kPartition.
+    {
+        std::lock_guard<std::mutex> lock(m_isect_mutex);
+        const auto it = m_isect_cache.find(mask);
+        if (it != m_isect_cache.end()) return it->second;
+    }
+    std::vector<std::shared_ptr<SampleEnvelope>> members;
+    for (const auto& [tag, env] : m_tag_envelopes) {
+        const auto it = m_tag_bit.find(tag);
+        if (it != m_tag_bit.end() && (mask & (uint64_t(1) << it->second))) {
+            members.push_back(env);
+        }
+    }
+    std::shared_ptr<SampleEnvelope> isect;
+    if (members.empty()) {
+        isect = nullptr; // every bit dangled; nothing to contain in
+    } else if (members.size() == 1) {
+        isect = members.front(); // the other bits dangled; degrade to the one real tube
+    } else {
+        isect = std::make_shared<IntersectionEnvelope>(std::move(members));
+    }
+    std::lock_guard<std::mutex> lock(m_isect_mutex);
+    m_isect_cache.emplace(mask, isect);
+    return isect;
+}
 
 std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::containment_for(
     const uint64_t region_mask,
@@ -287,20 +419,11 @@ bool TopoOffsetTetMesh::project_into_containment(const size_t vid, Vector3d& x) 
     return true;
 }
 
-// ---------------------------------------------------------------------------------------------
-// deform_others: other input regions deform instead of being envelope-held.
-// ---------------------------------------------------------------------------------------------
-
 bool TopoOffsetTetMesh::cell_is_deformable(const size_t tid) const
 {
-    if (m_deform_tags.empty()) return false;
-    if (m_tet_attribute[tid].label != 0) return false;
-    const auto& tags = m_tet_attribute[tid].tag;
-    if (tags.empty()) return false;
-    for (const int64_t t : tags) {
-        if (m_deform_tags.count(t) == 0) return false;
-    }
-    return true;
+    // deform_others: the whole medium outside the band deforms, the input complex's interior
+    // included -- its boundary is what the complex tube holds. Same set as cell_is_plastic().
+    return cell_is_plastic(tid);
 }
 
 bool TopoOffsetTetMesh::cell_is_released_band(const size_t tid) const
@@ -342,36 +465,6 @@ void TopoOffsetTetMesh::stamp_plastic_rests()
         x.rest_valid = true;
     }
 }
-
-namespace {
-/// The rest-shape cell of tet `tid` at the moving vertex `vid`, with the same corner
-/// permutation the shared smoother applies (vid first, winding preserved). False when the rest
-/// is degenerate or inverted -- a rest that holds no shape to preserve.
-template <typename Mesh>
-bool rest_cell_at(const Mesh& m, const size_t tid, const size_t vid, RestAMIPSEnergy3D::Cell& c)
-{
-    const auto& ta = m.m_tet_attribute[tid];
-    if (!ta.rest_valid) return false;
-    const std::array<size_t, 4> orig = m.oriented_tet_vids(tid);
-    const std::array<size_t, 4> vs = wmtk::orient_preserve_tet_reorder(orig, vid);
-    std::array<int, 4> from{};
-    for (int k = 0; k < 4; ++k) {
-        for (int j = 0; j < 4; ++j) {
-            if (orig[size_t(j)] == vs[size_t(k)]) from[size_t(k)] = j;
-        }
-    }
-    Eigen::Matrix3d R;
-    for (int k = 1; k < 4; ++k) {
-        R.col(k - 1) = ta.rest_pos[size_t(from[size_t(k)])] - ta.rest_pos[size_t(from[0])];
-    }
-    if (!(R.determinant() > 0.)) return false;
-    c.q1 = m.m_vertex_attribute[vs[1]].m_posf;
-    c.q2 = m.m_vertex_attribute[vs[2]].m_posf;
-    c.q3 = m.m_vertex_attribute[vs[3]].m_posf;
-    c.rest_inv = R.inverse();
-    return true;
-}
-} // namespace
 
 bool TopoOffsetTetMesh::smooth_plastic_vertex(const Tuple& t)
 {
@@ -425,117 +518,42 @@ bool TopoOffsetTetMesh::smooth_plastic_vertex(const Tuple& t)
 
 void TopoOffsetTetMesh::release_deformable_regions()
 {
-    // Held: any tag on an input-complex cell or on a wall face, and the sheet group. Everything
-    // else with an envelope is an object the offset merely shares the scene with, and
-    // deform_others releases it. Never released, whatever else it touches: every tag the
-    // offset_selection expression names. As in 2D.
-    std::set<int64_t> kept;
+    // deform_others: from here on the only region-class envelopes are the domain wall and the
+    // input complex boundary (EnvelopeSetup::WallComplex), and every other tag region is
+    // released: it deforms as plastic medium, see cell_is_plastic(). The released set is every
+    // input tag the selection does not name, ambient included; it drives cell_is_released_band()
+    // and the diagnostics. The tubes and the masks come from build_boundary_envelopes().
     std::set<int64_t> source_tags;
     if (m_offset_params.offset_selection) {
         for (const int64_t t : m_offset_params.offset_selection->tags_involved()) {
-            kept.insert(t);
             source_tags.insert(t);
         }
     }
-    for (const Tuple& f : get_faces()) {
-        if (f.switch_tetrahedron(*this)) continue; // wall faces only
-        for (const int64_t t : m_tet_attribute[f.tid(*this)].tag) kept.insert(t);
-    }
-    if (m_sheet_tag >= 0) kept.insert(m_sheet_tag);
-
-    m_deform_tags.clear();
-    for (const auto& [tag, env] : m_tag_envelopes) {
-        if (kept.count(tag) == 0) m_deform_tags.insert(tag);
-    }
     m_source_tags = source_tags;
-    if (m_deform_tags.empty()) {
-        logger().info("[deform_others] nothing to release: every tagged region is held");
-        return;
+    m_deform_tags.clear();
+    for (const auto& [tag, name] : m_tag_id_to_name) {
+        if (source_tags.count(tag) || m_offset_output_tag_ids.count(tag)) continue;
+        m_deform_tags.insert(tag);
     }
+    build_boundary_envelopes("deform_others", EnvelopeSetup::WallComplex);
+    // No released tube: a released boundary is held by nothing, in the operations too.
+    m_released_envelope = nullptr;
+    m_released_tube_dirty.store(false, std::memory_order_release);
 
     std::string released;
-    for (const int64_t t : m_deform_tags) {
-        released += " " + m_tag_id_to_name.at(t);
-    }
-
-    // Edit the masks in place, never recompute them: reduce a freed vertex's mask to its source
-    // bits. Never freed: a face that also borders a source tag, a face both of whose tets carry
-    // a source tag (complex-internal), or a wall vertex.
-    uint64_t released_bits = 0;
-    for (const int64_t t : m_deform_tags) {
-        const auto it = m_tag_bit.find(t);
-        if (it != m_tag_bit.end()) released_bits |= (uint64_t(1) << it->second);
-    }
-    if (released_bits) {
-        uint64_t source_bits = 0;
-        for (const int64_t t : source_tags) {
-            const auto it = m_tag_bit.find(t);
-            if (it != m_tag_bit.end()) source_bits |= (uint64_t(1) << it->second);
-        }
-        const auto tet_has_source = [&](const size_t tid) {
-            for (const int64_t t : m_tet_attribute[tid].tag) {
-                if (source_tags.count(t)) return true;
-            }
-            return false;
-        };
-        size_t n_freed = 0;
-        for (const Tuple& f : get_faces()) {
-            const size_t fid = f.fid(*this);
-            if (!m_face_attribute[fid].m_is_surface_fs) continue;
-            const std::optional<Tuple> t_opp = f.switch_tetrahedron(*this);
-            if (!t_opp) continue; // the domain wall
-            CellTag face_tags;
-            const auto& t0 = m_tet_attribute[f.tid(*this)].tag;
-            const auto& t1 = m_tet_attribute[t_opp->tid(*this)].tag;
-            std::set_symmetric_difference(
-                t0.begin(),
-                t0.end(),
-                t1.begin(),
-                t1.end(),
-                std::inserter(face_tags, face_tags.begin()));
-            bool released_here = false, touches_source = false;
-            for (const int64_t t : face_tags) {
-                if (m_deform_tags.count(t)) released_here = true;
-                if (source_tags.count(t)) touches_source = true;
-            }
-            if (!released_here || touches_source) continue;
-            if (tet_has_source(f.tid(*this)) && tet_has_source(t_opp->tid(*this))) {
-                continue; // complex-internal: anchored, never freed
-            }
-            for (const size_t v : get_face_vids(f)) {
-                if (!m_vertex_attribute[v].on_bbox_faces.empty()) continue; // wall stays held
-                const uint64_t kept_bits = m_vertex_extra[v].m_boundary_mask & source_bits;
-                if (m_vertex_extra[v].m_boundary_mask != kept_bits) ++n_freed;
-                m_vertex_extra[v].m_boundary_mask = kept_bits;
-            }
-        }
-        logger().info(
-            "[deform_others] {} boundary vertices freed down to their source bits",
-            n_freed);
-    }
-
-    size_t n_cells = 0;
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        if (cell_is_deformable(tid)) {
-            stamp_rest_cell(tid);
-            ++n_cells;
-        }
-    }
+    for (const int64_t t : m_deform_tags) released += " " + envelope_key_name(t);
     logger().info(
-        "[deform_others] released:{} | {} deformable cells stamped with their rest shape; "
-        "held: {} envelopes",
+        "[deform_others] released:{} | held: the domain wall and the input complex boundary "
+        "({} tubes); every cell outside the band is plastic",
         released,
-        n_cells,
         m_tag_envelopes.size());
-    m_released_tube_dirty.store(true, std::memory_order_release);
-    released_envelope(); // built here, at a consistent moment, not at some mid-pass first query
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::rest_energy_for_vertex(
     const size_t vid) const
 {
-    if (m_deform_tags.empty()) return nullptr;
+    // Off with the plastic medium: the final pass minimises regular-tet AMIPS alone.
+    if (!m_plastic_active) return nullptr;
     std::vector<RestAMIPSEnergy3D::Cell> cells;
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         // Released-band cells too: a released object's boundary inside the band has band-labeled
@@ -551,67 +569,343 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::rest_energy_fo
     return std::make_shared<RestAMIPSEnergy3D>(std::move(cells), w);
 }
 
-bool TopoOffsetTetMesh::face_borders_released_boundary(const Tuple& f) const
+bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip)
 {
-    // The same test release_deformable_regions() freed vertices by: the incident tets' CURRENT
-    // tag symmetric difference contains a released tag and no source tag.
-    const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-    if (!opp) return false; // the domain wall
-    CellTag face_tags;
-    const auto& t0 = m_tet_attribute[f.tid(*this)].tag;
-    const auto& t1 = m_tet_attribute[opp->tid(*this)].tag;
-    std::set_symmetric_difference(
-        t0.begin(),
-        t0.end(),
-        t1.begin(),
-        t1.end(),
-        std::inserter(face_tags, face_tags.begin()));
-    bool released_here = false;
-    for (const int64_t t : face_tags) {
-        if (m_source_tags.count(t)) return false;
-        if (m_deform_tags.count(t)) released_here = true;
+    const CellTag& tag = m_swap_tag.local();
+    const int label = m_swap_label.local();
+    for (const size_t t : tids) {
+        m_tet_attribute[t].tag = tag;
+        m_tet_attribute[t].label = label;
+        // deform_others: a swap rewires exactly these cells; their rest is stale.
+        stamp_rest_cell(t);
     }
-    return released_here;
+
+    // No offset-criterion acceptance for surface flips: the shared swap has already checked both
+    // new triangles against the face's envelope (see swap_before_surface()). `is_surface_flip`
+    // stays a parameter because the base reports it, but nothing here branches on it.
+    (void)is_surface_flip;
+    ++iter_cnt_swap;
+    return true;
 }
 
-std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::released_envelope() const
+bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
 {
-    // deform_others' ops-only tube: a tube around the CURRENT released boundaries, consulted by
-    // surface_envelope_for_face() -- the dispatch every operation containment check comes
-    // through and no smoothing path does. Lazy, on a dirty flag the smoothing accepts set; never
-    // rebuilt mid-operation. See the 2D twin.
-    if (m_deform_tags.empty()) return nullptr;
-    std::lock_guard<std::mutex> lock(m_released_mutex);
-    if (!m_released_tube_dirty.load(std::memory_order_acquire)) return m_released_envelope;
-    if (const_cast<TopoOffsetTetMesh*>(this)->m_vertex_attribute.recording.local()) {
-        return m_released_envelope;
+    if (!TetOptimizerMesh::collapse_edge_after(t)) {
+        return false;
     }
-    std::vector<Eigen::Vector3i> tris;
-    for (const Tuple& f : get_faces()) {
-        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
-        if (!face_borders_released_boundary(f)) continue;
-        const auto vs = get_face_vids(f);
-        tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
+    const size_t v2_id = collapse_cache.local().v2_id;
+    if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
+        m_vertex_attribute[v2_id].m_sizing_scalar = m_collapse_survivor_sizing.local();
     }
-    if (tris.empty()) {
-        m_released_envelope = nullptr;
-    } else {
-        std::vector<Eigen::Vector3d> verts(vert_capacity());
-        for (size_t i = 0; i < vert_capacity(); ++i) {
-            verts[i] = m_vertex_attribute[i].m_posf;
+    // deform_others: every surviving cell at the survivor changed shape (v1 became v2); their
+    // rest is stale.
+    for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+        stamp_rest_cell(tid);
+    }
+    return true;
+}
+
+bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
+{
+    // The collapse length gate lives in the shared pass, which filters the candidate list against
+    // collapsing_l2 scaled by the endpoints' sizing scalars.
+    if (!TetOptimizerMesh::collapse_edge_before(t)) {
+        return false;
+    }
+    // The survivor's own sizing scalar, for sizing_collapse_min = false: the base collapse
+    // overwrites it with the min of the two, and collapse_edge_after() puts it back.
+    // collapse_cache is the base's, filled by the call above; v2 survives.
+    m_collapse_survivor_sizing.local() =
+        m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar;
+    // Applied unconditionally, where the base asks only when both endpoints already sit on a
+    // tracked simplex: the offset region is a thin shell, so a collapse with one endpoint in the
+    // interior can still pinch its two sides together while every tracked surface survives.
+    if (!substructure_link_condition(t)) {
+        return false;
+    }
+    return true;
+}
+
+bool TopoOffsetTetMesh::collapse_before_vertex(
+    const size_t v1_id,
+    const size_t v2_id,
+    const double edge_length)
+{
+    // Diagnostic: the flattest cell this collapse is about to reshape, read back by
+    // record_flatness() in collapse_after_vertex().
+    {
+        double f = 1.;
+        for (const size_t tid : get_one_ring_tids_for_vertex(v1_id)) {
+            f = std::min(f, tet_flatness(tid));
         }
-        const double eps =
-            std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
-        m_released_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
-        m_released_envelope->init(verts, tris, eps);
+        m_collapse_parent_flatness.local() = f;
     }
-    m_released_tube_dirty.store(false, std::memory_order_release);
-    return m_released_envelope;
+
+    const auto& VE = m_vertex_extra;
+
+    // v1 is the vertex the collapse removes; it merges into v2, which keeps its position. A
+    // vertex on any tracked boundary may be removed provided it merges onto a vertex of the same
+    // class, the result stays inside its tags' envelopes, and the substructure link condition
+    // survives. That is TetWild's rule for its input surface, applied uniformly.
+
+    // Never both surfaces on one vertex: such a vertex sits at distance 0 from the input complex
+    // and is asked to sit at target_distance from it at once. Refused here, and asserted
+    // independently by check_no_vertex_on_both_surfaces().
+    {
+        const bool input = VE[v1_id].m_is_on_input || VE[v2_id].m_is_on_input;
+        const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
+        if (input && offset) {
+            return false;
+        }
+    }
+
+    // The front is always length-limited, whatever the pass says: it deliberately has no
+    // envelope while it moves, so its sizing field is the only thing bounding its resolution.
+    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
+        return false;
+    }
+
+    // The base only knows that both endpoints are on SOME tracked surface. A vertex may not leave
+    // the particular surface it belongs to, and each class is checked separately.
+    if (VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
+        return false;
+    }
+    if (VE[v1_id].m_is_on_offset && !VE[v2_id].m_is_on_offset) {
+        return false;
+    }
+    if (VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
+        return false;
+    }
+
+    // open boundary: an order-2 vertex may not merge into a lower-order one.
+    if (edge_length > 0 && m_vertex_attribute[v1_id].m_order == 2 &&
+        m_vertex_attribute[v2_id].m_order < 2) {
+        return false;
+    }
+
+    return true;
 }
 
-// ---------------------------------------------------------------------------------------------
-// Normals and gradients at the front.
-// ---------------------------------------------------------------------------------------------
+bool TopoOffsetTetMesh::collapse_after_connectivity(
+    const size_t,
+    const size_t v2_id,
+    const std::vector<std::array<size_t, 2>>&)
+{
+    // No offset criterion gates a collapse inside the loop: the offset envelope holds the
+    // surface, so containment is the shared pass's job. Coarsening keeps an absolute bar,
+    // because it runs after the loop and trades elements for nothing but the promise that the
+    // result is still good. As in 2D.
+    if (m_coarsen_mode && m_offset_potential) {
+        double after = 0.;
+        for (const Tuple& f : offset_surface_faces_live_at(v2_id)) {
+            after = std::max(after, face_criterion_rel(f));
+        }
+        if (after > 1.0) {
+            ++iter_cnt_collapse_offset_reject;
+            return false;
+        }
+    }
+    return true;
+}
+
+void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v2_id)
+{
+    // Diagnostic. Runs after the collapse is committed, so what it sees is real; the survivor's
+    // ring is every cell the collapse reshaped.
+    for (const size_t tid : get_one_ring_tids_for_vertex(v2_id)) {
+        if (tet_amips(tid) >= kNeedleQuality) report_needle("COLLAPSE", tid, -1.);
+        record_flatness("COLLAPSE", m_collapse_parent_flatness.local(), tid);
+    }
+
+    if (m_vertex_extra.at(v1_id).m_is_on_offset) ++iter_cnt_collapse_offset_removed;
+    // Churn: v1 is the vertex being removed, so if a split created it this collapse undoes that
+    // split. Same epoch means the collapse pass immediately following its own split pass took it
+    // straight back out.
+    {
+        const uint32_t born = m_vertex_extra.at(v1_id).m_born_epoch;
+        if (born != 0) {
+            ++iter_cnt_recollapsed;
+            if (born == m_op_epoch) ++iter_cnt_recollapsed_same_pass;
+        }
+    }
+
+    // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
+    m_vertex_extra[v2_id].m_is_on_input =
+        m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
+    m_vertex_extra[v2_id].m_is_on_offset =
+        m_vertex_extra.at(v1_id).m_is_on_offset || m_vertex_extra.at(v2_id).m_is_on_offset;
+    m_vertex_extra[v2_id].m_is_on_region =
+        m_vertex_extra.at(v1_id).m_is_on_region || m_vertex_extra.at(v2_id).m_is_on_region;
+    // The survivor now carries both vertices' geometry, so it lies on the union of their
+    // boundaries. See VertexExtra::m_boundary_mask.
+    m_vertex_extra[v2_id].m_boundary_mask |= m_vertex_extra.at(v1_id).m_boundary_mask;
+
+    // The base calls this only once a collapse has actually gone through.
+    ++iter_cnt_collapse;
+}
+
+void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge_open_boundary)
+{
+    const auto& cache = m_opt_split_cache.local();
+    // The base has already set m_is_on_surface, which is the union; this says which. The offset
+    // half is never rewritten here -- split_after_cells() derived it from the two endpoints, and
+    // that is the authority.
+    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
+    if (is_edge_open_boundary) {
+        m_vertex_attribute[v_id].m_order = 2;
+    }
+
+    // Diagnostic, see the header. Every cell incident to the midpoint was created by this split,
+    // so a MAX_ENERGY cell here is one this split manufactured; a split is never refused on
+    // quality, so nothing upstream would have stopped it.
+    const double parent_q = cache.parent_q_max;
+    for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
+        const double q = tet_amips(tid);
+        if (cell_quality(tid) >= MAX_ENERGY) ++m_deg_split_created;
+        if (q >= kNeedleQuality) report_needle("SPLIT", tid, parent_q);
+        record_flatness("SPLIT", cache.parent_flatness, tid);
+    }
+
+    // deform_others: every cell at the midpoint was created by this split and the snapshot copy
+    // gave each the parent's rest -- re-stamp, or a child measures itself against a tet twice
+    // its size (see TetAttributes::rest_valid).
+    for (const size_t tid : get_one_ring_tids_for_vertex(v_id)) {
+        stamp_rest_cell(tid);
+    }
+}
+
+bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
+{
+    // The new vertex's tracked-surface membership must be written before the shared split's own
+    // containment check, which reads m_is_on_region for all three vertices of each new triangle;
+    // an unrecognised triangle yields a null envelope and the check is silently skipped rather
+    // than failed. split_adjust_position() is the last hook the base offers before that check,
+    // which is the only reason this bookkeeping lives in a positioning hook. Safe against a
+    // refused split: m_vertex_extra is in the base's vertex attribute group, so a rollback undoes
+    // it, and the write is idempotent with split_after_vertex()'s own below.
+    const auto& cache = m_opt_split_cache.local();
+    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
+    return true; // the position itself is the base's business, and it is happy with it
+}
+
+bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
+{
+    ++m_smooth_trace.attempted;
+    const size_t vid = t.vid(*this);
+    // The final Phase A does not move the front: it is converged by then, its smoothing there
+    // would be AMIPS alone with the front free anywhere inside the offset tube, and no Phase B
+    // follows to put it back.
+    if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
+
+    // Diagnostic, recorded for every visit; only visits whose ring already holds a needle are
+    // counted, and smooth_after() reads this back.
+    auto& pre = m_needle_pre.local();
+    pre = {ring_max_quality(vid), m_vertex_attribute[vid].m_posf};
+    if (pre.first >= kNeedleQuality) ++m_needle_smooth_offered;
+
+    // The base's smooth_before minus its bounding-box refusal, which is why this does not call
+    // it: the base freezes every vertex on the domain wall. Here the wall is a region boundary
+    // held in ambient's tag envelope like any other, so its vertices are smoothed and the
+    // containment check decides whether the move survives. As in 2D.
+    //
+    // Rounding still has to happen, and its failure still refuses the move.
+    const bool rounded_now = round(t);
+    if (!m_vertex_attribute[vid].m_is_rounded && !rounded_now) {
+        ++m_smooth_trace.before_unrounded;
+        return false;
+    }
+
+    return true;
+}
+
+bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
+{
+    const size_t vid = t.vid(*this);
+    const auto& ve = m_vertex_extra[vid];
+
+    // Diagnostic, the other half of smooth_before()'s record.
+    {
+        const auto& pre = m_needle_pre.local();
+        if (pre.first >= kNeedleQuality) {
+            ++m_needle_smooth_reached;
+            const double after = ring_max_quality(vid);
+            const double moved = (m_vertex_attribute[vid].m_posf - pre.second).norm();
+            if (after < kNeedleQuality) ++m_needle_smooth_fixed;
+            if (moved < 1e-12) ++m_needle_smooth_stationary;
+            if (m_needle_smooth_reports.fetch_add(1) < 8) {
+                logger().info(
+                    "[needle-smooth #{}] vid {} ring max {:.6g} -> {:.6g} ({:.3g}x) | moved "
+                    "{:.6g} | input {} offset {} region {} mask 0x{:x} | pos ({:.17g}, {:.17g}, "
+                    "{:.17g})",
+                    m_needle_smooth_reports.load(),
+                    vid,
+                    pre.first,
+                    after,
+                    after / std::max(pre.first, 1e-300),
+                    moved,
+                    ve.m_is_on_input,
+                    ve.m_is_on_offset,
+                    ve.m_is_on_region,
+                    ve.m_boundary_mask,
+                    m_vertex_attribute[vid].m_posf[0],
+                    m_vertex_attribute[vid].m_posf[1],
+                    m_vertex_attribute[vid].m_posf[2]);
+            }
+        }
+    }
+    if (ve.m_is_on_region) {
+        ++m_smooth_trace.region_attempted;
+    }
+    if (ve.m_is_on_offset) {
+        ++m_smooth_trace.offset_attempted;
+    } else {
+        ++m_smooth_trace.interior_attempted;
+    }
+
+    // The plastic medium: a vertex whose whole ring is plastic and which no envelope holds flows
+    // under rest-shape AMIPS alone (see smooth_plastic_vertex). As in 2D.
+    if (m_plastic_active && !ve.m_is_on_offset && !smoothing_containment_envelope(vid)) {
+        bool all_plastic = true;
+        for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+            if (!cell_is_plastic(tid)) {
+                all_plastic = false;
+                break;
+            }
+        }
+        if (all_plastic) {
+            const bool okp = smooth_plastic_vertex(t);
+            ++m_smooth_trace.interior_attempted;
+            return okp;
+        }
+    }
+
+    // Phase B: a front vertex goes through the shared smoother -- same solver, line search and
+    // accept tests as every other vertex -- with the offset's options: its objective carries the
+    // offset terms (smoothing_extra_energy) and there is no quality veto, since a front vertex
+    // must be able to worsen its ring on the way to the level set. Shape is Phase A's job, and
+    // every other vertex in both phases is TetWild's smooth_after() unchanged.
+    if (phase_places_front() && ve.m_is_on_offset) {
+        const bool ok = smooth_front_vertex_phase_b(t);
+        if (ok) ++m_smooth_trace.offset_accepted;
+        return ok;
+    }
+    // Phase A is TetWild: the shared smoother, with the front held by m_offset_envelope and
+    // carrying no offset term of its own.
+    const double before = ve.m_is_on_offset ? band_vertex_residual(vid) : 0.;
+    const bool ok = TetOptimizerMesh::smooth_after(t);
+    if (!ve.m_is_on_offset) {
+        return ok;
+    }
+    const double after = band_vertex_residual(vid);
+    if (ok) ++m_smooth_trace.offset_accepted;
+
+    const auto nano = [](double x) { return static_cast<long long>(std::min(x, 1e9) * 1e9); };
+    m_smooth_trace.res_before_nano += nano(before);
+    m_smooth_trace.res_after_nano += nano(after);
+    atomic_max(m_smooth_trace.res_max_before_nano, nano(before));
+    atomic_max(m_smooth_trace.res_max_after_nano, nano(after));
+    return ok;
+}
 
 Vector3d TopoOffsetTetMesh::offset_vertex_normal(const size_t vid) const
 {
@@ -639,10 +933,6 @@ double TopoOffsetTetMesh::front_vertex_normal_gradient(const size_t vid) const
     if (n.squaredNorm() > 0.) return std::abs(n.dot(Vector3d(g)));
     return g.norm();
 }
-
-// ---------------------------------------------------------------------------------------------
-// Diagnostics: containment audit, mask health, smoothing trace.
-// ---------------------------------------------------------------------------------------------
 
 void TopoOffsetTetMesh::audit_surface_containment(const std::string& when) const
 {
@@ -989,9 +1279,152 @@ void TopoOffsetTetMesh::log_smooth_trace() const
         double(s.res_max_after_nano.load()) * 1e-9);
 }
 
-// ---------------------------------------------------------------------------------------------
-// The sizing field.
-// ---------------------------------------------------------------------------------------------
+void TopoOffsetTetMesh::pre_optimize_input_mesh()
+{
+    // See the declaration and the 2D twin. Everything here is Phase A on a mesh that has no
+    // offset in it yet.
+    const OptPhase saved_phase = m_phase;
+    const EdgeSplitMode saved_mode = m_edge_split_mode;
+    m_phase = OptPhase::A;
+    m_edge_split_mode = EdgeSplitMode::Optimization;
+
+    // The shared operations read the vertex order (the substructure link condition, the
+    // open-boundary rule) and the cell qualities; both have to exist before the first pass.
+    init_vertex_order();
+    for (const Tuple& t : get_tets()) {
+        m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
+    }
+
+    // The sizing field: target_distance on the input-complex BOUNDARY, graded outward. A face is
+    // on that boundary when exactly one incident tet carries the input-complex label -- the rule
+    // that produced m_phi_F.
+    const double l_target = std::max(m_params.l, 1e-16);
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l_target);
+    const double s_input = std::clamp(
+        m_offset_params.target_distance / l_target,
+        s_floor,
+        m_offset_params.max_sizing_scalar);
+    if (m_offset_params.pre_optimize_sizing_from_edges) {
+        // "Keep the resolution you have": every vertex takes the mean of its own incident edge
+        // lengths, the rule init_offset_sizing_field() uses on the front.
+        size_t n_set = 0;
+        double sum_h = 0.;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            double sum_len = 0.;
+            int n = 0;
+            for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
+                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
+                ++n;
+            }
+            if (n == 0) continue;
+            const double h_local = sum_len / n;
+            m_vertex_attribute[vid].m_sizing_scalar =
+                std::clamp(h_local / l_target, s_floor, m_offset_params.max_sizing_scalar);
+            sum_h += h_local;
+            ++n_set;
+        }
+        logger().info(
+            "[pre-optimize] sizing field: {} vertices seeded from their OWN incident edge "
+            "lengths (mean {:.6g} = {:.4g} l); target_distance {} does not enter",
+            n_set,
+            n_set ? sum_h / double(n_set) : 0.,
+            n_set ? (sum_h / double(n_set)) / l_target : 0.,
+            m_offset_params.target_distance);
+    } else {
+        std::vector<size_t> seeds;
+        for (const Tuple& f : get_faces()) {
+            const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
+            // A wall face is not a complex boundary: with offset_in the whole background carries
+            // label 1, and treating the missing opposite tet as "not complex" seeded the entire
+            // domain wall at delta. A wall vertex is seeded only through an interior face where
+            // the complex meets a non-complex region, i.e. where a complex boundary reaches the
+            // wall; a vertex bordering only the complex and the wall keeps the default scalar.
+            if (!opp) continue;
+            const bool in_a = m_tet_attribute[f.tid(*this)].label == 1;
+            const bool in_b = m_tet_attribute[opp->tid(*this)].label == 1;
+            if (in_a == in_b) continue; // interior to the complex, or interior to the background
+            for (const size_t vid : get_face_vids(f)) {
+                double& sc = m_vertex_attribute[vid].m_sizing_scalar;
+                sc = std::min(sc, s_input);
+                seeds.push_back(vid);
+            }
+        }
+        // A sheet, wire or point complex has no label-1 tets, so the face test above seeds
+        // nothing on it. The complex's vertices carry the label whatever its dimension: seed
+        // those too, but ONLY where the complex is not a solid region.
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            if (m_vertex_extra[vid].label != 1) continue;
+            bool region = false;
+            for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+                if (m_tet_attribute[tid].label == 1) {
+                    region = true;
+                    break;
+                }
+            }
+            if (region) continue;
+            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
+            sc = std::min(sc, s_input);
+            seeds.push_back(vid);
+        }
+        wmtk::vector_unique(seeds);
+        if (!seeds.empty()) {
+            gradation_smooth_sizing(m_offset_params.sizing_gradation, seeds);
+        }
+        logger().info(
+            "[pre-optimize] sizing seed: {} input-complex vertices at scalar {:.6g} "
+            "(= target_distance {} / l {:.6g}), graded outward at {}x per ring",
+            seeds.size(),
+            s_input,
+            m_offset_params.target_distance,
+            l_target,
+            m_offset_params.sizing_gradation);
+    }
+
+    // The seeded field, before a single operation runs.
+    if (m_offset_params.debug_output) {
+        write_vtu(m_offset_params.output_path + "_seeded");
+    }
+
+    const double before = std::get<0>(optimization_quality_stats());
+    logger().info(
+        "[pre-optimize] TetWild over the input mesh: {} vertices, {} tets, max element quality "
+        "{:.4} (stop {:.4}), held by the per-tag region envelopes only",
+        get_vertices().size(),
+        get_tets().size(),
+        before,
+        optimization_stop_metric());
+
+    mesh_improvement(std::max(1, m_offset_params.max_iterations));
+
+    const double after = std::get<0>(optimization_quality_stats());
+    logger().info(
+        "[pre-optimize] done: {} vertices, {} tets, max element quality {:.4} -> {:.4}",
+        get_vertices().size(),
+        get_tets().size(),
+        before,
+        after);
+
+    m_edge_split_mode = saved_mode;
+    m_phase = saved_phase;
+    consolidate_mesh();
+
+    // Re-derive the construction labels, because the optimization does not maintain them: no
+    // operation propagates the label, and marching_tets() decides which edges to split from
+    // exactly that label. Cleared first because label_input_complex() only ever writes 1.
+    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
+    for (const Tuple& e : get_edges()) m_edge_attribute[e.eid(*this)].label = 0;
+    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
+    for (const Tuple& t : get_tets()) m_tet_attribute[t.tid(*this)].label = 0;
+    label_input_complex();
+
+    // The input complex is NOT re-extracted: the driver builds m_input_complex_bvh -- and with
+    // it m_phi_V/E/F/P, the arrays init_offset_potential() hands to Phi -- once before
+    // execute_offset(), and that one extraction serves the whole run. As in 2D.
+    needle_scan("after the pre-pass");
+}
 
 void TopoOffsetTetMesh::init_offset_sizing_field()
 {
@@ -1107,10 +1540,6 @@ void TopoOffsetTetMesh::init_offset_sizing_field()
             n_flat);
     }
 }
-
-// ---------------------------------------------------------------------------------------------
-// The stall censuses and the needle diagnostics.
-// ---------------------------------------------------------------------------------------------
 
 void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const double filter_energy)
     const
@@ -1815,10 +2244,6 @@ void TopoOffsetTetMesh::needle_forensics() const
         m_flat_worsened_split.load());
 }
 
-// ---------------------------------------------------------------------------------------------
-// The band's measures.
-// ---------------------------------------------------------------------------------------------
-
 std::vector<bool> TopoOffsetTetMesh::band_vertex_mask() const
 {
     std::vector<bool> on_band(vert_capacity(), false);
@@ -2008,7 +2433,6 @@ double TopoOffsetTetMesh::edge_interpolation_residual(const size_t a, const size
     if (!std::isfinite(ra) || !std::isfinite(rb) || !std::isfinite(rm)) return -1.;
     return 2. * (1. - m_params.w_amips) / c * std::abs(rm - 0.5 * (ra + rb));
 }
-
 
 TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
 {
@@ -2721,6 +3145,79 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
     }
 }
 
+bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
+{
+    const size_t ta = f.tid(*this);
+    const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
+    if (!opp) {
+        // Domain boundary. A band cell here means the band was clipped by the bounding box, and
+        // that face is offset surface -- its vertices can never reach the target distance, which
+        // is precisely the thing that must be measured rather than hidden.
+        return cell_is_offset_band(ta);
+    }
+    const size_t tb = opp->tid(*this);
+    const bool a = cell_is_offset_band(ta), b = cell_is_offset_band(tb);
+    if (a == b) return false; // both in the band, or neither: not the band's surface
+    // The band's inner interface, against the input complex it wraps, sits at distance 0 by
+    // construction and would drag the reported error to target_distance everywhere.
+    return !cell_is_input_complex(a ? tb : ta);
+}
+
+bool TopoOffsetTetMesh::edge_is_offset_surface_live(const size_t a, const size_t b) const
+{
+    for (const size_t tid : get_incident_tids_for_edge(a, b)) {
+        const auto vs = oriented_tet_vids(tid);
+        for (const size_t c : vs) {
+            if (c == a || c == b) continue;
+            const auto found = try_tuple_from_face({{a, b, c}});
+            if (found && face_is_offset_surface_live(std::get<0>(*found))) return true;
+        }
+    }
+    return false;
+}
+
+std::vector<std::array<size_t, 2>> TopoOffsetTetMesh::offset_surface_edges() const
+{
+    std::set<std::array<size_t, 2>> edges;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const auto vs = get_face_vids(f);
+        for (int i = 0; i < 3; ++i) {
+            std::array<size_t, 2> e{{vs[i], vs[(i + 1) % 3]}};
+            if (e[0] > e[1]) std::swap(e[0], e[1]);
+            edges.insert(e);
+        }
+    }
+    return std::vector<std::array<size_t, 2>>(edges.begin(), edges.end());
+}
+
+std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_live_at(
+    const size_t vid) const
+{
+    std::vector<Tuple> result;
+    std::set<size_t> seen;
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        const auto tv = oriented_tet_vids(tid);
+        for (int skip = 0; skip < 4; ++skip) {
+            if (tv[size_t(skip)] == vid) continue;
+            const auto [ft, fid] = tuple_from_face(face_corners_from(tv, skip));
+            if (!seen.insert(fid).second) continue;
+            if (face_is_offset_surface_live(ft)) result.push_back(ft);
+        }
+    }
+    return result;
+}
+
+const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) const
+{
+    const size_t ta = f.tid(*this);
+    const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
+    size_t band = ta;
+    if (!cell_is_offset_band(ta) && opp && cell_is_offset_band(opp->tid(*this)))
+        band = opp->tid(*this);
+    return potential_for_region(band < m_cell_region.size() ? m_cell_region[band] : -1);
+}
+
 void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
 {
     // A vertex on both surfaces is unsatisfiable: at distance 0 from the input complex and
@@ -2760,6 +3257,66 @@ void TopoOffsetTetMesh::check_no_vertex_on_both_surfaces(const char* when) const
         m_offset_params.target_distance,
         detail,
         both.size() > n_show ? ", ..." : "");
+}
+
+bool TopoOffsetTetMesh::face_borders_released_boundary(const Tuple& f) const
+{
+    // The same test release_deformable_regions() freed vertices by: the incident tets' CURRENT
+    // tag symmetric difference contains a released tag and no source tag.
+    const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
+    if (!opp) return false; // the domain wall
+    CellTag face_tags;
+    const auto& t0 = m_tet_attribute[f.tid(*this)].tag;
+    const auto& t1 = m_tet_attribute[opp->tid(*this)].tag;
+    std::set_symmetric_difference(
+        t0.begin(),
+        t0.end(),
+        t1.begin(),
+        t1.end(),
+        std::inserter(face_tags, face_tags.begin()));
+    bool released_here = false;
+    for (const int64_t t : face_tags) {
+        if (m_source_tags.count(t)) return false;
+        if (m_deform_tags.count(t)) released_here = true;
+    }
+    return released_here;
+}
+
+std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::released_envelope() const
+{
+    // deform_others' ops-only tube: a tube around the CURRENT released boundaries, consulted by
+    // surface_envelope_for_face() -- the dispatch every operation containment check comes
+    // through and no smoothing path does. Lazy, on a dirty flag the smoothing accepts set; never
+    // rebuilt mid-operation. See the 2D twin.
+    // WallComplex holds a released boundary with nothing, the operations included.
+    if (envelope_setup() == EnvelopeSetup::WallComplex) return nullptr;
+    if (m_deform_tags.empty()) return nullptr;
+    std::lock_guard<std::mutex> lock(m_released_mutex);
+    if (!m_released_tube_dirty.load(std::memory_order_acquire)) return m_released_envelope;
+    if (const_cast<TopoOffsetTetMesh*>(this)->m_vertex_attribute.recording.local()) {
+        return m_released_envelope;
+    }
+    std::vector<Eigen::Vector3i> tris;
+    for (const Tuple& f : get_faces()) {
+        if (!m_face_attribute[f.fid(*this)].m_is_surface_fs) continue;
+        if (!face_borders_released_boundary(f)) continue;
+        const auto vs = get_face_vids(f);
+        tris.emplace_back(int(vs[0]), int(vs[1]), int(vs[2]));
+    }
+    if (tris.empty()) {
+        m_released_envelope = nullptr;
+    } else {
+        std::vector<Eigen::Vector3d> verts(vert_capacity());
+        for (size_t i = 0; i < vert_capacity(); ++i) {
+            verts[i] = m_vertex_attribute[i].m_posf;
+        }
+        const double eps =
+            std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+        m_released_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
+        m_released_envelope->init(verts, tris, eps);
+    }
+    m_released_tube_dirty.store(false, std::memory_order_release);
+    return m_released_envelope;
 }
 
 void TopoOffsetTetMesh::rebuild_offset_envelope()
@@ -2815,10 +3372,6 @@ void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& 
         idx == 0 ? std::ios::trunc : std::ios::app);
     if (f) f << fmt::format("{:05d}\t{}\n", idx, label);
 }
-
-// ---------------------------------------------------------------------------------------------
-// The loop.
-// ---------------------------------------------------------------------------------------------
 
 void TopoOffsetTetMesh::optimize_offset_single_phase()
 {
@@ -2950,6 +3503,10 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         if (ec.converged_single() && lowered_prev == 0) {
             m_energy_verdict = ec;
             m_converged = true;
+            // Provisional: the final pass below overwrites both when it runs. The verdict at the
+            // end of optimize_offset() requires this AND the front's.
+            m_quality_max_amips = amips;
+            m_quality_converged = amips < bar;
             logger().info(
                 "Single phase: the front is placed after {} iteration(s) (phi {:.4}x); max AMIPS "
                 "{:.4} against stop {:.4}",
@@ -2965,10 +3522,13 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                     m_params.stop_energy);
                 m_ab_round = it + 2;
                 m_phase = OptPhase::A;
+                // The whole envelope setup rebuilt fresh from the mesh as placement left it --
+                // the front's tube, and the region-class tubes per envelope_setup() -- and held
+                // for the entire pass; regular-tet AMIPS alone: the plastic vertex path and the
+                // rest-shape term are both off.
                 rebuild_offset_envelope();
+                build_boundary_envelopes("final pass", envelope_setup());
                 m_freeze_front = true;
-                // Pure TetWild: the pass exists to reach stop_energy, and a rest-shape term pulls
-                // background vertices toward non-equilateral shapes. No plasticity here.
                 const bool plastic_was = m_plastic_active;
                 m_plastic_active = false;
                 mesh_improvement(a_iters);
@@ -2976,11 +3536,14 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 m_freeze_front = false;
                 assign_band_regions();
                 const double final_amips = std::get<0>(optimization_quality_stats());
-                logger().info(
+                m_quality_max_amips = final_amips;
+                m_quality_converged = final_amips < m_params.stop_energy;
+                logger().log(
+                    m_quality_converged ? spdlog::level::info : spdlog::level::warn,
                     "\t[final pass] max element quality {:.4} (stop {:.4}) -> {}",
                     final_amips,
                     optimization_stop_metric(),
-                    final_amips < m_params.stop_energy ? "ok" : "STILL OVER");
+                    m_quality_converged ? "ok" : "STILL OVER: the run does not converge");
                 if (m_offset_params.debug_output) {
                     write_optimization_debug_output(fmt::format("phase_{}A", it + 2));
                 }
@@ -3120,16 +3683,23 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
           g.max_in_face}});
     log_worst_dist_vertex();
 
+    bool front_ok = false;
     {
+        // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
-        m_converged = ec.converged_single();
+        // Two criteria, both required: the front placed, and the final quality under
+        // stop_energy (the finishing pass's verdict; see m_quality_converged).
+        front_ok = ec.converged_single();
+        m_converged = front_ok && m_quality_converged;
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front vertices placed {} / pressed {} / travelling {} / stuck {} | "
+            "{}{}: front {} -- vertices placed {} / pressed {} / travelling {} / stuck {} | "
             "chords to resolve {} (at the sizing floor {}) | accuracy front_conv_rel {} "
-            "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar)",
+            "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar) || "
+            "final quality {}: max AMIPS {:.4} vs stop_energy {}",
             m_converged ? "Converged" : "Optimization did not converge",
-            m_energy_verdict ? " (measured at convergence, before the finishing pass)" : "",
+            m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
+            front_ok ? "placed" : "NOT placed",
             ec.n_placed,
             ec.n_pressed_on,
             ec.n_travelling,
@@ -3138,13 +3708,23 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             ec.n_at_floor,
             m_offset_params.front_conv_rel,
             ec.tube,
-            ec.max_vertex);
+            ec.max_vertex,
+            m_quality_converged ? "ok" : "OVER",
+            m_quality_max_amips,
+            m_params.stop_energy);
     }
 
+    // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log
+    // still names which criterion missed before the throw.
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
         log_and_throw_error(
-            "Optimization did not converge and throw_on_nonconvergence is set. Ran {} of {} "
-            "iterations; see the warnings above for the criterion that failed.",
+            "Optimization did not converge and throw_on_nonconvergence is set: front {}, final "
+            "quality {} (max AMIPS {:.4} vs stop_energy {}). Ran {} of {} iterations; see the "
+            "warnings above.",
+            front_ok ? "placed" : "NOT placed",
+            m_quality_converged ? "ok" : "OVER",
+            m_quality_max_amips,
+            m_params.stop_energy,
             optimization_metrics.size(),
             m_offset_params.max_iterations);
     }
