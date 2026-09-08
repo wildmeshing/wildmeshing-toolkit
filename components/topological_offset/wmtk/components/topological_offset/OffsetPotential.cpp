@@ -879,30 +879,14 @@ void OffsetEnergy<DIM>::residual(const VecD& p, double& r, VecD& dr) const
 {
     const double c = std::max(m_potential->target_level(), 1e-300);
     if (m_distance_residual && !m_potential->is_euclidean()) {
+        // The monotone length (Phi - c)/grad_ref in units of delta: exact at the level set,
+        // single-valued everywhere, growing without bound toward the input. Not a root-found
+        // distance: the smooth field has a second level set Phi = c inside the input, and a root
+        // search can converge to it and measure the distance to the wrong side.
         const double delta = std::max(m_potential->delta(), 1e-300);
-        if (m_cache_valid && (p - m_cache_p).squaredNorm() == 0.) {
-            r = m_cache_r;
-            dr = m_cache_dr;
-            return;
-        }
-        double s;
-        VecD n;
-        if (root_distance(p, s, n)) {
-            // r = -s/delta: negative when p is too close, like (d - delta)/delta. Moving p
-            // outward by t shrinks s by t, so dr/dp = (outward unit)/delta = -n/delta.
-            r = -s / delta;
-            dr = -n / delta;
-        } else {
-            // No root within reach (outside the support, or a vanishing gradient): the
-            // monotone length (Phi - c)/grad_ref, still in units of delta.
-            const double g_ref = std::max(m_potential->level_set_slope(), 1e-300);
-            r = (m_potential->value(p) - c) / (g_ref * delta);
-            dr = m_potential->gradient(p) / (g_ref * delta);
-        }
-        m_cache_p = p;
-        m_cache_r = r;
-        m_cache_dr = dr;
-        m_cache_valid = true;
+        const double g_ref = std::max(m_potential->level_set_slope(), 1e-300);
+        r = (m_potential->value(p) - c) / (g_ref * delta);
+        dr = m_potential->gradient(p) / (g_ref * delta);
         return;
     }
     // Normalised by the level: r = (Phi - c) / c, so the term is O(1) for every field and every
