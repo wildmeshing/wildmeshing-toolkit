@@ -417,28 +417,41 @@ public:
     bool m_freeze_front = false;
 
     /**
-     * @brief The final pass's containers, built ONCE when that pass starts and held unchanged
-     * until it ends.
+     * @brief Which boundaries the region-class envelopes hold, and how they are built.
      *
-     * m_final_pass_envelope is one exact tube, of the per-tag tubes' half-width m_envelope_eps,
-     * around every region-boundary segment as it stands at that moment: tag boundaries whether
-     * held or released by deform_others, and the domain wall. m_offset_envelope, rebuilt once
-     * just before, holds the front. m_final_pass_junction is their intersection, for a segment
-     * that is on both. While m_final_pass_envelope is non-null every containment query answers
-     * from these and nothing else -- surface_envelope_for_edge() for the operations,
-     * smoothing_energy_envelope() and smoothing_containment_envelope() for the smoother -- so
-     * the whole pass is TriWild against one fixed set of envelopes: no per-tag intersection
-     * built from the input, no released tube rebuilt behind the pass's back, no vertex left
-     * free because its mask was cleared. rest_energy_for_vertex() is null for the same span,
-     * so the pass minimises equilateral AMIPS alone. See begin_final_pass_envelope().
+     * PerTag (deform_others false): one exact tube per input tag around that tag's boundary
+     * segments, the domain wall in the tags of its wall faces. A vertex carries the bit of every
+     * tube it lies on and is contained in their intersection, so every region boundary -- the
+     * input complex and the wall included -- is held.
+     *
+     * WallComplex (deform_others true): exactly two tubes, the domain wall and the boundary of
+     * the input complex (any dimension, any manifoldness: it is a set of segments), under the
+     * pseudo-tags m_wall_tag / m_complex_tag. Every other region boundary carries no bit and is
+     * held by nothing; the medium around it is plastic, see face_is_plastic().
+     *
+     * Either way build_boundary_envelopes() derives the masks and tubes from the mesh as it
+     * stands when called: at load (PerTag, before the complex is labelled), when deform_others
+     * switches the setup at construction, and fresh at the start of the final pass. The offset
+     * tube is separate and unchanged.
      */
-    std::shared_ptr<SampleEnvelope> m_final_pass_envelope;
-    std::shared_ptr<SampleEnvelope> m_final_pass_junction;
-    /// Rebuild the offset tube, build m_final_pass_envelope from the current region-boundary
-    /// segments, log both. Called once, at the start of the final pass.
-    void begin_final_pass_envelope();
-    /// Drop both; the dispatch falls back to the per-tag machinery. Called once, at its end.
-    void end_final_pass_envelope();
+    enum class EnvelopeSetup { PerTag, WallComplex };
+    EnvelopeSetup envelope_setup() const
+    {
+        return m_offset_params.deform_others ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
+    }
+    static constexpr int64_t m_wall_tag = -2; ///< pseudo-tag: the domain wall's tube
+    static constexpr int64_t m_complex_tag = -3; ///< pseudo-tag: the input complex boundary
+    /// The name a tag or pseudo-tag prints under.
+    std::string envelope_key_name(int64_t tag) const;
+    /// Whether this edge lies on the boundary of the input complex: exactly one incident face
+    /// carries label 1, or the edge itself does while neither face does (a curve or edge piece).
+    bool edge_is_complex_boundary(const Tuple& e) const;
+    /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
+    /// under `setup`. PerTag at load (the complex is not labelled yet, and the pre-optimize pass
+    /// holds every tag boundary as it always did), WallComplex when deform_others switches it at
+    /// construction, envelope_setup() fresh at the final pass. The tracked-edge flags are left
+    /// alone: they are the topology the operations maintain. `when` labels the log line.
+    void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
 
     // No Phi test gates collapse and swap: the envelope is the constraint, and the offset
     // criterion belongs to Phase B's own placement. The coarsening bar is applied where 3D
@@ -689,7 +702,14 @@ public:
     mutable char m_debug_last_phase = '?';
     /// See offset_gradient_tolerance(). Nothing sets it on the single-phase path; it stays 0.
     double m_gradient_reference = 0.;
+    /// The run's verdict: the front placed AND the final quality under stop_energy. Read by the
+    /// report and by throw_on_nonconvergence.
     bool m_converged = false;
+    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is placed,
+    /// after the final pass when one ran. True when no pass was needed; false when the pass ended
+    /// still over. m_quality_max_amips is the value it was judged on.
+    bool m_quality_converged = true;
+    double m_quality_max_amips = 0.;
 
     /// Churn: split-born vertices that a collapse later removed, and the subset removed in the
     /// same pass-pair that created them.
@@ -1153,17 +1173,6 @@ public:
                 }
             }
         }
-        // The final pass: two fixed tubes and nothing else, see m_final_pass_envelope. The front
-        // (both ends on the offset, no region bit left after the class check above) is held by
-        // the offset tube; every other tracked segment is a region boundary -- held or released,
-        // masked or not -- and is held by the pass-wide region tube; a segment on both is held in
-        // their intersection. Only tracked segments are ever asked about, so there is no third
-        // kind here.
-        if (m_final_pass_envelope) {
-            if (all_offset && mask == 0) return m_offset_envelope;
-            if (!all_offset) return m_final_pass_envelope;
-            return m_final_pass_junction;
-        }
         // Both families compose: whatever holds this segment holds it at once. Phase A holds the
         // offset where Phase B left it; Phase B is what moves it, so it contributes nothing there
         // -- and null before the offset exists at all, which is the pre-pass.
@@ -1213,13 +1222,6 @@ public:
      */
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
     {
-        // The final pass: a region-boundary vertex is pulled to the pass-wide region tube, a real
-        // SampleEnvelope, whatever its mask says (a released boundary's mask was cleared). A
-        // front vertex is frozen there and never reaches the smoother. See
-        // m_final_pass_envelope.
-        if (m_final_pass_envelope) {
-            return vertex_is_on_region(vid) ? m_final_pass_envelope : nullptr;
-        }
         if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
             return nullptr;
         }
@@ -1268,17 +1270,6 @@ public:
         // out of one expression: pure-offset (mask 0) gives the offset tube in Phase A and null in
         // Phase B, pure-region gives its tubes' intersection in both, and a junction of the two
         // gives the intersection of everything.
-        //
-        // The final pass: the pass-wide region tube for every region-boundary vertex, the
-        // offset tube for a front vertex (frozen, so only diagnostics ask), their intersection
-        // for a vertex on both. See m_final_pass_envelope.
-        if (m_final_pass_envelope) {
-            const bool region = vertex_is_on_region(vid);
-            const bool offset = m_vertex_extra[vid].m_is_on_offset;
-            if (region && offset) return m_final_pass_junction;
-            if (region) return m_final_pass_envelope;
-            return offset ? m_offset_envelope : nullptr;
-        }
         return containment_for(vertex_boundary_mask(vid), m_vertex_extra[vid].m_is_on_offset);
     }
 
@@ -1358,8 +1349,7 @@ public:
     /// Whether this edge lies on a released region's boundary, by the incident faces' current
     /// tag symmetric difference -- the same test the release freed vertices by.
     bool edge_borders_released_boundary(const Tuple& e) const;
-    /// A face deforms when it is background (label 0), tagged, and every tag it carries was
-    /// released -- a face shared with a held region must not deform freely.
+    /// Under deform_others the same set as face_is_plastic(): every face outside the band.
     bool face_is_deformable(size_t fid) const;
     /// Plastic medium: under deform_others every background face -- ambient and the other objects
     /// alike -- is plastic, its rest shape re-stamped before every operation group, so smoothing
@@ -1369,9 +1359,9 @@ public:
     bool m_plastic_active = false; ///< set in optimize_offset() when deform_others
     bool face_is_plastic(size_t fid) const
     {
-        // Every background face, objects included: one material for the medium and the objects.
-        // Do not re-add the exclusion for released objects; measured no better -- see git history.
-        return m_plastic_active && m_face_extra[fid].label == 0;
+        // Everything outside the band: ambient, the other objects and the input complex's
+        // interior alike -- one material. The complex's boundary is what its tube holds.
+        return m_plastic_active && m_face_extra[fid].label != 2;
     }
     /// Stamp rest := current for every plastic face; called before every operation group.
     void stamp_plastic_rests();
