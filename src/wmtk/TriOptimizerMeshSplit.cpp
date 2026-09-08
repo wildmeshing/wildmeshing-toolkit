@@ -190,8 +190,8 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
     // this has to be done before the inversion check
     m_vertex_attribute[v_id].m_pos = to_rational(p);
 
-    for (auto& loc : locs) {
-        if (is_inverted(loc)) {
+    for (const Tuple& t : locs) {
+        if (is_inverted(t)) {
             m_vertex_attribute[v_id].m_is_rounded = false;
             break;
         }
@@ -229,8 +229,13 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // Guard against a pre-existing inverted incident triangle: re-check in exact
         // arithmetic (un-rounded v_id => is_inverted uses the rational path). This check
         // was missing, so a split could leave an inverted triangle behind.
-        for (const Tuple& loc : locs) {
-            if (is_inverted(loc)) {
+        for (const Tuple& t : locs) {
+            if (is_inverted(t)) {
+                log_and_throw_error(
+                    "split_edge_after: split of ({},{}) produced inverted triangle {}",
+                    v1_id,
+                    v2_id,
+                    t.fid(*this));
                 return false;
             }
         }
@@ -279,9 +284,17 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
         // violations that live on vanishingly small elements.
         if (cache.old_e_attrs.m_is_surface_fs) {
             if (surface_segment_is_outside(v1_id, v_id)) {
+                logger().error(
+                    "split of ({},{}) produced a surface segment outside the envelope",
+                    v1_id,
+                    v2_id);
                 return false;
             }
             if (surface_segment_is_outside(v_id, v2_id)) {
+                logger().error(
+                    "split of ({},{}) produced a surface segment outside the envelope",
+                    v1_id,
+                    v2_id);
                 return false;
             }
         }
@@ -299,8 +312,8 @@ bool TriOptimizerMesh::split_edge_after(const Tuple& loc)
     // A split is never refused on quality. It checks orientation, rounding and (above) the
     // envelope, and that is all: subdividing is the operation the optimizer reaches for when a
     // region is stuck, so it has to be allowed to run even where the result scores badly.
-    for (const Tuple& loc : locs) {
-        m_face_attribute[loc.fid(*this)].m_quality = get_quality(loc);
+    for (const Tuple& t : locs) {
+        m_face_attribute[t.fid(*this)].m_quality = get_quality(t);
     }
 
     /// update vertex attribute

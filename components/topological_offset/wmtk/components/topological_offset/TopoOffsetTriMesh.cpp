@@ -88,9 +88,10 @@ void TopoOffsetTriMesh::init_from_image(
     // complete and before init_surfaces_and_boundaries() seeds the vertex masks. Tags introduced
     // later (the band's output tag) get no bit: boundary membership is a property of the input
     // partition, which is why the masks are propagated rather than recomputed from current tags.
-    if (m_tag_id_to_name.size() > 64) {
+    if (m_tag_id_to_name.size() > 62) {
         log_and_throw_error(
-            "Per-tag boundary envelopes support at most 64 input tags, got {}",
+            "Per-tag boundary envelopes support at most 62 input tags (two mask bits are "
+            "reserved for the domain wall and the input complex boundary), got {}",
             m_tag_id_to_name.size());
     }
     m_tag_bit.clear();
@@ -98,6 +99,9 @@ void TopoOffsetTriMesh::init_from_image(
         const int bit = int(m_tag_bit.size());
         m_tag_bit[tag_id] = bit;
     }
+    // The two reserved bits of the WallComplex setup, see EnvelopeSetup.
+    m_tag_bit[m_wall_tag] = int(m_tag_bit.size());
+    m_tag_bit[m_complex_tag] = int(m_tag_bit.size());
 
     // propagate tags to faces
     auto faces = get_faces();
@@ -138,130 +142,31 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
     const auto edges = get_edges();
     logger().info("E = {}", edges.size());
 
-    // The domain wall is a region boundary: an edge with no opposite face bounds the ambient
-    // region against the unmeshed outside. Held in ambient's envelope, so it may be refined and
-    // its vertices may move within eps -- the same contract every other region boundary gets.
+    // Which edges are tracked region boundaries: an interior edge whose two faces carry different
+    // tag sets, an edge on the curve group, or a wall edge (no opposite face: the ambient region
+    // against the unmeshed outside). These flags are topology the operations maintain. Which
+    // tube holds an edge, and the vertex masks, are build_boundary_envelopes()'s.
     size_t n_edges_tracked = 0;
-    std::map<int64_t, std::vector<Eigen::Vector2i>> tag_edges; // per-tag boundary buckets
     for (const Tuple& e : edges) {
         const size_t eid = e.eid(*this);
-
-        // Whose boundary this edge is. Interior edge: every tag on exactly one side (the
-        // symmetric difference; a tag present on both sides has no boundary here). Wall edge:
-        // every tag of its single face, which is how ambient's envelope comes to hold the wall.
-        CellTag edge_tags;
         const bool on_curve = m_edge_extra[eid].on_curve;
-        if (on_curve) edge_tags.insert(m_curve_tag); // held in the curve group's tube too
         const std::optional<Tuple> f_opp = e.switch_face(*this);
         if (f_opp) {
             const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
             const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
-            if (tag0 == tag1 && !on_curve) {
-                continue;
-            }
-            std::set_symmetric_difference(
-                tag0.begin(),
-                tag0.end(),
-                tag1.begin(),
-                tag1.end(),
-                std::inserter(edge_tags, edge_tags.begin()));
-        } else {
-            edge_tags = m_face_attribute[e.fid(*this)].tags;
+            if (tag0 == tag1 && !on_curve) continue;
         }
-
         m_edge_attribute[eid].m_is_surface_fs = true;
         ++n_edges_tracked;
-
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
-
-        // Seed the per-vertex boundary masks and the per-tag edge buckets from the same
-        // classification, so the dispatch (a segment is constrained by the AND of its ends'
-        // masks) and the envelopes it dispatches to can never disagree about what is where.
-        const uint64_t bits = tag_bits(edge_tags);
-        for (const size_t v : {v1, v2}) m_vertex_extra[v].m_boundary_mask |= bits;
-        for (const int64_t t : edge_tags) {
-            tag_edges[t].emplace_back(int(v1), int(v2));
-        }
-        // The region flag, for interior boundaries only: the wall carries none because
-        // vertex_is_on_region() reads it off on_bbox_faces. Not "on the input complex" -- that is
-        // mark_input_complex_vertices()'s job, from the labels, once label_input_complex() has run.
         if (f_opp) {
             for (const size_t v : {v1, v2}) m_vertex_extra[v].m_is_on_region = true;
         }
-        // The base's own flag, a different field from the ones above: those say which tracked
-        // surface a vertex belongs to, this says that it belongs to one at all. Every
-        // surface-aware path in the shared engine gates on it.
         m_vertex_attribute[v1].m_is_on_surface = true;
         m_vertex_attribute[v2].m_is_on_surface = true;
     }
-
-    if (!m_envelope && n_edges_tracked > 0) {
-        logger().info("Init per-tag envelopes from face tags");
-        std::vector<Eigen::Vector2d> tempV(vert_capacity());
-        for (size_t i = 0; i < vert_capacity(); ++i) {
-            tempV[i] = m_vertex_attribute[i].m_posf;
-        }
-
-        // From the parameters: otherwise m_envelope_eps keeps its -1 sentinel, the envelopes get a
-        // negative half-width, is_outside() answers true for every segment including the ones they
-        // were built from, and every boundary freezes solid. The n_edges_tracked guard is what lets
-        // a mesh be constructed without params.init() rather than throwing on a nonpositive eps.
-        m_envelope_eps = m_offset_params.envelope_size;
-
-        // One envelope per tag, from that tag's boundary bucket -- the input partition as it stands
-        // before offset construction rewrites tags, so E_t is a tube around the as-loaded geometry
-        // the offset potential also measures against. An edge between two regions enters both
-        // regions' envelopes; the wall enters its single face's tags'.
-        m_tag_envelopes.clear();
-        {
-            std::lock_guard<std::mutex> lock(m_isect_mutex);
-            m_isect_cache.clear();
-        }
-        std::vector<std::shared_ptr<SampleEnvelope>> members;
-        std::string per_tag_log;
-        // The polyline the tangential placement walks, in the same indexing the envelope is built
-        // in, so nearest_point_feature()'s feature_id indexes both. See TagPolyline2d.
-        m_env_polyline_V = tempV;
-        m_tag_polyline.clear();
-        for (const auto& [tag, bucket] : tag_edges) {
-            if (bucket.empty()) continue; // offset_output_tag ids with no faces yet
-            // Exact, not sampled: the sampled test decides by where its sample points fall, so a
-            // chord at the tube wall can pass the collapse's whole-segment test and fail the
-            // split's half-segment test, leaving an edge no operation may touch. SampleEnvelope's
-            // constructor flag selects the engine (true = exact predicates). Falls back to sampled
-            // without a valid half-width -- the exact 2D init segfaults on the uninitialised eps a
-            // mesh built without params.init() carries. The 3D offset still builds sampled.
-            const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
-            auto env = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
-            env->init(tempV, bucket, m_envelope_eps);
-            m_tag_envelopes[tag] = env;
-            members.push_back(env);
-            per_tag_log += fmt::format(" {}:{}", m_tag_id_to_name.at(tag), bucket.size());
-
-            TagPolyline2d pl;
-            pl.E = bucket;
-            pl.at_vertex.assign(tempV.size(), {});
-            for (int i = 0; i < int(bucket.size()); ++i) {
-                pl.at_vertex[bucket[i][0]].push_back(i);
-                pl.at_vertex[bucket[i][1]].push_back(i);
-            }
-            m_tag_polyline[tag] = std::move(pl);
-        }
-
-        // The base's pointer survives as the union of the members -- inside any tube -- because
-        // the shared engine's direct uses of it ask exactly that question. Everything else
-        // dispatches per simplex through envelope_for_mask().
-        m_envelope = std::make_shared<UnionEnvelope>(std::move(members));
-        logger().info(
-            "\tPer-tag boundary envelopes: {} segments total (tag boundaries + domain wall), "
-            "eps {:.6g}, {} |{}",
-            n_edges_tracked,
-            m_envelope_eps,
-            (std::isfinite(m_envelope_eps) && m_envelope_eps > 0.) ? "EXACT"
-                                                                   : "sampled (no valid eps)",
-            per_tag_log);
-    }
+    if (n_edges_tracked > 0) build_boundary_envelopes("load", EnvelopeSetup::PerTag);
 
     // track bounding box. box_min/box_max are only set by Parameters::init(), which a mesh built
     // from a default-constructed Parameters never calls -- skip rather than index out of bounds.
@@ -301,6 +206,135 @@ void TopoOffsetTriMesh::init_surfaces_and_boundaries()
     }
 }
 
+
+std::string TopoOffsetTriMesh::envelope_key_name(const int64_t tag) const
+{
+    if (tag == m_wall_tag) return "wall";
+    if (tag == m_complex_tag) return "input_complex";
+    const auto it = m_tag_id_to_name.find(tag);
+    return it == m_tag_id_to_name.end() ? fmt::format("tag#{}", tag) : it->second;
+}
+
+bool TopoOffsetTriMesh::edge_is_complex_boundary(const Tuple& e) const
+{
+    const bool a = m_face_extra[e.fid(*this)].label == 1;
+    const std::optional<Tuple> opp = e.switch_face(*this);
+    const bool b = opp ? (m_face_extra[opp->fid(*this)].label == 1) : false;
+    if (a != b) return true; // a face of the complex on exactly one side
+    if (a && b) return false; // interior to the complex
+    // No complex face on either side: the edge is itself a piece of the complex (a curve
+    // selection, or an edge the selection expression labelled), or it is not on it at all.
+    return m_edge_extra[e.eid(*this)].label == 1;
+}
+
+void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const EnvelopeSetup setup)
+{
+    m_envelope_eps = m_offset_params.envelope_size;
+
+    // Fresh: every mask from the tracked edges as they stand, nothing carried over.
+    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
+
+    std::map<int64_t, std::vector<Eigen::Vector2i>> buckets;
+    size_t n_tracked = 0, n_wall = 0, n_complex = 0, n_free = 0;
+    for (const Tuple& e : get_edges()) {
+        const size_t eid = e.eid(*this);
+        // Region-class tracked edges only: the front has its own tube.
+        if (!m_edge_attribute[eid].m_is_surface_fs || edge_is_offset(eid)) continue;
+        ++n_tracked;
+        const std::optional<Tuple> f_opp = e.switch_face(*this);
+        CellTag keys;
+        if (setup == EnvelopeSetup::WallComplex) {
+            if (!f_opp) {
+                keys.insert(m_wall_tag);
+                ++n_wall;
+            }
+            if (edge_is_complex_boundary(e)) {
+                keys.insert(m_complex_tag);
+                ++n_complex;
+            }
+            if (keys.empty()) ++n_free;
+        } else {
+            // Whose boundary this edge is. Interior edge: every tag on exactly one side (the
+            // symmetric difference; a tag present on both sides has no boundary here). Wall
+            // edge: every tag of its one face, which is how ambient's tube comes to hold the
+            // box. The curve group's edges are in its tube too.
+            if (m_edge_extra[eid].on_curve) keys.insert(m_curve_tag);
+            if (f_opp) {
+                const auto& tag0 = m_face_attribute[e.fid(*this)].tags;
+                const auto& tag1 = m_face_attribute[f_opp->fid(*this)].tags;
+                std::set_symmetric_difference(
+                    tag0.begin(),
+                    tag0.end(),
+                    tag1.begin(),
+                    tag1.end(),
+                    std::inserter(keys, keys.begin()));
+            } else {
+                keys = m_face_attribute[e.fid(*this)].tags;
+                ++n_wall;
+            }
+            // The band's output tags are not region boundaries: the front is the offset tube's.
+            for (const int64_t t : m_offset_output_tag_ids) keys.erase(t);
+        }
+        const size_t v1 = e.vid(*this);
+        const size_t v2 = e.switch_vertex(*this).vid(*this);
+        const uint64_t bits = tag_bits(keys);
+        for (const size_t v : {v1, v2}) m_vertex_extra[v].m_boundary_mask |= bits;
+        for (const int64_t t : keys) buckets[t].emplace_back(int(v1), int(v2));
+    }
+
+    std::vector<Eigen::Vector2d> tempV(vert_capacity());
+    for (size_t i = 0; i < vert_capacity(); ++i) tempV[i] = m_vertex_attribute[i].m_posf;
+
+    m_tag_envelopes.clear();
+    m_tag_polyline.clear();
+    m_env_polyline_V = tempV;
+    {
+        std::lock_guard<std::mutex> lock(m_isect_mutex);
+        m_isect_cache.clear();
+        m_offset_isect_cache.clear();
+    }
+    const bool exact_ok = std::isfinite(m_envelope_eps) && m_envelope_eps > 0.;
+    std::vector<std::shared_ptr<SampleEnvelope>> members;
+    std::string per_tag_log;
+    for (const auto& [tag, bucket] : buckets) {
+        if (bucket.empty()) continue;
+        auto env = std::make_shared<SampleEnvelope>(/*exact=*/exact_ok);
+        env->init(tempV, bucket, m_envelope_eps);
+        m_tag_envelopes[tag] = env;
+        members.push_back(env);
+        per_tag_log += fmt::format(" {}:{}", envelope_key_name(tag), bucket.size());
+
+        TagPolyline2d pl;
+        pl.E = bucket;
+        pl.at_vertex.assign(tempV.size(), {});
+        for (int i = 0; i < int(bucket.size()); ++i) {
+            pl.at_vertex[bucket[i][0]].push_back(i);
+            pl.at_vertex[bucket[i][1]].push_back(i);
+        }
+        m_tag_polyline[tag] = std::move(pl);
+    }
+    // The base's pointer survives as the union of the members -- inside any tube -- because
+    // the shared engine's direct uses of it ask exactly that question. Everything else
+    // dispatches per simplex through envelope_for_mask().
+    m_envelope = members.empty() ? nullptr : std::make_shared<UnionEnvelope>(std::move(members));
+
+    logger().info(
+        "\t[envelopes @ {}] {}: {} region-boundary segments tracked ({} on the wall), eps {:.6g}, "
+        "{} |{}{}",
+        when,
+        setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
+        n_tracked,
+        n_wall,
+        m_envelope_eps,
+        exact_ok ? "EXACT" : "sampled (no valid eps)",
+        per_tag_log,
+        setup == EnvelopeSetup::WallComplex
+            ? fmt::format(
+                  " | {} on the input complex boundary, {} held by nothing (plastic)",
+                  n_complex,
+                  n_free)
+            : std::string());
+}
 
 void TopoOffsetTriMesh::mark_input_complex_vertices()
 {
@@ -1354,6 +1388,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
     // last matrix is for offset
     std::vector<MatrixXd> tags(m_tags_count + 1, MatrixXd(tris.size(), 1));
+    VectorXd amips(tris.size());
 
     for (size_t k = 0; k < tris.size(); ++k) {
         const size_t f_id = tris[k].fid(*this);
@@ -1363,6 +1398,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             tags[j](k, 0) = (m_face_attribute[f_id].tags.count(j) == 1) ? 1 : 0;
         }
         tags[m_tags_count](k, 0) = (m_face_extra[f_id].label == 2) ? 1 : 0;
+        amips[k] = m_face_attribute[f_id].m_quality;
     }
 
     for (size_t k = 0; k < tris.size(); ++k) {
@@ -1385,6 +1421,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
 
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
+    writer->add_cell_field("amips", amips);
     for (int64_t i = 0; i < m_tags_count; i++) {
         writer->add_cell_field(m_tag_id_to_name[i], tags[i]);
     }
