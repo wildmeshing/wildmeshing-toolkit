@@ -26,6 +26,7 @@
       "front_conv_criterion",
       "offset_residual_samples",
       "sorted_marching",
+      "save_offset_correspondence",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -224,6 +225,12 @@
     "type": "bool",
     "default": false,
     "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
+  },
+  {
+    "pointer": "/save_offset_correspondence",
+    "type": "bool",
+    "default": false,
+    "doc": "3D. Write <output>_correspondence.vtu right after marching_tets, before any optimization: the mesh as constructed, with the per-vertex field corr_input_vid giving, for every offset vertex, the id of the input-complex vertex it was split off from (-1 elsewhere). Vertex ids are those of that file."
   },
   {
     "pointer": "/check_manifoldness",

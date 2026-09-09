@@ -85,6 +85,9 @@ struct Parameters : public wmtk::OptimizerParameters
     // TopoOffsetTetMesh::offset_face_samples.
     int offset_residual_samples;
     bool sorted_marching;
+    /// Write <output>_correspondence.vtu right after marching: the mesh as constructed, with
+    /// corr_input_vid on every offset vertex. Ids are those of that file.
+    bool save_offset_correspondence;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -179,6 +182,7 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_residual_samples = json_params["offset_residual_samples"];
 
         sorted_marching = json_params["sorted_marching"];
+        save_offset_correspondence = json_params["save_offset_correspondence"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

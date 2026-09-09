@@ -57,6 +57,10 @@ public:
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
+    /// The input-complex vertex this offset vertex was split off from by marching_tets(): the
+    /// birth edge's endpoint on the complex. -1 everywhere else. Written by
+    /// save_offset_correspondence; not maintained past construction.
+    int64_t m_corr_input_vid = -1;
     /// Where this vertex stood at the start of the turn, so the convergence states can read its
     /// net movement. A split copies it on, so a new vertex reads as moved for the turn it was
     /// born in.
@@ -1540,6 +1544,7 @@ private:
         size_t v2_id;
         Vector3d new_v_pos;
         VertexExtra new_v_extra;
+        int64_t corr_input_vid = -1; ///< marching: the split edge's endpoint on the complex
 
         bool is_edge_on_region = false;
         bool is_edge_on_offset = false;

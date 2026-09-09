@@ -51,6 +51,13 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
 
     cache.is_edge_on_region = is_edge_on_region(t);
     cache.is_edge_on_offset = is_edge_on_offset(t);
+    // A marching edge has exactly one endpoint on the complex; that endpoint is the new vertex's
+    // correspondence. Any other split through this hook records none.
+    {
+        const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
+        const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
+        cache.corr_input_vid = (in1 != in2) ? int64_t(in1 ? cache.v1_id : cache.v2_id) : -1;
+    }
 
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
@@ -169,6 +176,7 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
 
     // vertex attribute
     m_vertex_extra[v_id] = cache.new_v_extra;
+    m_vertex_extra[v_id].m_corr_input_vid = cache.corr_input_vid;
     set_vertex_position(v_id, cache.new_v_pos);
     m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(

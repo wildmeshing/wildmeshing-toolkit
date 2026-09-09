@@ -1273,6 +1273,10 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     // job.
     m_edge_split_mode = EdgeSplitMode::Midpoint;
     marching_tets();
+    if (m_offset_params.save_offset_correspondence) {
+        // Before consolidate_mesh() renumbers: the ids in this file are the ids it refers to.
+        write_vtu(output_file.string() + "_correspondence");
+    }
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
@@ -1721,6 +1725,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     v_order.setZero();
     VectorXd v_id(vert_capacity());
     v_id.setZero();
+    VectorXd corr(vert_capacity());
+    corr.setConstant(-1.);
     // The sizing field, as point data: it drives every split and collapse gate. Two forms, as
     // in 2D: the raw scalar, and the target edge length l * scalar it means.
     VectorXd v_sizing(vert_capacity());
@@ -1759,6 +1765,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         labels[vid] = m_vertex_extra[vid].label;
         v_order[vid] = m_vertex_attribute[vid].m_order;
         v_id[vid] = vid;
+        corr[vid] = double(m_vertex_extra[vid].m_corr_input_vid);
         v_sizing[vid] = m_vertex_attribute[vid].m_sizing_scalar;
         v_target[vid] = m_params.l * v_sizing[vid];
     }
@@ -1784,6 +1791,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("labels", labels);
     writer.add_field("order", v_order);
     writer.add_field("vid", v_id);
+    writer.add_field("corr_input_vid", corr);
     writer.add_field("sizing_scalar", v_sizing);
     writer.add_field("target_edge_length", v_target);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
