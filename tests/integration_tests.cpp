@@ -158,6 +158,36 @@ TEST_CASE("topological-offset-models", tags_integration + "[offset][.]")
     logger().info("Tested {} topological_offset models.", input_files.size());
 }
 
+/**
+ * The manifold_extraction cases, one 2D and one 3D, listed in manifold_extraction_models.json.
+ *
+ * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
+ *
+ *     ./wmtk_integration_tests "[manifold]"
+ *
+ * manifold_extraction_3d was in Integration_Tests until data2 dropped it from
+ * integration_tests.json; the group asserts that the cases run.
+ */
+TEST_CASE("manifold-extraction-models", tags_integration + "[manifold][.]")
+{
+    namespace fs = std::filesystem;
+
+    nlohmann::json j;
+    REQUIRE_NOTHROW(j = load_json(integration_tests_dir / "manifold_extraction_models.json"));
+
+    std::vector<std::string> input_files;
+    REQUIRE_NOTHROW(input_files = j["integration_tests"]);
+    REQUIRE(!input_files.empty());
+
+    for (const auto& input_file : input_files) {
+        const path& f = integration_tests_dir / input_file;
+        logger().info(">>>>>>>>>> Manifold extraction: {} <<<<<<<<<<", f.filename().string());
+        CHECK(fs::exists(f));
+        CHECK_NOTHROW(wmtk_wrapper(f));
+    }
+    logger().info("Tested {} manifold_extraction models.", input_files.size());
+}
+
 TEST_CASE("TetWild", tags_integration + "[.]")
 {
     const path f = integration_tests_dir / "tetwild_octocat.json";
