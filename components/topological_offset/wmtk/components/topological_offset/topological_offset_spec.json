@@ -244,7 +244,7 @@
   {
     "pointer": "/binary_search_max_depth",
     "type": "int",
-    "default": 5,
+    "default": 10,
     "doc": "3D only. Halvings of the edge per bisection under binary_search_construction: the placed vertex is within edge length / 2^(depth+1) of the root. Only read when binary_search_construction is true."
   },
   {
