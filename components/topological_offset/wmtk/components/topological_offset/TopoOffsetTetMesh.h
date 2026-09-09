@@ -571,6 +571,8 @@ public:
     /// Every edge of the live offset surface, once. What the chord test and the alignment
     /// term enumerate; the 2D twin walks get_edges() and asks edge_is_offset_surface_live().
     std::vector<std::array<size_t, 2>> offset_surface_edges() const;
+    /// Every live offset-surface face as a sorted vertex triple.
+    std::vector<std::array<size_t, 3>> offset_surface_faces() const;
     /// The live offset-surface faces incident to vid.
     std::vector<Tuple> offset_surface_faces_live_at(size_t vid) const;
 
@@ -1029,6 +1031,11 @@ public:
     /// The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord
     /// (a, b) against front_conv_rel x target_distance; -1 unmeasurable.
     double edge_conv_ratio(size_t a, size_t b) const;
+    /// The face's interpolation residual as a ratio to the bar: the sagitta of Phi at the face
+    /// CENTROID, |Phi(g) - mean of the three corners| / |grad Phi(g)|, over the tube. The 3D
+    /// resolution test (the 2D twin tests chord midpoints; a surface's worst interpolation
+    /// error is inside the face, not on its edges). < 0 when not measurable.
+    double face_conv_ratio(size_t a, size_t b, size_t c) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
@@ -1245,33 +1252,36 @@ public:
      */
     struct EnergyCriterion
     {
-        double max_vertex = 0., max_edge = 0.; ///< ratios to the bar (1 = bar)
+        double max_vertex = 0., max_face = 0.; ///< ratios to the bar (1 = bar)
         double bar = 1.;
-        size_t n_vertices = 0, n_edges = 0, n_unmeasurable = 0;
-        size_t n_pressed = 0, n_edges_pressed = 0;
+        size_t n_vertices = 0, n_faces = 0, n_unmeasurable = 0;
+        size_t n_pressed = 0, n_faces_pressed = 0;
         size_t worst_vid = static_cast<size_t>(-1);
-        Vector3d worst_edge_mid = Vector3d::Zero();
-        double worst_edge_len = 0.;
-        size_t n_edges_over = 0, n_edges_over_on_level = 0;
-        double max_edge_on_level = 0.;
-        Vector3d worst_on_level_mid = Vector3d::Zero();
+        Vector3d worst_face_centroid = Vector3d::Zero();
+        double worst_face_len = 0.; ///< the worst face's longest edge
+        size_t n_faces_over = 0, n_faces_over_on_level = 0;
+        double max_face_on_level = 0.;
+        Vector3d worst_on_level_centroid = Vector3d::Zero();
         double tube = 0.;
         size_t n_placed = 0, n_travelling = 0, n_pressed_on = 0, n_stuck = 0;
         size_t n_pressed_touching = 0;
         size_t n_at_floor = 0;
         size_t worst_stuck_vid = static_cast<size_t>(-1);
         double worst_stuck_rho = 0.;
+        /// A face whose centroid sags over the tube with all three corners on the level set:
+        /// a, b are the ends of its LONGEST edge (the chord the target is derived from), c the
+        /// third corner; sag the centroid sag as a length; len the longest edge's length.
         struct Refinable
         {
-            size_t a, b;
+            size_t a, b, c;
             double sag, len;
         };
         std::vector<Refinable> refinable;
         bool vertices_ok() const { return max_vertex <= bar; }
-        bool edges_ok() const { return max_edge <= bar; }
+        bool faces_ok() const { return max_face <= bar; }
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
         bool converged_single() const { return converged() && refinable.empty(); }
-        double ratio() const { return bar > 0. ? std::max(max_vertex, max_edge) / bar : 0.; }
+        double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
     };
     EnergyCriterion energy_criterion();
     /// Whether a front vertex touches another front, the input or a region boundary through a
@@ -1282,9 +1292,10 @@ public:
     /// turns across the chord. Same formula as 2D.
     double front_chord_target(size_t va, size_t vb, double len, double sag, double tube) const;
 
-    /// The resolution rule: sets the target length at each refinable edge's ends from
-    /// front_chord_target(), graded outward. Returns the vertices changed.
-    size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& edges);
+    /// The resolution rule: sets the target length at each refinable face's three corners from
+    /// front_chord_target() over its longest edge with the centroid sag, graded outward.
+    /// Returns the vertices changed.
+    size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& faces);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),

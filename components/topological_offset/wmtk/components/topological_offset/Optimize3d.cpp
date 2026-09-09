@@ -2469,54 +2469,70 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             s.worst_vid = vid;
         }
     }
-    for (const auto& e : offset_surface_edges()) {
-        const size_t va = e[0], vb = e[1];
-        if (!placed(va) || !placed(vb)) continue;
+    // The resolution test is per FACE, sampled at the centroid: on a surface the interpolation
+    // error peaks inside the face, and a chord test on the edges alone misses it.
+    for (const auto& f : offset_surface_faces()) {
+        const size_t va = f[0], vb = f[1], vc = f[2];
+        if (!placed(va) || !placed(vb) || !placed(vc)) continue;
         if ((va < m_placement_pressed.size() && m_placement_pressed[va]) ||
-            (vb < m_placement_pressed.size() && m_placement_pressed[vb])) {
-            ++s.n_edges_pressed;
+            (vb < m_placement_pressed.size() && m_placement_pressed[vb]) ||
+            (vc < m_placement_pressed.size() && m_placement_pressed[vc])) {
+            ++s.n_faces_pressed;
             continue;
         }
-        const double gn = edge_conv_ratio(va, vb); // sag / tube
+        const double gn = face_conv_ratio(va, vb, vc); // centroid sag / tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
             continue;
         }
-        ++s.n_edges;
-        if (gn > s.max_edge) {
-            s.max_edge = gn;
-            s.worst_edge_mid =
-                0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
-            s.worst_edge_len =
-                (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
+        const Vector3d& pa = m_vertex_attribute[va].m_posf;
+        const Vector3d& pb = m_vertex_attribute[vb].m_posf;
+        const Vector3d& pc = m_vertex_attribute[vc].m_posf;
+        const Vector3d centroid = (pa + pb + pc) / 3.;
+        // The longest edge is the chord the target is derived from.
+        const std::array<std::pair<size_t, size_t>, 3> es = {{{va, vb}, {vb, vc}, {vc, va}}};
+        size_t la = va, lb = vb;
+        double len = 0.;
+        for (const auto& [u, w] : es) {
+            const double d = (m_vertex_attribute[u].m_posf - m_vertex_attribute[w].m_posf).norm();
+            if (d > len) {
+                len = d;
+                la = u;
+                lb = w;
+            }
+        }
+        ++s.n_faces;
+        if (gn > s.max_face) {
+            s.max_face = gn;
+            s.worst_face_centroid = centroid;
+            s.worst_face_len = len;
         }
         if (gn > s.bar) {
-            ++s.n_edges_over;
-            if (on_level[va] && on_level[vb]) {
-                ++s.n_edges_over_on_level;
-                const double len =
-                    (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
+            ++s.n_faces_over;
+            if (on_level[va] && on_level[vb] && on_level[vc]) {
+                ++s.n_faces_over_on_level;
                 // Refinable only if the rule can still lower a target; judged against the MAX of
-                // the two scalars, as in 2D.
+                // the three scalars (the 2D twin uses the max of its chord's two).
                 const double l = std::max(m_params.l, 1e-300);
                 const double s_floor = std::max(
                     m_offset_params.min_sizing_scalar,
                     m_offset_params.min_edge_length / l);
-                const double target = front_chord_target(va, vb, len, gn * s.tube, s.tube);
+                const size_t lc = (la != va && lb != va) ? va : ((la != vb && lb != vb) ? vb : vc);
+                const double target = front_chord_target(la, lb, len, gn * s.tube, s.tube);
                 const double sn =
                     std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 const double have = std::max(
-                    m_vertex_attribute[va].m_sizing_scalar,
-                    m_vertex_attribute[vb].m_sizing_scalar);
+                    {m_vertex_attribute[va].m_sizing_scalar,
+                     m_vertex_attribute[vb].m_sizing_scalar,
+                     m_vertex_attribute[vc].m_sizing_scalar});
                 if (sn < have) {
-                    s.refinable.push_back({va, vb, gn * s.tube, len});
+                    s.refinable.push_back({la, lb, lc, gn * s.tube, len});
                 } else {
                     ++s.n_at_floor;
                 }
-                if (gn > s.max_edge_on_level) {
-                    s.max_edge_on_level = gn;
-                    s.worst_on_level_mid =
-                        0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
+                if (gn > s.max_face_on_level) {
+                    s.max_face_on_level = gn;
+                    s.worst_on_level_centroid = centroid;
                 }
             }
         }
@@ -2590,6 +2606,26 @@ double TopoOffsetTetMesh::edge_conv_ratio(const size_t a, const size_t b) const
     const double gn = pot.gradient(m).norm();
     if (!(gn > 0.) || !std::isfinite(gn)) return -1.;
     const double sag = std::abs(pot.value(m) - 0.5 * (pot.value(pa) + pot.value(pb))) / gn;
+    return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
+}
+
+double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const size_t c) const
+{
+    // As a LENGTH: the sagitta of Phi at the centroid, |Phi(g) - mean of the corners|, divided
+    // by |grad Phi| at the centroid, against the accuracy front_conv_rel x target_distance.
+    // The face's field is its band cell's, the same selection as its edges'.
+    const OffsetPotential3D& pot = potential_for_edge(a, b);
+    if (!(pot.target_level() > 0.)) return -1.;
+    const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
+                   pc = m_vertex_attribute[c].m_posf;
+    const Vector3d g = (pa + pb + pc) / 3.;
+    const double gn = pot.gradient(g).norm();
+    if (!(gn > 0.) || !std::isfinite(gn)) return -1.;
+    const double va = pot.value(pa), vb = pot.value(pb), vc = pot.value(pc), vg = pot.value(g);
+    if (!std::isfinite(va) || !std::isfinite(vb) || !std::isfinite(vc) || !std::isfinite(vg)) {
+        return -1.;
+    }
+    const double sag = std::abs(vg - (va + vb + vc) / 3.) / gn;
     return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
 }
 
@@ -2788,18 +2824,20 @@ double TopoOffsetTetMesh::front_chord_target(
 }
 
 size_t TopoOffsetTetMesh::refine_front_from_sag(
-    const std::vector<EnergyCriterion::Refinable>& edges)
+    const std::vector<EnergyCriterion::Refinable>& faces)
 {
     const double l = std::max(m_params.l, 1e-300);
     const double tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const double s_floor =
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
     std::vector<size_t> changed;
-    for (const EnergyCriterion::Refinable& r : edges) {
+    for (const EnergyCriterion::Refinable& r : faces) {
         if (!(r.sag > 0.) || !(r.len > 0.)) continue;
+        // The target from the face's longest edge as the chord, with the centroid's sag; written
+        // at all three corners.
         const double target = front_chord_target(r.a, r.b, r.len, r.sag, tube);
         const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
-        for (const size_t v : {r.a, r.b}) {
+        for (const size_t v : {r.a, r.b, r.c}) {
             double& sc = m_vertex_attribute[v].m_sizing_scalar;
             if (sn < sc) {
                 sc = sn;
@@ -3386,6 +3424,19 @@ std::vector<std::array<size_t, 2>> TopoOffsetTetMesh::offset_surface_edges() con
     return std::vector<std::array<size_t, 2>>(edges.begin(), edges.end());
 }
 
+std::vector<std::array<size_t, 3>> TopoOffsetTetMesh::offset_surface_faces() const
+{
+    std::set<std::array<size_t, 3>> faces;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const auto vs = get_face_vids(f);
+        std::array<size_t, 3> t{{vs[0], vs[1], vs[2]}};
+        std::sort(t.begin(), t.end());
+        faces.insert(t);
+    }
+    return std::vector<std::array<size_t, 3>>(faces.begin(), faces.end());
+}
+
 std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_live_at(
     const size_t vid) const
 {
@@ -3642,10 +3693,11 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                                 : Vector3d::Zero();
         logger().info(
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4}, {:.4})), edges max {:.4}x (reported) "
-            "| {} vertices, {} edges | edges over the tube: {}, of which {} with both ends on the "
-            "level set (worst {:.4}x at ({:.4}, {:.4}, {:.4})) | states: placed {} pressed {} "
-            "travelling {} stuck {} | refinable edges {} (at the sizing floor {}) ========",
+            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4}, {:.4})), faces max {:.4}x at the "
+            "centroid (reported) | {} vertices, {} faces | faces over the tube: {}, of which {} "
+            "with all corners on the level set (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) | "
+            "states: placed {} pressed {} travelling {} stuck {} | refinable faces {} (at the "
+            "sizing floor {}) ========",
             it + 1,
             budget,
             amips,
@@ -3655,15 +3707,15 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             wx.x(),
             wx.y(),
             wx.z(),
-            ec.max_edge,
+            ec.max_face,
             ec.n_vertices,
-            ec.n_edges,
-            ec.n_edges_over,
-            ec.n_edges_over_on_level,
-            ec.max_edge_on_level,
-            ec.worst_on_level_mid.x(),
-            ec.worst_on_level_mid.y(),
-            ec.worst_on_level_mid.z(),
+            ec.n_faces,
+            ec.n_faces_over,
+            ec.n_faces_over_on_level,
+            ec.max_face_on_level,
+            ec.worst_on_level_centroid.x(),
+            ec.worst_on_level_centroid.y(),
+            ec.worst_on_level_centroid.z(),
             ec.n_placed,
             ec.n_pressed_on,
             ec.n_travelling,
@@ -3679,14 +3731,15 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             const size_t n = refine_front_from_sag(ec.refinable);
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front edge(s) with both ends on the level set sag over "
-                "the tube (worst {:.4}x at ({:.4}, {:.4}, {:.4})) -> target lowered at {} vertices",
+                "\t[resolution] turn {}: {} front face(s) with all corners on the level set sag "
+                "over the tube at the centroid (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> "
+                "target lowered at {} vertices",
                 it + 1,
                 ec.refinable.size(),
-                ec.max_edge_on_level,
-                ec.worst_on_level_mid.x(),
-                ec.worst_on_level_mid.y(),
-                ec.worst_on_level_mid.z(),
+                ec.max_face_on_level,
+                ec.worst_on_level_centroid.x(),
+                ec.worst_on_level_centroid.y(),
+                ec.worst_on_level_centroid.z(),
                 n);
         }
         if (ec.n_stuck > 0) {
@@ -3798,7 +3851,13 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         offset_residual_samples());
 
     // Seed the sizing field from the offset's current edge lengths, before any operation runs.
-    init_offset_sizing_field();
+    if (m_offset_params.init_offset_sizing) {
+        init_offset_sizing_field();
+    } else {
+        logger().info(
+            "[sizing] init_offset_sizing false: init_offset_sizing_field() skipped, the loop "
+            "starts from the field the pre-pass left");
+    }
 
     // Unconditional: write_vtu() must not be the only consolidate here (see the 2D twin).
     consolidate_mesh();
@@ -3898,7 +3957,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
             "{}{}: front {} -- vertices placed {} / pressed {} / travelling {} / stuck {} | "
-            "chords to resolve {} (at the sizing floor {}) | accuracy front_conv_rel {} "
+            "faces to resolve {} (at the sizing floor {}) | accuracy front_conv_rel {} "
             "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar) || "
             "final quality {}: max AMIPS {:.4} vs stop_energy {}",
             m_converged ? "Converged" : "Optimization did not converge",

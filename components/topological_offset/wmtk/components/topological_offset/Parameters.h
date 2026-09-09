@@ -141,6 +141,9 @@ struct Parameters : public wmtk::OptimizerParameters
     int adaptive_smoothing_max_passes; ///< cap on the passes per group
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
+    /// See the spec: false skips init_offset_sizing_field() at construction, so the field the
+    /// front starts from is whatever the pre-pass left (1.0 everywhere without it). 3D only.
+    bool init_offset_sizing;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -198,6 +201,7 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
+        init_offset_sizing = json_params["init_offset_sizing"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
