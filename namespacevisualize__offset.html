@@ -514,9 +514,10 @@ Written only when phi_grid_resolution &gt; 0 in the config. Returns None when ab
       </table>
 </div><div class="memdoc">
 <pre class="fragment">A per-vertex scalar from the file, flattened; None where the writer did not emit it.
-Both write_vtu() debug/phase frames and .msh result files carry `sizing` (m_sizing_scalar
-per vertex); older .msh files written before write_msh_groups() emitted it do not, and for
-those the sizing layer simply is not offered.</pre> 
+.msh result files carry `sizing` (m_sizing_scalar per vertex) and write_vtu() frames carry
+it as `sizing_scalar` in both dimensions, so `sizing` falls back to that name; older .msh
+files written before write_msh_groups() emitted it do not, and for those the sizing layer
+simply is not offered.</pre> 
 </div>
 </div>
 <a id="abb7ad33af4c11bdd42055e94a3cf75dc" name="abb7ad33af4c11bdd42055e94a3cf75dc"></a>

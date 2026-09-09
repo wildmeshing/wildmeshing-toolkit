@@ -78,13 +78,24 @@ Defining input</h1>
 <ul>
 <li><b>Single body:</b> Provide <code>offset_selection="tag_0"</code> (or whatever the desired tag name is). The boundary of that tag is used to create the offset. <code>offset_in=true</code> creates an offset in the inward direction. <code>offset_out=true</code> creates an offset in the outward direction. One or both can be true.</li>
 <li><b>Boolean expression:</b> Provide a general boolean expression (ie <code>offset_selection="(tag_0 | tag_1) &amp; ambient"</code>). The input simplicial complex consists of all simplices satisfying the boolean expression, around which the offset is created. The 'ambient' tag should be specified as <code>ambient</code> and not <code>_</code>.</li>
+<li><b>Open curve / sheet:</b> The .msh's <code>EnvelopeSurface</code> group (line elements in 2D, triangles in 3D) is registered as a tag under its own name, so naming it in <code>offset_selection</code> makes that curve or sheet the complex and the band grows on both of its sides.</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md42"></a>
 Offset region tags</h1>
 <p>Once the offset is created, two parameters control what tags exist in the offset region: <code>offset_output_tags</code>, and <code>protected_tags</code>. The tags in <code>offset_output_tags</code> (e.g. <code>["tag_0", "tag_3"]</code>) are assigned to all elements in the created offset. All existing tags are overwritten, except for those in <code>protected_tags</code> (e.g. <code>["tag_1", "tag_2"]</code>), which are never overwritten. To write the <code>'ambient'</code> tag, set <code>offset_output_tags=[]</code>. The <code>'ambient'</code> tag itself cannot be protected, it is always overwritten.</p>
 <h1><a class="anchor" id="autotoc_md43"></a>
 Respected topologies</h1>
-<p>Once the input simplicial complex is initialized, the offset is initialized around it. The topology of the offset region is <em>always</em> respected during offset growth toward the target distance. The boolean parameter <code>respect_all_topologies</code> controls whether the topology (after offset initialization) of all other tags is respected, <em>as if</em> the offset was to overwrite all other tags. </p>
+<p>Once the input simplicial complex is initialized, the offset is initialized around it. The topology of the offset region is <em>always</em> respected during offset growth toward the target distance.</p>
+<h1><a class="anchor" id="autotoc_md44"></a>
+One pipeline, two dimensions</h1>
+<p>The 2D (<code>TopoOffsetTriMesh</code>) and 3D (<code>TopoOffsetTetMesh</code>) meshes run the same algorithm one dimension apart, and are kept in lock step file for file: <code>TopoOffsetTriMesh.cpp</code> / <code>TopoOffsetTetMesh.cpp</code> (construction and I/O), <code>Optimize2d.cpp</code> / <code>Optimize3d.cpp</code> (the optimization loop, criteria and diagnostics), <code>FrontSmooth2d.cpp</code> / <code>FrontSmooth3d.cpp</code> (the front placement), with the dimension-specific operation hooks in <code>EdgeSplittingTri.cpp</code> and <code>EdgeSplittingTet.cpp</code> / <code>Collapse.cpp</code> / <code>Swap.cpp</code> / <code>Smooth.cpp</code>. Every key in <code>topological_offset_spec.json</code> means the same thing in both, and the console logs are the same lines (edges in 2D, faces in 3D). A stage of the run, in order:</p>
+<ol type="1">
+<li><code>pre_optimize_input</code>: TriWild / TetWild over the input mesh, held by the per-tag region envelopes, with the sizing field seeded to <code>target_distance</code> on the input-complex boundary.</li>
+<li>Construction: simplicial embedding, marching at edge midpoints, the band one cell thick.</li>
+<li>The smooth offset potential (or the euclidean distance) over the complex as loaded, one field per connected piece of the complex.</li>
+<li>The single-phase loop, up to <code>max_rounds</code> turns of split / collapse / swap, each followed by <code>interleaved_smoothing_passes</code> smoothing passes in which front vertices are placed by a one-dimensional solve along the field normal (<code>front_normal_projection</code>) against the offset and alignment terms; after each turn every front vertex is classified as placed / travelling / pressed / stuck against <code>front_conv_rel</code> (<code>front_conv_criterion</code>), and chords sagging over the accuracy are refined (<code>refine_front_from_sag</code>).</li>
+<li>A finishing TriWild / TetWild pass with the front frozen if max AMIPS is still over <code>stop_energy</code>. </li>
+</ol>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->

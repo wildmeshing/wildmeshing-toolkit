@@ -80,9 +80,6 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Per-face data the shared optimizer knows nothing about.  
- <a href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
@@ -90,11 +87,28 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ac31dfa68395babecba7e891313cc5123" id="r_ac31dfa68395babecba7e891313cc5123"><td class="memItemLeft" align="right" valign="top"><a id="ac31dfa68395babecba7e891313cc5123" name="ac31dfa68395babecba7e891313cc5123"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>label</b> = 0</td></tr>
 <tr class="separator:ac31dfa68395babecba7e891313cc5123"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8836b69b09aa0fa9a19a71328f1f0a95" id="r_a8836b69b09aa0fa9a19a71328f1f0a95"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_face_extra.html#a8836b69b09aa0fa9a19a71328f1f0a95">on_sheet</a> = false</td></tr>
+<tr class="separator:a8836b69b09aa0fa9a19a71328f1f0a95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Per-face data the shared optimizer knows nothing about. </p>
-<p>Tracked-surface state lives on <a class="el" href="classwmtk_1_1_surface_tag_attributes.html" title="Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.">wmtk::SurfaceTagAttributes</a>; only the construction label is the offset's own, and only the pre-optimization phase reads it. Registered with m_face_attr_group so it survives the mesh changing shape, but its values are maintained only by the offset's own operations &ndash; sound precisely because the label is dead by the time the shared ones run. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
+<div class="textblock"><p>Per-face construction label; the surface tags themselves are the base's <a class="el" href="classwmtk_1_1_surface_tag_attributes.html" title="Whether a codimension-1 simplex is tracked surface, and which bbox side it lies on.">wmtk::SurfaceTagAttributes</a>. Registered with m_face_attr_group. </p>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a8836b69b09aa0fa9a19a71328f1f0a95" name="a8836b69b09aa0fa9a19a71328f1f0a95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8836b69b09aa0fa9a19a71328f1f0a95">&#9670;&#160;</a></span>on_sheet</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::FaceExtra::on_sheet = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The face lies on the input's envelope surface group (within its envelope): selectable as the complex by name, held in that group's tube. Re-derived by classify_sheet_faces(); nothing propagates it through split or collapse, so it is read only before the optimization starts. The 2D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_edge_extra2d.html#a915d89d3b7fcf6b9acab20fd9b534bf0">EdgeExtra2d::on_curve</a>. </p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>
 </div><!-- contents -->

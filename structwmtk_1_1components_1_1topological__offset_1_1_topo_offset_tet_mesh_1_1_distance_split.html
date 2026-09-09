@@ -80,9 +80,6 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The offset surface's residual. Every band vertex and every face sample counts toward the max and the average, pinned vertices included. The reachable/pinned split (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a821b607d443918ea055c75b0502a621d">band_vertex_is_reachable()</a>) is attribution: a max driven by a pinned vertex calls for a different construction, not more optimization.  
- <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_distance_split.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
@@ -102,12 +99,14 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_reachable</b> = 0
 <tr class="memitem:a84875f19a95b012ccabf0f219600347b" id="r_a84875f19a95b012ccabf0f219600347b"><td class="memItemLeft" align="right" valign="top"><a id="a84875f19a95b012ccabf0f219600347b" name="a84875f19a95b012ccabf0f219600347b"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_pinned</b> = 0</td></tr>
 <tr class="separator:a84875f19a95b012ccabf0f219600347b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7baf106db8832027b6cfdd24cb033fb6" id="r_a7baf106db8832027b6cfdd24cb033fb6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_distance_split.html#a7baf106db8832027b6cfdd24cb033fb6">max_at_vertex</a> = 0.</td></tr>
+<tr class="memitem:a7baf106db8832027b6cfdd24cb033fb6" id="r_a7baf106db8832027b6cfdd24cb033fb6"><td class="memItemLeft" align="right" valign="top"><a id="a7baf106db8832027b6cfdd24cb033fb6" name="a7baf106db8832027b6cfdd24cb033fb6"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>max_at_vertex</b> = 0.</td></tr>
 <tr class="separator:a7baf106db8832027b6cfdd24cb033fb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1dadfdf64b5226b00ab1ec4727fda060" id="r_a1dadfdf64b5226b00ab1ec4727fda060"><td class="memItemLeft" align="right" valign="top"><a id="a1dadfdf64b5226b00ab1ec4727fda060" name="a1dadfdf64b5226b00ab1ec4727fda060"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>max_in_face</b> = 0.</td></tr>
 <tr class="separator:a1dadfdf64b5226b00ab1ec4727fda060"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5dec66345e300d328727e9633b10c9e" id="r_ac5dec66345e300d328727e9633b10c9e"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_distance_split.html#ac5dec66345e300d328727e9633b10c9e">n_outside_support</a> = 0</td></tr>
+<tr class="memitem:ac5dec66345e300d328727e9633b10c9e" id="r_ac5dec66345e300d328727e9633b10c9e"><td class="memItemLeft" align="right" valign="top"><a id="ac5dec66345e300d328727e9633b10c9e" name="ac5dec66345e300d328727e9633b10c9e"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_outside_support</b> = 0</td></tr>
 <tr class="separator:ac5dec66345e300d328727e9633b10c9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac99f84a6a46d835bb5066c26a923208e" id="r_ac99f84a6a46d835bb5066c26a923208e"><td class="memItemLeft" align="right" valign="top"><a id="ac99f84a6a46d835bb5066c26a923208e" name="ac99f84a6a46d835bb5066c26a923208e"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worst_outside_vid</b> = static_cast&lt;size_t&gt;(-1)</td></tr>
@@ -117,39 +116,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>worst_outside_dist<
 <tr class="separator:af2e3247a2c56ea4b87db308f0c54189e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The offset surface's residual. Every band vertex and every face sample counts toward the max and the average, pinned vertices included. The reachable/pinned split (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a821b607d443918ea055c75b0502a621d">band_vertex_is_reachable()</a>) is attribution: a max driven by a pinned vertex calls for a different construction, not more optimization. </p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="a7baf106db8832027b6cfdd24cb033fb6" name="a7baf106db8832027b6cfdd24cb033fb6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7baf106db8832027b6cfdd24cb033fb6">&#9670;&#160;</a></span>max_at_vertex</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::DistanceSplit::max_at_vertex = 0.</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>max_reachable, split by where it was measured: the vertex max says the surface is in the wrong place, the face max says it is too coarse to be in the right place. They call for different remedies &ndash; smoothing versus refinement. </p>
-
-</div>
-</div>
-<a id="ac5dec66345e300d328727e9633b10c9e" name="ac5dec66345e300d328727e9633b10c9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5dec66345e300d328727e9633b10c9e">&#9670;&#160;</a></span>n_outside_support</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTetMesh::DistanceSplit::n_outside_support = 0</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>The runaway guard's tally, collected in the same traversal &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aecfeb4a18831fc27c55a3c1ed62254e0" title="Stop the run if any reachable offset-surface vertex has left the potential&#39;s support.">check_offset_within_support()</a> and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2c40ad86e8385356129e18546929b616">report_outside_support()</a>. </p>
-
-</div>
-</div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<div class="textblock"><p>The band's distance error, split by whether the optimizer can do anything about it. Same struct as 2D, face samples in place of edge samples. </p>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>
 </div><!-- contents -->

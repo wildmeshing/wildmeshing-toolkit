@@ -79,6 +79,8 @@ $(function() {
   <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTetMesh::OptSplitCache Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -91,10 +93,45 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_edge_on_offset</b>
 <tr class="memitem:af58b2f0546f6357e20d25173a430f424" id="r_af58b2f0546f6357e20d25173a430f424"><td class="memItemLeft" align="right" valign="top"><a id="af58b2f0546f6357e20d25173a430f424" name="af58b2f0546f6357e20d25173a430f424"></a>
 std::map&lt; <a class="el" href="classwmtk_1_1simplex_1_1_edge.html">simplex::Edge</a>, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_tet_attributes.html">TetAttributes</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tets</b></td></tr>
 <tr class="separator:af58b2f0546f6357e20d25173a430f424"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf6c95949158859a9da60d21ad6473c6" id="r_aaf6c95949158859a9da60d21ad6473c6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_opt_split_cache.html#aaf6c95949158859a9da60d21ad6473c6">parent_q_max</a> = -1.</td></tr>
+<tr class="separator:aaf6c95949158859a9da60d21ad6473c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a86993a923a0b343b19ea42bd7a6ae41e" id="r_a86993a923a0b343b19ea42bd7a6ae41e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_opt_split_cache.html#a86993a923a0b343b19ea42bd7a6ae41e">parent_flatness</a> = 1.</td></tr>
+<tr class="separator:a86993a923a0b343b19ea42bd7a6ae41e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>What the shared split has to carry across for the offset: the region tag of each parent tet, keyed by the edge opposite the split one, and which surfaces the edge was on. </p>
-</div><hr/>The documentation for this struct was generated from the following file:<ul>
+</div><h2 class="groupheader">Member Data Documentation</h2>
+<a id="a86993a923a0b343b19ea42bd7a6ae41e" name="a86993a923a0b343b19ea42bd7a6ae41e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86993a923a0b343b19ea42bd7a6ae41e">&#9670;&#160;</a></span>parent_flatness</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::OptSplitCache::parent_flatness = 1.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Same question in the scale-invariant measure, which keeps resolving after AMIPS has saturated at MAX_ENERGY. Min over the parents: the flattest thing the split inherited. </p>
+
+</div>
+</div>
+<a id="aaf6c95949158859a9da60d21ad6473c6" name="aaf6c95949158859a9da60d21ad6473c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf6c95949158859a9da60d21ad6473c6">&#9670;&#160;</a></span>parent_q_max</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::OptSplitCache::parent_q_max = -1.</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Diagnostic: the parents' worst AMIPS before the split, so <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab15510c222ac6bdf3a3dc503aabd8151" title="Application metadata not represented by the shared vertex attributes.">split_after_vertex()</a> can say whether a needle child came from a healthy parent or an already unscoreable one. </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>
 </div><!-- contents -->

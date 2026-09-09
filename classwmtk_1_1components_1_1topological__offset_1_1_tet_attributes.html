@@ -91,7 +91,28 @@ CellTag&#160;</td><td class="memItemRight" valign="bottom"><b>tag</b></td></tr>
 <tr class="memitem:aa8153bb34c59eaf20a185dde1770c24a" id="r_aa8153bb34c59eaf20a185dde1770c24a"><td class="memItemLeft" align="right" valign="top"><a id="aa8153bb34c59eaf20a185dde1770c24a" name="aa8153bb34c59eaf20a185dde1770c24a"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>m_quality</b> = 0</td></tr>
 <tr class="separator:aa8153bb34c59eaf20a185dde1770c24a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a042c72900c35a1a3cf77d971498ad75b" id="r_a042c72900c35a1a3cf77d971498ad75b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_tet_attributes.html#a042c72900c35a1a3cf77d971498ad75b">rest_valid</a> = false</td></tr>
+<tr class="separator:a042c72900c35a1a3cf77d971498ad75b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81a9b402597fa5166c4921033b5b7f93" id="r_a81a9b402597fa5166c4921033b5b7f93"><td class="memItemLeft" align="right" valign="top"><a id="a81a9b402597fa5166c4921033b5b7f93" name="a81a9b402597fa5166c4921033b5b7f93"></a>
+std::array&lt; Vector3d, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>rest_pos</b></td></tr>
+<tr class="separator:a81a9b402597fa5166c4921033b5b7f93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a042c72900c35a1a3cf77d971498ad75b" name="a042c72900c35a1a3cf77d971498ad75b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a042c72900c35a1a3cf77d971498ad75b">&#9670;&#160;</a></span>rest_valid</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TetAttributes::rest_valid = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Rest shape (deform_others): the tet's corners when it last changed topologically, in the oriented order. Stamped for every deformable cell at release and re-stamped by the operation after-hooks for every cell an accepted split / collapse / swap changed, never by smoothing &ndash; a child left on its parent's rest reads det F ~ 1/2 and fights to regrow. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>

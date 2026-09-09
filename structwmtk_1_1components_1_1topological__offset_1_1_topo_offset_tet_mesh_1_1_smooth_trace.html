@@ -81,7 +81,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Why smoothing refused a vertex, one counter per site where it can say no.  
+<p>What smoothing did with each class of vertex, per pass. Same fields as 2D.  
  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
@@ -96,7 +96,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>reset</b> ()</td></tr
 Public Attributes</h2></td></tr>
 <tr class="memitem:a473f69fe4c85b00e5b79d7ea87eccd29" id="r_a473f69fe4c85b00e5b79d7ea87eccd29"><td class="memItemLeft" align="right" valign="top"><a id="a473f69fe4c85b00e5b79d7ea87eccd29" name="a473f69fe4c85b00e5b79d7ea87eccd29"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>attempted</b> {0}</td></tr>
-<tr class="memdesc:a473f69fe4c85b00e5b79d7ea87eccd29"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653">smooth_before()</a> entered <br /></td></tr>
+<tr class="memdesc:a473f69fe4c85b00e5b79d7ea87eccd29"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4915c29c2d3722b663c50bf84b9e9653" title="User specified preparations and desideratas for smoothing a vertex.">smooth_before()</a> entered <br /></td></tr>
 <tr class="separator:a473f69fe4c85b00e5b79d7ea87eccd29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0837b22df6988aef7c5c97d139a1c05b" id="r_a0837b22df6988aef7c5c97d139a1c05b"><td class="memItemLeft" align="right" valign="top"><a id="a0837b22df6988aef7c5c97d139a1c05b" name="a0837b22df6988aef7c5c97d139a1c05b"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_bbox</b> {0}</td></tr>
@@ -106,45 +106,91 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>b
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_unrounded</b> {0}</td></tr>
 <tr class="memdesc:a146ecb3a8d5bab01c7f442f070dc4edb"><td class="mdescLeft">&#160;</td><td class="mdescRight">base smooth_before said no: could not round <br /></td></tr>
 <tr class="separator:a146ecb3a8d5bab01c7f442f070dc4edb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a96b09daa9274af7970ab8f9653f7c0" id="r_a5a96b09daa9274af7970ab8f9653f7c0"><td class="memItemLeft" align="right" valign="top"><a id="a5a96b09daa9274af7970ab8f9653f7c0" name="a5a96b09daa9274af7970ab8f9653f7c0"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_on_region</b> {0}</td></tr>
-<tr class="memdesc:a5a96b09daa9274af7970ab8f9653f7c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">input complex, frozen <br /></td></tr>
-<tr class="separator:a5a96b09daa9274af7970ab8f9653f7c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c1fa842c771503aa0640bfa6d4bf57b" id="r_a4c1fa842c771503aa0640bfa6d4bf57b"><td class="memItemLeft" align="right" valign="top"><a id="a4c1fa842c771503aa0640bfa6d4bf57b" name="a4c1fa842c771503aa0640bfa6d4bf57b"></a>
-std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_phase_b_not_offset</b> {0}</td></tr>
-<tr class="memdesc:a4c1fa842c771503aa0640bfa6d4bf57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: wrong class for this sub-sweep. <br /></td></tr>
+<tr class="memitem:a4c1fa842c771503aa0640bfa6d4bf57b" id="r_a4c1fa842c771503aa0640bfa6d4bf57b"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#a4c1fa842c771503aa0640bfa6d4bf57b">before_phase_b_not_offset</a></td></tr>
+<tr class="memdesc:a4c1fa842c771503aa0640bfa6d4bf57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: on an input surface, neither placed nor relaxed.  <br /></td></tr>
 <tr class="separator:a4c1fa842c771503aa0640bfa6d4bf57b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5333d874a596b53094790889dffd45a4" id="r_a5333d874a596b53094790889dffd45a4"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#a5333d874a596b53094790889dffd45a4">before_phase_b_enveloped_background</a></td></tr>
-<tr class="memdesc:a5333d874a596b53094790889dffd45a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: envelope-held, stencilled.  <br /></td></tr>
+<tr class="memitem:a5333d874a596b53094790889dffd45a4" id="r_a5333d874a596b53094790889dffd45a4"><td class="memItemLeft" align="right" valign="top"><a id="a5333d874a596b53094790889dffd45a4" name="a5333d874a596b53094790889dffd45a4"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_phase_b_enveloped_background</b> {0}</td></tr>
+<tr class="memdesc:a5333d874a596b53094790889dffd45a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: envelope-held. <br /></td></tr>
 <tr class="separator:a5333d874a596b53094790889dffd45a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70a7af3f481776a2a5582e0ecb8bb906" id="r_a70a7af3f481776a2a5582e0ecb8bb906"><td class="memItemLeft" align="right" valign="top"><a id="a70a7af3f481776a2a5582e0ecb8bb906" name="a70a7af3f481776a2a5582e0ecb8bb906"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>before_phase_b_enveloped_offset</b> {0}</td></tr>
+<tr class="memdesc:a70a7af3f481776a2a5582e0ecb8bb906"><td class="mdescLeft">&#160;</td><td class="mdescRight">Phase B: on-offset AND held. <br /></td></tr>
+<tr class="separator:a70a7af3f481776a2a5582e0ecb8bb906"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad78db8606c5e72a6ede4367f459b9079" id="r_ad78db8606c5e72a6ede4367f459b9079"><td class="memItemLeft" align="right" valign="top"><a id="ad78db8606c5e72a6ede4367f459b9079" name="ad78db8606c5e72a6ede4367f459b9079"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_attempted</b> {0}</td></tr>
-<tr class="memdesc:ad78db8606c5e72a6ede4367f459b9079"><td class="mdescLeft">&#160;</td><td class="mdescRight">reached the smoother carrying the offset term <br /></td></tr>
+<tr class="memdesc:ad78db8606c5e72a6ede4367f459b9079"><td class="mdescLeft">&#160;</td><td class="mdescRight">reached the smoother with the offset term <br /></td></tr>
 <tr class="separator:ad78db8606c5e72a6ede4367f459b9079"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5970a5955d9c505f18a94a7a75549bde" id="r_a5970a5955d9c505f18a94a7a75549bde"><td class="memItemLeft" align="right" valign="top"><a id="a5970a5955d9c505f18a94a7a75549bde" name="a5970a5955d9c505f18a94a7a75549bde"></a>
+std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>offset_accepted</b> {0}</td></tr>
+<tr class="memdesc:a5970a5955d9c505f18a94a7a75549bde"><td class="mdescLeft">&#160;</td><td class="mdescRight">... and the smoother kept the new position <br /></td></tr>
+<tr class="separator:a5970a5955d9c505f18a94a7a75549bde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18e6a51d542e8c3e3ac3bb904571d5be" id="r_a18e6a51d542e8c3e3ac3bb904571d5be"><td class="memItemLeft" align="right" valign="top"><a id="a18e6a51d542e8c3e3ac3bb904571d5be" name="a18e6a51d542e8c3e3ac3bb904571d5be"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>interior_attempted</b> {0}</td></tr>
-<tr class="memdesc:a18e6a51d542e8c3e3ac3bb904571d5be"><td class="mdescLeft">&#160;</td><td class="mdescRight">reached it as an ordinary interior vertex <br /></td></tr>
+<tr class="memdesc:a18e6a51d542e8c3e3ac3bb904571d5be"><td class="mdescLeft">&#160;</td><td class="mdescRight">reached it without one <br /></td></tr>
 <tr class="separator:a18e6a51d542e8c3e3ac3bb904571d5be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab565485bd18f7f38435b1ce07df67041" id="r_ab565485bd18f7f38435b1ce07df67041"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#ab565485bd18f7f38435b1ce07df67041">region_attempted</a> {0}</td></tr>
+<tr class="separator:ab565485bd18f7f38435b1ce07df67041"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27fe4df29bd1e1311da7f4761f5b3112" id="r_a27fe4df29bd1e1311da7f4761f5b3112"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_smooth_trace.html#a27fe4df29bd1e1311da7f4761f5b3112">res_before_nano</a> {0}</td></tr>
+<tr class="separator:a27fe4df29bd1e1311da7f4761f5b3112"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aedb7a89f8b0adc636669c9c1caab9421" id="r_aedb7a89f8b0adc636669c9c1caab9421"><td class="memItemLeft" align="right" valign="top"><a id="aedb7a89f8b0adc636669c9c1caab9421" name="aedb7a89f8b0adc636669c9c1caab9421"></a>
+std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>res_after_nano</b> {0}</td></tr>
+<tr class="separator:aedb7a89f8b0adc636669c9c1caab9421"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4f0f7639fc49ece9c6e6b49cf39353e" id="r_ab4f0f7639fc49ece9c6e6b49cf39353e"><td class="memItemLeft" align="right" valign="top"><a id="ab4f0f7639fc49ece9c6e6b49cf39353e" name="ab4f0f7639fc49ece9c6e6b49cf39353e"></a>
+std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>res_max_before_nano</b> {0}</td></tr>
+<tr class="separator:ab4f0f7639fc49ece9c6e6b49cf39353e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0190e1790f38671d98fd1c26ea5ef3ee" id="r_a0190e1790f38671d98fd1c26ea5ef3ee"><td class="memItemLeft" align="right" valign="top"><a id="a0190e1790f38671d98fd1c26ea5ef3ee" name="a0190e1790f38671d98fd1c26ea5ef3ee"></a>
+std::atomic&lt; long long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>res_max_after_nano</b> {0}</td></tr>
+<tr class="separator:a0190e1790f38671d98fd1c26ea5ef3ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Why smoothing refused a vertex, one counter per site where it can say no. </p>
-<p>The base's SmoothRejectCounters covers the rejections inside the shared smoother; these cover the sites before it, where the offset says no for its own reasons, plus the split of what reached the smoother into offset-surface and interior. </p>
+<div class="textblock"><p>What smoothing did with each class of vertex, per pass. Same fields as 2D. </p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="a5333d874a596b53094790889dffd45a4" name="a5333d874a596b53094790889dffd45a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5333d874a596b53094790889dffd45a4">&#9670;&#160;</a></span>before_phase_b_enveloped_background</h2>
+<a id="a4c1fa842c771503aa0640bfa6d4bf57b" name="a4c1fa842c771503aa0640bfa6d4bf57b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4c1fa842c771503aa0640bfa6d4bf57b">&#9670;&#160;</a></span>before_phase_b_not_offset</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace::before_phase_b_enveloped_background</td>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace::before_phase_b_not_offset</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">            0}</div>
 </div><!-- fragment -->
-<p>Phase B: envelope-held, stencilled. </p>
+<p>Phase B: on an input surface, neither placed nor relaxed. </p>
+
+</div>
+</div>
+<a id="ab565485bd18f7f38435b1ce07df67041" name="ab565485bd18f7f38435b1ce07df67041"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab565485bd18f7f38435b1ce07df67041">&#9670;&#160;</a></span>region_attempted</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace::region_attempted {0}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>... of which sat on another region's boundary </p>
+
+</div>
+</div>
+<a id="a27fe4df29bd1e1311da7f4761f5b3112" name="a27fe4df29bd1e1311da7f4761f5b3112"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27fe4df29bd1e1311da7f4761f5b3112">&#9670;&#160;</a></span>res_before_nano</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;long long&gt; wmtk::components::topological_offset::TopoOffsetTetMesh::SmoothTrace::res_before_nano {0}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Phi residual over the offset vertices this pass actually touched, before and after, in units of 1e-9 so an integer atomic can accumulate a sum and a max. </p>
 
 </div>
 </div>

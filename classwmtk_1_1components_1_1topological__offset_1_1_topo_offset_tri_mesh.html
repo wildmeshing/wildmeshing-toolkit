@@ -1623,7 +1623,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Which half of the alternating optimization is running. </p>
-<p>The two criteria are optimized in turn, not jointly. The 2D counterpart of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aefd648969e4fc35a7802ed0ab4fa4bfc" title="Which half of the alternating optimization is running.">TopoOffsetTetMesh::OptPhase</a>.</p>
+<p>The two criteria are optimized in turn, not jointly. The 2D counterpart of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aefd648969e4fc35a7802ed0ab4fa4bfc" title="Which half of the alternating optimization is running. The 3D copy of TopoOffsetTriMesh::OptPhase.">TopoOffsetTetMesh::OptPhase</a>.</p>
 <p>Phase A is TriWild and nothing else: same operations, gates, sizing field and stall-driven refinement, with no offset energy term, acceptance criterion or stop metric. Its one addition is m_offset_envelope.</p>
 <p>Phase B moves the offset boundary and nothing else: smoothing passes against the offset energy, run to a fixed point, with no envelope on the offset (it is what has to travel) and no topological operations at all.</p>
 <p>The sizing field is shared and both phases write it: Phase A through TriWild's stall refinement on element quality, Phase B through the Phi residual of the faces smoothing could not place. Single is the mode the 2D run uses: TriWild's own loop with the front placed by Phase B's objective inside the smoothing passes. It follows B wherever the smoother is concerned (which objective a front vertex gets, no offset tube while it moves) and A everywhere the loop is concerned (quality stats and the stop metric are TriWild's). </p>
@@ -2100,7 +2100,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>How far the offset boundary is from where it should be: {max, avg} over vertices. </p>
-<p>The absolute error |dist(v, input complex) - target_distance| over the offset-boundary vertices only. The max is what the optimization converges against &ndash; the offset is only as good as its worst-placed vertex, and an average hides a stretch far off the target. Mirrors <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab107f83350d3b765f5431ab04134c60e" title="How far the offset surface is from where it should be: {max, avg} over its vertices.">TopoOffsetTetMesh::compute_distance_deviation()</a>. </p>
+<p>The absolute error |dist(v, input complex) - target_distance| over the offset-boundary vertices only. The max is what the optimization converges against &ndash; the offset is only as good as its worst-placed vertex, and an average hides a stretch far off the target. Mirrors <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab107f83350d3b765f5431ab04134c60e" title="How far the offset surface is from where it should be: {max, avg} over vertices.">TopoOffsetTetMesh::compute_distance_deviation()</a>. </p>
 
 </div>
 </div>
@@ -2897,7 +2897,7 @@ template&lt;typename Visit &gt; </div>
 </div><div class="memdoc">
 
 <p>Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall &ndash; once, from the input mesh, before offset construction runs. </p>
-<p>The 2D twin of TopoOffsetTetMesh::init_surfaces_and_boundaries(), called from the same place for the same reason: the band's tags replace a face's own rather than joining them, so an envelope built afterwards would be a tube around a curve truncated at the band.</p>
+<p>The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af73224d67c178a003138208607dd62be" title="Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall – on...">TopoOffsetTetMesh::init_surfaces_and_boundaries()</a>, called from the same place for the same reason: the band's tags replace a face's own rather than joining them, so an envelope built afterwards would be a tube around a curve truncated at the band.</p>
 <p>A region boundary is an edge whose two incident faces carry different tag sets; it enters the bucket of every tag on exactly one side (the symmetric difference). An edge with only one incident face is the domain wall and enters its single face's tags' buckets, which is how ambient's envelope comes to hold the box. Requires the face tags to be set, which <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a80af96dc1d64f478c466915ed596edc3" title="initialize TriMesh from vertex, face, tag data">init_from_image()</a> does just above the call. </p>
 
 </div>
@@ -3204,7 +3204,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 <p>The convergence tolerance: the bound on |grad (Phi - c)^2| at a band vertex. </p>
 <p>A fraction of target_distance, which is the right unit: grad E = 2 (Phi - c) grad Phi, and grad Phi is dimensionless for a field whose value is a length, so grad E is a length.</p>
-<p>The gradient needs no conversion of Phi's value into a length &ndash; it is the stationarity condition of the objective Phase B minimises, so it is the same test for the exact Euclidean field and for the smooth potential alike, which is what lets a reentrant input be judged by the same number as a convex one. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47783771f00f42a9e9f29e37d619445c" title="The convergence tolerance: the bound on |grad (Phi - c)^2| at a band vertex.">TopoOffsetTetMesh::offset_gradient_tolerance()</a> for the full derivation of the slope normalization. </p>
+<p>The gradient needs no conversion of Phi's value into a length &ndash; it is the stationarity condition of the objective Phase B minimises, so it is the same test for the exact Euclidean field and for the smooth potential alike, which is what lets a reentrant input be judged by the same number as a convex one. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47783771f00f42a9e9f29e37d619445c">TopoOffsetTetMesh::offset_gradient_tolerance()</a> for the full derivation of the slope normalization. </p>
 
 </div>
 </div>

@@ -80,7 +80,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The band's placement gradient: |grad (Phi(x) - c)^2| over the offset surface &ndash; at every band vertex AND at interior samples of every band face.  
+<p>The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior chord diagnostic and the normal-aligned reference quantity. Same fields as the 2D <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html" title="The convergence criterion&#39;s own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior c...">GradientSplit</a>, face samples in place of edge samples.  
  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
@@ -104,64 +104,32 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_pinned</b> = 0</t
 <tr class="separator:a9359eacd28709a17aae51df43df8c3e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88c35f4ee387bbfd66932719421c3078" id="r_a88c35f4ee387bbfd66932719421c3078"><td class="memItemLeft" align="right" valign="top"><a id="a88c35f4ee387bbfd66932719421c3078" name="a88c35f4ee387bbfd66932719421c3078"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>max_at_vertex</b> = 0.</td></tr>
-<tr class="memdesc:a88c35f4ee387bbfd66932719421c3078"><td class="mdescLeft">&#160;</td><td class="mdescRight">max_reachable, split by where it was measured &ndash; see the class comment. <br /></td></tr>
 <tr class="separator:a88c35f4ee387bbfd66932719421c3078"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01f7ec7f510cfeedf1dd78efffc21383" id="r_a01f7ec7f510cfeedf1dd78efffc21383"><td class="memItemLeft" align="right" valign="top"><a id="a01f7ec7f510cfeedf1dd78efffc21383" name="a01f7ec7f510cfeedf1dd78efffc21383"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>max_in_face</b> = 0.</td></tr>
 <tr class="separator:a01f7ec7f510cfeedf1dd78efffc21383"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa67744e0bbc1b5241701c9ed6d603408" id="r_aa67744e0bbc1b5241701c9ed6d603408"><td class="memItemLeft" align="right" valign="top"><a id="aa67744e0bbc1b5241701c9ed6d603408" name="aa67744e0bbc1b5241701c9ed6d603408"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>max_in_face_pinned</b> = 0.</td></tr>
+<tr class="separator:aa67744e0bbc1b5241701c9ed6d603408"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3db096474801d3ef91826a9e712fbffc" id="r_a3db096474801d3ef91826a9e712fbffc"><td class="memItemLeft" align="right" valign="top"><a id="a3db096474801d3ef91826a9e712fbffc" name="a3db096474801d3ef91826a9e712fbffc"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>max_normal_aligned</b> = 0.</td></tr>
+<tr class="separator:a3db096474801d3ef91826a9e712fbffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab26740084312d62c43e47fdc88cef109" id="r_ab26740084312d62c43e47fdc88cef109"><td class="memItemLeft" align="right" valign="top"><a id="ab26740084312d62c43e47fdc88cef109" name="ab26740084312d62c43e47fdc88cef109"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_face_samples</b> = 0</td></tr>
-<tr class="memdesc:ab26740084312d62c43e47fdc88cef109"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of n_reachable came from face interiors rather than vertices. <br /></td></tr>
 <tr class="separator:ab26740084312d62c43e47fdc88cef109"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f5d2446d79661efd7bb44f26161d134" id="r_a3f5d2446d79661efd7bb44f26161d134"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html#a3f5d2446d79661efd7bb44f26161d134">n_skipped_inverted</a> = 0</td></tr>
+<tr class="memitem:a3f5d2446d79661efd7bb44f26161d134" id="r_a3f5d2446d79661efd7bb44f26161d134"><td class="memItemLeft" align="right" valign="top"><a id="a3f5d2446d79661efd7bb44f26161d134" name="a3f5d2446d79661efd7bb44f26161d134"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_skipped_inverted</b> = 0</td></tr>
 <tr class="separator:a3f5d2446d79661efd7bb44f26161d134"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e1e546b353d19d5533e84456ebbaa1f" id="r_a5e1e546b353d19d5533e84456ebbaa1f"><td class="memItemLeft" align="right" valign="top"><a id="a5e1e546b353d19d5533e84456ebbaa1f" name="a5e1e546b353d19d5533e84456ebbaa1f"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_skipped_unrounded</b> = 0</td></tr>
 <tr class="separator:a5e1e546b353d19d5533e84456ebbaa1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a261e28cce6df58a6b879330fc85106bb" id="r_a261e28cce6df58a6b879330fc85106bb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html#a261e28cce6df58a6b879330fc85106bb">worst_vid</a> = static_cast&lt;size_t&gt;(-1)</td></tr>
+<tr class="memitem:a261e28cce6df58a6b879330fc85106bb" id="r_a261e28cce6df58a6b879330fc85106bb"><td class="memItemLeft" align="right" valign="top"><a id="a261e28cce6df58a6b879330fc85106bb" name="a261e28cce6df58a6b879330fc85106bb"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worst_vid</b> = static_cast&lt;size_t&gt;(-1)</td></tr>
 <tr class="separator:a261e28cce6df58a6b879330fc85106bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The band's placement gradient: |grad (Phi(x) - c)^2| over the offset surface &ndash; at every band vertex AND at interior samples of every band face. </p>
-<p>The convergence criterion. Structured like <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_distance_split.html" title="The offset surface&#39;s residual. Every band vertex and every face sample counts toward the max and the ...">DistanceSplit</a> and split the same three ways:</p>
-<ul>
-<li>reachable vs pinned &ndash; only the reachable half gates the run; a pinned vertex with a large gradient is a construction defect, reported rather than iterated on.</li>
-<li>measured vs skipped &ndash; a vertex whose ring is inverted or unrounded is one the smoother refuses to place, so its gradient is not part of the fixed point. Counted and logged, never silently dropped: a run that "converges" over vertices it never measured has not.</li>
-<li>at-vertex vs in-face &ndash; E = (Phi(x) - c)^2 is a field, so it can be evaluated inside a face just as the residual is. Both count toward max_reachable, so a triangle whose corners sit on the level set while its interior chords across it fails the criterion. Split because at-vertex calls for smoothing and in-face for refinement.</li>
-</ul>
-<p>A face sample is not a variable an optimization step can move, so the convergence test carries the in-face term and the Phase B stop test does not; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#af78c567c76d57f500eb906011ab0fd16" title="L-inf over offset vertices of the gradient of each vertex&#39;s own placement objective – the energy Phas...">phase_b_band_gradient_linf()</a>. </p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
-<a id="a3f5d2446d79661efd7bb44f26161d134" name="a3f5d2446d79661efd7bb44f26161d134"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f5d2446d79661efd7bb44f26161d134">&#9670;&#160;</a></span>n_skipped_inverted</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTetMesh::GradientSplit::n_skipped_inverted = 0</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Band vertices the smoother would refuse to place, so their gradient is not part of the fixed point this measures. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a72ac77d7f84f9011e7e6b7a3b662023c" title="Phase B&#39;s placement of an offset-surface vertex: the offset energy alone, then backtrack into the one...">smooth_offset_vertex_backtracking()</a>'s entry guard. </p>
-
-</div>
-</div>
-<a id="a261e28cce6df58a6b879330fc85106bb" name="a261e28cce6df58a6b879330fc85106bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a261e28cce6df58a6b879330fc85106bb">&#9670;&#160;</a></span>worst_vid</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTetMesh::GradientSplit::worst_vid = static_cast&lt;size_t&gt;(-1)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Where the driving max came from, for the log. worst_vid is set only when the max is an at-vertex one; an in-face max has no vertex to name. </p>
-
-</div>
-</div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
+<div class="textblock"><p>The convergence criterion's own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior chord diagnostic and the normal-aligned reference quantity. Same fields as the 2D <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_gradient_split.html" title="The convergence criterion&#39;s own split: ||grad (Phi - c)^2|| at band vertices plus the face-interior c...">GradientSplit</a>, face samples in place of edge samples. </p>
+</div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>
 </div><!-- contents -->

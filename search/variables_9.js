@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['kneedlequality_0',['kNeedleQuality',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aab6de2a6422c3cf28ea24a0f722c4cd3',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]]
+  ['kneedlequality_0',['kneedlequality',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab6816d36a30d9748d6bc89d2e2e33bfb',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::kNeedleQuality'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aab6de2a6422c3cf28ea24a0f722c4cd3',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::kNeedleQuality']]]
 ];

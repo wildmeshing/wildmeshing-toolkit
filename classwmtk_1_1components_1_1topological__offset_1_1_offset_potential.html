@@ -394,7 +394,7 @@ template&lt;int DIM&gt; </div>
 
 <p>|d(field)/d(distance)| at the level set on a flat stretch of input. </p>
 <p>The factor that turns a field difference into a length, so a criterion stated on the field's gradient is not by itself field-independent. The smoothing objective is E = (Phi - c)^2, so |grad E| ~ 2 * slope^2 * residual_length near the level set: a bound on |grad E| bounds a length only after dividing by slope^2. It is 1 for a distance field, where the two coincide, and 1/delta-ish for a barrier. The |grad Phi| ~ slope step is local to the level set on a flat stretch, not an identity.</p>
-<p>See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47783771f00f42a9e9f29e37d619445c" title="The convergence tolerance: the bound on |grad (Phi - c)^2| at a band vertex.">TopoOffsetTetMesh::offset_gradient_tolerance()</a>, which is the only consumer. </p>
+<p>See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47783771f00f42a9e9f29e37d619445c">TopoOffsetTetMesh::offset_gradient_tolerance()</a>, which is the only consumer. </p>
 
 </div>
 </div>

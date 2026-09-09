@@ -235,7 +235,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_tet_capac
 <tr class="memitem:aa8aaf9487edea3dc4c9105cee56fed41" id="r_aa8aaf9487edea3dc4c9105cee56fed41"><td class="memItemLeft" align="right" valign="top"><a id="aa8aaf9487edea3dc4c9105cee56fed41" name="aa8aaf9487edea3dc4c9105cee56fed41"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>ensure_free_vert_capacity</b> (size_t extra)</td></tr>
 <tr class="separator:aa8aaf9487edea3dc4c9105cee56fed41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f91416a429a4b8f8d0ece88b460b520" id="r_a2f91416a429a4b8f8d0ece88b460b520"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a2f91416a429a4b8f8d0ece88b460b520">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
+<tr class="memitem:a2f91416a429a4b8f8d0ece88b460b520" id="r_a2f91416a429a4b8f8d0ece88b460b520"><td class="memItemLeft" align="right" valign="top"><a id="a2f91416a429a4b8f8d0ece88b460b520" name="a2f91416a429a4b8f8d0ece88b460b520"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="separator:a2f91416a429a4b8f8d0ece88b460b520"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a994201bc6b9c05cca284e544228bffc3" id="r_a994201bc6b9c05cca284e544228bffc3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_mesh.html#a994201bc6b9c05cca284e544228bffc3">tuple_from_edge</a> (size_t tid, int local_eid) const</td></tr>
 <tr class="memdesc:a994201bc6b9c05cca284e544228bffc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">get a <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html" title="a Tuple refers to a global vid and a global tet id, and a local edge id and local face id">Tuple</a> from global tetra index and <b>local</b> edge index (from 0-5).  <br /></td></tr>
@@ -843,7 +844,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the modification succeed </dd></dl>
 
-<p>Reimplemented in <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#ae39dd9be8e21997b995211583eb2ab7d">app::interior_tet_opt::InteriorTetOpt</a>, <a class="el" href="classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html#a9baa7de9ab4e7948b0f3ff9c86376174">wmtk::components::c1_simplification::MMTetMesh</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1cc29220497521cb96acffbc4acc0b71">wmtk::TetOptimizerMesh</a>.</p>
+<p>Reimplemented in <a class="el" href="structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html#ae39dd9be8e21997b995211583eb2ab7d">app::interior_tet_opt::InteriorTetOpt</a>, <a class="el" href="classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html#a9baa7de9ab4e7948b0f3ff9c86376174">wmtk::components::c1_simplification::MMTetMesh</a>, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ac41e9e8ef834ea603cf06f7e6790be01">wmtk::components::topological_offset::TopoOffsetTetMesh</a>, and <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1cc29220497521cb96acffbc4acc0b71">wmtk::TetOptimizerMesh</a>.</p>
 
 </div>
 </div>
@@ -1676,34 +1677,6 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 <dl class="section return"><dt>Returns</dt><dd>true </dd>
 <dd>
 false </dd></dl>
-
-</div>
-</div>
-<a id="a2f91416a429a4b8f8d0ece88b460b520" name="a2f91416a429a4b8f8d0ece88b460b520"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f91416a429a4b8f8d0ece88b460b520">&#9670;&#160;</a></span>invariants()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual bool wmtk::TetMesh::invariants </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abeaef293c4a15ce1927d949960438847">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>

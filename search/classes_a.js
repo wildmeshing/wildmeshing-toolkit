@@ -8,6 +8,5 @@ var searchData=
   ['mmtetmesh_5',['MMTetMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_tet_mesh.html',1,'wmtk::components::c1_simplification']]],
   ['mmuvmesh_6',['MMUVMesh',['../classwmtk_1_1components_1_1c1__simplification_1_1_m_m_u_v_mesh.html',1,'wmtk::components::c1_simplification']]],
   ['mortoncode64_7',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
-  ['movestats_8',['MoveStats',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_move_stats.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['mshdata_9',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
+  ['mshdata_8',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
 ];
