@@ -1372,7 +1372,7 @@ void TopoOffsetTetMesh::pre_optimize_input_mesh()
 
     // The seeded field, before a single operation runs.
     if (m_offset_params.debug_output) {
-        write_vtu(m_offset_params.output_path + "_seeded");
+        write_debug_frame("pre_optimize_seeded");
     }
 
     const double before = std::get<0>(optimization_quality_stats());
@@ -3619,6 +3619,13 @@ void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& 
     if (f) f << fmt::format("{:05d}\t{}\n", idx, label);
 }
 
+void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
+{
+    const size_t idx = m_debug_seq++;
+    append_frame_label(idx, label);
+    write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+}
+
 void TopoOffsetTetMesh::optimize_offset_single_phase()
 {
     // One phase. Phase A is already TetWild's mesh_improvement -- split / smooth / collapse /
@@ -3672,7 +3679,6 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
-            m_debug_pass_name = group_names[gi];
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -3859,11 +3865,10 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             "starts from the field the pre-pass left");
     }
 
-    // Unconditional: write_vtu() must not be the only consolidate here (see the 2D twin).
+    // Unconditional: write_vtu() must not be the only consolidate here (see the 2D twin). No
+    // frame here: nothing changes the mesh between this point and the "construction" frame the
+    // optimization writes first, so one would duplicate the other.
     consolidate_mesh();
-    if (m_offset_params.debug_output) {
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    }
 
     iter_cnt_split = 0;
     iter_cnt_split_born = 0;

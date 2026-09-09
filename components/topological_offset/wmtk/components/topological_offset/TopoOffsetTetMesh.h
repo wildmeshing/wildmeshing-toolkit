@@ -143,7 +143,6 @@ public: // mode for splitting in marching tets
     };
 
 public:
-    int m_vtu_counter = 0;
     std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
     size_t m_tags_count;
     /// Tag id of the input's envelope surface group (the .msh triangle elements), or -1. An open
@@ -1428,9 +1427,9 @@ public:
     double amips_rel_at_face(const Tuple& f) const;
 
     /**
-     * @brief Put the frames beside the run's own output, and rename them into one timeline:
-     * <output>_NNNNN.vtu with one "NNNNN<tab>r<round><phase><pass>_<op>" line per frame in
-     * <output>_frames.txt. Exactly the 2D scheme; see TopoOffsetTriMesh.
+     * @brief Put the optimization's frames on the run's single debug timeline (see
+     * write_debug_frame()), labelled "r<round><phase><pass>_<op>" / "r<round><phase>_end".
+     * The label scheme is the 2D one; 2D still numbers its construction frames separately.
      */
     void write_optimization_debug_output(const std::string& path) override
     {
@@ -1451,16 +1450,20 @@ public:
         } else if (path.rfind("phase_", 0) == 0) {
             label = fmt::format("r{}{}_end", m_ab_round, ph);
         }
-        const size_t idx = m_debug_seq++;
-        append_frame_label(idx, label);
-        write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+        write_debug_frame(label);
     }
-    /// The pass the next debug frame belongs to; set by the single-phase loop before each
-    /// operation group, and by the smoothing sweeps. The 2D base carries this itself.
-    std::string m_debug_pass_name;
-
     /// One line of <output>_frames.txt; truncates the file on the first frame.
     void append_frame_label(size_t idx, const std::string& label) const;
+    /**
+     * @brief One frame of the run's single debug timeline: <output>_NNNNN.vtu with the next
+     * sequence number, and one "NNNNN<tab>label" line in <output>_frames.txt. Every debug
+     * frame the run writes -- the input as loaded, the construction stages, the pre-optimize
+     * seed, and the optimization's own frames through write_optimization_debug_output() --
+     * goes through this sequence, so the numbers are consecutive and the .txt says what each
+     * one is. The only debug files outside it are the ones that are not this mesh:
+     * <output>_input_complex.vtu and the phi grid.
+     */
+    void write_debug_frame(const std::string& label);
 
     /**
      * @brief initialize TetMesh from vertex, tet, and tag data

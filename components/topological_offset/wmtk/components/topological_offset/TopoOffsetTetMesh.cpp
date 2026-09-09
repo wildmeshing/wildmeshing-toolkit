@@ -1250,7 +1250,7 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     if (m_offset_params.pre_optimize_input) {
         pre_optimize_input_mesh();
         if (m_offset_params.debug_output) {
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+            write_debug_frame("pre_optimized");
         }
     }
 
@@ -1263,7 +1263,7 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     }
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("simplicial_embedding");
     }
 
     // initialize offset
@@ -1279,7 +1279,7 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     m_edge_split_mode = EdgeSplitMode::Midpoint;
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("marching");
     }
 
     // No growth pass: the band is exactly the one layer of background tets marching_tets()
@@ -1295,13 +1295,13 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     // changes the order later passes enumerate operations in, which changes the run.
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("re_embedded");
     }
 
     set_offset_tet_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("offset_tagged");
     }
 
     assert(ambient_assert());
