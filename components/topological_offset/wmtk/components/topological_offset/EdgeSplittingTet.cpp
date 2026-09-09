@@ -7,7 +7,6 @@
 
 namespace wmtk::components::topological_offset {
 
-
 //// TetMesh splitting
 
 bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
@@ -16,20 +15,15 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // marching-tets machinery, which places the new vertex on the offset's distance field and
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        const bool dbg_on_offset = is_edge_on_offset(t);
-        if (dbg_on_offset) ++iter_cnt_split_offset_before;
+        if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
         // Nothing is frozen against splits: refining a surface is not moving it, so the midpoint
         // is checked against its tags' boundary envelopes like any other tracked geometry -- the
         // input complex and the domain wall alike, the wall being a region boundary like any
-        // other. Do not re-add a wall-split refusal; measured worse -- see git history.
+        // other.
         //
         // Only the Optimization mode is guarded at all: the marching path below is how the offset
         // is constructed, and it has to be able to cut through anything.
-        if (!TetOptimizerMesh::split_edge_before(t)) {
-            if (dbg_on_offset) ++iter_cnt_split_offset_base_reject;
-            return false;
-        }
-        return true;
+        return TetOptimizerMesh::split_edge_before(t);
     }
     return marching_split_edge_before(t);
 }
@@ -61,10 +55,26 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
-    // The midpoint is the only construction placement: no target_distance enters construction at
-    // all, and carrying the offset surface out to the level set is the optimization phase's job.
+    // Midpoint: no target_distance enters construction at all, and carrying the offset surface
+    // out to the level set is the optimization phase's job. BinarySearch (marching_tets under
+    // binary_search_construction): the vertex goes to a root of d(x) - target_distance on the
+    // edge when one is bracketed, and to the midpoint otherwise.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
+    } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
+        const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
+        const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
+        bool at_root = false;
+        if (in1 != in2) {
+            at_root = in1 ? edge_split_binary_search(p1, p2, p_new)
+                          : edge_split_binary_search(p2, p1, p_new);
+        }
+        if (at_root) {
+            ++m_marching_root_splits;
+        } else {
+            p_new = (p1 + p2) / 2.0;
+            ++m_marching_midpoint_splits;
+        }
     } else {
         log_and_throw_error("Invalid edge split mode.");
     }
@@ -134,12 +144,40 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     return true;
 }
 
+bool TopoOffsetTetMesh::edge_split_binary_search(
+    const Vector3d& p_in,
+    const Vector3d& p_out,
+    Vector3d& p_new) const
+{
+    // f(x) = d(x) - target_distance, d the distance to the input complex through the BVH. A root
+    // is bracketed only when f changes sign between the endpoints; f(p_in) is negative for a
+    // vertex on the complex (d = 0) and positive when the offset endpoint lies beyond
+    // target_distance, so the test is on the signs, not on which end is "in".
+    const double delta = m_offset_params.target_distance;
+    double f_lo = m_input_complex_bvh->dist(p_in) - delta;
+    double f_hi = m_input_complex_bvh->dist(p_out) - delta;
+    if (!(f_lo < 0.) == !(f_hi < 0.)) return false; // same sign (or a zero): no root bracketed
+    Vector3d lo = p_in, hi = p_out;
+    const int depth = std::max(0, m_offset_params.binary_search_max_depth);
+    for (int i = 0; i < depth; ++i) {
+        const Vector3d mid = 0.5 * (lo + hi);
+        const double f_mid = m_input_complex_bvh->dist(mid) - delta;
+        if ((f_mid < 0.) == (f_lo < 0.)) {
+            lo = mid;
+            f_lo = f_mid;
+        } else {
+            hi = mid;
+            f_hi = f_mid;
+        }
+    }
+    p_new = 0.5 * (lo + hi);
+    return true;
+}
 
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (!TetOptimizerMesh::split_edge_after(t)) {
-            ++iter_cnt_split_offset_reject; // counts ALL refusals now; see the log line
             return false;
         }
         ++iter_cnt_split;
@@ -244,7 +282,6 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     return true;
 }
 
-
 bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
 {
     // load and reset cache
@@ -317,7 +354,6 @@ bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
 
     return true;
 }
-
 
 bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
 {
@@ -408,7 +444,6 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
     return true;
 }
 
-
 bool TopoOffsetTetMesh::split_tet_before(const Tuple& t)
 {
     auto& cache = tet_split_cache.local();
@@ -444,7 +479,6 @@ bool TopoOffsetTetMesh::split_tet_before(const Tuple& t)
 
     return true;
 }
-
 
 bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
 {
@@ -506,7 +540,6 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
     return true;
 }
 
-
 /**
  * The shared split places the new vertex, keeps quality and shared attributes, and checks envelope
  * containment. These three hooks add what only the offset knows: which region tag each child tet
@@ -518,6 +551,14 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     cache.tets.clear();
     cache.is_edge_on_region = is_edge_on_region(edge);
     cache.is_edge_on_offset = is_edge_on_offset(edge);
+    // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
+    // came from a parent that was already unscoreable, or from a healthy one.
+    cache.parent_q_max = -1.;
+    cache.parent_flatness = 1.;
+    for (const Tuple& tt : parents) {
+        cache.parent_q_max = std::max(cache.parent_q_max, tet_amips(tt.tid(*this)));
+        cache.parent_flatness = std::min(cache.parent_flatness, tet_flatness(tt.tid(*this)));
+    }
 
     // Key each parent by the edge OPPOSITE the one being split: that edge survives the split
     // and is shared by exactly the two children of this parent, so it names them afterwards.
@@ -544,15 +585,12 @@ bool TopoOffsetTetMesh::split_after_cells(
     // here because this is the hook that has the endpoints, and because the AND keeps the
     // never-both invariant true across a split -- an edge running from the complex to the offset
     // surface produces a midpoint on neither, which is what it geometrically is.
-    m_vertex_extra[v_id].m_is_on_input_complex =
-        m_vertex_extra[v1_id].m_is_on_input_complex && m_vertex_extra[v2_id].m_is_on_input_complex;
+    m_vertex_extra[v_id].m_is_on_input =
+        m_vertex_extra[v1_id].m_is_on_input && m_vertex_extra[v2_id].m_is_on_input;
     // Churn instrumentation, read only by collapse_after_vertex(). Assigned, never OR'd: v_id may
     // be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
     m_vertex_extra[v_id].m_born_epoch = m_op_epoch;
     if (m_op_epoch != 0) ++iter_cnt_split_born;
-    if (m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset) {
-        ++iter_cnt_split_offset_endpoints;
-    }
     // The boundary mask follows the same AND rule: the midpoint is on a tag boundary only if the
     // whole edge was. Assigned, not OR'd -- v_id may be a recycled slot carrying a dead vertex's
     // bits. Runs before the shared split's containment check, which reads the mask through
@@ -573,32 +611,6 @@ bool TopoOffsetTetMesh::split_after_cells(
         }
     }
     return true;
-}
-
-bool TopoOffsetTetMesh::split_adjust_position(const size_t v_id, const std::vector<Tuple>&)
-{
-    // The new vertex's tracked-surface membership must be written before the shared split's own
-    // containment check, which reads m_is_on_region for all three vertices of each new triangle;
-    // an unrecognised triangle yields a null envelope and the check is silently skipped rather
-    // than failed. split_adjust_position() is the last hook the base offers before that check,
-    // which is the only reason this bookkeeping lives in a positioning hook. Safe against a
-    // refused split: m_vertex_extra is in the base's vertex attribute group, so a rollback undoes
-    // it, and the write is idempotent with split_after_vertex()'s own below.
-    const auto& cache = m_opt_split_cache.local();
-    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
-    return true; // the position itself is the base's business, and it is happy with it
-}
-
-void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge_open_boundary)
-{
-    const auto& cache = m_opt_split_cache.local();
-    // The base has already set m_is_on_surface, which is the union; this says which. The offset
-    // half is never rewritten here -- split_after_cells() derived it from the two endpoints, and
-    // that is the authority.
-    m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
-    if (is_edge_open_boundary) {
-        m_vertex_attribute[v_id].m_order = 2;
-    }
 }
 
 } // namespace wmtk::components::topological_offset

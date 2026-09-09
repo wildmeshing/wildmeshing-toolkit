@@ -981,6 +981,126 @@ TEST_CASE("offset-potential-3d-support", "[offset][potential]")
 }
 
 
+TEST_CASE("align-energy-3d-derivatives", "[offset][potential]")
+{
+    // The 3D alignment term against finite differences: one residual per incident front face,
+    // both dependences on x (the face normal's rotation and the field's turning) differentiated.
+    const double delta = 0.25;
+    MatrixXd V(1, 3);
+    V << 0., 0., 0.;
+    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+
+    // Two faces around x on the sphere of radius ~delta, oriented outward by sigma.
+    const Vector3d x0(0.31, 0.02, -0.05);
+    std::vector<AlignEnergy3D::Face> faces;
+    faces.push_back({Vector3d(0.2, 0.25, 0.1), Vector3d(0.22, -0.1, 0.24), 1., 0.9});
+    faces.push_back({Vector3d(0.22, -0.1, 0.24), Vector3d(0.18, -0.2, -0.15), -1., 1.});
+    AlignEnergy3D energy(phi, faces, -1., 0.7);
+
+    const double h = 1e-6;
+    for (const Vector3d& x : {x0, Vector3d(0.27, 0.05, 0.03), Vector3d(0.35, -0.04, -0.02)}) {
+        VectorXd xv = x;
+        VectorXd g;
+        energy.gradient(xv, g);
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            INFO("k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-4 * std::max(1., std::abs(g[k])));
+        }
+        MatrixXd H;
+        energy.hessian(xv, H);
+        const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
+        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
+    }
+}
+
+
+TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
+{
+    // The rest-shape AMIPS of a tet: gradient and Hessian against finite differences, and the
+    // minimum of 3 at the rest shape (F = I), the same scale as the shared AMIPS against the
+    // regular tet.
+    std::vector<RestAMIPSEnergy3D::Cell> cells;
+    {
+        RestAMIPSEnergy3D::Cell c;
+        c.q1 = Vector3d(1., 0.1, 0.);
+        c.q2 = Vector3d(0.2, 1.1, 0.05);
+        c.q3 = Vector3d(0.1, 0.3, 0.9);
+        Eigen::Matrix3d R;
+        R.col(0) = Vector3d(0.9, 0., 0.1);
+        R.col(1) = Vector3d(0.1, 1., 0.);
+        R.col(2) = Vector3d(0., 0.2, 1.);
+        c.rest_inv = R.inverse();
+        cells.push_back(c);
+    }
+    {
+        RestAMIPSEnergy3D::Cell c;
+        c.q1 = Vector3d(-0.9, 0.2, 0.1);
+        c.q2 = Vector3d(-0.1, -0.8, 0.3);
+        c.q3 = Vector3d(0.1, 0.1, -1.);
+        Eigen::Matrix3d R;
+        R.col(0) = Vector3d(-1., 0., 0.);
+        R.col(1) = Vector3d(0., -1., 0.);
+        R.col(2) = Vector3d(0., 0., -1.);
+        c.rest_inv = R.inverse();
+        cells.push_back(c);
+    }
+    RestAMIPSEnergy3D energy(cells, 1.3);
+
+    const double h = 1e-6;
+    for (const Vector3d& x :
+         {Vector3d(0.05, -0.02, 0.03), Vector3d(-0.1, 0.1, 0.), Vector3d(0., 0., 0.)}) {
+        VectorXd xv = x;
+        VectorXd g;
+        energy.gradient(xv, g);
+        MatrixXd H;
+        energy.hessian(xv, H);
+        for (int k = 0; k < 3; ++k) {
+            VectorXd xp = xv, xm = xv;
+            xp[k] += h;
+            xm[k] -= h;
+            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+            INFO("k " << k << " fd " << fd << " analytic " << g[k]);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp, gm;
+            energy.gradient(xp, gp);
+            energy.gradient(xm, gm);
+            for (int j = 0; j < 3; ++j) {
+                const double fdh = (gp[j] - gm[j]) / (2. * h);
+                INFO("H(" << j << "," << k << ") fd " << fdh << " analytic " << H(j, k));
+                CHECK(std::abs(fdh - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+    }
+
+    // At the rest shape every cell reads exactly 3 (one cell whose rest IS its current shape).
+    RestAMIPSEnergy3D::Cell rest;
+    rest.q1 = Vector3d(1., 0., 0.);
+    rest.q2 = Vector3d(0., 1., 0.);
+    rest.q3 = Vector3d(0., 0., 1.);
+    rest.rest_inv = Eigen::Matrix3d::Identity();
+    RestAMIPSEnergy3D at_rest({rest}, 1.0);
+    VectorXd origin = Vector3d::Zero();
+    CHECK(at_rest.value(origin) == Catch::Approx(3.));
+    VectorXd g0;
+    at_rest.gradient(origin, g0);
+    CHECK(g0.norm() <= 1e-12);
+    // Inverted is invalid, not merely bad.
+    VectorXd bad = Vector3d(2., 2., 2.);
+    CHECK(std::isnan(at_rest.value(bad)));
+    CHECK(!at_rest.is_step_valid(origin, bad));
+}
+
+
 TEST_CASE("offset-energy-3d-lands-on-the-level-set", "[offset][potential]")
 {
     // The end-to-end question, in 3D: does minimising w (Phi - c)^2 with the solver the smoother

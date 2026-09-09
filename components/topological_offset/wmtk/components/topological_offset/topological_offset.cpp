@@ -198,19 +198,26 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        // Unconditional, matching 3D: construction leaves the band boundary on background-cell
-        // boundaries, so skipping the optimization does not yield a coarser offset but one whose
-        // defining property is unmet at an error set by the input mesh's resolution.
-        mesh.optimize_offset(output_filename);
+        // optimize_offset (json, default true). Construction leaves the band boundary on
+        // background-cell boundaries, so skipping the optimization does not yield a coarser
+        // offset but one whose defining property is unmet at an error set by the input mesh's
+        // resolution; false is for inspecting the constructed offset.
+        if (mesh.m_offset_params.optimize_offset) {
+            mesh.optimize_offset(output_filename);
 
-        // As in 3D: the check above ran on the offset as constructed, and optimization
-        // re-triangulates it, so the property has to be re-established afterwards.
-        if (check_manifoldness) {
-            if (mesh.offset_is_manifold()) {
-                logger().info("Offset region manifold check passed after optimization.");
-            } else {
-                logger().error("Offset region is NOT manifold after optimization!");
+            // As in 3D: the check above ran on the offset as constructed, and optimization
+            // re-triangulates it, so the property has to be re-established afterwards.
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed after optimization.");
+                } else {
+                    logger().error("Offset region is NOT manifold after optimization!");
+                }
             }
+        } else {
+            logger().info(
+                "optimize_offset false: the optimization is skipped, the offset as constructed "
+                "is the result");
         }
 
         double time = timer.getElapsedTime();
@@ -282,8 +289,7 @@ void topological_offset(nlohmann::json json_params)
                 report["converged"] = mesh.m_converged;
                 report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
                 // The measured scale that tolerance is a fraction of; without it the tolerance is
-                // an unreadable absolute number. 2D only -- 3D normalizes analytically and has no
-                // measured reference to report.
+                // an unreadable absolute number.
                 report["gradient_reference"] = mesh.gradient_reference();
                 report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
@@ -302,6 +308,17 @@ void topological_offset(nlohmann::json json_params)
     } else { // input is a 3d tet mesh
         logger().info("Input mesh (3D tetmesh): {}", input_path);
 
+        // As in 2D: the leash cannot be wider than the accuracy. See the 2D branch.
+        if (params.offset_envelope_rel > params.front_conv_rel) {
+            log_and_throw_error(
+                "offset_envelope_rel {} must be <= front_conv_rel {}: the operation corridor "
+                "(the leash) cannot be wider than the convergence accuracy, or the operations "
+                "keep denting the front past the resolution threshold and the loop chases the "
+                "damage forever",
+                params.offset_envelope_rel,
+                params.front_conv_rel);
+        }
+
         // initialize mesh
         TopoOffsetTetMesh mesh(params, NUM_THREADS);
         wmtk::set_preallocation_factor_from_json(mesh, json_params);
@@ -311,7 +328,8 @@ void topological_offset(nlohmann::json json_params)
             input_data.T_input_tag,
             input_data.V_envelope,
             input_data.F_envelope,
-            input_data.tag_names);
+            input_data.tag_names,
+            input_data.envelope_name);
 
         // label input complex
         mesh.m_offset_params.offset_selection =
@@ -367,8 +385,7 @@ void topological_offset(nlohmann::json json_params)
         timer.start();
         mesh.execute_offset(output_filename);
 
-        // Now that the offset exists, dhat can be sized to contain it: max(offset_dhat_factor x
-        // delta, 2 x the furthest any offset-surface vertex ended up from the input complex).
+        // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
         mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
 
@@ -421,21 +438,28 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        // Unconditional, matching 2D; `optimize` is not read here. Conservative growth leaves the
-        // band boundary on background-cell boundaries, so skipping the optimization does not
-        // yield a coarser offset but one whose defining property is unmet at an error set by the
-        // input mesh's resolution.
-        mesh.optimize_offset(output_filename);
+        // optimize_offset (json, default true), as in 2D. Conservative growth leaves the band
+        // boundary on background-cell boundaries, so skipping the optimization does not yield a
+        // coarser offset but one whose defining property is unmet at an error set by the input
+        // mesh's resolution; false is for inspecting the constructed offset.
+        if (mesh.m_offset_params.optimize_offset) {
+            mesh.optimize_offset(output_filename);
 
-        // The manifoldness check above ran on the offset as constructed. Optimization then
-        // re-triangulates it -- splits, collapses and four kinds of swap all touch the offset
-        // surface -- so the property has to be re-established afterwards, not assumed to survive.
-        if (check_manifoldness) {
-            if (mesh.offset_is_manifold()) {
-                logger().info("Offset region manifold check passed after optimization.");
-            } else {
-                logger().error("Offset region is NOT manifold after optimization!");
+            // The manifoldness check above ran on the offset as constructed. Optimization then
+            // re-triangulates it -- splits, collapses and four kinds of swap all touch the
+            // offset surface -- so the property has to be re-established afterwards, not
+            // assumed to survive.
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed after optimization.");
+                } else {
+                    logger().error("Offset region is NOT manifold after optimization!");
+                }
             }
+        } else {
+            logger().info(
+                "optimize_offset false: the optimization is skipped, the offset as constructed "
+                "is the result");
         }
 
         double time = timer.getElapsedTime();
@@ -475,15 +499,8 @@ void topological_offset(nlohmann::json json_params)
             report["threads"] = NUM_THREADS;
             report["time"] = time;
             if (!mesh.optimization_metrics.empty()) {
-                // Three measures, one criterion. Convergence is max_grad and nothing else -- the
-                // placement gradient |grad (Phi - c)^2| over the offset surface, at band vertices
-                // and at interior samples of band faces; the at_vertex / in_face split says
-                // whether a failing run wants smoothing or refinement. The two error series are
-                // reported facts, never criteria: max_l2_dist_err is the true Euclidean error,
-                // max_phi_residual the same miss measured in Phi and divided by the level-set
-                // slope. Where several primitives are active the level set Phi = c may not exist,
-                // the surface correctly settles at the nearest local minimum of (Phi - c)^2, and
-                // a converged run reports a nonzero residual. Do not add a bar to either.
+                // The same eight series as the 2D block above, face samples in place of edge
+                // samples. The two error series are reported facts, never criteria.
                 std::vector<double> max_dist_err, avg_dist_err, max_residual, avg_residual,
                     max_grad, avg_grad, max_grad_at_vertex, max_grad_in_face;
                 for (const auto& m : mesh.optimization_metrics) {
@@ -529,9 +546,9 @@ void topological_offset(nlohmann::json json_params)
                 // out of the loop the moment it converges, so its own verdict cannot drift from
                 // the criterion it applied.
                 report["converged"] = mesh.m_converged;
-                // Both bars: the one the verdict used, and the one the diagnostic residual is
-                // normalized by. A consumer plotting either series needs the matching bar.
                 report["offset_gradient_tolerance"] = mesh.offset_gradient_tolerance();
+                // The measured scale that tolerance is a fraction of, as in 2D.
+                report["gradient_reference"] = mesh.gradient_reference();
                 report["offset_residual_tolerance"] = mesh.offset_residual_tolerance();
                 report["offset_level"] = mesh.m_offset_potential->target_level();
                 report["offset_dhat"] = mesh.m_offset_potential->dhat();
