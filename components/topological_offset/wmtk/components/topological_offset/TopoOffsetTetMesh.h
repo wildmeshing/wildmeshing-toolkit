@@ -1285,6 +1285,45 @@ public:
     /// The resolution rule: sets the target length at each refinable edge's ends from
     /// front_chord_target(), graded outward. Returns the vertices changed.
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& edges);
+
+    /// Spread the refinement just made at `seeds` to the vertices around them, the way
+    /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
+    /// "distance" is grade_sizing_by_distance(seeds) and ignores `grade`. Every place the
+    /// offset lowers the field goes through here.
+    void grade_sizing(double grade, const std::vector<size_t>& seeds);
+    /// TetWild's gradation, ported from tetwild::TetWild::adjust_sizing_field: a breadth-first
+    /// walk out of the seeds over mesh neighbours; every vertex reached within R = 1.8 l of its
+    /// nearest seed has its scalar multiplied by 0.5 + 0.5 dist / R, the walk stops at vertices
+    /// farther than R, and the result is floored at the sizing floor. The seeds themselves keep
+    /// the scalar the caller gave them. Returns the number of vertices lowered.
+    size_t grade_sizing_by_distance(const std::vector<size_t>& seeds);
+
+    /// What one interleaved smoothing pass achieved, measured after it against the positions
+    /// before it. See smooth_group_to_convergence() and the adaptive_smoothing keys.
+    struct SmoothingProgress
+    {
+        /// Max front_vertex_conv_ratio over the front vertices that are measurable and not
+        /// pressed against another region (1 = the bar, the turn criterion's own test).
+        double front_max_ratio = 0.;
+        size_t front_worst_vid = static_cast<size_t>(-1);
+        size_t n_front = 0; ///< front vertices the max was taken over
+        size_t n_front_unmeasurable = 0; ///< ratio not finite: left out of the max
+        size_t n_front_pressed = 0; ///< front_vertex_touches_other(): left out of the max
+        double front_max_step = 0.; ///< max front step in the pass, in tube half-widths
+        /// Max over non-front vertices of the step in the pass divided by the vertex's target
+        /// edge length s_v * l.
+        double background_max_step = 0.;
+        size_t background_worst_vid = static_cast<size_t>(-1);
+        size_t n_background = 0;
+    };
+    /// Measure a pass: `before` holds every live vertex's position before it, indexed by vid.
+    SmoothingProgress smoothing_progress(const std::vector<Vector3d>& before);
+    /// The interleaved smoothing of one operation group under adaptive_smoothing: one pass at a
+    /// time through local_operations({0,0,0,1}), each followed by smoothing_progress(), until
+    /// the front has converged (max ratio <= 1) or stalled (max ratio fell by less than
+    /// adaptive_smoothing_stall_rel) AND the background has settled (max step <=
+    /// adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes.
+    void smooth_group_to_convergence(const char* group_name);
     /// The energy criterion as measured when the loop converged; the final Phase A runs after
     /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;

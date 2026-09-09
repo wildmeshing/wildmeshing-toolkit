@@ -16,6 +16,7 @@
 #include <limits>
 #include <map>
 #include <numeric>
+#include <queue>
 #include <set>
 #include <tuple>
 #include <unordered_map>
@@ -1305,32 +1306,20 @@ void TopoOffsetTetMesh::pre_optimize_input_mesh()
         m_offset_params.target_distance / l_target,
         s_floor,
         m_offset_params.max_sizing_scalar);
-    if (m_offset_params.pre_optimize_sizing_from_edges) {
-        // "Keep the resolution you have": every vertex takes the mean of its own incident edge
-        // lengths, the rule init_offset_sizing_field() uses on the front.
+    if (!m_offset_params.pre_optimize_sizing_from_target_length) {
+        // The default field: 1.0 everywhere, so this pass is a plain TetWild run against the
+        // base target length l and target_distance never enters. The 2D twin's
+        // pre_optimize_sizing_from_edges is not read here.
         size_t n_set = 0;
-        double sum_h = 0.;
         for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            double sum_len = 0.;
-            int n = 0;
-            for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
-                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
-                ++n;
-            }
-            if (n == 0) continue;
-            const double h_local = sum_len / n;
-            m_vertex_attribute[vid].m_sizing_scalar =
-                std::clamp(h_local / l_target, s_floor, m_offset_params.max_sizing_scalar);
-            sum_h += h_local;
+            m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
             ++n_set;
         }
         logger().info(
-            "[pre-optimize] sizing field: {} vertices seeded from their OWN incident edge "
-            "lengths (mean {:.6g} = {:.4g} l); target_distance {} does not enter",
+            "[pre-optimize] sizing field: 1.0 at every one of {} vertices (target edge length "
+            "l = {:.6g}); target_distance {} does not enter",
             n_set,
-            n_set ? sum_h / double(n_set) : 0.,
-            n_set ? (sum_h / double(n_set)) / l_target : 0.,
+            l_target,
             m_offset_params.target_distance);
     } else {
         std::vector<size_t> seeds;
@@ -1370,17 +1359,15 @@ void TopoOffsetTetMesh::pre_optimize_input_mesh()
             seeds.push_back(vid);
         }
         wmtk::vector_unique(seeds);
-        if (!seeds.empty()) {
-            gradation_smooth_sizing(m_offset_params.sizing_gradation, seeds);
-        }
+        grade_sizing(m_offset_params.sizing_gradation, seeds);
         logger().info(
             "[pre-optimize] sizing seed: {} input-complex vertices at scalar {:.6g} "
-            "(= target_distance {} / l {:.6g}), graded outward at {}x per ring",
+            "(= target_distance {} / l {:.6g}), graded outward by {} gradation",
             seeds.size(),
             s_input,
             m_offset_params.target_distance,
             l_target,
-            m_offset_params.sizing_gradation);
+            m_offset_params.sizing_gradation_mode);
     }
 
     // The seeded field, before a single operation runs.
@@ -1526,7 +1513,7 @@ void TopoOffsetTetMesh::init_offset_sizing_field()
             L_min = std::min(L_min, Lc);
             L_max = std::max(L_max, Lc);
         }
-        if (!changed.empty()) gradation_smooth_sizing(m_offset_params.sizing_gradation, changed);
+        grade_sizing(m_offset_params.sizing_gradation, changed);
         logger().info(
             "\tFront resolution from the tolerance: L = 3/4 sqrt(8 eps delta rho), rho >= delta "
             "-> {:.6g} .. {:.6g} ({:.3g} .. {:.3g} x delta) at eps {}; {} front vertices "
@@ -2820,8 +2807,216 @@ size_t TopoOffsetTetMesh::refine_front_from_sag(
             }
         }
     }
-    if (!changed.empty()) gradation_smooth_sizing(m_offset_params.sizing_gradation, changed);
+    grade_sizing(m_offset_params.sizing_gradation, changed);
     return changed.size();
+}
+
+TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
+    const std::vector<Vector3d>& before)
+{
+    SmoothingProgress s;
+    const OptPhase saved = m_phase;
+    m_phase = OptPhase::B; // the front objective's offset terms exist only in Phase B, as in
+                           // energy_criterion()
+    const double l = std::max(m_params.l, 1e-16);
+    const double tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const Vector3d& x = m_vertex_attribute[vid].m_posf;
+        const double step = vid < before.size() ? (x - before[vid]).norm() : 0.;
+        const bool front =
+            m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
+        if (!front) {
+            ++s.n_background;
+            const double target = std::max(m_vertex_attribute[vid].m_sizing_scalar * l, 1e-300);
+            const double r = step / target;
+            if (r > s.background_max_step) {
+                s.background_max_step = r;
+                s.background_worst_vid = vid;
+            }
+            continue;
+        }
+        if (tube > 0.) s.front_max_step = std::max(s.front_max_step, step / tube);
+        if (front_vertex_touches_other(vid)) {
+            ++s.n_front_pressed; // a constrained minimum: the ratio is the constraint force
+            continue;
+        }
+        const double gn = front_vertex_conv_ratio(vid);
+        if (!std::isfinite(gn)) {
+            ++s.n_front_unmeasurable;
+            continue;
+        }
+        ++s.n_front;
+        if (gn > s.front_max_ratio) {
+            s.front_max_ratio = gn;
+            s.front_worst_vid = vid;
+        }
+    }
+    m_phase = saved;
+    return s;
+}
+
+void TopoOffsetTetMesh::smooth_group_to_convergence(const char* group_name)
+{
+    const int max_passes = std::max(1, m_offset_params.adaptive_smoothing_max_passes);
+    const double stall_rel = m_offset_params.adaptive_smoothing_stall_rel;
+    const double step_rel = m_offset_params.adaptive_smoothing_step_rel;
+    std::vector<Vector3d> before;
+    double prev_front = std::numeric_limits<double>::infinity();
+    for (int p = 0; p < max_passes; ++p) {
+        before.assign(vert_capacity(), Vector3d::Zero());
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            before[vid] = m_vertex_attribute[vid].m_posf;
+        }
+        // One pass through the same entry the fixed count used: the sweep, rounding, the
+        // quality log and update_attributes(). The tube is NOT rebuilt between passes; the
+        // group's caller rebuilds it once, as with the fixed count.
+        local_operations({{0, 0, 0, 1}});
+        const SmoothingProgress s = smoothing_progress(before);
+        const bool front_converged = s.n_front == 0 || s.front_max_ratio <= 1.;
+        const bool front_stalled = !front_converged && std::isfinite(prev_front) &&
+                                   s.front_max_ratio > (1. - stall_rel) * prev_front;
+        const bool background_settled = s.background_max_step <= step_rel;
+        const char* front_verdict =
+            front_converged ? "converged" : (front_stalled ? "stalled" : "moving");
+        logger().info(
+            "\t[smoothing {} pass {}/{}] front: max ratio {:.4} (prev {:.4}) at v{}, {} measured "
+            "+ {} unmeasurable + {} pressed, max step {:.4} x tube -> {} | background: max step "
+            "{:.4} x target edge at v{} over {} vertices -> {}",
+            group_name,
+            p + 1,
+            max_passes,
+            s.front_max_ratio,
+            prev_front,
+            s.front_worst_vid,
+            s.n_front,
+            s.n_front_unmeasurable,
+            s.n_front_pressed,
+            s.front_max_step,
+            front_verdict,
+            s.background_max_step,
+            s.background_worst_vid,
+            s.n_background,
+            background_settled ? "settled" : "moving");
+        if ((front_converged || front_stalled) && background_settled) break;
+        prev_front = s.front_max_ratio;
+    }
+}
+
+void TopoOffsetTetMesh::grade_sizing(double grade, const std::vector<size_t>& seeds)
+{
+    if (seeds.empty()) return;
+    if (m_offset_params.sizing_gradation_mode == "distance") {
+        grade_sizing_by_distance(seeds);
+    } else {
+        gradation_smooth_sizing(grade, seeds);
+    }
+}
+
+size_t TopoOffsetTetMesh::grade_sizing_by_distance(const std::vector<size_t>& seeds)
+{
+    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field
+    // (attic/app/tetwild/TetWild.cpp): the same R, the same ramp, the same breadth-first walk
+    // that stops at R, the same floor. Two parts of that function are NOT ported on purpose:
+    //   - the seeds are not multiplied. TetWild's seeds are the worst tets' vertices and the
+    //     0.5 at dist 0 IS their refinement; here the caller has just set each seed's scalar to
+    //     the value it wants, and halving it again would refine the seed twice.
+    //   - the 1.5x recovery TetWild applies to every vertex outside the ball. That is TetWild's
+    //     stall response coarsening the field back, not gradation; here it would undo the
+    //     front's seeded resolution on every call.
+    // TetWild finds the nearest seed with geogram's nearest-neighbour search; a uniform grid of
+    // cell size R does the same job exactly for the only question asked, "which seed within R
+    // is nearest", without the dependency.
+    if (seeds.empty()) return 0;
+    const double l = std::max(m_params.l, 1e-16);
+    const double R = 1.8 * l;
+    const double refine_scalar = 0.5;
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+
+    std::vector<char> is_seed(vert_capacity(), 0);
+    std::vector<Vector3d> pts;
+    pts.reserve(seeds.size());
+    for (const size_t v : seeds) {
+        if (is_seed[v]) continue;
+        is_seed[v] = 1;
+        pts.push_back(m_vertex_attribute[v].m_posf);
+    }
+    // grid of cell size R: every seed within R of a query lies in the query's cell or one of
+    // its 26 neighbours.
+    Vector3d lo = pts[0];
+    for (const Vector3d& p : pts) lo = lo.cwiseMin(p);
+    auto cell_of = [&](const Vector3d& p) {
+        return std::array<int64_t, 3>{
+            static_cast<int64_t>(std::floor((p[0] - lo[0]) / R)),
+            static_cast<int64_t>(std::floor((p[1] - lo[1]) / R)),
+            static_cast<int64_t>(std::floor((p[2] - lo[2]) / R))};
+    };
+    std::map<std::array<int64_t, 3>, std::vector<size_t>> grid;
+    for (size_t i = 0; i < pts.size(); ++i) grid[cell_of(pts[i])].push_back(i);
+    auto nearest_seed_dist = [&](const Vector3d& p) {
+        const auto c = cell_of(p);
+        double best2 = std::numeric_limits<double>::infinity();
+        for (int64_t dx = -1; dx <= 1; ++dx)
+            for (int64_t dy = -1; dy <= 1; ++dy)
+                for (int64_t dz = -1; dz <= 1; ++dz) {
+                    const auto it = grid.find({c[0] + dx, c[1] + dy, c[2] + dz});
+                    if (it == grid.end()) continue;
+                    for (const size_t i : it->second)
+                        best2 = std::min(best2, (p - pts[i]).squaredNorm());
+                }
+        return std::sqrt(std::max(best2, 0.));
+    };
+
+    std::vector<double> scale_multipliers(vert_capacity(), 1.0);
+    std::vector<char> visited(vert_capacity(), 0);
+    std::queue<size_t> v_queue;
+    for (const size_t v : seeds) v_queue.push(v);
+    std::vector<size_t> cache_one_ring;
+    size_t n_reached = 0;
+    while (!v_queue.empty()) {
+        const size_t vid = v_queue.front();
+        v_queue.pop();
+        if (visited[vid]) continue;
+        visited[vid] = 1;
+        const double dist = nearest_seed_dist(m_vertex_attribute[vid].m_posf);
+        if (dist > R) continue; // outside the R-ball: not graded, and the walk stops here
+        ++n_reached;
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+        for (const size_t n_vid : get_one_ring_vids_for_vertex_adj(vid, cache_one_ring)) {
+            if (visited[n_vid]) continue;
+            v_queue.push(n_vid);
+        }
+    }
+
+    size_t n_lowered = 0;
+    size_t n_floored = 0;
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!visited[vid] || is_seed[vid] || scale_multipliers[vid] >= 1.) continue;
+        double& sc = m_vertex_attribute[vid].m_sizing_scalar;
+        double ns = sc * scale_multipliers[vid];
+        if (ns < s_floor) {
+            ns = s_floor;
+            ++n_floored;
+        }
+        if (ns < sc) {
+            sc = ns;
+            ++n_lowered;
+        }
+    }
+    logger().info(
+        "\t[gradation] distance (TetWild): {} seeds, {} vertices within R = 1.8 l = {:.6g} of "
+        "one, {} lowered by the 0.5 .. 1 ramp ({} at the floor {:.6g})",
+        pts.size(),
+        n_reached,
+        R,
+        n_lowered,
+        n_floored,
+        s_floor);
+    return n_lowered;
 }
 
 void TopoOffsetTetMesh::check_offset_within_support(const char* when) const
@@ -2998,7 +3193,7 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
         m_params.stuck_refine_factor,
         m_params.stuck_refine_min_scalar,
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
-    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+    grade_sizing(m_params.stuck_refine_gradation, refined);
 
     logger().info(
         "[stuck-refine A] worst {} tets (max energy {:.4}, filter {:.4}), refined {} of {} "
@@ -3403,6 +3598,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     // the tube can be rebuilt AFTER EVERY SMOOTHING PASS. What mesh_improvement() adds and is
     // left out here on purpose is its stall response, which refines around the worst elements: a
     // travelling front stretches cells by design.
+    // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
+    // front and the background settle (smooth_group_to_convergence()).
     const int k = std::max(1, m_params.interleaved_smoothing_passes);
     const std::array<std::array<int, 4>, 3> groups = {
         {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
@@ -3425,7 +3622,14 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
             m_debug_pass_name = group_names[gi];
-            local_operations(groups[gi]);
+            if (m_offset_params.adaptive_smoothing) {
+                // The group's operations alone, then its smoothing pass by pass until the front
+                // and the background have settled -- see smooth_group_to_convergence().
+                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
+                smooth_group_to_convergence(group_names[gi]);
+            } else {
+                local_operations(groups[gi]);
+            }
             rebuild_offset_envelope(); // the smoothing in this group moved the front
         }
         consolidate_mesh();
