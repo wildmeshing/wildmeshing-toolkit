@@ -18,6 +18,7 @@
       "target_distance",
       "target_distance_rel",
       "throw_on_nonconvergence",
+      "optimize_offset",
       "envelope_size",
       "envelope_size_rel",
       "offset_field",
@@ -26,6 +27,8 @@
       "front_conv_criterion",
       "offset_residual_samples",
       "sorted_marching",
+      "binary_search_construction",
+      "binary_search_max_depth",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -170,6 +173,12 @@
     "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Integration tests set it true so a convergence regression fails the run rather than passing with a warning."
   },
   {
+    "pointer": "/optimize_offset",
+    "type": "bool",
+    "default": true,
+    "doc": "Run the optimization (optimize_offset: pre-loop setup, the single-phase turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the pre-optimize pass, the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
+  },
+  {
     "pointer": "/envelope_size_rel",
     "type": "float",
     "default": 0.001,
@@ -225,6 +234,18 @@
     "type": "bool",
     "default": false,
     "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
+  },
+  {
+    "pointer": "/binary_search_construction",
+    "type": "bool",
+    "default": false,
+    "doc": "3D only. How marching_tets places the vertex it inserts on each edge it splits (an edge with one endpoint in the input complex or offset and the other in the background). false (the default): the plain edge midpoint; target_distance does not enter construction, and the optimization carries the front to the level set. true: bisection for a root of f(x) = d(x) - target_distance along the edge, d(x) the distance from the point to the input complex through its BVH -- the vertex is placed on the target level set as constructed. The root is searched only when f changes sign between the two endpoints (a root is bracketed); binary_search_max_depth halvings are made and the final bracket's midpoint is used. An edge that brackets no root -- shorter than target_distance from its complex end, say -- gets the midpoint as in the default. The simplicial embedding's splits always use the midpoint."
+  },
+  {
+    "pointer": "/binary_search_max_depth",
+    "type": "int",
+    "default": 5,
+    "doc": "3D only. Halvings of the edge per bisection under binary_search_construction: the placed vertex is within edge length / 2^(depth+1) of the root. Only read when binary_search_construction is true."
   },
   {
     "pointer": "/check_manifoldness",

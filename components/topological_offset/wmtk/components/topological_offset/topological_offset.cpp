@@ -198,19 +198,26 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        // Unconditional, matching 3D: construction leaves the band boundary on background-cell
-        // boundaries, so skipping the optimization does not yield a coarser offset but one whose
-        // defining property is unmet at an error set by the input mesh's resolution.
-        mesh.optimize_offset(output_filename);
+        // optimize_offset (json, default true). Construction leaves the band boundary on
+        // background-cell boundaries, so skipping the optimization does not yield a coarser
+        // offset but one whose defining property is unmet at an error set by the input mesh's
+        // resolution; false is for inspecting the constructed offset.
+        if (mesh.m_offset_params.optimize_offset) {
+            mesh.optimize_offset(output_filename);
 
-        // As in 3D: the check above ran on the offset as constructed, and optimization
-        // re-triangulates it, so the property has to be re-established afterwards.
-        if (check_manifoldness) {
-            if (mesh.offset_is_manifold()) {
-                logger().info("Offset region manifold check passed after optimization.");
-            } else {
-                logger().error("Offset region is NOT manifold after optimization!");
+            // As in 3D: the check above ran on the offset as constructed, and optimization
+            // re-triangulates it, so the property has to be re-established afterwards.
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed after optimization.");
+                } else {
+                    logger().error("Offset region is NOT manifold after optimization!");
+                }
             }
+        } else {
+            logger().info(
+                "optimize_offset false: the optimization is skipped, the offset as constructed "
+                "is the result");
         }
 
         double time = timer.getElapsedTime();
@@ -431,21 +438,28 @@ void topological_offset(nlohmann::json json_params)
             }
         }
 
-        // Unconditional, matching 2D; `optimize` is not read here. Conservative growth leaves the
-        // band boundary on background-cell boundaries, so skipping the optimization does not
-        // yield a coarser offset but one whose defining property is unmet at an error set by the
-        // input mesh's resolution.
-        mesh.optimize_offset(output_filename);
+        // optimize_offset (json, default true), as in 2D. Conservative growth leaves the band
+        // boundary on background-cell boundaries, so skipping the optimization does not yield a
+        // coarser offset but one whose defining property is unmet at an error set by the input
+        // mesh's resolution; false is for inspecting the constructed offset.
+        if (mesh.m_offset_params.optimize_offset) {
+            mesh.optimize_offset(output_filename);
 
-        // The manifoldness check above ran on the offset as constructed. Optimization then
-        // re-triangulates it -- splits, collapses and four kinds of swap all touch the offset
-        // surface -- so the property has to be re-established afterwards, not assumed to survive.
-        if (check_manifoldness) {
-            if (mesh.offset_is_manifold()) {
-                logger().info("Offset region manifold check passed after optimization.");
-            } else {
-                logger().error("Offset region is NOT manifold after optimization!");
+            // The manifoldness check above ran on the offset as constructed. Optimization then
+            // re-triangulates it -- splits, collapses and four kinds of swap all touch the
+            // offset surface -- so the property has to be re-established afterwards, not
+            // assumed to survive.
+            if (check_manifoldness) {
+                if (mesh.offset_is_manifold()) {
+                    logger().info("Offset region manifold check passed after optimization.");
+                } else {
+                    logger().error("Offset region is NOT manifold after optimization!");
+                }
             }
+        } else {
+            logger().info(
+                "optimize_offset false: the optimization is skipped, the offset as constructed "
+                "is the result");
         }
 
         double time = timer.getElapsedTime();

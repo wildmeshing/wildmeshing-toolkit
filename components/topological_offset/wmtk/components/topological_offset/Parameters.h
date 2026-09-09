@@ -33,6 +33,9 @@ struct Parameters : public wmtk::OptimizerParameters
     // misses the target is still a usable offset, and the warnings name the criterion that failed.
     // Integration tests set it true so a convergence regression fails rather than warns.
     bool throw_on_nonconvergence;
+    /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
+    /// called and the constructed band is written as the result.
+    bool optimize_offset;
     // Half-width of the envelope that contains every tag-region boundary during optimization.
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
@@ -85,6 +88,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // TopoOffsetTetMesh::offset_face_samples.
     int offset_residual_samples;
     bool sorted_marching;
+    /// See the spec (3D only): marching_tets places each new vertex at a root of
+    /// d(x) - target_distance along the edge by bisection, midpoint when no root is bracketed.
+    bool binary_search_construction;
+    int binary_search_max_depth; ///< bisection halvings per edge
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -173,6 +180,7 @@ struct Parameters : public wmtk::OptimizerParameters
         target_distance = json_params["target_distance"];
         target_distance_rel = json_params["target_distance_rel"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
+        optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
@@ -182,6 +190,8 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_residual_samples = json_params["offset_residual_samples"];
 
         sorted_marching = json_params["sorted_marching"];
+        binary_search_construction = json_params["binary_search_construction"];
+        binary_search_max_depth = json_params["binary_search_max_depth"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

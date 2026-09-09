@@ -55,10 +55,26 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     Vector3d p1 = VA[cache.v1_id].m_posf;
     Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
-    // The midpoint is the only construction placement: no target_distance enters construction at
-    // all, and carrying the offset surface out to the level set is the optimization phase's job.
+    // Midpoint: no target_distance enters construction at all, and carrying the offset surface
+    // out to the level set is the optimization phase's job. BinarySearch (marching_tets under
+    // binary_search_construction): the vertex goes to a root of d(x) - target_distance on the
+    // edge when one is bracketed, and to the midpoint otherwise.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
+    } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
+        const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
+        const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
+        bool at_root = false;
+        if (in1 != in2) {
+            at_root = in1 ? edge_split_binary_search(p1, p2, p_new)
+                          : edge_split_binary_search(p2, p1, p_new);
+        }
+        if (at_root) {
+            ++m_marching_root_splits;
+        } else {
+            p_new = (p1 + p2) / 2.0;
+            ++m_marching_midpoint_splits;
+        }
     } else {
         log_and_throw_error("Invalid edge split mode.");
     }
@@ -125,6 +141,36 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
         }
     }
 
+    return true;
+}
+
+bool TopoOffsetTetMesh::edge_split_binary_search(
+    const Vector3d& p_in,
+    const Vector3d& p_out,
+    Vector3d& p_new) const
+{
+    // f(x) = d(x) - target_distance, d the distance to the input complex through the BVH. A root
+    // is bracketed only when f changes sign between the endpoints; f(p_in) is negative for a
+    // vertex on the complex (d = 0) and positive when the offset endpoint lies beyond
+    // target_distance, so the test is on the signs, not on which end is "in".
+    const double delta = m_offset_params.target_distance;
+    double f_lo = m_input_complex_bvh->dist(p_in) - delta;
+    double f_hi = m_input_complex_bvh->dist(p_out) - delta;
+    if (!(f_lo < 0.) == !(f_hi < 0.)) return false; // same sign (or a zero): no root bracketed
+    Vector3d lo = p_in, hi = p_out;
+    const int depth = std::max(0, m_offset_params.binary_search_max_depth);
+    for (int i = 0; i < depth; ++i) {
+        const Vector3d mid = 0.5 * (lo + hi);
+        const double f_mid = m_input_complex_bvh->dist(mid) - delta;
+        if ((f_mid < 0.) == (f_lo < 0.)) {
+            lo = mid;
+            f_lo = f_mid;
+        } else {
+            hi = mid;
+            f_hi = f_mid;
+        }
+    }
+    p_new = 0.5 * (lo + hi);
     return true;
 }
 

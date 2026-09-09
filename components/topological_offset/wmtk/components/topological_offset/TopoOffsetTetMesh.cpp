@@ -1268,11 +1268,15 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 
     // initialize offset
     logger().info("Initializing offset...");
-    // The inserted vertex is the plain edge midpoint -- target_distance does not enter the
-    // placement at all. Carrying the surface out to target_distance is the optimization phase's
-    // job.
-    m_edge_split_mode = EdgeSplitMode::Midpoint;
+    // Default: the inserted vertex is the plain edge midpoint -- target_distance does not enter
+    // the placement at all, and carrying the surface out to target_distance is the optimization
+    // phase's job. binary_search_construction: the vertex goes to a root of
+    // d(x) - target_distance on the edge (bisection, binary_search_max_depth halvings), to the
+    // midpoint on an edge that brackets no root.
+    m_edge_split_mode = m_offset_params.binary_search_construction ? EdgeSplitMode::BinarySearch
+                                                                   : EdgeSplitMode::Midpoint;
     marching_tets();
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
         write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
@@ -1444,6 +1448,8 @@ void TopoOffsetTetMesh::simplicial_embedding()
 
 void TopoOffsetTetMesh::marching_tets()
 {
+    m_marching_root_splits = 0;
+    m_marching_midpoint_splits = 0;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -1481,6 +1487,18 @@ void TopoOffsetTetMesh::marching_tets()
         } else {
             log_and_throw_error("edge split failed! (marching_tets)");
         }
+    }
+    if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
+        logger().info(
+            "\t[construction] binary_search_construction: {} of {} marched edges split at a root "
+            "of d(x) - target_distance ({} halvings), {} at the midpoint (no root bracketed on "
+            "the edge)",
+            m_marching_root_splits,
+            e_to_split.size(),
+            std::max(0, m_offset_params.binary_search_max_depth),
+            m_marching_midpoint_splits);
+    } else {
+        logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }
 
     // mark all offset tets and children

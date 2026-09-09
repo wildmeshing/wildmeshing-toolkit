@@ -137,6 +137,8 @@ class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0, // construction: simplicial embedding AND marching_tets
+        BinarySearch = 1, // marching_tets under binary_search_construction: bisection on
+                          // d(x) - target_distance along the edge, midpoint when no root
         Optimization = 5 // the optimization phase; the shared engine places the vertex
     };
 
@@ -642,6 +644,22 @@ public:
 
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);
+    /**
+     * @brief Construction placement under binary_search_construction: bisection for a root of
+     * f(x) = d(x) - target_distance along the edge from p_in (the endpoint in the input complex
+     * or offset, label != 0) to p_out (the background endpoint), d(x) the distance to the input
+     * complex through m_input_complex_bvh. Only runs when f changes sign between the endpoints,
+     * i.e. a root is bracketed; then binary_search_max_depth halvings of the bracket and p_new
+     * is the final bracket's midpoint. Returns false, with p_new untouched, when no root is
+     * bracketed (the edge is shorter than target_distance, or both ends are outside it) -- the
+     * caller then places the plain midpoint. Assumes d is monotonic along the edge, as the old
+     * BinarySearch mode did; a non-monotonic d yields one of its roots.
+     */
+    bool edge_split_binary_search(const Vector3d& p_in, const Vector3d& p_out, Vector3d& p_new)
+        const;
+    /// marching_tets() tallies for the construction log: edges placed at a root / at the
+    /// midpoint for want of one. Reset at the start of marching_tets().
+    size_t m_marching_root_splits = 0, m_marching_midpoint_splits = 0;
 
     /**
      * @brief Reject any collapse that violates the substructure link condition, and remember the
