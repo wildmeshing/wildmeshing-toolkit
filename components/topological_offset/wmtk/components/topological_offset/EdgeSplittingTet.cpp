@@ -56,20 +56,23 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     Vector3d p2 = VA[cache.v2_id].m_posf;
     Vector3d p_new;
     // Midpoint: no target_distance enters construction at all, and carrying the offset surface
-    // out to the level set is the optimization phase's job. BinarySearch (marching_tets under
-    // binary_search_construction): the vertex goes to a root of d(x) - target_distance on the
-    // edge when one is bracketed, and to the midpoint otherwise.
+    // out to the level set is the optimization phase's job. SphereTrace (marching_tets under
+    // sphere_trace_initialization): the vertex goes to the point of the edge where d(x) reaches
+    // target_distance within the tolerance, and to the midpoint when the trace leaves the edge.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
-    } else if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
+    } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
         const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
-        bool at_root = false;
+        bool on_level = false;
+        size_t steps = 0;
         if (in1 != in2) {
-            at_root = in1 ? edge_split_binary_search(p1, p2, p_new)
-                          : edge_split_binary_search(p2, p1, p_new);
+            on_level = in1 ? edge_split_sphere_trace(p1, p2, p_new, steps)
+                           : edge_split_sphere_trace(p2, p1, p_new, steps);
         }
-        if (at_root) {
+        m_marching_trace_steps += steps;
+        m_marching_trace_steps_max = std::max(m_marching_trace_steps_max, steps);
+        if (on_level) {
             ++m_marching_root_splits;
         } else {
             p_new = (p1 + p2) / 2.0;
@@ -144,34 +147,38 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     return true;
 }
 
-bool TopoOffsetTetMesh::edge_split_binary_search(
+bool TopoOffsetTetMesh::edge_split_sphere_trace(
     const Vector3d& p_in,
     const Vector3d& p_out,
-    Vector3d& p_new) const
+    Vector3d& p_new,
+    size_t& steps) const
 {
-    // f(x) = d(x) - target_distance, d the distance to the input complex through the BVH. A root
-    // is bracketed only when f changes sign between the endpoints; f(p_in) is negative for a
-    // vertex on the complex (d = 0) and positive when the offset endpoint lies beyond
-    // target_distance, so the test is on the signs, not on which end is "in".
-    const double delta = m_offset_params.target_distance;
-    double f_lo = m_input_complex_bvh->dist(p_in) - delta;
-    double f_hi = m_input_complex_bvh->dist(p_out) - delta;
-    if (!(f_lo < 0.) == !(f_hi < 0.)) return false; // same sign (or a zero): no root bracketed
-    Vector3d lo = p_in, hi = p_out;
-    const int depth = std::max(0, m_offset_params.binary_search_max_depth);
-    for (int i = 0; i < depth; ++i) {
-        const Vector3d mid = 0.5 * (lo + hi);
-        const double f_mid = m_input_complex_bvh->dist(mid) - delta;
-        if ((f_mid < 0.) == (f_lo < 0.)) {
-            lo = mid;
-            f_lo = f_mid;
-        } else {
-            hi = mid;
-            f_hi = f_mid;
+    // Sphere tracing: d is 1-Lipschitz, so from a point at distance d the level set
+    // d = target_distance is at least target_distance - d away in every direction, and stepping
+    // exactly that far along the edge can never cross it. The step is positive while the trace
+    // has not converged (target_distance - d > tol), so t grows by more than tol each time and
+    // the loop ends within L / tol steps, one way or the other.
+    const double D = m_offset_params.target_distance;
+    const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    const Vector3d dir = p_out - p_in;
+    const double L = dir.norm();
+    steps = 0;
+    if (!(L > 0.)) return false;
+    const Vector3d u = dir / L;
+    double t = 0.;
+    while (true) {
+        const Vector3d p = p_in + t * u;
+        const double d = m_input_complex_bvh->dist(p);
+        ++steps;
+        if (std::abs(d - D) <= tol) {
+            p_new = p;
+            return true;
         }
+        t += D - d;
+        // Past (or at) the far endpoint: the level set is not on this edge. Behind the near
+        // endpoint: d(p_in) is already beyond the target, the same conclusion.
+        if (t >= L || t < 0.) return false;
     }
-    p_new = 0.5 * (lo + hi);
-    return true;
 }
 
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
