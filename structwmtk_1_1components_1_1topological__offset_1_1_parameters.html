@@ -173,12 +173,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>offset_residual_sample
 <tr class="memitem:af2f589c738c1ca954fdd3addc9fc58f8" id="r_af2f589c738c1ca954fdd3addc9fc58f8"><td class="memItemLeft" align="right" valign="top"><a id="af2f589c738c1ca954fdd3addc9fc58f8" name="af2f589c738c1ca954fdd3addc9fc58f8"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>sorted_marching</b></td></tr>
 <tr class="separator:af2f589c738c1ca954fdd3addc9fc58f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7710cd5207194075f101d721147fb45" id="r_af7710cd5207194075f101d721147fb45"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af7710cd5207194075f101d721147fb45">binary_search_construction</a></td></tr>
-<tr class="separator:af7710cd5207194075f101d721147fb45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad51150ad30280c1a62a9785c580a39c3" id="r_ad51150ad30280c1a62a9785c580a39c3"><td class="memItemLeft" align="right" valign="top"><a id="ad51150ad30280c1a62a9785c580a39c3" name="ad51150ad30280c1a62a9785c580a39c3"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>binary_search_max_depth</b></td></tr>
-<tr class="memdesc:ad51150ad30280c1a62a9785c580a39c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">bisection halvings per edge <br /></td></tr>
-<tr class="separator:ad51150ad30280c1a62a9785c580a39c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f60de909647416df3cd79bd92df9352" id="r_a1f60de909647416df3cd79bd92df9352"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a1f60de909647416df3cd79bd92df9352">sphere_trace_initialization</a></td></tr>
+<tr class="separator:a1f60de909647416df3cd79bd92df9352"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec4223bf61e4f0dc7a7218f92811ab6b" id="r_aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memItemLeft" align="right" valign="top"><a id="aec4223bf61e4f0dc7a7218f92811ab6b" name="aec4223bf61e4f0dc7a7218f92811ab6b"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>sphere_trace_target_rel_tol</b></td></tr>
+<tr class="memdesc:aec4223bf61e4f0dc7a7218f92811ab6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">|d - target| &lt;= tol x target ends the trace <br /></td></tr>
+<tr class="separator:aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a4f261f3043247d7743058781a2b84d" id="r_a5a4f261f3043247d7743058781a2b84d"><td class="memItemLeft" align="right" valign="top"><a id="a5a4f261f3043247d7743058781a2b84d" name="a5a4f261f3043247d7743058781a2b84d"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>output_path</b></td></tr>
 <tr class="separator:a5a4f261f3043247d7743058781a2b84d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -387,21 +387,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="af7710cd5207194075f101d721147fb45" name="af7710cd5207194075f101d721147fb45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7710cd5207194075f101d721147fb45">&#9670;&#160;</a></span>binary_search_construction</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::binary_search_construction</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>See the spec (3D only): marching_tets places each new vertex at a root of d(x) - target_distance along the edge by bisection, midpoint when no root is bracketed. </p>
-
-</div>
-</div>
 <a id="a9fe8648b4000c5ec8e9d449bdf38534c" name="a9fe8648b4000c5ec8e9d449bdf38534c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9fe8648b4000c5ec8e9d449bdf38534c">&#9670;&#160;</a></span>deform_others</h2>
 
@@ -579,6 +564,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>See the spec: how a lowered sizing scalar spreads to the vertices around it. "ring" = the base gradation_smooth_sizing, ring by ring at sizing_gradation x per ring; "distance" = TetWild's adjust_sizing_field ramp, a factor 0.5 at a seed rising linearly to 1 at distance 1.8 l, applied within that ball only. Read by 3D only. </p>
+
+</div>
+</div>
+<a id="a1f60de909647416df3cd79bd92df9352" name="a1f60de909647416df3cd79bd92df9352"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f60de909647416df3cd79bd92df9352">&#9670;&#160;</a></span>sphere_trace_initialization</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::sphere_trace_initialization</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>See the spec (3D only): marching_tets places each new vertex where d(x) reaches target_distance along the edge by sphere tracing, midpoint when the trace leaves the edge. </p>
 
 </div>
 </div>
