@@ -1274,15 +1274,14 @@ public:
     GradientSplit gradient_split(bool include_face_samples = true) const;
 
     /**
-     * @brief The "energy_gradient" criterion and the single phase's states: placed / travelling
-     * / pressed / stuck per front vertex, and the refinable chords. The same struct as 2D.
+     * @brief The "energy_gradient" criterion: the front's Newton-step ratios and the refinable
+     * faces. The 2D struct minus its per-vertex state labels.
      */
     struct EnergyCriterion
     {
         double max_vertex = 0., max_face = 0.; ///< ratios to the bar (1 = bar)
         double bar = 1.;
         size_t n_vertices = 0, n_faces = 0, n_unmeasurable = 0;
-        size_t n_pressed = 0, n_faces_pressed = 0;
         size_t worst_vid = static_cast<size_t>(-1);
         Vector3d worst_face_centroid = Vector3d::Zero();
         double worst_face_len = 0.; ///< the worst face's longest edge
@@ -1290,11 +1289,7 @@ public:
         double max_face_on_level = 0.;
         Vector3d worst_on_level_centroid = Vector3d::Zero();
         double tube = 0.;
-        size_t n_placed = 0, n_travelling = 0, n_pressed_on = 0, n_stuck = 0;
-        size_t n_pressed_touching = 0;
         size_t n_at_floor = 0;
-        size_t worst_stuck_vid = static_cast<size_t>(-1);
-        double worst_stuck_rho = 0.;
         /// A face whose centroid sags over the tube with all three corners on the level set:
         /// a, b are the ends of its LONGEST edge (the chord the target is derived from), c the
         /// third corner; sag the centroid sag as a length; len the longest edge's length.
@@ -1311,9 +1306,6 @@ public:
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
     };
     EnergyCriterion energy_criterion();
-    /// Whether a front vertex touches another front, the input or a region boundary through a
-    /// background tet -- the topological fact behind the `pressed` state.
-    bool front_vertex_touches_other(size_t vid) const;
     /// The edge length that would bring a front chord's sag under the tube: 3/4 L
     /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
     /// turns across the chord. Same formula as 2D.
@@ -1344,13 +1336,12 @@ public:
     /// before it. See smooth_group_to_convergence() and the adaptive_smoothing keys.
     struct SmoothingProgress
     {
-        /// Max front_vertex_conv_ratio over the front vertices that are measurable and not
-        /// pressed against another region (1 = the bar, the turn criterion's own test).
+        /// Max front_vertex_conv_ratio over the measurable front vertices (1 = the bar, the
+        /// turn criterion's own test).
         double front_max_ratio = 0.;
         size_t front_worst_vid = static_cast<size_t>(-1);
         size_t n_front = 0; ///< front vertices the max was taken over
         size_t n_front_unmeasurable = 0; ///< ratio not finite: left out of the max
-        size_t n_front_pressed = 0; ///< front_vertex_touches_other(): left out of the max
         double front_max_step = 0.; ///< max front step in the pass, in tube half-widths
         /// Max over non-front vertices of the step in the pass divided by the vertex's target
         /// edge length s_v * l.
@@ -1385,10 +1376,6 @@ public:
         if (m_vertex_extra[vid].m_is_on_offset && vertex_boundary_mask(vid) != 0) return false;
         return !vertex_is_on_domain_boundary(vid);
     }
-
-    /// Set by the placement when a vertex's last visit stopped on a constraint; the criterion
-    /// counts such a vertex as placed. Same as 2D.
-    std::vector<char> m_placement_pressed;
 
     /// TetWild's stall-driven sizing refinement, verbatim; Phase A only. See the 2D twin.
     size_t refine_sizing_around_worst(double max_metric) override;

@@ -2426,43 +2426,24 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
-    // The convergence length, front_conv_rel x delta: what "placed" means for a vertex and
-    // "resolved" for a chord. See edge_conv_ratio().
+    // The convergence length, front_conv_rel x delta: a vertex is on the level set within it,
+    // and a chord is resolved within it. See edge_conv_ratio().
     s.tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
-    const auto placed = [&](const size_t vid) {
+    const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
     std::vector<char> on_level(vert_capacity(), 0);
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
-        if (!placed(vid)) continue;
+        if (!front(vid)) continue;
         const Vector3d p = m_vertex_attribute[vid].m_posf;
         const double rho = potential_for(vid).residual_length(p);
         const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
-        const double newton_len =
-            gn * m_offset_params.front_conv_rel * m_offset_params.target_distance;
         if (!std::isfinite(rho) || !std::isfinite(gn)) {
             ++s.n_unmeasurable;
-        } else if (rho <= s.tube) {
-            ++s.n_placed;
-            on_level[vid] = 1;
-        } else if (newton_len > s.tube) {
-            ++s.n_travelling;
-        } else if (front_vertex_touches_other(vid) || !m_offset_params.front_alignment_energy) {
-            ++s.n_pressed_on;
-            if (front_vertex_touches_other(vid)) ++s.n_pressed_touching;
-        } else {
-            ++s.n_stuck;
-            if (rho > s.worst_stuck_rho) {
-                s.worst_stuck_rho = rho;
-                s.worst_stuck_vid = vid;
-            }
-        }
-        if (vid < m_placement_pressed.size() && m_placement_pressed[vid]) {
-            ++s.n_pressed; // constrained minimum: grad F is the constraint force, not a residual
             continue;
         }
-        if (!std::isfinite(gn)) continue;
+        if (rho <= s.tube) on_level[vid] = 1;
         ++s.n_vertices;
         if (gn > s.max_vertex) {
             s.max_vertex = gn;
@@ -2473,13 +2454,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     // error peaks inside the face, and a chord test on the edges alone misses it.
     for (const auto& f : offset_surface_faces()) {
         const size_t va = f[0], vb = f[1], vc = f[2];
-        if (!placed(va) || !placed(vb) || !placed(vc)) continue;
-        if ((va < m_placement_pressed.size() && m_placement_pressed[va]) ||
-            (vb < m_placement_pressed.size() && m_placement_pressed[vb]) ||
-            (vc < m_placement_pressed.size() && m_placement_pressed[vc])) {
-            ++s.n_faces_pressed;
-            continue;
-        }
+        if (!front(va) || !front(vb) || !front(vc)) continue;
         const double gn = face_conv_ratio(va, vb, vc); // centroid sag / tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
@@ -2547,8 +2522,6 @@ double TopoOffsetTetMesh::phase_b_front_gradient_linf()
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        if (vid < m_placement_pressed.size() && m_placement_pressed[vid])
-            continue; // constrained minimum
         const double gn = m_front_gradient_reference > 0. ||
                                   m_offset_params.front_conv_criterion != "gradient_norm_rel"
                               ? front_vertex_conv_ratio(vid)
@@ -2766,29 +2739,6 @@ void TopoOffsetTetMesh::log_front_profile(const size_t vid)
     m_phase = saved;
 }
 
-bool TopoOffsetTetMesh::front_vertex_touches_other(const size_t vid) const
-{
-    // Through a BACKGROUND tet, one of whose other vertices is on the input, on a region
-    // boundary, or on a front this vertex is not joined to by a front edge. A neighbour along
-    // the same front does not count. As in 2D.
-    std::set<size_t> along;
-    for (const Tuple& f : offset_surface_faces_live_at(vid)) {
-        for (const size_t u : get_face_vids(f)) {
-            if (u != vid) along.insert(u);
-        }
-    }
-    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-        if (m_tet_attribute[tid].label != 0) continue; // band or input: not the strip
-        for (const size_t u : oriented_tet_vids(tid)) {
-            if (u == vid) continue;
-            const VertexExtra& ue = m_vertex_extra[u];
-            if (ue.m_is_on_input || ue.m_is_on_region) return true;
-            if (ue.m_is_on_offset && along.count(u) == 0) return true;
-        }
-    }
-    return false;
-}
-
 double TopoOffsetTetMesh::front_chord_target(
     const size_t va,
     const size_t vb,
@@ -2901,10 +2851,6 @@ TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
             continue;
         }
         if (tube > 0.) s.front_max_step = std::max(s.front_max_step, step / tube);
-        if (front_vertex_touches_other(vid)) {
-            ++s.n_front_pressed; // a constrained minimum: the ratio is the constraint force
-            continue;
-        }
         const double gn = front_vertex_conv_ratio(vid);
         if (!std::isfinite(gn)) {
             ++s.n_front_unmeasurable;
@@ -2946,7 +2892,7 @@ void TopoOffsetTetMesh::smooth_group_to_convergence(const char* group_name)
             front_converged ? "converged" : (front_stalled ? "stalled" : "moving");
         logger().info(
             "\t[smoothing {} pass {}/{}] front: max ratio {:.4} (prev {:.4}) at v{}, {} measured "
-            "+ {} unmeasurable + {} pressed, max step {:.4} x tube -> {} | background: max step "
+            "+ {} unmeasurable, max step {:.4} x tube -> {} | background: max step "
             "{:.4} x target edge at v{} over {} vertices -> {}",
             group_name,
             p + 1,
@@ -2956,7 +2902,6 @@ void TopoOffsetTetMesh::smooth_group_to_convergence(const char* group_name)
             s.front_worst_vid,
             s.n_front,
             s.n_front_unmeasurable,
-            s.n_front_pressed,
             s.front_max_step,
             front_verdict,
             s.background_max_step,
@@ -3681,7 +3626,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement() so
     // the tube can be rebuilt AFTER EVERY SMOOTHING PASS. What mesh_improvement() adds and is
     // left out here on purpose is its stall response, which refines around the worst elements: a
-    // travelling front stretches cells by design.
+    // moving front stretches cells by design.
     // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
     // front and the background settle (smooth_group_to_convergence()).
     const int k = std::max(1, m_params.interleaved_smoothing_passes);
@@ -3753,8 +3698,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             "max {:.4}x the bar (worst v{} at ({:.4}, {:.4}, {:.4})), faces max {:.4}x at the "
             "centroid (reported) | {} vertices, {} faces | faces over the tube: {}, of which {} "
             "with all corners on the level set (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) | "
-            "states: placed {} pressed {} travelling {} stuck {} | refinable faces {} (at the "
-            "sizing floor {}) ========",
+            "refinable faces {} (at the sizing floor {}) ========",
             it + 1,
             budget,
             amips,
@@ -3773,10 +3717,6 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             ec.worst_on_level_centroid.x(),
             ec.worst_on_level_centroid.y(),
             ec.worst_on_level_centroid.z(),
-            ec.n_placed,
-            ec.n_pressed_on,
-            ec.n_travelling,
-            ec.n_stuck,
             ec.refinable.size(),
             ec.n_at_floor);
         if (m_offset_params.debug_output) {
@@ -3803,21 +3743,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
                 n);
         }
-        if (ec.n_stuck > 0) {
-            const Vector3d sp = m_vertex_attribute[ec.worst_stuck_vid].m_posf;
-            logger().info(
-                "\t[stuck] turn {}: {} front vertex(es) stopped short of the level set touching "
-                "nothing; worst v{} at ({:.4}, {:.4}, {:.4}), {:.4} x delta off",
-                it + 1,
-                ec.n_stuck,
-                ec.worst_stuck_vid,
-                sp.x(),
-                sp.y(),
-                sp.z(),
-                ec.worst_stuck_rho / m_offset_params.target_distance);
-        }
-        // Termination: every front vertex placed or pressed, none travelling or stuck, and no
-        // chord left to resolve -- then quality with the front frozen (below).
+        // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
+        // no face left to resolve -- then quality with the front frozen (below).
         if (ec.converged_single() && lowered_prev == 0) {
             m_energy_verdict = ec;
             m_converged = true;
@@ -4016,22 +3943,20 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         m_converged = front_ok && m_quality_converged;
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front {} -- vertices placed {} / pressed {} / travelling {} / stuck {} | "
+            "{}{}: front {} -- {} front vertices, max {:.4}x the bar, {} unmeasurable | "
             "faces to resolve {} (at the sizing floor {}) | accuracy front_conv_rel {} "
-            "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar) || "
+            "x target_distance = {:.4} || "
             "final quality {}: max AMIPS {:.4} vs stop_energy {}",
             m_converged ? "Converged" : "Optimization did not converge",
             m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
             front_ok ? "placed" : "NOT placed",
-            ec.n_placed,
-            ec.n_pressed_on,
-            ec.n_travelling,
-            ec.n_stuck,
+            ec.n_vertices,
+            ec.max_vertex,
+            ec.n_unmeasurable,
             ec.refinable.size(),
             ec.n_at_floor,
             m_offset_params.front_conv_rel,
             ec.tube,
-            ec.max_vertex,
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy);
