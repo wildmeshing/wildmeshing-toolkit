@@ -105,15 +105,12 @@ struct Parameters : public wmtk::OptimizerParameters
     int max_iterations;
     /// Run TriWild/TetWild over the INPUT mesh before the simplicial embedding and the marching,
     /// held only by the per-tag region envelopes. See pre_optimize_input_mesh() in either mesh.
+    /// In 3D the pass runs against a sizing field of 1.0 at every vertex.
     bool pre_optimize_input = true;
-    /// See the spec: which sizing field pre_optimize_input runs against. false = seed
-    /// target_distance on the input-complex boundary; true = seed every vertex from its own
-    /// incident edge lengths, so target_distance never enters the field. Read by 2D only.
+    /// [2D ONLY] See the spec: which sizing field 2D's pre_optimize_input runs against. false =
+    /// seed target_distance on the input-complex boundary; true = seed every vertex from its own
+    /// incident edge lengths. 3D does not read it: its pre-pass field is 1.0 everywhere.
     bool pre_optimize_sizing_from_edges = false;
-    /// See the spec: true = seed target_distance / l on the input-complex boundary and grade
-    /// outward (the same field 2D's default produces); false = the field is 1.0 everywhere, so
-    /// the pass runs against the base target length l alone. Read by 3D only.
-    bool pre_optimize_sizing_from_target_length = true;
     /// The operation passes' offset envelope width, as a fraction of target_distance -- the same
     /// tube every turn, rebuilt after every smoothing pass; see rebuild_offset_envelope(). Also
     /// feeds the derived sizing floor (min_edge_length_rel < 0).
@@ -148,9 +145,6 @@ struct Parameters : public wmtk::OptimizerParameters
     int adaptive_smoothing_max_passes; ///< cap on the passes per group
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
-    /// See the spec: false skips init_offset_sizing_field() at construction, so the field the
-    /// front starts from is whatever the pre-pass left (1.0 everywhere without it). 3D only.
-    bool init_offset_sizing;
     /// See the spec: true replaces the sag rule's chord target with a plain halving of the
     /// sizing scalar at the corners of every refinable face, floored like the sag rule. 3D only.
     bool sag_halve_refinement;
@@ -217,7 +211,6 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
-        init_offset_sizing = json_params["init_offset_sizing"];
         sag_halve_refinement = json_params["sag_halve_refinement"];
         pre_smooth = json_params["pre_smooth"];
 
@@ -257,8 +250,6 @@ struct Parameters : public wmtk::OptimizerParameters
         max_rounds = json_params["max_rounds"];
         pre_optimize_input = json_params["pre_optimize_input"];
         pre_optimize_sizing_from_edges = json_params["pre_optimize_sizing_from_edges"];
-        pre_optimize_sizing_from_target_length =
-            json_params["pre_optimize_sizing_from_target_length"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];

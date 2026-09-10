@@ -1296,84 +1296,19 @@ void TopoOffsetTetMesh::pre_optimize_input_mesh()
         m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
     }
 
-    // The sizing field: target_distance on the input-complex BOUNDARY, graded outward. A face is
-    // on that boundary when exactly one incident tet carries the input-complex label -- the rule
-    // that produced m_phi_F.
-    const double l_target = std::max(m_params.l, 1e-16);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l_target);
-    const double s_input = std::clamp(
-        m_offset_params.target_distance / l_target,
-        s_floor,
-        m_offset_params.max_sizing_scalar);
-    if (!m_offset_params.pre_optimize_sizing_from_target_length) {
-        // The default field: 1.0 everywhere, so this pass is a plain TetWild run against the
-        // base target length l and target_distance never enters. The 2D twin's
-        // pre_optimize_sizing_from_edges is not read here.
-        size_t n_set = 0;
-        for (const Tuple& v : get_vertices()) {
-            m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
-            ++n_set;
-        }
-        logger().info(
-            "[pre-optimize] sizing field: 1.0 at every one of {} vertices (target edge length "
-            "l = {:.6g}); target_distance {} does not enter",
-            n_set,
-            l_target,
-            m_offset_params.target_distance);
-    } else {
-        std::vector<size_t> seeds;
-        for (const Tuple& f : get_faces()) {
-            const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
-            // A wall face is not a complex boundary: with offset_in the whole background carries
-            // label 1, and treating the missing opposite tet as "not complex" seeded the entire
-            // domain wall at delta. A wall vertex is seeded only through an interior face where
-            // the complex meets a non-complex region, i.e. where a complex boundary reaches the
-            // wall; a vertex bordering only the complex and the wall keeps the default scalar.
-            if (!opp) continue;
-            const bool in_a = m_tet_attribute[f.tid(*this)].label == 1;
-            const bool in_b = m_tet_attribute[opp->tid(*this)].label == 1;
-            if (in_a == in_b) continue; // interior to the complex, or interior to the background
-            for (const size_t vid : get_face_vids(f)) {
-                double& sc = m_vertex_attribute[vid].m_sizing_scalar;
-                sc = std::min(sc, s_input);
-                seeds.push_back(vid);
-            }
-        }
-        // A sheet, wire or point complex has no label-1 tets, so the face test above seeds
-        // nothing on it. The complex's vertices carry the label whatever its dimension: seed
-        // those too, but ONLY where the complex is not a solid region.
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            if (m_vertex_extra[vid].label != 1) continue;
-            bool region = false;
-            for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
-                if (m_tet_attribute[tid].label == 1) {
-                    region = true;
-                    break;
-                }
-            }
-            if (region) continue;
-            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
-            sc = std::min(sc, s_input);
-            seeds.push_back(vid);
-        }
-        wmtk::vector_unique(seeds);
-        grade_sizing(m_offset_params.sizing_gradation, seeds);
-        logger().info(
-            "[pre-optimize] sizing seed: {} input-complex vertices at scalar {:.6g} "
-            "(= target_distance {} / l {:.6g}), graded outward by {} gradation",
-            seeds.size(),
-            s_input,
-            m_offset_params.target_distance,
-            l_target,
-            m_offset_params.sizing_gradation_mode);
+    // The sizing field this pass runs against is 1.0 at every vertex: a plain TetWild run
+    // against the base target length l. target_distance does not enter the field here.
+    size_t n_set = 0;
+    for (const Tuple& v : get_vertices()) {
+        m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
+        ++n_set;
     }
-
-    // The seeded field, before a single operation runs.
-    if (m_offset_params.debug_output) {
-        write_debug_frame("pre_optimize_seeded");
-    }
+    logger().info(
+        "[pre-optimize] sizing field: 1.0 at every one of {} vertices (target edge length "
+        "l = {:.6g}); target_distance {} does not enter",
+        n_set,
+        std::max(m_params.l, 1e-16),
+        m_offset_params.target_distance);
 
     const double before = std::get<0>(optimization_quality_stats());
     logger().info(
@@ -1411,121 +1346,6 @@ void TopoOffsetTetMesh::pre_optimize_input_mesh()
     // it m_phi_V/E/F/P, the arrays init_offset_potential() hands to Phi -- once before
     // execute_offset(), and that one extraction serves the whole run. As in 2D.
     needle_scan("after the pre-pass");
-}
-
-void TopoOffsetTetMesh::init_offset_sizing_field()
-{
-    // Paper Sec. 5.3.3, Step 1: the sizing field "is defined on each edge of the offset mesh and
-    // is initialized with the current length of each edge." The field is per-vertex here, so a
-    // vertex takes the mean of its incident offset-surface edges; every other vertex is seeded
-    // from its whole one-ring, or the first collapse pass decimates the background. As in 2D.
-    const double l = std::max(m_params.l, 1e-16);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-
-    double raw_sum = 0.;
-    int n_seeded = 0;
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        double sum_len = 0.;
-        int n = 0;
-        std::set<size_t> seen;
-        for (const Tuple& f : offset_surface_faces_live_at(vid)) {
-            for (const size_t nb : get_face_vids(f)) {
-                if (nb == vid || !seen.insert(nb).second) continue;
-                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
-                ++n;
-            }
-        }
-        if (n == 0) {
-            for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
-                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
-                ++n;
-            }
-            if (n == 0) continue; // isolated vertex; nothing to measure
-            m_vertex_attribute[vid].m_sizing_scalar =
-                std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
-            continue;
-        }
-        raw_sum += sum_len / n;
-        ++n_seeded;
-        m_vertex_attribute[vid].m_sizing_scalar =
-            std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
-    }
-    logger().info(
-        "\tOffset sizing seed: {} vertices, mean incident length {:.6} -> target {:.6} "
-        "(base l {:.6}, l_min {:.6} = {} x target_distance {}, scalar floor {:.6})",
-        n_seeded,
-        n_seeded > 0 ? raw_sum / n_seeded : 0.,
-        std::max(n_seeded > 0 ? raw_sum / n_seeded : 0., m_offset_params.min_edge_length),
-        l,
-        m_offset_params.min_edge_length,
-        m_offset_params.min_edge_length_rel,
-        m_offset_params.target_distance,
-        s_floor);
-
-    // The front's resolution follows from the tolerance and the level set's curvature, set once
-    // here: L <= sqrt(8 eps delta rho), rho the smaller principal radius of the level set of Phi
-    // through the vertex, floored at delta. See the 2D twin.
-    {
-        const double delta = m_offset_params.target_distance;
-        const double eps = m_offset_params.offset_envelope_rel;
-        std::vector<size_t> changed;
-        double L_min = std::numeric_limits<double>::infinity(), L_max = 0.;
-        size_t n_flat = 0;
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            if (!m_vertex_extra[vid].m_is_on_offset) continue;
-            const Vector3d x = m_vertex_attribute[vid].m_posf;
-            const OffsetPotential3D& pot = potential_for(vid);
-            const Vector3d g = pot.gradient(x);
-            const Eigen::Matrix3d H = pot.hessian(x);
-            const double gn = g.norm();
-            // The largest principal curvature of the level set through x: the extreme eigenvalue
-            // of the shape operator P H P / |g| on the tangent plane, P = I - n n^T.
-            double rho = delta;
-            if (gn > 0. && g.allFinite() && H.allFinite()) {
-                const Vector3d n = g / gn;
-                const Eigen::Matrix3d P = Eigen::Matrix3d::Identity() - n * n.transpose();
-                const Eigen::Matrix3d S = P * H * P / gn;
-                Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(S);
-                double k = 0.;
-                if (es.info() == Eigen::Success) {
-                    for (int i = 0; i < 3; ++i) k = std::max(k, std::abs(es.eigenvalues()[i]));
-                }
-                if (std::isfinite(k) && k > 0.)
-                    rho = std::max(1. / k, delta);
-                else
-                    rho = std::numeric_limits<double>::infinity();
-            }
-            if (!std::isfinite(rho)) {
-                ++n_flat;
-                continue; // a flat level set: the seeded resolution stands
-            }
-            const double L = 0.75 * std::sqrt(8. * eps * delta * rho);
-            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
-            const double ns = std::clamp(L / l, s_floor, m_offset_params.max_sizing_scalar);
-            if (ns < sc) {
-                sc = ns;
-                changed.push_back(vid);
-            }
-            const double Lc = std::min(L, sc * l);
-            L_min = std::min(L_min, Lc);
-            L_max = std::max(L_max, Lc);
-        }
-        grade_sizing(m_offset_params.sizing_gradation, changed);
-        logger().info(
-            "\tFront resolution from the tolerance: L = 3/4 sqrt(8 eps delta rho), rho >= delta "
-            "-> {:.6g} .. {:.6g} ({:.3g} .. {:.3g} x delta) at eps {}; {} front vertices "
-            "tightened, {} on a flat level set left at the seed",
-            std::isfinite(L_min) ? L_min : 0.,
-            L_max,
-            std::isfinite(L_min) ? L_min / delta : 0.,
-            L_max / delta,
-            eps,
-            changed.size(),
-            n_flat);
-    }
 }
 
 void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const double filter_energy)
@@ -3838,13 +3658,22 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         m_offset_params.front_conv_rel,
         offset_residual_samples());
 
-    // Seed the sizing field from the offset's current edge lengths, before any operation runs.
-    if (m_offset_params.init_offset_sizing) {
-        init_offset_sizing_field();
-    } else {
+    // No sizing seed here: the loop starts from the field as it is -- 1.0 everywhere, or what
+    // the pre-optimize pass left when pre_optimize_input is true. The front's resolution comes
+    // from the sag rule once it is placed.
+    {
+        double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
+        for (const Tuple& v : get_vertices()) {
+            const double s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
+            s_min = std::min(s_min, s);
+            s_max = std::max(s_max, s);
+        }
         logger().info(
-            "[sizing] init_offset_sizing false: init_offset_sizing_field() skipped, the loop "
-            "starts from the field the pre-pass left");
+            "[sizing] the loop starts from the sizing field as is ({}): scalar {:.6g} .. {:.6g}",
+            m_offset_params.pre_optimize_input ? "what the pre-optimize pass left"
+                                               : "1.0 everywhere, no pre-optimize pass",
+            s_min,
+            s_max);
     }
 
     // Unconditional: write_vtu() must not be the only consolidate here (see the 2D twin). No

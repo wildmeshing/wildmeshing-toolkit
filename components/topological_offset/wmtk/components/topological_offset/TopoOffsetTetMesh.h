@@ -578,11 +578,6 @@ public:
     /// The live offset-surface faces incident to vid.
     std::vector<Tuple> offset_surface_faces_live_at(size_t vid) const;
 
-    /// Seed the sizing field from the offset's current edge lengths (paper Sec. 5.3.3, Step 1),
-    /// once, before the first operation pass, then tighten the front's resolution from the
-    /// tolerance and the level set's curvature.
-    void init_offset_sizing_field();
-
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
     std::vector<std::array<double, 8>> optimization_metrics;
@@ -1458,9 +1453,9 @@ public:
     /**
      * @brief One frame of the run's single debug timeline: <output>_NNNNN.vtu with the next
      * sequence number, and one "NNNNN<tab>label" line in <output>_frames.txt. Every debug
-     * frame the run writes -- the input as loaded, the construction stages, the pre-optimize
-     * seed, and the optimization's own frames through write_optimization_debug_output() --
-     * goes through this sequence, so the numbers are consecutive and the .txt says what each
+     * frame the run writes -- the input as loaded, the construction stages, and the
+     * optimization's own frames through write_optimization_debug_output() -- goes through
+     * this sequence, so the numbers are consecutive and the .txt says what each
      * one is. The only debug files outside it are the ones that are not this mesh:
      * <output>_input_complex.vtu and the phi grid.
      */
@@ -1528,7 +1523,8 @@ public:
 
     /**
      * @brief TetWild over the input mesh, before any of the offset exists, held only by the
-     * per-tag region envelopes. The 3D twin of TopoOffsetTriMesh::pre_optimize_input_mesh().
+     * per-tag region envelopes, against a sizing field of 1.0 at every vertex. The 3D twin of
+     * TopoOffsetTriMesh::pre_optimize_input_mesh(), minus the 2D seed options.
      */
     void pre_optimize_input_mesh();
 

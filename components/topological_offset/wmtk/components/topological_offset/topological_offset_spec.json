@@ -44,7 +44,6 @@
       "adaptive_smoothing_max_passes",
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
-      "init_offset_sizing",
       "sag_halve_refinement",
       "pre_smooth",
       "max_iterations",
@@ -78,7 +77,6 @@
       "sizing_collapse_min",
       "max_rounds",
       "pre_optimize_sizing_from_edges",
-      "pre_optimize_sizing_from_target_length",
       "pre_optimize_input",
       "w_amips",
       "smoothing_mode",
@@ -371,12 +369,6 @@
     "doc": "3D only. Under adaptive_smoothing the background counts as settled when no non-front vertex moved more than this fraction of its own target edge length s_v * l in the pass."
   },
   {
-    "pointer": "/init_offset_sizing",
-    "type": "bool",
-    "default": true,
-    "doc": "3D only. true (the default): at construction, before the single-phase loop, init_offset_sizing_field seeds the sizing field on the front from its current edge lengths, tightens it by the level set's curvature at each vertex's constructed position (L = 3/4 sqrt(8 eps delta rho)), and grades it outward. false: that call is skipped, so the loop starts from the field the pre-optimize pass left (1.0 everywhere when there was none), and the front's resolution comes from the sag rule alone once it is placed."
-  },
-  {
     "pointer": "/sag_halve_refinement",
     "type": "bool",
     "default": false,
@@ -500,19 +492,13 @@
     "pointer": "/pre_optimize_sizing_from_edges",
     "default": false,
     "type": "bool",
-    "doc": "2D only; 3D reads pre_optimize_sizing_from_target_length instead. Which sizing field pre_optimize_input runs against. false (the default): seed target_distance / l on the input-complex boundary and grade outward, so the complex is resolved at the offset's own scale. true: seed every vertex from the mean of its own incident edge lengths instead, so target_distance never enters the field; that improves element quality without refining toward delta, so the constructed offset lands wherever the input mesh's own scale puts it. Only read when pre_optimize_input is true."
-  },
-  {
-    "pointer": "/pre_optimize_sizing_from_target_length",
-    "default": true,
-    "type": "bool",
-    "doc": "3D only. Which sizing field pre_optimize_input runs against. true (the default): seed target_distance / l on the input-complex boundary and grade outward, so the complex is resolved at the offset's own scale before the band is built. false: the field is 1.0 everywhere, so the pass is a plain TetWild run against the base target length l and target_distance never enters; the constructed offset then lands wherever the input mesh's own scale puts it and the front has to be refined by the optimization. Only read when pre_optimize_input is true."
+    "doc": "[2D ONLY] Which sizing field 2D's pre_optimize_input runs against; 3D does not read it, its pre-pass field is 1.0 everywhere. false (the default): seed target_distance / l on the input-complex boundary and grade outward, so the complex is resolved at the offset's own scale. true: seed every vertex from the mean of its own incident edge lengths instead, so target_distance never enters the field; that improves element quality without refining toward delta, so the constructed offset lands wherever the input mesh's own scale puts it. Only read when pre_optimize_input is true."
   },
   {
     "pointer": "/pre_optimize_input",
     "default": true,
     "type": "bool",
-    "doc": "Run TriWild/TetWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same parameters and held only by the per-tag region envelopes, which exist by then. The sizing field is seeded on the input-complex boundary alone and graded outward, so the complex is resolved at the offset's own scale and the marching band comes out one delta-scale cell thick. That matters because the marching places the offset on the background mesh's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
+    "doc": "Run TriWild/TetWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same parameters and held only by the per-tag region envelopes, which exist by then. In 3D the pass runs against a sizing field of 1.0 at every vertex, i.e. the base target length l, and the main loop then starts from whatever field the pass leaves (1.0 everywhere when the pass is off). In 2D the field is seeded per pre_optimize_sizing_from_edges, so the complex is resolved at the offset's own scale and the marching band comes out one delta-scale cell thick. That matters because the marching places the offset on the background mesh's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
   },
   {
     "pointer": "/min_edge_length",
@@ -552,7 +538,7 @@
       "ring",
       "distance"
     ],
-    "doc": "3D only. How a lowered sizing scalar spreads to the vertices around it, at every place the offset lowers the field (the pre-optimize seed, the front's curvature seed, the sag rule, the stuck refine). 'ring' (the default): the base gradation_smooth_sizing -- walk outward over mesh neighbours, capping each neighbour at sizing_gradation times the scalar it came from, so the field grades by mesh rings and a fine seed in a coarse mesh drags a shell of rings down with it. 'distance': TetWild's adjust_sizing_field gradation -- walk outward from the seeds and multiply every vertex within R = 1.8 l of its nearest seed by the linear ramp 0.5 + 0.5 dist / R (halved next to a seed, untouched at R), stopping at R; the seeds keep the value they were just given and nothing outside the ball changes. The refinement then reaches a seed geometrically through the split pass (each split child takes the mean of its parents' scalars) instead of by rings, so a fine target stays local to the seed however coarse the mesh around it is."
+    "doc": "3D only. How a lowered sizing scalar spreads to the vertices around it, at every place the offset lowers the field (the sag rule, the stuck refine). 'ring' (the default): the base gradation_smooth_sizing -- walk outward over mesh neighbours, capping each neighbour at sizing_gradation times the scalar it came from, so the field grades by mesh rings and a fine seed in a coarse mesh drags a shell of rings down with it. 'distance': TetWild's adjust_sizing_field gradation -- walk outward from the seeds and multiply every vertex within R = 1.8 l of its nearest seed by the linear ramp 0.5 + 0.5 dist / R (halved next to a seed, untouched at R), stopping at R; the seeds keep the value they were just given and nothing outside the ball changes. The refinement then reaches a seed geometrically through the split pass (each split child takes the mean of its parents' scalars) instead of by rings, so a fine target stays local to the seed however coarse the mesh around it is."
   },
   {
     "pointer": "/split_high_valence_threshold",
