@@ -1250,7 +1250,7 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     if (m_offset_params.pre_optimize_input) {
         pre_optimize_input_mesh();
         if (m_offset_params.debug_output) {
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+            write_debug_frame("pre_optimized");
         }
     }
 
@@ -1263,23 +1263,23 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     }
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("simplicial_embedding");
     }
 
     // initialize offset
     logger().info("Initializing offset...");
     // Default: the inserted vertex is the plain edge midpoint -- target_distance does not enter
     // the placement at all, and carrying the surface out to target_distance is the optimization
-    // phase's job. binary_search_construction: the vertex goes to a root of
-    // d(x) - target_distance on the edge (bisection, binary_search_max_depth halvings), to the
-    // midpoint on an edge that brackets no root.
-    m_edge_split_mode = m_offset_params.binary_search_construction ? EdgeSplitMode::BinarySearch
-                                                                   : EdgeSplitMode::Midpoint;
+    // phase's job. sphere_trace_initialization: the vertex goes to the point of the edge where
+    // d(x) = target_distance within sphere_trace_target_rel_tol (sphere tracing from the complex
+    // end), to the midpoint on an edge the trace leaves.
+    m_edge_split_mode = m_offset_params.sphere_trace_initialization ? EdgeSplitMode::SphereTrace
+                                                                    : EdgeSplitMode::Midpoint;
     marching_tets();
     m_edge_split_mode = EdgeSplitMode::Midpoint;
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("marching");
     }
 
     // No growth pass: the band is exactly the one layer of background tets marching_tets()
@@ -1295,13 +1295,13 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     // changes the order later passes enumerate operations in, which changes the run.
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("re_embedded");
     }
 
     set_offset_tet_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("offset_tagged");
     }
 
     assert(ambient_assert());
@@ -1450,6 +1450,8 @@ void TopoOffsetTetMesh::marching_tets()
 {
     m_marching_root_splits = 0;
     m_marching_midpoint_splits = 0;
+    m_marching_trace_steps = 0;
+    m_marching_trace_steps_max = 0;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -1488,15 +1490,18 @@ void TopoOffsetTetMesh::marching_tets()
             log_and_throw_error("edge split failed! (marching_tets)");
         }
     }
-    if (m_edge_split_mode == EdgeSplitMode::BinarySearch) {
+    if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         logger().info(
-            "\t[construction] binary_search_construction: {} of {} marched edges split at a root "
-            "of d(x) - target_distance ({} halvings), {} at the midpoint (no root bracketed on "
-            "the edge)",
+            "\t[construction] sphere_trace_initialization: {} of {} marched edges placed where "
+            "|d(x) - target_distance| <= {} x target_distance, {} at the midpoint (the trace left "
+            "the edge) | trace steps: {} total, {} max, {:.1f} per edge",
             m_marching_root_splits,
             e_to_split.size(),
-            std::max(0, m_offset_params.binary_search_max_depth),
-            m_marching_midpoint_splits);
+            m_offset_params.sphere_trace_target_rel_tol,
+            m_marching_midpoint_splits,
+            m_marching_trace_steps,
+            m_marching_trace_steps_max,
+            e_to_split.empty() ? 0. : double(m_marching_trace_steps) / double(e_to_split.size()));
     } else {
         logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }

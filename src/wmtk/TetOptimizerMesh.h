@@ -234,6 +234,12 @@ public:
     /// Shared TetWild/SimWild outer optimization schedule.
     int m_iterations_used = 0;
     int m_debug_print_counter = 0;
+    /// WHICH PASS THE NEXT DEBUG FRAME BELONGS TO, e.g. "split", "smooth", "collapse-skipped"
+    /// (a group whose op count was 0 still writes its checkpoint frame). Set by every writer
+    /// before it writes, so an application that renames frames (the 3D offset) can carry the
+    /// pass name into the file name; the base's own "debug_<N>" names are unchanged. The
+    /// TriOptimizerMesh twin.
+    std::string m_debug_pass_name;
     void mesh_improvement(int max_its = 80);
     std::tuple<double, double> local_operations(
         const std::array<int, 4>& ops,

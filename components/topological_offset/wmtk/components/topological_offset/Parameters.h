@@ -88,10 +88,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // TopoOffsetTetMesh::offset_face_samples.
     int offset_residual_samples;
     bool sorted_marching;
-    /// See the spec (3D only): marching_tets places each new vertex at a root of
-    /// d(x) - target_distance along the edge by bisection, midpoint when no root is bracketed.
-    bool binary_search_construction;
-    int binary_search_max_depth; ///< bisection halvings per edge
+    /// See the spec (3D only): marching_tets places each new vertex where d(x) reaches
+    /// target_distance along the edge by sphere tracing, midpoint when the trace leaves the edge.
+    bool sphere_trace_initialization;
+    double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -190,8 +190,8 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_residual_samples = json_params["offset_residual_samples"];
 
         sorted_marching = json_params["sorted_marching"];
-        binary_search_construction = json_params["binary_search_construction"];
-        binary_search_max_depth = json_params["binary_search_max_depth"];
+        sphere_trace_initialization = json_params["sphere_trace_initialization"];
+        sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

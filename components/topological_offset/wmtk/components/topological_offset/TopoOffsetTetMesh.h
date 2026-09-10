@@ -137,13 +137,13 @@ class TopoOffsetTetMesh : public wmtk::TetOptimizerMesh
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0, // construction: simplicial embedding AND marching_tets
-        BinarySearch = 1, // marching_tets under binary_search_construction: bisection on
-                          // d(x) - target_distance along the edge, midpoint when no root
+        SphereTrace = 1, // marching_tets under sphere_trace_initialization: sphere tracing
+                         // along the edge to d(x) = target_distance, midpoint when the trace
+                         // leaves the edge
         Optimization = 5 // the optimization phase; the shared engine places the vertex
     };
 
 public:
-    int m_vtu_counter = 0;
     std::array<size_t, 4> m_init_counts = {{0, 0, 0, 0}};
     size_t m_tags_count;
     /// Tag id of the input's envelope surface group (the .msh triangle elements), or -1. An open
@@ -645,21 +645,30 @@ public:
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);
     /**
-     * @brief Construction placement under binary_search_construction: bisection for a root of
-     * f(x) = d(x) - target_distance along the edge from p_in (the endpoint in the input complex
-     * or offset, label != 0) to p_out (the background endpoint), d(x) the distance to the input
-     * complex through m_input_complex_bvh. Only runs when f changes sign between the endpoints,
-     * i.e. a root is bracketed; then binary_search_max_depth halvings of the bracket and p_new
-     * is the final bracket's midpoint. Returns false, with p_new untouched, when no root is
-     * bracketed (the edge is shorter than target_distance, or both ends are outside it) -- the
-     * caller then places the plain midpoint. Assumes d is monotonic along the edge, as the old
-     * BinarySearch mode did; a non-monotonic d yields one of its roots.
+     * @brief Construction placement under sphere_trace_initialization: sphere tracing along the
+     * edge from p_in (the endpoint in the input complex, label != 0) towards p_out (the
+     * background endpoint) for the point where d(x) = target_distance, d(x) the distance to the
+     * input complex through m_input_complex_bvh. From t = 0 the trace evaluates d at the current
+     * point and steps forward by target_distance - d, the largest step that cannot cross the
+     * level set (d is 1-Lipschitz); it stops when |d - target_distance| <=
+     * sphere_trace_target_rel_tol x target_distance and returns true with p_new there. It returns
+     * false, p_new untouched, as soon as the current point reaches or passes p_out (t >= L: the
+     * level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target);
+     * the caller then places the plain midpoint. Every step taken is longer than the tolerance, so
+     * the trace
+     * ends within L / (tol x target_distance) steps; `steps` returns how many it took. No
+     * snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
      */
-    bool edge_split_binary_search(const Vector3d& p_in, const Vector3d& p_out, Vector3d& p_new)
-        const;
-    /// marching_tets() tallies for the construction log: edges placed at a root / at the
-    /// midpoint for want of one. Reset at the start of marching_tets().
+    bool edge_split_sphere_trace(
+        const Vector3d& p_in,
+        const Vector3d& p_out,
+        Vector3d& p_new,
+        size_t& steps) const;
+    /// marching_tets() tallies for the construction log: edges placed on the level set / at the
+    /// midpoint because the trace left the edge, and the trace steps (total, max). Reset at the
+    /// start of marching_tets().
     size_t m_marching_root_splits = 0, m_marching_midpoint_splits = 0;
+    size_t m_marching_trace_steps = 0, m_marching_trace_steps_max = 0;
 
     /**
      * @brief Reject any collapse that violates the substructure link condition, and remember the
@@ -1428,9 +1437,9 @@ public:
     double amips_rel_at_face(const Tuple& f) const;
 
     /**
-     * @brief Put the frames beside the run's own output, and rename them into one timeline:
-     * <output>_NNNNN.vtu with one "NNNNN<tab>r<round><phase><pass>_<op>" line per frame in
-     * <output>_frames.txt. Exactly the 2D scheme; see TopoOffsetTriMesh.
+     * @brief Put the optimization's frames on the run's single debug timeline (see
+     * write_debug_frame()), labelled "r<round><phase><pass>_<op>" / "r<round><phase>_end".
+     * The label scheme is the 2D one; 2D still numbers its construction frames separately.
      */
     void write_optimization_debug_output(const std::string& path) override
     {
@@ -1451,16 +1460,20 @@ public:
         } else if (path.rfind("phase_", 0) == 0) {
             label = fmt::format("r{}{}_end", m_ab_round, ph);
         }
-        const size_t idx = m_debug_seq++;
-        append_frame_label(idx, label);
-        write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+        write_debug_frame(label);
     }
-    /// The pass the next debug frame belongs to; set by the single-phase loop before each
-    /// operation group, and by the smoothing sweeps. The 2D base carries this itself.
-    std::string m_debug_pass_name;
-
     /// One line of <output>_frames.txt; truncates the file on the first frame.
     void append_frame_label(size_t idx, const std::string& label) const;
+    /**
+     * @brief One frame of the run's single debug timeline: <output>_NNNNN.vtu with the next
+     * sequence number, and one "NNNNN<tab>label" line in <output>_frames.txt. Every debug
+     * frame the run writes -- the input as loaded, the construction stages, the pre-optimize
+     * seed, and the optimization's own frames through write_optimization_debug_output() --
+     * goes through this sequence, so the numbers are consecutive and the .txt says what each
+     * one is. The only debug files outside it are the ones that are not this mesh:
+     * <output>_input_complex.vtu and the phi grid.
+     */
+    void write_debug_frame(const std::string& label);
 
     /**
      * @brief initialize TetMesh from vertex, tet, and tag data
