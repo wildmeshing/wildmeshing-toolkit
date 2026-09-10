@@ -2849,6 +2849,32 @@ size_t TopoOffsetTetMesh::refine_front_from_sag(
     return changed.size();
 }
 
+size_t TopoOffsetTetMesh::refine_front_by_halving(
+    const std::vector<EnergyCriterion::Refinable>& faces)
+{
+    const double l = std::max(m_params.l, 1e-300);
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    // Each corner is halved once per call: the first face that names it does the halving and
+    // marks it, so a vertex shared by several refinable faces is not halved several times.
+    std::vector<size_t> changed;
+    std::vector<char> done(vert_capacity(), 0);
+    for (const EnergyCriterion::Refinable& r : faces) {
+        for (const size_t v : {r.a, r.b, r.c}) {
+            if (done[v]) continue;
+            done[v] = 1;
+            double& sc = m_vertex_attribute[v].m_sizing_scalar;
+            const double sn = std::max(0.5 * sc, s_floor);
+            if (sn < sc) {
+                sc = sn;
+                changed.push_back(v);
+            }
+        }
+    }
+    grade_sizing(m_offset_params.sizing_gradation, changed);
+    return changed.size();
+}
+
 TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
     const std::vector<Vector3d>& before)
 {
@@ -3666,6 +3692,31 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     // One turn of grace after a target is lowered: refine_front_from_sag() writes a sizing target
     // and the split pass that realizes it does not run until the NEXT turn.
     size_t lowered_last_turn = 0;
+    if (m_offset_params.pre_smooth) {
+        // One smoothing block on the constructed mesh before turn 1's split pass: the same
+        // block every operation group is followed by, with the same bookkeeping around it
+        // (plastic rests stamped before, the tube rebuilt after). Frames are labelled r0S*.
+        m_ab_round = 0;
+        m_phase = OptPhase::Single;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
+            m_vertex_extra[vid].m_turn_start_valid = true;
+        }
+        rebuild_offset_envelope();
+        stamp_plastic_rests();
+        logger().info(
+            "\t[pre_smooth] one smoothing block before turn 1: {}",
+            m_offset_params.adaptive_smoothing
+                ? std::string("adaptive smoothing")
+                : fmt::format("{} interleaved smoothing pass(es)", k));
+        if (m_offset_params.adaptive_smoothing) {
+            smooth_group_to_convergence("pre_smooth");
+        } else {
+            local_operations({{0, 0, 0, k}});
+        }
+        rebuild_offset_envelope();
+    }
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;
         m_iterations_used = it + 1;
@@ -3734,18 +3785,22 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         const size_t lowered_prev = lowered_last_turn;
         lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
-            const size_t n = refine_front_from_sag(ec.refinable);
+            // sag_halve_refinement: halve the corners' scalars instead of the chord target.
+            const bool halve = m_offset_params.sag_halve_refinement;
+            const size_t n =
+                halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
             lowered_last_turn = n;
             logger().info(
                 "\t[resolution] turn {}: {} front face(s) with all corners on the level set sag "
                 "over the tube at the centroid (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> "
-                "target lowered at {} vertices",
+                "{} at {} vertices",
                 it + 1,
                 ec.refinable.size(),
                 ec.max_face_on_level,
                 ec.worst_on_level_centroid.x(),
                 ec.worst_on_level_centroid.y(),
                 ec.worst_on_level_centroid.z(),
+                halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
                 n);
         }
         if (ec.n_stuck > 0) {

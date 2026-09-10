@@ -1323,6 +1323,10 @@ public:
     /// front_chord_target() over its longest edge with the centroid sag, graded outward.
     /// Returns the vertices changed.
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& faces);
+    /// sag_halve_refinement: halve the sizing scalar at the corners of every refinable face,
+    /// once per vertex per call, floored like refine_front_from_sag(), then graded outward.
+    /// Returns the number of vertices lowered.
+    size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),

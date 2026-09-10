@@ -45,6 +45,8 @@
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
       "init_offset_sizing",
+      "sag_halve_refinement",
+      "pre_smooth",
       "max_iterations",
       "offset_envelope_rel",
       "length_rel",
@@ -373,6 +375,18 @@
     "type": "bool",
     "default": true,
     "doc": "3D only. true (the default): at construction, before the single-phase loop, init_offset_sizing_field seeds the sizing field on the front from its current edge lengths, tightens it by the level set's curvature at each vertex's constructed position (L = 3/4 sqrt(8 eps delta rho)), and grades it outward. false: that call is skipped, so the loop starts from the field the pre-optimize pass left (1.0 everywhere when there was none), and the front's resolution comes from the sag rule alone once it is placed."
+  },
+  {
+    "pointer": "/sag_halve_refinement",
+    "type": "bool",
+    "default": false,
+    "doc": "3D only, single-phase loop only. How the sizing field is lowered at the end of a turn for the refinable front faces (every corner on the level set, the centroid's sag over it beyond front_conv_rel x target_distance). false (the default): refine_front_from_sag, the chord rule 3/4 L (tube/sag)^(1/p) capped at L/2, with the exponent p read from the field's turn across the chord -- unbounded below except for the sizing floor, so a coarse front over a creased field can drop a scalar by 20x in one turn. true: the corners of every refinable face have their sizing scalar halved, once per turn no matter how many refinable faces share the vertex, floored at max(min_sizing_scalar, min_edge_length / l); no other vertex is lowered directly. The lowered scalars are then graded outward by sizing_gradation_mode as with the chord rule, so with sizing_gradation 2 on an already graded field a neighbour also drops by at most a factor 2."
+  },
+  {
+    "pointer": "/pre_smooth",
+    "type": "bool",
+    "default": false,
+    "doc": "3D only, single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: interleaved_smoothing_passes sweeps, or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
   },
   {
     "pointer": "/coarsen_pass",
