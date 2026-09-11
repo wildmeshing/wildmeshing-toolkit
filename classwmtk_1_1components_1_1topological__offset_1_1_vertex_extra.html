@@ -160,7 +160,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_turn_start_valid</b
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Where this vertex stood at the start of the turn, so the convergence states can read its net movement. A split copies it on, so a new vertex reads as moved for the turn it was born in. </p>
+<p>Where this vertex stood at the start of the turn. Written every turn (and before the pre_smooth block); read by nothing since the per-vertex convergence states were removed. </p>
 
 </div>
 </div>

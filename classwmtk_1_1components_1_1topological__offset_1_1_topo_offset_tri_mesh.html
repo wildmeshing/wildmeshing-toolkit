@@ -128,6 +128,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html">OptSplitCache2d</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smoothing_progress.html">SmoothingProgress</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html">SmoothTrace</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">What smoothing did with each class of vertex, per pass.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -138,6 +140,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:addbcdb8e756d5f5c94e67fbb46012ed3" id="r_addbcdb8e756d5f5c94e67fbb46012ed3"><td class="memItemLeft" align="right" valign="top"><a id="addbcdb8e756d5f5c94e67fbb46012ed3" name="addbcdb8e756d5f5c94e67fbb46012ed3"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>EdgeSplitMode</b> { <b>Midpoint</b> = 0
+, <b>SphereTrace</b> = 1
 , <b>Optimization</b> = 2
  }</td></tr>
 <tr class="separator:addbcdb8e756d5f5c94e67fbb46012ed3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,7 +148,7 @@ Public Types</h2></td></tr>
 , <b>B</b>
 , <b>Single</b>
  }</td></tr>
-<tr class="memdesc:ae7d378d2e069d63e6dda752dec7228b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which half of the alternating optimization is running.  <a href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae7d378d2e069d63e6dda752dec7228b4">More...</a><br /></td></tr>
+<tr class="memdesc:ae7d378d2e069d63e6dda752dec7228b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which mode the hooks are running in. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aefd648969e4fc35a7802ed0ab4fa4bfc" title="Which mode the hooks are running in. The 3D copy of TopoOffsetTriMesh::OptPhase.">TopoOffsetTetMesh::OptPhase</a>.  <a href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae7d378d2e069d63e6dda752dec7228b4">More...</a><br /></td></tr>
 <tr class="separator:ae7d378d2e069d63e6dda752dec7228b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae54cc73cecb6e6b6aa2ebaec06b36faf" id="r_ae54cc73cecb6e6b6aa2ebaec06b36faf"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae54cc73cecb6e6b6aa2ebaec06b36faf">EnvelopeSetup</a> { <b>PerTag</b>
 , <b>WallComplex</b>
@@ -305,14 +308,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_worst_dist_vertex
 <tr class="separator:a2e8bf1ccd77703928c10575cfdbc4bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68fe276a1546b7d3c1b1ef0f3bc21998" id="r_a68fe276a1546b7d3c1b1ef0f3bc21998"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a68fe276a1546b7d3c1b1ef0f3bc21998">edge_is_offset_surface_live</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="separator:a68fe276a1546b7d3c1b1ef0f3bc21998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65618a133bd94c513e2905b127c48547" id="r_a65618a133bd94c513e2905b127c48547"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a65618a133bd94c513e2905b127c48547">init_offset_sizing_field</a> ()</td></tr>
-<tr class="separator:a65618a133bd94c513e2905b127c48547"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88f9082c92ed850780ed44e420d3df01" id="r_a88f9082c92ed850780ed44e420d3df01"><td class="memItemLeft" align="right" valign="top"><a id="a88f9082c92ed850780ed44e420d3df01" name="a88f9082c92ed850780ed44e420d3df01"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>marching_split_edge_before</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="separator:a88f9082c92ed850780ed44e420d3df01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad00c482e39b5aab446463b9d91e4cdf6" id="r_ad00c482e39b5aab446463b9d91e4cdf6"><td class="memItemLeft" align="right" valign="top"><a id="ad00c482e39b5aab446463b9d91e4cdf6" name="ad00c482e39b5aab446463b9d91e4cdf6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>marching_split_edge_after</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="separator:ad00c482e39b5aab446463b9d91e4cdf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5723c60394dff4a8441cd6b90b52e5f" id="r_ab5723c60394dff4a8441cd6b90b52e5f"><td class="memItemLeft" align="right" valign="top"><a id="ab5723c60394dff4a8441cd6b90b52e5f" name="ab5723c60394dff4a8441cd6b90b52e5f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>edge_split_sphere_trace</b> (const Vector2d &amp;p_in, const Vector2d &amp;p_out, Vector2d &amp;p_new, size_t &amp;steps) const</td></tr>
+<tr class="memdesc:ab5723c60394dff4a8441cd6b90b52e5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construction placement under sphere_trace_initialization: sphere tracing along the edge from p_in (the endpoint in the input complex, label != 0) towards p_out (the background endpoint) for the point where d(x) = target_distance, d(x) the distance to the input complex through m_input_complex_bvh. From t = 0 the trace evaluates d at the current point and steps forward by target_distance - d, the largest step that cannot cross the level set (d is 1-Lipschitz); it stops when |d - target_distance| &lt;= sphere_trace_target_rel_tol x target_distance and returns true with p_new there. It returns false, p_new untouched, as soon as the current point reaches or passes p_out (t &gt;= L: the level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target); the caller then places the plain midpoint. Every step taken is longer than the tolerance, so the trace ends within L / (tol x target_distance) steps; <code>steps</code> returns how many it took. No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is. Same as 3D. <br /></td></tr>
+<tr class="separator:ab5723c60394dff4a8441cd6b90b52e5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb3cf3ddec458e5b7b78947d7d0d34a4" id="r_aeb3cf3ddec458e5b7b78947d7d0d34a4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb3cf3ddec458e5b7b78947d7d0d34a4">collapse_edge_before</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t) override</td></tr>
 <tr class="memdesc:aeb3cf3ddec458e5b7b78947d7d0d34a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reject any collapse that violates the substructure link condition.  <br /></td></tr>
 <tr class="separator:aeb3cf3ddec458e5b7b78947d7d0d34a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -494,12 +499,22 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stamp_plastic_rests</
 <tr class="memitem:a99288ef3171bc0b77ccde1eaaa6ccfe1" id="r_a99288ef3171bc0b77ccde1eaaa6ccfe1"><td class="memItemLeft" align="right" valign="top"><a id="a99288ef3171bc0b77ccde1eaaa6ccfe1" name="a99288ef3171bc0b77ccde1eaaa6ccfe1"></a>
 <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html">EnergyCriterion</a>&#160;</td><td class="memItemRight" valign="bottom"><b>energy_criterion</b> ()</td></tr>
 <tr class="separator:a99288ef3171bc0b77ccde1eaaa6ccfe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad72246f7d298d397f758209802ca936" id="r_aad72246f7d298d397f758209802ca936"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aad72246f7d298d397f758209802ca936">front_vertex_touches_other</a> (size_t vid) const</td></tr>
-<tr class="separator:aad72246f7d298d397f758209802ca936"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43331ef995001b2654760d9326d1a391" id="r_a43331ef995001b2654760d9326d1a391"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a43331ef995001b2654760d9326d1a391">front_chord_target</a> (size_t va, size_t vb, double len, double sag, double tube) const</td></tr>
 <tr class="separator:a43331ef995001b2654760d9326d1a391"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2aafc5fa40cbf1db6fd044fcf5c3324d" id="r_a2aafc5fa40cbf1db6fd044fcf5c3324d"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2aafc5fa40cbf1db6fd044fcf5c3324d">refine_front_from_sag</a> (const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion_1_1_refinable.html">EnergyCriterion::Refinable</a> &gt; &amp;edges)</td></tr>
 <tr class="separator:a2aafc5fa40cbf1db6fd044fcf5c3324d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23e5cfd9a644120025db5d5d387a9f33" id="r_a23e5cfd9a644120025db5d5d387a9f33"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a23e5cfd9a644120025db5d5d387a9f33">refine_front_by_halving</a> (const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion_1_1_refinable.html">EnergyCriterion::Refinable</a> &gt; &amp;edges)</td></tr>
+<tr class="separator:a23e5cfd9a644120025db5d5d387a9f33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae549ef7a2286c785a79440cf3c0650b7" id="r_ae549ef7a2286c785a79440cf3c0650b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae549ef7a2286c785a79440cf3c0650b7">grade_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
+<tr class="separator:ae549ef7a2286c785a79440cf3c0650b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace428e3af19fb32cb4a3fffba1bd28e9" id="r_ace428e3af19fb32cb4a3fffba1bd28e9"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ace428e3af19fb32cb4a3fffba1bd28e9">grade_sizing_by_distance</a> (const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
+<tr class="separator:ace428e3af19fb32cb4a3fffba1bd28e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f73fe38492217603a3ce1a9d42a2bb7" id="r_a1f73fe38492217603a3ce1a9d42a2bb7"><td class="memItemLeft" align="right" valign="top"><a id="a1f73fe38492217603a3ce1a9d42a2bb7" name="a1f73fe38492217603a3ce1a9d42a2bb7"></a>
+<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smoothing_progress.html">SmoothingProgress</a>&#160;</td><td class="memItemRight" valign="bottom"><b>smoothing_progress</b> (const std::vector&lt; Vector2d &gt; &amp;before)</td></tr>
+<tr class="memdesc:a1f73fe38492217603a3ce1a9d42a2bb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Measure a pass: <code>before</code> holds every live vertex's position before it, indexed by vid. <br /></td></tr>
+<tr class="separator:a1f73fe38492217603a3ce1a9d42a2bb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bf9ec740a75e95b226e1c4593a1f0e0" id="r_a9bf9ec740a75e95b226e1c4593a1f0e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a9bf9ec740a75e95b226e1c4593a1f0e0">smooth_group_to_convergence</a> (const char *group_name)</td></tr>
+<tr class="separator:a9bf9ec740a75e95b226e1c4593a1f0e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c4b6dd3232107106d04d448848e2026" id="r_a0c4b6dd3232107106d04d448848e2026"><td class="memItemLeft" align="right" valign="top"><a id="a0c4b6dd3232107106d04d448848e2026" name="a0c4b6dd3232107106d04d448848e2026"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>edge_interpolation_residual</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="memdesc:a0c4b6dd3232107106d04d448848e2026"><td class="mdescLeft">&#160;</td><td class="mdescRight">The interpolation residual of front edge e, see <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front is at a critical point of Phase B&#39;s energy,...">EnergyCriterion</a>. -1 when unmeasurable. <br /></td></tr>
@@ -538,10 +553,16 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>edge_interpolation_
 <tr class="memitem:a6e748d434c4328a9a5a158fd82ae9615" id="r_a6e748d434c4328a9a5a158fd82ae9615"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6e748d434c4328a9a5a158fd82ae9615">face_criterion_rel</a> (const size_t fid) const</td></tr>
 <tr class="separator:a6e748d434c4328a9a5a158fd82ae9615"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1148365246b4569aefcabc41dfed1950" id="r_a1148365246b4569aefcabc41dfed1950"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950">write_smoothing_debug_output</a> (const std::string &amp;path) const override</td></tr>
-<tr class="memdesc:a1148365246b4569aefcabc41dfed1950"><td class="mdescLeft">&#160;</td><td class="mdescRight">Put the frames beside the run's own output, and rename them into one timeline.  <br /></td></tr>
+<tr class="memdesc:a1148365246b4569aefcabc41dfed1950"><td class="mdescLeft">&#160;</td><td class="mdescRight">Put the optimization's frames on the run's single debug timeline (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5c6399a7f7ce8877c6b7f0579eebba85" title="One frame of the run&#39;s single debug timeline: &lt;output&gt;_NNNNN.vtu with the next sequence number,...">write_debug_frame()</a>), labelled "r&lt;round&gt;&lt;phase&gt;&lt;pass&gt;_&lt;op&gt;" / "r&lt;round&gt;&lt;phase&gt;_end". &lt;pass&gt; counts passes within the current phase and restarts whenever the round or the phase changes, so <code>r1S3</code> reads as "round 1, single phase, third pass"; the restart is detected here, so no call site has to remember to reset anything. Renaming here rather than at the call sites keeps this out of the shared driver, whose naming is also triwild's and simwild's. Same scheme as 3D.  <br /></td></tr>
 <tr class="separator:a1148365246b4569aefcabc41dfed1950"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0863cbf32e74283644f4b6b506ac2cc" id="r_ac0863cbf32e74283644f4b6b506ac2cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac0863cbf32e74283644f4b6b506ac2cc">append_frame_label</a> (size_t idx, const std::string &amp;label) const</td></tr>
+<tr class="memitem:ac0863cbf32e74283644f4b6b506ac2cc" id="r_ac0863cbf32e74283644f4b6b506ac2cc"><td class="memItemLeft" align="right" valign="top"><a id="ac0863cbf32e74283644f4b6b506ac2cc" name="ac0863cbf32e74283644f4b6b506ac2cc"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>append_frame_label</b> (size_t idx, const std::string &amp;label) const</td></tr>
+<tr class="memdesc:ac0863cbf32e74283644f4b6b506ac2cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">One line of &lt;output&gt;_frames.txt; truncates the file on the first frame. <br /></td></tr>
 <tr class="separator:ac0863cbf32e74283644f4b6b506ac2cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c6399a7f7ce8877c6b7f0579eebba85" id="r_a5c6399a7f7ce8877c6b7f0579eebba85"><td class="memItemLeft" align="right" valign="top"><a id="a5c6399a7f7ce8877c6b7f0579eebba85" name="a5c6399a7f7ce8877c6b7f0579eebba85"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>write_debug_frame</b> (const std::string &amp;label)</td></tr>
+<tr class="memdesc:a5c6399a7f7ce8877c6b7f0579eebba85"><td class="mdescLeft">&#160;</td><td class="mdescRight">One frame of the run's single debug timeline: &lt;output&gt;_NNNNN.vtu with the next sequence number, and one "NNNNN&lt;tab&gt;label" line in &lt;output&gt;_frames.txt. Every debug frame the run writes &ndash; the input as loaded, the construction stages, and the optimization's own frames through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950" title="Put the optimization&#39;s frames on the run&#39;s single debug timeline (see write_debug_frame()),...">write_smoothing_debug_output()</a> &ndash; goes through this sequence, so the numbers are consecutive and the .txt says what each one is. The only debug files outside it are the ones that are not this mesh: &lt;output&gt;_input_complex.vtu and the phi grid. <br /></td></tr>
+<tr class="separator:a5c6399a7f7ce8877c6b7f0579eebba85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80af96dc1d64f478c466915ed596edc3" id="r_a80af96dc1d64f478c466915ed596edc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a80af96dc1d64f478c466915ed596edc3">init_from_image</a> (const MatrixXd &amp;V, const MatrixXi &amp;F, const MatrixSi &amp;F_tags, const MatrixXd &amp;V_env, const MatrixXi &amp;F_env, const std::vector&lt; std::string &gt; &amp;tag_names, const std::string &amp;curve_name=&quot;&quot;)</td></tr>
 <tr class="memdesc:a80af96dc1d64f478c466915ed596edc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">initialize <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> from vertex, face, tag data  <br /></td></tr>
 <tr class="separator:a80af96dc1d64f478c466915ed596edc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -579,13 +600,11 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty_input_complex</
 <tr class="memdesc:a6e2860310660ea8a8eeb8faf0512c998"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <br /></td></tr>
 <tr class="separator:a6e2860310660ea8a8eeb8faf0512c998"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf44b2eb5a5d5258e2ef96d1a4281357" id="r_acf44b2eb5a5d5258e2ef96d1a4281357"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#acf44b2eb5a5d5258e2ef96d1a4281357">pre_optimize_input_mesh</a> ()</td></tr>
-<tr class="memdesc:acf44b2eb5a5d5258e2ef96d1a4281357"><td class="mdescLeft">&#160;</td><td class="mdescRight">TriWild over the input mesh, before any of the offset exists.  <br /></td></tr>
+<tr class="memdesc:acf44b2eb5a5d5258e2ef96d1a4281357"><td class="mdescLeft">&#160;</td><td class="mdescRight">TriWild over the input mesh, before any of the offset exists, held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex.  <br /></td></tr>
 <tr class="separator:acf44b2eb5a5d5258e2ef96d1a4281357"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ff3f39908a066bcc044e73fdce80b97" id="r_a6ff3f39908a066bcc044e73fdce80b97"><td class="memItemLeft" align="right" valign="top"><a id="a6ff3f39908a066bcc044e73fdce80b97" name="a6ff3f39908a066bcc044e73fdce80b97"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>execute_offset</b> (const std::filesystem::path &amp;output_file)</td></tr>
+<tr class="memitem:a6ff3f39908a066bcc044e73fdce80b97" id="r_a6ff3f39908a066bcc044e73fdce80b97"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6ff3f39908a066bcc044e73fdce80b97">execute_offset</a> (const std::filesystem::path &amp;output_file)</td></tr>
 <tr class="separator:a6ff3f39908a066bcc044e73fdce80b97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d441bedc0773f511659914d15038e82" id="r_a4d441bedc0773f511659914d15038e82"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82">marching_tris</a> ()</td></tr>
-<tr class="memdesc:a4d441bedc0773f511659914d15038e82"><td class="mdescLeft">&#160;</td><td class="mdescRight">execute simplistic marching tris. All edges with one vertex labelled 0 and the other 1/2 are split, always at the midpoint.  <br /></td></tr>
 <tr class="separator:a4d441bedc0773f511659914d15038e82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea264b1a223b4f7135aee933d9f266eb" id="r_aea264b1a223b4f7135aee933d9f266eb"><td class="memItemLeft" align="right" valign="top"><a id="aea264b1a223b4f7135aee933d9f266eb" name="aea264b1a223b4f7135aee933d9f266eb"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_simplicially_embedded</b> () const</td></tr>
@@ -1068,9 +1087,6 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>cell_capacity</b> (
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a3d7205fdfc20bede7047bf6bc8475f5d" id="r_a3d7205fdfc20bede7047bf6bc8475f5d"><td class="memItemLeft" align="right" valign="top"><a id="a3d7205fdfc20bede7047bf6bc8475f5d" name="a3d7205fdfc20bede7047bf6bc8475f5d"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>m_vtu_counter</b> = 0</td></tr>
-<tr class="separator:a3d7205fdfc20bede7047bf6bc8475f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a72b05924571db09a0c7f3486057fad3c" id="r_a72b05924571db09a0c7f3486057fad3c"><td class="memItemLeft" align="right" valign="top"><a id="a72b05924571db09a0c7f3486057fad3c" name="a72b05924571db09a0c7f3486057fad3c"></a>
 std::array&lt; size_t, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_init_counts</b> = {{0, 0, 0}}</td></tr>
 <tr class="separator:a72b05924571db09a0c7f3486057fad3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1265,6 +1281,17 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>i
 <tr class="memitem:a51f289867592f133df2a925274812801" id="r_a51f289867592f133df2a925274812801"><td class="memItemLeft" align="right" valign="top"><a id="a51f289867592f133df2a925274812801" name="a51f289867592f133df2a925274812801"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_opt_split_cache2d.html">OptSplitCache2d</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_opt_split_cache</b></td></tr>
 <tr class="separator:a51f289867592f133df2a925274812801"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad883bf9628476751abc9736ea8191007" id="r_ad883bf9628476751abc9736ea8191007"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad883bf9628476751abc9736ea8191007">m_marching_root_splits</a> = 0</td></tr>
+<tr class="separator:ad883bf9628476751abc9736ea8191007"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3853220b1e77098fc2a43afc0de8b94" id="r_ae3853220b1e77098fc2a43afc0de8b94"><td class="memItemLeft" align="right" valign="top"><a id="ae3853220b1e77098fc2a43afc0de8b94" name="ae3853220b1e77098fc2a43afc0de8b94"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_marching_midpoint_splits</b> = 0</td></tr>
+<tr class="separator:ae3853220b1e77098fc2a43afc0de8b94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04ef4d5fb76706ff79e75a77886a290f" id="r_a04ef4d5fb76706ff79e75a77886a290f"><td class="memItemLeft" align="right" valign="top"><a id="a04ef4d5fb76706ff79e75a77886a290f" name="a04ef4d5fb76706ff79e75a77886a290f"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_marching_trace_steps</b> = 0</td></tr>
+<tr class="separator:a04ef4d5fb76706ff79e75a77886a290f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae214adb6308f1426dcdf1ea95d56856f" id="r_ae214adb6308f1426dcdf1ea95d56856f"><td class="memItemLeft" align="right" valign="top"><a id="ae214adb6308f1426dcdf1ea95d56856f" name="ae214adb6308f1426dcdf1ea95d56856f"></a>
+size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_marching_trace_steps_max</b> = 0</td></tr>
+<tr class="separator:ae214adb6308f1426dcdf1ea95d56856f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04918216ddbfa86bf16089726d8f093a" id="r_a04918216ddbfa86bf16089726d8f093a"><td class="memItemLeft" align="right" valign="top"><a id="a04918216ddbfa86bf16089726d8f093a" name="a04918216ddbfa86bf16089726d8f093a"></a>
 <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smooth_trace.html">SmoothTrace</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_smooth_trace</b></td></tr>
 <tr class="separator:a04918216ddbfa86bf16089726d8f093a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1332,8 +1359,6 @@ std::mutex&#160;</td><td class="memItemRight" valign="bottom"><b>m_released_mute
 <tr class="separator:ae45a97a5ada2b8ca32e2fc501162f2b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b018d69a6229478b05361575b7b6963" id="r_a6b018d69a6229478b05361575b7b6963"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html">EnergyCriterion</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6b018d69a6229478b05361575b7b6963">m_energy_verdict</a></td></tr>
 <tr class="separator:a6b018d69a6229478b05361575b7b6963"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a113855306e7afc88ca1b9f720fa00597" id="r_a113855306e7afc88ca1b9f720fa00597"><td class="memItemLeft" align="right" valign="top">std::vector&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a113855306e7afc88ca1b9f720fa00597">m_placement_pressed</a></td></tr>
-<tr class="separator:a113855306e7afc88ca1b9f720fa00597"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa616d80377ff2cba6dfe234ba4a2f447" id="r_aa616d80377ff2cba6dfe234ba4a2f447"><td class="memItemLeft" align="right" valign="top"><a id="aa616d80377ff2cba6dfe234ba4a2f447" name="aa616d80377ff2cba6dfe234ba4a2f447"></a>
 std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_deg_split_created</b> {0}</td></tr>
 <tr class="separator:aa616d80377ff2cba6dfe234ba4a2f447"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1622,44 +1647,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </table>
 </div><div class="memdoc">
 
-<p>Which half of the alternating optimization is running. </p>
-<p>The two criteria are optimized in turn, not jointly. The 2D counterpart of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aefd648969e4fc35a7802ed0ab4fa4bfc" title="Which half of the alternating optimization is running. The 3D copy of TopoOffsetTriMesh::OptPhase.">TopoOffsetTetMesh::OptPhase</a>.</p>
-<p>Phase A is TriWild and nothing else: same operations, gates, sizing field and stall-driven refinement, with no offset energy term, acceptance criterion or stop metric. Its one addition is m_offset_envelope.</p>
-<p>Phase B moves the offset boundary and nothing else: smoothing passes against the offset energy, run to a fixed point, with no envelope on the offset (it is what has to travel) and no topological operations at all.</p>
-<p>The sizing field is shared and both phases write it: Phase A through TriWild's stall refinement on element quality, Phase B through the Phi residual of the faces smoothing could not place. Single is the mode the 2D run uses: TriWild's own loop with the front placed by Phase B's objective inside the smoothing passes. It follows B wherever the smoother is concerned (which objective a front vertex gets, no offset tube while it moves) and A everywhere the loop is concerned (quality stats and the stop metric are TriWild's). </p>
+<p>Which mode the hooks are running in. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aefd648969e4fc35a7802ed0ab4fa4bfc" title="Which mode the hooks are running in. The 3D copy of TopoOffsetTriMesh::OptPhase.">TopoOffsetTetMesh::OptPhase</a>. </p>
+<p>A: TriWild's loop and nothing else &ndash; the pre-optimize pass and the frozen-front final pass &ndash; with m_offset_envelope holding the front. B: the front objective's offset terms are live; set only around measurements (the criterion, the gradient reference) so they see the objective the placement uses. Single: the run's loop, TriWild's operation groups with the front placed by B's objective inside the smoothing passes &ndash; B wherever the smoother is concerned (objective, no offset tube while the front moves), A wherever the loop is (quality stats, stop metric). </p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac0863cbf32e74283644f4b6b506ac2cc" name="ac0863cbf32e74283644f4b6b506ac2cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac0863cbf32e74283644f4b6b506ac2cc">&#9670;&#160;</a></span>append_frame_label()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::append_frame_label </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>idx</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>label</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>One line of &lt;output&gt;_frames.txt; truncates the file on the first frame. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950" title="Put the frames beside the run&#39;s own output, and rename them into one timeline.">write_smoothing_debug_output()</a>. </p>
-
-</div>
-</div>
 <a id="a1a1b924d5cd153d7729f862f0ebd3ab3" name="a1a1b924d5cd153d7729f862f0ebd3ab3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1a1b924d5cd153d7729f862f0ebd3ab3">&#9670;&#160;</a></span>audit_surface_containment()</h2>
 
@@ -2222,7 +2215,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Diagnostic only: which tag boundaries the incident faces say this edge lies on right now &ndash; the same symmetric difference <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#adcf5a59758fd47fda26157e9bcb0dc90" title="Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall – on...">init_surfaces_and_boundaries()</a> classified by. </p>
-<p>Nothing dispatches or propagates from this. It is only trustworthy while the face tags are still the input's own: execute_offset() replaces the tags of every face the band grows through, after which this is empty across every region edge the band swallowed, so deriving split masks from it mints uncontained region vertices (log_region_edge_mask_health counts the divergence). New vertices take the endpoints' mask AND behind the parent edge's class gate instead &ndash; 3D's rule at both of its split sites &ndash; which is what stops a chord, not being a region-class edge, from over-claiming a tube a full target_distance away. </p>
+<p>Nothing dispatches or propagates from this. It is only trustworthy while the face tags are still the input's own: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6ff3f39908a066bcc044e73fdce80b97">execute_offset()</a> replaces the tags of every face the band grows through, after which this is empty across every region edge the band swallowed, so deriving split masks from it mints uncontained region vertices (log_region_edge_mask_health counts the divergence). New vertices take the endpoints' mask AND behind the parent edge's class gate instead &ndash; 3D's rule at both of its split sites &ndash; which is what stops a chord, not being a region-class edge, from over-claiming a tube a full target_distance away. </p>
 
 </div>
 </div>
@@ -2399,6 +2392,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 <p>The envelope a simplex with this boundary mask is contained in, or null. </p>
 <p>Zero bits: no boundary, no container. One bit: that tag's own envelope. Several bits: a memoized <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html">IntersectionEnvelope</a> over the members &ndash; inside means inside every tube, which pins junction geometry to the junction. Containment-only for the multi-bit case: the composite implements just the virtual is_outside queries, so it must never be returned from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb04c5eb85f5ce4a24832549592e8b0e" title="The offset boundary is the one tracked surface with no envelope, in either role.">smoothing_energy_envelope()</a>, whose pull calls the non-virtual nearest_point. </p>
+
+</div>
+</div>
+<a id="a6ff3f39908a066bcc044e73fdce80b97" name="a6ff3f39908a066bcc044e73fdce80b97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ff3f39908a066bcc044e73fdce80b97">&#9670;&#160;</a></span>execute_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::execute_offset </td>
+          <td>(</td>
+          <td class="paramtype">const std::filesystem::path &amp;&#160;</td>
+          <td class="paramname"><em>output_file</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Construction, start to finish: the optional pre-optimize pass, the simplicial embedding, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82">marching_tris()</a>, the re-embedding and the offset tagging. The optimization is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2d2433ad916e327fa9847c3d11965f0d" title="The 2D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a>, which the driver calls afterwards. </p>
 
 </div>
 </div>
@@ -2684,22 +2696,51 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
-<a id="aad72246f7d298d397f758209802ca936" name="aad72246f7d298d397f758209802ca936"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad72246f7d298d397f758209802ca936">&#9670;&#160;</a></span>front_vertex_touches_other()</h2>
+<a id="ae549ef7a2286c785a79440cf3c0650b7" name="ae549ef7a2286c785a79440cf3c0650b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae549ef7a2286c785a79440cf3c0650b7">&#9670;&#160;</a></span>grade_sizing()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::front_vertex_touches_other </td>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::grade_sizing </td>
           <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>vid</em></td><td>)</td>
-          <td> const</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>grade</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>seeds</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Whether a front vertex touches another front, the input or a region boundary through a background triangle &ndash; the topological fact behind the <code>pressed</code> state. </p>
+<p>Spread the refinement just made at <code>seeds</code> to the vertices around them, the way sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds), "distance" is grade_sizing_by_distance(seeds) and ignores <code>grade</code>. Every place the offset lowers the field goes through here. </p>
+
+</div>
+</div>
+<a id="ace428e3af19fb32cb4a3fffba1bd28e9" name="ace428e3af19fb32cb4a3fffba1bd28e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace428e3af19fb32cb4a3fffba1bd28e9">&#9670;&#160;</a></span>grade_sizing_by_distance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTriMesh::grade_sizing_by_distance </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; size_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>seeds</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>TetWild's gradation, ported from tetwild::TetWild::adjust_sizing_field: a breadth-first walk out of the seeds over mesh neighbours; every vertex reached within R = 1.8 l of its nearest seed has its scalar multiplied by 0.5 + 0.5 dist / R, the walk stops at vertices farther than R, and the result is floored at the sizing floor. The seeds themselves keep the scalar the caller gave them. Returns the number of vertices lowered. </p>
 
 </div>
 </div>
@@ -2860,24 +2901,6 @@ template&lt;typename Visit &gt; </div>
 
 <p>Build the smooth offset potential from the extraction <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a42e2f9ce5d18df257bec140417e7b0f5" title="Build the input complex&#39;s BVH and its smooth offset potential, from one extraction.">init_input_complex_bvh()</a> kept. </p>
 <p>Separate from that call only because it needs target_distance and offset_dhat_factor, which a caller wanting nothing but the distance field has no reason to have set. The geometry is still extracted exactly once, so the potential and the BVH cannot describe different inputs. </p>
-
-</div>
-</div>
-<a id="a65618a133bd94c513e2905b127c48547" name="a65618a133bd94c513e2905b127c48547"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65618a133bd94c513e2905b127c48547">&#9670;&#160;</a></span>init_offset_sizing_field()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::init_offset_sizing_field </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Seed the sizing field from the offset's current edge lengths (paper Sec. 5.3.3, Step 1), once, before the first operation pass. Without it the field starts at the background target length and the first collapse pass decimates the offset. </p>
 
 </div>
 </div>
@@ -3075,9 +3098,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>execute simplistic marching tris. All edges with one vertex labelled 0 and the other 1/2 are split, always at the midpoint. </p>
-<p>No target_distance enters construction at all: the paper places inserted vertices at the midpoint (Sec. 5.2) and leaves the distance to Step 3, so carrying the boundary out to the level set is entirely the optimization phase's job. Same as 3D. </p>
+<p>Marching triangles: every edge with one endpoint in the input complex (label 1/2) and the other in the background (label 0) is split &ndash; at the midpoint, or under sphere_trace_initialization where d(x) = target_distance along the edge (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ab5723c60394dff4a8441cd6b90b52e5f" title="Construction placement under sphere_trace_initialization: sphere tracing along the edge from p_in (th...">edge_split_sphere_trace()</a>) &ndash; and afterwards every background triangle still touching a complex frontier vertex (the split-off halves) becomes the band (label 2). </p>
 
 </div>
 </div>
@@ -3520,10 +3541,8 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 
-<p>TriWild over the input mesh, before any of the offset exists. </p>
-<p>Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point where the only tracked surfaces are the tag-region boundaries (input complex and domain wall among them) and the only containment is their per-tag envelopes. There is no offset yet, so no offset envelope and no Phi term: this is TriWild, exactly.</p>
-<p>Worth a pass because <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82" title="execute simplistic marching tris. All edges with one vertex labelled 0 and the other 1/2 are split,...">marching_tris()</a> puts the offset boundary on the background triangulation's own cell boundaries: how far the constructed offset lands from the complex is a property of the input mesh, and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#afbbac40d482c0c178d4b001709c62f06" title="Build the smooth offset potential from the extraction init_input_complex_bvh() kept.">init_offset_potential()</a> sizes dhat from that reach. One coarse cell touching the complex inflates dhat several-fold, and a large dhat merges the level sets of features that are close together, which no later stage can undo.</p>
-<p>The sizing field is seeded first, to target_distance on the input-complex boundary and graded outward: a band built on cells of delta scale lands near delta from the complex, which is what keeps dhat small. Unseeded, the base field is m_params.l everywhere, far coarser than the mesh around the complex, so the pass would coarsen the input instead. </p>
+<p>TriWild over the input mesh, before any of the offset exists, held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex. </p>
+<p>Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point where the only tracked surfaces are the tag-region boundaries (input complex and domain wall among them) and the only containment is their per-tag envelopes. There is no offset yet, so no offset envelope and no Phi term: this is TriWild, exactly. Same as 3D. </p>
 
 </div>
 </div>
@@ -3575,6 +3594,25 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 <p>Rebuild m_offset_envelope from the current offset-boundary segments, and drop the intersections memoized against the old one. Called when the offset is created and at the end of every Phase B. </p>
+
+</div>
+</div>
+<a id="a23e5cfd9a644120025db5d5d387a9f33" name="a23e5cfd9a644120025db5d5d387a9f33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23e5cfd9a644120025db5d5d387a9f33">&#9670;&#160;</a></span>refine_front_by_halving()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTriMesh::refine_front_by_halving </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion_1_1_refinable.html">EnergyCriterion::Refinable</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>edges</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>sag_halve_refinement: halve the sizing scalar at the ends of every refinable edge, once per vertex per call, floored like <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2aafc5fa40cbf1db6fd044fcf5c3324d">refine_front_from_sag()</a>, then graded outward. Returns the number of vertices lowered. </p>
 
 </div>
 </div>
@@ -3900,6 +3938,25 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 <p>Phase B placement of a front vertex: the shared smoother with the offset's options. </p>
 <p>The same 2-D Newton solve, line search and accept tests as any TriWild vertex; the objective carries the offset terms through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1c2c87ee7038a5c3c08f4b7ab31c2138">smoothing_extra_energy()</a>. No quality veto, because a front vertex has to be able to worsen its ring on its way to the level set &ndash; element shape is Phase A's job. </p>
+
+</div>
+</div>
+<a id="a9bf9ec740a75e95b226e1c4593a1f0e0" name="a9bf9ec740a75e95b226e1c4593a1f0e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bf9ec740a75e95b226e1c4593a1f0e0">&#9670;&#160;</a></span>smooth_group_to_convergence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::smooth_group_to_convergence </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>group_name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The interleaved smoothing of one operation group under adaptive_smoothing: one pass at a time through local_operations({0,0,0,1}), each followed by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1f73fe38492217603a3ce1a9d42a2bb7" title="Measure a pass: before holds every live vertex&#39;s position before it, indexed by vid.">smoothing_progress()</a>, until the front has converged (max ratio &lt;= 1) or stalled (max ratio fell by less than adaptive_smoothing_stall_rel) AND the background has settled (max step &lt;= adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes. </p>
 
 </div>
 </div>
@@ -4694,11 +4751,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 </table>
 </div><div class="memdoc">
 
-<p>Put the frames beside the run's own output, and rename them into one timeline. </p>
-<p>Every debug frame in 2D goes through here &ndash; the shared driver's per-pass frames, Phase B's, and the A/B driver's per-phase ones &ndash; so this is the one place that can give them all a common order. A bare <code>debug_N</code> or <code>phase_&lt;r&gt;&lt;A|B&gt;</code> comes out as </p><pre class="fragment">&lt;output&gt;_step_&lt;NNNNN&gt;_r&lt;round&gt;&lt;A|B&gt;&lt;pass&gt;.vtu      a pass inside a phase
-&lt;output&gt;_step_&lt;NNNNN&gt;_r&lt;round&gt;&lt;A|B&gt;_end.vtu         the frame the phase handed on
-</pre><p> NNNNN is a single monotonic counter across the whole run, so sorting on it is run order. &lt;pass&gt; counts passes within the current phase and restarts whenever the round or the phase changes, so <code>r1A3</code> reads as "round 1, phase A, third pass"; the restart is detected here, so no call site has to remember to reset anything. Round 0 is construction.</p>
-<p>Renaming here rather than at the call sites is what keeps this out of the shared driver: <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share.">wmtk::TriOptimizerMesh</a> is also triwild's and simwild's, so its naming is not ours to change. </p>
+<p>Put the optimization's frames on the run's single debug timeline (see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5c6399a7f7ce8877c6b7f0579eebba85" title="One frame of the run&#39;s single debug timeline: &lt;output&gt;_NNNNN.vtu with the next sequence number,...">write_debug_frame()</a>), labelled "r&lt;round&gt;&lt;phase&gt;&lt;pass&gt;_&lt;op&gt;" / "r&lt;round&gt;&lt;phase&gt;_end". &lt;pass&gt; counts passes within the current phase and restarts whenever the round or the phase changes, so <code>r1S3</code> reads as "round 1, single phase, third pass"; the restart is detected here, so no call site has to remember to reset anything. Renaming here rather than at the call sites keeps this out of the shared driver, whose naming is also triwild's and simwild's. Same scheme as 3D. </p>
 
 <p>Implements <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html">wmtk::TriOptimizerMesh</a>.</p>
 
@@ -4796,7 +4849,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The A/B round the run is in, 1-based; 0 before the loop starts. Read only by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950" title="Put the frames beside the run&#39;s own output, and rename them into one timeline.">write_smoothing_debug_output()</a>, to tag each frame with the sub-iteration it belongs to. </p>
+<p>The turn the run is in, 1-based; 0 before the loop starts. Read only by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950" title="Put the optimization&#39;s frames on the run&#39;s single debug timeline (see write_debug_frame()),...">write_smoothing_debug_output()</a>, to tag each frame with the turn it belongs to. </p>
 
 </div>
 </div>
@@ -4910,7 +4963,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The energy criterion as measured when the A/B loop converged; the final Phase A runs after it and the verdict must not be re-measured on that mesh. </p>
+<p>The energy criterion as measured when the loop converged; the final Phase A runs after it and the verdict must not be re-measured on that mesh. </p>
 
 </div>
 </div>
@@ -4982,7 +5035,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 </div><div class="memdoc">
 
 <p>The input complex as loaded. Built once, never rebuilt. </p>
-<p>It answers the Euclidean distance to the input, a diagnostic rather than the definition of the offset &ndash; see m_offset_potential, which is what the optimization is driven by. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a42e2f9ce5d18df257bec140417e7b0f5" title="Build the input complex&#39;s BVH and its smooth offset potential, from one extraction.">init_input_complex_bvh()</a> has one call site, before execute_offset() runs, so this holds the original geometry however the elements representing the complex are later remeshed.</p>
+<p>It answers the Euclidean distance to the input, a diagnostic rather than the definition of the offset &ndash; see m_offset_potential, which is what the optimization is driven by. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a42e2f9ce5d18df257bec140417e7b0f5" title="Build the input complex&#39;s BVH and its smooth offset potential, from one extraction.">init_input_complex_bvh()</a> has one call site, before <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6ff3f39908a066bcc044e73fdce80b97">execute_offset()</a> runs, so this holds the original geometry however the elements representing the complex are later remeshed.</p>
 <p>That invariant is load-bearing: rebuilding from the live mesh would redefine the offset distance in terms of a surface the optimizer had just moved, and the convergence criterion would be measuring the mesh against itself.</p>
 <p>The only structure over the input complex. For offset_field "euclidean" the potential shares this very object as its query engine, which is why it is a shared_ptr. Containment is not its job &ndash; the per-tag region envelopes (m_tag_envelopes) hold the complex in place. </p>
 
@@ -5008,6 +5061,21 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 </table>
 </div><div class="memdoc">
 <p>Memoized <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_intersection_envelope.html">IntersectionEnvelope</a> per multi-bit mask. Lazily built under the mutex because the queries that need them run concurrently under kPartition. </p>
+
+</div>
+</div>
+<a id="ad883bf9628476751abc9736ea8191007" name="ad883bf9628476751abc9736ea8191007"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad883bf9628476751abc9736ea8191007">&#9670;&#160;</a></span>m_marching_root_splits</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTriMesh::m_marching_root_splits = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82">marching_tris()</a> tallies for the construction log: edges placed on the level set / at the midpoint because the trace left the edge, and the trace steps (total, max). Reset at the start of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82">marching_tris()</a>. </p>
 
 </div>
 </div>
@@ -5142,21 +5210,6 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 </table>
 </div><div class="memdoc">
 <p>How many Phase B offset placements found the vertex already outside its own envelope on entry. The post-step projection pulls it back in, but the invariant is 0: a nonzero count means construction or Phase A leaves offset vertices outside their region tube. A run total. </p>
-
-</div>
-</div>
-<a id="a113855306e7afc88ca1b9f720fa00597" name="a113855306e7afc88ca1b9f720fa00597"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a113855306e7afc88ca1b9f720fa00597">&#9670;&#160;</a></span>m_placement_pressed</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;char&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_placement_pressed</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Set by the placement when a vertex's last visit stopped on QualityBound, cleared when it moved. distance_criterion() counts such a vertex as placed &ndash; its level set is unreachable by construction &ndash; and drops edges touching one from the resolution and orientation halves; update_band_sizing_from_tolerance() does not refine such edges. </p>
 
 </div>
 </div>

@@ -82,7 +82,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>The "energy_gradient" criterion and the single phase's states: placed / travelling / pressed / stuck per front vertex, and the refinable chords. The same struct as 2D.  
+<p>The "energy_gradient" criterion: the front's Newton-step ratios and the refinable faces. The 3D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front is at a critical point of Phase B&#39;s energy,...">TopoOffsetTriMesh::EnergyCriterion</a>.  
  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a>&gt;</code></p>
@@ -131,12 +131,6 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_faces</b> = 0</td
 <tr class="memitem:aaea5dcf5b4aa65ae16cde541f49c9c3f" id="r_aaea5dcf5b4aa65ae16cde541f49c9c3f"><td class="memItemLeft" align="right" valign="top"><a id="aaea5dcf5b4aa65ae16cde541f49c9c3f" name="aaea5dcf5b4aa65ae16cde541f49c9c3f"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_unmeasurable</b> = 0</td></tr>
 <tr class="separator:aaea5dcf5b4aa65ae16cde541f49c9c3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a925fe0e6307f3f2b9c979c8f823b20c9" id="r_a925fe0e6307f3f2b9c979c8f823b20c9"><td class="memItemLeft" align="right" valign="top"><a id="a925fe0e6307f3f2b9c979c8f823b20c9" name="a925fe0e6307f3f2b9c979c8f823b20c9"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_pressed</b> = 0</td></tr>
-<tr class="separator:a925fe0e6307f3f2b9c979c8f823b20c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7dd6b92ab47c18770cfd02a1f2b52bed" id="r_a7dd6b92ab47c18770cfd02a1f2b52bed"><td class="memItemLeft" align="right" valign="top"><a id="a7dd6b92ab47c18770cfd02a1f2b52bed" name="a7dd6b92ab47c18770cfd02a1f2b52bed"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_faces_pressed</b> = 0</td></tr>
-<tr class="separator:a7dd6b92ab47c18770cfd02a1f2b52bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f494f0d51749f0ca3bb544fe89c6749" id="r_a8f494f0d51749f0ca3bb544fe89c6749"><td class="memItemLeft" align="right" valign="top"><a id="a8f494f0d51749f0ca3bb544fe89c6749" name="a8f494f0d51749f0ca3bb544fe89c6749"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worst_vid</b> = static_cast&lt;size_t&gt;(-1)</td></tr>
 <tr class="separator:a8f494f0d51749f0ca3bb544fe89c6749"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -162,36 +156,15 @@ Vector3d&#160;</td><td class="memItemRight" valign="bottom"><b>worst_on_level_ce
 <tr class="memitem:a735969c5dd7384b69fa46efaaaf0d3f4" id="r_a735969c5dd7384b69fa46efaaaf0d3f4"><td class="memItemLeft" align="right" valign="top"><a id="a735969c5dd7384b69fa46efaaaf0d3f4" name="a735969c5dd7384b69fa46efaaaf0d3f4"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>tube</b> = 0.</td></tr>
 <tr class="separator:a735969c5dd7384b69fa46efaaaf0d3f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a444db0181b5985ef5e75013a77555b09" id="r_a444db0181b5985ef5e75013a77555b09"><td class="memItemLeft" align="right" valign="top"><a id="a444db0181b5985ef5e75013a77555b09" name="a444db0181b5985ef5e75013a77555b09"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_placed</b> = 0</td></tr>
-<tr class="separator:a444db0181b5985ef5e75013a77555b09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1437bb4c304a97e2b9373d4ec3aaab7b" id="r_a1437bb4c304a97e2b9373d4ec3aaab7b"><td class="memItemLeft" align="right" valign="top"><a id="a1437bb4c304a97e2b9373d4ec3aaab7b" name="a1437bb4c304a97e2b9373d4ec3aaab7b"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_travelling</b> = 0</td></tr>
-<tr class="separator:a1437bb4c304a97e2b9373d4ec3aaab7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20268fc86d8acd708cc58cccfe80ca7f" id="r_a20268fc86d8acd708cc58cccfe80ca7f"><td class="memItemLeft" align="right" valign="top"><a id="a20268fc86d8acd708cc58cccfe80ca7f" name="a20268fc86d8acd708cc58cccfe80ca7f"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_pressed_on</b> = 0</td></tr>
-<tr class="separator:a20268fc86d8acd708cc58cccfe80ca7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81e1fe3351d4f0341c7a12060db78f15" id="r_a81e1fe3351d4f0341c7a12060db78f15"><td class="memItemLeft" align="right" valign="top"><a id="a81e1fe3351d4f0341c7a12060db78f15" name="a81e1fe3351d4f0341c7a12060db78f15"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_stuck</b> = 0</td></tr>
-<tr class="separator:a81e1fe3351d4f0341c7a12060db78f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af733ae24f1ed4f424e8a8f2aa20c0e8a" id="r_af733ae24f1ed4f424e8a8f2aa20c0e8a"><td class="memItemLeft" align="right" valign="top"><a id="af733ae24f1ed4f424e8a8f2aa20c0e8a" name="af733ae24f1ed4f424e8a8f2aa20c0e8a"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_pressed_touching</b> = 0</td></tr>
-<tr class="separator:af733ae24f1ed4f424e8a8f2aa20c0e8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91cd973cc76865a8e05cd924aa3c21cd" id="r_a91cd973cc76865a8e05cd924aa3c21cd"><td class="memItemLeft" align="right" valign="top"><a id="a91cd973cc76865a8e05cd924aa3c21cd" name="a91cd973cc76865a8e05cd924aa3c21cd"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n_at_floor</b> = 0</td></tr>
 <tr class="separator:a91cd973cc76865a8e05cd924aa3c21cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad876138eff29f8bb04286e8331a43c4d" id="r_ad876138eff29f8bb04286e8331a43c4d"><td class="memItemLeft" align="right" valign="top"><a id="ad876138eff29f8bb04286e8331a43c4d" name="ad876138eff29f8bb04286e8331a43c4d"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>worst_stuck_vid</b> = static_cast&lt;size_t&gt;(-1)</td></tr>
-<tr class="separator:ad876138eff29f8bb04286e8331a43c4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5fb27e1b11d685bf0d34c5e8f0fce892" id="r_a5fb27e1b11d685bf0d34c5e8f0fce892"><td class="memItemLeft" align="right" valign="top"><a id="a5fb27e1b11d685bf0d34c5e8f0fce892" name="a5fb27e1b11d685bf0d34c5e8f0fce892"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>worst_stuck_rho</b> = 0.</td></tr>
-<tr class="separator:a5fb27e1b11d685bf0d34c5e8f0fce892"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1820c5a09ca21b2bf5a16d255cc6744" id="r_ac1820c5a09ca21b2bf5a16d255cc6744"><td class="memItemLeft" align="right" valign="top"><a id="ac1820c5a09ca21b2bf5a16d255cc6744" name="ac1820c5a09ca21b2bf5a16d255cc6744"></a>
 std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion_1_1_refinable.html">Refinable</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>refinable</b></td></tr>
 <tr class="separator:ac1820c5a09ca21b2bf5a16d255cc6744"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The "energy_gradient" criterion and the single phase's states: placed / travelling / pressed / stuck per front vertex, and the refinable chords. The same struct as 2D. </p>
+<div class="textblock"><p>The "energy_gradient" criterion: the front's Newton-step ratios and the refinable faces. The 3D twin of <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front is at a critical point of Phase B&#39;s energy,...">TopoOffsetTriMesh::EnergyCriterion</a>. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>
