@@ -40,10 +40,8 @@ public:
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset boundary itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
-    /// Where this vertex stood at the start of the turn (single phase), so the convergence states
-    /// can read its net movement -- a vertex jiggling back and forth in a pressed seam has a large
-    /// summed motion and a small net one, and only the net one says whether the seam has settled.
-    /// A split copies it on, so a new vertex reads as moved for the turn it was born in.
+    /// Where this vertex stood at the start of the turn. Written every turn (and before the
+    /// pre_smooth block); read by nothing since the per-vertex convergence states were removed.
     Vector2d m_turn_start = Vector2d::Zero();
     bool m_turn_start_valid = false;
 
@@ -113,11 +111,13 @@ class TopoOffsetTriMesh : public wmtk::TriOptimizerMesh
 public: // mode for splitting in marching tets
     enum class EdgeSplitMode {
         Midpoint = 0, // construction: simplicial embedding AND marching_tris
+        SphereTrace = 1, // marching_tris under sphere_trace_initialization: sphere tracing
+                         // along the edge to d(x) = target_distance, midpoint when the trace
+                         // leaves the edge
         Optimization = 2 // the optimization phase; the shared engine places the vertex
     };
 
 public:
-    int m_vtu_counter = 0;
     std::array<size_t, 3> m_init_counts = {{0, 0, 0}};
     size_t m_tags_count;
     /// Tag id of the input's curve group (the .msh line elements), or -1. An open curve has no
@@ -379,27 +379,16 @@ public:
     bool curve_tangent(int64_t tag, const Vector2d& x, const Vector2d& prefer, Vector2d& tau) const;
 
     /**
-     * @brief Which half of the alternating optimization is running.
+     * @brief Which mode the hooks are running in. The 2D twin of TopoOffsetTetMesh::OptPhase.
      *
-     * The two criteria are optimized in turn, not jointly. The 2D counterpart of
-     * TopoOffsetTetMesh::OptPhase.
-     *
-     * Phase A is TriWild and nothing else: same operations, gates, sizing field and stall-driven
-     * refinement, with no offset energy term, acceptance criterion or stop metric. Its one
-     * addition is m_offset_envelope.
-     *
-     * Phase B moves the offset boundary and nothing else: smoothing passes against the offset
-     * energy, run to a fixed point, with no envelope on the offset (it is what has to travel)
-     * and no topological operations at all.
-     *
-     * The sizing field is shared and both phases write it: Phase A through TriWild's stall
-     * refinement on element quality, Phase B through the Phi residual of the faces smoothing
-     * could not place.
+     * A: TriWild's loop and nothing else -- the pre-optimize pass and the frozen-front final
+     * pass -- with m_offset_envelope holding the front. B: the front objective's offset terms
+     * are live; set only around measurements (the criterion, the gradient reference) so they
+     * see the objective the placement uses. Single: the run's loop, TriWild's operation groups
+     * with the front placed by B's objective inside the smoothing passes -- B wherever the
+     * smoother is concerned (objective, no offset tube while the front moves), A wherever the
+     * loop is (quality stats, stop metric).
      */
-    /// Single is the mode the 2D run uses: TriWild's own loop with the front placed by Phase B's
-    /// objective inside the smoothing passes. It follows B wherever the smoother is concerned
-    /// (which objective a front vertex gets, no offset tube while it moves) and A everywhere the
-    /// loop is concerned (quality stats and the stop metric are TriWild's).
     enum class OptPhase { A, B, Single };
 
     /// Whether the smoother places front vertices against the offset objective: Phase B, and
@@ -671,11 +660,6 @@ public:
     /// -- the live counterpart of edge_is_offset(), for use inside the operation passes.
     bool edge_is_offset_surface_live(const Tuple& e) const;
 
-    /// Seed the sizing field from the offset's current edge lengths (paper Sec. 5.3.3, Step 1),
-    /// once, before the first operation pass. Without it the field starts at the background
-    /// target length and the first collapse pass decimates the offset.
-    void init_offset_sizing_field();
-
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_edge}. max_grad is the convergence criterion -- the full
     /// placement-gradient norm at band vertices -- so max_grad_at_vertex repeats it and
@@ -690,8 +674,8 @@ public:
     /// work, so a round's entry is exactly what its Phase A did. This does not mirror
     /// optimization_metrics, which is a single whole-run summary.
     std::vector<std::array<int, 3>> op_counts;
-    /// The A/B round the run is in, 1-based; 0 before the loop starts. Read only by
-    /// write_smoothing_debug_output(), to tag each frame with the sub-iteration it belongs to.
+    /// The turn the run is in, 1-based; 0 before the loop starts. Read only by
+    /// write_smoothing_debug_output(), to tag each frame with the turn it belongs to.
     int m_ab_round = 0;
     /// Monotonic frame counter for the debug timeline. Mutable because the write hook is const.
     mutable size_t m_debug_seq = 0;
@@ -750,6 +734,31 @@ public:
 
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);
+    /**
+     * @brief Construction placement under sphere_trace_initialization: sphere tracing along the
+     * edge from p_in (the endpoint in the input complex, label != 0) towards p_out (the
+     * background endpoint) for the point where d(x) = target_distance, d(x) the distance to the
+     * input complex through m_input_complex_bvh. From t = 0 the trace evaluates d at the current
+     * point and steps forward by target_distance - d, the largest step that cannot cross the
+     * level set (d is 1-Lipschitz); it stops when |d - target_distance| <=
+     * sphere_trace_target_rel_tol x target_distance and returns true with p_new there. It returns
+     * false, p_new untouched, as soon as the current point reaches or passes p_out (t >= L: the
+     * level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target);
+     * the caller then places the plain midpoint. Every step taken is longer than the tolerance, so
+     * the trace ends within L / (tol x target_distance) steps; `steps` returns how many it took.
+     * No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
+     * Same as 3D.
+     */
+    bool edge_split_sphere_trace(
+        const Vector2d& p_in,
+        const Vector2d& p_out,
+        Vector2d& p_new,
+        size_t& steps) const;
+    /// marching_tris() tallies for the construction log: edges placed on the level set / at the
+    /// midpoint because the trace left the edge, and the trace steps (total, max). Reset at the
+    /// start of marching_tris().
+    size_t m_marching_root_splits = 0, m_marching_midpoint_splits = 0;
+    size_t m_marching_trace_steps = 0, m_marching_trace_steps_max = 0;
 
     /**
      * @brief Reject any collapse that violates the substructure link condition.
@@ -1645,47 +1654,22 @@ public:
      */
     struct EnergyCriterion
     {
-        double
-            max_vertex = 0.,
-            max_edge =
-                0.; ///< RATIOS to the bar (1 = bar): the vertex measure per front_conv_criterion; the edge test
-        double bar = 1.; ///< the ratios' bar, 1
+        double max_vertex = 0., max_edge = 0.; ///< ratios to the bar (1 = bar)
+        double bar = 1.;
         size_t n_vertices = 0, n_edges = 0, n_unmeasurable = 0;
-        size_t n_pressed = 0, n_edges_pressed = 0; ///< skipped: pressed (see m_placement_pressed)
         size_t worst_vid = static_cast<size_t>(-1);
         Vector2d worst_edge_mid = Vector2d::Zero();
-        double worst_edge_len = 0.;
+        double worst_edge_len = 0.; ///< the worst edge's length
         /// Reported only: the edges over the bar, split by whether both endpoints are on the level
         /// set (residual within the tube). An edge whose endpoints are on the level set and whose
-        /// chord still misses it is under-resolved -- the state the vertex test cannot see; one
-        /// whose endpoints are off the level set is pressed, where the sag says nothing about
-        /// resolution.
+        /// chord still misses it is under-resolved -- the state the vertex test cannot see.
         size_t n_edges_over = 0, n_edges_over_on_level = 0;
         double max_edge_on_level = 0.;
         Vector2d worst_on_level_mid = Vector2d::Zero();
-        /// The single phase's states, all in the one tolerance the pipeline has, the tube
-        /// half-width `tube` = offset_envelope_rel x target_distance. For a front vertex with
-        /// rho = its distance from its level set and step = how far placement moved it this turn:
-        ///   placed      rho <= tube
-        ///   travelling  not placed, and the objective still wants to move it: its remaining
-        ///               1-D Newton step along the normal, in length, is over the tube
-        ///   pressed     not placed, stationary: held short of its level set by a crushed ring --
-        ///               a seam or a wall. `n_pressed_touching` counts those whose ring reaches
-        ///               another front, the input or a region boundary directly; the rest press
-        ///               through a strip more than one cell thick.
-        ///   stuck       not placed, stationary, touching nothing, with the alignment term on --
-        ///               the term's own bias holding the vertex (with it off nothing but a crushed
-        ///               ring can). Named in the log; never counted as converged.
-        /// A front edge with both ends placed whose chord sags over the tube is `refinable`: the
-        /// resolution rule refines it (refine_front_from_sag). Convergence is "placed or pressed,
-        /// nothing travelling or stuck, nothing refinable": refinement and convergence read the
-        /// same field, as TriWild's do.
         double tube = 0.;
-        size_t n_placed = 0, n_travelling = 0, n_pressed_on = 0, n_stuck = 0;
-        size_t n_pressed_touching = 0; ///< of the pressed, those touching another front or a wall
         size_t n_at_floor = 0; ///< chords over the tube whose ends are already at the sizing floor
-        size_t worst_stuck_vid = static_cast<size_t>(-1);
-        double worst_stuck_rho = 0.;
+        /// A front edge whose chord sags over the tube with both ends on the level set: a, b its
+        /// ends; sag the midpoint sag as a length; len the edge's length.
         struct Refinable
         {
             size_t a, b;
@@ -1694,20 +1678,11 @@ public:
         std::vector<Refinable> refinable;
         bool vertices_ok() const { return max_vertex <= bar; }
         bool edges_ok() const { return max_edge <= bar; }
-        /// The alternating loop's test (and 3D's): the vertex test alone.
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
-        /// The single phase's test: the vertex test -- every front vertex's remaining Newton step
-        /// along its normal at most front_conv_rel x target_distance -- and nothing left to
-        /// refine. The states above are reported, not gated on: gating on "placed within the tube"
-        /// makes pressed seams (whose vertices are stationary off the level set by definition) and
-        /// objective-biased vertices run to the budget, doubling the front and crushing the strip.
         bool converged_single() const { return converged() && refinable.empty(); }
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_edge) / bar : 0.; }
     };
     EnergyCriterion energy_criterion();
-    /// Whether a front vertex touches another front, the input or a region boundary through a
-    /// background triangle -- the topological fact behind the `pressed` state.
-    bool front_vertex_touches_other(size_t vid) const;
     /// The edge length that would bring a front chord's sag under the tube: 3/4 L
     /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
     /// turns across the chord (2 where it is smooth, 1 where the chord straddles a kink).
@@ -1717,8 +1692,50 @@ public:
     /// The resolution rule: sets the target length at each refinable edge's ends from
     /// front_chord_target(), graded outward. Returns the vertices changed.
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& edges);
-    /// The energy criterion as measured when the A/B loop converged; the final Phase A runs
-    /// after it and the verdict must not be re-measured on that mesh.
+    /// sag_halve_refinement: halve the sizing scalar at the ends of every refinable edge, once
+    /// per vertex per call, floored like refine_front_from_sag(), then graded outward. Returns
+    /// the number of vertices lowered.
+    size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& edges);
+
+    /// Spread the refinement just made at `seeds` to the vertices around them, the way
+    /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
+    /// "distance" is grade_sizing_by_distance(seeds) and ignores `grade`. Every place the
+    /// offset lowers the field goes through here.
+    void grade_sizing(double grade, const std::vector<size_t>& seeds);
+    /// TetWild's gradation, ported from tetwild::TetWild::adjust_sizing_field: a breadth-first
+    /// walk out of the seeds over mesh neighbours; every vertex reached within R = 1.8 l of its
+    /// nearest seed has its scalar multiplied by 0.5 + 0.5 dist / R, the walk stops at vertices
+    /// farther than R, and the result is floored at the sizing floor. The seeds themselves keep
+    /// the scalar the caller gave them. Returns the number of vertices lowered.
+    size_t grade_sizing_by_distance(const std::vector<size_t>& seeds);
+
+    /// What one interleaved smoothing pass achieved, measured after it against the positions
+    /// before it. See smooth_group_to_convergence() and the adaptive_smoothing keys.
+    struct SmoothingProgress
+    {
+        /// Max front_vertex_conv_ratio over the measurable front vertices (1 = the bar, the
+        /// turn criterion's own test).
+        double front_max_ratio = 0.;
+        size_t front_worst_vid = static_cast<size_t>(-1);
+        size_t n_front = 0; ///< front vertices the max was taken over
+        size_t n_front_unmeasurable = 0; ///< ratio not finite: left out of the max
+        double front_max_step = 0.; ///< max front step in the pass, in tube half-widths
+        /// Max over non-front vertices of the step in the pass divided by the vertex's target
+        /// edge length s_v * l.
+        double background_max_step = 0.;
+        size_t background_worst_vid = static_cast<size_t>(-1);
+        size_t n_background = 0;
+    };
+    /// Measure a pass: `before` holds every live vertex's position before it, indexed by vid.
+    SmoothingProgress smoothing_progress(const std::vector<Vector2d>& before);
+    /// The interleaved smoothing of one operation group under adaptive_smoothing: one pass at a
+    /// time through local_operations({0,0,0,1}), each followed by smoothing_progress(), until
+    /// the front has converged (max ratio <= 1) or stalled (max ratio fell by less than
+    /// adaptive_smoothing_stall_rel) AND the background has settled (max step <=
+    /// adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes.
+    void smooth_group_to_convergence(const char* group_name);
+    /// The energy criterion as measured when the loop converged; the final Phase A runs after
+    /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;
     /// The interpolation residual of front edge e, see EnergyCriterion. -1 when unmeasurable.
     double edge_interpolation_residual(const Tuple& e) const;
@@ -1763,12 +1780,6 @@ public:
 
         return !vertex_is_on_domain_boundary(vid);
     }
-
-    /// Set by the placement when a vertex's last visit stopped on QualityBound, cleared when it
-    /// moved. distance_criterion() counts such a vertex as placed -- its level set is
-    /// unreachable by construction -- and drops edges touching one from the resolution and
-    /// orientation halves; update_band_sizing_from_tolerance() does not refine such edges.
-    std::vector<char> m_placement_pressed;
 
     /**
      * @brief TriWild's stall-driven sizing refinement, verbatim.
@@ -1924,22 +1935,13 @@ public:
     /// it is the per-face form of optimization_quality_stats()'s Phase B max.
     double face_criterion_rel(const size_t fid) const;
     /**
-     * @brief Put the frames beside the run's own output, and rename them into one timeline.
-     *
-     * Every debug frame in 2D goes through here -- the shared driver's per-pass frames, Phase B's,
-     * and the A/B driver's per-phase ones -- so this is the one place that can give them all a
-     * common order. A bare `debug_N` or `phase_<r><A|B>` comes out as
-     *
-     *     <output>_step_<NNNNN>_r<round><A|B><pass>.vtu      a pass inside a phase
-     *     <output>_step_<NNNNN>_r<round><A|B>_end.vtu         the frame the phase handed on
-     *
-     * NNNNN is a single monotonic counter across the whole run, so sorting on it is run order.
-     * <pass> counts passes within the current phase and restarts whenever the round or the phase
-     * changes, so `r1A3` reads as "round 1, phase A, third pass"; the restart is detected here, so
-     * no call site has to remember to reset anything. Round 0 is construction.
-     *
-     * Renaming here rather than at the call sites is what keeps this out of the shared driver:
-     * wmtk::TriOptimizerMesh is also triwild's and simwild's, so its naming is not ours to change.
+     * @brief Put the optimization's frames on the run's single debug timeline (see
+     * write_debug_frame()), labelled "r<round><phase><pass>_<op>" / "r<round><phase>_end".
+     * <pass> counts passes within the current phase and restarts whenever the round or the
+     * phase changes, so `r1S3` reads as "round 1, single phase, third pass"; the restart is
+     * detected here, so no call site has to remember to reset anything. Renaming here rather
+     * than at the call sites keeps this out of the shared driver, whose naming is also triwild's
+     * and simwild's. Same scheme as 3D.
      */
     void write_smoothing_debug_output(const std::string& path) const override
     {
@@ -1963,20 +1965,20 @@ public:
         } else if (path.rfind("phase_", 0) == 0) {
             label = fmt::format("r{}{}_end", m_ab_round, ph);
         }
-        // The file name is the sequence number and nothing else, so ParaView groups the frames into
-        // one time series: it needs the digits last, right before the extension, and every frame
-        // of a series to share its prefix. The label goes to <output>_frames.txt, one
-        // "NNNNN<tab>label" line per frame, which is what the polyscope viewer reads for its
-        // slider.
-        const size_t idx = m_debug_seq++;
-        append_frame_label(idx, label);
-        const_cast<TopoOffsetTriMesh*>(this)->write_vtu(
-            m_offset_params.output_path + fmt::format("_{:05d}", idx));
+        const_cast<TopoOffsetTriMesh*>(this)->write_debug_frame(label);
     }
-
-    /// One line of <output>_frames.txt; truncates the file on the first frame. See
-    /// write_smoothing_debug_output().
+    /// One line of <output>_frames.txt; truncates the file on the first frame.
     void append_frame_label(size_t idx, const std::string& label) const;
+    /**
+     * @brief One frame of the run's single debug timeline: <output>_NNNNN.vtu with the next
+     * sequence number, and one "NNNNN<tab>label" line in <output>_frames.txt. Every debug
+     * frame the run writes -- the input as loaded, the construction stages, and the
+     * optimization's own frames through write_smoothing_debug_output() -- goes through
+     * this sequence, so the numbers are consecutive and the .txt says what each
+     * one is. The only debug files outside it are the ones that are not this mesh:
+     * <output>_input_complex.vtu and the phi grid.
+     */
+    void write_debug_frame(const std::string& label);
 
     /**
      * @brief initialize TriMesh from vertex, face, tag data
@@ -2046,36 +2048,26 @@ public:
     //// overriden splits/invariants
 
     /**
-     * @brief TriWild over the input mesh, before any of the offset exists.
+     * @brief TriWild over the input mesh, before any of the offset exists, held only by the
+     * per-tag region envelopes, against a sizing field of 1.0 at every vertex.
      *
      * Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point where
      * the only tracked surfaces are the tag-region boundaries (input complex and domain wall among
      * them) and the only containment is their per-tag envelopes. There is no offset yet, so no
-     * offset envelope and no Phi term: this is TriWild, exactly.
-     *
-     * Worth a pass because marching_tris() puts the offset boundary on the background
-     * triangulation's own cell boundaries: how far the constructed offset lands from the complex
-     * is a property of the input mesh, and init_offset_potential() sizes dhat from that reach. One
-     * coarse cell touching the complex inflates dhat several-fold, and a large dhat merges the
-     * level sets of features that are close together, which no later stage can undo.
-     *
-     * The sizing field is seeded first, to target_distance on the input-complex boundary and
-     * graded outward: a band built on cells of delta scale lands near delta from the complex,
-     * which is what keeps dhat small. Unseeded, the base field is m_params.l everywhere, far
-     * coarser than the mesh around the complex, so the pass would coarsen the input instead.
+     * offset envelope and no Phi term: this is TriWild, exactly. Same as 3D.
      */
     void pre_optimize_input_mesh();
 
+    /// Construction, start to finish: the optional pre-optimize pass, the simplicial embedding,
+    /// marching_tris(), the re-embedding and the offset tagging. The optimization is
+    /// optimize_offset(), which the driver calls afterwards.
     void execute_offset(const std::filesystem::path& output_file);
 
-    /**
-     * @brief execute simplistic marching tris. All edges with one vertex labelled 0 and the other
-     * 1/2 are split, always at the midpoint.
-     *
-     * No target_distance enters construction at all: the paper places inserted vertices at the
-     * midpoint (Sec. 5.2) and leaves the distance to Step 3, so carrying the boundary out to the
-     * level set is entirely the optimization phase's job. Same as 3D.
-     */
+    /// Marching triangles: every edge with one endpoint in the input complex (label 1/2) and the
+    /// other in the background (label 0) is split -- at the midpoint, or under
+    /// sphere_trace_initialization where d(x) = target_distance along the edge (see
+    /// edge_split_sphere_trace()) -- and afterwards every background triangle still touching a
+    /// complex frontier vertex (the split-off halves) becomes the band (label 2).
     void marching_tris();
 
 

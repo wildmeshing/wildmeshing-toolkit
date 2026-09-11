@@ -5,10 +5,13 @@
 #include <wmtk/utils/SizingField.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <limits>
+#include <map>
+#include <queue>
 #include <set>
 
 namespace wmtk::components::topological_offset {
@@ -1449,7 +1452,7 @@ void TopoOffsetTriMesh::log_smooth_trace() const
 
 void TopoOffsetTriMesh::pre_optimize_input_mesh()
 {
-    // See the declaration for why this exists. Everything here is Phase A on a mesh that has no
+    // See the declaration and the 3D twin. Everything here is Phase A on a mesh that has no
     // offset in it yet.
     const OptPhase saved_phase = m_phase;
     const EdgeSplitMode saved_mode = m_edge_split_mode;
@@ -1464,114 +1467,19 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
     // Optimization path or they would be treated as marching splits.
     m_edge_split_mode = EdgeSplitMode::Optimization;
 
-    // The sizing field: target_distance on the input-complex BOUNDARY, graded outward. That
-    // boundary is the curve Phi measures from and the curve the marching wraps the band around,
-    // so asking for delta there makes the band one delta-scale cell thick, which is what puts the
-    // constructed offset near delta from the complex. The boundary and not the whole complex: a
-    // filled complex's interior vertices carry the same label, and resolving them at delta would
-    // multiply the mesh for geometry the offset never measures against. An edge is on that
-    // boundary when exactly one incident face carries the input-complex label -- the rule that
-    // produced m_phi_E.
-    const double l_target = std::max(m_params.l, 1e-16);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l_target);
-    const double s_input = std::clamp(
-        m_offset_params.target_distance / l_target,
-        s_floor,
-        m_offset_params.max_sizing_scalar);
-    // Which sizing field this pass runs against -- see pre_optimize_sizing_from_edges.
-    if (m_offset_params.pre_optimize_sizing_from_edges) {
-        // "Keep the resolution you have": every vertex takes the mean of its own incident edge
-        // lengths, the rule init_offset_sizing_field() uses on the front. target_distance never
-        // enters, so this pass improves element quality without refining anything toward delta
-        // and the constructed offset lands wherever the input mesh's own scale puts it.
-        size_t n_set = 0;
-        double sum_h = 0.;
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            double sum_len = 0.;
-            int n = 0;
-            for (const size_t nb : get_one_ring_vids_for_vertex_duplicate(vid)) {
-                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
-                ++n;
-            }
-            if (n == 0) continue;
-            const double h_local = sum_len / n;
-            m_vertex_attribute[vid].m_sizing_scalar =
-                std::clamp(h_local / l_target, s_floor, m_offset_params.max_sizing_scalar);
-            sum_h += h_local;
-            ++n_set;
-        }
-        logger().info(
-            "[pre-optimize] sizing field: {} vertices seeded from their OWN incident edge "
-            "lengths (mean {:.6g} = {:.4g} l); target_distance {} does not enter",
-            n_set,
-            n_set ? sum_h / double(n_set) : 0.,
-            n_set ? (sum_h / double(n_set)) / l_target : 0.,
-            m_offset_params.target_distance);
-    } else {
-        // The gradation: gradation_smooth_sizing(), the shared ring BFS, and nothing else. Do not
-        // re-add the rejected alternatives -- a Lipschitz ramp in distance (with or without a
-        // plateau), one-ring Jacobi averaging, tetwild's init_sizing_field() distance BFS, or
-        // triwild's multiplicative grow-and-refine recipe; all measured worse -- see git history
-        // of this file.
-        std::vector<size_t> seeds;
-        for (const Tuple& e : get_edges()) {
-            const std::optional<Tuple> opp = e.switch_face(*this);
-            // A wall edge is not a complex boundary: with offset_in the whole background carries
-            // label 1, and treating the missing opposite face as "not complex" seeded the entire
-            // domain wall at delta. A wall vertex is seeded only through an interior edge where
-            // the complex meets a non-complex region, i.e. where a complex boundary reaches the
-            // wall; a vertex bordering only the complex and the wall keeps the default scalar.
-            if (!opp) continue;
-            const bool in_a = m_face_extra[e.fid(*this)].label == 1;
-            const bool in_b = m_face_extra[opp->fid(*this)].label == 1;
-            if (in_a == in_b) continue; // interior to the complex, or interior to the background
-            for (const size_t vid : {e.vid(*this), e.switch_vertex(*this).vid(*this)}) {
-                double& sc = m_vertex_attribute[vid].m_sizing_scalar;
-                sc = std::min(sc, s_input);
-                seeds.push_back(vid);
-            }
-        }
-        // A curve complex has no label-1 faces, so the edge test above seeds nothing on it and the
-        // pre-pass would be a silent no-op, leaving the band one coarse input cell thick. The
-        // complex's vertices carry the label whatever its dimension: seed those too, but ONLY
-        // where the complex is a curve -- a region labels its interior vertices as well, and
-        // seeding those refines the whole region. A vertex with a label-1 face in its ring belongs
-        // to a region, whose boundary the edge loop above already seeded.
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            if (m_vertex_extra[vid].label != 1) continue;
-            bool region = false;
-            for (const size_t fid : get_one_ring_fids_for_vertex(v)) {
-                if (m_face_extra[fid].label == 1) {
-                    region = true;
-                    break;
-                }
-            }
-            if (region) continue;
-            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
-            sc = std::min(sc, s_input);
-            seeds.push_back(vid);
-        }
-        wmtk::vector_unique(seeds);
-        if (!seeds.empty()) {
-            gradation_smooth_sizing(m_offset_params.sizing_gradation, seeds);
-        }
-        logger().info(
-            "[pre-optimize] sizing seed: {} input-complex vertices at scalar {:.6g} "
-            "(= target_distance {} / l {:.6g}), graded outward at {}x per ring",
-            seeds.size(),
-            s_input,
-            m_offset_params.target_distance,
-            l_target,
-            m_offset_params.sizing_gradation);
+    // The sizing field this pass runs against is 1.0 at every vertex: a plain TriWild run
+    // against the base target length l. target_distance does not enter the field here.
+    size_t n_set = 0;
+    for (const Tuple& v : get_vertices()) {
+        m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
+        ++n_set;
     }
-
-    // The seeded field, before a single operation runs.
-    if (m_offset_params.debug_output) {
-        write_vtu(m_offset_params.output_path + "_seeded");
-    }
+    logger().info(
+        "[pre-optimize] sizing field: 1.0 at every one of {} vertices (target edge length "
+        "l = {:.6g}); target_distance {} does not enter",
+        n_set,
+        std::max(m_params.l, 1e-16),
+        m_offset_params.target_distance);
 
     const double before = std::get<0>(optimization_quality_stats());
     logger().info(
@@ -1620,129 +1528,6 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
     // The fix, if it is ever needed, is to re-extract the boundary curve only, not the closure.
     needle_scan("after the pre-pass");
 }
-
-void TopoOffsetTriMesh::init_offset_sizing_field()
-{
-    // Paper Sec. 5.3.3, Step 1: the sizing field "is defined on each edge of the offset mesh and
-    // is initialized with the current length of each edge."
-    //
-    // The base's default scalar of 1 means a target of m_params.l, a fraction of the bounding box
-    // diagonal and far longer than the front's own edges, so starting there makes every front edge
-    // a collapse candidate on the first pass and the front is decimated before the metrics below
-    // get to speak. Starting from the current lengths keeps the resolution the mesh has. The field
-    // is per-vertex here, so a vertex takes the mean of its incident front edges.
-    const double l = std::max(m_params.l, 1e-16);
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-
-    double raw_sum = 0.;
-    int n_seeded = 0;
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        double sum_len = 0.;
-        int n = 0;
-        for (const Tuple& e : get_one_ring_edges_for_vertex(v)) {
-            if (!edge_is_offset_surface_live(e)) continue;
-            const size_t nb =
-                (e.vid(*this) == vid) ? e.switch_vertex(*this).vid(*this) : e.vid(*this);
-            sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
-            ++n;
-        }
-        // Every vertex is seeded, not just the front's: a vertex with no incident front edge falls
-        // back to its whole one-ring. Leaving the background at the base target -- far coarser
-        // than the mesh construction produced -- is what makes a bare collapse pass destructive,
-        // since the gate is edge length against the target at its endpoints and would then mark
-        // essentially every interior edge as collapsible.
-        if (n == 0) {
-            for (const size_t nb : get_one_ring_vids_for_vertex_duplicate(vid)) {
-                sum_len += (m_vertex_attribute[vid].m_posf - m_vertex_attribute[nb].m_posf).norm();
-                ++n;
-            }
-            if (n == 0) continue; // isolated vertex; nothing to measure
-            m_vertex_attribute[vid].m_sizing_scalar =
-                std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
-            continue;
-        }
-        raw_sum += sum_len / n;
-        ++n_seeded;
-        m_vertex_attribute[vid].m_sizing_scalar =
-            std::clamp((sum_len / n) / l, s_floor, m_offset_params.max_sizing_scalar);
-    }
-    logger().info(
-        "\tOffset sizing seed: {} vertices, mean incident length {:.6} -> target {:.6} "
-        "(base l {:.6}, l_min {:.6} = {} x target_distance {}, scalar floor {:.6})",
-        n_seeded,
-        n_seeded > 0 ? raw_sum / n_seeded : 0.,
-        std::max(n_seeded > 0 ? raw_sum / n_seeded : 0., m_offset_params.min_edge_length),
-        l,
-        m_offset_params.min_edge_length,
-        m_offset_params.min_edge_length_rel,
-        m_offset_params.target_distance,
-        s_floor);
-
-    // The front's resolution follows from the tolerance and the level set's curvature, set once
-    // here. A chord of length L over curvature radius rho misses it by L^2 / (8 rho) and the front
-    // must stay within eps x delta of the level set (eps = offset_envelope_rel), so
-    // L <= sqrt(8 eps delta rho). rho is floored at delta: on the convex side the level set's
-    // curvature never exceeds 1 / delta, and where it does -- a concave crease at the input's
-    // medial axis, a seam between two fronts -- no chord resolves it and the vertex test decides.
-    {
-        const double delta = m_offset_params.target_distance;
-        const double eps = m_offset_params.offset_envelope_rel;
-        std::vector<size_t> changed;
-        double L_min = std::numeric_limits<double>::infinity(), L_max = 0.;
-        size_t n_flat = 0;
-        for (const Tuple& v : get_vertices()) {
-            const size_t vid = v.vid(*this);
-            if (!m_vertex_extra[vid].m_is_on_offset) continue;
-            const Vector2d x = m_vertex_attribute[vid].m_posf;
-            const OffsetPotential2D& pot = potential_for(vid);
-            const Vector2d g = pot.gradient(x);
-            const Eigen::Matrix2d H = pot.hessian(x);
-            const double gn = g.norm();
-            // Curvature of the level set of Phi through x.
-            double rho = delta;
-            if (gn > 0. && g.allFinite() && H.allFinite()) {
-                const double k = (g.x() * g.x() * H(1, 1) - 2. * g.x() * g.y() * H(0, 1) +
-                                  g.y() * g.y() * H(0, 0)) /
-                                 (gn * gn * gn);
-                if (std::isfinite(k) && std::abs(k) > 0.)
-                    rho = std::max(1. / std::abs(k), delta);
-                else
-                    rho = std::numeric_limits<double>::infinity();
-            }
-            if (!std::isfinite(rho)) {
-                ++n_flat;
-                continue; // a straight level set: the seeded resolution stands
-            }
-            // 3/4: Phase A splits an edge only once it is longer than 4/3 of its target, so the
-            // target is 3/4 of the chord the tube allows.
-            const double L = 0.75 * std::sqrt(8. * eps * delta * rho);
-            double& sc = m_vertex_attribute[vid].m_sizing_scalar;
-            const double ns = std::clamp(L / l, s_floor, m_offset_params.max_sizing_scalar);
-            if (ns < sc) {
-                sc = ns;
-                changed.push_back(vid);
-            }
-            const double Lc = std::min(L, sc * l); // what the vertex actually gets
-            L_min = std::min(L_min, Lc);
-            L_max = std::max(L_max, Lc);
-        }
-        if (!changed.empty()) gradation_smooth_sizing(m_offset_params.sizing_gradation, changed);
-        logger().info(
-            "\tFront resolution from the tolerance: L = 3/4 sqrt(8 eps delta rho), rho >= delta "
-            "-> {:.6g} .. {:.6g} ({:.3g} .. {:.3g} x delta) at eps {}; {} front vertices "
-            "tightened, {} on a straight level set left at the seed",
-            std::isfinite(L_min) ? L_min : 0.,
-            L_max,
-            std::isfinite(L_min) ? L_min / delta : 0.,
-            L_max / delta,
-            eps,
-            changed.size(),
-            n_flat);
-    }
-}
-
 
 void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const double filter_energy)
     const
@@ -2726,71 +2511,41 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
-    // The convergence length, front_conv_rel x delta: what "placed" means for a vertex and
-    // "resolved" for a chord. See edge_conv_ratio() for the role split -- offset_envelope_rel is
-    // the leash on the operations, this is the accuracy, and startup requires leash <= accuracy.
+    // The convergence length, front_conv_rel x delta: a vertex is on the level set within it,
+    // and a chord is resolved within it. See edge_conv_ratio() for the role split --
+    // offset_envelope_rel is the leash on the operations, this is the accuracy, and startup
+    // requires leash <= accuracy.
     s.tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
-    const auto placed = [&](const size_t vid) {
+    const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
     std::vector<char> on_level(vert_capacity(), 0);
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
-        if (!placed(vid)) continue;
-        // The single phase's states -- see EnergyCriterion. rho is the reference-slope length
-        // residual_length(), the measure the sag test qualifies its ends with. "Stopped" is the
-        // objective's stationarity -- the remaining 1-D Newton step along the normal, in length,
-        // at most the tube -- not the net displacement: at a pressed seam the two fronts take
-        // turns pushing the one-cell strip and every vertex drifts a little for ever, while the
-        // objective is stationary there.
+        if (!front(vid)) continue;
+        // rho is the reference-slope length residual_length(), the measure the sag test
+        // qualifies its ends with; gn the objective's stationarity, the remaining 1-D Newton
+        // step along the normal against the tube.
         const Vector2d p = m_vertex_attribute[vid].m_posf;
         const double rho = potential_for(vid).residual_length(p);
         const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
-        const double newton_len =
-            gn * m_offset_params.front_conv_rel * m_offset_params.target_distance;
         if (!std::isfinite(rho) || !std::isfinite(gn)) {
             ++s.n_unmeasurable;
-        } else if (rho <= s.tube) {
-            ++s.n_placed;
-            on_level[vid] = 1;
-        } else if (newton_len > s.tube) {
-            ++s.n_travelling;
-        } else if (front_vertex_touches_other(vid) || !m_offset_params.front_alignment_energy) {
-            // Stationary off its level set. With the alignment term off the objective is the
-            // offset term and w x AMIPS alone, so only a press can hold a vertex short of its
-            // level set -- another front (touching), or the interior of a strip two cells thick.
-            // With the alignment term on, a stationary vertex touching nothing is the term's own
-            // bias: stuck.
-            ++s.n_pressed_on;
-            if (front_vertex_touches_other(vid)) ++s.n_pressed_touching;
-        } else {
-            ++s.n_stuck;
-            if (rho > s.worst_stuck_rho) {
-                s.worst_stuck_rho = rho;
-                s.worst_stuck_vid = vid;
-            }
-        }
-        // The alternating loop's vertex test, kept for it and for the log.
-        if (vid < m_placement_pressed.size() && m_placement_pressed[vid]) {
-            ++s.n_pressed; // constrained minimum: grad F is the constraint force, not a residual
             continue;
         }
-        if (!std::isfinite(gn)) continue;
+        if (rho <= s.tube) on_level[vid] = 1;
         ++s.n_vertices;
         if (gn > s.max_vertex) {
             s.max_vertex = gn;
             s.worst_vid = vid;
         }
     }
+    // The resolution test is per EDGE, sampled at the midpoint (the 3D twin samples each face
+    // at its centroid).
     for (const Tuple& e : get_edges()) {
         if (!edge_is_offset_surface_live(e)) continue;
         const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-        if (!placed(va) || !placed(vb)) continue;
-        if ((va < m_placement_pressed.size() && m_placement_pressed[va]) ||
-            (vb < m_placement_pressed.size() && m_placement_pressed[vb])) {
-            ++s.n_edges_pressed; // the seam: a constrained pair, not a resolution question
-            continue;
-        }
+        if (!front(va) || !front(vb)) continue;
         const double gn = edge_conv_ratio(e); // sag / tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
@@ -2862,8 +2617,6 @@ double TopoOffsetTriMesh::phase_b_front_gradient_linf()
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        if (vid < m_placement_pressed.size() && m_placement_pressed[vid])
-            continue; // constrained minimum
         const double gn = m_front_gradient_reference > 0. ||
                                   m_offset_params.front_conv_criterion != "gradient_norm_rel"
                               ? front_vertex_conv_ratio(vid)
@@ -2924,7 +2677,7 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
     // As a LENGTH: the sagitta of Phi over the chord, |Phi(m) - mean Phi|, divided by |grad Phi|
     // at the midpoint. The dimensionless form this replaced meant a tighter tolerance for the
     // smooth field than for the Euclidean one at the same number. Reported, not gated -- the
-    // front's resolution is set from the tolerance in init_offset_sizing_field().
+    // front's resolution is set by the sag rule at the end of every turn.
     const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
     const OffsetPotential2D& pot = potential_for_edge(a, b);
     const Vector2d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
@@ -3081,31 +2834,6 @@ void TopoOffsetTriMesh::log_front_profile(const size_t vid)
     m_phase = saved;
 }
 
-bool TopoOffsetTriMesh::front_vertex_touches_other(const size_t vid) const
-{
-    // Through a BACKGROUND triangle (the strip between two fronts, or between a front and a
-    // wall), one of whose other vertices is on the input, on a region boundary, or on a front
-    // this vertex is not joined to by a front edge -- another band's front, or this band's own
-    // front across a slot. A neighbour along the same front does not count: the triangle behind
-    // a front edge is the band's own.
-    std::set<size_t> along;
-    for (const Tuple& e : get_one_ring_edges_for_vertex(vid)) {
-        if (!edge_is_offset(e.eid(*this))) continue;
-        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
-        along.insert(va == vid ? vb : va);
-    }
-    for (const size_t fid : get_one_ring_fids_for_vertex(vid)) {
-        if (m_face_extra[fid].label != 0) continue; // band or input: not the strip
-        for (const size_t u : oriented_tri_vids(fid)) {
-            if (u == vid) continue;
-            const VertexExtra2d& ue = m_vertex_extra[u];
-            if (ue.m_is_on_input || ue.m_is_on_region) return true;
-            if (ue.m_is_on_offset && along.count(u) == 0) return true;
-        }
-    }
-    return false;
-}
-
 double TopoOffsetTriMesh::front_chord_target(
     const size_t va,
     const size_t vb,
@@ -3124,8 +2852,10 @@ double TopoOffsetTriMesh::front_chord_target(
     // and phi_b the turns each half would carry (the midpoint gradient splits it). A smooth arc
     // splits the turn evenly, so a half's sag is a quarter; a kink puts the whole jump in one
     // half, whose sag is a half. So ratio = (max(phi_a, phi_b) / phi) / 2 is the predicted sag
-    // fraction, in [1/4, 1/2], and p = -1 / log2(ratio) maps it back: 1/4 -> 2, 1/2 -> 1.
-    // Anything degenerate falls back to 2.
+    // fraction, in [1/4, 1/2], and p = -log2(ratio) maps it back: 1/4 -> 2, 1/2 -> 1. (Until
+    // the 3D port was mirrored back this read -1 / log2(ratio), which maps 1/4 to 0.5 and 1/2
+    // to 1 and so over-refined every smooth chord by (sag / tube)^(1..2) instead of the square
+    // root.) Anything degenerate falls back to 2. Same as 3D.
     double p = 2.;
     const OffsetPotential2D& pot = potential_for_edge(va, vb);
     const Vector2d pa = m_vertex_attribute[va].m_posf, pb = m_vertex_attribute[vb].m_posf;
@@ -3141,7 +2871,7 @@ double TopoOffsetTriMesh::front_chord_target(
         if (phi > 0.) {
             const double ratio =
                 std::clamp(0.5 * std::max(turn(ua, um), turn(um, ub)) / phi, 0.25, 0.5);
-            p = -1. / std::log2(ratio);
+            p = -std::log2(ratio);
         }
     }
     return std::min(0.75 * len * std::pow(tube / sag, 1. / p), 0.5 * len);
@@ -3180,8 +2910,235 @@ size_t TopoOffsetTriMesh::refine_front_from_sag(
             }
         }
     }
-    if (!changed.empty()) gradation_smooth_sizing(m_offset_params.sizing_gradation, changed);
+    grade_sizing(m_offset_params.sizing_gradation, changed);
     return changed.size();
+}
+
+size_t TopoOffsetTriMesh::refine_front_by_halving(
+    const std::vector<EnergyCriterion::Refinable>& edges)
+{
+    const double l = std::max(m_params.l, 1e-300);
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+    // Each end is halved once per call: the first edge that names it does the halving and
+    // marks it, so a vertex shared by several refinable edges is not halved several times.
+    std::vector<size_t> changed;
+    std::vector<char> done(vert_capacity(), 0);
+    for (const EnergyCriterion::Refinable& r : edges) {
+        for (const size_t v : {r.a, r.b}) {
+            if (done[v]) continue;
+            done[v] = 1;
+            double& sc = m_vertex_attribute[v].m_sizing_scalar;
+            const double sn = std::max(0.5 * sc, s_floor);
+            if (sn < sc) {
+                sc = sn;
+                changed.push_back(v);
+            }
+        }
+    }
+    grade_sizing(m_offset_params.sizing_gradation, changed);
+    return changed.size();
+}
+
+TopoOffsetTriMesh::SmoothingProgress TopoOffsetTriMesh::smoothing_progress(
+    const std::vector<Vector2d>& before)
+{
+    SmoothingProgress s;
+    const OptPhase saved = m_phase;
+    m_phase = OptPhase::B; // the front objective's offset terms exist only in Phase B, as in
+                           // energy_criterion()
+    const double l = std::max(m_params.l, 1e-16);
+    const double tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const Vector2d& x = m_vertex_attribute[vid].m_posf;
+        const double step = vid < before.size() ? (x - before[vid]).norm() : 0.;
+        const bool front =
+            m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
+        if (!front) {
+            ++s.n_background;
+            const double target = std::max(m_vertex_attribute[vid].m_sizing_scalar * l, 1e-300);
+            const double r = step / target;
+            if (r > s.background_max_step) {
+                s.background_max_step = r;
+                s.background_worst_vid = vid;
+            }
+            continue;
+        }
+        if (tube > 0.) s.front_max_step = std::max(s.front_max_step, step / tube);
+        const double gn = front_vertex_conv_ratio(vid);
+        if (!std::isfinite(gn)) {
+            ++s.n_front_unmeasurable;
+            continue;
+        }
+        ++s.n_front;
+        if (gn > s.front_max_ratio) {
+            s.front_max_ratio = gn;
+            s.front_worst_vid = vid;
+        }
+    }
+    m_phase = saved;
+    return s;
+}
+
+void TopoOffsetTriMesh::smooth_group_to_convergence(const char* group_name)
+{
+    const int max_passes = std::max(1, m_offset_params.adaptive_smoothing_max_passes);
+    const double stall_rel = m_offset_params.adaptive_smoothing_stall_rel;
+    const double step_rel = m_offset_params.adaptive_smoothing_step_rel;
+    std::vector<Vector2d> before;
+    double prev_front = std::numeric_limits<double>::infinity();
+    for (int p = 0; p < max_passes; ++p) {
+        before.assign(vert_capacity(), Vector2d::Zero());
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            before[vid] = m_vertex_attribute[vid].m_posf;
+        }
+        // One pass through the same entry the fixed count used: the sweep, rounding, the
+        // quality log and update_attributes(). The tube is NOT rebuilt between passes; the
+        // group's caller rebuilds it once, as with the fixed count.
+        local_operations({{0, 0, 0, 1}});
+        const SmoothingProgress s = smoothing_progress(before);
+        const bool front_converged = s.n_front == 0 || s.front_max_ratio <= 1.;
+        const bool front_stalled = !front_converged && std::isfinite(prev_front) &&
+                                   s.front_max_ratio > (1. - stall_rel) * prev_front;
+        const bool background_settled = s.background_max_step <= step_rel;
+        const char* front_verdict =
+            front_converged ? "converged" : (front_stalled ? "stalled" : "moving");
+        logger().info(
+            "\t[smoothing {} pass {}/{}] front: max ratio {:.4} (prev {:.4}) at v{}, {} measured "
+            "+ {} unmeasurable, max step {:.4} x tube -> {} | background: max step "
+            "{:.4} x target edge at v{} over {} vertices -> {}",
+            group_name,
+            p + 1,
+            max_passes,
+            s.front_max_ratio,
+            prev_front,
+            s.front_worst_vid,
+            s.n_front,
+            s.n_front_unmeasurable,
+            s.front_max_step,
+            front_verdict,
+            s.background_max_step,
+            s.background_worst_vid,
+            s.n_background,
+            background_settled ? "settled" : "moving");
+        if ((front_converged || front_stalled) && background_settled) break;
+        prev_front = s.front_max_ratio;
+    }
+}
+
+void TopoOffsetTriMesh::grade_sizing(double grade, const std::vector<size_t>& seeds)
+{
+    if (seeds.empty()) return;
+    if (m_offset_params.sizing_gradation_mode == "distance") {
+        grade_sizing_by_distance(seeds);
+    } else {
+        gradation_smooth_sizing(grade, seeds);
+    }
+}
+
+size_t TopoOffsetTriMesh::grade_sizing_by_distance(const std::vector<size_t>& seeds)
+{
+    // Ported statement for statement from tetwild::TetWild::adjust_sizing_field
+    // (attic/app/tetwild/TetWild.cpp), one dimension down: the same R, the same ramp, the same
+    // breadth-first walk that stops at R, the same floor. Two parts of that function are NOT
+    // ported on purpose:
+    //   - the seeds are not multiplied. TetWild's seeds are the worst tets' vertices and the
+    //     0.5 at dist 0 IS their refinement; here the caller has just set each seed's scalar to
+    //     the value it wants, and halving it again would refine the seed twice.
+    //   - the 1.5x recovery TetWild applies to every vertex outside the ball. That is TetWild's
+    //     stall response coarsening the field back, not gradation; here it would undo the
+    //     front's resolution on every call.
+    // TetWild finds the nearest seed with geogram's nearest-neighbour search; a uniform grid of
+    // cell size R does the same job exactly for the only question asked, "which seed within R
+    // is nearest", without the dependency.
+    if (seeds.empty()) return 0;
+    const double l = std::max(m_params.l, 1e-16);
+    const double R = 1.8 * l;
+    const double refine_scalar = 0.5;
+    const double s_floor =
+        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
+
+    std::vector<char> is_seed(vert_capacity(), 0);
+    std::vector<Vector2d> pts;
+    pts.reserve(seeds.size());
+    for (const size_t v : seeds) {
+        if (is_seed[v]) continue;
+        is_seed[v] = 1;
+        pts.push_back(m_vertex_attribute[v].m_posf);
+    }
+    // grid of cell size R: every seed within R of a query lies in the query's cell or one of
+    // its 8 neighbours.
+    Vector2d lo = pts[0];
+    for (const Vector2d& p : pts) lo = lo.cwiseMin(p);
+    auto cell_of = [&](const Vector2d& p) {
+        return std::array<int64_t, 2>{
+            static_cast<int64_t>(std::floor((p[0] - lo[0]) / R)),
+            static_cast<int64_t>(std::floor((p[1] - lo[1]) / R))};
+    };
+    std::map<std::array<int64_t, 2>, std::vector<size_t>> grid;
+    for (size_t i = 0; i < pts.size(); ++i) grid[cell_of(pts[i])].push_back(i);
+    auto nearest_seed_dist = [&](const Vector2d& p) {
+        const auto c = cell_of(p);
+        double best2 = std::numeric_limits<double>::infinity();
+        for (int64_t dx = -1; dx <= 1; ++dx)
+            for (int64_t dy = -1; dy <= 1; ++dy) {
+                const auto it = grid.find({c[0] + dx, c[1] + dy});
+                if (it == grid.end()) continue;
+                for (const size_t i : it->second)
+                    best2 = std::min(best2, (p - pts[i]).squaredNorm());
+            }
+        return std::sqrt(std::max(best2, 0.));
+    };
+
+    std::vector<double> scale_multipliers(vert_capacity(), 1.0);
+    std::vector<char> visited(vert_capacity(), 0);
+    std::queue<size_t> v_queue;
+    for (const size_t v : seeds) v_queue.push(v);
+    size_t n_reached = 0;
+    while (!v_queue.empty()) {
+        const size_t vid = v_queue.front();
+        v_queue.pop();
+        if (visited[vid]) continue;
+        visited[vid] = 1;
+        const double dist = nearest_seed_dist(m_vertex_attribute[vid].m_posf);
+        if (dist > R) continue; // outside the R-ball: not graded, and the walk stops here
+        ++n_reached;
+        scale_multipliers[vid] = std::min(
+            scale_multipliers[vid],
+            dist / R * (1 - refine_scalar) + refine_scalar); // linear interpolate
+        for (const size_t n_vid : get_one_ring_vids_for_vertex_duplicate(vid)) {
+            if (visited[n_vid]) continue;
+            v_queue.push(n_vid);
+        }
+    }
+
+    size_t n_lowered = 0;
+    size_t n_floored = 0;
+    for (size_t vid = 0; vid < vert_capacity(); ++vid) {
+        if (!visited[vid] || is_seed[vid] || scale_multipliers[vid] >= 1.) continue;
+        double& sc = m_vertex_attribute[vid].m_sizing_scalar;
+        double ns = sc * scale_multipliers[vid];
+        if (ns < s_floor) {
+            ns = s_floor;
+            ++n_floored;
+        }
+        if (ns < sc) {
+            sc = ns;
+            ++n_lowered;
+        }
+    }
+    logger().info(
+        "\t[gradation] distance (TetWild): {} seeds, {} vertices within R = 1.8 l = {:.6g} of "
+        "one, {} lowered by the 0.5 .. 1 ramp ({} at the floor {:.6g})",
+        pts.size(),
+        n_reached,
+        R,
+        n_lowered,
+        n_floored,
+        s_floor);
+    return n_lowered;
 }
 
 void TopoOffsetTriMesh::check_offset_within_support(const char* when) const
@@ -3374,7 +3331,7 @@ size_t TopoOffsetTriMesh::refine_sizing_around_worst(const double max_metric)
         m_params.stuck_refine_factor,
         m_params.stuck_refine_min_scalar,
         [this](size_t v) -> double& { return m_vertex_attribute[v].m_sizing_scalar; });
-    gradation_smooth_sizing(m_params.stuck_refine_gradation, refined);
+    grade_sizing(m_params.stuck_refine_gradation, refined);
 
     logger().info(
         "[stuck-refine A] worst {} tris (max energy {:.4}, filter {:.4}), refined {} of {} "
@@ -3720,23 +3677,26 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
 
 void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& label) const
 {
-    // See write_smoothing_debug_output(). Truncated on the first frame of the run, appended to
-    // afterwards; a run with no debug output never creates it.
     std::ofstream f(
         m_offset_params.output_path + "_frames.txt",
         idx == 0 ? std::ios::trunc : std::ios::app);
     if (f) f << fmt::format("{:05d}\t{}\n", idx, label);
 }
 
+void TopoOffsetTriMesh::write_debug_frame(const std::string& label)
+{
+    const size_t idx = m_debug_seq++;
+    append_frame_label(idx, label);
+    write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+}
+
 void TopoOffsetTriMesh::optimize_offset_single_phase()
 {
-    // One phase. Phase A is already TriWild's mesh_improvement -- split / smooth / collapse /
-    // smooth / swap / smooth -- so operations and smoothing interleave there already; the only
-    // things Phase B adds are WHICH objective a front vertex is smoothed against and that it is
-    // not caged in the offset tube while it moves. Give A's smoothing passes both
-    // (OptPhase::Single) and the second phase has nothing left to do. The tube still holds the
-    // front for the OPERATIONS (surface_envelope_for_edge, which does not read the phase) and is
-    // rebuilt after every iteration, so it follows the front rather than capping it.
+    // One loop: TriWild's operation groups (split / collapse / swap, each followed by smoothing)
+    // with the front placed by the offset objective inside the smoothing passes
+    // (OptPhase::Single) and never caged by the offset tube while it moves. The tube still holds
+    // the front for the OPERATIONS (surface_envelope_for_edge does not read the phase) and is
+    // rebuilt after every group, so it follows the front rather than capping it. As in 3D.
     const int rounds = std::max(1, m_offset_params.max_rounds);
     const int a_iters = std::max(1, m_offset_params.max_iterations);
     check_no_vertex_on_both_surfaces("construction");
@@ -3752,32 +3712,48 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         m_front_gradient_reference,
         m_offset_params.front_conv_criterion,
         m_offset_params.front_conv_rel);
-    // Its own key, max_rounds: one turn here is split | collapse | swap with a smoothing pass
-    // after each, which is neither an A/B round nor a Phase A iteration, so borrowing either key
-    // gives a stuck case a budget meant for something else. max_iterations still bounds the
-    // finishing pass, which is an ordinary TriWild run.
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TriWild's operation groups, run here rather than through mesh_improvement() so
-    // the tube can be rebuilt AFTER EVERY SMOOTHING PASS. Only smoothing moves the front -- an
-    // accepted split, collapse or swap cannot take a front edge out of the tube -- so the tube
-    // goes stale only across a smooth, and one rebuild per turn leaves collapse and swap judging
-    // the front against a tube it has already left. local_operations() is the engine's own pass
-    // driver; what mesh_improvement() adds and is left out here on purpose is its stall response,
-    // which refines around the worst elements: a travelling front stretches cells by design.
-    // The smoothing count is interleaved_smoothing_passes, the key the shared loop reads for the
-    // same thing, so one key sets it for the pre-optimisation pass, the finishing pass and here.
+    // the tube can be rebuilt AFTER EVERY SMOOTHING PASS. What mesh_improvement() adds and is
+    // left out here on purpose is its stall response, which refines around the worst elements: a
+    // moving front stretches cells by design.
+    // k is the fixed count when adaptive_smoothing is off; on, each group smooths until the
+    // front and the background settle (smooth_group_to_convergence()).
     const int k = std::max(1, m_params.interleaved_smoothing_passes);
     const std::array<std::array<int, 4>, 3> groups = {
         {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
+    static constexpr std::array<const char*, 3> group_names = {{"split", "collapse", "swap"}};
     partition_mesh_morton();
-    // One turn of grace after a target is lowered: refine_front_from_sag() writes a sizing target
-    // and the split pass that realizes it does not run until the NEXT turn, so a turn that
-    // classifies every chord as at-floor may be looking at a mesh not yet refined to the targets
-    // already written for it, and exiting there would end the run with the last write unspent.
-    // Terminates for the same reason the rule itself does: the scalars only ever fall and stop at
-    // the floor, so a turn that writes nothing always comes.
+    // One turn of grace after the field is lowered: the sag rule (refine_front_from_sag or
+    // refine_front_by_halving) lowers sizing scalars at the end of a turn, and the split pass
+    // that realizes them does not run until the NEXT turn.
     size_t lowered_last_turn = 0;
+    if (m_offset_params.pre_smooth) {
+        // One smoothing block on the constructed mesh before turn 1's split pass: the same
+        // block every operation group is followed by, with the same bookkeeping around it
+        // (plastic rests stamped before, the tube rebuilt after). Frames are labelled r0S*.
+        m_ab_round = 0;
+        m_phase = OptPhase::Single;
+        for (const Tuple& v : get_vertices()) {
+            const size_t vid = v.vid(*this);
+            m_vertex_extra[vid].m_turn_start = m_vertex_attribute[vid].m_posf;
+            m_vertex_extra[vid].m_turn_start_valid = true;
+        }
+        rebuild_offset_envelope();
+        stamp_plastic_rests();
+        logger().info(
+            "\t[pre_smooth] one smoothing block before turn 1: {}",
+            m_offset_params.adaptive_smoothing
+                ? std::string("adaptive smoothing")
+                : fmt::format("{} interleaved smoothing pass(es)", k));
+        if (m_offset_params.adaptive_smoothing) {
+            smooth_group_to_convergence("pre_smooth");
+        } else {
+            local_operations({{0, 0, 0, k}});
+        }
+        rebuild_offset_envelope();
+    }
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;
         m_iterations_used = it + 1;
@@ -3788,9 +3764,17 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             m_vertex_extra[vid].m_turn_start_valid = true;
         }
         rebuild_offset_envelope();
-        for (const auto& ops : groups) {
+        for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
-            local_operations(ops);
+            if (gi == 1) needle_scan("collapse pass");
+            if (m_offset_params.adaptive_smoothing) {
+                // The group's operations alone, then its smoothing pass by pass until the front
+                // and the background have settled -- see smooth_group_to_convergence().
+                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
+                smooth_group_to_convergence(group_names[gi]);
+            } else {
+                local_operations(groups[gi]);
+            }
             rebuild_offset_envelope(); // the smoothing in this group moved the front
         }
         consolidate_mesh();
@@ -3803,11 +3787,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                                 : Vector2d::Zero();
         logger().info(
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})), edges max {:.4}x (reported) | {} "
-            "vertices, {} edges | edges over the tube: {}, of which {} with both ends on the "
-            "level set (worst {:.4}x at ({:.4}, {:.4})) | states: placed {} pressed {} travelling "
-            "{} "
-            "stuck {} | refinable edges {} (at the sizing floor {}) ========",
+            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})), edges max {:.4}x at the midpoint "
+            "(reported) | {} vertices, {} edges | edges over the tube: {}, of which {} with both "
+            "ends on the level set (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable edges {} "
+            "(at the sizing floor {}) ========",
             it + 1,
             budget,
             amips,
@@ -3824,45 +3807,33 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.max_edge_on_level,
             ec.worst_on_level_mid.x(),
             ec.worst_on_level_mid.y(),
-            ec.n_placed,
-            ec.n_pressed_on,
-            ec.n_travelling,
-            ec.n_stuck,
             ec.refinable.size(),
             ec.n_at_floor);
         if (m_offset_params.debug_output) {
             write_smoothing_debug_output(fmt::format("phase_{}S", it + 1));
         }
-        // The resolution rule, every turn: see EnergyCriterion and refine_front_from_sag().
         const size_t lowered_prev = lowered_last_turn;
         lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
-            const size_t n = refine_front_from_sag(ec.refinable);
+            // sag_halve_refinement: halve the ends' scalars instead of the chord target.
+            const bool halve = m_offset_params.sag_halve_refinement;
+            const size_t n =
+                halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front edge(s) with both ends on the level set sag over "
-                "the tube (worst {:.4}x at ({:.4}, {:.4})) -> target lowered at {} vertices",
+                "\t[resolution] turn {}: {} front edge(s) with both ends on the level set sag "
+                "over the tube at the midpoint (worst {:.4}x, midpoint ({:.4}, {:.4})) -> "
+                "{} at {} vertices",
                 it + 1,
                 ec.refinable.size(),
                 ec.max_edge_on_level,
                 ec.worst_on_level_mid.x(),
                 ec.worst_on_level_mid.y(),
+                halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
                 n);
         }
-        if (ec.n_stuck > 0) {
-            const Vector2d sp = m_vertex_attribute[ec.worst_stuck_vid].m_posf;
-            logger().info(
-                "\t[stuck] turn {}: {} front vertex(es) stopped short of the level set touching "
-                "nothing; worst v{} at ({:.4}, {:.4}), {:.4} x delta off",
-                it + 1,
-                ec.n_stuck,
-                ec.worst_stuck_vid,
-                sp.x(),
-                sp.y(),
-                ec.worst_stuck_rho / m_offset_params.target_distance);
-        }
-        // Termination: every front vertex placed or pressed, none travelling or stuck, and no
-        // chord left to resolve -- then quality with the front frozen (below).
+        // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
+        // no chord left to resolve -- then quality with the front frozen (below).
         if (ec.converged_single() && lowered_prev == 0) {
             m_energy_verdict = ec;
             m_converged = true;
@@ -3972,29 +3943,37 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         m_offset_params.front_conv_rel,
         offset_residual_samples());
 
-    // Seed the sizing field from the offset's current edge lengths, before any operation runs.
-    // Must come after the offset edges are classified above, since it reads them.
-    init_offset_sizing_field();
+    // No sizing seed here: the loop starts from the field as it is -- 1.0 everywhere, or what
+    // the pre-optimize pass left when pre_optimize_input is true. The front's resolution comes
+    // from the sag rule once it is placed.
+    {
+        double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
+        for (const Tuple& v : get_vertices()) {
+            const double s = m_vertex_attribute[v.vid(*this)].m_sizing_scalar;
+            s_min = std::min(s_min, s);
+            s_max = std::max(s_max, s);
+        }
+        logger().info(
+            "[sizing] the loop starts from the sizing field as is ({}): scalar {:.6g} .. {:.6g}",
+            m_offset_params.pre_optimize_input ? "what the pre-optimize pass left"
+                                               : "1.0 everywhere, no pre-optimize pass",
+            s_min,
+            s_max);
+    }
 
     // Unconditional, and it must stay that way: write_vtu() calls consolidate_mesh(), which
     // renumbers the mesh, which changes the order every subsequent pass enumerates operations in,
-    // which changes the run. With the debug write below the only consolidate here, turning debug
-    // output on silently produced a different numerical result.
+    // which changes the run; a debug write must never be the only consolidate here. No frame
+    // here: nothing changes the mesh between this point and the "construction" frame the
+    // optimization writes first, so one would duplicate the other.
     consolidate_mesh();
-    if (m_offset_params.debug_output) {
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
-    }
 
-    // The shared engine's own loop, driven alternately rather than jointly -- see OptPhase. Each
-    // Phase A is one mesh_improvement() with a TriWild criterion; each Phase B is smoothing to a
-    // fixed point.
-    //
-    // The offset plugs into mesh_improvement() through the same virtuals simwild uses:
+    // The offset plugs into the shared engine through the same virtuals simwild uses:
     //   - optimization_quality_stats(): per phase -- TriWild's own in A, the max of AMIPS and the
     //     offset residual in B;
     //   - optimization_stop_metric(): per phase, in the SAME units as the line above;
     //   - refine_sizing_around_worst(): TriWild's, fired only on a stall.
-    // Placement is not among them: the front is placed by Phase B's own local solve.
+    // Placement is not among them: the front is placed by the smoother's own local solve.
     iter_cnt_split = 0;
     iter_cnt_split_born = 0;
     iter_cnt_recollapsed = 0;
@@ -4096,22 +4075,20 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         m_converged = front_ok && m_quality_converged;
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front {} -- vertices placed {} / pressed {} / travelling {} / stuck {} | "
+            "{}{}: front {} -- {} front vertices, max {:.4}x the bar, {} unmeasurable | "
             "chords to resolve {} (at the sizing floor {}) | accuracy front_conv_rel {} "
-            "x target_distance = {:.4} | (vertex test, informative: max {:.4}x its bar) || "
+            "x target_distance = {:.4} || "
             "final quality {}: max AMIPS {:.4} vs stop_energy {}",
             m_converged ? "Converged" : "Optimization did not converge",
             m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
             front_ok ? "placed" : "NOT placed",
-            ec.n_placed,
-            ec.n_pressed_on,
-            ec.n_travelling,
-            ec.n_stuck,
+            ec.n_vertices,
+            ec.max_vertex,
+            ec.n_unmeasurable,
             ec.refinable.size(),
             ec.n_at_floor,
             m_offset_params.front_conv_rel,
             ec.tube,
-            ec.max_vertex,
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy);

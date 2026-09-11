@@ -1267,7 +1267,7 @@ public:
 
     /**
      * @brief The "energy_gradient" criterion: the front's Newton-step ratios and the refinable
-     * faces. The 2D struct minus its per-vertex state labels.
+     * faces. The 3D twin of TopoOffsetTriMesh::EnergyCriterion.
      */
     struct EnergyCriterion
     {
@@ -1422,7 +1422,7 @@ public:
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see
      * write_debug_frame()), labelled "r<round><phase><pass>_<op>" / "r<round><phase>_end".
-     * The label scheme is the 2D one; 2D still numbers its construction frames separately.
+     * Same scheme as 2D.
      */
     void write_optimization_debug_output(const std::string& path) override
     {
@@ -1521,7 +1521,7 @@ public:
     /**
      * @brief TetWild over the input mesh, before any of the offset exists, held only by the
      * per-tag region envelopes, against a sizing field of 1.0 at every vertex. The 3D twin of
-     * TopoOffsetTriMesh::pre_optimize_input_mesh(), minus the 2D seed options.
+     * TopoOffsetTriMesh::pre_optimize_input_mesh().
      */
     void pre_optimize_input_mesh();
 
