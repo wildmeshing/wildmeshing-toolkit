@@ -148,6 +148,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
+    /// See the spec: refuse a front collapse or surface flip whose neighbourhood was converged
+    /// (every front face around the endpoints within the tube, every corner within the bar)
+    /// and would not be afterwards. false = the operation passes as they are.
+    bool front_refuse_converged_collapse;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -210,6 +214,7 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         sag_halve_refinement = json_params["sag_halve_refinement"];
         pre_smooth = json_params["pre_smooth"];
+        front_refuse_converged_collapse = json_params["front_refuse_converged_collapse"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];

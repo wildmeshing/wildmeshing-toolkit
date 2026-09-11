@@ -46,6 +46,7 @@
       "adaptive_smoothing_step_rel",
       "sag_halve_refinement",
       "pre_smooth",
+      "front_refuse_converged_collapse",
       "max_iterations",
       "offset_envelope_rel",
       "length_rel",
@@ -378,6 +379,12 @@
     "type": "bool",
     "default": false,
     "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: interleaved_smoothing_passes sweeps, or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+  },
+  {
+    "pointer": "/front_refuse_converged_collapse",
+    "type": "bool",
+    "default": false,
+    "doc": "Single-phase loop only. true: the collapse and swap passes refuse an operation that would un-resolve a resolved patch of the front. A front simplex is resolved when its sag over the level set is within the tube (front_conv_rel x target_distance) and every corner's Newton-step ratio is within the bar, both read from a snapshot of the front taken at the start of the group. A collapse of a front edge whose two endpoints have only resolved front faces around them is refused if any face it would leave around the survivor sags over the tube (predicted before the collapse: the survivor keeps its position and the removed vertex's faces are re-attached to it), or if the survivor's Newton-step ratio after the collapse is over the bar (measured after, the collapse is rolled back). A surface flip of the offset whose two old faces are resolved is refused if either new face sags over the tube. Where the neighbourhood is not already resolved nothing is refused, so the passes still coarsen and re-triangulate a moving front freely. Refusals are counted per turn. false (the default): the passes as they are."
   },
   {
     "pointer": "/coarsen_pass",
