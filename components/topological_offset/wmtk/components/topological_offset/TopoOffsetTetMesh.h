@@ -57,9 +57,8 @@ public:
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
-    /// Where this vertex stood at the start of the turn, so the convergence states can read its
-    /// net movement. A split copies it on, so a new vertex reads as moved for the turn it was
-    /// born in.
+    /// Where this vertex stood at the start of the turn. Written every turn (and before the
+    /// pre_smooth block); read by nothing since the per-vertex convergence states were removed.
     Vector3d m_turn_start = Vector3d::Zero();
     bool m_turn_start_valid = false;
 
@@ -310,16 +309,15 @@ public:
     bool project_into_containment(size_t vid, Vector3d& x) const;
 
     /**
-     * @brief Which half of the alternating optimization is running. The 3D copy of
-     * TopoOffsetTriMesh::OptPhase.
+     * @brief Which mode the hooks are running in. The 3D copy of TopoOffsetTriMesh::OptPhase.
      *
-     * Phase A is TetWild and nothing else: same operations, gates, sizing field and
-     * stall-driven refinement, with no offset energy term. Its one addition is m_offset_envelope.
-     * Phase B moves the offset surface and nothing else: smoothing against the offset energy.
-     * Single is the mode the run uses: TetWild's operation groups with the front placed by Phase
-     * B's objective inside the smoothing passes. It follows B wherever the smoother is concerned
-     * (which objective a front vertex gets, no offset tube while it moves) and A everywhere the
-     * loop is concerned (quality stats and the stop metric are TetWild's).
+     * A: TetWild's loop and nothing else -- the pre-optimize pass and the frozen-front final
+     * pass -- with m_offset_envelope holding the front. B: the front objective's offset terms
+     * are live; set only around measurements (the criterion, the gradient reference) so they
+     * see the objective the placement uses. Single: the run's loop, TetWild's operation groups
+     * with the front placed by B's objective inside the smoothing passes -- B wherever the
+     * smoother is concerned (objective, no offset tube while the front moves), A wherever the
+     * loop is (quality stats, stop metric).
      */
     enum class OptPhase { A, B, Single };
 
@@ -578,11 +576,6 @@ public:
     /// The live offset-surface faces incident to vid.
     std::vector<Tuple> offset_surface_faces_live_at(size_t vid) const;
 
-    /// Seed the sizing field from the offset's current edge lengths (paper Sec. 5.3.3, Step 1),
-    /// once, before the first operation pass, then tighten the front's resolution from the
-    /// tolerance and the level set's curvature.
-    void init_offset_sizing_field();
-
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
     std::vector<std::array<double, 8>> optimization_metrics;
@@ -655,9 +648,8 @@ public:
      * false, p_new untouched, as soon as the current point reaches or passes p_out (t >= L: the
      * level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target);
      * the caller then places the plain midpoint. Every step taken is longer than the tolerance, so
-     * the trace
-     * ends within L / (tol x target_distance) steps; `steps` returns how many it took. No
-     * snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
+     * the trace ends within L / (tol x target_distance) steps; `steps` returns how many it took.
+     * No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
      */
     bool edge_split_sphere_trace(
         const Vector3d& p_in,
@@ -695,7 +687,7 @@ public:
     /**
      * @brief Which tag the tets a swap creates should carry, and the topology half of the
      * surface-flip refusal (class match, mask match). The geometric half is the shared swap's
-     * containment check. See Swap.cpp.
+     * containment check. See Optimize3d.cpp.
      */
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
@@ -1274,15 +1266,14 @@ public:
     GradientSplit gradient_split(bool include_face_samples = true) const;
 
     /**
-     * @brief The "energy_gradient" criterion and the single phase's states: placed / travelling
-     * / pressed / stuck per front vertex, and the refinable chords. The same struct as 2D.
+     * @brief The "energy_gradient" criterion: the front's Newton-step ratios and the refinable
+     * faces. The 3D twin of TopoOffsetTriMesh::EnergyCriterion.
      */
     struct EnergyCriterion
     {
         double max_vertex = 0., max_face = 0.; ///< ratios to the bar (1 = bar)
         double bar = 1.;
         size_t n_vertices = 0, n_faces = 0, n_unmeasurable = 0;
-        size_t n_pressed = 0, n_faces_pressed = 0;
         size_t worst_vid = static_cast<size_t>(-1);
         Vector3d worst_face_centroid = Vector3d::Zero();
         double worst_face_len = 0.; ///< the worst face's longest edge
@@ -1290,11 +1281,7 @@ public:
         double max_face_on_level = 0.;
         Vector3d worst_on_level_centroid = Vector3d::Zero();
         double tube = 0.;
-        size_t n_placed = 0, n_travelling = 0, n_pressed_on = 0, n_stuck = 0;
-        size_t n_pressed_touching = 0;
         size_t n_at_floor = 0;
-        size_t worst_stuck_vid = static_cast<size_t>(-1);
-        double worst_stuck_rho = 0.;
         /// A face whose centroid sags over the tube with all three corners on the level set:
         /// a, b are the ends of its LONGEST edge (the chord the target is derived from), c the
         /// third corner; sag the centroid sag as a length; len the longest edge's length.
@@ -1311,9 +1298,6 @@ public:
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
     };
     EnergyCriterion energy_criterion();
-    /// Whether a front vertex touches another front, the input or a region boundary through a
-    /// background tet -- the topological fact behind the `pressed` state.
-    bool front_vertex_touches_other(size_t vid) const;
     /// The edge length that would bring a front chord's sag under the tube: 3/4 L
     /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
     /// turns across the chord. Same formula as 2D.
@@ -1323,6 +1307,10 @@ public:
     /// front_chord_target() over its longest edge with the centroid sag, graded outward.
     /// Returns the vertices changed.
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& faces);
+    /// sag_halve_refinement: halve the sizing scalar at the corners of every refinable face,
+    /// once per vertex per call, floored like refine_front_from_sag(), then graded outward.
+    /// Returns the number of vertices lowered.
+    size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),
@@ -1340,13 +1328,12 @@ public:
     /// before it. See smooth_group_to_convergence() and the adaptive_smoothing keys.
     struct SmoothingProgress
     {
-        /// Max front_vertex_conv_ratio over the front vertices that are measurable and not
-        /// pressed against another region (1 = the bar, the turn criterion's own test).
+        /// Max front_vertex_conv_ratio over the measurable front vertices (1 = the bar, the
+        /// turn criterion's own test).
         double front_max_ratio = 0.;
         size_t front_worst_vid = static_cast<size_t>(-1);
         size_t n_front = 0; ///< front vertices the max was taken over
         size_t n_front_unmeasurable = 0; ///< ratio not finite: left out of the max
-        size_t n_front_pressed = 0; ///< front_vertex_touches_other(): left out of the max
         double front_max_step = 0.; ///< max front step in the pass, in tube half-widths
         /// Max over non-front vertices of the step in the pass divided by the vertex's target
         /// edge length s_v * l.
@@ -1381,10 +1368,6 @@ public:
         if (m_vertex_extra[vid].m_is_on_offset && vertex_boundary_mask(vid) != 0) return false;
         return !vertex_is_on_domain_boundary(vid);
     }
-
-    /// Set by the placement when a vertex's last visit stopped on a constraint; the criterion
-    /// counts such a vertex as placed. Same as 2D.
-    std::vector<char> m_placement_pressed;
 
     /// TetWild's stall-driven sizing refinement, verbatim; Phase A only. See the 2D twin.
     size_t refine_sizing_around_worst(double max_metric) override;
@@ -1439,7 +1422,7 @@ public:
     /**
      * @brief Put the optimization's frames on the run's single debug timeline (see
      * write_debug_frame()), labelled "r<round><phase><pass>_<op>" / "r<round><phase>_end".
-     * The label scheme is the 2D one; 2D still numbers its construction frames separately.
+     * Same scheme as 2D.
      */
     void write_optimization_debug_output(const std::string& path) override
     {
@@ -1467,9 +1450,9 @@ public:
     /**
      * @brief One frame of the run's single debug timeline: <output>_NNNNN.vtu with the next
      * sequence number, and one "NNNNN<tab>label" line in <output>_frames.txt. Every debug
-     * frame the run writes -- the input as loaded, the construction stages, the pre-optimize
-     * seed, and the optimization's own frames through write_optimization_debug_output() --
-     * goes through this sequence, so the numbers are consecutive and the .txt says what each
+     * frame the run writes -- the input as loaded, the construction stages, and the
+     * optimization's own frames through write_optimization_debug_output() -- goes through
+     * this sequence, so the numbers are consecutive and the .txt says what each
      * one is. The only debug files outside it are the ones that are not this mesh:
      * <output>_input_complex.vtu and the phi grid.
      */
@@ -1537,15 +1520,21 @@ public:
 
     /**
      * @brief TetWild over the input mesh, before any of the offset exists, held only by the
-     * per-tag region envelopes. The 3D twin of TopoOffsetTriMesh::pre_optimize_input_mesh().
+     * per-tag region envelopes, against a sizing field of 1.0 at every vertex. The 3D twin of
+     * TopoOffsetTriMesh::pre_optimize_input_mesh().
      */
     void pre_optimize_input_mesh();
 
-    /// main function from which all others are called
+    /// Construction, start to finish: the optional pre-optimize pass, the simplicial embedding,
+    /// marching_tets(), the re-embedding and the offset tagging. The optimization is
+    /// optimize_offset(), which the driver calls afterwards.
     void execute_offset(const std::filesystem::path& output_file);
 
-    /// Simplistic marching tets: all edges with one vertex labelled 0 and the other 1/2 are
-    /// split at the midpoint. No target_distance enters construction.
+    /// Marching tets: every edge with one endpoint in the input complex (label 1/2) and the
+    /// other in the background (label 0) is split -- at the midpoint, or under
+    /// sphere_trace_initialization where d(x) = target_distance along the edge (see
+    /// edge_split_sphere_trace()) -- and afterwards every background tet still touching a
+    /// complex frontier vertex (the split-off halves) becomes the band (label 2).
     void marching_tets();
 
     //// simplicial embedding stuff

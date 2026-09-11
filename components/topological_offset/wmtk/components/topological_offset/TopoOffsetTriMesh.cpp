@@ -966,7 +966,7 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
     if (m_offset_params.pre_optimize_input) {
         pre_optimize_input_mesh();
         if (m_offset_params.debug_output) {
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+            write_debug_frame("pre_optimized");
         }
     }
 
@@ -979,19 +979,23 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
     }
     consolidate_mesh();
     if (m_offset_params.debug_output) {
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("simplicial_embedding");
     }
-
 
     // initialize offset
     logger().info("Initializing offset...");
-    // The inserted vertex is the plain edge midpoint; target_distance does not enter construction
-    // at all. Carrying the boundary out to it is the optimization phase's job.
-    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
+    // Default: the inserted vertex is the plain edge midpoint -- target_distance does not enter
+    // the placement at all, and carrying the boundary out to target_distance is the optimization
+    // phase's job. sphere_trace_initialization: the vertex goes to the point of the edge where
+    // d(x) = target_distance within sphere_trace_target_rel_tol (sphere tracing from the complex
+    // end), to the midpoint on an edge the trace leaves.
+    m_edge_split_mode = m_offset_params.sphere_trace_initialization ? EdgeSplitMode::SphereTrace
+                                                                    : EdgeSplitMode::Midpoint;
     marching_tris();
+    m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     consolidate_mesh();
     if (m_offset_params.debug_output) {
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("marching");
     }
 
     // No growth pass: the band is exactly the one layer of background triangles marching_tris()
@@ -1009,16 +1013,13 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
     // renumbers, which changes the order later passes enumerate operations in, i.e. the run.
     consolidate_mesh();
     if (m_offset_params.debug_output) {
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("re_embedded");
     }
 
-    // No root-finding pass here: inserted vertices stay at the midpoint (paper Sec. 5.2), as in
-    // 3D. Construction therefore leaves the band boundary on background-cell boundaries, accurate
-    // only to the local cell size -- which is why optimize_offset() is unconditional.
     set_offset_tri_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) {
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("offset_tagged");
     }
 
     assert(ambient_assert());
@@ -1135,6 +1136,10 @@ void TopoOffsetTriMesh::simplicial_embedding()
 
 void TopoOffsetTriMesh::marching_tris()
 {
+    m_marching_root_splits = 0;
+    m_marching_midpoint_splits = 0;
+    m_marching_trace_steps = 0;
+    m_marching_trace_steps_max = 0;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -1172,6 +1177,21 @@ void TopoOffsetTriMesh::marching_tris()
         } else {
             log_and_throw_error("edge split failed! (marching_tris)");
         }
+    }
+    if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
+        logger().info(
+            "\t[construction] sphere_trace_initialization: {} of {} marched edges placed where "
+            "|d(x) - target_distance| <= {} x target_distance, {} at the midpoint (the trace left "
+            "the edge) | trace steps: {} total, {} max, {:.1f} per edge",
+            m_marching_root_splits,
+            e_to_split.size(),
+            m_offset_params.sphere_trace_target_rel_tol,
+            m_marching_midpoint_splits,
+            m_marching_trace_steps,
+            m_marching_trace_steps_max,
+            e_to_split.empty() ? 0. : double(m_marching_trace_steps) / double(e_to_split.size()));
+    } else {
+        logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }
 
     // mark all offset tris (incident to any vert with label 1 or 2)

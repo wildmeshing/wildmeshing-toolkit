@@ -149,7 +149,7 @@ void topological_offset(nlohmann::json json_params)
 
         // output input complex and entire mesh as vtu
         if (mesh.m_offset_params.debug_output) {
-            mesh.write_vtu(output_filename.string() + fmt::format("_{}", mesh.m_vtu_counter++));
+            mesh.write_debug_frame("input");
             mesh.write_input_complex(output_filename.string() + "_input_complex");
         }
 
