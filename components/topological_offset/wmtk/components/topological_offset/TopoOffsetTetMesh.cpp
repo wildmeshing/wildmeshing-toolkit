@@ -29,7 +29,7 @@ namespace wmtk::components::topological_offset {
 
 /**
  * Construction and I/O -- the twin of TopoOffsetTriMesh.cpp. The optimization phase lives in
- * Optimize3d.cpp, FrontSmooth3d.cpp, Smooth.cpp, Collapse.cpp, Swap.cpp and EdgeSplittingTet.cpp.
+ * Optimize3d.cpp, FrontSmooth3d.cpp and EdgeSplittingTet.cpp.
  */
 
 namespace {

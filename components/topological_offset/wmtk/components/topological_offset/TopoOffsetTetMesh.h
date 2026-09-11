@@ -57,9 +57,8 @@ public:
     bool m_is_on_input = false; // on the input complex
     bool m_is_on_offset = false; // on the offset surface itself
     bool m_is_on_region = false; // on some OTHER tag region's boundary
-    /// Where this vertex stood at the start of the turn, so the convergence states can read its
-    /// net movement. A split copies it on, so a new vertex reads as moved for the turn it was
-    /// born in.
+    /// Where this vertex stood at the start of the turn. Written every turn (and before the
+    /// pre_smooth block); read by nothing since the per-vertex convergence states were removed.
     Vector3d m_turn_start = Vector3d::Zero();
     bool m_turn_start_valid = false;
 
@@ -310,16 +309,15 @@ public:
     bool project_into_containment(size_t vid, Vector3d& x) const;
 
     /**
-     * @brief Which half of the alternating optimization is running. The 3D copy of
-     * TopoOffsetTriMesh::OptPhase.
+     * @brief Which mode the hooks are running in. The 3D copy of TopoOffsetTriMesh::OptPhase.
      *
-     * Phase A is TetWild and nothing else: same operations, gates, sizing field and
-     * stall-driven refinement, with no offset energy term. Its one addition is m_offset_envelope.
-     * Phase B moves the offset surface and nothing else: smoothing against the offset energy.
-     * Single is the mode the run uses: TetWild's operation groups with the front placed by Phase
-     * B's objective inside the smoothing passes. It follows B wherever the smoother is concerned
-     * (which objective a front vertex gets, no offset tube while it moves) and A everywhere the
-     * loop is concerned (quality stats and the stop metric are TetWild's).
+     * A: TetWild's loop and nothing else -- the pre-optimize pass and the frozen-front final
+     * pass -- with m_offset_envelope holding the front. B: the front objective's offset terms
+     * are live; set only around measurements (the criterion, the gradient reference) so they
+     * see the objective the placement uses. Single: the run's loop, TetWild's operation groups
+     * with the front placed by B's objective inside the smoothing passes -- B wherever the
+     * smoother is concerned (objective, no offset tube while the front moves), A wherever the
+     * loop is (quality stats, stop metric).
      */
     enum class OptPhase { A, B, Single };
 
@@ -650,9 +648,8 @@ public:
      * false, p_new untouched, as soon as the current point reaches or passes p_out (t >= L: the
      * level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target);
      * the caller then places the plain midpoint. Every step taken is longer than the tolerance, so
-     * the trace
-     * ends within L / (tol x target_distance) steps; `steps` returns how many it took. No
-     * snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
+     * the trace ends within L / (tol x target_distance) steps; `steps` returns how many it took.
+     * No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
      */
     bool edge_split_sphere_trace(
         const Vector3d& p_in,
@@ -690,7 +687,7 @@ public:
     /**
      * @brief Which tag the tets a swap creates should carry, and the topology half of the
      * surface-flip refusal (class match, mask match). The geometric half is the shared swap's
-     * containment check. See Swap.cpp.
+     * containment check. See Optimize3d.cpp.
      */
     bool swap_before_interior(const std::vector<size_t>& tids) override;
     bool swap_before_surface(
@@ -1528,11 +1525,16 @@ public:
      */
     void pre_optimize_input_mesh();
 
-    /// main function from which all others are called
+    /// Construction, start to finish: the optional pre-optimize pass, the simplicial embedding,
+    /// marching_tets(), the re-embedding and the offset tagging. The optimization is
+    /// optimize_offset(), which the driver calls afterwards.
     void execute_offset(const std::filesystem::path& output_file);
 
-    /// Simplistic marching tets: all edges with one vertex labelled 0 and the other 1/2 are
-    /// split at the midpoint. No target_distance enters construction.
+    /// Marching tets: every edge with one endpoint in the input complex (label 1/2) and the
+    /// other in the background (label 0) is split -- at the midpoint, or under
+    /// sphere_trace_initialization where d(x) = target_distance along the edge (see
+    /// edge_split_sphere_trace()) -- and afterwards every background tet still touching a
+    /// complex frontier vertex (the split-off halves) becomes the band (label 2).
     void marching_tets();
 
     //// simplicial embedding stuff

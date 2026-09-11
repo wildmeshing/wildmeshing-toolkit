@@ -275,7 +275,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // triangles with surface_triangle_is_outside(), which dispatches through the face's boundary
     // mask to the per-tag envelopes, and that envelope is the geometric constraint. The
     // class-match and mask-match refusals above are the topology half. No offset criterion is
-    // captured here; placement accuracy belongs to Phase B.
+    // captured here; placement accuracy is the smoothing passes' job.
     return true;
 }
 
@@ -2753,7 +2753,7 @@ size_t TopoOffsetTetMesh::grade_sizing_by_distance(const std::vector<size_t>& se
     //     the value it wants, and halving it again would refine the seed twice.
     //   - the 1.5x recovery TetWild applies to every vertex outside the ball. That is TetWild's
     //     stall response coarsening the field back, not gradation; here it would undo the
-    //     front's seeded resolution on every call.
+    //     front's resolution on every call.
     // TetWild finds the nearest seed with geogram's nearest-neighbour search; a uniform grid of
     // cell size R does the same job exactly for the only question asked, "which seed within R
     // is nearest", without the dependency.
@@ -3419,12 +3419,10 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
 
 void TopoOffsetTetMesh::optimize_offset_single_phase()
 {
-    // One phase. Phase A is already TetWild's mesh_improvement -- split / smooth / collapse /
-    // smooth / swap / smooth -- so operations and smoothing interleave there already; the only
-    // things Phase B adds are WHICH objective a front vertex is smoothed against and that it is
-    // not caged in the offset tube while it moves. Give A's smoothing passes both
-    // (OptPhase::Single) and the second phase has nothing left to do. The tube still holds the
-    // front for the OPERATIONS (surface_envelope_for_face, which does not read the phase) and is
+    // One loop: TetWild's operation groups (split / collapse / swap, each followed by smoothing)
+    // with the front placed by the offset objective inside the smoothing passes
+    // (OptPhase::Single) and never caged by the offset tube while it moves. The tube still holds
+    // the front for the OPERATIONS (surface_envelope_for_face does not read the phase) and is
     // rebuilt after every group, so it follows the front rather than capping it. As in 2D.
     const int rounds = std::max(1, m_offset_params.max_rounds);
     const int a_iters = std::max(1, m_offset_params.max_iterations);
@@ -3454,8 +3452,9 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
     static constexpr std::array<const char*, 3> group_names = {{"split", "collapse", "swap"}};
     compute_vertex_partition_morton();
-    // One turn of grace after a target is lowered: refine_front_from_sag() writes a sizing target
-    // and the split pass that realizes it does not run until the NEXT turn.
+    // One turn of grace after the field is lowered: the sag rule (refine_front_from_sag or
+    // refine_front_by_halving) lowers sizing scalars at the end of a turn, and the split pass
+    // that realizes them does not run until the NEXT turn.
     size_t lowered_last_turn = 0;
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
