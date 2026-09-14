@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -1335,6 +1336,35 @@ public:
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. See the spec entry for the three measures. Infinite when unmeasurable.
     double front_vertex_conv_ratio(size_t vid) const;
+    /**
+     * @brief THE definition of "placed" for a vertex on the offset surface.
+     *
+     * Every decision in the component that asks "is the placement of this front vertex done"
+     * goes through here or through front_placed_by_ratio(): the loop's vertex test
+     * (EnergyCriterion::vertices_ok()), the endpoint qualification of the chord-sag
+     * classification, the collapse guard's snapshot and its after-half, the adaptive-smoothing
+     * stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex
+     * cannot be placed for one of them and not for another.
+     *
+     * It was not always one notion: the sag classification used to qualify its endpoints with
+     * the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance)
+     * while everything else used the criterion's stationarity measure. The two disagree exactly
+     * where it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one
+     * a hair outside the tube disqualified its whole chord from ever being refined, with the
+     * chord then counted in neither `refinable` nor `n_at_floor` and so invisible to
+     * converged_single().
+     *
+     * The caller has established that vid is a live front vertex (m_is_on_offset && m_is_rounded);
+     * this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed.
+     */
+    bool front_vertex_placed(size_t vid) const;
+    /// front_vertex_placed()'s decision on an already-measured ratio, for the callers that have
+    /// one in hand (energy_criterion(), the guard's snapshot, SmoothingProgress): the one place
+    /// the bar is applied. Keep this and front_vertex_placed() in step.
+    bool front_placed_by_ratio(const double ratio) const
+    {
+        return std::isfinite(ratio) && ratio <= 1.;
+    }
     /// The edge test divided by its bar (1 = bar), per front_conv_criterion; -1 unmeasurable.
     double edge_conv_ratio(const Tuple& e) const;
     /// The same test on a vertex PAIR, so the front guard can measure a chord the mesh does not
@@ -1694,15 +1724,18 @@ public:
         size_t worst_vid = static_cast<size_t>(-1);
         Vector2d worst_edge_mid = Vector2d::Zero();
         double worst_edge_len = 0.; ///< the worst edge's length
-        /// Reported only: the edges over the bar, split by whether both endpoints are on the level
-        /// set (residual within the tube). An edge whose endpoints are on the level set and whose
-        /// chord still misses it is under-resolved -- the state the vertex test cannot see.
-        size_t n_edges_over = 0, n_edges_over_on_level = 0;
-        double max_edge_on_level = 0.;
-        Vector2d worst_on_level_mid = Vector2d::Zero();
+        /// Reported only: the edges over the bar, split by whether both endpoints are PLACED
+        /// (front_vertex_placed(), the one notion). An edge whose endpoints are placed and whose
+        /// chord still misses the level set is under-resolved -- the state the vertex test cannot
+        /// see, and the only one the sag rule may act on: refining a chord whose ends are still
+        /// moving would chase the front rather than resolve it.
+        size_t n_edges_over = 0, n_edges_over_placed = 0;
+        double max_edge_placed = 0.;
+        Vector2d worst_placed_mid = Vector2d::Zero();
         double tube = 0.;
         size_t n_at_floor = 0; ///< chords over the tube whose ends are already at the sizing floor
-        /// A front edge whose chord sags over the tube with both ends on the level set: a, b its
+        size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
+        /// A front edge whose chord sags over the tube with both ends placed: a, b its
         /// ends; sag the midpoint sag as a length; len the edge's length.
         struct Refinable
         {
@@ -1710,7 +1743,10 @@ public:
             double sag, len;
         };
         std::vector<Refinable> refinable;
-        bool vertices_ok() const { return max_vertex <= bar; }
+        /// Every front vertex placed. Counted through front_vertex_placed() rather than
+        /// re-derived from max_vertex, so the loop's exit test and the per-vertex notion cannot
+        /// drift apart; max_vertex stays for the reporting.
+        bool vertices_ok() const { return n_unplaced == 0; }
         bool edges_ok() const { return max_edge <= bar; }
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
         bool converged_single() const { return converged() && refinable.empty(); }

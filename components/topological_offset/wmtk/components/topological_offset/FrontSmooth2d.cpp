@@ -297,7 +297,7 @@ bool TopoOffsetTriMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     align.gradient(xv, ga);
     place.gradient(xv, gp);
     if (!((ga.dot(n_dir)) * (gp.dot(n_dir)) < 0.)) return false;
-    return front_vertex_conv_ratio(vid) <= 1.;
+    return front_vertex_placed(vid);
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_objective(

@@ -684,7 +684,7 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     if (m_offset_params.front_refuse_converged_collapse && m_collapse_guard_armed.local()) {
         m_collapse_guard_armed.local() = 0;
         const double r = front_vertex_conv_ratio(collapse_cache.local().v2_id);
-        if (!(r <= 1.)) {
+        if (!front_placed_by_ratio(r)) {
             ++iter_cnt_collapse_guard_reject;
             return false;
         }
@@ -768,8 +768,7 @@ void TopoOffsetTriMesh::snapshot_front_convergence()
 bool TopoOffsetTriMesh::front_vertex_converged_snapshot(const size_t vid) const
 {
     if (vid >= m_front_conv_snapshot.size()) return false;
-    const double r = m_front_conv_snapshot[vid];
-    return std::isfinite(r) && r <= 1.;
+    return front_placed_by_ratio(m_front_conv_snapshot[vid]);
 }
 
 bool TopoOffsetTriMesh::front_edge_converged(const size_t a, const size_t b) const
@@ -2620,29 +2619,35 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
-    // The convergence length, front_conv_rel x delta: a vertex is on the level set within it,
-    // and a chord is resolved within it. See edge_conv_ratio() for the role split --
-    // offset_envelope_rel is the leash on the operations, this is the accuracy, and startup
-    // requires leash <= accuracy.
+    // The resolution length, front_conv_rel x delta: a chord is resolved within it. The same
+    // number sets the vertex bar inside front_vertex_conv_ratio(), so placement and resolution
+    // share one accuracy. See edge_conv_ratio() for the role split -- offset_envelope_rel is the
+    // leash on the operations, this is the accuracy, and startup requires leash <= accuracy.
     s.tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
-    std::vector<char> on_level(vert_capacity(), 0);
+    std::vector<char> placed(vert_capacity(), 0);
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!front(vid)) continue;
-        // rho is the reference-slope length residual_length(), the measure the sag test
-        // qualifies its ends with; gn the objective's stationarity, the remaining 1-D Newton
-        // step along the normal against the tube.
+        // gn is the vertex's convergence measure over its bar, per front_conv_criterion; rho the
+        // reference-slope length residual_length(), its actual distance to the level set. rho is
+        // reported and gates measurability, NOT placement: front_vertex_placed() is the one
+        // notion, and it reads gn. See the declaration for what qualifying the sag test's
+        // endpoints by rho instead used to cost.
         const Vector2d p = m_vertex_attribute[vid].m_posf;
         const double rho = potential_for(vid).residual_length(p);
-        const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
+        const double gn = front_vertex_conv_ratio(vid);
         if (!std::isfinite(rho) || !std::isfinite(gn)) {
             ++s.n_unmeasurable;
             continue;
         }
-        if (rho <= s.tube) on_level[vid] = 1;
+        if (front_placed_by_ratio(gn)) {
+            placed[vid] = 1;
+        } else {
+            ++s.n_unplaced;
+        }
         ++s.n_vertices;
         if (gn > s.max_vertex) {
             s.max_vertex = gn;
@@ -2670,8 +2675,8 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         }
         if (gn > s.bar) {
             ++s.n_edges_over;
-            if (on_level[va] && on_level[vb]) {
-                ++s.n_edges_over_on_level;
+            if (placed[va] && placed[vb]) {
+                ++s.n_edges_over_placed;
                 const double len =
                     (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
                 // Refinable only if the rule can still lower a target: at the sizing floor
@@ -2705,9 +2710,9 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                 } else {
                     ++s.n_at_floor;
                 }
-                if (gn > s.max_edge_on_level) {
-                    s.max_edge_on_level = gn;
-                    s.worst_on_level_mid =
+                if (gn > s.max_edge_placed) {
+                    s.max_edge_placed = gn;
+                    s.worst_placed_mid =
                         0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
                 }
             }
@@ -2766,6 +2771,13 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
     // decrement: half of g_n^2 / h, the energy the next Newton step still gains, against rel x F
     const double F = prob->value(xv);
     return F > 0. ? (0.5 * gn * gn / h) / (rel * F) : std::numeric_limits<double>::infinity();
+}
+
+bool TopoOffsetTriMesh::front_vertex_placed(const size_t vid) const
+{
+    // THE definition; see the declaration. front_vertex_conv_ratio() already dispatches on
+    // front_conv_criterion, so the criterion the config names is the criterion every caller gets.
+    return front_placed_by_ratio(front_vertex_conv_ratio(vid));
 }
 
 double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
@@ -3114,7 +3126,7 @@ void TopoOffsetTriMesh::smooth_group_to_convergence(const char* group_name)
         // group's caller rebuilds it once, as with the fixed count.
         local_operations({{0, 0, 0, 1}});
         const SmoothingProgress s = smoothing_progress(before);
-        const bool front_converged = s.n_front == 0 || s.front_max_ratio <= 1.;
+        const bool front_converged = s.n_front == 0 || front_placed_by_ratio(s.front_max_ratio);
         const bool front_stalled = !front_converged && std::isfinite(prev_front) &&
                                    s.front_max_ratio > (1. - stall_rel) * prev_front;
         const bool background_settled = s.background_max_step <= step_rel;
@@ -3912,7 +3924,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
             "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})), edges max {:.4}x at the midpoint "
             "(reported) | {} vertices, {} edges | edges over the tube: {}, of which {} with both "
-            "ends on the level set (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable edges {} "
+            "ends placed (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable edges {} "
             "(at the sizing floor {}) ========",
             it + 1,
             budget,
@@ -3926,10 +3938,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.n_vertices,
             ec.n_edges,
             ec.n_edges_over,
-            ec.n_edges_over_on_level,
-            ec.max_edge_on_level,
-            ec.worst_on_level_mid.x(),
-            ec.worst_on_level_mid.y(),
+            ec.n_edges_over_placed,
+            ec.max_edge_placed,
+            ec.worst_placed_mid.x(),
+            ec.worst_placed_mid.y(),
             ec.refinable.size(),
             ec.n_at_floor);
         if (m_offset_params.front_refuse_converged_collapse) {
@@ -3952,14 +3964,14 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front edge(s) with both ends on the level set sag "
+                "\t[resolution] turn {}: {} front edge(s) with both ends placed sag "
                 "over the tube at the midpoint (worst {:.4}x, midpoint ({:.4}, {:.4})) -> "
                 "{} at {} vertices",
                 it + 1,
                 ec.refinable.size(),
-                ec.max_edge_on_level,
-                ec.worst_on_level_mid.x(),
-                ec.worst_on_level_mid.y(),
+                ec.max_edge_placed,
+                ec.worst_placed_mid.x(),
+                ec.worst_placed_mid.y(),
                 halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
                 n);
         }
