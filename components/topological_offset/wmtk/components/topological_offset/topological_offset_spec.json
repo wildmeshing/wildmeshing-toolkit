@@ -23,6 +23,7 @@
       "envelope_size_rel",
       "offset_field",
       "offset_dhat_factor",
+      "DEBUG_manual_dhat",
       "front_conv_rel",
       "front_conv_criterion",
       "offset_residual_samples",
@@ -205,6 +206,12 @@
     "default": 2.0,
     "type": "float",
     "doc": "Support radius of the smooth offset potential, as a multiple of target_distance. Must be > 1. The offset level set lies strictly inside the support; a band vertex that leaves the support is a hard error."
+  },
+  {
+    "pointer": "/DEBUG_manual_dhat",
+    "default": -1.0,
+    "type": "float",
+    "doc": "[2D ONLY] Debugging override for the smooth potential's support radius dhat, as an ABSOLUTE length. Negative (the default) leaves the automatic sizing alone: dhat = max(offset_dhat_factor x target_distance, 2 x the distance of the furthest constructed offset vertex). A value >= 0 replaces that outright, so the effective factor is DEBUG_manual_dhat / target_distance and must still exceed 1 for the level set to lie strictly inside the support. For asking what a run does under a support it would not have chosen: outside the support Phi is identically zero with a zero gradient, so a front vertex that leaves it gets no direction back and drifts on the quality term alone. Ignored by the euclidean field, which has no support. Read only by the 2D construction; 3D ignores it until the port."
   },
   {
     "pointer": "/front_conv_rel",

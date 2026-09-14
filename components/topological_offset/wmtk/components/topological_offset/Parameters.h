@@ -46,6 +46,11 @@ struct Parameters : public wmtk::OptimizerParameters
     // level set has to lie strictly inside the support, or the vertices on it get no gradient. A
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
+    /// [2D ONLY] Debugging override for the potential's support radius: >= 0 uses this dhat as an
+    /// ABSOLUTE length, in place of both offset_dhat_factor x target_distance and the
+    /// constructed-offset floor. Negative (the default) leaves the automatic sizing alone. Only
+    /// the 2D construction reads it; the 3D twin ignores it until the port.
+    double debug_manual_dhat;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
     // The accuracy: this fraction of target_distance is both the vertex bar (the remaining Newton
     // step of a front vertex along its move direction, under the default criterion) and the chord
@@ -185,6 +190,7 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
+        debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
         front_conv_rel = json_params["front_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];

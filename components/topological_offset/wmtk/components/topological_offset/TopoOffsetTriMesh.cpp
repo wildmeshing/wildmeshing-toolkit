@@ -852,9 +852,24 @@ void TopoOffsetTriMesh::init_offset_potential()
     // same geometry a different offset depending on how the input was meshed. Same rule as 3D.
     const double delta = m_offset_params.target_distance;
     const double reach = max_band_vertex_distance();
-    const double dhat = std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
+    // DEBUG_manual_dhat, when set, replaces BOTH halves of the rule above -- the configured
+    // factor and the constructed-offset floor -- with one absolute length, so a run can be asked
+    // what it does under a support it would never have chosen. [2D ONLY], see Parameters.h.
+    const bool manual = m_offset_params.debug_manual_dhat >= 0.;
+    const double dhat = manual ? m_offset_params.debug_manual_dhat
+                               : std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
     const double effective_factor = dhat / delta;
-    if (reach > 0.) {
+    if (manual) {
+        logger().warn(
+            "\tDEBUG_manual_dhat {}: dhat forced to {:.6g} = {:.4g}x delta, overriding the "
+            "automatic max({}x delta, 2x the furthest offset vertex {:.6g}) = {:.6g}",
+            m_offset_params.debug_manual_dhat,
+            dhat,
+            effective_factor,
+            m_offset_params.offset_dhat_factor,
+            reach,
+            std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach));
+    } else if (reach > 0.) {
         logger().info(
             "\tdhat sized from the constructed offset: furthest offset vertex {:.6g} = {:.4g}x "
             "delta, so dhat = max({}x delta, 2x that) = {:.6g} = {:.4g}x delta",
