@@ -705,6 +705,10 @@ public:
     /// Operations refused because they would have left an offset-boundary face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
+    /// front_refuse_converged_collapse: collapses refused because a resolved patch of the front
+    /// would have come out unresolved. No swap counter here: the 3D twin also guards the surface
+    /// flip, which has no 2D counterpart -- see swap_edge_before().
+    std::atomic<int> iter_cnt_collapse_guard_reject{0};
     /// Splits of an offset-boundary edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
@@ -983,6 +987,27 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
+    /// front_refuse_converged_collapse, per collapse: 1 when collapse_edge_before() found the
+    /// endpoints' front edges resolved and the predicted result edges within the tube, so that
+    /// collapse_edge_after() still has to test the survivor's ratio.
+    mutable wmtk::threading::enumerable_thread_specific<char> m_collapse_guard_armed;
+    /// front_refuse_converged_collapse: front_vertex_conv_ratio() at every front vertex as it
+    /// was at the start of the collapse group (NaN off the front), indexed by vid. The guard
+    /// reads "was this converged" from here rather than re-measuring inside every hook.
+    std::vector<double> m_front_conv_snapshot;
+    void snapshot_front_convergence();
+    /// The snapshot says vid is a front vertex whose ratio was finite and within the bar.
+    bool front_vertex_converged_snapshot(size_t vid) const;
+    /// A resolved front chord: both ends converged per the snapshot and the midpoint sag
+    /// (edge_conv_ratio) within the tube. The 3D twin tests a face at its centroid.
+    bool front_edge_converged(size_t a, size_t b) const;
+    /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
+    /// Returns true when the collapse must be refused; arms m_collapse_guard_armed when the
+    /// after-test still applies.
+    bool front_guard_refuses_collapse(size_t v1, size_t v2);
+    /// The live offset-surface edges incident to vid, deduplicated. The 3D twin is
+    /// offset_surface_faces_live_at().
+    std::vector<Tuple> offset_surface_edges_live_at(size_t vid) const;
     void log_smooth_trace() const;
 
 
@@ -1306,6 +1331,9 @@ public:
     double front_vertex_conv_ratio(size_t vid) const;
     /// The edge test divided by its bar (1 = bar), per front_conv_criterion; -1 unmeasurable.
     double edge_conv_ratio(const Tuple& e) const;
+    /// The same test on a vertex PAIR, so the front guard can measure a chord the mesh does not
+    /// carry yet (the edge a collapse would leave behind). The tuple form delegates here.
+    double edge_conv_ratio(size_t a, size_t b) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
     /// The field's outward unit direction at front vertex vid (zero where grad Phi vanishes).
@@ -1739,6 +1767,8 @@ public:
     std::optional<EnergyCriterion> m_energy_verdict;
     /// The interpolation residual of front edge e, see EnergyCriterion. -1 when unmeasurable.
     double edge_interpolation_residual(const Tuple& e) const;
+    /// The same on a vertex pair; the tuple form delegates here. See edge_conv_ratio(a, b).
+    double edge_interpolation_residual(size_t a, size_t b) const;
 
     /**
      * @brief The normal at an offset vertex. Every caller that needs one goes through here, so
