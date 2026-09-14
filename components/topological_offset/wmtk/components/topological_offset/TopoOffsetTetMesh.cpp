@@ -1761,6 +1761,14 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     //                         in length units, comparable with target_distance. Never tested.
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
     //                         so where it collapses the Newton step collapses with it.
+    //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
+    //                         complex, straight off the BVH. Not a field measure: it does not go
+    //                         through potential_for(), so it is the same number whatever
+    //                         offset_field is and whichever region the vertex belongs to, and
+    //                         target_distance is what it should equal. For the smooth field it is
+    //                         the only Euclidean number on the frame -- residual_length() there is
+    //                         a barrier-value residual, not a length to the complex. -2 before the
+    //                         BVH exists (the construction frames written ahead of it).
     //
     // Together they separate "placed" from "stationary but wrong": on the medial axis of the
     // field there is no gradient to move along, so the ratio goes to zero while the residual
@@ -1768,11 +1776,12 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // value that is not finite. Costs one objective build per front vertex per frame, which is
     // the same work energy_criterion() does once a turn; debug output only.
     VectorXd v_conv(vert_capacity()), v_resid(vert_capacity()), v_grad(vert_capacity()),
-        v_align(vert_capacity());
+        v_align(vert_capacity()), v_cdist(vert_capacity());
     v_conv.setConstant(-1.);
     v_resid.setConstant(-1.);
     v_grad.setConstant(-1.);
     v_align.setConstant(-1.);
+    v_cdist.setConstant(-1.);
 
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
@@ -1845,6 +1854,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
             v_resid[vid] = finite_or(pot.residual_length(p));
             v_grad[vid] = finite_or(pot.gradient(p).norm());
             v_align[vid] = finite_or(front_move_alignment(vid));
+            v_cdist[vid] =
+                m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
         }
         m_phase = saved_phase;
     }
@@ -1876,6 +1887,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("front_residual_length", v_resid);
     writer.add_field("front_grad_norm", v_grad);
     writer.add_field("front_move_align", v_align);
+    writer.add_field("front_complex_distance", v_cdist);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -1924,6 +1936,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         off_writer.add_field("front_residual_length", v_resid);
         off_writer.add_field("front_grad_norm", v_grad);
         off_writer.add_field("front_move_align", v_align);
+        off_writer.add_field("front_complex_distance", v_cdist);
         logger().info("Write {}", off_out_path);
         off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
     }

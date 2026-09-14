@@ -54,6 +54,12 @@ what a convergence question is answered with:
                                 test measures a step that cannot reduce the distance at all,
                                 which is what an envelope-held front vertex gets.
 
+  front: distance to complex / delta
+                                the plain Euclidean distance from the vertex to the input
+                                complex, over the target distance: 1 is exactly on the offset.
+                                Read straight off the BVH rather than from the vertex's region
+                                field, so it is the same number under either offset_field and is
+                                the independent check on where the front really is.
   front: sag / tube             the OTHER half of the test, on the edge (2D) / face (3D) rather
                                 than on its corners: how far the level set curves away from the
                                 chord, over the same tube. > 1 with both corners on the level
@@ -182,7 +188,7 @@ def point_scalar(m, name):
 # before that carry it on every vertex of an intra-turn frame and are masked out the same way.)
 # Absent from frames written before the fields existed, in which case the layers are not offered.
 FRONT_DIAGS = ("front_conv_ratio", "front_residual_length", "front_grad_norm",
-               "front_move_align")
+               "front_move_align", "front_complex_distance")
 
 
 def front_diags(m):
@@ -939,6 +945,16 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
         gn = diags.get("front_grad_norm")
         if gn is not None:
             m.add_scalar_quantity("front: |grad Phi|", gn[rows], cmap="viridis", enabled=False)
+        cd = diags.get("front_complex_distance")
+        if cd is not None and delta:
+            # The plain Euclidean distance to the input complex over the target distance, which
+            # is 1 where the vertex is exactly on the offset. Unlike "residual / delta" this does
+            # not come from the vertex's region field, so it is the same number under either
+            # offset_field and it cannot be thrown off by the region map: the independent check
+            # on where the front actually is.
+            m.add_scalar_quantity("front: distance to complex / delta (1 = on the offset)",
+                                  cd[rows] / float(delta), cmap="coolwarm", vminmax=(0.5, 1.5),
+                                  enabled=False)
         ma = diags.get("front_move_align")
         if ma is not None:
             # 1: the test's step is the step toward the level set. 0: it measures a direction

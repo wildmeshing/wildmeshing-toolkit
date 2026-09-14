@@ -1450,6 +1450,14 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     //                         in length units, comparable with target_distance. Never tested.
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
     //                         so where it collapses the Newton step collapses with it.
+    //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
+    //                         complex, straight off the BVH. Not a field measure: it does not go
+    //                         through potential_for(), so it is the same number whatever
+    //                         offset_field is and whichever region the vertex belongs to, and
+    //                         target_distance is what it should equal. For the smooth field it is
+    //                         the only Euclidean number on the frame -- residual_length() there is
+    //                         a barrier-value residual, not a length to the complex. -2 before the
+    //                         BVH exists (the construction frames written ahead of it).
     //
     // Together they separate "placed" from "stationary but wrong": on the medial axis of the
     // field there is no gradient to move along, so the ratio goes to zero while the residual
@@ -1471,7 +1479,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // reads the same (possibly stale) map after the frame as before it. Nothing about the
     // optimization changes; only the frame stops being unmeasurable. -1 marks a vertex that is
     // not on the front, -2 a value that is not finite; there is no longer a "not measured" case.
-    Eigen::MatrixXd CR(vs.size(), 1), RL(vs.size(), 1), GN(vs.size(), 1), MA(vs.size(), 1);
+    Eigen::MatrixXd CR(vs.size(), 1), RL(vs.size(), 1), GN(vs.size(), 1), MA(vs.size(), 1),
+        CD(vs.size(), 1);
     std::vector<int> saved_face_region, saved_vertex_region;
     const bool region_map_refreshed = !m_region_potentials.empty();
     if (region_map_refreshed) {
@@ -1484,7 +1493,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         m_phase = OptPhase::B; // as energy_criterion(): the offset terms exist only in Phase B
         const auto finite_or = [](const double x) { return std::isfinite(x) ? x : -2.; };
         for (size_t k = 0; k < vs.size(); ++k) {
-            CR(k, 0) = RL(k, 0) = GN(k, 0) = MA(k, 0) = -1.;
+            CR(k, 0) = RL(k, 0) = GN(k, 0) = MA(k, 0) = CD(k, 0) = -1.;
             const size_t vid = vs[k].vid(*this);
             if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) {
                 continue;
@@ -1495,6 +1504,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             RL(k, 0) = finite_or(pot.residual_length(p));
             GN(k, 0) = finite_or(pot.gradient(p).norm());
             MA(k, 0) = finite_or(front_move_alignment(vid));
+            CD(k, 0) =
+                m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
         }
         m_phase = saved_phase;
     }
@@ -1512,6 +1523,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     writer->add_field("front_residual_length", RL);
     writer->add_field("front_grad_norm", GN);
     writer->add_field("front_move_align", MA);
+    writer->add_field("front_complex_distance", CD);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // The front's per-EDGE sag, as a companion line mesh `<path>_front.vtu`. The resolution half
@@ -1557,6 +1569,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             front_writer->add_cell_field("front_sag_ratio", SAG);
             front_writer->add_cell_field("chord_length", LEN);
             front_writer->add_field("sizing_scalar", S);
+            front_writer->add_field("front_complex_distance", CD);
             front_writer->write_mesh(front_path, V, FE, paraviewo::CellType::Line);
         }
     }

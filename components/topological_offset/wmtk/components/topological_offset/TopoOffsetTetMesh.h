@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -1077,6 +1078,37 @@ public:
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. Infinite when unmeasurable.
     double front_vertex_conv_ratio(size_t vid) const;
+    /**
+     * @brief THE definition of "placed" for a vertex on the offset surface.
+     *
+     * Every decision in the component that asks "is the placement of this front vertex done"
+     * goes through here or through front_placed_by_ratio(): the loop's vertex test
+     * (EnergyCriterion::vertices_ok()), the corner qualification of the face-sag classification,
+     * the collapse and swap guards' snapshot and the collapse guard's after-half, the
+     * adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by
+     * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
+     *
+     * It was not always one notion: the sag classification used to qualify its corners with the
+     * DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while
+     * everything else used the criterion's stationarity measure. The two disagree exactly where
+     * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
+     * hair outside the tube disqualified its whole face from ever being refined, with the face
+     * then counted in neither `refinable` nor `n_at_floor` and so invisible to
+     * converged_single(). Measured in 2D on top_annots_uday: at turn 1, 50 of the 114 sagging
+     * chords were dropped that way, the worst of them sagging 74 tubes, because one end sat
+     * 1.02 tubes off the level set with a Newton step of 1e-9.
+     *
+     * The caller has established that vid is a live front vertex (m_is_on_offset && m_is_rounded);
+     * this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed.
+     */
+    bool front_vertex_placed(size_t vid) const;
+    /// front_vertex_placed()'s decision on an already-measured ratio, for the callers that have
+    /// one in hand (energy_criterion(), the guards' snapshot, SmoothingProgress): the one place
+    /// the bar is applied. Keep this and front_vertex_placed() in step.
+    bool front_placed_by_ratio(const double ratio) const
+    {
+        return std::isfinite(ratio) && ratio <= 1.;
+    }
     /// The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord
     /// (a, b) against front_conv_rel x target_distance; -1 unmeasurable.
     double edge_conv_ratio(size_t a, size_t b) const;
@@ -1307,12 +1339,18 @@ public:
         size_t worst_vid = static_cast<size_t>(-1);
         Vector3d worst_face_centroid = Vector3d::Zero();
         double worst_face_len = 0.; ///< the worst face's longest edge
-        size_t n_faces_over = 0, n_faces_over_on_level = 0;
-        double max_face_on_level = 0.;
-        Vector3d worst_on_level_centroid = Vector3d::Zero();
+        /// Reported only: the faces over the bar, split by whether all three corners are PLACED
+        /// (front_vertex_placed(), the one notion). A face whose corners are placed and whose
+        /// centroid still misses the level set is under-resolved -- the state the vertex test
+        /// cannot see, and the only one the sag rule may act on: refining a face whose corners
+        /// are still moving would chase the front rather than resolve it.
+        size_t n_faces_over = 0, n_faces_over_placed = 0;
+        double max_face_placed = 0.;
+        Vector3d worst_placed_centroid = Vector3d::Zero();
         double tube = 0.;
         size_t n_at_floor = 0;
-        /// A face whose centroid sags over the tube with all three corners on the level set:
+        size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
+        /// A face whose centroid sags over the tube with all three corners placed:
         /// a, b are the ends of its LONGEST edge (the chord the target is derived from), c the
         /// third corner; sag the centroid sag as a length; len the longest edge's length.
         struct Refinable
@@ -1321,7 +1359,10 @@ public:
             double sag, len;
         };
         std::vector<Refinable> refinable;
-        bool vertices_ok() const { return max_vertex <= bar; }
+        /// Every front vertex placed. Counted through front_vertex_placed() rather than
+        /// re-derived from max_vertex, so the loop's exit test and the per-vertex notion cannot
+        /// drift apart; max_vertex stays for the reporting.
+        bool vertices_ok() const { return n_unplaced == 0; }
         bool faces_ok() const { return max_face <= bar; }
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
         bool converged_single() const { return converged() && refinable.empty(); }
