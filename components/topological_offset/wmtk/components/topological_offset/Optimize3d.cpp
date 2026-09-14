@@ -2526,7 +2526,7 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
 }
 
-void TopoOffsetTetMesh::assign_band_regions()
+void TopoOffsetTetMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
     // with an input-complex vertex, whose piece is read off the per-piece BVHs (the nearest
@@ -2608,6 +2608,7 @@ void TopoOffsetTetMesh::assign_band_regions()
             }
         }
     }
+    if (!log) return;
     std::string per;
     for (size_t r = 0; r < n_cells.size(); ++r)
         per += fmt::format("{}{}", r ? " / " : "", n_cells[r]);

@@ -221,7 +221,9 @@ public:
     std::vector<int> m_cell_region; ///< per tet: band's region, -1 none, -2 reached from two
     std::vector<int> m_vertex_region; ///< per vertex: region of its band cells, -1 / -2 as above
     void init_region_potentials(double delta, double effective_factor);
-    void assign_band_regions();
+    /// Rebuild m_*_region from the mesh. `log` false suppresses the per-turn "[regions]" line:
+    /// write_vtu() re-derives the map for its frame diagnostics and puts the old one back.
+    void assign_band_regions(bool log = true);
     /// Diagnostic: the front objective of one vertex along its normal, offset term vs total.
     void log_front_profile(size_t vid);
     int vertex_region(const size_t vid) const
@@ -1064,6 +1066,10 @@ public:
     /// The line a front vertex is placed along: the field normal, or that normal projected into
     /// the boundary surface (onto its crease) where an input envelope holds it.
     Vector3d front_vertex_move_direction(size_t vid) const;
+    /// |cos| between front_vertex_move_direction() and the field normal: 1 means the convergence
+    /// test's 1-D step is the step toward the level set, 0 means it measures a direction that
+    /// cannot reduce the distance. Debug-frame diagnostic; see write_vtu().
+    double front_move_alignment(size_t vid) const;
     /// Whether the 1-D placement at vid is trapped by the alignment term: a live front face at
     /// or past perpendicular to the field AND the alignment term's 1-D gradient opposing the
     /// placement term's along the move direction, at a vertex stationary off its level set.

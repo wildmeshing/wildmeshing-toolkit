@@ -2802,7 +2802,7 @@ double TopoOffsetTriMesh::edge_conv_ratio(const size_t a, const size_t b) const
     return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
 }
 
-void TopoOffsetTriMesh::assign_band_regions()
+void TopoOffsetTriMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band faces, seeded from every band face
     // that shares an edge with an input-complex face, with that face's region. A band face
@@ -2892,6 +2892,7 @@ void TopoOffsetTriMesh::assign_band_regions()
             }
         }
     }
+    if (!log) return;
     std::string per;
     for (size_t r = 0; r < n_faces.size(); ++r)
         per += fmt::format("{}{}", r ? " / " : "", n_faces[r]);

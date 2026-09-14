@@ -39,6 +39,32 @@ groups, and
                     and is adjustable on a log10 slider. The background mesh also carries it
                     as a "quality (AMIPS)" cell scalar.
 
+The offset surface also carries the run's own front diagnostics, off by default, which are
+what a convergence question is answered with:
+
+  front: Newton step / bar      front_vertex_conv_ratio() as written by write_vtu(). This is
+                                the ONLY per-vertex quantity the convergence test reads, so
+                                <= 1 means the loop considers the vertex placed. Range 0..2.
+  front: residual / delta       the vertex's true distance to the level set over the target
+                                distance. 0 is on the level set. The test never reads this.
+  front: |grad Phi|             the field gradient the objective's pull is built from.
+  front: move dir . field normal
+                                |cos| between the direction the placement may move the vertex
+                                in and the direction that reduces its distance. 0 means the
+                                test measures a step that cannot reduce the distance at all,
+                                which is what an envelope-held front vertex gets.
+
+  front: sag / tube             the OTHER half of the test, on the edge (2D) / face (3D) rather
+                                than on its corners: how far the level set curves away from the
+                                chord, over the same tube. > 1 with both corners on the level
+                                set is what makes a chord refinable. Read from the frame's sag
+                                companion (`_front.vtu` in 2D, `_off.vtu` in 3D).
+
+Red on the residual layer and dark on the Newton-step layer at the same vertex means
+stationary in the wrong place: no gradient to move along, so the test calls it placed. That is
+what a vertex trapped on the medial axis of the field looks like. Frames written before those
+fields existed simply do not offer the layers.
+
 The offset surface carries two scalar layers: distance to the input surface, and
 |distance - delta| / delta. delta comes from the config (`target_distance`, else
 `target_distance_rel` x the mesh bounding-box diagonal -- the box is the frozen
@@ -133,7 +159,7 @@ def read_groups(path):
     # envelope as a triangle block, which this line-only extraction leaves empty.)
     env = [c.data for c in m.cells if c.type == "line"]
     env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
-    return m.points, ncol - 1, groups, env, point_scalar(m, "sizing")
+    return m.points, ncol - 1, groups, env, point_scalar(m, "sizing"), front_diags(m)
 
 
 def point_scalar(m, name):
@@ -147,6 +173,64 @@ def point_scalar(m, name):
         if n in pd:
             return np.asarray(pd[n]).reshape(-1)
     return None
+
+
+# The per-vertex front diagnostics write_vtu() emits, in both dimensions. Sentinels: -1 a vertex
+# that is not on the front, -2 a value that is not finite. Both are masked to NaN here so they
+# cannot drag a colour range. (-3, "the whole frame not measured because its band-region map was
+# stale", was retired when the writer started re-deriving the map per frame; frames from runs
+# before that carry it on every vertex of an intra-turn frame and are masked out the same way.)
+# Absent from frames written before the fields existed, in which case the layers are not offered.
+FRONT_DIAGS = ("front_conv_ratio", "front_residual_length", "front_grad_norm",
+               "front_move_align")
+
+
+def front_diags(m):
+    """{field name: per-vertex array with the sentinels as NaN} for whichever fields are present."""
+    out = {}
+    for name in FRONT_DIAGS:
+        v = point_scalar(m, name)
+        if v is None:
+            continue
+        v = np.asarray(v, dtype=float).copy()
+        v[v < 0.0] = np.nan
+        out[name] = v
+    return out
+
+
+# The per-EDGE (2D) / per-FACE (3D) sag, which lives in its own companion file because the frame
+# itself is a triangle/tet mesh with nowhere to put a quantity on an edge or a surface face:
+# `<frame>_front.vtu` in 2D (line cells over the live offset edges) and `<frame>_off.vtu` in 3D
+# (the offset faces, which the 3D writer already emits). Both carry `front_sag_ratio`, the sag
+# over the tube -- the number energy_criterion() tests to decide what to refine -- with the same
+# sentinels as the vertex diagnostics. Returned as a dict keyed by the cell's SORTED vertex tuple,
+# because the viewer derives the offset surface from the frame's own cells and has to match the
+# companion's cells onto it; the vertex indexing is shared, so the tuple is the key.
+FRONT_SAG = "front_sag_ratio"
+
+
+def front_sag_map(path):
+    """{sorted vertex tuple: sag ratio} from the frame's sag companion; {} where there is none."""
+    for suffix, kinds in (("_front.vtu", ("line",)), ("_off.vtu", ("triangle",))):
+        comp = path.with_name(path.stem + suffix)
+        if not comp.exists():
+            continue
+        try:
+            m = meshio.read(str(comp))
+        except Exception:
+            continue
+        vals = m.cell_data.get(FRONT_SAG)
+        if vals is None:
+            continue
+        out = {}
+        for block, arr in zip(m.cells, vals):
+            if block.type not in kinds:
+                continue
+            for cell, v in zip(block.data, np.asarray(arr).reshape(-1)):
+                out[tuple(sorted(int(i) for i in cell))] = float(v) if v >= 0.0 else float("nan")
+        if out:
+            return {FRONT_SAG: out}
+    return {}
 
 
 def read_groups_vtu(path):
@@ -183,7 +267,9 @@ def read_groups_vtu(path):
             groups[name] = sel
     env = [c.data for c in m.cells if c.type == "line"]
     env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
-    return m.points, ncol - 1, groups, env, point_scalar(m, "sizing")
+    diags = front_diags(m)
+    diags.update(front_sag_map(path))
+    return m.points, ncol - 1, groups, env, point_scalar(m, "sizing"), diags
 
 
 def read_any(path):
@@ -560,7 +646,7 @@ def resolve(args):
 
 def load(msh, cfg):
     """Everything main() draws, as plain arrays -- no polyscope."""
-    points, dim, groups, envelope, sizing = read_any(msh)
+    points, dim, groups, envelope, sizing, diags = read_any(msh)
     # `offset_tag` is the .vtu frames' label-based band marker and is preferred where
     # present; .msh files name the band by its output tag instead.
     offset_tags = {"offset_tag"} & set(groups)
@@ -699,7 +785,7 @@ def load(msh, cfg):
         err = (op, oc, dist, np.abs(dist - delta) / delta)
 
     mesh = (mesh_cells, mesh_class, mesh_tags)
-    return points, dim, groups, surf, delta, prov, err, mesh, sizing
+    return points, dim, groups, surf, delta, prov, err, mesh, sizing, diags
 
 
 LAYERS = [
@@ -713,7 +799,7 @@ LAYERS = [
 ]
 
 
-def register_frame(prefix, points, dim, surf, err, mesh, sizing=None):
+def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None, delta=None):
     """Register one frame's layers, all disabled.
 
     Returns ({layer label: structure}, extras) where extras holds what the sizing toggle needs
@@ -822,6 +908,55 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None):
         m.add_scalar_quantity("sizing", s_off, cmap="viridis", vminmax=(0.0, 1.0))
         rel_info = (err[3], float(err[3].max())) if err is not None else None
         extras["off"] = (m, s_off, rel_info)
+
+    # The front convergence diagnostics, on the offset surface, as heat maps. These are the two
+    # halves of the convergence question side by side:
+    #
+    #   "Newton step / bar"        what converged_single() actually tests at a vertex. <= 1 is
+    #                              "placed", and the loop may exit on it. Range fixed at 0..2 so
+    #                              the bar sits at the middle of the map.
+    #   "residual / delta"         how far the vertex really is from the level set, which the
+    #                              test never looks at. 0 is on it, 1 is a whole target distance
+    #                              off. Range fixed at 0..1.
+    #   "|grad Phi|"               the field gradient the objective's pull is built from.
+    #                              Autoscaled, since its size is the field's business.
+    #
+    # A vertex that is red on "residual / delta" and dark on "Newton step / bar" is stationary in
+    # the wrong place: no gradient to move along, so the test calls it placed. That is what a
+    # vertex trapped on the medial axis of the field looks like.
+    if diags and out.get("offset surface") is not None and len(surf["offset"]):
+        m = (ps.get_surface_mesh if dim == 3 else ps.get_curve_network)(prefix + "offset surface")
+        rows = np.unique(surf["offset"])
+        cr = diags.get("front_conv_ratio")
+        if cr is not None:
+            m.add_scalar_quantity("front: Newton step / bar (<=1 = placed)", cr[rows],
+                                  cmap="reds", vminmax=(0.0, 2.0), enabled=False)
+        rl = diags.get("front_residual_length")
+        if rl is not None and delta:
+            m.add_scalar_quantity("front: residual / delta (0 = on the level set)",
+                                  rl[rows] / float(delta), cmap="reds", vminmax=(0.0, 1.0),
+                                  enabled=False)
+        gn = diags.get("front_grad_norm")
+        if gn is not None:
+            m.add_scalar_quantity("front: |grad Phi|", gn[rows], cmap="viridis", enabled=False)
+        ma = diags.get("front_move_align")
+        if ma is not None:
+            # 1: the test's step is the step toward the level set. 0: it measures a direction
+            # that cannot reduce the distance, so the vertex reads as placed wherever it sits.
+            m.add_scalar_quantity("front: move dir . field normal (1 = useful)", ma[rows],
+                                  cmap="viridis", vminmax=(0.0, 1.0), enabled=False)
+        # The sag, on the EDGES (2D) / FACES (3D) themselves, not on their corners: the other
+        # half of the convergence test. A chord whose corners are both on the level set and whose
+        # sag is over 1 is refinable; over 1 with the sizing already at the floor is the "at the
+        # sizing floor" count the verdict prints, and the only way to see WHERE those chords are.
+        sag = diags.get(FRONT_SAG)
+        if sag is not None:
+            vals = np.array([sag.get(tuple(sorted(int(i) for i in c)), np.nan)
+                             for c in surf["offset"]], dtype=float)
+            if np.isfinite(vals).any():
+                m.add_scalar_quantity("front: sag / tube (>1 = refinable)", vals,
+                                      defined_on="faces" if dim == 3 else "edges",
+                                      cmap="reds", vminmax=(0.0, 2.0), enabled=False)
     return {k: v for k, v in out.items() if v is not None}, extras
 
 
@@ -888,14 +1023,14 @@ def main():
     phi_grid = load_phi_grid(meshes)
 
     def load_frame(path):
-        points, dim, groups, surf, delta, prov, err, mesh, sizing = load(path, cfg)
+        points, dim, groups, surf, delta, prov, err, mesh, sizing, diags = load(path, cfg)
         if phi_grid is not None and len(surf["offset"]):
             op, oc = compact(points, surf["offset"])
             d = sample_regular_grid(
                 phi_grid[1], np.asarray(phi_grid[3]["euclidean_distance"]).ravel(), op[:, :2])
             if d is not None:
                 err = (op, oc, d, np.abs(d - delta) / delta)
-        return (path, points, dim, groups, surf, delta, prov, err, mesh, sizing)
+        return (path, points, dim, groups, surf, delta, prov, err, mesh, sizing, diags)
 
     # --lazy: a series is read ONE FRAME AT A TIME, when the slider lands on it, instead of
     # every frame up front. Both halves of the eager path are the slow part -- load() parses
@@ -916,7 +1051,7 @@ def main():
     for k, path in enumerate(meshes[:1] if lazy else meshes):
         fr = frame_at(k) if lazy else load_frame(path)
         frames.append(fr)
-        path, points, dim, groups, surf, delta, prov, err, mesh, sizing = fr
+        path, points, dim, groups, surf, delta, prov, err, mesh, sizing, diags = fr
         if k == 0 or not series:
             print("mesh   %s  (%s)" % (path, "tets" if dim == 3 else "triangles"))
             print("delta  %g  (%s)" % (delta, prov))
@@ -957,9 +1092,9 @@ def main():
 
     registered = []
     extra_qs = [] # per frame: quantity handles the sizing toggle flips, see register_frame
-    for k, (path, points, d, groups, surf, delta, prov, err, mesh, sizing) in enumerate(frames):
+    for k, (path, points, d, groups, surf, delta, prov, err, mesh, sizing, diags) in enumerate(frames):
         prefix = ("f%04d " % k) if series and not lazy else ""
-        layers, extras = register_frame(prefix, points, d, surf, err, mesh, sizing)
+        layers, extras = register_frame(prefix, points, d, surf, err, mesh, sizing, diags, delta)
         registered.append(layers)
         extra_qs.append(extras)
     has_sizing = any(("off" in ex or "bg" in ex) for ex in extra_qs)
@@ -1152,7 +1287,8 @@ def main():
                 except Exception:
                     pass
             fr = frame_at(v)
-            registered[0], extra_qs[0] = register_frame("", fr[1], fr[2], fr[4], fr[7], fr[8], fr[9])
+            registered[0], extra_qs[0] = register_frame(
+                "", fr[1], fr[2], fr[4], fr[7], fr[8], fr[9], fr[10], fr[5])
         apply_visibility()
 
     def callback():
