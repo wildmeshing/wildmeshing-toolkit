@@ -45,8 +45,10 @@ ExternalProject_Add(
     # At 9c2144c (2026-09-08) _two_circles moves to absolute target 0.15 with spec defaults (converges
     # through a 15-iteration final pass), and _dragon_held is added: the dragon at 1e-3 with
     # deform_others false, a converging case for the per-tag envelope setup.
+    # At 3734b13 (2026-09-09) the manifold_extraction cases move to manifold_extraction_models.json,
+    # read by the hidden [manifold] group; manifold_extraction_3d leaves integration_tests.json.
     #
-    GIT_TAG 9c2144c3bfb30ff2fe607aa5ad9acb67585c868b
+    GIT_TAG 3734b13218d5328f2bff9deb5de690f26539136b
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""

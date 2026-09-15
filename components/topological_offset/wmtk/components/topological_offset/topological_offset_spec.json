@@ -18,15 +18,19 @@
       "target_distance",
       "target_distance_rel",
       "throw_on_nonconvergence",
+      "optimize_offset",
       "envelope_size",
       "envelope_size_rel",
       "offset_field",
       "offset_dhat_factor",
+      "DEBUG_manual_dhat",
       "front_conv_rel",
       "front_conv_criterion",
       "offset_residual_samples",
       "sorted_marching",
       "save_offset_correspondence",
+      "sphere_trace_initialization",
+      "sphere_trace_target_rel_tol",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -42,6 +46,9 @@
       "adaptive_smoothing_max_passes",
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
+      "sag_halve_refinement",
+      "pre_smooth",
+      "front_refuse_converged_collapse",
       "max_iterations",
       "offset_envelope_rel",
       "length_rel",
@@ -72,8 +79,6 @@
       "front_alignment_energy",
       "sizing_collapse_min",
       "max_rounds",
-      "pre_optimize_sizing_from_edges",
-      "pre_optimize_sizing_from_target_length",
       "pre_optimize_input",
       "w_amips",
       "smoothing_mode",
@@ -95,7 +100,7 @@
   {
     "pointer": "/input",
     "type": "string",
-    "doc": "Input mesh, .msh: a triangle mesh for the 2D pipeline, a tetrahedral mesh for the 3D one. The two pipelines are the same algorithm one dimension apart and read every key below the same way."
+    "doc": "Input mesh, .msh: a triangle or a tetrahedral mesh. The two pipelines are the same algorithm one dimension apart and read every key below the same way."
   },
   {
     "pointer": "/output",
@@ -170,6 +175,12 @@
     "doc": "If true, a run that finishes without meeting the convergence criteria raises an error instead of logging a warning. Default false: a non-converged offset is still a usable one, and the warnings already name which criterion failed. Integration tests set it true so a convergence regression fails the run rather than passing with a warning."
   },
   {
+    "pointer": "/optimize_offset",
+    "type": "bool",
+    "default": true,
+    "doc": "Run the optimization (optimize_offset: pre-loop setup, the single-phase turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the pre-optimize pass, the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
+  },
+  {
     "pointer": "/envelope_size_rel",
     "type": "float",
     "default": 0.001,
@@ -184,18 +195,24 @@
   {
     "pointer": "/offset_field",
     "type": "string",
-    "default": "smooth",
+    "default": "euclidean",
     "options": [
       "smooth",
       "euclidean"
     ],
-    "doc": "Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by. 'smooth' (the default) is the offset geometric contact potential Phi, with the front on the level set Phi = c: C^2, analytic derivatives, and a level set that bulges outward at reentrant features, so it is a smoothed offset rather than the exact one. 'euclidean' is the exact distance to the input complex, which makes the residual exact but introduces a gradient discontinuity across the medial axis and a crease at every reentrant feature that no refinement resolves; offset_dhat_factor and the outside-the-support guard stop meaning anything, since it has no compact support."
+    "doc": "Which field defines the offset, and so what the front is placed on, what the criterion measures and what the sizing field refines by. 'smooth' is the offset geometric contact potential Phi, with the front on the level set Phi = c: C^2, analytic derivatives, and a level set that bulges outward at reentrant features, so it is a smoothed offset rather than the exact one. 'euclidean' (the default) is the exact distance to the input complex, which makes the residual exact but introduces a gradient discontinuity across the medial axis and a crease at every reentrant feature that no refinement resolves; offset_dhat_factor and the outside-the-support guard stop meaning anything, since it has no compact support."
   },
   {
     "pointer": "/offset_dhat_factor",
     "default": 2.0,
     "type": "float",
     "doc": "Support radius of the smooth offset potential, as a multiple of target_distance. Must be > 1. The offset level set lies strictly inside the support; a band vertex that leaves the support is a hard error."
+  },
+  {
+    "pointer": "/DEBUG_manual_dhat",
+    "default": -1.0,
+    "type": "float",
+    "doc": "[2D ONLY] Debugging override for the smooth potential's support radius dhat, as an ABSOLUTE length. Negative (the default) leaves the automatic sizing alone: dhat = max(offset_dhat_factor x target_distance, 2 x the distance of the furthest constructed offset vertex). A value >= 0 replaces that outright, so the effective factor is DEBUG_manual_dhat / target_distance and must still exceed 1 for the level set to lie strictly inside the support. For asking what a run does under a support it would not have chosen: outside the support Phi is identically zero with a zero gradient, so a front vertex that leaves it gets no direction back and drifts on the quality term alone. Ignored by the euclidean field, which has no support. Read only by the 2D construction; 3D ignores it until the port."
   },
   {
     "pointer": "/front_conv_rel",
@@ -218,13 +235,25 @@
     "pointer": "/offset_residual_samples",
     "default": 3,
     "type": "int",
-    "doc": "Sampling density used to measure the offset's residual between its vertices, a reported diagnostic. In 2D, k points in the interior of each band edge at i/(k+1), so k = 1 is the midpoint; in 3D, the interior lattice points of each offset-surface triangle at denominator k+2, so k = 1 is the centroid and the counts are 1, 3, 6, 10 for k = 1..4. 0 measures only at vertices, which is blind to a surface whose vertices sit on the level set while the elements between them cut across it."
+    "doc": "Sampling density used to measure the offset's residual between its vertices, a reported diagnostic: the interior lattice points of each front simplex at denominator k+2 (k points per edge at i/(k+1); 1, 3, 6, 10 points per triangle for k = 1..4), so k = 1 is the midpoint / centroid. 0 measures only at vertices, which is blind to a surface whose vertices sit on the level set while the elements between them cut across it."
   },
   {
     "pointer": "/sorted_marching",
     "type": "bool",
     "default": false,
-    "doc": "Execute marching tets in decreasing order of edge length. Increases run time, may increase output mesh quality."
+    "doc": "Execute the marching in decreasing order of edge length. Increases run time, may increase output mesh quality."
+  },
+  {
+    "pointer": "/sphere_trace_initialization",
+    "type": "bool",
+    "default": true,
+    "doc": "How the marching places the vertex it inserts on each edge it splits (an edge with one endpoint in the input complex and the other in the background). false: the plain edge midpoint; target_distance does not enter construction, and the optimization carries the front to the level set. true (the default): sphere tracing along the edge from the complex endpoint for the point where d(x) = target_distance, d(x) the distance from the point to the input complex through its BVH: evaluate d at the current point, step forward along the edge by target_distance - d (the largest step that cannot cross the level set), repeat until |d - target_distance| <= sphere_trace_target_rel_tol x target_distance. If the current point reaches or passes the background endpoint the level set is not on the edge and the vertex goes to the midpoint. No snapping away from the endpoints. The simplicial embedding's splits always use the midpoint."
+  },
+  {
+    "pointer": "/sphere_trace_target_rel_tol",
+    "type": "float",
+    "default": 0.01,
+    "doc": "In (0, 1). The trace under sphere_trace_initialization stops at the first point where |d(x) - target_distance| <= this x target_distance; the placed vertex is that close to the target level set along the edge. Smaller is tighter and takes more steps (each step is longer than the tolerance, so at most edge length / (tol x target_distance) of them). Only read when sphere_trace_initialization is true."
   },
   {
     "pointer": "/save_offset_correspondence",
@@ -248,7 +277,7 @@
     "pointer": "/phi_grid_resolution",
     "type": "int",
     "default": 0,
-    "doc": "Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer. 0 disables it. In 2D the grid covers the whole domain; in 3D a volume is unaffordable, so it is the PLANE through the box centre normal to the box's shortest extent. Carries phi, phi_residual_length and euclidean_distance per vertex; warp by phi to see the field as a height surface."
+    "doc": "Samples per side of the grid the smooth offset potential is written on, as <output>_phi.vtu, for the viewer. 0 disables it. The grid is the plane through the box centre normal to the box's shortest extent (the whole domain when the domain is planar). Carries phi, phi_residual_length and euclidean_distance per vertex; warp by phi to see the field as a height surface."
   },
   {
     "pointer": "/DEBUG_output",
@@ -327,31 +356,49 @@
     "pointer": "/interleaved_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the pre-optimisation pass, the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the 3D single-phase loop this fixed count is only used when adaptive_smoothing is false."
+    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the pre-optimisation pass, the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the single-phase loop this fixed count is only used when adaptive_smoothing is false."
   },
   {
     "pointer": "/adaptive_smoothing",
     "type": "bool",
-    "default": true,
-    "doc": "3D only, single-phase loop only. Run the smoothing after each of the three operation groups (split, collapse, swap) pass by pass until it has converged or stalled, instead of a fixed interleaved_smoothing_passes. After every pass two things are measured against the positions before it. Front vertices (on the offset, not pressed against another region): the convergence ratio front_vertex_conv_ratio, the same Newton-step ratio the turn's criterion tests -- converged when its maximum is at or below 1, stalled when the maximum fell by less than adaptive_smoothing_stall_rel of its previous value, since a stalled front needs an operation and not another sweep. Background vertices: the step each vertex made divided by its target edge length s_v * l -- settled when the maximum is at or below adaptive_smoothing_step_rel. The group's smoothing stops when the front is converged or stalled AND the background has settled, or at adaptive_smoothing_max_passes. Front vertices whose ratio is not measurable (a non-positive curvature of the objective along the move direction) are counted and left out of the maximum. The offset tube is rebuilt after the group as before, not after each pass."
+    "default": false,
+    "doc": "Single-phase loop only. Run the smoothing after each of the three operation groups (split, collapse, swap) pass by pass until it has converged or stalled, instead of a fixed interleaved_smoothing_passes. After every pass two things are measured against the positions before it. Front vertices (on the offset): the convergence ratio front_vertex_conv_ratio, the same Newton-step ratio the turn's criterion tests -- converged when its maximum is at or below 1, stalled when the maximum fell by less than adaptive_smoothing_stall_rel of its previous value, since a stalled front needs an operation and not another sweep. Background vertices: the step each vertex made divided by its target edge length s_v * l -- settled when the maximum is at or below adaptive_smoothing_step_rel. The group's smoothing stops when the front is converged or stalled AND the background has settled, or at adaptive_smoothing_max_passes. Front vertices whose ratio is not measurable (a non-positive curvature of the objective along the move direction) are counted and left out of the maximum. The offset tube is rebuilt after the group as before, not after each pass."
   },
   {
     "pointer": "/adaptive_smoothing_max_passes",
     "type": "int",
     "default": 20,
-    "doc": "3D only. Upper bound on the smoothing passes of one operation group under adaptive_smoothing; at least 1 pass always runs."
+    "doc": "Upper bound on the smoothing passes of one operation group under adaptive_smoothing; at least 1 pass always runs."
   },
   {
     "pointer": "/adaptive_smoothing_stall_rel",
     "type": "float",
     "default": 0.1,
-    "doc": "3D only. Under adaptive_smoothing the front counts as stalled when a pass lowered the maximum convergence ratio by less than this fraction of its value before the pass (0.1 = less than 10 percent). Never applied to the first pass of a group."
+    "doc": "Under adaptive_smoothing the front counts as stalled when a pass lowered the maximum convergence ratio by less than this fraction of its value before the pass (0.1 = less than 10 percent). Never applied to the first pass of a group."
   },
   {
     "pointer": "/adaptive_smoothing_step_rel",
     "type": "float",
     "default": 0.01,
-    "doc": "3D only. Under adaptive_smoothing the background counts as settled when no non-front vertex moved more than this fraction of its own target edge length s_v * l in the pass."
+    "doc": "Under adaptive_smoothing the background counts as settled when no non-front vertex moved more than this fraction of its own target edge length s_v * l in the pass."
+  },
+  {
+    "pointer": "/sag_halve_refinement",
+    "type": "bool",
+    "default": true,
+    "doc": "Single-phase loop only. How the sizing field is lowered at the end of a turn for the refinable front simplices (every vertex on the level set, the sag at the midpoint / centroid over it beyond front_conv_rel x target_distance). false: refine_front_from_sag, the chord rule 3/4 L (tube/sag)^(1/p) capped at L/2, with the exponent p read from the field's turn across the chord -- unbounded below except for the sizing floor, so a coarse front over a creased field can drop a scalar by 20x in one turn. true (the default): the vertices of every refinable simplex have their sizing scalar halved, once per turn no matter how many refinable simplices share the vertex, floored at max(min_sizing_scalar, min_edge_length / l); no other vertex is lowered directly. The lowered scalars are then graded outward by sizing_gradation_mode as with the chord rule, so with sizing_gradation 2 on an already graded field a neighbour also drops by at most a factor 2."
+  },
+  {
+    "pointer": "/pre_smooth",
+    "type": "bool",
+    "default": false,
+    "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: interleaved_smoothing_passes sweeps, or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+  },
+  {
+    "pointer": "/front_refuse_converged_collapse",
+    "type": "bool",
+    "default": false,
+    "doc": "Single-phase loop only. true: the collapse and swap passes refuse an operation that would un-resolve a resolved patch of the front. A front simplex is resolved when its sag over the level set is within the tube (front_conv_rel x target_distance) and every corner's Newton-step ratio is within the bar, both read from a snapshot of the front taken at the start of the group. A collapse of a front edge whose two endpoints have only resolved front faces around them is refused if any face it would leave around the survivor sags over the tube (predicted before the collapse: the survivor keeps its position and the removed vertex's faces are re-attached to it), or if the survivor's Newton-step ratio after the collapse is over the bar (measured after, the collapse is rolled back). A surface flip of the offset whose two old faces are resolved is refused if either new face sags over the tube (3D only: a 2D front is a curve, its edges are surface-tracked and never flipped, and no other flip moves a front vertex, so there is nothing for the swap half to guard). Where the neighbourhood is not already resolved nothing is refused, so the passes still coarsen and re-triangulate a moving front freely. Refusals are counted per turn. false (the default): the passes as they are."
   },
   {
     "pointer": "/coarsen_pass",
@@ -441,13 +488,13 @@
     "pointer": "/front_normal_projection",
     "default": true,
     "type": "bool",
-    "doc": "The front is placed by a one-dimensional solve along its field normal n = grad Phi/|grad Phi|: the same objective restricted to the line x0 + s n, with the same solver, line search and accept test, and the vertex test reads the step along that same n. Where a vertex sits along the front carries no information about the offset, and in the free solve that tangential motion is driven by AMIPS alone, which made fronts slide and fold where two of them meet. Spacing along the front is left to the operation passes' smoother. A front vertex an input envelope also holds moves along that boundary instead: its curve's tangent in 2D, the field normal projected into the boundary surface (or onto its crease) in 3D."
+    "doc": "The front is placed by a one-dimensional solve along its field normal n = grad Phi/|grad Phi|: the same objective restricted to the line x0 + s n, with the same solver, line search and accept test, and the vertex test reads the step along that same n. Where a vertex sits along the front carries no information about the offset, and in the free solve that tangential motion is driven by AMIPS alone, which made fronts slide and fold where two of them meet. Spacing along the front is left to the operation passes' smoother. A front vertex an input envelope also holds moves along that boundary instead: the field normal projected into the boundary (or onto its crease)."
   },
   {
     "pointer": "/front_alignment_energy",
     "default": true,
     "type": "bool",
-    "doc": "Whether the front objective carries the alignment term: the sum over the vertex's live front edges (2D) or faces (3D) of (1 - n_e . ghat(m_e))^2, with n_e the simplex normal and ghat the field's unit gradient at its midpoint / centroid, weighted like the offset term. It is what acts on the front's normals under front_normal_projection, and what lets a pressed seam settle in a few turns rather than tens. On by default, with a known cost: under normal-only placement it can act only along the normal, so it biases a vertex a few percent of target_distance off its level set on curved fronts. Each term is weighted by the gradient agreement at its corners, max(0, ghat_a . ghat_b) (the minimum over the corner pairs in 3D), frozen per visit, so a simplex spanning a concave corner's bisector gets no direction target instead of an impossible one."
+    "doc": "Whether the front objective carries the alignment term: the sum over the vertex's live front simplices of (1 - n_e . ghat(m_e))^2, with n_e the simplex normal and ghat the field's unit gradient at its midpoint / centroid, weighted like the offset term. It is what acts on the front's normals under front_normal_projection, and what lets a pressed seam settle in a few turns rather than tens. On by default, with a known cost: under normal-only placement it can act only along the normal, so it biases a vertex a few percent of target_distance off its level set on curved fronts. Each term is weighted by the gradient agreement at its corners, max(0, ghat_a . ghat_b) (the minimum over the corner pairs), frozen per visit, so a simplex spanning a concave corner's bisector gets no direction target instead of an impossible one."
   },
   {
     "pointer": "/sizing_collapse_min",
@@ -462,22 +509,10 @@
     "doc": "The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect."
   },
   {
-    "pointer": "/pre_optimize_sizing_from_edges",
-    "default": false,
-    "type": "bool",
-    "doc": "2D only; 3D reads pre_optimize_sizing_from_target_length instead. Which sizing field pre_optimize_input runs against. false (the default): seed target_distance / l on the input-complex boundary and grade outward, so the complex is resolved at the offset's own scale. true: seed every vertex from the mean of its own incident edge lengths instead, so target_distance never enters the field; that improves element quality without refining toward delta, so the constructed offset lands wherever the input mesh's own scale puts it. Only read when pre_optimize_input is true."
-  },
-  {
-    "pointer": "/pre_optimize_sizing_from_target_length",
-    "default": true,
-    "type": "bool",
-    "doc": "3D only. Which sizing field pre_optimize_input runs against. true (the default): seed target_distance / l on the input-complex boundary and grade outward, so the complex is resolved at the offset's own scale before the band is built. false: the field is 1.0 everywhere, so the pass is a plain TetWild run against the base target length l and target_distance never enters; the constructed offset then lands wherever the input mesh's own scale puts it and the front has to be refined by the optimization. Only read when pre_optimize_input is true."
-  },
-  {
     "pointer": "/pre_optimize_input",
     "default": true,
     "type": "bool",
-    "doc": "Run TriWild/TetWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same parameters and held only by the per-tag region envelopes, which exist by then. The sizing field is seeded on the input-complex boundary alone and graded outward, so the complex is resolved at the offset's own scale and the marching band comes out one delta-scale cell thick. That matters because the marching places the offset on the background mesh's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
+    "doc": "Run TriWild/TetWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same parameters and held only by the per-tag region envelopes, which exist by then. The pass runs against a sizing field of 1.0 at every vertex, i.e. the base target length l, and the main loop then starts from whatever field the pass leaves (1.0 everywhere when the pass is off). Worth a pass because the marching places the offset on the background mesh's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
   },
   {
     "pointer": "/min_edge_length",
@@ -517,7 +552,7 @@
       "ring",
       "distance"
     ],
-    "doc": "3D only. How a lowered sizing scalar spreads to the vertices around it, at every place the offset lowers the field (the pre-optimize seed, the front's curvature seed, the sag rule, the stuck refine). 'ring' (the default): the base gradation_smooth_sizing -- walk outward over mesh neighbours, capping each neighbour at sizing_gradation times the scalar it came from, so the field grades by mesh rings and a fine seed in a coarse mesh drags a shell of rings down with it. 'distance': TetWild's adjust_sizing_field gradation -- walk outward from the seeds and multiply every vertex within R = 1.8 l of its nearest seed by the linear ramp 0.5 + 0.5 dist / R (halved next to a seed, untouched at R), stopping at R; the seeds keep the value they were just given and nothing outside the ball changes. The refinement then reaches a seed geometrically through the split pass (each split child takes the mean of its parents' scalars) instead of by rings, so a fine target stays local to the seed however coarse the mesh around it is."
+    "doc": "How a lowered sizing scalar spreads to the vertices around it, at every place the offset lowers the field (the sag rule, the stuck refine). 'ring' (the default): the base gradation_smooth_sizing -- walk outward over mesh neighbours, capping each neighbour at sizing_gradation times the scalar it came from, so the field grades by mesh rings and a fine seed in a coarse mesh drags a shell of rings down with it. 'distance': TetWild's adjust_sizing_field gradation -- walk outward from the seeds and multiply every vertex within R = 1.8 l of its nearest seed by the linear ramp 0.5 + 0.5 dist / R (halved next to a seed, untouched at R), stopping at R; the seeds keep the value they were just given and nothing outside the ball changes. The refinement then reaches a seed geometrically through the split pass (each split child takes the mean of its parents' scalars) instead of by rings, so a fine target stays local to the seed however coarse the mesh around it is."
   },
   {
     "pointer": "/split_high_valence_threshold",
@@ -551,7 +586,7 @@
       "projected",
       "exact"
     ],
-    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along 3D edges and curve segments. Rests a w_amips-proportional distance off the input."
+    "doc": "How smoothing places a surface vertex. 'projected': smooth with AMIPS alone as if interior, then walk back toward the start projecting each candidate onto the input; accept the first projected candidate that does not invert and strictly lowers the worst incident element, else do not move. Lands exactly on the input; no weights. 'exact': minimize w_amips * AMIPS + (1-w_amips) * (d/eps)^2 with the true region-wise Hessian of the distance to the piecewise-linear input; sliding is free where the input is flat, held at corners, constrained along edges and curve segments. Rests a w_amips-proportional distance off the input."
   },
   {
     "pointer": "/w_amips",

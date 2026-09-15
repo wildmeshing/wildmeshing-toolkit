@@ -69,10 +69,29 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     Vector2d p1 = m_vertex_attribute[cache.v1_id].m_posf;
     Vector2d p2 = m_vertex_attribute[cache.v2_id].m_posf;
     Vector2d p_new;
-    // The midpoint is the only construction placement: no target_distance enters construction at
-    // all, and carrying the front out to the level set is entirely the optimization phase's job.
+    // Midpoint: no target_distance enters construction at all, and carrying the front out to
+    // the level set is the optimization phase's job. SphereTrace (marching_tris under
+    // sphere_trace_initialization): the vertex goes to the point of the edge where d(x) reaches
+    // target_distance within the tolerance, and to the midpoint when the trace leaves the edge.
     if (m_edge_split_mode == EdgeSplitMode::Midpoint) {
         p_new = (p1 + p2) / 2.0;
+    } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
+        const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
+        const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
+        bool on_level = false;
+        size_t steps = 0;
+        if (in1 != in2) {
+            on_level = in1 ? edge_split_sphere_trace(p1, p2, p_new, steps)
+                           : edge_split_sphere_trace(p2, p1, p_new, steps);
+        }
+        m_marching_trace_steps += steps;
+        m_marching_trace_steps_max = std::max(m_marching_trace_steps_max, steps);
+        if (on_level) {
+            ++m_marching_root_splits;
+        } else {
+            p_new = (p1 + p2) / 2.0;
+            ++m_marching_midpoint_splits;
+        }
     } else {
         log_and_throw_error("Invalid edge split mode.");
     }
@@ -116,6 +135,39 @@ bool TopoOffsetTriMesh::marching_split_edge_before(const Tuple& t)
     return true;
 }
 
+bool TopoOffsetTriMesh::edge_split_sphere_trace(
+    const Vector2d& p_in,
+    const Vector2d& p_out,
+    Vector2d& p_new,
+    size_t& steps) const
+{
+    // Sphere tracing: d is 1-Lipschitz, so from a point at distance d the level set
+    // d = target_distance is at least target_distance - d away in every direction, and stepping
+    // exactly that far along the edge can never cross it. The step is positive while the trace
+    // has not converged (target_distance - d > tol), so t grows by more than tol each time and
+    // the loop ends within L / tol steps, one way or the other. Same as 3D.
+    const double D = m_offset_params.target_distance;
+    const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    const Vector2d dir = p_out - p_in;
+    const double L = dir.norm();
+    steps = 0;
+    if (!(L > 0.)) return false;
+    const Vector2d u = dir / L;
+    double t = 0.;
+    while (true) {
+        const Vector2d p = p_in + t * u;
+        const double d = m_input_complex_bvh->dist(p);
+        ++steps;
+        if (std::abs(d - D) <= tol) {
+            p_new = p;
+            return true;
+        }
+        t += D - d;
+        // Past (or at) the far endpoint: the level set is not on this edge. Behind the near
+        // endpoint: d(p_in) is already beyond the target, the same conclusion.
+        if (t >= L || t < 0.) return false;
+    }
+}
 
 bool TopoOffsetTriMesh::split_edge_after(const Tuple& t)
 {

@@ -33,6 +33,9 @@ struct Parameters : public wmtk::OptimizerParameters
     // misses the target is still a usable offset, and the warnings name the criterion that failed.
     // Integration tests set it true so a convergence regression fails rather than warns.
     bool throw_on_nonconvergence;
+    /// See the spec: false stops the run at the constructed offset, optimize_offset() is not
+    /// called and the constructed band is written as the result.
+    bool optimize_offset;
     // Half-width of the envelope that contains every tag-region boundary during optimization.
     // Absolute; if < 0, computed from envelope_size_rel (relative to the bbox diagonal).
     double envelope_size;
@@ -43,6 +46,11 @@ struct Parameters : public wmtk::OptimizerParameters
     // level set has to lie strictly inside the support, or the vertices on it get no gradient. A
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
+    /// [2D ONLY] Debugging override for the potential's support radius: >= 0 uses this dhat as an
+    /// ABSOLUTE length, in place of both offset_dhat_factor x target_distance and the
+    /// constructed-offset floor. Negative (the default) leaves the automatic sizing alone. Only
+    /// the 2D construction reads it; the 3D twin ignores it until the port.
+    double debug_manual_dhat;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
     // The accuracy: this fraction of target_distance is both the vertex bar (the remaining Newton
     // step of a front vertex along its move direction, under the default criterion) and the chord
@@ -88,6 +96,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// Write <output>_correspondence.vtu right after marching: the mesh as constructed, with
     /// corr_input_vid on every offset vertex. Ids are those of that file.
     bool save_offset_correspondence;
+    /// See the spec: the marching places each new vertex where d(x) reaches target_distance
+    /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
+    bool sphere_trace_initialization;
+    double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -100,16 +112,9 @@ struct Parameters : public wmtk::OptimizerParameters
     /// frozen-front finishing pass.
     int max_iterations;
     /// Run TriWild/TetWild over the INPUT mesh before the simplicial embedding and the marching,
-    /// held only by the per-tag region envelopes. See pre_optimize_input_mesh() in either mesh.
+    /// held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex.
+    /// See pre_optimize_input_mesh() in either mesh.
     bool pre_optimize_input = true;
-    /// See the spec: which sizing field pre_optimize_input runs against. false = seed
-    /// target_distance on the input-complex boundary; true = seed every vertex from its own
-    /// incident edge lengths, so target_distance never enters the field. Read by 2D only.
-    bool pre_optimize_sizing_from_edges = false;
-    /// See the spec: true = seed target_distance / l on the input-complex boundary and grade
-    /// outward (the same field 2D's default produces); false = the field is 1.0 everywhere, so
-    /// the pass runs against the base target length l alone. Read by 3D only.
-    bool pre_optimize_sizing_from_target_length = true;
     /// The operation passes' offset envelope width, as a fraction of target_distance -- the same
     /// tube every turn, rebuilt after every smoothing pass; see rebuild_offset_envelope(). Also
     /// feeds the derived sizing floor (min_edge_length_rel < 0).
@@ -135,15 +140,26 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: how a lowered sizing scalar spreads to the vertices around it. "ring" =
     /// the base gradation_smooth_sizing, ring by ring at sizing_gradation x per ring;
     /// "distance" = TetWild's adjust_sizing_field ramp, a factor 0.5 at a seed rising linearly
-    /// to 1 at distance 1.8 l, applied within that ball only. Read by 3D only.
+    /// to 1 at distance 1.8 l, applied within that ball only.
     std::string sizing_gradation_mode;
     /// See the spec: the interleaved smoothing of each operation group runs until the front's
     /// Newton-step ratio converges or stalls AND the background's step settles, instead of a
-    /// fixed interleaved_smoothing_passes. Read by 3D only.
+    /// fixed interleaved_smoothing_passes.
     bool adaptive_smoothing;
     int adaptive_smoothing_max_passes; ///< cap on the passes per group
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
+    /// See the spec: true replaces the sag rule's chord target with a plain halving of the
+    /// sizing scalar at the ends / corners of every refinable edge / face, floored like the sag
+    /// rule.
+    bool sag_halve_refinement;
+    /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
+    /// smoothing) before the first turn of the single-phase loop.
+    bool pre_smooth;
+    /// See the spec: refuse a front collapse or surface flip whose neighbourhood was converged
+    /// (every front face around the endpoints within the tube, every corner within the bar)
+    /// and would not be afterwards. false = the operation passes as they are.
+    bool front_refuse_converged_collapse;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -173,9 +189,11 @@ struct Parameters : public wmtk::OptimizerParameters
         target_distance = json_params["target_distance"];
         target_distance_rel = json_params["target_distance_rel"];
         throw_on_nonconvergence = json_params["throw_on_nonconvergence"];
+        optimize_offset = json_params["optimize_offset"];
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
+        debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
         front_conv_rel = json_params["front_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
@@ -183,6 +201,8 @@ struct Parameters : public wmtk::OptimizerParameters
 
         sorted_marching = json_params["sorted_marching"];
         save_offset_correspondence = json_params["save_offset_correspondence"];
+        sphere_trace_initialization = json_params["sphere_trace_initialization"];
+        sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];
@@ -202,6 +222,9 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
+        sag_halve_refinement = json_params["sag_halve_refinement"];
+        pre_smooth = json_params["pre_smooth"];
+        front_refuse_converged_collapse = json_params["front_refuse_converged_collapse"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
@@ -238,9 +261,6 @@ struct Parameters : public wmtk::OptimizerParameters
         deform_others = json_params["deform_others"];
         max_rounds = json_params["max_rounds"];
         pre_optimize_input = json_params["pre_optimize_input"];
-        pre_optimize_sizing_from_edges = json_params["pre_optimize_sizing_from_edges"];
-        pre_optimize_sizing_from_target_length =
-            json_params["pre_optimize_sizing_from_target_length"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];

@@ -29,7 +29,7 @@ namespace wmtk::components::topological_offset {
 
 /**
  * Construction and I/O -- the twin of TopoOffsetTriMesh.cpp. The optimization phase lives in
- * Optimize3d.cpp, FrontSmooth3d.cpp, Smooth.cpp, Collapse.cpp, Swap.cpp and EdgeSplittingTet.cpp.
+ * Optimize3d.cpp, FrontSmooth3d.cpp and EdgeSplittingTet.cpp.
  */
 
 namespace {
@@ -1250,7 +1250,7 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     if (m_offset_params.pre_optimize_input) {
         pre_optimize_input_mesh();
         if (m_offset_params.debug_output) {
-            write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+            write_debug_frame("pre_optimized");
         }
     }
 
@@ -1263,23 +1263,27 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     }
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("simplicial_embedding");
     }
 
     // initialize offset
     logger().info("Initializing offset...");
-    // The inserted vertex is the plain edge midpoint -- target_distance does not enter the
-    // placement at all. Carrying the surface out to target_distance is the optimization phase's
-    // job.
-    m_edge_split_mode = EdgeSplitMode::Midpoint;
+    // Default: the inserted vertex is the plain edge midpoint -- target_distance does not enter
+    // the placement at all, and carrying the surface out to target_distance is the optimization
+    // phase's job. sphere_trace_initialization: the vertex goes to the point of the edge where
+    // d(x) = target_distance within sphere_trace_target_rel_tol (sphere tracing from the complex
+    // end), to the midpoint on an edge the trace leaves.
+    m_edge_split_mode = m_offset_params.sphere_trace_initialization ? EdgeSplitMode::SphereTrace
+                                                                    : EdgeSplitMode::Midpoint;
     marching_tets();
+    m_edge_split_mode = EdgeSplitMode::Midpoint;
     if (m_offset_params.save_offset_correspondence) {
         // Before consolidate_mesh() renumbers: the ids in this file are the ids it refers to.
         write_vtu(output_file.string() + "_correspondence");
     }
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("marching");
     }
 
     // No growth pass: the band is exactly the one layer of background tets marching_tets()
@@ -1295,13 +1299,13 @@ void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
     // changes the order later passes enumerate operations in, which changes the run.
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("re_embedded");
     }
 
     set_offset_tet_tags();
     consolidate_mesh();
     if (m_offset_params.debug_output) { // intermediate output
-        write_vtu(output_file.string() + fmt::format("_{}", m_vtu_counter++));
+        write_debug_frame("offset_tagged");
     }
 
     assert(ambient_assert());
@@ -1448,6 +1452,10 @@ void TopoOffsetTetMesh::simplicial_embedding()
 
 void TopoOffsetTetMesh::marching_tets()
 {
+    m_marching_root_splits = 0;
+    m_marching_midpoint_splits = 0;
+    m_marching_trace_steps = 0;
+    m_marching_trace_steps_max = 0;
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -1485,6 +1493,21 @@ void TopoOffsetTetMesh::marching_tets()
         } else {
             log_and_throw_error("edge split failed! (marching_tets)");
         }
+    }
+    if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
+        logger().info(
+            "\t[construction] sphere_trace_initialization: {} of {} marched edges placed where "
+            "|d(x) - target_distance| <= {} x target_distance, {} at the midpoint (the trace left "
+            "the edge) | trace steps: {} total, {} max, {:.1f} per edge",
+            m_marching_root_splits,
+            e_to_split.size(),
+            m_offset_params.sphere_trace_target_rel_tol,
+            m_marching_midpoint_splits,
+            m_marching_trace_steps,
+            m_marching_trace_steps_max,
+            e_to_split.empty() ? 0. : double(m_marching_trace_steps) / double(e_to_split.size()));
+    } else {
+        logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }
 
     // mark all offset tets and children
@@ -1733,6 +1756,38 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     v_sizing.setZero();
     VectorXd v_target(vert_capacity());
     v_target.setZero();
+    // Front convergence diagnostics, as point data: what the convergence test measures next to
+    // what it does not, so the two can be compared at the same vertex. Same three fields as 2D.
+    //
+    //   front_conv_ratio      front_vertex_conv_ratio(): the remaining Newton step of the front
+    //                         objective along the move direction, over its bar. This is the ONLY
+    //                         per-vertex quantity converged_single() tests, so <= 1 reads as
+    //                         "placed" and the loop may exit on it.
+    //   front_residual_length residual_length(): the vertex's actual distance to the level set,
+    //                         in length units, comparable with target_distance. Never tested.
+    //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
+    //                         so where it collapses the Newton step collapses with it.
+    //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
+    //                         complex, straight off the BVH. Not a field measure: it does not go
+    //                         through potential_for(), so it is the same number whatever
+    //                         offset_field is and whichever region the vertex belongs to, and
+    //                         target_distance is what it should equal. For the smooth field it is
+    //                         the only Euclidean number on the frame -- residual_length() there is
+    //                         a barrier-value residual, not a length to the complex. -2 before the
+    //                         BVH exists (the construction frames written ahead of it).
+    //
+    // Together they separate "placed" from "stationary but wrong": on the medial axis of the
+    // field there is no gradient to move along, so the ratio goes to zero while the residual
+    // stays at whatever the geometry left. -1 marks a vertex that is not on the front, -2 a
+    // value that is not finite. Costs one objective build per front vertex per frame, which is
+    // the same work energy_criterion() does once a turn; debug output only.
+    VectorXd v_conv(vert_capacity()), v_resid(vert_capacity()), v_grad(vert_capacity()),
+        v_align(vert_capacity()), v_cdist(vert_capacity());
+    v_conv.setConstant(-1.);
+    v_resid.setConstant(-1.);
+    v_grad.setConstant(-1.);
+    v_align.setConstant(-1.);
+    v_cdist.setConstant(-1.);
 
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
@@ -1770,6 +1825,48 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         v_target[vid] = m_params.l * v_sizing[vid];
     }
 
+    // MEASURED AGAINST A FRESHLY DERIVED BAND-REGION MAP, as in 2D. Every one of these reads the
+    // vertex's own region's field through potential_for(vid) -> m_vertex_region, and that member
+    // is rebuilt only once a turn. Between rebuilds it is stale two different ways: a split
+    // appends vertices it does not cover (harmless -- vertex_region() bounds-checks and they fall
+    // back to the union field), and a base pass consolidates and renumbers every vid mid-pass,
+    // after which its entries name the WRONG vertices and the measures come out as residuals of
+    // tens of delta and ratios in the thousands. Testing the map's size caught the second case
+    // only by also catching the first, and refused the great majority of a run's frames.
+    //
+    // So the map is re-derived here and put back exactly as it was afterwards: the frame is
+    // measured against the regions the mesh has AT THIS MOMENT -- which is what
+    // energy_criterion() sees, since the loop rebuilds the map before it measures -- and the run
+    // reads the same (possibly stale) map after the frame as before it. -1 marks a vertex that is
+    // not on the front, -2 a value that is not finite; there is no "not measured" case.
+    std::vector<int> saved_cell_region, saved_vertex_region;
+    const bool region_map_refreshed = !m_region_potentials.empty();
+    if (region_map_refreshed) {
+        saved_cell_region = m_cell_region;
+        saved_vertex_region = m_vertex_region;
+        assign_band_regions(/*log=*/false);
+    }
+    {
+        const OptPhase saved_phase = m_phase;
+        m_phase = OptPhase::B; // as energy_criterion(): the offset terms exist only in Phase B
+        const auto finite_or = [](const double x) { return std::isfinite(x) ? x : -2.; };
+        for (const Tuple& v : vs) {
+            const size_t vid = v.vid(*this);
+            if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) {
+                continue;
+            }
+            const Vector3d p = m_vertex_attribute[vid].m_posf;
+            const auto& pot = potential_for(vid);
+            v_conv[vid] = finite_or(front_vertex_conv_ratio(vid));
+            v_resid[vid] = finite_or(pot.residual_length(p));
+            v_grad[vid] = finite_or(pot.gradient(p).norm());
+            v_align[vid] = finite_or(front_move_alignment(vid));
+            v_cdist[vid] =
+                m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
+        }
+        m_phase = saved_phase;
+    }
+
     for (size_t k = 0; k < tets.size(); ++k) {
         const auto& loc_vs = oriented_tet_vertices(tets[k]);
         for (int j = 0; j < 4; j++) {
@@ -1794,6 +1891,11 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("corr_input_vid", corr);
     writer.add_field("sizing_scalar", v_sizing);
     writer.add_field("target_edge_length", v_target);
+    writer.add_field("front_conv_ratio", v_conv);
+    writer.add_field("front_residual_length", v_resid);
+    writer.add_field("front_grad_norm", v_grad);
+    writer.add_field("front_move_align", v_align);
+    writer.add_field("front_complex_distance", v_cdist);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -1810,12 +1912,47 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // offset faces
     const std::string off_out_path = path + "_off.vtu";
     {
+        // The front's per-FACE sag, the resolution half of the convergence test: energy_criterion()
+        // samples every live offset face at its centroid, and that number has nowhere to live on
+        // the tet frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
+        //
+        //   front_sag_ratio  face_conv_ratio(): the centroid sag over the tube (front_conv_rel x
+        //                    target_distance). > 1 with every corner on the level set is what
+        //                    makes a face refinable. -1 unmeasurable, including a face with a
+        //                    corner that is not a front vertex. Measured under the same
+        //                    re-derived region map as the vertex fields above.
+        //   chord_length     the face's longest edge, so the sag can be read against the geometry
+        //                    that produced it.
+        VectorXd f_sag(faces_off.size()), f_len(faces_off.size());
+        const auto front = [&](const size_t vid) {
+            return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
+        };
+        for (size_t i = 0; i < faces_off.size(); ++i) {
+            const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
+            f_sag[i] = front(a) && front(b) && front(c) ? face_conv_ratio(a, b, c) : -1.;
+            const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
+                           pc = m_vertex_attribute[c].m_posf;
+            f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
+        }
         paraviewo::VTUWriter off_writer;
+        off_writer.add_cell_field("front_sag_ratio", f_sag);
+        off_writer.add_cell_field("chord_length", f_len);
         off_writer.add_field("order", v_order);
         off_writer.add_field("vid", v_id);
         off_writer.add_field("sizing_scalar", v_sizing);
+        off_writer.add_field("front_conv_ratio", v_conv);
+        off_writer.add_field("front_residual_length", v_resid);
+        off_writer.add_field("front_grad_norm", v_grad);
+        off_writer.add_field("front_move_align", v_align);
+        off_writer.add_field("front_complex_distance", v_cdist);
         logger().info("Write {}", off_out_path);
         off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
+    }
+
+    // The band-region map back exactly as the run left it (see the frame diagnostics above).
+    if (region_map_refreshed) {
+        m_cell_region.swap(saved_cell_region);
+        m_vertex_region.swap(saved_vertex_region);
     }
     // edges
     const std::string edge_out_path = path + "_edge.vtu";

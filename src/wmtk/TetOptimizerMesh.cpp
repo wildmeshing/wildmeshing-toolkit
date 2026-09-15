@@ -172,6 +172,7 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
                 retry_count);
         }
         timer.start();
+        m_debug_pass_name = ops[i] > 0 ? std::string(names[i]) : std::string(names[i]) + "-skipped";
         if (i == 0) {
             for (int n = 0; n < ops[i]; ++n) {
                 ++m_op_epoch; // see m_op_epoch: one epoch per split pass
