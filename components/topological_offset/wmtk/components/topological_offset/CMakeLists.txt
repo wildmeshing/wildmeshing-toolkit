@@ -52,7 +52,9 @@ endif()
 
 # The smooth offset potential. Deliberately linked HERE and not into wmtk::toolkit: this is the
 # only consumer, and ipc-toolkit brings geogram, filib, TBB and tight_inclusion with it, none of
-# which tetwild / triwild / simwild have any use for.
+# which tetwild / triwild / simwild have any use for. Being the only consumer is also why this
+# component's test binaries were the only ones exposed when ipc and tight_inclusion compiled
+# themselves for the host CPU; recipes/ipc_toolkit.cmake and cmake/FindAVX.cmake stop that.
 include(ipc_toolkit)
 
 target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC

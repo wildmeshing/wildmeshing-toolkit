@@ -46,6 +46,11 @@ struct Parameters : public wmtk::OptimizerParameters
     // level set has to lie strictly inside the support, or the vertices on it get no gradient. A
     // band vertex that travels past the support is a hard error, not a silently frozen vertex.
     double offset_dhat_factor;
+    /// [2D ONLY] Debugging override for the potential's support radius: >= 0 uses this dhat as an
+    /// ABSOLUTE length, in place of both offset_dhat_factor x target_distance and the
+    /// constructed-offset floor. Negative (the default) leaves the automatic sizing alone. Only
+    /// the 2D construction reads it; the 3D twin ignores it until the port.
+    double debug_manual_dhat;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
     // The accuracy: this fraction of target_distance is both the vertex bar (the remaining Newton
     // step of a front vertex along its move direction, under the default criterion) and the chord
@@ -148,6 +153,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
+    /// See the spec: refuse a front collapse or surface flip whose neighbourhood was converged
+    /// (every front face around the endpoints within the tube, every corner within the bar)
+    /// and would not be afterwards. false = the operation passes as they are.
+    bool front_refuse_converged_collapse;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -181,6 +190,7 @@ struct Parameters : public wmtk::OptimizerParameters
         envelope_size = json_params["envelope_size"];
         envelope_size_rel = json_params["envelope_size_rel"];
         offset_dhat_factor = json_params["offset_dhat_factor"];
+        debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
         front_conv_rel = json_params["front_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
@@ -210,6 +220,7 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         sag_halve_refinement = json_params["sag_halve_refinement"];
         pre_smooth = json_params["pre_smooth"];
+        front_refuse_converged_collapse = json_params["front_refuse_converged_collapse"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];

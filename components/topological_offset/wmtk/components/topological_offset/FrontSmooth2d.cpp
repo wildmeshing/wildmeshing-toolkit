@@ -170,6 +170,25 @@ bool TopoOffsetTriMesh::smooth_front_vertex_phase_b(const Tuple& t)
     return true;
 }
 
+double TopoOffsetTriMesh::front_move_alignment(const size_t vid) const
+{
+    // |cos| between the direction the placement is allowed to move the vertex in and the field
+    // normal, which is the direction that actually reduces its distance to the level set.
+    //
+    // 1: the vertex moves along the field normal, so the 1-D Newton step the convergence test
+    //    measures is the step toward the level set and a small step really does mean placed.
+    // 0: the two are perpendicular. front_vertex_move_direction() returns the BOUNDARY TANGENT
+    //    for a vertex an input envelope holds, and the test then measures a step that cannot
+    //    reduce the distance at all, so the vertex reads as placed wherever it happens to sit.
+    // Negative marks a direction or a gradient that does not exist.
+    const Vector2d n = front_vertex_move_direction(vid);
+    if (!(n.squaredNorm() > 0.)) return -2.;
+    const Vector2d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
+    const double gn = g.norm();
+    if (!(gn > 0.) || !std::isfinite(gn)) return -2.;
+    return std::abs(n.normalized().dot(g / gn));
+}
+
 Vector2d TopoOffsetTriMesh::front_vertex_move_direction(const size_t vid) const
 {
     // A front vertex held by an input envelope (it sits on a tag-region boundary or the domain
@@ -278,7 +297,7 @@ bool TopoOffsetTriMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     align.gradient(xv, ga);
     place.gradient(xv, gp);
     if (!((ga.dot(n_dir)) * (gp.dot(n_dir)) < 0.)) return false;
-    return front_vertex_conv_ratio(vid) <= 1.;
+    return front_vertex_placed(vid);
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTriMesh::phase_b_front_objective(

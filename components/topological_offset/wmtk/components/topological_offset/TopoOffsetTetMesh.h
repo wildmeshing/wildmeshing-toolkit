@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
@@ -221,7 +222,9 @@ public:
     std::vector<int> m_cell_region; ///< per tet: band's region, -1 none, -2 reached from two
     std::vector<int> m_vertex_region; ///< per vertex: region of its band cells, -1 / -2 as above
     void init_region_potentials(double delta, double effective_factor);
-    void assign_band_regions();
+    /// Rebuild m_*_region from the mesh. `log` false suppresses the per-turn "[regions]" line:
+    /// write_vtu() re-derives the map for its frame diagnostics and puts the old one back.
+    void assign_band_regions(bool log = true);
     /// Diagnostic: the front objective of one vertex along its normal, offset term vs total.
     void log_front_profile(size_t vid);
     int vertex_region(const size_t vid) const
@@ -615,6 +618,10 @@ public:
     /// Operations refused because they would have left an offset-surface face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
+    /// front_refuse_converged_collapse: operations refused because a resolved patch of the front
+    /// would have come out unresolved.
+    std::atomic<int> iter_cnt_collapse_guard_reject{0};
+    std::atomic<int> iter_cnt_swap_guard_reject{0};
     /// Splits of an offset-surface edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
@@ -848,6 +855,26 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
+    /// front_refuse_converged_collapse, per collapse: 1 when collapse_edge_before() found the
+    /// endpoints' front faces resolved and the predicted result faces within the tube, so that
+    /// collapse_edge_after() still has to test the survivor's ratio.
+    mutable wmtk::threading::enumerable_thread_specific<char> m_collapse_guard_armed;
+    /// front_refuse_converged_collapse: front_vertex_conv_ratio() at every front vertex as it
+    /// was at the start of the collapse / swap group (NaN off the front), indexed by vid. The
+    /// guard reads "was this converged" from here rather than re-measuring inside every hook.
+    std::vector<double> m_front_conv_snapshot;
+    void snapshot_front_convergence();
+    /// The snapshot says vid is a front vertex whose ratio was finite and within the bar.
+    bool front_vertex_converged_snapshot(size_t vid) const;
+    /// A resolved front face: every corner converged per the snapshot and the centroid sag
+    /// (face_conv_ratio) within the tube.
+    bool front_face_converged(size_t a, size_t b, size_t c) const;
+    /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
+    /// Returns true when the collapse must be refused; arms m_collapse_guard_armed when the
+    /// after-test still applies.
+    bool front_guard_refuses_collapse(size_t v1, size_t v2);
+    /// The three corner ids of a face tuple.
+    std::array<size_t, 3> face_vids(const Tuple& f) const;
     void log_smooth_trace() const;
 
     /// Are the tracked region boundaries actually contained by anything? The 3D twin of
@@ -1040,6 +1067,10 @@ public:
     /// The line a front vertex is placed along: the field normal, or that normal projected into
     /// the boundary surface (onto its crease) where an input envelope holds it.
     Vector3d front_vertex_move_direction(size_t vid) const;
+    /// |cos| between front_vertex_move_direction() and the field normal: 1 means the convergence
+    /// test's 1-D step is the step toward the level set, 0 means it measures a direction that
+    /// cannot reduce the distance. Debug-frame diagnostic; see write_vtu().
+    double front_move_alignment(size_t vid) const;
     /// Whether the 1-D placement at vid is trapped by the alignment term: a live front face at
     /// or past perpendicular to the field AND the alignment term's 1-D gradient opposing the
     /// placement term's along the move direction, at a vertex stationary off its level set.
@@ -1047,6 +1078,37 @@ public:
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
     /// bar. Infinite when unmeasurable.
     double front_vertex_conv_ratio(size_t vid) const;
+    /**
+     * @brief THE definition of "placed" for a vertex on the offset surface.
+     *
+     * Every decision in the component that asks "is the placement of this front vertex done"
+     * goes through here or through front_placed_by_ratio(): the loop's vertex test
+     * (EnergyCriterion::vertices_ok()), the corner qualification of the face-sag classification,
+     * the collapse and swap guards' snapshot and the collapse guard's after-half, the
+     * adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by
+     * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
+     *
+     * It was not always one notion: the sag classification used to qualify its corners with the
+     * DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while
+     * everything else used the criterion's stationarity measure. The two disagree exactly where
+     * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
+     * hair outside the tube disqualified its whole face from ever being refined, with the face
+     * then counted in neither `refinable` nor `n_at_floor` and so invisible to
+     * converged_single(). Measured in 2D on top_annots_uday: at turn 1, 50 of the 114 sagging
+     * chords were dropped that way, the worst of them sagging 74 tubes, because one end sat
+     * 1.02 tubes off the level set with a Newton step of 1e-9.
+     *
+     * The caller has established that vid is a live front vertex (m_is_on_offset && m_is_rounded);
+     * this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed.
+     */
+    bool front_vertex_placed(size_t vid) const;
+    /// front_vertex_placed()'s decision on an already-measured ratio, for the callers that have
+    /// one in hand (energy_criterion(), the guards' snapshot, SmoothingProgress): the one place
+    /// the bar is applied. Keep this and front_vertex_placed() in step.
+    bool front_placed_by_ratio(const double ratio) const
+    {
+        return std::isfinite(ratio) && ratio <= 1.;
+    }
     /// The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord
     /// (a, b) against front_conv_rel x target_distance; -1 unmeasurable.
     double edge_conv_ratio(size_t a, size_t b) const;
@@ -1277,12 +1339,18 @@ public:
         size_t worst_vid = static_cast<size_t>(-1);
         Vector3d worst_face_centroid = Vector3d::Zero();
         double worst_face_len = 0.; ///< the worst face's longest edge
-        size_t n_faces_over = 0, n_faces_over_on_level = 0;
-        double max_face_on_level = 0.;
-        Vector3d worst_on_level_centroid = Vector3d::Zero();
+        /// Reported only: the faces over the bar, split by whether all three corners are PLACED
+        /// (front_vertex_placed(), the one notion). A face whose corners are placed and whose
+        /// centroid still misses the level set is under-resolved -- the state the vertex test
+        /// cannot see, and the only one the sag rule may act on: refining a face whose corners
+        /// are still moving would chase the front rather than resolve it.
+        size_t n_faces_over = 0, n_faces_over_placed = 0;
+        double max_face_placed = 0.;
+        Vector3d worst_placed_centroid = Vector3d::Zero();
         double tube = 0.;
         size_t n_at_floor = 0;
-        /// A face whose centroid sags over the tube with all three corners on the level set:
+        size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
+        /// A face whose centroid sags over the tube with all three corners placed:
         /// a, b are the ends of its LONGEST edge (the chord the target is derived from), c the
         /// third corner; sag the centroid sag as a length; len the longest edge's length.
         struct Refinable
@@ -1291,7 +1359,10 @@ public:
             double sag, len;
         };
         std::vector<Refinable> refinable;
-        bool vertices_ok() const { return max_vertex <= bar; }
+        /// Every front vertex placed. Counted through front_vertex_placed() rather than
+        /// re-derived from max_vertex, so the loop's exit test and the per-vertex notion cannot
+        /// drift apart; max_vertex stays for the reporting.
+        bool vertices_ok() const { return n_unplaced == 0; }
         bool faces_ok() const { return max_face <= bar; }
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
         bool converged_single() const { return converged() && refinable.empty(); }

@@ -852,9 +852,24 @@ void TopoOffsetTriMesh::init_offset_potential()
     // same geometry a different offset depending on how the input was meshed. Same rule as 3D.
     const double delta = m_offset_params.target_distance;
     const double reach = max_band_vertex_distance();
-    const double dhat = std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
+    // DEBUG_manual_dhat, when set, replaces BOTH halves of the rule above -- the configured
+    // factor and the constructed-offset floor -- with one absolute length, so a run can be asked
+    // what it does under a support it would never have chosen. [2D ONLY], see Parameters.h.
+    const bool manual = m_offset_params.debug_manual_dhat >= 0.;
+    const double dhat = manual ? m_offset_params.debug_manual_dhat
+                               : std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach);
     const double effective_factor = dhat / delta;
-    if (reach > 0.) {
+    if (manual) {
+        logger().warn(
+            "\tDEBUG_manual_dhat {}: dhat forced to {:.6g} = {:.4g}x delta, overriding the "
+            "automatic max({}x delta, 2x the furthest offset vertex {:.6g}) = {:.6g}",
+            m_offset_params.debug_manual_dhat,
+            dhat,
+            effective_factor,
+            m_offset_params.offset_dhat_factor,
+            reach,
+            std::max(m_offset_params.offset_dhat_factor * delta, 2. * reach));
+    } else if (reach > 0.) {
         logger().info(
             "\tdhat sized from the constructed offset: furthest offset vertex {:.6g} = {:.4g}x "
             "delta, so dhat = max({}x delta, 2x that) = {:.6g} = {:.4g}x delta",
@@ -1439,6 +1454,77 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         Ltgt(k, 0) = m_params.l * S(k, 0);
     }
 
+    // Front convergence diagnostics, as point data: what the convergence test measures next to
+    // what it does not, so the two can be compared at the same vertex.
+    //
+    //   front_conv_ratio      front_vertex_conv_ratio(): the remaining Newton step of the front
+    //                         objective along the move direction, over its bar. This is the ONLY
+    //                         per-vertex quantity converged_single() tests, so <= 1 reads as
+    //                         "placed" and the loop may exit on it.
+    //   front_residual_length residual_length(): the vertex's actual distance to the level set,
+    //                         in length units, comparable with target_distance. Never tested.
+    //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
+    //                         so where it collapses the Newton step collapses with it.
+    //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
+    //                         complex, straight off the BVH. Not a field measure: it does not go
+    //                         through potential_for(), so it is the same number whatever
+    //                         offset_field is and whichever region the vertex belongs to, and
+    //                         target_distance is what it should equal. For the smooth field it is
+    //                         the only Euclidean number on the frame -- residual_length() there is
+    //                         a barrier-value residual, not a length to the complex. -2 before the
+    //                         BVH exists (the construction frames written ahead of it).
+    //
+    // Together they separate "placed" from "stationary but wrong": on the medial axis of the
+    // field there is no gradient to move along, so the ratio goes to zero while the residual
+    // stays at whatever the geometry left. -1 marks a vertex that is not on the front, -2 a
+    // value that is not finite. Costs one objective build per front vertex per frame, which is
+    // the same work energy_criterion() does once a turn; debug output only.
+    // MEASURED AGAINST A FRESHLY DERIVED BAND-REGION MAP. Every one of these reads the vertex's
+    // own region's field through potential_for(vid) -> m_vertex_region, and that member is
+    // rebuilt only once a turn. Between rebuilds it is stale two different ways: a split appends
+    // vertices it does not cover (harmless -- vertex_region() bounds-checks and they fall back to
+    // the union field), and a base pass consolidates and renumbers every vid mid-pass, after
+    // which its entries name the WRONG vertices and the measures come out as residuals of tens
+    // of delta and ratios in the thousands. Testing the map's size caught the second case only
+    // by also catching the first, and refused 240 of this model's 281 frames.
+    //
+    // So the map is re-derived here and put back exactly as it was afterwards: the frame is
+    // measured against the regions the mesh has AT THIS MOMENT -- which is what
+    // energy_criterion() sees, since the loop rebuilds the map before it measures -- and the run
+    // reads the same (possibly stale) map after the frame as before it. Nothing about the
+    // optimization changes; only the frame stops being unmeasurable. -1 marks a vertex that is
+    // not on the front, -2 a value that is not finite; there is no longer a "not measured" case.
+    Eigen::MatrixXd CR(vs.size(), 1), RL(vs.size(), 1), GN(vs.size(), 1), MA(vs.size(), 1),
+        CD(vs.size(), 1);
+    std::vector<int> saved_face_region, saved_vertex_region;
+    const bool region_map_refreshed = !m_region_potentials.empty();
+    if (region_map_refreshed) {
+        saved_face_region = m_face_region;
+        saved_vertex_region = m_vertex_region;
+        assign_band_regions(/*log=*/false);
+    }
+    {
+        const OptPhase saved_phase = m_phase;
+        m_phase = OptPhase::B; // as energy_criterion(): the offset terms exist only in Phase B
+        const auto finite_or = [](const double x) { return std::isfinite(x) ? x : -2.; };
+        for (size_t k = 0; k < vs.size(); ++k) {
+            CR(k, 0) = RL(k, 0) = GN(k, 0) = MA(k, 0) = CD(k, 0) = -1.;
+            const size_t vid = vs[k].vid(*this);
+            if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) {
+                continue;
+            }
+            const Vector2d p = m_vertex_attribute[vid].m_posf;
+            const auto& pot = potential_for(vid);
+            CR(k, 0) = finite_or(front_vertex_conv_ratio(vid));
+            RL(k, 0) = finite_or(pot.residual_length(p));
+            GN(k, 0) = finite_or(pot.gradient(p).norm());
+            MA(k, 0) = finite_or(front_move_alignment(vid));
+            CD(k, 0) =
+                m_input_complex_bvh ? finite_or(m_input_complex_bvh->dist(VectorXd(p))) : -2.;
+        }
+        m_phase = saved_phase;
+    }
+
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
     writer->add_cell_field("amips", amips);
@@ -1448,7 +1534,66 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     writer->add_cell_field("offset_tag", tags[m_tags_count]); // also hacky but it works.
     writer->add_field("sizing_scalar", S);
     writer->add_field("target_edge_length", Ltgt);
+    writer->add_field("front_conv_ratio", CR);
+    writer->add_field("front_residual_length", RL);
+    writer->add_field("front_grad_norm", GN);
+    writer->add_field("front_move_align", MA);
+    writer->add_field("front_complex_distance", CD);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
+
+    // The front's per-EDGE sag, as a companion line mesh `<path>_front.vtu`. The resolution half
+    // of the convergence test is per edge -- energy_criterion() samples every live offset edge at
+    // its midpoint -- and a triangle .vtu has nowhere to put an edge quantity. Same packed vertex
+    // indexing as the frame above, so a viewer can key the field onto the offset curve it derives
+    // from the triangles, by vertex pair.
+    //
+    //   front_sag_ratio   edge_conv_ratio(): the chord's sag over the tube (front_conv_rel x
+    //                     target_distance). > 1 with both ends on the level set is what makes an
+    //                     edge refinable. -1 unmeasurable, including where an end is not a front
+    //                     vertex, so the curve is complete either way. Measured under the same
+    //                     re-derived region map as the vertex fields above, which it needs for
+    //                     the same reason: potential_for_edge() reads m_vertex_region too.
+    //   chord_length      |b - a|, so the sag can be read against the edge that produced it.
+    {
+        const auto front = [&](const size_t vid) {
+            return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
+        };
+        std::vector<std::array<int, 2>> fe;
+        std::vector<double> fe_sag, fe_len;
+        for (const Tuple& e : get_edges()) {
+            if (!edge_is_offset_surface_live(e)) continue;
+            const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+            if (packed[va] < 0 || packed[vb] < 0) continue;
+            fe.push_back({packed[va], packed[vb]});
+            fe_sag.push_back(front(va) && front(vb) ? edge_conv_ratio(va, vb) : -1.);
+            fe_len.push_back(
+                (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm());
+        }
+        if (!fe.empty()) {
+            Eigen::MatrixXi FE(fe.size(), 2);
+            Eigen::MatrixXd SAG(fe.size(), 1), LEN(fe.size(), 1);
+            for (size_t k = 0; k < fe.size(); ++k) {
+                FE(k, 0) = fe[k][0];
+                FE(k, 1) = fe[k][1];
+                SAG(k, 0) = fe_sag[k];
+                LEN(k, 0) = fe_len[k];
+            }
+            const std::string front_path = path + "_front.vtu";
+            std::shared_ptr<paraviewo::ParaviewWriter> front_writer =
+                std::make_shared<paraviewo::VTUWriter>();
+            front_writer->add_cell_field("front_sag_ratio", SAG);
+            front_writer->add_cell_field("chord_length", LEN);
+            front_writer->add_field("sizing_scalar", S);
+            front_writer->add_field("front_complex_distance", CD);
+            front_writer->write_mesh(front_path, V, FE, paraviewo::CellType::Line);
+        }
+    }
+
+    // The band-region map back exactly as the run left it (see the frame diagnostics above).
+    if (region_map_refreshed) {
+        m_face_region.swap(saved_face_region);
+        m_vertex_region.swap(saved_vertex_region);
+    }
 
     // surface output
     if (m_has_envelope) {

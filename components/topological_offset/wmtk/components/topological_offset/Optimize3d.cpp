@@ -270,6 +270,18 @@ bool TopoOffsetTetMesh::swap_before_surface(
     if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
         return false;
     }
+    // front_refuse_converged_collapse: two resolved offset faces may not be flipped into a pair
+    // of which one sags over the tube. No vertex moves in a flip, so the new faces' sag is
+    // known here; the corners' ratios are taken as unchanged.
+    if (m_offset_params.front_refuse_converged_collapse &&
+        m_face_attribute[fid_abc].m_surface_class == OFFSET_SURFACE_CLASS &&
+        front_face_converged(a, b, c) && front_face_converged(a, b, d)) {
+        const double r1 = face_conv_ratio(a, c, d), r2 = face_conv_ratio(b, c, d);
+        if (!(r1 >= 0. && r1 <= 1.) || !(r2 >= 0. && r2 <= 1.)) {
+            ++iter_cnt_swap_guard_reject;
+            return false;
+        }
+    }
 
     // Non-offset surface flips are not refused categorically: the shared swap checks both new
     // triangles with surface_triangle_is_outside(), which dispatches through the face's boundary
@@ -595,6 +607,17 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
+    // front_refuse_converged_collapse, the after-half: the survivor's Newton-step ratio on its
+    // new ring. Returning false here rolls the collapse back (connectivity and every
+    // registered attribute, m_vertex_extra included).
+    if (m_offset_params.front_refuse_converged_collapse && m_collapse_guard_armed.local()) {
+        m_collapse_guard_armed.local() = 0;
+        const double r = front_vertex_conv_ratio(v2_id);
+        if (!front_placed_by_ratio(r)) {
+            ++iter_cnt_collapse_guard_reject;
+            return false;
+        }
+    }
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[v2_id].m_sizing_scalar = m_collapse_survivor_sizing.local();
     }
@@ -624,7 +647,88 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
+    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
+    m_collapse_guard_armed.local() = 0;
+    if (m_offset_params.front_refuse_converged_collapse &&
+        front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+        ++iter_cnt_collapse_guard_reject;
+        return false;
+    }
     return true;
+}
+
+std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
+{
+    const std::array<Tuple, 3> vs = get_face_vertices(f);
+    return {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
+}
+
+void TopoOffsetTetMesh::snapshot_front_convergence()
+{
+    m_front_conv_snapshot.assign(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
+        m_front_conv_snapshot[vid] = front_vertex_conv_ratio(vid);
+    }
+}
+
+bool TopoOffsetTetMesh::front_vertex_converged_snapshot(const size_t vid) const
+{
+    if (vid >= m_front_conv_snapshot.size()) return false;
+    const double r = m_front_conv_snapshot[vid];
+    return front_placed_by_ratio(r);
+}
+
+bool TopoOffsetTetMesh::front_face_converged(const size_t a, const size_t b, const size_t c) const
+{
+    if (!front_vertex_converged_snapshot(a) || !front_vertex_converged_snapshot(b) ||
+        !front_vertex_converged_snapshot(c)) {
+        return false;
+    }
+    const double r = face_conv_ratio(a, b, c);
+    return r >= 0. && r <= 1.;
+}
+
+bool TopoOffsetTetMesh::front_guard_refuses_collapse(const size_t v1, const size_t v2)
+{
+    // Only a front-to-front collapse re-triangulates the front. v1 is removed, v2 survives at
+    // its own position (the base moves nothing), so every face around the pair that does not
+    // contain the edge is re-attached to v2 with the same corner positions: the result's sag
+    // can be read before the collapse runs.
+    const auto front = [&](const size_t v) {
+        return m_vertex_extra[v].m_is_on_offset && m_vertex_attribute[v].m_is_rounded;
+    };
+    if (!front(v1) || !front(v2)) return false;
+    std::vector<std::array<size_t, 3>> faces;
+    std::set<size_t> seen;
+    for (const size_t v : {v1, v2}) {
+        for (const Tuple& f : offset_surface_faces_live_at(v)) {
+            if (!seen.insert(f.fid(*this)).second) continue;
+            faces.push_back(face_vids(f));
+        }
+    }
+    if (faces.empty()) return false;
+    // The guard protects a resolved neighbourhood only: with any face around either endpoint
+    // unresolved the pass is free to act, as it is with the key off.
+    for (const std::array<size_t, 3>& f : faces) {
+        if (!front_face_converged(f[0], f[1], f[2])) return false;
+    }
+    for (std::array<size_t, 3> f : faces) {
+        bool has1 = false, has2 = false;
+        for (const size_t v : f) {
+            has1 = has1 || v == v1;
+            has2 = has2 || v == v2;
+        }
+        if (has1 && has2) continue; // the faces on the edge vanish
+        for (size_t& v : f) {
+            if (v == v1) v = v2;
+        }
+        const double r = face_conv_ratio(f[0], f[1], f[2]);
+        if (!(r >= 0. && r <= 1.)) return true; // over the tube, or unmeasurable
+    }
+    m_collapse_guard_armed.local() = 1; // the survivor's own ratio is tested after the collapse
+    return false;
 }
 
 bool TopoOffsetTetMesh::collapse_before_vertex(
@@ -2246,24 +2350,35 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
-    // The convergence length, front_conv_rel x delta: a vertex is on the level set within it,
-    // and a chord is resolved within it. See edge_conv_ratio().
+    // The resolution length, front_conv_rel x delta: a face is resolved within it. The same
+    // number sets the vertex bar inside front_vertex_conv_ratio(), so placement and resolution
+    // share one accuracy. See edge_conv_ratio() for the role split -- offset_envelope_rel is the
+    // leash on the operations, this is the accuracy, and startup requires leash <= accuracy.
     s.tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
-    std::vector<char> on_level(vert_capacity(), 0);
+    std::vector<char> placed(vert_capacity(), 0);
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!front(vid)) continue;
+        // gn is the vertex's convergence measure over its bar, per front_conv_criterion; rho the
+        // reference-slope length residual_length(), its actual distance to the level set. rho is
+        // reported and gates measurability, NOT placement: front_vertex_placed() is the one
+        // notion, and it reads gn. See the declaration for what qualifying the sag test's corners
+        // by rho instead used to cost.
         const Vector3d p = m_vertex_attribute[vid].m_posf;
         const double rho = potential_for(vid).residual_length(p);
-        const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
+        const double gn = front_vertex_conv_ratio(vid);
         if (!std::isfinite(rho) || !std::isfinite(gn)) {
             ++s.n_unmeasurable;
             continue;
         }
-        if (rho <= s.tube) on_level[vid] = 1;
+        if (front_placed_by_ratio(gn)) {
+            placed[vid] = 1;
+        } else {
+            ++s.n_unplaced;
+        }
         ++s.n_vertices;
         if (gn > s.max_vertex) {
             s.max_vertex = gn;
@@ -2304,8 +2419,8 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         }
         if (gn > s.bar) {
             ++s.n_faces_over;
-            if (on_level[va] && on_level[vb] && on_level[vc]) {
-                ++s.n_faces_over_on_level;
+            if (placed[va] && placed[vb] && placed[vc]) {
+                ++s.n_faces_over_placed;
                 // Refinable only if the rule can still lower a target; judged against the MAX of
                 // the three scalars (the 2D twin uses the max of its chord's two).
                 const double l = std::max(m_params.l, 1e-300);
@@ -2325,9 +2440,9 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                 } else {
                     ++s.n_at_floor;
                 }
-                if (gn > s.max_face_on_level) {
-                    s.max_face_on_level = gn;
-                    s.worst_on_level_centroid = centroid;
+                if (gn > s.max_face_placed) {
+                    s.max_face_placed = gn;
+                    s.worst_placed_centroid = centroid;
                 }
             }
         }
@@ -2382,6 +2497,13 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
     return F > 0. ? (0.5 * gn * gn / h) / (rel * F) : std::numeric_limits<double>::infinity();
 }
 
+bool TopoOffsetTetMesh::front_vertex_placed(const size_t vid) const
+{
+    // THE definition; see the declaration. front_vertex_conv_ratio() already dispatches on
+    // front_conv_criterion, so the criterion the config names is the criterion every caller gets.
+    return front_placed_by_ratio(front_vertex_conv_ratio(vid));
+}
+
 double TopoOffsetTetMesh::edge_conv_ratio(const size_t a, const size_t b) const
 {
     const double r = edge_interpolation_residual(a, b);
@@ -2422,7 +2544,7 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
 }
 
-void TopoOffsetTetMesh::assign_band_regions()
+void TopoOffsetTetMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band cells, seeded from every band cell
     // with an input-complex vertex, whose piece is read off the per-piece BVHs (the nearest
@@ -2504,6 +2626,7 @@ void TopoOffsetTetMesh::assign_band_regions()
             }
         }
     }
+    if (!log) return;
     std::string per;
     for (size_t r = 0; r < n_cells.size(); ++r)
         per += fmt::format("{}{}", r ? " / " : "", n_cells[r]);
@@ -2704,7 +2827,7 @@ void TopoOffsetTetMesh::smooth_group_to_convergence(const char* group_name)
         // group's caller rebuilds it once, as with the fixed count.
         local_operations({{0, 0, 0, 1}});
         const SmoothingProgress s = smoothing_progress(before);
-        const bool front_converged = s.n_front == 0 || s.front_max_ratio <= 1.;
+        const bool front_converged = s.n_front == 0 || front_placed_by_ratio(s.front_max_ratio);
         const bool front_stalled = !front_converged && std::isfinite(prev_front) &&
                                    s.front_max_ratio > (1. - stall_rel) * prev_front;
         const bool background_settled = s.background_max_step <= step_rel;
@@ -3491,9 +3614,16 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             m_vertex_extra[vid].m_turn_start_valid = true;
         }
         rebuild_offset_envelope();
+        const int guard_c0 = iter_cnt_collapse_guard_reject.load();
+        const int guard_s0 = iter_cnt_swap_guard_reject.load();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
+            // front_refuse_converged_collapse: the "was resolved" half of the guard is read from
+            // the front as it stands when the collapse / swap group begins.
+            if (m_offset_params.front_refuse_converged_collapse && gi >= 1) {
+                snapshot_front_convergence();
+            }
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -3516,7 +3646,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
             "max {:.4}x the bar (worst v{} at ({:.4}, {:.4}, {:.4})), faces max {:.4}x at the "
             "centroid (reported) | {} vertices, {} faces | faces over the tube: {}, of which {} "
-            "with all corners on the level set (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) | "
+            "with all corners placed (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) | "
             "refinable faces {} (at the sizing floor {}) ========",
             it + 1,
             budget,
@@ -3531,13 +3661,23 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             ec.n_vertices,
             ec.n_faces,
             ec.n_faces_over,
-            ec.n_faces_over_on_level,
-            ec.max_face_on_level,
-            ec.worst_on_level_centroid.x(),
-            ec.worst_on_level_centroid.y(),
-            ec.worst_on_level_centroid.z(),
+            ec.n_faces_over_placed,
+            ec.max_face_placed,
+            ec.worst_placed_centroid.x(),
+            ec.worst_placed_centroid.y(),
+            ec.worst_placed_centroid.z(),
             ec.refinable.size(),
             ec.n_at_floor);
+        if (m_offset_params.front_refuse_converged_collapse) {
+            logger().info(
+                "\t[front guard] turn {}: {} collapse(s) and {} swap(s) refused for un-resolving "
+                "a resolved patch of the front ({} / {} in the run so far)",
+                it + 1,
+                iter_cnt_collapse_guard_reject.load() - guard_c0,
+                iter_cnt_swap_guard_reject.load() - guard_s0,
+                iter_cnt_collapse_guard_reject.load(),
+                iter_cnt_swap_guard_reject.load());
+        }
         if (m_offset_params.debug_output) {
             write_optimization_debug_output(fmt::format("phase_{}S", it + 1));
         }
@@ -3550,15 +3690,15 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front face(s) with all corners on the level set sag "
+                "\t[resolution] turn {}: {} front face(s) with all corners placed sag "
                 "over the tube at the centroid (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> "
                 "{} at {} vertices",
                 it + 1,
                 ec.refinable.size(),
-                ec.max_face_on_level,
-                ec.worst_on_level_centroid.x(),
-                ec.worst_on_level_centroid.y(),
-                ec.worst_on_level_centroid.z(),
+                ec.max_face_placed,
+                ec.worst_placed_centroid.x(),
+                ec.worst_placed_centroid.y(),
+                ec.worst_placed_centroid.z(),
                 halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
                 n);
         }
@@ -3687,6 +3827,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_collapse = 0;
     iter_cnt_collapse_offset_removed = 0;
     iter_cnt_swap = 0;
+    iter_cnt_collapse_guard_reject = 0;
+    iter_cnt_swap_guard_reject = 0;
     m_smooth_trace.reset();
     optimization_metrics.clear();
     op_counts.clear();
@@ -3713,6 +3855,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
+    if (m_offset_params.front_refuse_converged_collapse) {
+        logger().info(
+            "front guard (front_refuse_converged_collapse): {} collapses and {} swaps refused",
+            iter_cnt_collapse_guard_reject.load(),
+            iter_cnt_swap_guard_reject.load());
+    }
 
     // Final metrics and the convergence verdict, one entry for the whole run.
     assign_band_regions();

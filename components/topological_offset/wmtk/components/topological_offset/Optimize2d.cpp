@@ -161,6 +161,13 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
+    // front_refuse_converged_collapse has no swap half here, unlike the 3D twin
+    // (swap_before_surface()). There a flip re-triangulates the offset SURFACE and keeps it, so
+    // it can mint a sagging face; a 2D front is a curve with no such freedom. An offset edge
+    // does not reach this hook at all: it carries m_is_surface_fs with both ends
+    // m_is_on_surface, so TriOptimizerMesh::swap_edge_before() above already refused it through
+    // is_edge_on_surface(). A flip of any other edge moves no vertex and changes no front chord,
+    // so it cannot un-resolve the front.
     return true;
 }
 
@@ -671,6 +678,17 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::collapse_edge_after(t)) {
         return false;
     }
+    // front_refuse_converged_collapse, the after-half: the survivor's Newton-step ratio on its
+    // new ring. Returning false here rolls the collapse back (connectivity and every registered
+    // attribute, m_vertex_extra included).
+    if (m_offset_params.front_refuse_converged_collapse && m_collapse_guard_armed.local()) {
+        m_collapse_guard_armed.local() = 0;
+        const double r = front_vertex_conv_ratio(collapse_cache.local().v2_id);
+        if (!front_placed_by_ratio(r)) {
+            ++iter_cnt_collapse_guard_reject;
+            return false;
+        }
+    }
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar =
             m_collapse_survivor_sizing.local();
@@ -715,7 +733,93 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
+    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
+    m_collapse_guard_armed.local() = 0;
+    if (m_offset_params.front_refuse_converged_collapse &&
+        front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+        ++iter_cnt_collapse_guard_reject;
+        return false;
+    }
     return true;
+}
+
+std::vector<TopoOffsetTriMesh::Tuple> TopoOffsetTriMesh::offset_surface_edges_live_at(
+    const size_t vid) const
+{
+    std::vector<Tuple> result;
+    std::set<size_t> seen;
+    for (const Tuple& e : get_one_ring_edges_for_vertex(tuple_from_vertex(vid))) {
+        if (!seen.insert(e.eid(*this)).second) continue;
+        if (edge_is_offset_surface_live(e)) result.push_back(e);
+    }
+    return result;
+}
+
+void TopoOffsetTriMesh::snapshot_front_convergence()
+{
+    m_front_conv_snapshot.assign(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
+        m_front_conv_snapshot[vid] = front_vertex_conv_ratio(vid);
+    }
+}
+
+bool TopoOffsetTriMesh::front_vertex_converged_snapshot(const size_t vid) const
+{
+    if (vid >= m_front_conv_snapshot.size()) return false;
+    return front_placed_by_ratio(m_front_conv_snapshot[vid]);
+}
+
+bool TopoOffsetTriMesh::front_edge_converged(const size_t a, const size_t b) const
+{
+    if (!front_vertex_converged_snapshot(a) || !front_vertex_converged_snapshot(b)) {
+        return false;
+    }
+    const double r = edge_conv_ratio(a, b);
+    return r >= 0. && r <= 1.;
+}
+
+bool TopoOffsetTriMesh::front_guard_refuses_collapse(const size_t v1, const size_t v2)
+{
+    // Only a front-to-front collapse re-triangulates the front. v1 is removed, v2 survives at
+    // its own position (the base moves nothing), so every front edge around the pair that does
+    // not join them is re-attached to v2 with the same endpoint positions: the result's sag can
+    // be read before the collapse runs. The 3D twin predicts faces; here the front is a curve,
+    // so the pair's two surviving chords are what is predicted.
+    const auto front = [&](const size_t v) {
+        return m_vertex_extra[v].m_is_on_offset && m_vertex_attribute[v].m_is_rounded;
+    };
+    if (!front(v1) || !front(v2)) return false;
+    std::vector<std::array<size_t, 2>> edges;
+    std::set<size_t> seen;
+    for (const size_t v : {v1, v2}) {
+        for (const Tuple& e : offset_surface_edges_live_at(v)) {
+            if (!seen.insert(e.eid(*this)).second) continue;
+            edges.push_back(get_edge_vids(e));
+        }
+    }
+    if (edges.empty()) return false;
+    // The guard protects a resolved neighbourhood only: with any chord around either endpoint
+    // unresolved the pass is free to act, as it is with the key off.
+    for (const std::array<size_t, 2>& e : edges) {
+        if (!front_edge_converged(e[0], e[1])) return false;
+    }
+    for (std::array<size_t, 2> e : edges) {
+        bool has1 = false, has2 = false;
+        for (const size_t v : e) {
+            has1 = has1 || v == v1;
+            has2 = has2 || v == v2;
+        }
+        if (has1 && has2) continue; // the chord joining the pair vanishes
+        for (size_t& v : e) {
+            if (v == v1) v = v2;
+        }
+        const double r = edge_conv_ratio(e[0], e[1]);
+        if (!(r >= 0. && r <= 1.)) return true; // over the tube, or unmeasurable
+    }
+    m_collapse_guard_armed.local() = 1; // the survivor's own ratio is tested after the collapse
+    return false;
 }
 
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
@@ -2488,7 +2592,11 @@ TopoOffsetTriMesh::GradientSplit TopoOffsetTriMesh::gradient_split(
 
 double TopoOffsetTriMesh::edge_interpolation_residual(const Tuple& e) const
 {
-    const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+    return edge_interpolation_residual(e.vid(*this), e.switch_vertex(*this).vid(*this));
+}
+
+double TopoOffsetTriMesh::edge_interpolation_residual(const size_t a, const size_t b) const
+{
     const OffsetPotential2D& pot = potential_for_edge(a, b);
     const double c = pot.target_level();
     if (!(c > 0.)) return -1.;
@@ -2511,29 +2619,35 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     EnergyCriterion s;
     const OptPhase saved = m_phase;
     m_phase = OptPhase::B; // the objective's offset terms exist only in Phase B
-    // The convergence length, front_conv_rel x delta: a vertex is on the level set within it,
-    // and a chord is resolved within it. See edge_conv_ratio() for the role split --
-    // offset_envelope_rel is the leash on the operations, this is the accuracy, and startup
-    // requires leash <= accuracy.
+    // The resolution length, front_conv_rel x delta: a chord is resolved within it. The same
+    // number sets the vertex bar inside front_vertex_conv_ratio(), so placement and resolution
+    // share one accuracy. See edge_conv_ratio() for the role split -- offset_envelope_rel is the
+    // leash on the operations, this is the accuracy, and startup requires leash <= accuracy.
     s.tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
     const auto front = [&](const size_t vid) {
         return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
     };
-    std::vector<char> on_level(vert_capacity(), 0);
+    std::vector<char> placed(vert_capacity(), 0);
     for (const Tuple& v : get_vertices()) {
         const size_t vid = v.vid(*this);
         if (!front(vid)) continue;
-        // rho is the reference-slope length residual_length(), the measure the sag test
-        // qualifies its ends with; gn the objective's stationarity, the remaining 1-D Newton
-        // step along the normal against the tube.
+        // gn is the vertex's convergence measure over its bar, per front_conv_criterion; rho the
+        // reference-slope length residual_length(), its actual distance to the level set. rho is
+        // reported and gates measurability, NOT placement: front_vertex_placed() is the one
+        // notion, and it reads gn. See the declaration for what qualifying the sag test's
+        // endpoints by rho instead used to cost.
         const Vector2d p = m_vertex_attribute[vid].m_posf;
         const double rho = potential_for(vid).residual_length(p);
-        const double gn = front_vertex_conv_ratio(vid); // Newton step / (front_conv_rel x delta)
+        const double gn = front_vertex_conv_ratio(vid);
         if (!std::isfinite(rho) || !std::isfinite(gn)) {
             ++s.n_unmeasurable;
             continue;
         }
-        if (rho <= s.tube) on_level[vid] = 1;
+        if (front_placed_by_ratio(gn)) {
+            placed[vid] = 1;
+        } else {
+            ++s.n_unplaced;
+        }
         ++s.n_vertices;
         if (gn > s.max_vertex) {
             s.max_vertex = gn;
@@ -2561,8 +2675,8 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
         }
         if (gn > s.bar) {
             ++s.n_edges_over;
-            if (on_level[va] && on_level[vb]) {
-                ++s.n_edges_over_on_level;
+            if (placed[va] && placed[vb]) {
+                ++s.n_edges_over_placed;
                 const double len =
                     (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm();
                 // Refinable only if the rule can still lower a target: at the sizing floor
@@ -2596,9 +2710,9 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                 } else {
                     ++s.n_at_floor;
                 }
-                if (gn > s.max_edge_on_level) {
-                    s.max_edge_on_level = gn;
-                    s.worst_on_level_mid =
+                if (gn > s.max_edge_placed) {
+                    s.max_edge_placed = gn;
+                    s.worst_placed_mid =
                         0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
                 }
             }
@@ -2659,9 +2773,22 @@ double TopoOffsetTriMesh::front_vertex_conv_ratio(const size_t vid) const
     return F > 0. ? (0.5 * gn * gn / h) / (rel * F) : std::numeric_limits<double>::infinity();
 }
 
+bool TopoOffsetTriMesh::front_vertex_placed(const size_t vid) const
+{
+    // THE definition; see the declaration. front_vertex_conv_ratio() already dispatches on
+    // front_conv_criterion, so the criterion the config names is the criterion every caller gets.
+    return front_placed_by_ratio(front_vertex_conv_ratio(vid));
+}
+
 double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
 {
-    const double r = edge_interpolation_residual(e); // (2 w / c) |r(m) - mean r|, -1 unmeasurable
+    return edge_conv_ratio(e.vid(*this), e.switch_vertex(*this).vid(*this));
+}
+
+double TopoOffsetTriMesh::edge_conv_ratio(const size_t a, const size_t b) const
+{
+    // (2 w / c) |r(m) - mean r|, -1 unmeasurable
+    const double r = edge_interpolation_residual(a, b);
     if (r < 0.) return r;
     const double rel = m_offset_params.front_conv_rel;
     if (m_offset_params.front_conv_criterion == "gradient_norm_rel") {
@@ -2678,7 +2805,6 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
     // at the midpoint. The dimensionless form this replaced meant a tighter tolerance for the
     // smooth field than for the Euclidean one at the same number. Reported, not gated -- the
     // front's resolution is set by the sag rule at the end of every turn.
-    const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
     const OffsetPotential2D& pot = potential_for_edge(a, b);
     const Vector2d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
     const Vector2d m = 0.5 * (pa + pb);
@@ -2688,7 +2814,7 @@ double TopoOffsetTriMesh::edge_conv_ratio(const Tuple& e) const
     return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
 }
 
-void TopoOffsetTriMesh::assign_band_regions()
+void TopoOffsetTriMesh::assign_band_regions(const bool log)
 {
     // See m_region_potentials. A flood fill over the band faces, seeded from every band face
     // that shares an edge with an input-complex face, with that face's region. A band face
@@ -2778,6 +2904,7 @@ void TopoOffsetTriMesh::assign_band_regions()
             }
         }
     }
+    if (!log) return;
     std::string per;
     for (size_t r = 0; r < n_faces.size(); ++r)
         per += fmt::format("{}{}", r ? " / " : "", n_faces[r]);
@@ -2999,7 +3126,7 @@ void TopoOffsetTriMesh::smooth_group_to_convergence(const char* group_name)
         // group's caller rebuilds it once, as with the fixed count.
         local_operations({{0, 0, 0, 1}});
         const SmoothingProgress s = smoothing_progress(before);
-        const bool front_converged = s.n_front == 0 || s.front_max_ratio <= 1.;
+        const bool front_converged = s.n_front == 0 || front_placed_by_ratio(s.front_max_ratio);
         const bool front_stalled = !front_converged && std::isfinite(prev_front) &&
                                    s.front_max_ratio > (1. - stall_rel) * prev_front;
         const bool background_settled = s.background_max_step <= step_rel;
@@ -3764,9 +3891,17 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             m_vertex_extra[vid].m_turn_start_valid = true;
         }
         rebuild_offset_envelope();
+        const int guard_c0 = iter_cnt_collapse_guard_reject.load();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
+            // front_refuse_converged_collapse: the "was resolved" half of the guard is read from
+            // the front as it stands when the collapse group begins. Only that group: the 3D twin
+            // snapshots for the swap group as well, which has no guard here -- see
+            // swap_edge_before().
+            if (m_offset_params.front_refuse_converged_collapse && gi == 1) {
+                snapshot_front_convergence();
+            }
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -3789,7 +3924,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
             "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})), edges max {:.4}x at the midpoint "
             "(reported) | {} vertices, {} edges | edges over the tube: {}, of which {} with both "
-            "ends on the level set (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable edges {} "
+            "ends placed (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable edges {} "
             "(at the sizing floor {}) ========",
             it + 1,
             budget,
@@ -3803,12 +3938,20 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.n_vertices,
             ec.n_edges,
             ec.n_edges_over,
-            ec.n_edges_over_on_level,
-            ec.max_edge_on_level,
-            ec.worst_on_level_mid.x(),
-            ec.worst_on_level_mid.y(),
+            ec.n_edges_over_placed,
+            ec.max_edge_placed,
+            ec.worst_placed_mid.x(),
+            ec.worst_placed_mid.y(),
             ec.refinable.size(),
             ec.n_at_floor);
+        if (m_offset_params.front_refuse_converged_collapse) {
+            logger().info(
+                "\t[front guard] turn {}: {} collapse(s) refused for un-resolving a resolved "
+                "patch of the front ({} in the run so far)",
+                it + 1,
+                iter_cnt_collapse_guard_reject.load() - guard_c0,
+                iter_cnt_collapse_guard_reject.load());
+        }
         if (m_offset_params.debug_output) {
             write_smoothing_debug_output(fmt::format("phase_{}S", it + 1));
         }
@@ -3821,14 +3964,14 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front edge(s) with both ends on the level set sag "
+                "\t[resolution] turn {}: {} front edge(s) with both ends placed sag "
                 "over the tube at the midpoint (worst {:.4}x, midpoint ({:.4}, {:.4})) -> "
                 "{} at {} vertices",
                 it + 1,
                 ec.refinable.size(),
-                ec.max_edge_on_level,
-                ec.worst_on_level_mid.x(),
-                ec.worst_on_level_mid.y(),
+                ec.max_edge_placed,
+                ec.worst_placed_mid.x(),
+                ec.worst_placed_mid.y(),
                 halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
                 n);
         }
@@ -3981,6 +4124,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_collapse = 0;
     iter_cnt_collapse_offset_removed = 0;
     iter_cnt_swap = 0;
+    iter_cnt_collapse_guard_reject = 0;
     m_smooth_trace.reset();
     optimization_metrics.clear();
     op_counts.clear();
@@ -4011,6 +4155,11 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
+    if (m_offset_params.front_refuse_converged_collapse) {
+        logger().info(
+            "front guard (front_refuse_converged_collapse): {} collapses refused",
+            iter_cnt_collapse_guard_reject.load());
+    }
     // No push_back here: op_counts is a per-round series recorded inside the driver loop, so
     // appending the run totals would make the last entry mean something different from every
     // other one. The run total is the sum of the series.

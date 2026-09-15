@@ -249,6 +249,20 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     return true;
 }
 
+double TopoOffsetTetMesh::front_move_alignment(const size_t vid) const
+{
+    // |cos| between the direction the placement is allowed to move the vertex in and the field
+    // normal, which is the direction that actually reduces its distance to the level set. Same
+    // meaning as the 2D twin: 1 the test measures the step toward the level set, 0 it measures a
+    // step that cannot reduce the distance at all. Negative marks a missing direction or gradient.
+    const Vector3d n = front_vertex_move_direction(vid);
+    if (!(n.squaredNorm() > 0.)) return -2.;
+    const Vector3d g = potential_for(vid).gradient(m_vertex_attribute[vid].m_posf);
+    const double gn = g.norm();
+    if (!(gn > 0.) || !std::isfinite(gn)) return -2.;
+    return std::abs(n.normalized().dot(g / gn));
+}
+
 Vector3d TopoOffsetTetMesh::front_vertex_move_direction(const size_t vid) const
 {
     // A front vertex held by an input envelope (it sits on a tag-region boundary or the domain
@@ -350,7 +364,7 @@ bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     align.gradient(xv, ga);
     place.gradient(xv, gp);
     if (!((ga.dot(n_dir)) * (gp.dot(n_dir)) < 0.)) return false;
-    return front_vertex_conv_ratio(vid) <= 1.;
+    return front_vertex_placed(vid);
 }
 
 std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_objective(
