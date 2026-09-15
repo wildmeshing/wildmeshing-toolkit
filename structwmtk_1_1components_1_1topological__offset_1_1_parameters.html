@@ -145,6 +145,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>envelope_size_rel</
 <tr class="memitem:a1f687fca19047b12f16067848c158ea1" id="r_a1f687fca19047b12f16067848c158ea1"><td class="memItemLeft" align="right" valign="top"><a id="a1f687fca19047b12f16067848c158ea1" name="a1f687fca19047b12f16067848c158ea1"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>offset_dhat_factor</b></td></tr>
 <tr class="separator:a1f687fca19047b12f16067848c158ea1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeaef365c38235567b1a5b7acf85baad6" id="r_aeaef365c38235567b1a5b7acf85baad6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aeaef365c38235567b1a5b7acf85baad6">debug_manual_dhat</a></td></tr>
+<tr class="separator:aeaef365c38235567b1a5b7acf85baad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56a89926b6a243f85fe52d0d734afe17" id="r_a56a89926b6a243f85fe52d0d734afe17"><td class="memItemLeft" align="right" valign="top"><a id="a56a89926b6a243f85fe52d0d734afe17" name="a56a89926b6a243f85fe52d0d734afe17"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>offset_field</b></td></tr>
 <tr class="memdesc:a56a89926b6a243f85fe52d0d734afe17"><td class="mdescLeft">&#160;</td><td class="mdescRight">"smooth" (Phi level set) or "euclidean" (exact distance) <br /></td></tr>
@@ -230,6 +232,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>adaptive_smoothing_
 <tr class="separator:aeb0e014e54d31b9b0e1ee0fcfac44135"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44d24b926a44e47277c794f99c58deb4" id="r_a44d24b926a44e47277c794f99c58deb4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a44d24b926a44e47277c794f99c58deb4">pre_smooth</a></td></tr>
 <tr class="separator:a44d24b926a44e47277c794f99c58deb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a4fa416211901ca6c4ac644ffebea43" id="r_a3a4fa416211901ca6c4ac644ffebea43"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a3a4fa416211901ca6c4ac644ffebea43">front_refuse_converged_collapse</a></td></tr>
+<tr class="separator:a3a4fa416211901ca6c4ac644ffebea43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade5ad21c9f80caffe4801db0fb77f70e" id="r_ade5ad21c9f80caffe4801db0fb77f70e"><td class="memItemLeft" align="right" valign="top"><a id="ade5ad21c9f80caffe4801db0fb77f70e" name="ade5ad21c9f80caffe4801db0fb77f70e"></a>
 VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>box_min</b></td></tr>
 <tr class="separator:ade5ad21c9f80caffe4801db0fb77f70e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -385,6 +389,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<a id="aeaef365c38235567b1a5b7acf85baad6" name="aeaef365c38235567b1a5b7acf85baad6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeaef365c38235567b1a5b7acf85baad6">&#9670;&#160;</a></span>debug_manual_dhat</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::Parameters::debug_manual_dhat</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>[2D ONLY] Debugging override for the potential's support radius: &gt;= 0 uses this dhat as an ABSOLUTE length, in place of both offset_dhat_factor x target_distance and the constructed-offset floor. Negative (the default) leaves the automatic sizing alone. Only the 2D construction reads it; the 3D twin ignores it until the port. </p>
+
+</div>
+</div>
 <a id="a9fe8648b4000c5ec8e9d449bdf38534c" name="a9fe8648b4000c5ec8e9d449bdf38534c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9fe8648b4000c5ec8e9d449bdf38534c">&#9670;&#160;</a></span>deform_others</h2>
 
@@ -412,6 +431,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>see the spec: needed at pressed seams, biased elsewhere </p>
+
+</div>
+</div>
+<a id="a3a4fa416211901ca6c4ac644ffebea43" name="a3a4fa416211901ca6c4ac644ffebea43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a4fa416211901ca6c4ac644ffebea43">&#9670;&#160;</a></span>front_refuse_converged_collapse</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::front_refuse_converged_collapse</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>See the spec: refuse a front collapse or surface flip whose neighbourhood was converged (every front face around the endpoints within the tube, every corner within the bar) and would not be afterwards. false = the operation passes as they are. </p>
 
 </div>
 </div>

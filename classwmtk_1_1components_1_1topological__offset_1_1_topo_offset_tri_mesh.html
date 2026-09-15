@@ -193,9 +193,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ab3462f208cadcbe34da1d35958a02e7c" id="r_ab3462f208cadcbe34da1d35958a02e7c"><td class="memItemLeft" align="right" valign="top"><a id="ab3462f208cadcbe34da1d35958a02e7c" name="ab3462f208cadcbe34da1d35958a02e7c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>init_region_potentials</b> (double delta, double effective_factor)</td></tr>
 <tr class="separator:ab3462f208cadcbe34da1d35958a02e7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a168a3d78a2ca0ed14c163f27b9eafc16" id="r_a168a3d78a2ca0ed14c163f27b9eafc16"><td class="memItemLeft" align="right" valign="top"><a id="a168a3d78a2ca0ed14c163f27b9eafc16" name="a168a3d78a2ca0ed14c163f27b9eafc16"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>assign_band_regions</b> ()</td></tr>
-<tr class="separator:a168a3d78a2ca0ed14c163f27b9eafc16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e142ca8895d0f43fa4426dde0a8c85c" id="r_a0e142ca8895d0f43fa4426dde0a8c85c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a0e142ca8895d0f43fa4426dde0a8c85c">assign_band_regions</a> (bool log=true)</td></tr>
+<tr class="separator:a0e142ca8895d0f43fa4426dde0a8c85c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19c997f967c8211506b6f6ca9aedcd6b" id="r_a19c997f967c8211506b6f6ca9aedcd6b"><td class="memItemLeft" align="right" valign="top"><a id="a19c997f967c8211506b6f6ca9aedcd6b" name="a19c997f967c8211506b6f6ca9aedcd6b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>log_front_profile</b> (size_t vid)</td></tr>
 <tr class="memdesc:a19c997f967c8211506b6f6ca9aedcd6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Diagnostic: the front objective of one vertex along its normal, offset term vs total. <br /></td></tr>
@@ -369,6 +368,19 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>ring_max_quality</b
 void&#160;</td><td class="memItemRight" valign="bottom"><b>record_flatness</b> (const char *op, double parent_flat, size_t child_fid) const</td></tr>
 <tr class="memdesc:a902b10c0d879bfe52af8419ba567f6e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Genesis: flatness transitions recorded at the operation hooks. {op, parent, child}. <br /></td></tr>
 <tr class="separator:a902b10c0d879bfe52af8419ba567f6e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad77d97bd1eb9c20cca9831617f94321d" id="r_ad77d97bd1eb9c20cca9831617f94321d"><td class="memItemLeft" align="right" valign="top"><a id="ad77d97bd1eb9c20cca9831617f94321d" name="ad77d97bd1eb9c20cca9831617f94321d"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>snapshot_front_convergence</b> ()</td></tr>
+<tr class="separator:ad77d97bd1eb9c20cca9831617f94321d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4eb6271b494242479f79b3a5be2ff513" id="r_a4eb6271b494242479f79b3a5be2ff513"><td class="memItemLeft" align="right" valign="top"><a id="a4eb6271b494242479f79b3a5be2ff513" name="a4eb6271b494242479f79b3a5be2ff513"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_vertex_converged_snapshot</b> (size_t vid) const</td></tr>
+<tr class="memdesc:a4eb6271b494242479f79b3a5be2ff513"><td class="mdescLeft">&#160;</td><td class="mdescRight">The snapshot says vid is a front vertex whose ratio was finite and within the bar. <br /></td></tr>
+<tr class="separator:a4eb6271b494242479f79b3a5be2ff513"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa1fbeb311386145c7f28d1ef2ea9bbe4" id="r_aa1fbeb311386145c7f28d1ef2ea9bbe4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa1fbeb311386145c7f28d1ef2ea9bbe4">front_edge_converged</a> (size_t a, size_t b) const</td></tr>
+<tr class="separator:aa1fbeb311386145c7f28d1ef2ea9bbe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac77f3b21fe84e24e30d981abbdba36f5" id="r_ac77f3b21fe84e24e30d981abbdba36f5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac77f3b21fe84e24e30d981abbdba36f5">front_guard_refuses_collapse</a> (size_t v1, size_t v2)</td></tr>
+<tr class="separator:ac77f3b21fe84e24e30d981abbdba36f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2e8ea96389182605c577fddfb0b58a9" id="r_af2e8ea96389182605c577fddfb0b58a9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af2e8ea96389182605c577fddfb0b58a9">offset_surface_edges_live_at</a> (size_t vid) const</td></tr>
+<tr class="separator:af2e8ea96389182605c577fddfb0b58a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4569e9a0891bb03ddc73f91934a884c0" id="r_a4569e9a0891bb03ddc73f91934a884c0"><td class="memItemLeft" align="right" valign="top"><a id="a4569e9a0891bb03ddc73f91934a884c0" name="a4569e9a0891bb03ddc73f91934a884c0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>log_smooth_trace</b> () const</td></tr>
 <tr class="separator:a4569e9a0891bb03ddc73f91934a884c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -413,14 +425,23 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_smooth_trace</b> 
 <tr class="separator:a5a0b0d55bff565e93ff06e78db52c96b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20a8879893f0a39277bae158e433b415" id="r_a20a8879893f0a39277bae158e433b415"><td class="memItemLeft" align="right" valign="top">Vector2d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a20a8879893f0a39277bae158e433b415">front_vertex_move_direction</a> (size_t vid) const</td></tr>
 <tr class="separator:a20a8879893f0a39277bae158e433b415"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a936de74a1eb2d3a7cb4d98d96632eee5" id="r_a936de74a1eb2d3a7cb4d98d96632eee5"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a936de74a1eb2d3a7cb4d98d96632eee5">front_move_alignment</a> (size_t vid) const</td></tr>
+<tr class="separator:a936de74a1eb2d3a7cb4d98d96632eee5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26c6450baecc7fe88aa6711774c14a07" id="r_a26c6450baecc7fe88aa6711774c14a07"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a26c6450baecc7fe88aa6711774c14a07">front_vertex_alignment_traps_1d_solve</a> (size_t vid) const</td></tr>
 <tr class="separator:a26c6450baecc7fe88aa6711774c14a07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7620c0f305ceb682f3816c038dfd3cb" id="r_aa7620c0f305ceb682f3816c038dfd3cb"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa7620c0f305ceb682f3816c038dfd3cb">front_vertex_conv_ratio</a> (size_t vid) const</td></tr>
 <tr class="separator:aa7620c0f305ceb682f3816c038dfd3cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93757d95da143dddbd7ed27983ada036" id="r_a93757d95da143dddbd7ed27983ada036"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a93757d95da143dddbd7ed27983ada036">front_vertex_placed</a> (size_t vid) const</td></tr>
+<tr class="memdesc:a93757d95da143dddbd7ed27983ada036"><td class="mdescLeft">&#160;</td><td class="mdescRight">THE definition of "placed" for a vertex on the offset surface.  <br /></td></tr>
+<tr class="separator:a93757d95da143dddbd7ed27983ada036"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a353e585580bc68556aeace8436f7de5d" id="r_a353e585580bc68556aeace8436f7de5d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d">front_placed_by_ratio</a> (const double ratio) const</td></tr>
+<tr class="separator:a353e585580bc68556aeace8436f7de5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a66d65197fa7fcef41dafade509444cd2" id="r_a66d65197fa7fcef41dafade509444cd2"><td class="memItemLeft" align="right" valign="top"><a id="a66d65197fa7fcef41dafade509444cd2" name="a66d65197fa7fcef41dafade509444cd2"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>edge_conv_ratio</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="memdesc:a66d65197fa7fcef41dafade509444cd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The edge test divided by its bar (1 = bar), per front_conv_criterion; -1 unmeasurable. <br /></td></tr>
 <tr class="separator:a66d65197fa7fcef41dafade509444cd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab287fc39e5ac6b3b5784c13d3b728e0" id="r_aab287fc39e5ac6b3b5784c13d3b728e0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aab287fc39e5ac6b3b5784c13d3b728e0">edge_conv_ratio</a> (size_t a, size_t b) const</td></tr>
+<tr class="separator:aab287fc39e5ac6b3b5784c13d3b728e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaab542372a5003f3043729724f3c40d7" id="r_aaab542372a5003f3043729724f3c40d7"><td class="memItemLeft" align="right" valign="top"><a id="aaab542372a5003f3043729724f3c40d7" name="aaab542372a5003f3043729724f3c40d7"></a>
 Vector2d&#160;</td><td class="memItemRight" valign="bottom"><b>front_vertex_normal</b> (size_t vid) const</td></tr>
 <tr class="memdesc:aaab542372a5003f3043729724f3c40d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The field's outward unit direction at front vertex vid (zero where grad Phi vanishes). <br /></td></tr>
@@ -519,6 +540,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stamp_plastic_rests</
 double&#160;</td><td class="memItemRight" valign="bottom"><b>edge_interpolation_residual</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="memdesc:a0c4b6dd3232107106d04d448848e2026"><td class="mdescLeft">&#160;</td><td class="mdescRight">The interpolation residual of front edge e, see <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html" title="The &quot;energy_gradient&quot; criterion: the front is at a critical point of Phase B&#39;s energy,...">EnergyCriterion</a>. -1 when unmeasurable. <br /></td></tr>
 <tr class="separator:a0c4b6dd3232107106d04d448848e2026"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aafc2886572573777e86c4fc7ac23e39a" id="r_aafc2886572573777e86c4fc7ac23e39a"><td class="memItemLeft" align="right" valign="top"><a id="aafc2886572573777e86c4fc7ac23e39a" name="aafc2886572573777e86c4fc7ac23e39a"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>edge_interpolation_residual</b> (size_t a, size_t b) const</td></tr>
+<tr class="memdesc:aafc2886572573777e86c4fc7ac23e39a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The same on a vertex pair; the tuple form delegates here. See edge_conv_ratio(a, b). <br /></td></tr>
+<tr class="separator:aafc2886572573777e86c4fc7ac23e39a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4cc47e628aad541ce946ca6fb81540de" id="r_a4cc47e628aad541ce946ca6fb81540de"><td class="memItemLeft" align="right" valign="top">Vector2d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4cc47e628aad541ce946ca6fb81540de">offset_vertex_normal</a> (const size_t vid) const</td></tr>
 <tr class="memdesc:a4cc47e628aad541ce946ca6fb81540de"><td class="mdescLeft">&#160;</td><td class="mdescRight">The normal at an offset vertex. Every caller that needs one goes through here, so switching the definition is a one-line edit rather than a hunt through the call sites.  <br /></td></tr>
 <tr class="separator:a4cc47e628aad541ce946ca6fb81540de"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1271,6 +1296,8 @@ std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>i
 <tr class="memitem:a5c48faa00c99f0f5cb2f8018b817aa6d" id="r_a5c48faa00c99f0f5cb2f8018b817aa6d"><td class="memItemLeft" align="right" valign="top"><a id="a5c48faa00c99f0f5cb2f8018b817aa6d" name="a5c48faa00c99f0f5cb2f8018b817aa6d"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>iter_cnt_swap_offset_reject</b> {0}</td></tr>
 <tr class="separator:a5c48faa00c99f0f5cb2f8018b817aa6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e5a689837daedfa2cd38ffbb2adf4b4" id="r_a1e5a689837daedfa2cd38ffbb2adf4b4"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1e5a689837daedfa2cd38ffbb2adf4b4">iter_cnt_collapse_guard_reject</a> {0}</td></tr>
+<tr class="separator:a1e5a689837daedfa2cd38ffbb2adf4b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34860383735336ee8e0be5fccfae19a8" id="r_a34860383735336ee8e0be5fccfae19a8"><td class="memItemLeft" align="right" valign="top"><a id="a34860383735336ee8e0be5fccfae19a8" name="a34860383735336ee8e0be5fccfae19a8"></a>
 std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>iter_cnt_split_offset_before</b> {0}</td></tr>
 <tr class="memdesc:a34860383735336ee8e0be5fccfae19a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Splits of an offset-boundary edge: offered, accepted. <br /></td></tr>
@@ -1332,6 +1359,10 @@ std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="separator:aa5d583badc3beba89d2981296b16ca28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8d92fc0e149da9a2d9fa4720b0694af" id="r_ad8d92fc0e149da9a2d9fa4720b0694af"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad8d92fc0e149da9a2d9fa4720b0694af">m_collapse_survivor_sizing</a></td></tr>
 <tr class="separator:ad8d92fc0e149da9a2d9fa4720b0694af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb107e33548e6c3aaa85310037641914" id="r_afb107e33548e6c3aaa85310037641914"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#afb107e33548e6c3aaa85310037641914">m_collapse_guard_armed</a></td></tr>
+<tr class="separator:afb107e33548e6c3aaa85310037641914"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac88f1abc4c7715071229e7322d973920" id="r_ac88f1abc4c7715071229e7322d973920"><td class="memItemLeft" align="right" valign="top">std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac88f1abc4c7715071229e7322d973920">m_front_conv_snapshot</a></td></tr>
+<tr class="separator:ac88f1abc4c7715071229e7322d973920"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28d39e69c9fca7c401bd134b109403e5" id="r_a28d39e69c9fca7c401bd134b109403e5"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a28d39e69c9fca7c401bd134b109403e5">m_placement_env_entry_outside</a> {0}</td></tr>
 <tr class="separator:a28d39e69c9fca7c401bd134b109403e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af377832d8ccb1227ebd5aa78f0813280" id="r_af377832d8ccb1227ebd5aa78f0813280"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af377832d8ccb1227ebd5aa78f0813280">m_placement_projected</a> {0}</td></tr>
@@ -1653,6 +1684,25 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a0e142ca8895d0f43fa4426dde0a8c85c" name="a0e142ca8895d0f43fa4426dde0a8c85c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e142ca8895d0f43fa4426dde0a8c85c">&#9670;&#160;</a></span>assign_band_regions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::assign_band_regions </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>log</em> = <code>true</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Rebuild m_*_region from the mesh. <code>log</code> false suppresses the per-turn "[regions]" line: write_vtu() re-derives the map for its frame diagnostics and puts the old one back. </p>
+
+</div>
+</div>
 <a id="a1a1b924d5cd153d7729f862f0ebd3ab3" name="a1a1b924d5cd153d7729f862f0ebd3ab3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1a1b924d5cd153d7729f862f0ebd3ab3">&#9670;&#160;</a></span>audit_surface_containment()</h2>
 
@@ -2219,6 +2269,35 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="aab287fc39e5ac6b3b5784c13d3b728e0" name="aab287fc39e5ac6b3b5784c13d3b728e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab287fc39e5ac6b3b5784c13d3b728e0">&#9670;&#160;</a></span>edge_conv_ratio()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::edge_conv_ratio </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The same test on a vertex PAIR, so the front guard can measure a chord the mesh does not carry yet (the edge a collapse would leave behind). The tuple form delegates here. </p>
+
+</div>
+</div>
 <a id="ae708f34fce4ac719ab65e9059b24fecc" name="ae708f34fce4ac719ab65e9059b24fecc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae708f34fce4ac719ab65e9059b24fecc">&#9670;&#160;</a></span>edge_is_complex_boundary()</h2>
 
@@ -2620,6 +2699,110 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
+<a id="aa1fbeb311386145c7f28d1ef2ea9bbe4" name="aa1fbeb311386145c7f28d1ef2ea9bbe4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1fbeb311386145c7f28d1ef2ea9bbe4">&#9670;&#160;</a></span>front_edge_converged()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::front_edge_converged </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>A resolved front chord: both ends converged per the snapshot and the midpoint sag (edge_conv_ratio) within the tube. The 3D twin tests a face at its centroid. </p>
+
+</div>
+</div>
+<a id="ac77f3b21fe84e24e30d981abbdba36f5" name="ac77f3b21fe84e24e30d981abbdba36f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac77f3b21fe84e24e30d981abbdba36f5">&#9670;&#160;</a></span>front_guard_refuses_collapse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::front_guard_refuses_collapse </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The guard's collapse test, run from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb3cf3ddec458e5b7b78947d7d0d34a4" title="Reject any collapse that violates the substructure link condition.">collapse_edge_before()</a>; see the key's spec doc. Returns true when the collapse must be refused; arms m_collapse_guard_armed when the after-test still applies. </p>
+
+</div>
+</div>
+<a id="a936de74a1eb2d3a7cb4d98d96632eee5" name="a936de74a1eb2d3a7cb4d98d96632eee5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a936de74a1eb2d3a7cb4d98d96632eee5">&#9670;&#160;</a></span>front_move_alignment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::front_move_alignment </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>|cos| between <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a20a8879893f0a39277bae158e433b415">front_vertex_move_direction()</a> and the field normal: 1 means the convergence test's 1-D step is the step toward the level set, 0 means it measures a direction that cannot reduce the distance. Debug-frame diagnostic; see write_vtu(). </p>
+
+</div>
+</div>
+<a id="a353e585580bc68556aeace8436f7de5d" name="a353e585580bc68556aeace8436f7de5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a353e585580bc68556aeace8436f7de5d">&#9670;&#160;</a></span>front_placed_by_ratio()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::front_placed_by_ratio </td>
+          <td>(</td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>ratio</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a93757d95da143dddbd7ed27983ada036" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a>'s decision on an already-measured ratio, for the callers that have one in hand (energy_criterion(), the guard's snapshot, <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_smoothing_progress.html">SmoothingProgress</a>): the one place the bar is applied. Keep this and <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a93757d95da143dddbd7ed27983ada036" title="THE definition of &quot;placed&quot; for a vertex on the offset surface.">front_vertex_placed()</a> in step. </p>
+
+</div>
+</div>
 <a id="a26c6450baecc7fe88aa6711774c14a07" name="a26c6450baecc7fe88aa6711774c14a07"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26c6450baecc7fe88aa6711774c14a07">&#9670;&#160;</a></span>front_vertex_alignment_traps_1d_solve()</h2>
 
@@ -2693,6 +2876,29 @@ template&lt;typename Visit &gt; </div>
       </table>
 </div><div class="memdoc">
 <p>||grad F|| at front vertex vid, F the objective <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aff6e725da3cb02511b68037696bdfa05" title="Phase B placement of a front vertex: the shared smoother with the offset&#39;s options.">smooth_front_vertex_phase_b()</a> minimises. +inf if unmeasurable. The pass stop and the loop's vertex test. </p>
+
+</div>
+</div>
+<a id="a93757d95da143dddbd7ed27983ada036" name="a93757d95da143dddbd7ed27983ada036"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93757d95da143dddbd7ed27983ada036">&#9670;&#160;</a></span>front_vertex_placed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::front_vertex_placed </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>THE definition of "placed" for a vertex on the offset surface. </p>
+<p>Every decision in the component that asks "is the placement of this front vertex done" goes through here or through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d">front_placed_by_ratio()</a>: the loop's vertex test (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a7663982a4b656320e40189a0c68fdaaa">EnergyCriterion::vertices_ok()</a>), the endpoint qualification of the chord-sag classification, the collapse guard's snapshot and its after-half, the adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex cannot be placed for one of them and not for another.</p>
+<p>It was not always one notion: the sag classification used to qualify its endpoints with the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole chord from ever being refined, with the chord then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single().</p>
+<p>The caller has established that vid is a live front vertex (m_is_on_offset &amp;&amp; m_is_rounded); this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed. </p>
 
 </div>
 </div>
@@ -3279,6 +3485,25 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 </div><div class="memdoc">
 <p>The residual scale, derived from the criterion rather than configured beside it.</p>
 <p>grad E = 2 (Phi - c) grad Phi, so on a field with unit slope at the level set the gradient bound |grad E| &lt;= g is exactly |Phi - c| &lt;= g/2: half the gradient tolerance, in length units. It feeds the Phase A offset envelope (offset_envelope_rel x this) and the derived min_edge_length floor, so loosening the criterion loosens the tube with it. </p>
+
+</div>
+</div>
+<a id="af2e8ea96389182605c577fddfb0b58a9" name="af2e8ea96389182605c577fddfb0b58a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2e8ea96389182605c577fddfb0b58a9">&#9670;&#160;</a></span>offset_surface_edges_live_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">TopoOffsetTriMesh::Tuple</a> &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::offset_surface_edges_live_at </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>vid</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The live offset-surface edges incident to vid, deduplicated. The 3D twin is offset_surface_faces_live_at(). </p>
 
 </div>
 </div>
@@ -4798,6 +5023,21 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="a1e5a689837daedfa2cd38ffbb2adf4b4" name="a1e5a689837daedfa2cd38ffbb2adf4b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e5a689837daedfa2cd38ffbb2adf4b4">&#9670;&#160;</a></span>iter_cnt_collapse_guard_reject</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;int&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::iter_cnt_collapse_guard_reject {0}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>front_refuse_converged_collapse: collapses refused because a resolved patch of the front would have come out unresolved. No swap counter here: the 3D twin also guards the surface flip, which has no 2D counterpart &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac7fa458ec03da89aa38538dd78b7905f" title="Reject a flip whose new edge already exists.">swap_edge_before()</a>. </p>
+
+</div>
+</div>
 <a id="aa39b4c6c30e3a3e342e699209c689a14" name="aa39b4c6c30e3a3e342e699209c689a14"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa39b4c6c30e3a3e342e699209c689a14">&#9670;&#160;</a></span>iter_cnt_split_born</h2>
 
@@ -4850,6 +5090,29 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 <p>The turn the run is in, 1-based; 0 before the loop starts. Read only by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950" title="Put the optimization&#39;s frames on the run&#39;s single debug timeline (see write_debug_frame()),...">write_smoothing_debug_output()</a>, to tag each frame with the turn it belongs to. </p>
+
+</div>
+</div>
+<a id="afb107e33548e6c3aaa85310037641914" name="afb107e33548e6c3aaa85310037641914"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb107e33548e6c3aaa85310037641914">&#9670;&#160;</a></span>m_collapse_guard_armed</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt;char&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_collapse_guard_armed</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>front_refuse_converged_collapse, per collapse: 1 when <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb3cf3ddec458e5b7b78947d7d0d34a4" title="Reject any collapse that violates the substructure link condition.">collapse_edge_before()</a> found the endpoints' front edges resolved and the predicted result edges within the tube, so that <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad14f55277b15130248b370fc7bfeab09" title="A collapse is accepted by the same criterion the smoothing minimises.">collapse_edge_after()</a> still has to test the survivor's ratio. </p>
 
 </div>
 </div>
@@ -4982,6 +5245,21 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="ac88f1abc4c7715071229e7322d973920" name="ac88f1abc4c7715071229e7322d973920"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac88f1abc4c7715071229e7322d973920">&#9670;&#160;</a></span>m_front_conv_snapshot</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;double&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_front_conv_snapshot</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>front_refuse_converged_collapse: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa7620c0f305ceb682f3816c038dfd3cb">front_vertex_conv_ratio()</a> at every front vertex as it was at the start of the collapse group (NaN off the front), indexed by vid. The guard reads "was this converged" from here rather than re-measuring inside every hook. </p>
+
+</div>
+</div>
 <a id="aa039163f977329aa5b90b20ce338d4ea" name="aa039163f977329aa5b90b20ce338d4ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa039163f977329aa5b90b20ce338d4ea">&#9670;&#160;</a></span>m_front_gradient_reference</h2>
 
@@ -5095,7 +5373,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 <p>m_offset_potential above is built over the whole selected complex: the sum of every piece's barrier for the smooth potential, the distance to the nearest piece for the Euclidean field. Neither is the field a front should be placed on where two pieces are close &ndash; the sum has no level set at all across a narrow gap, so both fronts are pushed through the background strip until inversion.</p>
 <p>A region is a connected piece, not a tag: one tag covering two pieces that never touch would make them share a field and bring that bridging back. Pieces are the connected components of the captured complex under vertex connectivity (two pieces meeting at a point share an offset there, so they share a field), computed once in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a42e2f9ce5d18df257bec140417e7b0f5" title="Build the input complex&#39;s BVH and its smooth offset potential, from one extraction.">init_input_complex_bvh()</a> so the numbering is fixed for the whole run. <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac2eb3c671593be59d472d30e3a51ad55" title="make mesh a simplicial embedding of the input complex (simplices labelled 1)">simplicial_embedding()</a> is what makes this correspond to the band: no background triangle can touch two disjoint pieces, so the band's connected components are the disjoint offsets.</p>
 <p>A band grown from one piece is placed on that piece's field alone: Phi_A = c for band A, Phi_B = c for band B. Where the two would overlap, each front is pulled outward by its own field and held by the strip's quality bar &ndash; a symmetric local minimum with a thin gap of background between the fronts, which is the topological offset.</p>
-<p>The map from band to region is assign_band_regions(): a flood fill over the band faces, seeded from every band face with a complex vertex, whose piece is read off the captured complex geometrically. A face reachable from two regions and a vertex on faces of two regions read -2 and fall back to the union field. m_offset_potential is kept for everything that is not per-vertex: the support (dhat), the viewer's grid, the report. connected pieces of the input complex; one field each </p>
+<p>The map from band to region is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a0e142ca8895d0f43fa4426dde0a8c85c">assign_band_regions()</a>: a flood fill over the band faces, seeded from every band face with a complex vertex, whose piece is read off the captured complex geometrically. A face reachable from two regions and a vertex on faces of two regions read -2 and fall back to the union field. m_offset_potential is kept for everything that is not per-vertex: the support (dhat), the viewer's grid, the report. connected pieces of the input complex; one field each </p>
 
 </div>
 </div>
