@@ -1168,7 +1168,7 @@ def main():
     # dragon changed?" needs the input drawn beside it, and this is the input as the run loaded it.
     ref_structs = []
     if input_ref is not None and input_ref.is_file():
-        rp, rdim, rgroups, _, _ = read_groups(input_ref)
+        rp, rdim, rgroups = read_groups(input_ref)[:3]
         rows = {}
         for g, cells in rgroups.items():
             for r in cells:
