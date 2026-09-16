@@ -102,6 +102,13 @@ struct Parameters : public wmtk::OptimizerParameters
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
     bool sphere_trace_initialization;
     double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
+    /// EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that
+    /// leaves its edge falls back to the midpoint for THAT edge alone, so one construction can
+    /// mix vertices sitting on the level set with vertices sitting at edge midpoints. With this
+    /// on, the march is probed first, and a single untraceable edge sends EVERY edge to its
+    /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
+    /// See the spec doc, and marching_tris() / marching_tets().
+    bool experimental_consistent_construction_split = false;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -204,6 +211,8 @@ struct Parameters : public wmtk::OptimizerParameters
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
+        experimental_consistent_construction_split =
+            json_params["EXPERIMENTAL_consistent_construction_split"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];
