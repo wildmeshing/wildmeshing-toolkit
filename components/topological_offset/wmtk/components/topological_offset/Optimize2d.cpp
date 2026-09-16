@@ -3794,6 +3794,15 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
         m_offset_params.target_distance);
 }
 
+namespace {
+/// Cheap existence test for a companion frame; <filesystem> is not used in this component.
+bool debug_frame_file_exists(const std::string& p)
+{
+    std::ifstream f(p);
+    return f.good();
+}
+} // namespace
+
 void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& label) const
 {
     std::ofstream f(
@@ -3806,7 +3815,55 @@ void TopoOffsetTriMesh::write_debug_frame(const std::string& label)
 {
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
-    write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+    const std::string base = m_offset_params.output_path + fmt::format("_{:05d}", idx);
+    write_vtu(base);
+    // Record what this frame actually wrote, then refresh the ParaView collections. Which
+    // companions exist is dimension-specific and some are conditional, so they are discovered
+    // from disk rather than hard-coded here.
+    if (m_debug_frame_labels.size() <= idx) m_debug_frame_labels.resize(idx + 1);
+    m_debug_frame_labels[idx] = label;
+    for (const char* sfx : {"", "_surf", "_off", "_edge", "_front"}) {
+        if (debug_frame_file_exists(base + sfx + ".vtu")) m_debug_pvd_series[sfx].push_back(idx);
+    }
+    write_debug_pvd();
+}
+
+void TopoOffsetTriMesh::write_debug_pvd() const
+{
+    // DEBUG_output only. ParaView detects a file series only when the frame index sits
+    // IMMEDIATELY before the extension. The main frames are <output>_NNNNN.vtu and group fine,
+    // but every companion is <output>_NNNNN_off.vtu -- index in the middle, suffix after it --
+    // so ParaView opens each companion as its own dataset instead of one time series. A .pvd
+    // collection names the files explicitly, which sidesteps the naming rule entirely.
+    // Rewritten after EVERY frame, not once at the end: these runs are killed often, and a
+    // killed run should still leave a series that opens.
+    const std::string& out = m_offset_params.output_path;
+    // file= is resolved relative to the .pvd, so it carries the bare name, not output_path.
+    const std::string stem = out.substr(out.find_last_of("/\\") + 1);
+    for (const auto& [sfx, idxs] : m_debug_pvd_series) {
+        if (idxs.size() < 2) continue; // a single frame is not a series
+        std::ofstream f(out + (sfx.empty() ? std::string("_main") : sfx) + ".pvd", std::ios::trunc);
+        if (!f) continue;
+        f << "<?xml version=\"1.0\"?>\n"
+             "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n"
+             "  <Collection>\n";
+        for (const size_t i : idxs) {
+            f << fmt::format(
+                "    <DataSet timestep=\"{}\" group=\"\" part=\"0\" file=\"{}_{:05d}{}.vtu\"/>",
+                i,
+                stem,
+                i,
+                sfx);
+            // The frame's label, so the .pvd also says which pass produced each timestep. A
+            // label containing "--" would close the XML comment early, so it is left out.
+            const std::string lab = i < m_debug_frame_labels.size() ? m_debug_frame_labels[i] : "";
+            if (!lab.empty() && lab.find("--") == std::string::npos) {
+                f << fmt::format("  <!-- {} -->", lab);
+            }
+            f << "\n";
+        }
+        f << "  </Collection>\n</VTKFile>\n";
+    }
 }
 
 void TopoOffsetTriMesh::optimize_offset_single_phase()

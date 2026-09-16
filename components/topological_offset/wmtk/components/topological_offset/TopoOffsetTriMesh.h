@@ -682,6 +682,16 @@ public:
     int m_ab_round = 0;
     /// Monotonic frame counter for the debug timeline. Mutable because the write hook is const.
     mutable size_t m_debug_seq = 0;
+    /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
+    /// companion suffix, the frame indices that actually produced one. Both exist only to write
+    /// the ParaView collections -- see write_debug_pvd(). Same in 3D.
+    mutable std::vector<std::string> m_debug_frame_labels;
+    mutable std::map<std::string, std::vector<size_t>> m_debug_pvd_series;
+    /// DEBUG_output: rewrite <output>{_main,_off,_surf,_edge,_front}.pvd, a ParaView time
+    /// series over the debug frames. Needed because ParaView only groups a file series when the
+    /// index is immediately before the extension, which is false for every companion
+    /// (<output>_NNNNN_off.vtu). Called after every frame, so a killed run still opens.
+    void write_debug_pvd() const;
     /// Pass index within the current phase, and the (round, phase) it belongs to -- when those
     /// change the index restarts. All three exist only to name frames.
     mutable int m_debug_pass = 0;
