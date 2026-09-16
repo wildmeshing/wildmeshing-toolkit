@@ -136,11 +136,12 @@ var searchData=
   ['execute_5foffset_133',['execute_offset',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6ff3f39908a066bcc044e73fdce80b97',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::execute_offset()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7d7171eba2ae3bf030e8f456c9965c86',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::execute_offset()']]],
   ['executepass_134',['executepass',['../structwmtk_1_1_execute_pass.html',1,'wmtk::ExecutePass&lt; AppMesh &gt;'],['../structwmtk_1_1_execute_pass.html#a922fdd528b06468eafe56f70d0b8d2aa',1,'wmtk::ExecutePass::ExecutePass()']]],
   ['executions_20for_20example_20applications_135',['Command Line Executions for Example Applications',['../index.html#autotoc_md76',1,'']]],
-  ['explicit_20attribute_20update_136',['Explicit Attribute Update',['../index.html#autotoc_md70',1,'']]],
-  ['explicit_20invariant_20design_137',['Explicit Invariant Design',['../index.html#autotoc_md69',1,'']]],
-  ['exportstruct_138',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['expression_139',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]],
-  ['expression_20parser_20for_20tags_140',['Expression Parser for Tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2wmtk_2coe458f49cabfb51348f9d7982efe81432.html',1,'']]],
-  ['extract_5fcurve_5fmesh_141',['extract_curve_mesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.html#a677ffc3e0f6c1b7a009e90933c4c4101',1,'wmtk::components::manifold_extraction::ManExtractTriMesh']]],
-  ['extract_5fsurface_5fmesh_142',['extract_surface_mesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html#a35d161b8df489c60086efe44e9885b8b',1,'wmtk::components::manifold_extraction::ManExtractTetMesh']]]
+  ['experimental_5fconsistent_5fconstruction_5fsplit_136',['experimental_consistent_construction_split',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c',1,'wmtk::components::topological_offset::Parameters']]],
+  ['explicit_20attribute_20update_137',['Explicit Attribute Update',['../index.html#autotoc_md70',1,'']]],
+  ['explicit_20invariant_20design_138',['Explicit Invariant Design',['../index.html#autotoc_md69',1,'']]],
+  ['exportstruct_139',['ExportStruct',['../structwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh_1_1_export_struct.html',1,'wmtk::components::tetwild::TetWildMesh']]],
+  ['expression_140',['Expression',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_expression.html',1,'wmtk::components::simwild::expression_parser']]],
+  ['expression_20parser_20for_20tags_141',['Expression Parser for Tags',['../md__2home_2runner_2work_2wildmeshing-toolkit_2wildmeshing-toolkit_2components_2simwild_2wmtk_2coe458f49cabfb51348f9d7982efe81432.html',1,'']]],
+  ['extract_5fcurve_5fmesh_142',['extract_curve_mesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tri_mesh.html#a677ffc3e0f6c1b7a009e90933c4c4101',1,'wmtk::components::manifold_extraction::ManExtractTriMesh']]],
+  ['extract_5fsurface_5fmesh_143',['extract_surface_mesh',['../classwmtk_1_1components_1_1manifold__extraction_1_1_man_extract_tet_mesh.html#a35d161b8df489c60086efe44e9885b8b',1,'wmtk::components::manifold_extraction::ManExtractTetMesh']]]
 ];

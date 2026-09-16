@@ -11,5 +11,6 @@ var searchData=
   ['eps2_5fedge_8',['eps2_edge',['../classwmtk_1_1_sample_envelope.html#a37cb35a79a867dea585aa2346c873c0b',1,'wmtk::SampleEnvelope']]],
   ['esp_9',['esp',['../structwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential_1_1_impl.html#a9bdacea01eebe034e80c5f54214e9016',1,'wmtk::components::topological_offset::SmoothOffsetPotential::Impl']]],
   ['exact_5fenvelope_10',['exact_envelope',['../classwmtk_1_1_sample_envelope.html#a236b0a02e557cd600ee1e26b1f376ca1',1,'wmtk::SampleEnvelope']]],
-  ['exact_5fenvelope_5f2d_11',['exact_envelope_2d',['../classwmtk_1_1_sample_envelope.html#a7286c0f3b39e115452de7a5920db1adb',1,'wmtk::SampleEnvelope']]]
+  ['exact_5fenvelope_5f2d_11',['exact_envelope_2d',['../classwmtk_1_1_sample_envelope.html#a7286c0f3b39e115452de7a5920db1adb',1,'wmtk::SampleEnvelope']]],
+  ['experimental_5fconsistent_5fconstruction_5fsplit_12',['experimental_consistent_construction_split',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c',1,'wmtk::components::topological_offset::Parameters']]]
 ];

@@ -2837,7 +2837,7 @@ template&lt;typename Visit &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the bar. See the spec entry for the three measures. Infinite when unmeasurable. </p>
+<p>The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the bar. See the spec entry for the four measures &ndash; three of stationarity, plus residual_error, which measures the residual length instead. Infinite when unmeasurable. </p>
 
 </div>
 </div>
@@ -2897,7 +2897,7 @@ template&lt;typename Visit &gt; </div>
 
 <p>THE definition of "placed" for a vertex on the offset surface. </p>
 <p>Every decision in the component that asks "is the placement of this front vertex done" goes through here or through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d">front_placed_by_ratio()</a>: the loop's vertex test (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a7663982a4b656320e40189a0c68fdaaa">EnergyCriterion::vertices_ok()</a>), the endpoint qualification of the chord-sag classification, the collapse guard's snapshot and its after-half, the adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex cannot be placed for one of them and not for another.</p>
-<p>It was not always one notion: the sag classification used to qualify its endpoints with the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole chord from ever being refined, with the chord then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single().</p>
+<p>It was not always one notion: the sag classification used to qualify its endpoints with the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole chord from ever being refined, with the chord then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single(). * front_conv_criterion "residual_error" makes that same residual_length() the measure for every one of the callers above. That is not the defect coming back: the defect was the SPLIT &ndash; one test using distance while the rest used stationarity &ndash; not the use of distance. Under residual_error both halves of the criterion, the vertex test and the chord/face sag, are lengths against rel x target_distance.</p>
 <p>The caller has established that vid is a live front vertex (m_is_on_offset &amp;&amp; m_is_rounded); this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed. </p>
 
 </div>

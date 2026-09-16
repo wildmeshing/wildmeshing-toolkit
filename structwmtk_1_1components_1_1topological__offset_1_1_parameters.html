@@ -156,7 +156,7 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv_rel</b><
 <tr class="separator:a06eedb4d505aae8a551e0677e1fc7d9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3188f326201273023d24761ed87c640c" id="r_a3188f326201273023d24761ed87c640c"><td class="memItemLeft" align="right" valign="top"><a id="a3188f326201273023d24761ed87c640c" name="a3188f326201273023d24761ed87c640c"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv_criterion</b></td></tr>
-<tr class="memdesc:a3188f326201273023d24761ed87c640c"><td class="mdescLeft">&#160;</td><td class="mdescRight">gradient_norm_rel | step_size_rel | decrement <br /></td></tr>
+<tr class="memdesc:a3188f326201273023d24761ed87c640c"><td class="mdescLeft">&#160;</td><td class="mdescRight">gradient_norm_rel | step_size_rel | decrement | residual_error <br /></td></tr>
 <tr class="separator:a3188f326201273023d24761ed87c640c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab81a01358a1558310de1c2906c5beb93" id="r_ab81a01358a1558310de1c2906c5beb93"><td class="memItemLeft" align="right" valign="top"><a id="ab81a01358a1558310de1c2906c5beb93" name="ab81a01358a1558310de1c2906c5beb93"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_normal_projection</b> = true</td></tr>
@@ -177,10 +177,10 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>sorted_marching</b></
 <tr class="separator:af2f589c738c1ca954fdd3addc9fc58f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f60de909647416df3cd79bd92df9352" id="r_a1f60de909647416df3cd79bd92df9352"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a1f60de909647416df3cd79bd92df9352">sphere_trace_initialization</a></td></tr>
 <tr class="separator:a1f60de909647416df3cd79bd92df9352"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec4223bf61e4f0dc7a7218f92811ab6b" id="r_aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memItemLeft" align="right" valign="top"><a id="aec4223bf61e4f0dc7a7218f92811ab6b" name="aec4223bf61e4f0dc7a7218f92811ab6b"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>sphere_trace_target_rel_tol</b></td></tr>
-<tr class="memdesc:aec4223bf61e4f0dc7a7218f92811ab6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">|d - target| &lt;= tol x target ends the trace <br /></td></tr>
+<tr class="memitem:aec4223bf61e4f0dc7a7218f92811ab6b" id="r_aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aec4223bf61e4f0dc7a7218f92811ab6b">sphere_trace_target_rel_tol</a></td></tr>
 <tr class="separator:aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af20b7251572220cfa98f403a3919740c" id="r_af20b7251572220cfa98f403a3919740c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c">experimental_consistent_construction_split</a> = false</td></tr>
+<tr class="separator:af20b7251572220cfa98f403a3919740c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a4f261f3043247d7743058781a2b84d" id="r_a5a4f261f3043247d7743058781a2b84d"><td class="memItemLeft" align="right" valign="top"><a id="a5a4f261f3043247d7743058781a2b84d" name="a5a4f261f3043247d7743058781a2b84d"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>output_path</b></td></tr>
 <tr class="separator:a5a4f261f3043247d7743058781a2b84d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -419,6 +419,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<a id="af20b7251572220cfa98f403a3919740c" name="af20b7251572220cfa98f403a3919740c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af20b7251572220cfa98f403a3919740c">&#9670;&#160;</a></span>experimental_consistent_construction_split</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::experimental_consistent_construction_split = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that leaves its edge falls back to the midpoint for THAT edge alone, so one construction can mix vertices sitting on the level set with vertices sitting at edge midpoints. With this on, the march is probed first, and a single untraceable edge sends EVERY edge to its midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off. See the spec doc, and marching_tris() / marching_tets(). </p>
+
+</div>
+</div>
 <a id="a05bf491992f5f3ee660f5583c5e291cc" name="a05bf491992f5f3ee660f5583c5e291cc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a05bf491992f5f3ee660f5583c5e291cc">&#9670;&#160;</a></span>front_alignment_energy</h2>
 
@@ -596,6 +611,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>See the spec: the marching places each new vertex where d(x) reaches target_distance along the edge by sphere tracing, midpoint when the trace leaves the edge. </p>
+
+</div>
+</div>
+<a id="aec4223bf61e4f0dc7a7218f92811ab6b" name="aec4223bf61e4f0dc7a7218f92811ab6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec4223bf61e4f0dc7a7218f92811ab6b">&#9670;&#160;</a></span>sphere_trace_target_rel_tol</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::Parameters::sphere_trace_target_rel_tol</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>|d - target| &lt;= tol x target ends the trace </p>
 
 </div>
 </div>
