@@ -708,9 +708,9 @@ public:
     /// Operations refused because they would have left an offset-boundary face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// front_refuse_converged_collapse: collapses refused because a resolved patch of the front
-    /// would have come out unresolved. No swap counter here: the 3D twin also guards the surface
-    /// flip, which has no 2D counterpart -- see swap_edge_before().
+    /// EXPERIMENTAL_ops_divergence_guard: collapses refused for raising the local sag of the
+    /// offset surface. No swap counter here: the 3D twin also guards the surface flip, which has
+    /// no 2D counterpart -- see swap_edge_before().
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     /// Splits of an offset-boundary edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
@@ -990,24 +990,17 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// front_refuse_converged_collapse, per collapse: 1 when collapse_edge_before() found the
-    /// endpoints' front edges resolved and the predicted result edges within the tube, so that
-    /// collapse_edge_after() still has to test the survivor's ratio.
-    mutable wmtk::threading::enumerable_thread_specific<char> m_collapse_guard_armed;
-    /// front_refuse_converged_collapse: front_vertex_conv_ratio() at every front vertex as it
-    /// was at the start of the collapse group (NaN off the front), indexed by vid. The guard
-    /// reads "was this converged" from here rather than re-measuring inside every hook.
-    std::vector<double> m_front_conv_snapshot;
-    void snapshot_front_convergence();
-    /// The snapshot says vid is a front vertex whose ratio was finite and within the bar.
-    bool front_vertex_converged_snapshot(size_t vid) const;
-    /// A resolved front chord: both ends converged per the snapshot and the midpoint sag
-    /// (edge_conv_ratio) within the tube. The 3D twin tests a face at its centroid.
-    bool front_edge_converged(size_t a, size_t b) const;
+    /// EXPERIMENTAL_ops_divergence_guard: one chord's sag as edge_conv_ratio measures it, with
+    /// an unmeasurable chord reported as infinity so that losing measurability counts as
+    /// worsening. The 3D twin is offset_face_sag(), measured at the face centroid.
+    double offset_edge_sag(size_t a, size_t b) const;
+    /// The largest offset_edge_sag() over a set of chords given by their vertex pairs; 0 for an
+    /// empty set.
+    double max_offset_edge_sag(const std::vector<std::array<size_t, 2>>& edges) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
-    /// Returns true when the collapse must be refused; arms m_collapse_guard_armed when the
-    /// after-test still applies.
-    bool front_guard_refuses_collapse(size_t v1, size_t v2);
+    /// Returns true when the collapse must be refused. There is no after-half: the survivor
+    /// keeps its position, so the result is measured exactly before the collapse runs.
+    bool ops_guard_refuses_collapse(size_t v1, size_t v2) const;
     /// The live offset-surface edges incident to vid, deduplicated. The 3D twin is
     /// offset_surface_faces_live_at().
     std::vector<Tuple> offset_surface_edges_live_at(size_t vid) const;

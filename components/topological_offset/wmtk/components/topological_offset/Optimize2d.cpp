@@ -161,7 +161,7 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
-    // front_refuse_converged_collapse has no swap half here, unlike the 3D twin
+    // EXPERIMENTAL_ops_divergence_guard has no swap half here, unlike the 3D twin
     // (swap_before_surface()). There a flip re-triangulates the offset SURFACE and keeps it, so
     // it can mint a sagging face; a 2D front is a curve with no such freedom. An offset edge
     // does not reach this hook at all: it carries m_is_surface_fs with both ends
@@ -678,17 +678,9 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::collapse_edge_after(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the after-half: the survivor's Newton-step ratio on its
-    // new ring. Returning false here rolls the collapse back (connectivity and every registered
-    // attribute, m_vertex_extra included).
-    if (m_offset_params.front_refuse_converged_collapse && m_collapse_guard_armed.local()) {
-        m_collapse_guard_armed.local() = 0;
-        const double r = front_vertex_conv_ratio(collapse_cache.local().v2_id);
-        if (!front_placed_by_ratio(r)) {
-            ++iter_cnt_collapse_guard_reject;
-            return false;
-        }
-    }
+    // EXPERIMENTAL_ops_divergence_guard has no after-half: the survivor does not move and the
+    // removed vertex's chords are re-attached to it unchanged, so the whole comparison is exact
+    // in collapse_edge_before() and no collapse is ever rolled back for it. As in 3D.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar =
             m_collapse_survivor_sizing.local();
@@ -733,10 +725,9 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
-    m_collapse_guard_armed.local() = 0;
-    if (m_offset_params.front_refuse_converged_collapse &&
-        front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+    // EXPERIMENTAL_ops_divergence_guard; see ops_guard_refuses_collapse().
+    if (m_offset_params.experimental_ops_divergence_guard &&
+        ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
     }
@@ -755,57 +746,48 @@ std::vector<TopoOffsetTriMesh::Tuple> TopoOffsetTriMesh::offset_surface_edges_li
     return result;
 }
 
-void TopoOffsetTriMesh::snapshot_front_convergence()
+double TopoOffsetTriMesh::offset_edge_sag(const size_t a, const size_t b) const
 {
-    m_front_conv_snapshot.assign(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        m_front_conv_snapshot[vid] = front_vertex_conv_ratio(vid);
-    }
-}
-
-bool TopoOffsetTriMesh::front_vertex_converged_snapshot(const size_t vid) const
-{
-    if (vid >= m_front_conv_snapshot.size()) return false;
-    return front_placed_by_ratio(m_front_conv_snapshot[vid]);
-}
-
-bool TopoOffsetTriMesh::front_edge_converged(const size_t a, const size_t b) const
-{
-    if (!front_vertex_converged_snapshot(a) || !front_vertex_converged_snapshot(b)) {
-        return false;
-    }
+    // EXPERIMENTAL_ops_divergence_guard: one chord's sag, as edge_conv_ratio measures it (the
+    // sagitta at the midpoint over front_conv_rel x target_distance). An unmeasurable chord is
+    // infinite, so losing measurability counts as getting worse, while a neighbourhood that was
+    // already unmeasurable is never made worse -- infinity is not strictly greater than
+    // infinity. The 3D twin is offset_face_sag(), which measures at the centroid instead.
     const double r = edge_conv_ratio(a, b);
-    return r >= 0. && r <= 1.;
+    if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
+    return r;
 }
 
-bool TopoOffsetTriMesh::front_guard_refuses_collapse(const size_t v1, const size_t v2)
+double TopoOffsetTriMesh::max_offset_edge_sag(const std::vector<std::array<size_t, 2>>& edges) const
 {
-    // Only a front-to-front collapse re-triangulates the front. v1 is removed, v2 survives at
-    // its own position (the base moves nothing), so every front edge around the pair that does
-    // not join them is re-attached to v2 with the same endpoint positions: the result's sag can
-    // be read before the collapse runs. The 3D twin predicts faces; here the front is a curve,
-    // so the pair's two surviving chords are what is predicted.
-    const auto front = [&](const size_t v) {
-        return m_vertex_extra[v].m_is_on_offset && m_vertex_attribute[v].m_is_rounded;
-    };
-    if (!front(v1) || !front(v2)) return false;
-    std::vector<std::array<size_t, 2>> edges;
+    double worst = 0.;
+    for (const std::array<size_t, 2>& e : edges) {
+        worst = std::max(worst, offset_edge_sag(e[0], e[1]));
+    }
+    return worst;
+}
+
+bool TopoOffsetTriMesh::ops_guard_refuses_collapse(const size_t v1, const size_t v2) const
+{
+    // EXPERIMENTAL_ops_divergence_guard, the collapse half; the 3D twin predicts faces, here the
+    // front is a curve so the prediction is over chords. v1 is removed and v2 survives at its
+    // own position -- the base moves no vertex in a collapse -- so every chord the survivor ends
+    // up with is one of the chords around the pair now, with v1 relabelled to v2 and both
+    // endpoints unmoved. The "after" sag is therefore exact before anything is modified.
+    std::vector<std::array<size_t, 2>> before;
     std::set<size_t> seen;
     for (const size_t v : {v1, v2}) {
         for (const Tuple& e : offset_surface_edges_live_at(v)) {
             if (!seen.insert(e.eid(*this)).second) continue;
-            edges.push_back(get_edge_vids(e));
+            before.push_back(get_edge_vids(e));
         }
     }
-    if (edges.empty()) return false;
-    // The guard protects a resolved neighbourhood only: with any chord around either endpoint
-    // unresolved the pass is free to act, as it is with the key off.
-    for (const std::array<size_t, 2>& e : edges) {
-        if (!front_edge_converged(e[0], e[1])) return false;
-    }
-    for (std::array<size_t, 2> e : edges) {
+    // Nothing of the offset surface is touched: not this guard's business.
+    if (before.empty()) return false;
+
+    std::vector<std::array<size_t, 2>> after;
+    after.reserve(before.size());
+    for (std::array<size_t, 2> e : before) {
         bool has1 = false, has2 = false;
         for (const size_t v : e) {
             has1 = has1 || v == v1;
@@ -815,11 +797,10 @@ bool TopoOffsetTriMesh::front_guard_refuses_collapse(const size_t v1, const size
         for (size_t& v : e) {
             if (v == v1) v = v2;
         }
-        const double r = edge_conv_ratio(e[0], e[1]);
-        if (!(r >= 0. && r <= 1.)) return true; // over the tube, or unmeasurable
+        after.push_back(e);
     }
-    m_collapse_guard_armed.local() = 1; // the survivor's own ratio is tested after the collapse
-    return false;
+    // Strictly greater: a collapse that leaves the worst chord exactly as bad is allowed.
+    return max_offset_edge_sag(after) > max_offset_edge_sag(before);
 }
 
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
@@ -3906,13 +3887,6 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
-            // front_refuse_converged_collapse: the "was resolved" half of the guard is read from
-            // the front as it stands when the collapse group begins. Only that group: the 3D twin
-            // snapshots for the swap group as well, which has no guard here -- see
-            // swap_edge_before().
-            if (m_offset_params.front_refuse_converged_collapse && gi == 1) {
-                snapshot_front_convergence();
-            }
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -3955,10 +3929,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.worst_placed_mid.y(),
             ec.refinable.size(),
             ec.n_at_floor);
-        if (m_offset_params.front_refuse_converged_collapse) {
+        if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
-                "\t[front guard] turn {}: {} collapse(s) refused for un-resolving a resolved "
-                "patch of the front ({} in the run so far)",
+                "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
+                "offset surface ({} in the run so far)",
                 it + 1,
                 iter_cnt_collapse_guard_reject.load() - guard_c0,
                 iter_cnt_collapse_guard_reject.load());
@@ -4166,9 +4140,10 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    if (m_offset_params.front_refuse_converged_collapse) {
+    if (m_offset_params.experimental_ops_divergence_guard) {
         logger().info(
-            "front guard (front_refuse_converged_collapse): {} collapses refused",
+            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses refused for raising the "
+            "local sag",
             iter_cnt_collapse_guard_reject.load());
     }
     // No push_back here: op_counts is a per-round series recorded inside the driver loop, so

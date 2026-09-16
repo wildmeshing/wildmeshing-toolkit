@@ -618,8 +618,8 @@ public:
     /// Operations refused because they would have left an offset-surface face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// front_refuse_converged_collapse: operations refused because a resolved patch of the front
-    /// would have come out unresolved.
+    /// EXPERIMENTAL_ops_divergence_guard: operations refused for raising the local sag of the
+    /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
     /// Splits of an offset-surface edge: offered, accepted.
@@ -855,24 +855,16 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// front_refuse_converged_collapse, per collapse: 1 when collapse_edge_before() found the
-    /// endpoints' front faces resolved and the predicted result faces within the tube, so that
-    /// collapse_edge_after() still has to test the survivor's ratio.
-    mutable wmtk::threading::enumerable_thread_specific<char> m_collapse_guard_armed;
-    /// front_refuse_converged_collapse: front_vertex_conv_ratio() at every front vertex as it
-    /// was at the start of the collapse / swap group (NaN off the front), indexed by vid. The
-    /// guard reads "was this converged" from here rather than re-measuring inside every hook.
-    std::vector<double> m_front_conv_snapshot;
-    void snapshot_front_convergence();
-    /// The snapshot says vid is a front vertex whose ratio was finite and within the bar.
-    bool front_vertex_converged_snapshot(size_t vid) const;
-    /// A resolved front face: every corner converged per the snapshot and the centroid sag
-    /// (face_conv_ratio) within the tube.
-    bool front_face_converged(size_t a, size_t b, size_t c) const;
+    /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio measures it, with an
+    /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
+    double offset_face_sag(size_t a, size_t b, size_t c) const;
+    /// The largest offset_face_sag() over a set of faces given by their vertex triples; 0 for an
+    /// empty set.
+    double max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
-    /// Returns true when the collapse must be refused; arms m_collapse_guard_armed when the
-    /// after-test still applies.
-    bool front_guard_refuses_collapse(size_t v1, size_t v2);
+    /// Returns true when the collapse must be refused. There is no after-half: the survivor
+    /// keeps its position, so the result is measured exactly before the collapse runs.
+    bool ops_guard_refuses_collapse(size_t v1, size_t v2) const;
     /// The three corner ids of a face tuple.
     std::array<size_t, 3> face_vids(const Tuple& f) const;
     void log_smooth_trace() const;

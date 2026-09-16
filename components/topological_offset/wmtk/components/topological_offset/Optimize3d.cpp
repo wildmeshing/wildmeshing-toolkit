@@ -270,14 +270,16 @@ bool TopoOffsetTetMesh::swap_before_surface(
     if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
         return false;
     }
-    // front_refuse_converged_collapse: two resolved offset faces may not be flipped into a pair
-    // of which one sags over the tube. No vertex moves in a flip, so the new faces' sag is
-    // known here; the corners' ratios are taken as unchanged.
-    if (m_offset_params.front_refuse_converged_collapse &&
-        m_face_attribute[fid_abc].m_surface_class == OFFSET_SURFACE_CLASS &&
-        front_face_converged(a, b, c) && front_face_converged(a, b, d)) {
-        const double r1 = face_conv_ratio(a, c, d), r2 = face_conv_ratio(b, c, d);
-        if (!(r1 >= 0. && r1 <= 1.) || !(r2 >= 0. && r2 <= 1.)) {
+    // EXPERIMENTAL_ops_divergence_guard, the swap half: a flip of the offset surface may not
+    // raise the sag of the pair of faces it re-triangulates. abc + abd become acd + bcd; no
+    // vertex moves, so every corner position is unchanged and both maxima are exact here. The
+    // comparison is against the state before this flip, not against the bar: an unresolved
+    // patch is guarded exactly as a resolved one is.
+    if (m_offset_params.experimental_ops_divergence_guard &&
+        m_face_attribute[fid_abc].m_surface_class == OFFSET_SURFACE_CLASS) {
+        const double before = std::max(offset_face_sag(a, b, c), offset_face_sag(a, b, d));
+        const double after = std::max(offset_face_sag(a, c, d), offset_face_sag(b, c, d));
+        if (after > before) {
             ++iter_cnt_swap_guard_reject;
             return false;
         }
@@ -607,17 +609,9 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
-    // front_refuse_converged_collapse, the after-half: the survivor's Newton-step ratio on its
-    // new ring. Returning false here rolls the collapse back (connectivity and every
-    // registered attribute, m_vertex_extra included).
-    if (m_offset_params.front_refuse_converged_collapse && m_collapse_guard_armed.local()) {
-        m_collapse_guard_armed.local() = 0;
-        const double r = front_vertex_conv_ratio(v2_id);
-        if (!front_placed_by_ratio(r)) {
-            ++iter_cnt_collapse_guard_reject;
-            return false;
-        }
-    }
+    // EXPERIMENTAL_ops_divergence_guard has no after-half: the survivor does not move and the
+    // removed vertex's faces are re-attached to it unchanged, so the whole comparison is exact
+    // in collapse_edge_before() and no collapse is ever rolled back for it.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[v2_id].m_sizing_scalar = m_collapse_survivor_sizing.local();
     }
@@ -647,10 +641,9 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
-    m_collapse_guard_armed.local() = 0;
-    if (m_offset_params.front_refuse_converged_collapse &&
-        front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+    // EXPERIMENTAL_ops_divergence_guard; see ops_guard_refuses_collapse().
+    if (m_offset_params.experimental_ops_divergence_guard &&
+        ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
     }
@@ -663,72 +656,63 @@ std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
     return {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
 }
 
-void TopoOffsetTetMesh::snapshot_front_convergence()
+double TopoOffsetTetMesh::offset_face_sag(const size_t a, const size_t b, const size_t c) const
 {
-    m_front_conv_snapshot.assign(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        m_front_conv_snapshot[vid] = front_vertex_conv_ratio(vid);
-    }
-}
-
-bool TopoOffsetTetMesh::front_vertex_converged_snapshot(const size_t vid) const
-{
-    if (vid >= m_front_conv_snapshot.size()) return false;
-    const double r = m_front_conv_snapshot[vid];
-    return front_placed_by_ratio(r);
-}
-
-bool TopoOffsetTetMesh::front_face_converged(const size_t a, const size_t b, const size_t c) const
-{
-    if (!front_vertex_converged_snapshot(a) || !front_vertex_converged_snapshot(b) ||
-        !front_vertex_converged_snapshot(c)) {
-        return false;
-    }
+    // EXPERIMENTAL_ops_divergence_guard: one face's sag, as face_conv_ratio measures it (the
+    // sagitta at the centroid over front_conv_rel x target_distance). An unmeasurable face is
+    // infinite, so making a measurable neighbourhood unmeasurable counts as getting worse,
+    // while a neighbourhood that was already unmeasurable is never made "worse" by anything --
+    // infinity is not strictly greater than infinity, which is the comparison the guard makes.
     const double r = face_conv_ratio(a, b, c);
-    return r >= 0. && r <= 1.;
+    if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
+    return r;
 }
 
-bool TopoOffsetTetMesh::front_guard_refuses_collapse(const size_t v1, const size_t v2)
+double TopoOffsetTetMesh::max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const
 {
-    // Only a front-to-front collapse re-triangulates the front. v1 is removed, v2 survives at
-    // its own position (the base moves nothing), so every face around the pair that does not
-    // contain the edge is re-attached to v2 with the same corner positions: the result's sag
-    // can be read before the collapse runs.
-    const auto front = [&](const size_t v) {
-        return m_vertex_extra[v].m_is_on_offset && m_vertex_attribute[v].m_is_rounded;
-    };
-    if (!front(v1) || !front(v2)) return false;
-    std::vector<std::array<size_t, 3>> faces;
+    double worst = 0.;
+    for (const std::array<size_t, 3>& f : faces) {
+        worst = std::max(worst, offset_face_sag(f[0], f[1], f[2]));
+    }
+    return worst;
+}
+
+bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t v2) const
+{
+    // EXPERIMENTAL_ops_divergence_guard, the collapse half. v1 is removed and v2 survives at its
+    // own position -- the base moves no vertex in a collapse -- so every face the survivor ends
+    // up with is one of the faces around the pair now, with v1 relabelled to v2 and all three
+    // corner positions unchanged. That makes the "after" sag exact here, before anything is
+    // modified, so the whole test lives in the before-half and no collapse is rolled back.
+    std::vector<std::array<size_t, 3>> before;
     std::set<size_t> seen;
     for (const size_t v : {v1, v2}) {
         for (const Tuple& f : offset_surface_faces_live_at(v)) {
             if (!seen.insert(f.fid(*this)).second) continue;
-            faces.push_back(face_vids(f));
+            before.push_back(face_vids(f));
         }
     }
-    if (faces.empty()) return false;
-    // The guard protects a resolved neighbourhood only: with any face around either endpoint
-    // unresolved the pass is free to act, as it is with the key off.
-    for (const std::array<size_t, 3>& f : faces) {
-        if (!front_face_converged(f[0], f[1], f[2])) return false;
-    }
-    for (std::array<size_t, 3> f : faces) {
+    // Nothing of the offset surface is touched: not this guard's business. This is also what
+    // makes the guard a no-op away from the front, rather than needing a front-to-front test.
+    if (before.empty()) return false;
+
+    std::vector<std::array<size_t, 3>> after;
+    after.reserve(before.size());
+    for (std::array<size_t, 3> f : before) {
         bool has1 = false, has2 = false;
         for (const size_t v : f) {
             has1 = has1 || v == v1;
             has2 = has2 || v == v2;
         }
-        if (has1 && has2) continue; // the faces on the edge vanish
+        if (has1 && has2) continue; // the faces on the collapsed edge vanish
         for (size_t& v : f) {
             if (v == v1) v = v2;
         }
-        const double r = face_conv_ratio(f[0], f[1], f[2]);
-        if (!(r >= 0. && r <= 1.)) return true; // over the tube, or unmeasurable
+        after.push_back(f);
     }
-    m_collapse_guard_armed.local() = 1; // the survivor's own ratio is tested after the collapse
-    return false;
+    // Strictly greater: a collapse that leaves the worst face exactly as bad is allowed, so the
+    // passes can still coarsen freely wherever they are not making the front worse.
+    return max_offset_face_sag(after) > max_offset_face_sag(before);
 }
 
 bool TopoOffsetTetMesh::collapse_before_vertex(
@@ -3630,11 +3614,6 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
-            // front_refuse_converged_collapse: the "was resolved" half of the guard is read from
-            // the front as it stands when the collapse / swap group begins.
-            if (m_offset_params.front_refuse_converged_collapse && gi >= 1) {
-                snapshot_front_convergence();
-            }
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -3679,10 +3658,10 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             ec.worst_placed_centroid.z(),
             ec.refinable.size(),
             ec.n_at_floor);
-        if (m_offset_params.front_refuse_converged_collapse) {
+        if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
-                "\t[front guard] turn {}: {} collapse(s) and {} swap(s) refused for un-resolving "
-                "a resolved patch of the front ({} / {} in the run so far)",
+                "\t[ops guard] turn {}: {} collapse(s) and {} swap(s) refused for raising the "
+                "local sag of the offset surface ({} / {} in the run so far)",
                 it + 1,
                 iter_cnt_collapse_guard_reject.load() - guard_c0,
                 iter_cnt_swap_guard_reject.load() - guard_s0,
@@ -3866,9 +3845,10 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    if (m_offset_params.front_refuse_converged_collapse) {
+    if (m_offset_params.experimental_ops_divergence_guard) {
         logger().info(
-            "front guard (front_refuse_converged_collapse): {} collapses and {} swaps refused",
+            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses and {} swaps refused "
+            "for raising the local sag",
             iter_cnt_collapse_guard_reject.load(),
             iter_cnt_swap_guard_reject.load());
     }
