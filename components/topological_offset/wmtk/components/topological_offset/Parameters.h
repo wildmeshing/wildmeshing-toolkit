@@ -60,14 +60,19 @@ struct Parameters : public wmtk::OptimizerParameters
     double front_conv_rel;
     // Which convergence test gates the run, used identically by the loop's vertex test and the
     // placement stop. F is the vertex's front objective, g its gradient, H its Gauss-Newton
-    // Hessian, n its move direction; all three compare against front_conv_rel. See
+    // Hessian, n its move direction; all four compare against front_conv_rel. See
     // front_vertex_conv_ratio().
     //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
     //     rel x target_distance.
     //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against rel x F.
     //   "gradient_norm_rel": |n.g| against rel x the reference gradient, measured once on the
     //     band as constructed.
-    std::string front_conv_criterion; ///< gradient_norm_rel | step_size_rel | decrement
+    //   "residual_error": not a stationarity measure at all -- the field's own residual at the
+    //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
+    //     the euclidean field and the ENERGY residual for the smooth one), against
+    //     rel x target_distance. No objective is built and n does not enter.
+    /// gradient_norm_rel | step_size_rel | decrement | residual_error
+    std::string front_conv_criterion;
     // The front is placed by a one-dimensional solve along its field normal
     // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
     // x0 + s n -- instead of a free solve. Where a vertex sits along the front carries no offset
@@ -97,6 +102,13 @@ struct Parameters : public wmtk::OptimizerParameters
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
     bool sphere_trace_initialization;
     double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
+    /// EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that
+    /// leaves its edge falls back to the midpoint for THAT edge alone, so one construction can
+    /// mix vertices sitting on the level set with vertices sitting at edge midpoints. With this
+    /// on, the march is probed first, and a single untraceable edge sends EVERY edge to its
+    /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
+    /// See the spec doc, and marching_tris() / marching_tets().
+    bool experimental_consistent_construction_split = false;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -199,6 +211,8 @@ struct Parameters : public wmtk::OptimizerParameters
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
+        experimental_consistent_construction_split =
+            json_params["EXPERIMENTAL_consistent_construction_split"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

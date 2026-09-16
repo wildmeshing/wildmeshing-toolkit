@@ -116,28 +116,44 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
 }
 
 /**
- * The topological_offset cases: three 2D, three 3D.
+ * The topological_offset cases: nine 2D, three apiece on three simple shapes. The 3D configs
+ * are kept in data2 but NOT registered (see the bottom of this comment).
  *
  * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
  *
  *     ./wmtk_integration_tests "[offset]"
  *
- * AT THE CURRENT DATA PIN ALL SIX ARE COMMENTED OUT and this case runs nothing. Their names sit
- * in the manifest's _commented_out key and their configs are still in data2; the list this reads
- * is empty on purpose, so an empty list is a pass, not a failure. 2D and 3D now share one
- * optimization flow and it does not converge on the ESP-based offset potential, so registering
- * any of them would assert a known failure.
+ * What the manifest (data2 integration_tests/topological_offset_models.json) lists: for each of
+ * circle_2d / square_2d / triangle_2d, a "large" case at target_distance_rel 5e-2, a "medium" one
+ * at 1e-2 and a "small" one at 1e-3, every one otherwise at the defaults -- euclidean field,
+ * tag_0 selected -- with front_conv_criterion "residual_error". That criterion measures the
+ * field's own residual as a LENGTH (|d - target_distance| for the euclidean field) over
+ * front_conv_rel x target_distance, so what these cases assert is the distance error itself
+ * rather than the size of a Newton step, which is what makes them worth running on shapes this
+ * small. All nine set throw_on_nonconvergence, so a case that fails to place the front fails the
+ * test. Locally the large cases converge in 4 turns, the medium ones in 6-7 and the small ones in
+ * 9, every one of them under 2 s.
  *
- * They were in Integration_Tests until data2 c414d7f. Two of them threw at construction on a
- * both-surfaces check that tested a flag pair rather than the geometry (fixed in 366c038e85);
- * all six then became far more expensive when the offset moved to the alternating A/B
- * optimization, which runs up to ab_max_rounds phases of a full mesh_improvement where the old
- * loop ran one -- enough for topological_offset_3d alone to exceed the suite's 7200 s budget.
+ * The three targets span two decades on purpose: the front's accuracy relative to delta is not
+ * constant across them -- the worst vertex reads 0.018-0.041x the bar at 1e-2 and 0.032-0.049x at
+ * 5e-2 -- so a regression that only bites at one scale is not hidden by the other two.
  *
- * WHEN CASES ARE RE-REGISTERED: the 3D ones are not expected to converge. Only the 2D dragon
- * sets throw_on_nonconvergence, so the rest report and continue, and what the group asserts is
- * that they RUN -- which is exactly what the construction throw broke, invisibly, because Debug
- * CI does not build the integration tests at all.
+ * The small cases also carry envelope_size_rel 1e-4, and that is load-bearing, not tidiness:
+ * envelope_size_rel is relative to the bounding-box diagonal and NOT to target_distance, so the
+ * default 1e-3 is a tenth of delta at target_distance_rel 1e-2 but a FULL delta at 1e-3 -- an
+ * input-complex envelope as wide as the whole offset. At the default the triangle does not
+ * converge (40 turns, 14.6x the bar); at 1e-4 it converges in 9 with 228x less distance error.
+ *
+ * The 3D cases (topological_offset_3d*.json) sit in the manifest's _commented_out key: configs
+ * kept in data2, not run, and not expected to converge. They were in Integration_Tests until
+ * data2 c414d7f. Two of them threw at construction on a both-surfaces check that tested a flag
+ * pair rather than the geometry (fixed in 366c038e85); all of them then became far more expensive
+ * when the offset moved to the alternating A/B optimization, which runs up to ab_max_rounds
+ * phases of a full mesh_improvement where the old loop ran one -- enough for
+ * topological_offset_3d alone to exceed the suite's 7200 s budget. Re-register them only against
+ * a runtime measured on the current loop.
+ *
+ * An empty "integration_tests" list is a pass, not a failure.
  */
 TEST_CASE("topological-offset-models", tags_integration + "[offset][.]")
 {

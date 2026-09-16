@@ -1334,7 +1334,8 @@ public:
     /// placement term's along the move direction. See the definition.
     bool front_vertex_alignment_traps_1d_solve(size_t vid) const;
     /// The vertex's convergence measure divided by its bar, per front_conv_criterion: 1 is the
-    /// bar. See the spec entry for the three measures. Infinite when unmeasurable.
+    /// bar. See the spec entry for the four measures -- three of stationarity, plus residual_error,
+    /// which measures the residual length instead. Infinite when unmeasurable.
     double front_vertex_conv_ratio(size_t vid) const;
     /**
      * @brief THE definition of "placed" for a vertex on the offset surface.
@@ -1352,7 +1353,12 @@ public:
      * where it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one
      * a hair outside the tube disqualified its whole chord from ever being refined, with the
      * chord then counted in neither `refinable` nor `n_at_floor` and so invisible to
-     * converged_single().
+     * converged_single().     *
+     * front_conv_criterion "residual_error" makes that same residual_length() the measure for every
+     * one of the callers above. That is not the defect coming back: the defect was the SPLIT --
+     * one test using distance while the rest used stationarity -- not the use of distance. Under
+     * residual_error both halves of the criterion, the vertex test and the chord/face sag, are
+     * lengths against rel x target_distance.
      *
      * The caller has established that vid is a live front vertex (m_is_on_offset && m_is_rounded);
      * this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed.
