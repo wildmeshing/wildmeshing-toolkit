@@ -60,14 +60,19 @@ struct Parameters : public wmtk::OptimizerParameters
     double front_conv_rel;
     // Which convergence test gates the run, used identically by the loop's vertex test and the
     // placement stop. F is the vertex's front objective, g its gradient, H its Gauss-Newton
-    // Hessian, n its move direction; all three compare against front_conv_rel. See
+    // Hessian, n its move direction; all four compare against front_conv_rel. See
     // front_vertex_conv_ratio().
     //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
     //     rel x target_distance.
     //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against rel x F.
     //   "gradient_norm_rel": |n.g| against rel x the reference gradient, measured once on the
     //     band as constructed.
-    std::string front_conv_criterion; ///< gradient_norm_rel | step_size_rel | decrement
+    //   "residual_error": not a stationarity measure at all -- the field's own residual at the
+    //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
+    //     the euclidean field and the ENERGY residual for the smooth one), against
+    //     rel x target_distance. No objective is built and n does not enter.
+    /// gradient_norm_rel | step_size_rel | decrement | residual_error
+    std::string front_conv_criterion;
     // The front is placed by a one-dimensional solve along its field normal
     // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
     // x0 + s n -- instead of a free solve. Where a vertex sits along the front carries no offset

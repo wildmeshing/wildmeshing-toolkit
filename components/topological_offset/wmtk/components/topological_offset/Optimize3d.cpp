@@ -2478,6 +2478,17 @@ double TopoOffsetTetMesh::front_vertex_conv_ratio(const size_t vid) const
         return bar > 0. ? front_vertex_normal_gradient(vid) / bar
                         : std::numeric_limits<double>::infinity();
     }
+    if (crit == "residual_error") {
+        // Where the vertex IS, not how far it still wants to move: the field's own residual as a
+        // LENGTH (band_vertex_residual(), exactly |d - target_distance| for a euclidean field),
+        // over the same bar the face test uses. No objective is built -- the measure does not
+        // depend on the move direction, so front_normal_projection does not enter -- and a
+        // non-finite residual reads as unmeasurable, as it does under the other criteria.
+        const double bar = rel * m_offset_params.target_distance;
+        if (!(bar > 0.)) return std::numeric_limits<double>::infinity();
+        const double rho = band_vertex_residual(vid);
+        return std::isfinite(rho) ? rho / bar : std::numeric_limits<double>::infinity();
+    }
     const Vector3d x = m_vertex_attribute[vid].m_posf;
     Eigen::VectorXd xv = x, g(3);
     Eigen::MatrixXd H(3, 3);
