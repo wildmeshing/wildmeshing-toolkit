@@ -428,13 +428,13 @@
     "pointer": "/pre_smooth",
     "type": "bool",
     "default": false,
-    "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- pre_smooth_max_passes sweeps, with the plastic rests stamped before and the offset tube rebuilt after, so the front is carried toward the level set once before the first split pass measures it. The block is smoothing alone and reads neither adaptive_smoothing nor interleaved_smoothing_passes, which belong to the loop's operation groups. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+    "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- sweeps until the adaptive stop test fires, at most pre_smooth_max_passes, with the plastic rests stamped before and the offset tube rebuilt after, so the front is carried toward the level set once before the first split pass measures it. The block is smoothing alone and reads neither adaptive_smoothing nor interleaved_smoothing_passes, which belong to the loop's operation groups. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
   },
   {
     "pointer": "/pre_smooth_max_passes",
-    "default": 2,
+    "default": 20,
     "type": "int",
-    "doc": "Smoothing sweeps in the pre_smooth block, a fixed count (at least 1). Its own key so the mesh as constructed can be smoothed a different number of times than the loop smooths after each operation group (interleaved_smoothing_passes). Read only when pre_smooth is true."
+    "doc": "Bound on the smoothing sweeps of the pre_smooth block. The block sweeps until the adaptive stop test fires -- the front has converged or stalled and the background has settled, see adaptive_smoothing_stall_rel and adaptive_smoothing_step_rel -- and this many sweeps at most (at least 1). Its own key so the mesh as constructed can be given a different bound than the loop's groups (adaptive_smoothing_max_passes). Read only when pre_smooth is true."
   },
   {
     "pointer": "/front_refuse_converged_collapse",

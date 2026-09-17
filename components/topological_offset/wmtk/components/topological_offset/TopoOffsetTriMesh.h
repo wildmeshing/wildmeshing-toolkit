@@ -1805,7 +1805,9 @@ public:
     /// the front has converged (max ratio <= 1) or stalled (max ratio fell by less than
     /// adaptive_smoothing_stall_rel) AND the background has settled (max step <=
     /// adaptive_smoothing_step_rel x its target edge), or adaptive_smoothing_max_passes.
-    void smooth_group_to_convergence(const char* group_name);
+    /// max_passes bounds the sweeps: adaptive_smoothing_max_passes for the loop's groups,
+    /// pre_smooth_max_passes for the pre_smooth block.
+    void smooth_group_to_convergence(const char* group_name, int max_passes);
     /// The energy criterion as measured when the loop converged; the final Phase A runs after
     /// it and the verdict must not be re-measured on that mesh.
     std::optional<EnergyCriterion> m_energy_verdict;

@@ -3118,9 +3118,11 @@ TopoOffsetTriMesh::SmoothingProgress TopoOffsetTriMesh::smoothing_progress(
     return s;
 }
 
-void TopoOffsetTriMesh::smooth_group_to_convergence(const char* group_name)
+void TopoOffsetTriMesh::smooth_group_to_convergence(
+    const char* group_name,
+    const int max_passes_asked)
 {
-    const int max_passes = std::max(1, m_offset_params.adaptive_smoothing_max_passes);
+    const int max_passes = std::max(1, max_passes_asked);
     const double stall_rel = m_offset_params.adaptive_smoothing_stall_rel;
     const double step_rel = m_offset_params.adaptive_smoothing_step_rel;
     std::vector<Vector2d> before;
@@ -3873,7 +3875,8 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
         // block every operation group is followed by, with the same bookkeeping around it
         // (plastic rests stamped before, the tube rebuilt after). Frames are labelled r0S*.
-        // pre_smooth_max_passes sweeps, a fixed count. The block is smoothing alone, so it reads
+        // Sweeps until the adaptive stop test fires (front converged or stalled, background
+        // settled), at most pre_smooth_max_passes. The block is smoothing alone, so it reads
         // neither adaptive_smoothing nor interleaved_smoothing_passes, which belong to the loop.
         const int kp = std::max(1, m_offset_params.pre_smooth_max_passes);
         m_ab_round = 0;
@@ -3886,10 +3889,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         rebuild_offset_envelope();
         stamp_plastic_rests();
         logger().info(
-            "\t[pre_smooth] one smoothing block before turn 1: {} smoothing pass(es) "
-            "(pre_smooth_max_passes)",
+            "\t[pre_smooth] one smoothing block before turn 1: until converged, at most {} "
+            "pass(es) (pre_smooth_max_passes)",
             kp);
-        local_operations({{0, 0, 0, kp}});
+        smooth_group_to_convergence("pre_smooth", kp);
         rebuild_offset_envelope();
     }
     // THE CAP PHASE. The band is placed by now; what is left is the shape of the offset's capped
@@ -3988,7 +3991,9 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
-                smooth_group_to_convergence(group_names[gi]);
+                smooth_group_to_convergence(
+                    group_names[gi],
+                    m_offset_params.adaptive_smoothing_max_passes);
             } else {
                 local_operations(groups[gi]);
             }

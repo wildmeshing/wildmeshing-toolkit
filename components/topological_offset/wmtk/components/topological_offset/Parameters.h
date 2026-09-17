@@ -162,7 +162,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: the cap phase after pre_smooth.
     bool cap_processing;
     bool pre_smooth;
-    /// See the spec: sweeps in the pre_smooth block, a fixed count of its own.
+    /// See the spec: bound on the pre_smooth block's sweeps; it stops earlier once converged.
     int pre_smooth_max_passes;
     /// See the spec: the cap phase's round bound and its sweeps after each split pass.
     int cap_max_rounds;
