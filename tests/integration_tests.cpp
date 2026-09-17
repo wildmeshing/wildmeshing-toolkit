@@ -144,19 +144,21 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
  * input-complex envelope as wide as the whole offset. At the default the triangle does not
  * converge (40 turns, 14.6x the bar); at 1e-4 it converges in 9 with 228x less distance error.
  *
- * The 3D cases (data2 596be38) are the same idea one dimension up, on models/cube_3d.msh: the
+ * The 3D cases (data2 8cc07f7) are the same idea one dimension up, on models/cube_3d.msh: the
  * 3x3 grid the offset work has been swept on, target_distance_rel 5e-2 / 1e-2 / 1e-3 against
  * front_conv_rel 0.5 / 0.1 / 0.025, named cube_{large,medium,small}_offset_conv{0.5,0.1,0.025}.
  * Each is defaults apart from those two keys plus envelope_size_rel 1e-4 and min_sizing_scalar
  * 1e-3, so they exercise the shipping defaults over that grid -- NOT the sweep's parameters,
  * which also set front_alignment_energy false and both EXPERIMENTAL_ keys true.
  *
- * THREE THINGS TO KNOW BEFORE TRUSTING THEM. They do not set throw_on_nonconvergence, unlike the
- * 2D nine, so today they assert only that the run completes without throwing. None of them has
- * been run -- every 2D case was run before it was added, these were not. And
- * target_distance_rel 1e-3 with front_conv_rel 0.025 is a KNOWN STALL on this model: the
- * placement criterion freezes with the sag criterion solved and refinement exhausted, so that
- * case is expected to burn max_rounds.
+ * All nine set throw_on_nonconvergence, as every integration test does and as all nine 2D cases
+ * do, so a case that fails to place the front fails the test.
+ *
+ * TWO THINGS TO KNOW BEFORE TRUSTING THEM. None has been run -- every 2D case was run before it
+ * was added, these were not. And target_distance_rel 1e-3 with front_conv_rel 0.025 is a KNOWN
+ * STALL on this model: the placement criterion freezes with the sag criterion solved and
+ * refinement exhausted, so that case burns max_rounds and is EXPECTED TO FAIL until the stall is
+ * fixed. That is the key doing its job, not a reason to drop it from that case.
  *
  * Time the group before registering any of it near CI. That is what retired the previous 3D
  * cases: topological_offset_3d.json and its two siblings (on double_sphere and 127891) sat in
