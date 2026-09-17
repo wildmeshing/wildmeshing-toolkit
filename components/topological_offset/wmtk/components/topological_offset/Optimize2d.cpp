@@ -3840,7 +3840,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         m_offset_params.front_conv_criterion,
         m_offset_params.front_conv_rel);
     (void)rounds;
-    const int budget = std::max(1, m_offset_params.max_rounds);
+    // Clamped at 0, not 1: max_rounds 0 asks for no turns at all, so the construction -- and the
+    // pre_smooth block below, when it is on -- is the whole run. Every value of 1 or more is
+    // unchanged; 0 used to mean 1 silently.
+    const int budget = std::max(0, m_offset_params.max_rounds);
     // One turn is TriWild's operation groups, run here rather than through mesh_improvement() so
     // the tube can be rebuilt AFTER EVERY SMOOTHING PASS. What mesh_improvement() adds and is
     // left out here on purpose is its stall response, which refines around the worst elements: a
@@ -4029,6 +4032,20 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             return;
         }
     }
+    // The quality members are written only in the convergence branch above and by the finishing
+    // pass inside it, so a loop that returns here -- exhausted, or never entered under a zero
+    // budget -- would leave the defaults (m_quality_converged true, m_quality_max_amips 0) and
+    // the verdict at the end of optimize_offset() would report a quality nothing measured. The
+    // pair is the turn line's own: AMIPS in the Single phase, against optimization_stop_metric().
+    m_phase = OptPhase::Single;
+    m_quality_max_amips = std::get<0>(optimization_quality_stats());
+    m_quality_converged = m_quality_max_amips < optimization_stop_metric();
+    if (budget == 0) {
+        logger().info(
+            "max_rounds 0: no turns requested, the run ends at the constructed offset{}",
+            m_offset_params.pre_smooth ? " and the pre_smooth block" : "");
+        return;
+    }
     logger().warn("Single phase did not converge in {} turns (max_rounds)", budget);
     log_front_profile(energy_criterion().worst_vid);
 }
@@ -4215,12 +4232,19 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     log_worst_dist_vertex();
 
     bool front_ok = false;
+    // Which half of the criterion failed, named. "NOT placed" alone was read as the vertices
+    // being off the level set even where they were all on it and only the chords between them
+    // sagged, which is a resolution failure: it needs a split, not more smoothing.
+    const char* front_state = "vertices NOT placed";
     {
         // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
         // Two criteria, both required: the front placed, and the final quality under
         // stop_energy (the finishing pass's verdict; see m_quality_converged).
         front_ok = ec.converged_single();
+        front_state = front_ok         ? "placed"
+                      : ec.converged() ? "vertices placed, chords NOT resolved"
+                                       : "vertices NOT placed";
         m_converged = front_ok && m_quality_converged;
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
@@ -4230,7 +4254,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             "final quality {}: max AMIPS {:.4} vs stop_energy {}",
             m_converged ? "Converged" : "Optimization did not converge",
             m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
-            front_ok ? "placed" : "NOT placed",
+            front_state,
             ec.n_vertices,
             ec.max_vertex,
             ec.n_unmeasurable,
@@ -4250,7 +4274,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             "Optimization did not converge and throw_on_nonconvergence is set: front {}, final "
             "quality {} (max AMIPS {:.4} vs stop_energy {}). Ran {} of {} iterations; see the "
             "warnings above.",
-            front_ok ? "placed" : "NOT placed",
+            front_state,
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy,
