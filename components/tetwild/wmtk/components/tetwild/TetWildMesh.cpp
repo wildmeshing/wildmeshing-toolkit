@@ -65,8 +65,50 @@ void TetWildMesh::optimization_sanity_checks_extra()
     }
 }
 
+std::pair<size_t, size_t> TetWildMesh::feature_retention(double* worst_ratio) const
+{
+    if (worst_ratio) {
+        *worst_ratio = 0;
+    }
+    if (m_feature_points.empty()) {
+        return {0, 0};
+    }
+
+    // One nearest-neighbour query per anchor against a kd-tree of the live vertices; the
+    // 2D version learned the hard way not to scan every vertex per feature.
+    std::vector<Vector3d> pts;
+    pts.reserve(vert_capacity());
+    for (const Tuple& v : get_vertices()) {
+        pts.push_back(m_vertex_attribute[v.vid(*this)].m_posf);
+    }
+    if (pts.empty()) {
+        return {0, m_feature_points.size()};
+    }
+    const KNN knn(pts);
+
+    size_t kept = 0;
+    for (const Vector3d& anchor : m_feature_points) {
+        uint32_t idx = 0;
+        double sq = 0;
+        knn.nearest_neighbor(anchor, idx, sq);
+        if (sq <= m_feature_eps * m_feature_eps) {
+            ++kept;
+        } else if (worst_ratio) {
+            *worst_ratio = std::max(*worst_ratio, std::sqrt(sq) / m_feature_eps);
+        }
+    }
+    return {kept, m_feature_points.size()};
+}
+
 std::shared_ptr<SampleEnvelope> TetWildMesh::smoothing_energy_envelope(const size_t vid) const
 {
+    // A vertex on an input feature curve is pulled toward the feature tube. Checked FIRST:
+    // the feature is user-supplied where order 2 is derived, so where a vertex is both, the
+    // explicit constraint wins. Both are soft pulls; the hard vetoes (the collapse guard and
+    // the tagged-edge containment in smoothing) are unaffected by this order.
+    if (m_track_feature_edges && m_feature_envelope && vertex_has_feature_edge(vid)) {
+        return m_feature_envelope;
+    }
     // Order 2 means the vertex is on a surface boundary or a non-manifold edge. This is
     // broader than the old m_is_on_open_boundary flag, which covered only open boundaries.
     if (get_order_of_vertex(vid) >= 2 && m_order2_envelope && m_order2_envelope->initialized()) {
@@ -624,6 +666,94 @@ void TetWildMesh::filter_with_input_surface_winding_number()
     }
 
     remove_tets_by_ids(rm_tids);
+}
+
+void TetWildMesh::filter_with_roles(const std::vector<size_t>& volume_inputs)
+{
+    std::vector<size_t> rm_tids;
+    for (const Tuple& t : get_tets()) {
+        const size_t tid = t.tid(*this);
+        const auto& wn = m_tet_attribute[tid].m_winding_number_per_input;
+        bool inside = false;
+        for (const size_t k : volume_inputs) {
+            if (k < wn.size() && wn[k] > 0.5) {
+                inside = true;
+                break;
+            }
+        }
+        if (!inside) {
+            rm_tids.emplace_back(tid);
+        }
+    }
+    remove_tets_by_ids(rm_tids);
+}
+
+void TetWildMesh::output_hybrid_mesh(
+    const std::string& file,
+    const std::vector<std::array<Vector3d, 3>>& sheet_triangles,
+    const std::vector<std::array<Vector3d, 2>>& curve_segments,
+    const std::vector<Vector3d>& anchor_points)
+{
+    wmtk::MshData msh;
+
+    // Tet block: the filtered mesh as it stands (the caller consolidated it).
+    const auto& vtx = get_vertices();
+    msh.add_tet_vertices(vtx.size(), [&](size_t k) {
+        return m_vertex_attribute[vtx[k].vid(*this)].m_posf;
+    });
+    const auto& tets = get_tets();
+    msh.add_tets(tets.size(), [&](size_t k) {
+        const auto vs = oriented_tet_vertices(tets[k]);
+        std::array<size_t, 4> data;
+        for (int j = 0; j < 4; j++) {
+            data[j] = vs[j].vid(*this);
+        }
+        return data;
+    });
+
+    // Face and edge blocks carry their own vertex arrays (welded by exact position).
+    const auto weld = [](const auto& elements, auto& verts, auto& indexed) {
+        std::map<std::array<double, 3>, size_t> vid_of;
+        for (const auto& el : elements) {
+            auto& out = indexed.emplace_back();
+            for (size_t j = 0; j < el.size(); ++j) {
+                const std::array<double, 3> key = {{el[j][0], el[j][1], el[j][2]}};
+                const auto [it, inserted] = vid_of.emplace(key, verts.size());
+                if (inserted) {
+                    verts.push_back(el[j]);
+                }
+                out[j] = it->second;
+            }
+        }
+    };
+    if (!sheet_triangles.empty()) {
+        std::vector<Vector3d> fv;
+        std::vector<std::array<size_t, 3>> ft;
+        weld(sheet_triangles, fv, ft);
+        msh.add_face_vertices(fv.size(), [&](size_t k) { return fv[k]; });
+        msh.add_faces(ft.size(), [&](size_t k) { return ft[k]; });
+    }
+    if (!curve_segments.empty()) {
+        std::vector<Vector3d> ev;
+        std::vector<std::array<size_t, 2>> ee;
+        weld(curve_segments, ev, ee);
+        msh.add_edge_vertices(ev.size(), [&](size_t k) { return ev[k]; });
+        msh.add_edges(ee.size(), [&](size_t k) { return ee[k]; });
+    }
+
+    if (!anchor_points.empty()) {
+        msh.add_point_vertices(anchor_points.size(), [&](size_t k) { return anchor_points[k]; });
+        msh.add_points(anchor_points.size(), [&](size_t k) { return std::array<size_t, 1>{{k}}; });
+    }
+
+    msh.save(file, /*binary=*/true);
+    logger().info(
+        "hybrid output: {} tets, {} surface triangles, {} curve edges, {} anchor points -> {}",
+        tets.size(),
+        sheet_triangles.size(),
+        curve_segments.size(),
+        anchor_points.size(),
+        file);
 }
 
 void TetWildMesh::filter_with_tracked_surface_winding_number()

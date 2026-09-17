@@ -31,6 +31,12 @@ namespace wmtk::utils {
  * @param[out] E_out_sources optional: for each row of E_out, the input edges (rows of E) it
  *             tiles, ascending. Usually one; more where input edges overlap, which is
  *             exactly the case a geometric look-up on E_out alone cannot tell apart.
+ * @param[out] point_map optional: for each row of V, the row of V_out holding that exact
+ *             point. The arrangement triangulates every input point, referenced by a
+ *             segment or not, so this is how a free point (no incident segment) is found
+ *             again in the output; exact duplicates in V map to the same output row. -1
+ *             only if the remesher dropped the point, which it does not do for points --
+ *             the entry exists so a caller can assert that rather than assume it.
  */
 void embed_segments(
     const MatrixXd& V,
@@ -39,7 +45,8 @@ void embed_segments(
     std::vector<Vector2r>& V_rational,
     MatrixXi& F_out,
     MatrixXi& E_out,
-    std::vector<std::vector<int>>* E_out_sources = nullptr);
+    std::vector<std::vector<int>>* E_out_sources = nullptr,
+    std::vector<int>* point_map = nullptr);
 
 /**
  * @brief Read every input edge mesh and concatenate them into one segment network.

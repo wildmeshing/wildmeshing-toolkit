@@ -9,6 +9,7 @@
 #include <wmtk/utils/SimplifySegments.hpp>
 #include <wmtk/utils/resolve_path.hpp>
 
+#include <wmtk/io/read_edge_mesh.hpp>
 #include <wmtk/utils/EmbedSegments.hpp>
 #include <wmtk/utils/EnvelopeBudget.hpp>
 
@@ -258,6 +259,55 @@ void triwild(nlohmann::json json_params)
         params.preserve_topology ? 0.0 : double(json_params["remove_duplicate_eps"]);
     wmtk::utils::read_input_curves(input_paths, remove_duplicate_eps, V_in, E_in, Vs, Es);
 
+    // Input point files: every vertex is a feature point, appended to V_in as an isolated
+    // vertex (referenced by no segment). Appended BEFORE the bounding box is taken, so a
+    // point outside the curves' box still ends up inside the triangulated domain. Not added
+    // to Vs/Es: points carry no winding number.
+    {
+        std::vector<std::string> point_paths = json_params["input_points"];
+        for (std::string& p : point_paths) {
+            p = resolve_path(root, p).string();
+        }
+        for (const std::string& path : point_paths) {
+            MatrixXd Vp;
+            MatrixXi Ep;
+            io::read_edge_mesh(path, Vp, Ep, remove_duplicate_eps);
+            if (Ep.rows() > 0) {
+                logger().warn(
+                    "input_points file {} has {} edges; only its {} vertices are used",
+                    path,
+                    Ep.rows(),
+                    Vp.rows());
+            }
+            logger().info("Read point file {}: #P = {}", path, Vp.rows());
+            const int base = V_in.rows();
+            V_in.conservativeResize(base + Vp.rows(), 2);
+            V_in.block(base, 0, Vp.rows(), 2) = Vp.block(0, 0, Vp.rows(), 2);
+        }
+    }
+
+    // Free points to preserve: every vertex of V_in with no incident segment -- the point
+    // files above, plus any isolated vertex the curve files contained (read_edge_mesh keeps
+    // them for exactly this). Detected on the ORIGINAL input, not the simplified network: a
+    // sub-eps loop can degenerate to an isolated vertex during simplification, and such a
+    // remnant is the simplification doing its job, not an input point to pin.
+    std::vector<Vector2d> free_points;
+    {
+        std::vector<int> valence(V_in.rows(), 0);
+        for (int i = 0; i < E_in.rows(); ++i) {
+            ++valence[E_in(i, 0)];
+            ++valence[E_in(i, 1)];
+        }
+        for (int v = 0; v < V_in.rows(); ++v) {
+            if (valence[v] == 0) {
+                free_points.emplace_back(V_in.row(v));
+            }
+        }
+        if (!free_points.empty()) {
+            logger().info("input free points: {}", free_points.size());
+        }
+    }
+
     // Informational input-topology report; gated behind DEBUG_euler because it is only
     // meaningful next to the matching computations later in the run.
     const bool debug_euler = json_params["DEBUG_euler"];
@@ -358,7 +408,47 @@ void triwild(nlohmann::json json_params)
     std::vector<Vector2r> V_rational; // the same vertices, exact
     MatrixXi F;
     MatrixXi E; // constraint edges in the arrangement
-    wmtk::utils::embed_segments(V_simp, E_simp, V, V_rational, F, E);
+    std::vector<int> point_map;
+    wmtk::utils::embed_segments(
+        V_simp,
+        E_simp,
+        V,
+        V_rational,
+        F,
+        E,
+        nullptr,
+        free_points.empty() ? nullptr : &point_map);
+
+    // Find each free point's vertex in the arrangement. By POSITION, not by index: the
+    // simplification compacts V, so input row ids do not survive it -- but an isolated
+    // vertex has no incident segment, so no collapse ever moves it and its coordinates in
+    // V_simp are bit-identical to the input's. The arrangement's point provenance then maps
+    // that row to the output vertex.
+    std::vector<size_t> free_point_vids;
+    if (!free_points.empty()) {
+        std::map<std::pair<double, double>, int> simp_row_of;
+        for (int v = 0; v < V_simp.rows(); ++v) {
+            simp_row_of.emplace(std::make_pair(V_simp(v, 0), V_simp(v, 1)), v);
+        }
+        for (const Vector2d& p : free_points) {
+            const auto it = simp_row_of.find({p[0], p[1]});
+            if (it == simp_row_of.end()) {
+                log_and_throw_error(
+                    "Input free point ({}, {}) not found after simplification; isolated "
+                    "vertices must survive it unmoved",
+                    p[0],
+                    p[1]);
+            }
+            const int vid = point_map[it->second];
+            if (vid < 0) {
+                log_and_throw_error(
+                    "Input free point ({}, {}) was dropped by the arrangement",
+                    p[0],
+                    p[1]);
+            }
+            free_point_vids.push_back(size_t(vid));
+        }
+    }
 
     // The arrangement is the baseline for everything after it. It is EXPECTED to differ
     // from the input: resolving a crossing inserts a vertex shared by both curves, which
@@ -440,7 +530,7 @@ void triwild(nlohmann::json json_params)
 
     TriWildMesh mesh(params, opt_eps, NUM_THREADS);
     wmtk::set_preallocation_factor_from_json(mesh, json_params);
-    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env);
+    mesh.init_mesh(V, V_rational, F, E, tag_names, V_env, E_env, free_point_vids);
 
     // After init_mesh, which is what builds the envelope, and after the simplification, which
     // uses its own object -- so this only disables the checks the optimizer makes.
@@ -491,6 +581,31 @@ void triwild(nlohmann::json json_params)
         logger().info(
             "Skipping winding-number and flood-fill computation (skip_winding_number). The "
             "output groups will be empty.");
+    }
+
+    // Feature collections, taken BEFORE any filter deletes triangles: user-supplied
+    // features must not vanish from the feature outputs and audits when the region they
+    // live in is discarded (they do leave the triangle mesh itself). Same rule as 3D.
+    std::vector<std::array<Vector2d, 2>> collected_curve_segs;
+    std::vector<Vector2d> collected_anchor_pts;
+    std::pair<size_t, size_t> collected_retention{0, 0};
+    double collected_retention_worst = 0;
+    {
+        for (const auto& e : mesh.get_edges()) {
+            if (!mesh.m_edge_attribute[e.eid(mesh)].m_is_surface_fs) {
+                continue;
+            }
+            collected_curve_segs.push_back(
+                {{mesh.m_vertex_attribute[e.vid(mesh)].m_posf,
+                  mesh.m_vertex_attribute[e.switch_vertex(mesh).vid(mesh)].m_posf}});
+        }
+        for (const auto& v : mesh.get_vertices()) {
+            const size_t vid = v.vid(mesh);
+            if (mesh.m_vertex_extra[vid].m_feature_id != NO_FEATURE) {
+                collected_anchor_pts.push_back(mesh.m_vertex_attribute[vid].m_posf);
+            }
+        }
+        collected_retention = mesh.feature_retention(&collected_retention_worst);
     }
 
     if (filter_option == "input") {
@@ -608,16 +723,20 @@ void triwild(nlohmann::json json_params)
     double feat_worst_ratio = 0;
     size_t feat_kept = 0, feat_total = 0;
     if (json_params["DEBUG_feature_retention"]) {
-        std::tie(feat_kept, feat_total) = mesh.feature_retention(&feat_worst_ratio);
+        // Pre-filter numbers (see the collection above): a feature in a discarded region
+        // left the triangle mesh with its region, but was preserved up to extraction and
+        // survives in _features.obj.
+        std::tie(feat_kept, feat_total) = collected_retention;
+        feat_worst_ratio = collected_retention_worst;
     }
     if (feat_total > 0) {
         if (feat_kept == feat_total) {
             logger().info("feature points retained: {}/{}", feat_kept, feat_total);
         } else {
             logger().warn(
-                "feature points retained: {}/{} -- {} polyline endpoints or junctions are no "
-                "longer represented within eps; the worst is {:.2f} x eps from the nearest "
-                "vertex",
+                "feature points retained: {}/{} -- {} feature points (polyline endpoints, "
+                "junctions, or input free points) are no longer represented within eps; the "
+                "worst is {:.2f} x eps from the nearest vertex",
                 feat_kept,
                 feat_total,
                 feat_total - feat_kept,
@@ -713,6 +832,37 @@ void triwild(nlohmann::json json_params)
         mesh.write_vtu(output_path);
     }
     mesh.write_msh_groups(output_path + ".msh");
+
+    // The tracked curves and feature anchors, as an edge mesh with point records -- the 2D
+    // counterpart of tetwild's _features.obj, from the same pre-filter collections. Only
+    // written when the input supplied free points, mirroring 3D's features-present gate --
+    // and keeping featureless runs byte-identical, output file set included.
+    if (!free_points.empty()) {
+        std::ofstream fout(output_path + "_features.obj");
+        std::map<std::array<double, 2>, size_t> vid_of;
+        const auto obj_vertex = [&](const Vector2d& p) {
+            const std::array<double, 2> key = {{p[0], p[1]}};
+            const auto [it, inserted] = vid_of.emplace(key, vid_of.size() + 1);
+            if (inserted) {
+                fout << "v " << p[0] << " " << p[1] << " 0\n";
+            }
+            return it->second;
+        };
+        std::vector<std::array<size_t, 2>> obj_edges;
+        for (const auto& seg : collected_curve_segs) {
+            obj_edges.push_back({{obj_vertex(seg[0]), obj_vertex(seg[1])}});
+        }
+        std::vector<size_t> obj_points;
+        for (const Vector2d& p : collected_anchor_pts) {
+            obj_points.push_back(obj_vertex(p));
+        }
+        for (const auto& e : obj_edges) {
+            fout << "l " << e[0] << " " << e[1] << "\n";
+        }
+        for (const size_t pid : obj_points) {
+            fout << "p " << pid << "\n";
+        }
+    }
 
     logger().info("======= finish =========");
 }

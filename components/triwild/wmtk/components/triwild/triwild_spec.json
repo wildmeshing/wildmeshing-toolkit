@@ -6,6 +6,7 @@
     "required": ["application", "input"],
     "optional": [
       "output",
+      "input_points",
       "input_names",
       "input_dir",
       "num_threads",
@@ -81,6 +82,17 @@
     "pointer": "/input/*",
     "type": "string",
     "doc": "Triangular input mesh."
+  },
+  {
+    "pointer": "/input_points",
+    "type": "list",
+    "default": [],
+    "doc": "List of input POINT files: every vertex of each file is a feature point to preserve, whether or not the file also has edges (they are ignored). Each point is inserted as a vertex of the triangulation and anchored like a polyline endpoint: some output vertex stays within eps of it, collapses that would break that are refused, and smoothing may move the carrying vertex only within the eps ball. Free points can also be supplied inline: a vertex of an /input curve file with no incident edge is anchored the same way. A point lying in a region the /filter discards leaves the triangle mesh with that region, but survives in the <output>_features.obj feature output, and DEBUG_feature_retention reports the PRE-filter state -- a feature preserved through the optimization is never reported lost because extraction discarded its region."
+  },
+  {
+    "pointer": "/input_points/*",
+    "type": "string",
+    "doc": "One input point file (any edge-mesh format; only the vertices are used)."
   },
   {
     "pointer": "/output",

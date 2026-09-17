@@ -130,6 +130,10 @@ bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
     if (is_edge_on_bbox(t)) {
         return false;
     }
+    // A tagged feature edge IS the operated edge here, and this swap deletes it outright.
+    if (m_track_feature_edges && m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge) {
+        return false;
+    }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip (see
     // prepare_surface_flip). If disabled, keep the old behavior of rejecting all surface-edge
     // swaps. Route on the direct incident-surface-face count so a genuine surface edge is never
@@ -149,6 +153,10 @@ bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
     cache.max_energy = max_energy;
 
     face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
+    if (m_track_feature_edges) {
+        feature_edges_cache(incident_tets, cache.changed_edges);
+    }
+
 
     return true;
 }
@@ -327,6 +335,10 @@ bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
     }
 
     tracker_assign_after(*this, twotets, cache.changed_faces, m_face_attribute);
+    if (m_track_feature_edges) {
+        feature_edges_restore_region(twotets, cache.changed_edges);
+    }
+
 
     if (cache.is_surface_flip) {
         // The generic tracker copied the old (interior) attributes onto the new
@@ -436,6 +448,10 @@ bool TetOptimizerMesh::swap_face_before(const Tuple& t)
     }
 
     face_attribute_tracker(*this, twotets, m_face_attribute, cache.changed_faces);
+    if (m_track_feature_edges) {
+        feature_edges_cache(twotets, cache.changed_edges);
+    }
+
     return true;
 }
 
@@ -456,6 +472,10 @@ bool TetOptimizerMesh::swap_face_after(const Tuple& t)
     if (!swap_after_cells(new_tids, false)) return false;
 
     tracker_assign_after(*this, incident_tets, swap_cache.local().changed_faces, m_face_attribute);
+    if (m_track_feature_edges) {
+        feature_edges_restore_region(incident_tets, swap_cache.local().changed_edges);
+    }
+
 
     cnt_swap++;
     return true;
@@ -558,6 +578,10 @@ bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
     if (is_edge_on_bbox(t)) {
         return false;
     }
+    // A tagged feature edge IS the operated edge here, and this swap deletes it outright.
+    if (m_track_feature_edges && m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge) {
+        return false;
+    }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip. The base 4-4
     // swap is steered to the case that creates the new surface edge (c,d) by
     // swap_edge_44_accept_case; if no 4-4 diagonal yields (c,d) the swap is rejected. Route on the
@@ -577,6 +601,10 @@ bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
     cache.max_energy = max_energy;
 
     face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
+    if (m_track_feature_edges) {
+        feature_edges_cache(incident_tets, cache.changed_edges);
+    }
+
 
     return true;
 }
@@ -613,6 +641,10 @@ bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
     }
 
     tracker_assign_after(*this, incident_tets, cache.changed_faces, m_face_attribute);
+    if (m_track_feature_edges) {
+        feature_edges_restore_region(incident_tets, cache.changed_edges);
+    }
+
 
     if (cache.is_surface_flip) {
         // Re-tag the two new surface faces (the generic tracker reset them to interior). Net
@@ -679,6 +711,10 @@ bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
     if (is_edge_on_bbox(t)) {
         return false;
     }
+    // A tagged feature edge IS the operated edge here, and this swap deletes it outright.
+    if (m_track_feature_edges && m_feature_edge_attribute[t.eid(*this)].m_is_feature_edge) {
+        return false;
+    }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip. The base 5-6
     // swap is steered to the fan that creates the new surface edge (c,d) by
     // swap_edge_56_accept_case; if no fan yields (c,d) the swap is rejected. Route on the direct
@@ -698,6 +734,10 @@ bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
     cache.max_energy = max_energy;
 
     face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
+    if (m_track_feature_edges) {
+        feature_edges_cache(incident_tets, cache.changed_edges);
+    }
+
 
     return true;
 }
@@ -735,6 +775,10 @@ bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
     }
 
     tracker_assign_after(*this, tids, cache.changed_faces, m_face_attribute);
+    if (m_track_feature_edges) {
+        feature_edges_restore_region(tids, cache.changed_edges);
+    }
+
 
     if (cache.is_surface_flip) {
         // Re-tag the two new surface faces (the generic tracker reset them to interior). Net

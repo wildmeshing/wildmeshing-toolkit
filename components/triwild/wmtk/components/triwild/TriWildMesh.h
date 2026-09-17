@@ -172,6 +172,11 @@ public:
      *        stay near what the user gave us, not near the simplified version of it. Same
      *        arrangement as tetwild, which hands its optimizer the envelope built on the
      *        unsimplified input surface.
+     * @param free_point_vids rows of V that stand for input FREE POINTS -- input vertices
+     *        with no incident segment. Each is anchored in m_feature_points exactly like a
+     *        polyline endpoint: same ball, same collapse policy, same retention audit. They
+     *        cannot be derived here the way endpoints and junctions are, because their
+     *        valence in E is 0 -- the same valence as every background-grid vertex.
      */
     void init_mesh(
         const MatrixXd& V,
@@ -180,7 +185,8 @@ public:
         const MatrixXi& E,
         const std::vector<std::string>& tag_names,
         const MatrixXd& V_env,
-        const MatrixXi& E_env);
+        const MatrixXi& E_env,
+        const std::vector<size_t>& free_point_vids = {});
 
     void init_surfaces_and_boundaries();
 
@@ -235,8 +241,8 @@ protected:
     {
         if (const size_t n = m_feature_rejects.load(); n > 0) {
             logger().info(
-                "[feature] {} collapses refused to keep a polyline endpoint or junction "
-                "within {:.6} of its input position",
+                "[feature] {} collapses refused to keep a feature point (polyline endpoint, "
+                "junction, or input free point) within {:.6} of its input position",
                 n,
                 m_envelope_eps);
         }

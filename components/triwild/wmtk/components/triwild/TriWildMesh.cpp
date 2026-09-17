@@ -46,7 +46,8 @@ void TriWildMesh::init_mesh(
     const MatrixXi& E,
     const std::vector<std::string>& tag_names,
     const MatrixXd& V_env,
-    const MatrixXi& E_env)
+    const MatrixXi& E_env,
+    const std::vector<size_t>& free_point_vids)
 {
     assert(V.cols() == 2);
     assert(F.cols() == 3);
@@ -222,6 +223,32 @@ void TriWildMesh::init_mesh(
                 n_endpoints,
                 n_junctions,
                 m_feature_points.size(),
+                m_envelope_eps);
+        }
+
+        // Input free points: anchored unconditionally, junctions' cleanup exemption
+        // included. A junction is anchored (or not) by policy, because it is DERIVED from
+        // the curve network; a free point IS the input, so there is no policy question. A
+        // vertex that already carries a feature id (a free point coinciding with a polyline
+        // endpoint, merged by the arrangement's dedup) keeps the id it has -- one anchor at
+        // that position is enough, the retention audit is geometric.
+        size_t n_free = 0;
+        for (const size_t v : free_point_vids) {
+            if (v >= vert_capacity()) {
+                log_and_throw_error("Free-point vertex id {} out of range", v);
+            }
+            if (m_vertex_extra[v].m_feature_id != NO_FEATURE) {
+                continue;
+            }
+            m_vertex_extra[v].m_feature_id = m_feature_points.size();
+            m_feature_points.push_back(m_vertex_attribute[v].m_posf);
+            ++n_free;
+        }
+        if (n_free > 0) {
+            logger().info(
+                "feature points: {} input free points anchored within {:.6} of their input "
+                "positions",
+                n_free,
                 m_envelope_eps);
         }
     }
