@@ -31,6 +31,7 @@
       "save_offset_correspondence",
       "sphere_trace_initialization",
       "sphere_trace_target_rel_tol",
+      "EXPERIMENTAL_consistent_construction_split",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -233,9 +234,10 @@
     "options": [
       "gradient_norm_rel",
       "step_size_rel",
-      "decrement"
+      "decrement",
+      "residual_error"
     ],
-    "doc": "What 'converged' means for a front vertex, in the placement stop and in the loop's vertex test, measured against front_conv_rel. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian; under front_normal_projection both are taken along the vertex's move direction n. 'step_size_rel' (the default): the remaining 1-D Newton step, |n . g| / (n^T H n), against rel x target_distance. 'decrement': the Newton decrement, half of (n . g)^2 / (n^T H n), against rel x F(x). 'gradient_norm_rel': |n . g| against rel x a reference measured once on the band as constructed. Prefer the step or the decrement: the gradient is stiffness times remaining displacement, so the sliver between two meeting fronts reads far above the bar while sitting at its minimum."
+    "doc": "What 'converged' means for a front vertex, in the placement stop and in the loop's vertex test, measured against front_conv_rel. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian; under front_normal_projection both are taken along the vertex's move direction n. 'step_size_rel' (the default): the remaining 1-D Newton step, |n . g| / (n^T H n), against rel x target_distance. 'decrement': the Newton decrement, half of (n . g)^2 / (n^T H n), against rel x F(x). 'gradient_norm_rel': |n . g| against rel x a reference measured once on the band as constructed. Prefer the step or the decrement: the gradient is stiffness times remaining displacement, so the sliver between two meeting fronts reads far above the bar while sitting at its minimum. 'residual_error' is the odd one out and measures where the vertex IS rather than how far it still wants to move: the field's own residual as a length (for 'euclidean' exactly |d - target_distance|), against rel x target_distance -- the same bar the chord test uses, so both halves of the criterion then mean one thing. It builds no objective, so front_normal_projection does not enter, and a vertex wedged at a stationary point it cannot leave is reported by how wrong it is rather than by how still it is. Two costs: under 'smooth' the residual is a barrier residual, not a Euclidean distance, and it saturates outside the support, so a front that has left dhat reads a bounded error instead of a large one; and a vertex drifting across the level set at a stationary point of the objective can read placed on one turn and unplaced on the next."
   },
   {
     "pointer": "/offset_residual_samples",
@@ -266,6 +268,12 @@
     "type": "bool",
     "default": false,
     "doc": "3D. Write <output>_correspondence.vtu right after marching_tets, before any optimization: the mesh as constructed, with the per-vertex field corr_input_vid giving, for every offset vertex, the id of the input-complex vertex it was split off from (-1 elsewhere). Vertex ids are those of that file."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_consistent_construction_split",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL, and a no-op unless sphere_trace_initialization is true. Makes the marching construction all or nothing. Normally each marched edge is placed independently: the trace runs from the complex end and, on an edge the trace leaves (the level set is not on that edge), that ONE edge falls back to its midpoint -- so a single construction can mix vertices sitting on the level set with vertices sitting at edge midpoints, which is the inconsistency this flag exists to remove. With it on, the whole march is probed before any edge is split: if every marched edge can be traced, every edge is traced as usual; if even one cannot, EVERY edge is split at its midpoint instead and the construction is uniformly a midpoint march. The probe repeats the trace the split would do -- it reads only the endpoint positions and the input-complex BVH, neither of which a split changes -- so a construction that does trace everywhere pays for two full trace passes. The construction log says which way it went and how many edges could not be traced."
   },
   {
     "pointer": "/check_manifoldness",

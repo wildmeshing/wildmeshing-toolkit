@@ -1190,6 +1190,53 @@ void TopoOffsetTriMesh::marching_tris()
         sort_edges_by_length(e_to_split);
     }
 
+    // EXPERIMENTAL_consistent_construction_split: the march becomes all-or-nothing. Normally a
+    // trace that leaves its edge falls back to the midpoint for THAT edge alone, so one
+    // construction can mix vertices on the level set with vertices at edge midpoints. Here the
+    // march is probed first and a single untraceable edge sends every edge to its midpoint.
+    //
+    // The probe is exact, not an estimate: edge_split_sphere_trace() is const and reads only the
+    // two endpoint positions and the input-complex BVH; a split inserts a vertex without moving
+    // any existing one, and the labels this loop reads are only rewritten after it. So the answers
+    // here are the answers the split hook would get. The cost is that a march which does trace
+    // everywhere traces twice. Only SphereTrace can mix, so the flag is a no-op otherwise.
+    // Identical to TopoOffsetTetMesh::marching_tets().
+    const EdgeSplitMode entry_split_mode = m_edge_split_mode;
+    if (m_offset_params.experimental_consistent_construction_split &&
+        m_edge_split_mode == EdgeSplitMode::SphereTrace) {
+        size_t untraceable = 0;
+        for (const simplex::Edge& e : e_to_split) {
+            const size_t va = e.vertices()[0];
+            const size_t vb = e.vertices()[1];
+            // Exactly one end carries a non-zero label: that is how e_to_split was built.
+            const size_t v_in = m_vertex_extra[va].label != 0 ? va : vb;
+            const size_t v_out = (v_in == va) ? vb : va;
+            Vector2d p_probe;
+            size_t steps = 0;
+            if (!edge_split_sphere_trace(
+                    m_vertex_attribute[v_in].m_posf,
+                    m_vertex_attribute[v_out].m_posf,
+                    p_probe,
+                    steps)) {
+                ++untraceable;
+            }
+        }
+        if (untraceable > 0) {
+            m_edge_split_mode = EdgeSplitMode::Midpoint;
+            logger().info(
+                "\t[construction] EXPERIMENTAL_consistent_construction_split: {} of {} marched "
+                "edges cannot be traced to the level set, so the WHOLE march falls back to "
+                "midpoint splits",
+                untraceable,
+                e_to_split.size());
+        } else {
+            logger().info(
+                "\t[construction] EXPERIMENTAL_consistent_construction_split: all {} marched "
+                "edges can be traced, so the march traces everywhere",
+                e_to_split.size());
+        }
+    }
+
     // actually split edges
     std::vector<Tuple> garbage;
     std::vector<size_t> frontier_verts; // the one-ring of these verts must be labelled offset
@@ -1224,6 +1271,9 @@ void TopoOffsetTriMesh::marching_tris()
     } else {
         logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
     }
+    // Leave the mode as it was found: the consistency flag may have forced it to Midpoint above,
+    // and that decision belongs to this march alone.
+    m_edge_split_mode = entry_split_mode;
 
     // mark all offset tris (incident to any vert with label 1 or 2)
     for (const size_t v_id : frontier_verts) {

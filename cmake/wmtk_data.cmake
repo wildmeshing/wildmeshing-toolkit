@@ -47,8 +47,19 @@ ExternalProject_Add(
     # deform_others false, a converging case for the per-tag envelope setup.
     # At 3734b13 (2026-09-09) the manifold_extraction cases move to manifold_extraction_models.json,
     # read by the hidden [manifold] group; manifold_extraction_3d leaves integration_tests.json.
+    # At e19ece6 (2026-09-15) the seven 2D cases above are GONE, and with them the three models only
+    # they used (dragon_rectangle, two_circles, two_overlap_crossing). In their place: nine cases on
+    # three simple shapes -- circle_2d, square_2d, triangle_2d, each at target_distance_rel 5e-2,
+    # 1e-2 and 1e-3 -- all on front_conv_criterion "residual_error" (which lands in this repo in the
+    # same push; the fixtures cannot pass without it) and all with throw_on_nonconvergence, so the
+    # group now asserts convergence rather than merely that a case runs. Each was run locally first:
+    # 4 turns for the large cases, 6-7 for the medium, 9 for the small, all under 2 s. The small
+    # cases override envelope_size_rel to 1e-4 because that key is relative to the bounding-box
+    # diagonal and not to target_distance, so the default is a full delta wide at 1e-3 and the
+    # triangle does not converge at it. The dragon and two_overlap wall-problem fixtures are gone
+    # with the rest; the open problem they stood for is recorded in .claude/CLAUDE.md, not here.
     #
-    GIT_TAG 3734b13218d5328f2bff9deb5de690f26539136b
+    GIT_TAG e19ece62931f64d2766b33c88a880e8056142f6a
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
