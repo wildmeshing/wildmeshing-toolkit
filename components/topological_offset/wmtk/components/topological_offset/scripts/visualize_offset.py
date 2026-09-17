@@ -204,6 +204,26 @@ def front_diags(m):
     return out
 
 
+def add_front_scalar(struct, name, vals, **kw):
+    """Register a front diagnostic, keeping NaN out of polyscope's buffers.
+
+    The C++ writes -1 where a vertex has no value, and front_diags() turns that into NaN. Two
+    cases reach here. A frame written BEFORE the optimization computed the diagnostics -- every
+    construction frame -- has no value anywhere, and the layer is skipped: polyscope rejects an
+    all-NaN buffer ("Invalid +-inf or NaN values detected"), once per quantity per frame. A live
+    frame can still carry a few unmeasurable front vertices (a non-positive curvature of the
+    objective along the move direction); those are drawn at the top of the range, because an
+    unmeasurable vertex is one the criterion cannot call placed.
+    """
+    v = np.asarray(vals, dtype=float)
+    finite = np.isfinite(v)
+    if not finite.any():
+        return
+    if not finite.all():
+        lim = kw.get("vminmax")
+        v = np.where(finite, v, lim[1] if lim else v[finite].max())
+    struct.add_scalar_quantity(name, v, **kw)
+
 # The per-EDGE (2D) / per-FACE (3D) sag, which lives in its own companion file because the frame
 # itself is a triangle/tet mesh with nowhere to put a quantity on an edge or a surface face:
 # `<frame>_front.vtu` in 2D (line cells over the live offset edges) and `<frame>_off.vtu` in 3D
@@ -935,16 +955,16 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
         rows = np.unique(surf["offset"])
         cr = diags.get("front_conv_ratio")
         if cr is not None:
-            m.add_scalar_quantity("front: Newton step / bar (<=1 = placed)", cr[rows],
+            add_front_scalar(m, "front: Newton step / bar (<=1 = placed)", cr[rows],
                                   cmap="reds", vminmax=(0.0, 2.0), enabled=False)
         rl = diags.get("front_residual_length")
         if rl is not None and delta:
-            m.add_scalar_quantity("front: residual / delta (0 = on the level set)",
+            add_front_scalar(m, "front: residual / delta (0 = on the level set)",
                                   rl[rows] / float(delta), cmap="reds", vminmax=(0.0, 1.0),
                                   enabled=False)
         gn = diags.get("front_grad_norm")
         if gn is not None:
-            m.add_scalar_quantity("front: |grad Phi|", gn[rows], cmap="viridis", enabled=False)
+            add_front_scalar(m, "front: |grad Phi|", gn[rows], cmap="viridis", enabled=False)
         cd = diags.get("front_complex_distance")
         if cd is not None and delta:
             # The plain Euclidean distance to the input complex over the target distance, which
@@ -952,14 +972,14 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
             # not come from the vertex's region field, so it is the same number under either
             # offset_field and it cannot be thrown off by the region map: the independent check
             # on where the front actually is.
-            m.add_scalar_quantity("front: distance to complex / delta (1 = on the offset)",
+            add_front_scalar(m, "front: distance to complex / delta (1 = on the offset)",
                                   cd[rows] / float(delta), cmap="coolwarm", vminmax=(0.5, 1.5),
                                   enabled=False)
         ma = diags.get("front_move_align")
         if ma is not None:
             # 1: the test's step is the step toward the level set. 0: it measures a direction
             # that cannot reduce the distance, so the vertex reads as placed wherever it sits.
-            m.add_scalar_quantity("front: move dir . field normal (1 = useful)", ma[rows],
+            add_front_scalar(m, "front: move dir . field normal (1 = useful)", ma[rows],
                                   cmap="viridis", vminmax=(0.0, 1.0), enabled=False)
         # The sag, on the EDGES (2D) / FACES (3D) themselves, not on their corners: the other
         # half of the convergence test. A chord whose corners are both on the level set and whose
@@ -969,10 +989,9 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
         if sag is not None:
             vals = np.array([sag.get(tuple(sorted(int(i) for i in c)), np.nan)
                              for c in surf["offset"]], dtype=float)
-            if np.isfinite(vals).any():
-                m.add_scalar_quantity("front: sag / tube (>1 = refinable)", vals,
-                                      defined_on="faces" if dim == 3 else "edges",
-                                      cmap="reds", vminmax=(0.0, 2.0), enabled=False)
+            add_front_scalar(m, "front: sag / tube (>1 = refinable)", vals,
+                             defined_on="faces" if dim == 3 else "edges",
+                             cmap="reds", vminmax=(0.0, 2.0), enabled=False)
     return {k: v for k, v in out.items() if v is not None}, extras
 
 
