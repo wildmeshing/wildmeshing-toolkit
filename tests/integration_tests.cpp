@@ -116,8 +116,8 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
 }
 
 /**
- * The topological_offset cases: nine 2D, three apiece on three simple shapes. The 3D configs
- * are kept in data2 but NOT registered (see the bottom of this comment).
+ * The topological_offset cases: nine 2D, three apiece on three simple shapes, and nine 3D on the
+ * cube.
  *
  * Hidden ([.]) so it is never registered with ctest and cannot run in CI. Run it explicitly:
  *
@@ -144,14 +144,25 @@ TEST_CASE("challenging-low-stop-energy-models", tags_integration + "[challenging
  * input-complex envelope as wide as the whole offset. At the default the triangle does not
  * converge (40 turns, 14.6x the bar); at 1e-4 it converges in 9 with 228x less distance error.
  *
- * The 3D cases (topological_offset_3d*.json) sit in the manifest's _commented_out key: configs
- * kept in data2, not run, and not expected to converge. They were in Integration_Tests until
- * data2 c414d7f. Two of them threw at construction on a both-surfaces check that tested a flag
- * pair rather than the geometry (fixed in 366c038e85); all of them then became far more expensive
- * when the offset moved to the alternating A/B optimization, which runs up to ab_max_rounds
- * phases of a full mesh_improvement where the old loop ran one -- enough for
- * topological_offset_3d alone to exceed the suite's 7200 s budget. Re-register them only against
- * a runtime measured on the current loop.
+ * The 3D cases (data2 596be38) are the same idea one dimension up, on models/cube_3d.msh: the
+ * 3x3 grid the offset work has been swept on, target_distance_rel 5e-2 / 1e-2 / 1e-3 against
+ * front_conv_rel 0.5 / 0.1 / 0.025, named cube_{large,medium,small}_offset_conv{0.5,0.1,0.025}.
+ * Each is defaults apart from those two keys plus envelope_size_rel 1e-4 and min_sizing_scalar
+ * 1e-3, so they exercise the shipping defaults over that grid -- NOT the sweep's parameters,
+ * which also set front_alignment_energy false and both EXPERIMENTAL_ keys true.
+ *
+ * THREE THINGS TO KNOW BEFORE TRUSTING THEM. They do not set throw_on_nonconvergence, unlike the
+ * 2D nine, so today they assert only that the run completes without throwing. None of them has
+ * been run -- every 2D case was run before it was added, these were not. And
+ * target_distance_rel 1e-3 with front_conv_rel 0.025 is a KNOWN STALL on this model: the
+ * placement criterion freezes with the sag criterion solved and refinement exhausted, so that
+ * case is expected to burn max_rounds.
+ *
+ * Time the group before registering any of it near CI. That is what retired the previous 3D
+ * cases: topological_offset_3d.json and its two siblings (on double_sphere and 127891) sat in
+ * the manifest's _commented_out key, unrun, after becoming expensive enough for one of them to
+ * exceed the suite's 7200 s budget on the A/B loop. They and models/127891.msh were deleted in
+ * data2 596be38; double_sphere.msh stays, three simwild 3D cases read it.
  *
  * An empty "integration_tests" list is a pass, not a failure.
  */
