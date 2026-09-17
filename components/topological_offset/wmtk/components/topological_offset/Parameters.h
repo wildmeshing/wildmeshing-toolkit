@@ -155,6 +155,10 @@ struct Parameters : public wmtk::OptimizerParameters
     bool sag_halve_refinement;
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
+    /// See the spec: the shape and reach of the offset's end cap, Euclidean field only.
+    /// cap_p 2 with cap_extent_rel 1 is the Euclidean distance itself, and is the default.
+    double cap_p;
+    double cap_extent_rel;
     bool pre_smooth;
     /// See the spec: sweeps in the pre_smooth block, a fixed count of its own.
     int pre_smooth_max_passes;
@@ -225,6 +229,8 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         sag_halve_refinement = json_params["sag_halve_refinement"];
+        cap_p = json_params["cap_p"];
+        cap_extent_rel = json_params["cap_extent_rel"];
         pre_smooth = json_params["pre_smooth"];
         pre_smooth_max_passes = json_params["pre_smooth_max_passes"];
         front_refuse_converged_collapse = json_params["front_refuse_converged_collapse"];

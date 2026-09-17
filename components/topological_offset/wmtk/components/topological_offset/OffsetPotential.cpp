@@ -952,7 +952,11 @@ void OffsetEnergy<DIM>::hessian(const TVector& x, MatrixXd& hessian)
 template <int DIM>
 EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     const std::shared_ptr<SampleEnvelope>& envelope,
-    const double delta)
+    const double delta,
+    const double cap_p,
+    const double cap_extent_rel,
+    const MatrixXd& complex_V,
+    const MatrixXi& complex_F)
     // No support limit: d is defined everywhere, so the runaway guard that exists for Phi's compact
     // support has nothing to catch. Infinity says so, rather than a large finite number something
     // might later compare against.
@@ -977,12 +981,86 @@ EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     // |value - c| / |grad| is still d - delta.
     m_c = 1.;
     m_grad_ref = 1. / delta;
+    // The end cap, 3D: an OPEN SURFACE's boundary. A boundary edge is one exactly one triangle
+    // uses, and its frame is that triangle's normal. A boundary vertex takes the mean of its
+    // boundary edges' normals -- harmless, since adjacent face normals vary smoothly, where
+    // adjacent rim tangents flip by 90 degrees at a corner. Keyed by the
+    // ids nearest_point_feature() reports: the sorted vertex pair packed as min * n + max for an
+    // edge, the vertex index for a vertex. A closed surface has none, so a solid's offset is
+    // untouched. The complex is passed in rather than read off the envelope: its copies are
+    // private to the shared engine.
+    m_cap_p = cap_p;
+    m_cap_L = cap_extent_rel * delta;
+    m_cap_active = std::abs(cap_p - 2.) > 1e-12 || std::abs(cap_extent_rel - 1.) > 1e-12;
+    if constexpr (DIM == 3) {
+        if (m_cap_active) {
+            if (!(cap_p > 1.)) {
+                log_and_throw_error("EuclideanOffsetPotential: cap_p must be > 1, got {}", cap_p);
+            }
+            if (!(m_cap_L > 0.)) {
+                log_and_throw_error(
+                    "EuclideanOffsetPotential: cap_extent_rel must be > 0, got {}",
+                    cap_extent_rel);
+            }
+            const long long n = complex_V.rows();
+            std::map<std::pair<int, int>, std::vector<int>> use; // edge -> the triangles using it
+            for (int f = 0; f < complex_F.rows(); ++f) {
+                for (int k = 0; k < 3; ++k) {
+                    const int a0 = complex_F(f, k), b0 = complex_F(f, (k + 1) % 3);
+                    use[{std::min(a0, b0), std::max(a0, b0)}].push_back(f);
+                }
+            }
+            std::map<int, VecD> vert_t;
+            for (const auto& [e, fs] : use) {
+                if (fs.size() != 1) continue;
+                const int f = fs[0];
+                int opp = -1;
+                for (int k = 0; k < 3; ++k) {
+                    const int v = complex_F(f, k);
+                    if (v != e.first && v != e.second) opp = v;
+                }
+                if (opp < 0) continue;
+                const Eigen::Vector3d A = complex_V.row(e.first).template head<3>();
+                const Eigen::Vector3d B = complex_V.row(e.second).template head<3>();
+                const Eigen::Vector3d C = complex_V.row(opp).template head<3>();
+                Eigen::Vector3d out = (B - A).cross(C - A); // the triangle's normal
+                if (!(out.norm() > 0.)) continue;
+                out.normalize();
+                const long long id = (long long)std::min(e.first, e.second) * n +
+                                     (long long)std::max(e.first, e.second);
+                m_cap_normal[id] = VecD(out);
+                for (const int v : {e.first, e.second}) {
+                    auto it = vert_t.find(v);
+                    if (it == vert_t.end()) {
+                        vert_t[v] = VecD(out);
+                    } else {
+                        // signs are arbitrary per triangle: accumulate on the same side
+                        it->second += (it->second.dot(VecD(out)) >= 0.) ? VecD(out) : VecD(-out);
+                    }
+                }
+            }
+            for (auto& [v, t] : vert_t) {
+                if (!(t.norm() > 0.)) continue;
+                m_cap_normal[(long long)v] = VecD(t.normalized());
+            }
+            logger().info(
+                "\t[offset field] end cap: p = {}, L = {} ({} x delta) over {} boundary feature(s) "
+                "of "
+                "the input surface",
+                cap_p,
+                m_cap_L,
+                cap_extent_rel,
+                m_cap_normal.size());
+        }
+    }
 }
 
 template <int DIM>
 EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     const std::shared_ptr<SimplicialComplexBVH>& bvh,
-    const double delta)
+    const double delta,
+    const double cap_p,
+    const double cap_extent_rel)
     : OffsetPotential<DIM>(delta, std::numeric_limits<double>::infinity())
     , m_bvh(bvh)
 {
@@ -1003,29 +1081,82 @@ EuclideanOffsetPotential<DIM>::EuclideanOffsetPotential(
     // envelope-backed constructor above for why the raw distance is not used.
     m_c = 1.;
     m_grad_ref = 1. / delta;
+    // The end cap. Active only when it asks for something the Euclidean distance does not already
+    // give: cap_p 2 with L = delta IS the Euclidean distance (h^2 + s^2 = |w|^2), so the default
+    // leaves every query on the original path and every run bit-identical.
+    m_cap_p = cap_p;
+    m_cap_L = cap_extent_rel * delta;
+    m_cap_active = std::abs(cap_p - 2.) > 1e-12 || std::abs(cap_extent_rel - 1.) > 1e-12;
+    if (m_cap_active) {
+        if (!(cap_p > 1.)) {
+            log_and_throw_error(
+                "EuclideanOffsetPotential: cap_p must be > 1 (the field is not C1 at 1), got {}",
+                cap_p);
+        }
+        if (!(m_cap_L > 0.)) {
+            log_and_throw_error(
+                "EuclideanOffsetPotential: cap_extent_rel must be > 0, got {}",
+                cap_extent_rel);
+        }
+        if constexpr (DIM == 2) {
+            // An open end is a complex vertex exactly one segment uses. Pseudo-edges (i, i) carry
+            // isolated input vertices and are not segments, so they neither give a vertex valence
+            // nor an end: an isolated point has no tangent and keeps its round cap.
+            const auto& V = bvh->vertices_2d();
+            const auto& E = bvh->edges_2d();
+            std::unordered_map<int, std::vector<int>> use; // vertex -> the segments using it
+            for (size_t e = 0; e < E.size(); ++e) {
+                if (E[e][0] == E[e][1]) continue;
+                use[E[e][0]].push_back(int(e));
+                use[E[e][1]].push_back(int(e));
+            }
+            for (const auto& [v, es] : use) {
+                if (es.size() != 1) continue;
+                const Eigen::Vector2i& e = E[size_t(es[0])];
+                const int other = (e[0] == v) ? e[1] : e[0];
+                const Eigen::Vector2d t = V[size_t(v)] - V[size_t(other)];
+                if (!(t.norm() > 0.)) continue;
+                // the segment's normal; its sign is irrelevant, h takes an absolute value
+                m_cap_normal[(long long)v] = VecD(Eigen::Vector2d(-t.y(), t.x()).normalized());
+            }
+            logger().info(
+                "\t[offset field] end cap: p = {}, L = {} ({} x delta) at {} open end(s) of the "
+                "complex",
+                cap_p,
+                m_cap_L,
+                cap_extent_rel,
+                m_cap_normal.size());
+        } else {
+            log_and_throw_error("EuclideanOffsetPotential: the end cap is 2D only for now");
+        }
+    }
 }
 
 template <int DIM>
-void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, int& dim, VecD& dir)
-    const
+void EuclideanOffsetPotential<DIM>::nearest_feature(
+    const VecD& p,
+    VecD& foot,
+    int& dim,
+    VecD& dir,
+    long long& feature_id) const
 {
     if constexpr (DIM == 2) {
         bool on_corner = false;
-        int feature_id = -1;
+        int fid = -1;
         Eigen::Vector2d seg_normal;
         // Same query, either engine: the two implementations of it are identical.
         if (m_bvh) {
-            m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
+            m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, fid);
         } else {
-            m_envelope->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id);
+            m_envelope->nearest_point_feature(p, foot, on_corner, seg_normal, fid);
         }
         // The 2D query reports the segment normal, while the Hessian below is cased on the
         // direction along the feature: a segment interior is dim 1 with the tangent, obtained by
         // rotating the normal a quarter turn.
         dim = on_corner ? 0 : 1;
         dir = on_corner ? VecD::Zero().eval() : VecD(-seg_normal.y(), seg_normal.x());
+        feature_id = fid;
     } else {
-        long long feature_id = -1;
         m_envelope->nearest_point_feature(p, foot, dim, dir, feature_id);
     }
 
@@ -1037,6 +1168,102 @@ void EuclideanOffsetPotential<DIM>::nearest_feature(const VecD& p, VecD& foot, i
         dim = 0;
         dir = VecD::Zero();
     }
+}
+
+
+template <int DIM>
+bool EuclideanOffsetPotential<DIM>::cap_normal(const long long feature_id, VecD& t) const
+{
+    if (!m_cap_active) return false;
+    const auto it = m_cap_normal.find(feature_id);
+    if (it == m_cap_normal.end()) return false;
+    t = it->second;
+    return true;
+}
+
+template <int DIM>
+long long EuclideanOffsetPotential<DIM>::capped_end_id(const VecD& p) const
+{
+    if (!m_cap_active) return -1;
+    VecD foot = VecD::Zero(), dir = VecD::Zero();
+    int dim = -1;
+    long long feature_id = -1;
+    nearest_feature(p, foot, dim, dir, feature_id);
+    VecD t;
+    return ((dim == 0 || (DIM == 3 && dim == 1)) && cap_normal(feature_id, t)) ? feature_id : -1;
+}
+
+template <int DIM>
+bool EuclideanOffsetPotential<DIM>::at_capped_end(const VecD& p) const
+{
+    if (!m_cap_active) return false;
+    VecD foot = VecD::Zero(), dir = VecD::Zero();
+    int dim = -1;
+    long long feature_id = -1;
+    nearest_feature(p, foot, dim, dir, feature_id);
+    VecD t;
+    // dim 0 is an open end of a 2D curve or a boundary vertex of a 3D surface; dim 1 is a
+    // boundary EDGE of a 3D surface, which has no counterpart in 2D.
+    return (dim == 0 || (DIM == 3 && dim == 1)) && cap_normal(feature_id, t);
+}
+
+template <int DIM>
+double EuclideanOffsetPotential<DIM>::cap_distance(
+    const VecD& w,
+    const VecD& n,
+    VecD* grad,
+    MatD* hess) const
+{
+    // d = (h^p + b^p)^(1/p) with h = |w . n| the height along the complex's normal and
+    // b = s delta/L, s = |w - (w.n) n| the length of what is left: how far past the end the point
+    // is, within the tangent plane. Over the complex's interior the nearest point is straight
+    // below and s = 0, so this returns h = |w| exactly, the Euclidean value the band uses, and
+    // the cap joins it without a step.
+    const double p = m_cap_p;
+    const double k = m_delta / m_cap_L;
+    const double hn = w.dot(n);
+    const double h = std::abs(hn);
+    const VecD sv = w - hn * n;
+    const double sl = sv.norm();
+    const double b = sl * k;
+    const double d = std::pow(std::pow(h, p) + std::pow(b, p), 1. / p);
+    if (!(d > 1e-14)) {
+        if (grad) *grad = VecD::Zero();
+        if (hess) *hess = MatD::Zero();
+        return 0.;
+    }
+    // On the normal line through the foot (s = 0) the in-plane direction is undefined and its
+    // terms are dropped; on the tangent plane (h = 0) likewise for the normal term.
+    const bool has_h = h > 1e-14 * m_delta;
+    const bool has_s = sl > 1e-14 * m_delta;
+    const VecD uh = has_h ? VecD((hn >= 0. ? 1. : -1.) * n) : VecD(VecD::Zero());
+    const VecD us = has_s ? VecD(sv / sl) : VecD(VecD::Zero());
+    const double fh = has_h ? std::pow(h / d, p - 1.) : 0.;
+    const double fb = has_s ? std::pow(b / d, p - 1.) : 0.;
+    if (grad) *grad = fh * uh + fb * k * us;
+    if (hess) {
+        MatD H = MatD::Zero();
+        // h is linear in w (its Hessian is zero); s is the distance to the normal line, with
+        // Hessian (I - n n^T - us us^T) / s.
+        if (has_h) {
+            const double fhh =
+                (p - 1.) * std::pow(h, p - 2.) / std::pow(d, p - 1.) * (1. - std::pow(h / d, p));
+            H += fhh * uh * uh.transpose();
+        }
+        if (has_s) {
+            H += fb * k * ((MatD::Identity() - n * n.transpose() - us * us.transpose()) / sl);
+            const double fbb =
+                (p - 1.) * std::pow(b, p - 2.) / std::pow(d, p - 1.) * (1. - std::pow(b / d, p));
+            H += fbb * k * k * us * us.transpose();
+            if (has_h) {
+                const double fhb = -(p - 1.) * std::pow(h, p - 1.) * std::pow(b, p - 1.) /
+                                   std::pow(d, 2. * p - 1.);
+                H += fhb * k * (uh * us.transpose() + us * uh.transpose());
+            }
+        }
+        *hess = H;
+    }
+    return d;
 }
 
 template <int DIM>
@@ -1051,10 +1278,26 @@ double EuclideanOffsetPotential<DIM>::value(const VecD& p) const
             Eigen::Vector2d foot;
             bool on_corner = false;
             Eigen::Vector2d seg_normal;
-            int feature_id = -1;
-            return std::sqrt(
-                       m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, feature_id)) /
-                   m_delta;
+            int fid = -1;
+            const double d2 = m_bvh->nearest_point_feature(p, foot, on_corner, seg_normal, fid);
+            VecD t;
+            if (on_corner && cap_normal((long long)fid, t)) {
+                return cap_distance(p - VecD(foot), t, nullptr, nullptr) / m_delta;
+            }
+            return std::sqrt(d2) / m_delta;
+        }
+    }
+    if constexpr (DIM == 3) {
+        if (m_cap_active) {
+            VecD foot = VecD::Zero(), dir = VecD::Zero();
+            int dim = -1;
+            long long feature_id = -1;
+            nearest_feature(p, foot, dim, dir, feature_id);
+            VecD t;
+            if ((dim == 0 || dim == 1) && cap_normal(feature_id, t)) {
+                return cap_distance(p - foot, t, nullptr, nullptr) / m_delta;
+            }
+            return (p - foot).norm() / m_delta;
         }
     }
     return std::sqrt(m_envelope->squared_distance(p)) / m_delta;
@@ -1066,7 +1309,8 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
 {
     VecD foot = VecD::Zero(), dir = VecD::Zero();
     int dim = -1;
-    nearest_feature(p, foot, dim, dir);
+    long long feature_id = -1;
+    nearest_feature(p, foot, dim, dir, feature_id);
 
     const VecD r = p - foot;
     const double d = r.norm();
@@ -1077,6 +1321,12 @@ typename EuclideanOffsetPotential<DIM>::VecD EuclideanOffsetPotential<DIM>::grad
     if (!(d > 1e-14)) {
         return VecD::Zero();
     }
+    VecD t;
+    if ((dim == 0 || (DIM == 3 && dim == 1)) && cap_normal(feature_id, t)) {
+        VecD g;
+        cap_distance(r, t, &g, nullptr);
+        return g / m_delta;
+    }
     return r / (d * m_delta);
 }
 
@@ -1086,7 +1336,8 @@ typename EuclideanOffsetPotential<DIM>::MatD EuclideanOffsetPotential<DIM>::hess
 {
     VecD foot = VecD::Zero(), dir = VecD::Zero();
     int dim = -1;
-    nearest_feature(p, foot, dim, dir);
+    long long feature_id = -1;
+    nearest_feature(p, foot, dim, dir, feature_id);
 
     const VecD r = p - foot;
     const double d = r.norm();
@@ -1094,6 +1345,13 @@ typename EuclideanOffsetPotential<DIM>::MatD EuclideanOffsetPotential<DIM>::hess
         return MatD::Zero();
     }
     const VecD u = r / d;
+
+    VecD t;
+    if ((dim == 0 || (DIM == 3 && dim == 1)) && cap_normal(feature_id, t)) {
+        MatD H;
+        cap_distance(r, t, nullptr, &H);
+        return H / m_delta;
+    }
 
     // grad^2 d, by feature kind. Transcribed from ExactDistanceEnergy2D/3D, which state the
     // Hessian of d^2; grad^2(d^2) = 2 (grad d grad d^T + d grad^2 d) converts one to the other.
@@ -1115,7 +1373,8 @@ std::string EuclideanOffsetPotential<DIM>::describe_active(const VecD& p) const
 {
     VecD foot = VecD::Zero(), dir = VecD::Zero();
     int dim = -1;
-    nearest_feature(p, foot, dim, dir);
+    long long feature_id = -1;
+    nearest_feature(p, foot, dim, dir, feature_id);
     static constexpr std::array<const char*, 3> kinds = {{"vertex", "edge interior", "face"}};
     return fmt::format(
         "nearest feature: {} at ({}), d = {:.6g}, level = {:.6g}, residual = {:.6g}",

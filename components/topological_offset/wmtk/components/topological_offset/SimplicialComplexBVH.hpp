@@ -37,6 +37,11 @@ private:
     std::vector<Eigen::Vector2i> m_e2;
 
 public:
+    /// The 2D input copies, so a caller can classify the complex's own topology -- which vertices
+    /// are its open ends -- against the same feature ids nearest_point_feature() reports.
+    const std::vector<Eigen::Vector2d>& vertices_2d() const { return m_v2; }
+    const std::vector<Eigen::Vector2i>& edges_2d() const { return m_e2; }
+
     /**
      * @brief initialize BVH from "closed" simplicial complex
      * @param V: Nx2 or Nx3, all vertices contained anywhere in complex

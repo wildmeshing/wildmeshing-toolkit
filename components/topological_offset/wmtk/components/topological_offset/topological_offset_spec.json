@@ -47,6 +47,8 @@
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
       "sag_halve_refinement",
+      "cap_p",
+      "cap_extent_rel",
       "pre_smooth",
       "pre_smooth_max_passes",
       "front_refuse_converged_collapse",
@@ -388,6 +390,18 @@
     "type": "bool",
     "default": true,
     "doc": "Single-phase loop only. How the sizing field is lowered at the end of a turn for the refinable front simplices (every vertex on the level set, the sag at the midpoint / centroid over it beyond front_conv_rel x target_distance). false: refine_front_from_sag, the chord rule 3/4 L (tube/sag)^(1/p) capped at L/2, with the exponent p read from the field's turn across the chord -- unbounded below except for the sizing floor, so a coarse front over a creased field can drop a scalar by 20x in one turn. true (the default): the vertices of every refinable simplex have their sizing scalar halved, once per turn no matter how many refinable simplices share the vertex, floored at max(min_sizing_scalar, min_edge_length / l); no other vertex is lowered directly. The lowered scalars are then graded outward by sizing_gradation_mode as with the chord rule, so with sizing_gradation 2 on an already graded field a neighbour also drops by at most a factor 2."
+  },
+  {
+    "pointer": "/cap_p",
+    "default": 2.0,
+    "type": "float",
+    "doc": "2D and the Euclidean field only. Shape of the offset's END CAP, at the open ends of the input complex -- a complex vertex that exactly one segment uses. Beyond such an end the field is (h^cap_p + (s_+ . target_distance/L)^cap_p)^(1/cap_p), with s the distance along the end's outward tangent, h what is left of the offset from the end across that tangent, and L = cap_extent_rel x target_distance. 2 (the default) with cap_extent_rel 1 is h^2 + s^2, i.e. the Euclidean distance itself, so the default is not an approximation of the old behaviour but the same computation, and every run is unchanged. Above 2 squares the cap off, towards 1 cuts a chamfer. Must be greater than 1: at 1 the field has a kink where the cap meets the band. A closed complex has no open ends, so this does nothing to a solid's offset, and a convex corner keeps its rounding."
+  },
+  {
+    "pointer": "/cap_extent_rel",
+    "default": 1.0,
+    "type": "float",
+    "doc": "2D and the Euclidean field only. How far the end cap reaches along the complex's outward tangent, as a multiple of target_distance: L = cap_extent_rel x target_distance in the formula under cap_p. 1 (the default) with cap_p 2 is the Euclidean half-disc. Below 1 the cap closes sooner, a blunt wedge; above 1 it closes later, a needle whose tip angle is 2 atan(L / target_distance). Must be positive. The field's slope along the tangent scales as target_distance / L, so a long cap leaves little pulling a front vertex near its tip and the placement there is slow."
   },
   {
     "pointer": "/pre_smooth",

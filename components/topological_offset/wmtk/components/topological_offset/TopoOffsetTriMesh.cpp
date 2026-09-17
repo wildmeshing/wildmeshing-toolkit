@@ -828,10 +828,21 @@ void TopoOffsetTriMesh::init_offset_potential()
     // input-complex structure this mesh keeps.
     const size_t n_input_segments = size_t(m_phi_E.rows()) + m_phi_P.size();
 
+    const bool cap_asked = std::abs(m_offset_params.cap_p - 2.) > 1e-12 ||
+                           std::abs(m_offset_params.cap_extent_rel - 1.) > 1e-12;
+    if (cap_asked && m_offset_params.offset_field != "euclidean") {
+        log_and_throw_error(
+            "cap_p / cap_extent_rel shape the END CAP of the Euclidean distance, and the smooth "
+            "potential is a sum of barriers over primitives with no notion of an end: the two "
+            "cannot be combined. Got offset_field '{}'.",
+            m_offset_params.offset_field);
+    }
     if (m_offset_params.offset_field == "euclidean") {
         m_offset_potential = std::make_shared<EuclideanOffsetPotential2D>(
             m_input_complex_bvh,
-            m_offset_params.target_distance);
+            m_offset_params.target_distance,
+            m_offset_params.cap_p,
+            m_offset_params.cap_extent_rel);
         logger().info(
             "\tOffset field: EUCLIDEAN (exact distance), level d = {}, {} segments ({} of them "
             "isolated points)",
@@ -925,7 +936,12 @@ void TopoOffsetTriMesh::init_region_potentials(const double delta, const double 
             for (size_t i = 0; i < P_r.size(); ++i) P_m(i, 0) = P_r[i];
             auto bvh = std::make_shared<SimplicialComplexBVH>();
             bvh->init(m_phi_V, MatrixXi(0, 4), F_r, E_r, P_m);
-            m_region_potentials.push_back(std::make_shared<EuclideanOffsetPotential2D>(bvh, delta));
+            m_region_potentials.push_back(
+                std::make_shared<EuclideanOffsetPotential2D>(
+                    bvh,
+                    delta,
+                    m_offset_params.cap_p,
+                    m_offset_params.cap_extent_rel));
         } else {
             m_region_potentials.push_back(
                 std::make_shared<SmoothOffsetPotential2D>(

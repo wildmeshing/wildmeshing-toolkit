@@ -11,6 +11,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace wmtk::components::topological_offset {
@@ -73,6 +74,13 @@ public:
     virtual double value(const VecD& p) const = 0;
     /// The Euclidean field: value() is the distance, so a distance residual is the plain one.
     virtual bool is_euclidean() const { return false; }
+
+    /// Whether `p`'s nearest feature is an end this field caps; see EuclideanOffsetPotential.
+    /// False for every field that has no caps, which is every field but that one.
+    virtual bool at_capped_end(const VecD& p) const { return false; }
+
+    /// See EuclideanOffsetPotential; -1 for every field without caps.
+    virtual long long capped_end_id(const VecD& p) const { return -1; }
     virtual VecD gradient(const VecD& p) const = 0;
     virtual MatD hessian(const VecD& p) const = 0;
 
@@ -283,7 +291,13 @@ public:
      * foot point and the feature kind the derivatives are cased on, and only the exact kind answers
      * it. Its eps is irrelevant and no containment test is run against it.
      */
-    EuclideanOffsetPotential(const std::shared_ptr<SampleEnvelope>& envelope, double delta);
+    EuclideanOffsetPotential(
+        const std::shared_ptr<SampleEnvelope>& envelope,
+        double delta,
+        double cap_p = 2.,
+        double cap_extent_rel = 1.,
+        const MatrixXd& complex_V = MatrixXd(),
+        const MatrixXi& complex_F = MatrixXi());
 
     /**
      * @brief Build over the input-complex BVH. The 2D path, and 2D-only -- checked at runtime,
@@ -294,7 +308,11 @@ public:
      * solid's own zero interior. Containment of the input complex is not this object's business;
      * the per-tag region envelopes hold it.
      */
-    EuclideanOffsetPotential(const std::shared_ptr<SimplicialComplexBVH>& bvh, double delta);
+    EuclideanOffsetPotential(
+        const std::shared_ptr<SimplicialComplexBVH>& bvh,
+        double delta,
+        double cap_p = 2.,
+        double cap_extent_rel = 1.);
 
     double value(const VecD& p) const override;
     VecD gradient(const VecD& p) const override;
@@ -317,14 +335,69 @@ public:
     std::string describe_active(const VecD& p) const override;
 
 private:
+    /**
+     * The END CAP, at the open ends of the complex only.
+     *
+     * An open curve, or an open surface, has boundary features: a vertex no two segments share,
+     * an edge no two triangles share. Beyond such an end the Euclidean field rounds the offset
+     * off in a half-circle, and that is the only shape it can produce. The cap replaces it by one
+     * family, in the end's own frame, which is set by the complex's NORMAL n there and nothing
+     * else: h = |(p - f) . n| the height along the normal, s the length of what is left of p - f,
+     * i.e. how far past the end the point is within the tangent plane:
+     *
+     *     d = ( h^cap_p + (s_+ . delta/L)^cap_p )^(1/cap_p),   L = cap_extent_rel * delta
+     *
+     * cap_p = 2 with L = delta is h^2 + s^2 = |p - f|^2, i.e. EXACTLY the Euclidean distance, so
+     * the default changes no run. s is a LENGTH in the tangent plane, not a component along a
+     * chosen direction: that is what makes a corner of an open surface's rim behave. There the
+     * foot is the corner vertex and s is simply the in-plane distance to it, so the level set
+     * wraps the corner smoothly. An "outward tangent" per rim feature, averaged at a corner,
+     * tore the field along the seams and no refinement could follow it (measured on the square
+     * sheet: sag stuck at 0.06 on 0.07 edges). Raising cap_p squares the cap off, lowering it
+     * toward 1 cuts a chamfer, and L sets how far along the tangent the level set takes to close:
+     * short is a blunt wedge, long a needle. cap_p must stay above 1 or the field is not C1 where
+     * the cap
+     * meets the band; the tangential slope scales as delta/L, so a long cap leaves almost nothing
+     * pulling a front vertex near its tip.
+     *
+     * Only the ends are touched. A closed complex -- every solid's boundary -- has none, so this
+     * is inert there, and a convex corner of one keeps its rounding.
+     */
+    bool cap_active() const { return m_cap_active; }
+
+    /// The complex's normal at the open end `feature_id`, or false when that feature is not one.
+    bool cap_normal(long long feature_id, VecD& n) const;
+
+    /// Whether the nearest feature of `p` is a capped open end. The front smoother asks this to
+    /// decide a vertex's freedom: the normal-only solve exists because the tangential position of
+    /// an ordinary front vertex says nothing about the offset, and at a cap that is false -- the
+    /// tangential position IS the cap's shape -- so there the restriction is dropped.
+    bool at_capped_end(const VecD& p) const override;
+
+    /// The id of the capped end nearest `p`, or -1 when its nearest feature is not one. The cap
+    /// phase reads it to pair a chord's two ends: only a chord whose ends answer the SAME id has
+    /// an unambiguous cap to be refined against.
+    long long capped_end_id(const VecD& p) const override;
+
     /// The foot point, feature kind and direction at `p`, with the degenerate-segment demotion
     /// already applied. dim is 2 (face interior), 1 (edge interior) or 0 (vertex).
-    void nearest_feature(const VecD& p, VecD& foot, int& dim, VecD& dir) const;
+    void nearest_feature(const VecD& p, VecD& foot, int& dim, VecD& dir, long long& feature_id)
+        const;
 
     using OffsetPotential<DIM>::m_delta;
     using OffsetPotential<DIM>::m_grad_ref;
     using OffsetPotential<DIM>::m_dhat;
     using OffsetPotential<DIM>::m_c;
+
+    /// d and its derivatives at a point whose nearest feature is the open end with normal `n`.
+    /// `grad` and `hess` are filled when non-null. Returns d in length units.
+    double cap_distance(const VecD& w, const VecD& n, VecD* grad, MatD* hess) const;
+
+    double m_cap_p = 2.; ///< see cap_active()
+    double m_cap_L = 0.; ///< cap_extent_rel * delta, in length units
+    bool m_cap_active = false; ///< false when the cap reduces to the Euclidean distance
+    /// The complex's normal per open end, keyed by the feature id nearest_point_feature() reports.
+    std::unordered_map<long long, VecD> m_cap_normal;
 
     /// Exactly one of these is set, by whichever constructor ran: the envelope by the 3D path,
     /// the BVH by the 2D path. Every query branches on m_bvh.
@@ -469,6 +542,7 @@ private:
     double m_sign, m_weight;
 };
 using OffsetEnergy3D = OffsetEnergy<3>;
+
 
 /**
  * @brief The 3D twin of AlignEnergy2D: each incident front FACE at the vertex against the field.

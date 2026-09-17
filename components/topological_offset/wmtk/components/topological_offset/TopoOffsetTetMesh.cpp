@@ -1018,7 +1018,11 @@ void TopoOffsetTetMesh::init_offset_potential()
         }
         m_offset_potential = std::make_shared<EuclideanOffsetPotential3D>(
             m_input_complex_envelope,
-            m_offset_params.target_distance);
+            m_offset_params.target_distance,
+            m_offset_params.cap_p,
+            m_offset_params.cap_extent_rel,
+            m_phi_V,
+            m_phi_F);
         init_region_potentials(m_offset_params.target_distance, 0.);
         return;
     }
