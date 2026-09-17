@@ -407,6 +407,8 @@ public:
 
     /// The final Phase A: front vertices are not smoothed (see smooth_before()).
     bool m_freeze_front = false;
+    /// True only inside the cap phase; see optimize_offset_single_phase().
+    bool m_cap_phase = false;
 
     /**
      * @brief Which boundaries the region-class envelopes hold, and how they are built.

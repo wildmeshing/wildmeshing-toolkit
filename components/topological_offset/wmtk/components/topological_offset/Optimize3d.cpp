@@ -901,6 +901,16 @@ bool TopoOffsetTetMesh::smooth_before(const Tuple& t)
     // would be AMIPS alone with the front free anywhere inside the offset tube, and no Phase B
     // follows to put it back.
     if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
+    // The cap phase holds the band that is already placed, and moves everything else of the
+    // front: the caps themselves, and any vertex a split has just created. Freezing by
+    // cap-mapping alone was wrong -- a cap face's centroid is often nearest the complex's
+    // INTERIOR, so the vertex a split puts there is not cap-mapped, and freezing it left it
+    // stranded inside the level set (measured on the sheet: median 0.79 of target_distance).
+    if (m_cap_phase && m_vertex_extra[vid].m_is_on_offset &&
+        !potential_for(vid).at_capped_end(m_vertex_attribute[vid].m_posf) &&
+        front_vertex_placed(vid)) {
+        return false;
+    }
 
     // Diagnostic, recorded for every visit; only visits whose ring already holds a needle are
     // counted, and smooth_after() reads this back.
@@ -3604,6 +3614,159 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             kp);
         local_operations({{0, 0, 0, kp}});
         rebuild_offset_envelope();
+    }
+    // THE CAP PHASE, the 3D twin of the 2D one. The band is placed by now; what is left is the
+    // shape of the offset's caps, which the per-vertex offset term cannot fix -- every point of
+    // the level set satisfies it equally, so a cap's corner is not special to it. Resolution is,
+    // so this refines the cap's own front faces and nothing else: the rest of the front is
+    // frozen, the criterion is the loop's own energy_criterion(), and each face it marks on a cap
+    // is split at its longest edge.
+    if (m_offset_params.cap_processing) {
+        m_cap_phase = true;
+        m_phase = OptPhase::Single;
+        // cap_max_rounds is a bound, not a schedule: the exit is "every cap vertex placed and no
+        // face of a single cap refinable".
+        const int cap_budget = std::max(0, m_offset_params.cap_max_rounds);
+        for (int cr = 0; cr < cap_budget; ++cr) {
+            m_ab_round = 0;
+            const EnergyCriterion ec = energy_criterion();
+            // A face whose three vertices are all cap-mapped. Not "to the same feature": a 3D
+            // cap is a rim of many edges and corners, and a face on it routinely has its corners
+            // nearest to three neighbouring rim features -- one cap, three ids. A face that spans
+            // two DIFFERENT caps lies along a flat stretch of the level set, and the criterion's
+            // own sag test never marks it, so no id comparison is needed to keep it out.
+            std::vector<EnergyCriterion::Refinable> mine;
+            for (const auto& r : ec.refinable) {
+                // ANY corner on a cap, not all three. A face that straddles the rim has corners
+                // over the complex's flat interior as well, and those are exactly the faces whose
+                // sag the cap causes -- demanding all three left them unrefined (measured on the
+                // sheet: 0 of 34 refinable faces admitted, front stuck at 0.79 of the target).
+                if (potential_for(r.a).capped_end_id(m_vertex_attribute[r.a].m_posf) >= 0 ||
+                    potential_for(r.b).capped_end_id(m_vertex_attribute[r.b].m_posf) >= 0 ||
+                    potential_for(r.c).capped_end_id(m_vertex_attribute[r.c].m_posf) >= 0) {
+                    mine.push_back(r);
+                }
+            }
+            logger().info(
+                "\t[cap phase] round {}/{}: {} of {} refinable face(s) touch a cap",
+                cr + 1,
+                cap_budget,
+                mine.size(),
+                ec.refinable.size());
+            if (mine.empty() && ec.vertices_ok()) break;
+            if (!mine.empty()) {
+                // The face's LONGEST edge, which is the one the criterion models: its target
+                // length comes from front_chord_target(la, lb, ...) over exactly that edge, and
+                // the sag it must bring down goes as L^2 / 8R in it (measured on this sheet:
+                // L 0.603 -> sag 0.162, L 0.388 -> 0.065, against L^2/8R of 0.152 and 0.063).
+                //
+                // Not the centroid, which leaves every edge intact so the sag barely moves and
+                // the faces triple each round (127 -> 48843 in eleven). Not all three edges,
+                // which refines fourfold per round and drags the neighbours in. Not the sizing
+                // route the turn loop uses, which grades outward and reached 50k vertices in
+                // three rounds here.
+                //
+                //
+                // Split by Rivara's longest-edge propagation, since splits are the only
+                // operation here and nothing repairs a thin face afterwards: the face across the
+                // edge is cut along an edge that need not be its own longest, and that is where
+                // the slivers came from (sheet_coarse: face shape max 64.6 without this). Walk
+                // from the face across the edge: while the shared edge is not the neighbour's
+                // longest, step to the neighbour and to ITS longest edge. Lengths grow strictly
+                // along the walk, so it ends, at a pair of faces sharing their common longest
+                // edge; split that edge, then walk again from the same face until its own
+                // longest edge is gone. Ties are the one loophole (exactly equal lengths), closed
+                // by the visited set.
+                const auto longest = [&](size_t u, size_t w, size_t x) {
+                    // The criterion's own rule (strict >, edges in this order), so the walk
+                    // agrees with the edge it handed over.
+                    const std::array<std::pair<size_t, size_t>, 3> es = {{{u, w}, {w, x}, {x, u}}};
+                    std::pair<size_t, size_t> best = es[0];
+                    double len = 0.;
+                    for (const auto& e : es) {
+                        const double d = (m_vertex_attribute[e.first].m_posf -
+                                          m_vertex_attribute[e.second].m_posf)
+                                             .norm();
+                        if (d > len) {
+                            len = d;
+                            best = e;
+                        }
+                    }
+                    return best;
+                };
+                // The other front face on edge (u,w) than (u,w,x): its apex, if there is exactly
+                // one (a closed manifold front has exactly two faces on every edge).
+                const auto across = [&](size_t u, size_t w, size_t x, size_t& y) {
+                    const Tuple e = tuple_from_edge({{u, w}});
+                    if (!e.is_valid(*this)) return false;
+                    std::set<size_t> apexes;
+                    for (const size_t tid : get_incident_tids_for_edge(e)) {
+                        for (const size_t v : oriented_tet_vids(tid)) {
+                            if (v == u || v == w || v == x) continue;
+                            const size_t fid =
+                                std::get<1>(tuple_from_face(std::array<size_t, 3>{{u, w, v}}));
+                            if (fid == static_cast<size_t>(-1)) continue;
+                            if (m_face_attribute[fid].m_surface_class != OFFSET_SURFACE_CLASS) {
+                                continue;
+                            }
+                            apexes.insert(v);
+                        }
+                    }
+                    if (apexes.size() != 1) return false;
+                    y = *apexes.begin();
+                    return true;
+                };
+                std::vector<Tuple> garbage;
+                size_t done = 0, propagated = 0, stale = 0, refused = 0;
+                for (const auto& r : mine) {
+                    if (!tuple_from_edge({{r.a, r.b}}).is_valid(*this)) {
+                        ++stale; // an earlier walk this round already split it
+                        continue;
+                    }
+                    while (tuple_from_edge({{r.a, r.b}}).is_valid(*this)) {
+                        size_t u = r.a, w = r.b, x = r.c, y = 0;
+                        std::set<std::array<size_t, 3>> visited;
+                        while (across(u, w, x, y)) {
+                            const auto [p, q] = longest(u, w, y);
+                            if ((p == u && q == w) || (p == w && q == u)) break; // terminal pair
+                            std::array<size_t, 3> key{{u, w, y}};
+                            std::sort(key.begin(), key.end());
+                            if (!visited.insert(key).second) break; // a tie cycle: split here
+                            x = u + w + y - p - q; // the neighbour's third vertex
+                            u = p;
+                            w = q;
+                        }
+                        garbage.clear();
+                        const Tuple t = tuple_from_edge({{u, w}});
+                        if (!split_edge(t, garbage)) {
+                            ++refused;
+                            break;
+                        }
+                        const bool own = (u == r.a && w == r.b) || (u == r.b && w == r.a);
+                        if (own)
+                            ++done;
+                        else
+                            ++propagated;
+                    }
+                }
+                logger().info(
+                    "\t[cap phase] split {} marked edge(s) + {} propagated | {} stale, {} refused",
+                    done,
+                    propagated,
+                    stale,
+                    refused);
+                if (m_params.debug_output) {
+                    write_debug_frame(fmt::format("cap{}_split", cr + 1));
+                }
+            }
+            stamp_plastic_rests();
+            m_debug_pass_name = fmt::format("cap{}", cr + 1);
+            // cap_smoothing_passes_per_split sweeps, a fixed count, as in the pre_smooth block.
+            local_operations(
+                {{0, 0, 0, std::max(1, m_offset_params.cap_smoothing_passes_per_split)}});
+            rebuild_offset_envelope();
+        }
+        m_cap_phase = false;
     }
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;

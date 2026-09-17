@@ -1018,6 +1018,16 @@ bool TopoOffsetTriMesh::smooth_before(const Tuple& t)
     // follows to put it back. The pass may still split, collapse and swap around the front and
     // smooth everything else.
     if (m_freeze_front && m_vertex_extra[vid].m_is_on_offset) return false;
+    // The cap phase holds the band that is already placed, and moves everything else of the
+    // front: the caps themselves, and any vertex a split has just created. Freezing by
+    // cap-mapping alone was wrong -- a cap face's centroid is often nearest the complex's
+    // INTERIOR, so the vertex a split puts there is not cap-mapped, and freezing it left it
+    // stranded inside the level set (measured on the sheet: median 0.79 of target_distance).
+    if (m_cap_phase && m_vertex_extra[vid].m_is_on_offset &&
+        !potential_for(vid).at_capped_end(m_vertex_attribute[vid].m_posf) &&
+        front_vertex_placed(vid)) {
+        return false;
+    }
 
     // Diagnostic, recorded for every visit; only visits whose ring already holds a needle are
     // counted, and smooth_after() reads this back.
@@ -3881,6 +3891,77 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             kp);
         local_operations({{0, 0, 0, kp}});
         rebuild_offset_envelope();
+    }
+    // THE CAP PHASE. The band is placed by now; what is left is the shape of the offset's capped
+    // ends, which the per-vertex offset term cannot fix because every point of the level set
+    // satisfies it equally -- the corner of a box cap is not special to it. Resolution is what
+    // fixes it: the criterion is the loop's own energy_criterion(), and the chords it marks on a
+    // cap are split directly, one split_edge() each, with the rest of the front frozen.
+    if (m_offset_params.cap_processing) {
+        m_cap_phase = true;
+        m_phase = OptPhase::Single;
+        // cap_max_rounds is a bound, not a schedule: the phase's own exit is "every cap vertex
+        // placed and no chord of a single cap refinable", and on the caps measured it comes after
+        // 1 to 5.
+        const int cap_budget = std::max(0, m_offset_params.cap_max_rounds);
+        for (int cr = 0; cr < cap_budget; ++cr) {
+            m_ab_round = 0;
+            const EnergyCriterion ec = energy_criterion();
+            // A chord whose two ends are both cap-mapped. Not "to the same end": a chord from one
+            // end's cap to the other's is a flank, straight along a flat stretch of the level
+            // set, and the criterion's own sag test never marks it -- so the id comparison the
+            // 3D twin cannot afford (a cap there is a rim of many features) is not needed here.
+            std::vector<EnergyCriterion::Refinable> mine;
+            for (const auto& r : ec.refinable) {
+                if (potential_for(r.a).capped_end_id(m_vertex_attribute[r.a].m_posf) < 0) continue;
+                if (potential_for(r.b).capped_end_id(m_vertex_attribute[r.b].m_posf) < 0) continue;
+                mine.push_back(r);
+            }
+            logger().info(
+                "\t[cap phase] round {}/{}: {} of {} refinable chord(s) lie on a cap",
+                cr + 1,
+                cap_budget,
+                mine.size(),
+                ec.refinable.size());
+            // Placed AND nothing left to refine, the loop's own pair. Without the first half
+            // this exits the moment a split lands a vertex short of the level set: a chord is
+            // refinable only while BOTH its ends are placed, so unplaced children empty the list
+            // and the phase reports resolved when it is merely behind.
+            if (mine.empty() && ec.vertices_ok()) break;
+            if (!mine.empty()) {
+                // Split those chords directly, one split_edge() each, the way marching_tris()
+                // splits the edges it picked. NOT the sizing route the turn loop uses: lowering a
+                // sizing scalar grades outward to the neighbours, so the ordinary split pass then
+                // refines the whole patch of background around the cap (measured: 510 splits and
+                // 1184 triangles against 16 and 228 for the same shape).
+                //
+                // Deduplicated and each tuple checked: a split earlier in the round can retire a
+                // later chord, and asking for a retired edge's tuple walks a stale id.
+                std::set<std::pair<size_t, size_t>> edges;
+                for (const auto& r : mine) {
+                    edges.insert({std::min(r.a, r.b), std::max(r.a, r.b)});
+                }
+                std::vector<Tuple> garbage;
+                size_t done = 0;
+                for (const auto& [ea, eb] : edges) {
+                    garbage.clear();
+                    const Tuple t = get_tuple_from_edge(simplex::Edge(ea, eb));
+                    if (!t.is_valid(*this)) continue;
+                    if (split_edge(t, garbage)) ++done;
+                }
+                logger().info("\t[cap phase] split {} of {} edge(s)", done, edges.size());
+                if (m_params.debug_output) {
+                    write_debug_frame(fmt::format("cap{}_split", cr + 1));
+                }
+            }
+            stamp_plastic_rests();
+            m_debug_pass_name = fmt::format("cap{}", cr + 1);
+            // cap_smoothing_passes_per_split sweeps, a fixed count, as in the pre_smooth block.
+            local_operations(
+                {{0, 0, 0, std::max(1, m_offset_params.cap_smoothing_passes_per_split)}});
+            rebuild_offset_envelope();
+        }
+        m_cap_phase = false;
     }
     for (int it = 0; it < budget; ++it) {
         m_ab_round = it + 1;

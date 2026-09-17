@@ -49,6 +49,7 @@
       "sag_halve_refinement",
       "cap_p",
       "cap_extent_rel",
+      "cap_processing",
       "pre_smooth",
       "pre_smooth_max_passes",
       "front_refuse_converged_collapse",
@@ -89,7 +90,9 @@
       "project_line_search_nested_steps",
       "smooth_quality_veto",
       "perform_sanity_checks",
-      "deform_others"
+      "deform_others",
+      "cap_max_rounds",
+      "cap_smoothing_passes_per_split"
     ]
   },
   {
@@ -402,6 +405,24 @@
     "default": 1.0,
     "type": "float",
     "doc": "2D and the Euclidean field only. How far the end cap reaches along the complex's outward tangent, as a multiple of target_distance: L = cap_extent_rel x target_distance in the formula under cap_p. 1 (the default) with cap_p 2 is the Euclidean half-disc. Below 1 the cap closes sooner, a blunt wedge; above 1 it closes later, a needle whose tip angle is 2 atan(L / target_distance). Must be positive. The field's slope along the tangent scales as target_distance / L, so a long cap leaves little pulling a front vertex near its tip and the placement there is slow."
+  },
+  {
+    "pointer": "/cap_processing",
+    "default": false,
+    "type": "bool",
+    "doc": "2D, the Euclidean field, and only with a cap (see cap_p). A second phase after the pre_smooth block, for the offset's capped ends alone. The whole front is frozen except the vertices whose nearest feature is a capped end; those keep the normal-only placement they have everywhere else, and the chords between two vertices of the SAME cap are refined by the loop's own rule -- energy_criterion()'s refinable list, then refine_front_from_sag / refine_front_by_halving and a split pass. The band is already placed by then and is held; the background still smooths, so the new elements are not left as born. A chord whose two ends belong to different caps is skipped: its correspondence is ambiguous, and being a straight run along a flat piece of level set its sag is zero anyway. Every vertex a split creates inherits the cap its chord belonged to, so the correspondence stays known. Rounds are bounded by cap_max_rounds; each round's split pass is followed by cap_smoothing_passes_per_split smoothing sweeps, a fixed count like the pre_smooth block's, whatever adaptive_smoothing says."
+  },
+  {
+    "pointer": "/cap_max_rounds",
+    "type": "int",
+    "default": 20,
+    "doc": "Bound on the cap phase's rounds (cap_processing), each a split pass over the cap faces the sag test marks, then cap_smoothing_passes_per_split smoothing sweeps. A bound, not a schedule: the phase exits earlier as soon as every cap vertex is placed and no cap face fails the sag test (measured: 1 to 5 rounds in 2D, 6 to 14 on the 3D sheet). 0 skips the phase."
+  },
+  {
+    "pointer": "/cap_smoothing_passes_per_split",
+    "type": "int",
+    "default": 2,
+    "doc": "Smoothing sweeps after each split pass of the cap phase, a fixed count (at least 1). Independent of the loop's interleaved_smoothing_passes and of adaptive_smoothing, like pre_smooth_max_passes."
   },
   {
     "pointer": "/pre_smooth",

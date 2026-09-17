@@ -159,9 +159,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// cap_p 2 with cap_extent_rel 1 is the Euclidean distance itself, and is the default.
     double cap_p;
     double cap_extent_rel;
+    /// See the spec: the cap phase after pre_smooth.
+    bool cap_processing;
     bool pre_smooth;
     /// See the spec: sweeps in the pre_smooth block, a fixed count of its own.
     int pre_smooth_max_passes;
+    /// See the spec: the cap phase's round bound and its sweeps after each split pass.
+    int cap_max_rounds;
+    int cap_smoothing_passes_per_split;
     /// See the spec: refuse a front collapse or surface flip whose neighbourhood was converged
     /// (every front face around the endpoints within the tube, every corner within the bar)
     /// and would not be afterwards. false = the operation passes as they are.
@@ -231,8 +236,11 @@ struct Parameters : public wmtk::OptimizerParameters
         sag_halve_refinement = json_params["sag_halve_refinement"];
         cap_p = json_params["cap_p"];
         cap_extent_rel = json_params["cap_extent_rel"];
+        cap_processing = json_params["cap_processing"];
         pre_smooth = json_params["pre_smooth"];
         pre_smooth_max_passes = json_params["pre_smooth_max_passes"];
+        cap_max_rounds = json_params["cap_max_rounds"];
+        cap_smoothing_passes_per_split = json_params["cap_smoothing_passes_per_split"];
         front_refuse_converged_collapse = json_params["front_refuse_converged_collapse"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
