@@ -80,10 +80,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // two of them meet.
     bool front_normal_projection = true;
     bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
-    /// What a collapse's surviving vertex keeps as its sizing scalar. false (the default): its
-    /// own. true: the smaller of the two, which is the shared engine's rule -- refinement then
-    /// never relaxes behind a travelling front.
-    bool sizing_collapse_min = false;
+    /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
+    /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
+    /// behind a travelling front. false: the survivor's own.
+    bool sizing_collapse_min = true;
     /// Other input regions (no input-complex simplex, no wall contact) deform under smoothing
     /// against their rest shape instead of being envelope-held. See the spec doc.
     bool deform_others = true;

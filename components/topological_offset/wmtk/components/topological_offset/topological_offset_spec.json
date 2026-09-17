@@ -499,9 +499,9 @@
   },
   {
     "pointer": "/sizing_collapse_min",
-    "default": false,
+    "default": true,
     "type": "bool",
-    "doc": "What the surviving vertex of a collapse keeps as its sizing scalar. false (the default): its own scalar, restored after the base collapse. true: the smaller of the two, which is the shared engine's rule. The min rule carries substantially more vertices and lengthens the placement loop where the front travels, because the offset's sizing follows a moving front and has to relax behind it, which a scalar that only ever falls cannot do."
+    "doc": "What the surviving vertex of a collapse keeps as its sizing scalar. true (the default): the smaller of the two, which is the shared engine's rule. false: its own scalar, restored after the base collapse. The min rule carries substantially more vertices and lengthens the placement loop where the front travels, because the offset's sizing follows a moving front and has to relax behind it, which a scalar that only ever falls cannot do."
   },
   {
     "pointer": "/max_rounds",
