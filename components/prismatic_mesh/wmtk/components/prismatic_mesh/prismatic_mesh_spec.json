@@ -1,0 +1,37 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "application",
+            "input",
+            "output"
+        ],
+        "optional": [
+            "input_dir"
+        ]
+    },
+    {
+        "pointer": "/application",
+        "type": "string",
+        "options": [
+            "prismatic_mesh"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string",
+        "doc": "Construction VTU with labels, vid, corr_input_vid, tag_0 and offset_tag."
+    },
+    {
+        "pointer": "/output",
+        "type": "string",
+        "doc": "Output VTU filename, relative to the JSON directory. A missing extension becomes .vtu."
+    },
+    {
+        "pointer": "/input_dir",
+        "type": "string",
+        "default": "",
+        "doc": "Base directory for input; set by wmtk_app to the JSON directory."
+    }
+]
