@@ -3389,6 +3389,82 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
     return result;
 }
 
+/// The outer-angle threshold, in degrees, above which an offset-surface edge counts as folded
+/// over: the angle between its two faces measured through ONE of the two sides. 180 is flat and
+/// 360 is the two faces exactly on top of each other. Because the two sides sum to 360, "over
+/// 330 on one side" is the same statement as "under 30 unsigned", which is what the code tests --
+/// see offset_surface_foldover_labels() for why the side is not determined.
+/// Optimize2d.cpp carries the same constant; the two values must stay equal.
+static constexpr double FOLDOVER_OUTER_ANGLE_DEG = 330.;
+
+std::vector<char> TopoOffsetTetMesh::offset_surface_foldover_labels() const
+{
+    std::vector<char> fold(vert_capacity(), 0);
+
+    // Every live offset face against each of its three edges, so an edge arrives with the faces
+    // that actually carry it. A std::map keyed on the sorted vertex pair: the surface is a small
+    // part of the mesh and this runs once per debug frame.
+    struct EdgeFaces
+    {
+        int n = 0;
+        std::array<size_t, 2> opposite{{0, 0}}; // the two faces' third vertices
+    };
+    std::map<std::array<size_t, 2>, EdgeFaces> edges;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const auto fv = get_face_vids(f);
+        for (int i = 0; i < 3; ++i) {
+            const size_t a = fv[i], b = fv[(i + 1) % 3], c = fv[(i + 2) % 3];
+            std::array<size_t, 2> key{{a, b}};
+            if (key[0] > key[1]) std::swap(key[0], key[1]);
+            EdgeFaces& ef = edges[key];
+            if (ef.n < 2) ef.opposite[size_t(ef.n)] = c;
+            ++ef.n; // counted past 2 on purpose, so a non-manifold edge can be recognised
+        }
+    }
+
+    // A fold is the two faces lying on top of each other, and WHICH side is pinched is not part
+    // of it. MEASURED, on the cube at target_distance_rel 5e-2 with the construction probe off
+    // and the alignment term off: at every folded edge in that run it is the BACKGROUND that is
+    // pinched, not the band -- the two band tets sit at angles like 92 and 265 degrees around
+    // the edge, on either side of a sliver of outside a fraction of a degree wide. Measuring
+    // through the background there gives 0.67 degrees, not 359.33. So the side is deliberately
+    // not determined: the two sides sum to 360, "over 355 through one side" is exactly "under 5
+    // unsigned", and testing the unsigned angle catches the fold whichever wedge collapsed.
+    // This also drops the band-apex orientation the first version needed, which was the part
+    // that could be got wrong.
+    const double coincidence_deg = 360. - FOLDOVER_OUTER_ANGLE_DEG;
+    for (const auto& [e, ef] : edges) {
+        // Not two faces means the angle is not defined -- a domain-boundary rim, or a
+        // non-manifold edge. Not measurable is not a fold.
+        if (ef.n != 2) continue;
+        const Vector3d pa = m_vertex_attribute[e[0]].m_posf;
+        const Vector3d pb = m_vertex_attribute[e[1]].m_posf;
+        Vector3d dir = pb - pa;
+        const double elen = dir.norm();
+        if (!(elen > 0.)) continue;
+        dir /= elen;
+        // Each face's in-plane direction away from the edge, so the angle between them is the
+        // angle around the edge and not the angle between two arbitrary chords.
+        const auto perp = [&](const size_t opp_vid, Vector3d& u) -> bool {
+            const Vector3d w = m_vertex_attribute[opp_vid].m_posf - pa;
+            u = w - w.dot(dir) * dir;
+            const double len = u.norm();
+            if (!(len > 0.) || !std::isfinite(len)) return false;
+            u /= len;
+            return true;
+        };
+        Vector3d u0, u1;
+        if (!perp(ef.opposite[0], u0) || !perp(ef.opposite[1], u1)) continue;
+        const double ang = std::acos(std::clamp(u0.dot(u1), -1., 1.)) * 180. / M_PI; // [0, 180]
+        if (ang < coincidence_deg) {
+            fold[e[0]] = 1;
+            fold[e[1]] = 1;
+        }
+    }
+    return fold;
+}
+
 const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) const
 {
     const size_t ta = f.tid(*this);

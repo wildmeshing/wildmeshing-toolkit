@@ -1832,6 +1832,20 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     v_align.setConstant(-1.);
     v_cdist.setConstant(-1.);
 
+    // Collapsed-foldover flag, as point data: 1 where the vertex is an endpoint of an offset
+    // surface edge whose two faces have folded back onto each other (outer angle over the
+    // threshold), 0 elsewhere. DEBUG ONLY -- computed only under debug_output, so a plain
+    // save_vtu run writes it as all 0 rather than paying for the surface walk.
+    // See offset_surface_foldover_labels() for what the angle is and how its side is decided.
+    VectorXd v_fold(vert_capacity());
+    v_fold.setZero();
+    if (m_offset_params.debug_output) {
+        const std::vector<char> fold = offset_surface_foldover_labels();
+        for (size_t vid = 0; vid < fold.size() && vid < size_t(v_fold.size()); ++vid) {
+            v_fold[int(vid)] = fold[vid] ? 1. : 0.;
+        }
+    }
+
     for (size_t k = 0; k < tets.size(); ++k) {
         const size_t t_id = tets[k].tid(*this);
         for (int i = 0; i < m_tags_count; i++) {
@@ -1937,6 +1951,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("front_grad_norm", v_grad);
     writer.add_field("front_move_align", v_align);
     writer.add_field("front_complex_distance", v_cdist);
+    writer.add_field("offset_foldover", v_fold);
     writer.write_mesh(path + ".vtu", V, T, paraviewo::CellType::Tetrahedron);
 
     // surface
@@ -1986,6 +2001,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         off_writer.add_field("front_grad_norm", v_grad);
         off_writer.add_field("front_move_align", v_align);
         off_writer.add_field("front_complex_distance", v_cdist);
+        off_writer.add_field("offset_foldover", v_fold);
         logger().info("Write {}", off_out_path);
         off_writer.write_mesh(off_out_path, V, F_off, paraviewo::CellType::Triangle);
     }

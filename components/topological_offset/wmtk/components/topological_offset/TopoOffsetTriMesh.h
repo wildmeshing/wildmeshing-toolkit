@@ -1017,6 +1017,27 @@ public:
     /// The live offset-surface edges incident to vid, deduplicated. The 3D twin is
     /// offset_surface_faces_live_at().
     std::vector<Tuple> offset_surface_edges_live_at(size_t vid) const;
+
+    /**
+     * @brief Per-vertex 0/1: has the offset curve folded back on itself at this vertex? Debug
+     * frame diagnostic; see write_vtu(). Costs one pass over the live offset edges, no field
+     * evaluation.
+     *
+     * A vertex on the offset curve carries two live offset edges. Measured through either
+     * side, the angle between them is 180 degrees where the curve is straight and 360 where the
+     * two edges lie on top of each other with that side pinched to nothing. Over
+     * FOLDOVER_OUTER_ANGLE_DEG through EITHER side is the fold, and the vertex gets 1.
+     *
+     * Which side is pinched is deliberately not determined; see the 3D twin, where the measured
+     * folds pinch the background rather than the band. Since the two sides sum to 360, the test
+     * is simply that the unsigned angle is under 360 minus the threshold. Vertices without
+     * exactly two live offset edges are left 0, as are degenerate edges: this is a diagnostic,
+     * and a number it cannot measure is not a fold.
+     *
+     * The 3D twin is TopoOffsetTetMesh::offset_surface_foldover_labels(), which asks the same
+     * question of an offset-surface EDGE's two faces and marks that edge's two endpoints.
+     */
+    std::vector<char> offset_surface_foldover_labels() const;
     void log_smooth_trace() const;
 
 

@@ -579,6 +579,28 @@ public:
     /// The live offset-surface faces incident to vid.
     std::vector<Tuple> offset_surface_faces_live_at(size_t vid) const;
 
+    /**
+     * @brief Per-vertex 0/1: is this vertex an endpoint of a COLLAPSED (folded-over) offset
+     * surface edge? Debug-frame diagnostic; see write_vtu(). Costs one pass over the live
+     * offset faces, no field evaluation.
+     *
+     * An offset-surface edge carries two live offset faces. Measured through either side, the
+     * angle between them is 180 degrees where the surface is flat and 360 where the two faces
+     * lie on top of each other with that side pinched to nothing. Over FOLDOVER_OUTER_ANGLE_DEG
+     * through EITHER side is the fold, and every such edge's two endpoints get 1.
+     *
+     * Which side is pinched is deliberately not determined: on the cube the measured folds
+     * pinch the BACKGROUND, not the band, so a test written around a pinched band found none of
+     * them. Since the two sides sum to 360, the test is simply that the unsigned angle is under
+     * 360 minus the threshold. Vertices of an edge that does not carry exactly two live offset
+     * faces are left 0, as are degenerate faces: this is a diagnostic, and a number it cannot
+     * measure is not a fold.
+     *
+     * The 2D twin is TopoOffsetTriMesh::offset_surface_foldover_labels(), which asks the same
+     * question of a curve vertex's two incident offset edges.
+     */
+    std::vector<char> offset_surface_foldover_labels() const;
+
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
     std::vector<std::array<double, 8>> optimization_metrics;

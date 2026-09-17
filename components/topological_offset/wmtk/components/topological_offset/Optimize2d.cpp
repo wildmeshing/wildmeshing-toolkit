@@ -3615,6 +3615,61 @@ bool TopoOffsetTriMesh::edge_is_offset_surface_live(const Tuple& e) const
     return !face_is_input_complex(a ? fb : fa);
 }
 
+/// The outer-angle threshold, in degrees, above which the offset curve counts as folded over at
+/// a vertex: the angle between its two incident offset edges measured through ONE of the two
+/// sides. 180 is straight and 360 is the two edges exactly on top of each other. Because the two
+/// sides sum to 360, "over 330 on one side" is the same statement as "under 30 unsigned", which
+/// is what the code tests -- see offset_surface_foldover_labels() for why the side is not
+/// determined. Optimize3d.cpp carries the same constant; the two values must stay equal.
+static constexpr double FOLDOVER_OUTER_ANGLE_DEG = 330.;
+
+std::vector<char> TopoOffsetTriMesh::offset_surface_foldover_labels() const
+{
+    std::vector<char> fold(vert_capacity(), 0);
+
+    // Per curve vertex, its neighbours across live offset edges.
+    struct VertexEdges
+    {
+        int n = 0;
+        std::array<size_t, 2> nbr{{0, 0}};
+    };
+    std::vector<VertexEdges> at(vert_capacity());
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+        const auto record = [&](const size_t v, const size_t other) {
+            VertexEdges& ve = at[v];
+            if (ve.n < 2) ve.nbr[size_t(ve.n)] = other;
+            ++ve.n; // counted past 2 on purpose, so a non-manifold vertex can be recognised
+        };
+        record(va, vb);
+        record(vb, va);
+    }
+
+    // A fold is the two edges lying on top of each other, and WHICH side is pinched is not part
+    // of it -- the band's side or the background's. See the 3D twin, where the measured folds
+    // turned out to pinch the BACKGROUND, so a test written around a pinched band missed every
+    // one of them. The two sides sum to 360, so "over the threshold through one side" is exactly
+    // "under 360 minus it unsigned", and the unsigned angle catches the fold either way without
+    // having to decide which side is which.
+    const double coincidence_deg = 360. - FOLDOVER_OUTER_ANGLE_DEG;
+    for (size_t vid = 0; vid < at.size(); ++vid) {
+        const VertexEdges& ve = at[vid];
+        // Not two edges means the angle is not defined -- a curve end, or a non-manifold vertex.
+        // Not measurable is not a fold.
+        if (ve.n != 2) continue;
+        const Vector2d p = m_vertex_attribute[vid].m_posf;
+        const Vector2d w0 = m_vertex_attribute[ve.nbr[0]].m_posf - p;
+        const Vector2d w1 = m_vertex_attribute[ve.nbr[1]].m_posf - p;
+        const double l0 = w0.norm(), l1 = w1.norm();
+        if (!(l0 > 0.) || !(l1 > 0.) || !std::isfinite(l0) || !std::isfinite(l1)) continue;
+        const double ang =
+            std::acos(std::clamp((w0 / l0).dot(w1 / l1), -1., 1.)) * 180. / M_PI; // [0, 180]
+        if (ang < coincidence_deg) fold[vid] = 1;
+    }
+    return fold;
+}
+
 void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
 {
     // A vertex on both surfaces is unsatisfiable: it sits at distance 0 from the input complex,
