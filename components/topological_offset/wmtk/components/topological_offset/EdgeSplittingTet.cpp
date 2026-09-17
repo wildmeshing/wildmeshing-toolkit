@@ -391,10 +391,17 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
             3);
     m_vertex_extra[v_id].label = cache.splitf_label;
+    // On the offset surface exactly when the whole face is, the AND of its corners -- the same
+    // rule split_edge_after() applies to its two. It matters because split_face() is no longer
+    // construction-only: the cap phase splits front faces at their centroids, and without this
+    // the new vertex is not a front vertex, so nothing places it on the level set and nothing
+    // measures it (it sat at 0.6 of target_distance while the criterion reported the front
+    // resolved).
+    m_vertex_extra[v_id].m_is_on_offset = m_vertex_extra[v1_id].m_is_on_offset &&
+                                          m_vertex_extra[v2_id].m_is_on_offset &&
+                                          m_vertex_extra[v3_id].m_is_on_offset;
     // Interior to the split face, so on exactly the boundaries the whole face is on: the AND of
-    // its corners. Assigned, not OR'd -- the slot may be recycled. No surface flags are derived
-    // here and none need to be: split_face() runs only from simplicial_embedding(), during
-    // construction, so the surfaces this vertex could be on do not exist yet.
+    // its corners. Assigned, not OR'd -- the slot may be recycled.
     m_vertex_extra[v_id].m_boundary_mask = m_vertex_extra[v1_id].m_boundary_mask &
                                            m_vertex_extra[v2_id].m_boundary_mask &
                                            m_vertex_extra[v3_id].m_boundary_mask;
