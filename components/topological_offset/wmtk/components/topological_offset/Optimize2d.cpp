@@ -7,12 +7,14 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <limits>
 #include <map>
 #include <queue>
 #include <set>
+#include <vector>
 
 namespace wmtk::components::topological_offset {
 
@@ -774,6 +776,18 @@ bool TopoOffsetTriMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // own position -- the base moves no vertex in a collapse -- so every chord the survivor ends
     // up with is one of the chords around the pair now, with v1 relabelled to v2 and both
     // endpoints unmoved. The "after" sag is therefore exact before anything is modified.
+
+    // THE GATE, and it is deliberately the first thing here: the guard applies only to a
+    // candidate that lies exactly ON the offset surface, which in 2D means the collapsed edge is
+    // itself between a band triangle and a background one (edge_is_offset_surface_live: band on
+    // one side, and the other side neither band nor input complex). Everything below -- a
+    // one-ring walk per endpoint and a sag evaluation per chord, each of which evaluates the
+    // potential and its gradient -- is skipped for every other candidate. The 3D twin gates on
+    // edge_is_offset_surface_live(v1, v2), where the surface is made of faces and the edge
+    // qualifies by being an edge of one.
+    const auto found = try_tuple_from_edge({{v1, v2}});
+    if (!found || !edge_is_offset_surface_live(std::get<0>(*found))) return false;
+
     std::vector<std::array<size_t, 2>> before;
     std::set<size_t> seen;
     for (const size_t v : {v1, v2}) {
@@ -3801,6 +3815,58 @@ bool debug_frame_file_exists(const std::string& p)
     std::ifstream f(p);
     return f.good();
 }
+
+/// DEBUG_output only. Splice a VTK FieldData string array carrying this frame's pass label into
+/// a .vtu paraviewo has just closed, so ParaView can display it per timestep: add an Annotate
+/// Attribute Data filter, association Field Data, array frame_label.
+///
+/// Why splice rather than write it properly: paraviewo's VTUWriter exposes only numeric point
+/// and cell fields (Eigen::MatrixXd), with no FieldData and no string support, and it is a
+/// third-party dependency outside this component. The .vtu is XML, so the block goes in here.
+/// format="ascii" keeps it out of the appended-data section, so the binary offsets paraviewo
+/// already wrote stay valid. VTK encodes a string as its character codes, space separated and
+/// null terminated, which also makes the label XML-safe whatever it contains.
+///
+/// The <UnstructuredGrid> anchor sits in the first few hundred bytes, so only the head is held
+/// in memory and the body -- tens of megabytes on a large frame -- is streamed through.
+bool inject_frame_label(const std::string& path, const std::string& label)
+{
+    static const std::string anchor = "<UnstructuredGrid>";
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return false;
+    std::string head(4096, '\0');
+    in.read(&head[0], static_cast<std::streamsize>(head.size()));
+    head.resize(static_cast<size_t>(in.gcount()));
+    const size_t at = head.find(anchor);
+    if (at == std::string::npos) return false;
+    const size_t cut = at + anchor.size();
+
+    std::string codes;
+    for (const char c : label) {
+        codes += std::to_string(static_cast<unsigned>(static_cast<unsigned char>(c))) + " ";
+    }
+    codes += "0";
+
+    const std::string tmp = path + ".lbl";
+    {
+        std::ofstream out(tmp, std::ios::binary);
+        if (!out) return false;
+        out.write(head.data(), static_cast<std::streamsize>(cut));
+        out << "\n  <FieldData>\n    <Array type=\"String\" Name=\"frame_label\" "
+               "NumberOfTuples=\"1\" format=\"ascii\">\n      "
+            << codes << "\n    </Array>\n  </FieldData>";
+        out.write(head.data() + cut, static_cast<std::streamsize>(head.size() - cut));
+        std::vector<char> buf(size_t(1) << 16);
+        while (in.read(buf.data(), static_cast<std::streamsize>(buf.size())) || in.gcount() > 0) {
+            out.write(buf.data(), in.gcount());
+        }
+        if (!out) return false;
+    }
+    in.close();
+    if (std::rename(tmp.c_str(), path.c_str()) == 0) return true;
+    std::remove(tmp.c_str()); // leave the frame paraviewo wrote rather than a half-named file
+    return false;
+}
 } // namespace
 
 void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& label) const
@@ -3823,7 +3889,14 @@ void TopoOffsetTriMesh::write_debug_frame(const std::string& label)
     if (m_debug_frame_labels.size() <= idx) m_debug_frame_labels.resize(idx + 1);
     m_debug_frame_labels[idx] = label;
     for (const char* sfx : {"", "_surf", "_off", "_edge", "_front"}) {
-        if (debug_frame_file_exists(base + sfx + ".vtu")) m_debug_pvd_series[sfx].push_back(idx);
+        const std::string p = base + sfx + ".vtu";
+        if (!debug_frame_file_exists(p)) continue;
+        // The label goes INTO the frame as FieldData, not only into the .pvd: a .pvd DataSet's
+        // name= attribute does reach the reader, but as a vtkCharArray, which ParaView's
+        // annotation renders as the first character's numeric code rather than the text, and an
+        // XML comment is discarded outright. See inject_frame_label().
+        inject_frame_label(p, label);
+        m_debug_pvd_series[sfx].push_back(idx);
     }
     write_debug_pvd();
 }

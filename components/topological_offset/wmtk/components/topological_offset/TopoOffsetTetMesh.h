@@ -872,8 +872,10 @@ public:
     /// empty set.
     double max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
-    /// Returns true when the collapse must be refused. There is no after-half: the survivor
-    /// keeps its position, so the result is measured exactly before the collapse runs.
+    /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
+    /// exactly on the offset surface, which it checks first and cheaply: everything else returns
+    /// false without walking a one-ring or evaluating a potential. There is no after-half: the
+    /// survivor keeps its position, so the result is measured exactly before the collapse runs.
     bool ops_guard_refuses_collapse(size_t v1, size_t v2) const;
     /// The three corner ids of a face tuple.
     std::array<size_t, 3> face_vids(const Tuple& f) const;

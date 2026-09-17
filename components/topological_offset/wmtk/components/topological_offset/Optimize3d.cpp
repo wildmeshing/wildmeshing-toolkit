@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <functional>
@@ -20,6 +21,7 @@
 #include <set>
 #include <tuple>
 #include <unordered_map>
+#include <vector>
 
 namespace wmtk::components::topological_offset {
 
@@ -257,8 +259,8 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // The flip replaces surface faces (a,b,c) and (a,b,d) with (a,c,d),(b,c,d). Both must belong
     // to the same tracked surface: a mixed flip would hand a triangle of the input complex to the
     // offset surface, or the reverse, moving the line where one meets the other.
-    const size_t fid_abc = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, c}}));
-    const size_t fid_abd = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, d}}));
+    const auto [ftup_abc, fid_abc] = tuple_from_face(std::array<size_t, 3>{{a, b, c}});
+    const auto [ftup_abd, fid_abd] = tuple_from_face(std::array<size_t, 3>{{a, b, d}});
     if (fid_abc == static_cast<size_t>(-1) || fid_abd == static_cast<size_t>(-1)) {
         return false;
     }
@@ -275,8 +277,14 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // vertex moves, so every corner position is unchanged and both maxima are exact here. The
     // comparison is against the state before this flip, not against the bar: an unresolved
     // patch is guarded exactly as a resolved one is.
+    //
+    // The gate is the same one the collapse half uses, and it comes before the four sag
+    // evaluations: BOTH re-triangulated faces must lie exactly on the offset surface, band on
+    // one side and background on the other, asked live of the tags rather than read from the
+    // cached m_surface_class -- these operations run between one labelling pass and the next,
+    // which is the reason face_is_offset_surface_live() exists.
     if (m_offset_params.experimental_ops_divergence_guard &&
-        m_face_attribute[fid_abc].m_surface_class == OFFSET_SURFACE_CLASS) {
+        face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
         const double before = std::max(offset_face_sag(a, b, c), offset_face_sag(a, b, d));
         const double after = std::max(offset_face_sag(a, c, d), offset_face_sag(b, c, d));
         if (after > before) {
@@ -684,6 +692,23 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // up with is one of the faces around the pair now, with v1 relabelled to v2 and all three
     // corner positions unchanged. That makes the "after" sag exact here, before anything is
     // modified, so the whole test lives in the before-half and no collapse is rolled back.
+
+    // THE GATE, and it is deliberately the first thing here: the guard applies only to a
+    // candidate that lies exactly ON the offset surface, i.e. the collapsed edge is an edge of a
+    // face with the band on one side and the background on the other
+    // (face_is_offset_surface_live). Everything below -- two one-ring walks over the incident
+    // tets and a sag evaluation per face, each of which evaluates the potential and its gradient
+    // -- is skipped for every other candidate, which is the great majority of them. Before this
+    // gate existed the guard engaged on any collapse with EITHER endpoint incident to an offset
+    // face, which took in two further classes. One could never have been refused: with a single
+    // endpoint on the surface the relabel below is vacuous (the other endpoint is on none of the
+    // faces collected), so "after" always equalled "before". The other could: both endpoints on
+    // the surface with the edge itself running through the band interior does move the removed
+    // vertex's faces onto the survivor, and that collapse is now passed through unguarded. That
+    // narrowing is the point of the gate, not an oversight -- the guard is for operations ON the
+    // surface -- but it is the one behavioural change here, not just a saving.
+    if (!edge_is_offset_surface_live(v1, v2)) return false;
+
     std::vector<std::array<size_t, 3>> before;
     std::set<size_t> seen;
     for (const size_t v : {v1, v2}) {
@@ -692,8 +717,9 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
             before.push_back(face_vids(f));
         }
     }
-    // Nothing of the offset surface is touched: not this guard's business. This is also what
-    // makes the guard a no-op away from the front, rather than needing a front-to-front test.
+    // Unreachable through the gate above (an edge on the offset surface has an incident offset
+    // face at both of its ends), and kept so max_offset_face_sag() is never asked for the
+    // maximum of an empty set.
     if (before.empty()) return false;
 
     std::vector<std::array<size_t, 3>> after;
@@ -3527,6 +3553,58 @@ bool debug_frame_file_exists(const std::string& p)
     std::ifstream f(p);
     return f.good();
 }
+
+/// DEBUG_output only. Splice a VTK FieldData string array carrying this frame's pass label into
+/// a .vtu paraviewo has just closed, so ParaView can display it per timestep: add an Annotate
+/// Attribute Data filter, association Field Data, array frame_label.
+///
+/// Why splice rather than write it properly: paraviewo's VTUWriter exposes only numeric point
+/// and cell fields (Eigen::MatrixXd), with no FieldData and no string support, and it is a
+/// third-party dependency outside this component. The .vtu is XML, so the block goes in here.
+/// format="ascii" keeps it out of the appended-data section, so the binary offsets paraviewo
+/// already wrote stay valid. VTK encodes a string as its character codes, space separated and
+/// null terminated, which also makes the label XML-safe whatever it contains.
+///
+/// The <UnstructuredGrid> anchor sits in the first few hundred bytes, so only the head is held
+/// in memory and the body -- tens of megabytes on a large frame -- is streamed through.
+bool inject_frame_label(const std::string& path, const std::string& label)
+{
+    static const std::string anchor = "<UnstructuredGrid>";
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return false;
+    std::string head(4096, '\0');
+    in.read(&head[0], static_cast<std::streamsize>(head.size()));
+    head.resize(static_cast<size_t>(in.gcount()));
+    const size_t at = head.find(anchor);
+    if (at == std::string::npos) return false;
+    const size_t cut = at + anchor.size();
+
+    std::string codes;
+    for (const char c : label) {
+        codes += std::to_string(static_cast<unsigned>(static_cast<unsigned char>(c))) + " ";
+    }
+    codes += "0";
+
+    const std::string tmp = path + ".lbl";
+    {
+        std::ofstream out(tmp, std::ios::binary);
+        if (!out) return false;
+        out.write(head.data(), static_cast<std::streamsize>(cut));
+        out << "\n  <FieldData>\n    <Array type=\"String\" Name=\"frame_label\" "
+               "NumberOfTuples=\"1\" format=\"ascii\">\n      "
+            << codes << "\n    </Array>\n  </FieldData>";
+        out.write(head.data() + cut, static_cast<std::streamsize>(head.size() - cut));
+        std::vector<char> buf(size_t(1) << 16);
+        while (in.read(buf.data(), static_cast<std::streamsize>(buf.size())) || in.gcount() > 0) {
+            out.write(buf.data(), in.gcount());
+        }
+        if (!out) return false;
+    }
+    in.close();
+    if (std::rename(tmp.c_str(), path.c_str()) == 0) return true;
+    std::remove(tmp.c_str()); // leave the frame paraviewo wrote rather than a half-named file
+    return false;
+}
 } // namespace
 
 void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& label) const
@@ -3549,7 +3627,14 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
     if (m_debug_frame_labels.size() <= idx) m_debug_frame_labels.resize(idx + 1);
     m_debug_frame_labels[idx] = label;
     for (const char* sfx : {"", "_surf", "_off", "_edge", "_front"}) {
-        if (debug_frame_file_exists(base + sfx + ".vtu")) m_debug_pvd_series[sfx].push_back(idx);
+        const std::string p = base + sfx + ".vtu";
+        if (!debug_frame_file_exists(p)) continue;
+        // The label goes INTO the frame as FieldData, not only into the .pvd: a .pvd DataSet's
+        // name= attribute does reach the reader, but as a vtkCharArray, which ParaView's
+        // annotation renders as the first character's numeric code rather than the text, and an
+        // XML comment is discarded outright. See inject_frame_label().
+        inject_frame_label(p, label);
+        m_debug_pvd_series[sfx].push_back(idx);
     }
     write_debug_pvd();
 }
