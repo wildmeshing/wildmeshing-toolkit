@@ -4414,6 +4414,42 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             m_params.stop_energy);
     }
 
+    // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
+    // the delivered mesh, not a debug curiosity, so it is reported whether or not debug_output
+    // wrote the per-vertex field. Run here, at the end of optimize_offset, so it describes the
+    // mesh the driver is about to write: after the finishing pass, not at the loop's verdict.
+    // Reported for a run that did not converge too, where a fold is if anything more likely.
+    // See offset_surface_foldover_labels() for what the angle is and why its side is not
+    // determined. Costs one pass over the live offset simplices, once, with no field evaluation.
+    {
+        const std::vector<char> fold = offset_surface_foldover_labels();
+        size_t n_fold = 0;
+        size_t first = std::numeric_limits<size_t>::max();
+        for (size_t vid = 0; vid < fold.size(); ++vid) {
+            if (!fold[vid]) continue;
+            ++n_fold;
+            if (first == std::numeric_limits<size_t>::max()) first = vid;
+        }
+        if (n_fold > 0) {
+            const auto& p = m_vertex_attribute[first].m_posf;
+            logger().warn(
+                "[foldover] the offset surface is folded back on itself at {} vertex(es): {} "
+                "meet within {} degrees of coincident (over {} degrees through one side). "
+                "First at v{} ({:.4}, {:.4}{}). {}",
+                n_fold,
+                "two offset edges at a curve vertex",
+                360. - FOLDOVER_OUTER_ANGLE_DEG,
+                FOLDOVER_OUTER_ANGLE_DEG,
+                first,
+                p[0],
+                p[1],
+                "",
+                m_offset_params.debug_output
+                    ? "The per-vertex flag offset_foldover is on the debug frames."
+                    : "Set DEBUG_output to get the per-vertex offset_foldover field.");
+        }
+    }
+
     // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log
     // still names which criterion missed before the throw.
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
