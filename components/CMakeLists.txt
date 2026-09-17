@@ -28,3 +28,9 @@ add_subdirectory("simwild/wmtk/components/simwild")
 add_subdirectory("c1_simplification/wmtk/components/c1_simplification")
 add_subdirectory("manifold_extraction/wmtk/components/manifold_extraction")
 add_subdirectory("topological_offset/wmtk/components/topological_offset")
+
+# Optional: links polyfem. Gated by WMTK_WITH_POLYFEM (top-level CMakeLists) so the default build
+# never downloads or compiles it.
+if(WMTK_WITH_POLYFEM)
+    add_subdirectory("polyfem_ops/wmtk/components/polyfem_ops")
+endif()

@@ -1,5 +1,6 @@
 #include "EnergyHarmonicTet.hpp"
 #include <limits>
+#include <cassert>
 // Generated with following snippet with some text replacement.
 // Also modified for infinity evaluation
 // ```python

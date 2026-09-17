@@ -62,6 +62,19 @@ option(WMTK_BUILD_INTEGRATION_TESTS "Build integration tests (might take very lo
 # the whole mesh, so it is O(#F) per operation. Tests only -- off by default, and gated at
 # compile time rather than by a runtime flag so a normal build carries none of it.
 option(WMTK_DEBUG_BRUTE_FORCE_OPS "Validate each TriMesh operation against a brute-force reference (very slow)" OFF)
+
+# The polyfem_ops component links polyfem as a library (see cmake/recipes/polyfem.cmake), which
+# roughly doubles the build, so it is opt-in. polyfem includes h5pp unconditionally, so the one
+# thing it needs from the default build is HDF5 through paraviewo; the recipe reads its switch
+# from this variable, and with the option off the default build is unchanged. (Apple Accelerate
+# in polysolve, the sparse solver the reference runs used, is on for every Apple build through
+# recipes/polysolve.cmake, which is why recipes/eigen.cmake pins the Eigen commit polysolve needs.)
+option(WMTK_WITH_POLYFEM "Build the polyfem_ops component, which links polyfem" OFF)
+if(WMTK_WITH_POLYFEM)
+    set(WMTK_PARAVIEWO_WITH_HDF5 ON)
+else()
+    set(WMTK_PARAVIEWO_WITH_HDF5 OFF)
+endif()
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

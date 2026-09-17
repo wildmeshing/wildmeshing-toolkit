@@ -9,6 +9,8 @@
 // Created by Yixin Hu on 4/11/17.
 //
 
+// libigl 2.6.0's headers use assert() without including <cassert> (Eigen 3.4.0 used to include it for them; the Eigen pinned now does not). Keep this above the igl includes.
+#include <cassert>
 #include <igl/winding_number.h>
 
 #include <wmtk/utils/DisableWarnings.hpp>

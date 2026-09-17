@@ -103,7 +103,8 @@ inline void winding_number(
     if (O.rows() == 0 || F.rows() == 0 || V.rows() == 0) return;
 
     // Build the accelerator once (same as igl::winding_number for triangle meshes).
-    igl::WindingNumberAABB<Eigen::Matrix<double, 1, 3>, Eigen::MatrixXd, Eigen::MatrixXi> hier(
+    // libigl >= 2.5 parametrises the tree on <Scalar, Index>; the mesh types are deduced by the ctor.
+    igl::WindingNumberAABB<double, int> hier(
         V,
         F);
     hier.grow();

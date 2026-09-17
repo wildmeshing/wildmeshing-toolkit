@@ -570,7 +570,7 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
             "dhat": init_dhat,
             "alpha_t": cfg.get("alpha_t", OPT_DEFAULTS["alpha_t"]),
             "alpha_n": cfg.get("alpha_n", OPT_DEFAULTS["alpha_n"]),
-            "use_rest_shape_measure": cfg.get("use_rest_shape_measure", True),
+            "use_rest_shape_measure": cfg.get("use_rest_shape_measure", False),
             "use_adaptive_dhat": cfg.get("use_adaptive_dhat", False),
             "collision_pairs": collision_pairs,
             "collision_mesh": {

@@ -1,0 +1,40 @@
+[
+  {
+    "pointer": "/",
+    "type": "object",
+    "required": [
+      "application",
+      "input",
+      "operation"
+    ],
+    "optional": [
+      "output"
+    ],
+    "doc": "Dispatcher for the polyfem-backed simwild operations. Only these keys are validated here; an operation's own parameters are validated by the operation against the pysimwild spec.json that defines them."
+  },
+  {
+    "pointer": "/application",
+    "type": "string",
+    "doc": "Must be polyfem_ops."
+  },
+  {
+    "pointer": "/input",
+    "type": "string",
+    "doc": "Input multi-tag .msh path."
+  },
+  {
+    "pointer": "/output",
+    "type": "string",
+    "default": "out",
+    "doc": "Output path stem: the deformed mesh is written to <output>.msh and working artifacts next to it."
+  },
+  {
+    "pointer": "/operation",
+    "type": "string",
+    "options": [
+      "minimum_separation",
+      "laplacian_smoothing"
+    ],
+    "doc": "Which polyfem operation to run."
+  }
+]
