@@ -156,6 +156,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
+    /// See the spec: sweeps in the pre_smooth block, a fixed count of its own.
+    int pre_smooth_max_passes;
     /// See the spec: refuse a front collapse or surface flip whose neighbourhood was converged
     /// (every front face around the endpoints within the tube, every corner within the bar)
     /// and would not be afterwards. false = the operation passes as they are.
@@ -224,6 +226,7 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         sag_halve_refinement = json_params["sag_halve_refinement"];
         pre_smooth = json_params["pre_smooth"];
+        pre_smooth_max_passes = json_params["pre_smooth_max_passes"];
         front_refuse_converged_collapse = json_params["front_refuse_converged_collapse"];
 
         // ---- inherited from wmtk::OptimizerParameters ----

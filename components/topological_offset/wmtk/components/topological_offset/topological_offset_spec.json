@@ -48,6 +48,7 @@
       "adaptive_smoothing_step_rel",
       "sag_halve_refinement",
       "pre_smooth",
+      "pre_smooth_max_passes",
       "front_refuse_converged_collapse",
       "max_iterations",
       "offset_envelope_rel",
@@ -392,7 +393,13 @@
     "pointer": "/pre_smooth",
     "type": "bool",
     "default": false,
-    "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: interleaved_smoothing_passes sweeps, or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+    "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- pre_smooth_max_passes sweeps, with the plastic rests stamped before and the offset tube rebuilt after, so the front is carried toward the level set once before the first split pass measures it. The block is smoothing alone and reads neither adaptive_smoothing nor interleaved_smoothing_passes, which belong to the loop's operation groups. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
+  },
+  {
+    "pointer": "/pre_smooth_max_passes",
+    "default": 2,
+    "type": "int",
+    "doc": "Smoothing sweeps in the pre_smooth block, a fixed count (at least 1). Its own key so the mesh as constructed can be smoothed a different number of times than the loop smooths after each operation group (interleaved_smoothing_passes). Read only when pre_smooth is true."
   },
   {
     "pointer": "/front_refuse_converged_collapse",
@@ -506,7 +513,7 @@
     "pointer": "/max_rounds",
     "default": 40,
     "type": "int",
-    "doc": "The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect."
+    "doc": "The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect. 0 means no turns at all: the run ends at the constructed offset, after the pre_smooth block when pre_smooth is true, which is how the construction is inspected with one smoothing block and nothing else."
   },
   {
     "pointer": "/pre_optimize_input",

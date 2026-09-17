@@ -3863,6 +3863,9 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
         // block every operation group is followed by, with the same bookkeeping around it
         // (plastic rests stamped before, the tube rebuilt after). Frames are labelled r0S*.
+        // pre_smooth_max_passes sweeps, a fixed count. The block is smoothing alone, so it reads
+        // neither adaptive_smoothing nor interleaved_smoothing_passes, which belong to the loop.
+        const int kp = std::max(1, m_offset_params.pre_smooth_max_passes);
         m_ab_round = 0;
         m_phase = OptPhase::Single;
         for (const Tuple& v : get_vertices()) {
@@ -3873,15 +3876,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         rebuild_offset_envelope();
         stamp_plastic_rests();
         logger().info(
-            "\t[pre_smooth] one smoothing block before turn 1: {}",
-            m_offset_params.adaptive_smoothing
-                ? std::string("adaptive smoothing")
-                : fmt::format("{} interleaved smoothing pass(es)", k));
-        if (m_offset_params.adaptive_smoothing) {
-            smooth_group_to_convergence("pre_smooth");
-        } else {
-            local_operations({{0, 0, 0, k}});
-        }
+            "\t[pre_smooth] one smoothing block before turn 1: {} smoothing pass(es) "
+            "(pre_smooth_max_passes)",
+            kp);
+        local_operations({{0, 0, 0, kp}});
         rebuild_offset_envelope();
     }
     for (int it = 0; it < budget; ++it) {
