@@ -59,11 +59,11 @@ std::optional<double> active_distance_from_contact_form(
  * @brief The sink that turns polyfem's own log records into `polyfem_iter_<i>.log` (and into the
  * lines whose last "Finished:" line `check_polyfem_success` quotes when a solve failed).
  *
- * The subprocess backend copies the child's stdout into that file. In process there is no child
+ * The Python engine copies the executable's stdout into that file. In process there is no child
  * stdout to copy, so the text is taken where it is produced: spdlog's default pattern formats each
  * record exactly as the `stdout_color_sink` the executable installs formats it, and the escapes
  * polyfem embeds in a few messages with `fmt::fg` (the "timing" tag) are stripped here just as the
- * subprocess backend strips them out of the pipe.
+ * Python strips them out of its capture.
  *
  * `stop()` exists because `State::init` REPLACES polyfem's global logger on every solve: a logger
  * this sink was attached to can outlive the solve if something still holds it, and after stop()
@@ -87,7 +87,7 @@ public:
         m_file.close();
     }
 
-    /// The captured records, split on '\n' exactly as the subprocess backend splits the pipe.
+    /// The captured records, split on '\n' exactly as the Python splits the executable's output.
     std::vector<std::string> lines()
     {
         std::lock_guard<std::mutex> lock(base_sink<std::mutex>::mutex_);
@@ -123,9 +123,9 @@ private:
 };
 
 /// polyfem's default log level (json-specs/log.json: /output/log/level defaults to "debug"). The
-/// executable only overrides it when `--log_level` is passed and the subprocess backend never
-/// passes it, so this is the level both backends' log files are written at. Read off the document
-/// anyway, so that a JSON that did set it would still produce matching logs.
+/// executable only overrides it when `--log_level` is passed and the Python engine never passes
+/// it, so this is the level both engines' log files are written at. Read off the document anyway,
+/// so that a JSON that did set it would still produce matching logs.
 spdlog::level::level_enum document_log_level(const nlohmann::json& doc)
 {
     const auto output = doc.find("output");
@@ -142,8 +142,8 @@ spdlog::level::level_enum document_log_level(const nlohmann::json& doc)
 }
 
 /// Put `sink` on `logger` unless it is already there. polyfem's logger, ipc's logger and (through
-/// GeogramUtils) geogram's output are the three things the child printed on stdout; they are two
-/// distinct logger objects sharing one set of sinks, so both have to be fed.
+/// GeogramUtils) geogram's output are the three things the executable prints on stdout; they are
+/// two distinct logger objects sharing one set of sinks, so both have to be fed.
 void attach_sink(spdlog::logger& logger, const spdlog::sink_ptr& sink)
 {
     auto& sinks = logger.sinks();
@@ -182,7 +182,7 @@ std::optional<double> active_distance_from_contact_form(
         state.solve_data.contact_form.get());
     if (form == nullptr) {
         // No contact at all (the smoothing operation), or a formulation whose post_step does not
-        // log the line: either way the subprocess backend would find nothing to parse.
+        // log the line: either way the executable's log has no line for the Python to parse.
         return std::nullopt;
     }
     const Eigen::MatrixXd displaced = form->compute_displaced_surface(sol.col(0));
@@ -204,7 +204,7 @@ std::optional<double> active_distance_from_contact_form(
  * Three inputs still go through files because polyfem has no in-memory entry point for them and
  * this step adds none: the soft constraints, the hard pins and the collision proxy with its linear
  * map. The reduced mesh stays a file too -- see the comment on `run_solve` -- so the simulation
- * JSON is byte for byte the one the subprocess backend hands the child, and polyfem's own readers
+ * JSON is byte for byte the one the Python engine hands the executable, and polyfem's own readers
  * open all four.
  *
  * What does NOT go through a file any more is the warm start: the JSON's `input/data/state` and
@@ -241,8 +241,8 @@ public:
             args["output"]["data"]["state"] = "";
         }
 
-        // `-o <out_dir>`, the only command-line argument the subprocess backend passes, applied
-        // the way main.cpp applies it.
+        // `-o <out_dir>`, the one command-line argument the Python engine passes the executable
+        // besides `-j`, applied the way main.cpp applies it.
         nlohmann::json patch = nlohmann::json::object();
         patch["/output/directory"_json_pointer] = std::filesystem::absolute(out_dir).string();
         args.merge_patch(patch);
@@ -261,9 +261,9 @@ public:
         try {
             result = run_solve(args, capture, wants_warm_start);
         } catch (const std::exception& e) {
-            // The subprocess reports this as a dead child (an uncaught exception aborts main, so
-            // the Python sees return code -6); in process there is no signal to report, so the
-            // failure is a non-zero code and check_polyfem_success prints its banner as usual.
+            // The executable dies on this (an uncaught exception aborts main, so the Python engine
+            // sees return code -6); in process there is no signal to report, so the failure is a
+            // non-zero code and check_polyfem_success prints its banner as usual.
             // polyfem has already logged the message itself -- log_and_throw_error logs before it
             // throws -- so it is in the captured lines and in the log file.
             logger().error("polyfem failed in process: {}", e.what());
@@ -279,10 +279,9 @@ public:
         return result;
     }
 
-    void reset_warm_start(const std::filesystem::path&, const std::filesystem::path&) override
+    void reset_warm_start() override
     {
-        // The two paths are the subprocess backend's business; here there is nothing on disk to
-        // unlink, only the two solutions to drop.
+        // Nothing on disk to unlink, only the two solutions to drop.
         m_last.reset();
         m_committed.reset();
     }

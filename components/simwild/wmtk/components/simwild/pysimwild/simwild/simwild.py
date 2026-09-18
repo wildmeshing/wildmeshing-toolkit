@@ -498,8 +498,9 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
 
 def _run_polyfem_op(op_name, params, engine):
     """Validate `params` against the op's spec.json and run the engine on
-    the validated, defaults-filled dict. The PolyFEM binary comes from
-    $POLYFEM_BIN (the engines raise if it is unset)."""
+    the validated, defaults-filled dict. The Python engine runs the PolyFEM
+    binary named by $POLYFEM_BIN and raises if it is unset; the C++ engine is
+    linked against polyfem and needs no binary."""
     from .polyfem_ops import spec as _spec
     p = _spec.validate(_spec.load_spec(op_name), params)
     _ensure_output_dir(p["output"])
@@ -559,8 +560,8 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
     - output: Output path stem; writes <output>.msh (artifacts next to it).
     - others: Additional parameters — see polyfem_ops/minimum_separation/spec.json
       (scale, use_laplacian, weight_*, rtol, max_iterations, strategy
-      ["dhat" default | "stiffness" experimental], ...). PolyFEM binary:
-      export POLYFEM_BIN.
+      ["dhat" default | "stiffness" experimental], ...). PolyFEM binary
+      (engine="python" only): export POLYFEM_BIN.
     - engine: Which implementation runs the op — "python" (default) or "cpp",
       the C++ port of it in the wmtk component polyfem_ops, which takes the
       same parameters and writes the same files and needs the toolkit built
@@ -624,7 +625,8 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={},
       Empty = every material interface.
     - output: Output path stem; writes <output>.msh (artifacts next to it).
     - others: Additional parameters — see polyfem_ops/laplacian_smoothing/spec.json
-      (weight_laplacian, smooth_positions, ...). PolyFEM binary: export POLYFEM_BIN.
+      (weight_laplacian, smooth_positions, ...). PolyFEM binary
+      (engine="python" only): export POLYFEM_BIN.
     - engine: Which implementation runs the op — "python" (default) or "cpp",
       the C++ port of it in the wmtk component polyfem_ops, which takes the
       same parameters and writes the same files and needs the toolkit built

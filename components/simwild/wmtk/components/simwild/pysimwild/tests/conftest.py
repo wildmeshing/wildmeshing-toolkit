@@ -56,10 +56,12 @@ def _polyfem_ops_available():
 
 # The `engine` values the simwild wrappers accept: the Python glue (the
 # reference implementation) and its C++ port. Parametrizing a test over this
-# runs it once per engine and puts the engine name in the test id; the C++ half
-# skips when the toolkit was built without the component.
+# runs it once per engine and puts the engine name in the test id. The Python
+# half skips without $POLYFEM_BIN, the binary it runs; the C++ half is linked
+# against polyfem and skips only when the toolkit was built without the
+# component.
 ENGINES = [
-    "python",
+    pytest.param("python", marks=needs_polyfem),
     pytest.param("cpp", marks=pytest.mark.skipif(
         not _polyfem_ops_available(),
         reason="the wildmeshing module was built without the polyfem_ops "

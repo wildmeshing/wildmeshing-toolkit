@@ -8,14 +8,13 @@ import pytest
 
 from simwild import simwild as wm
 
-from conftest import ENGINES, needs_polyfem
+from conftest import ENGINES
 from geo import (interface_polyline_2d, polyline_length, roughness_2d,
                  signed_volumes)
 
 SEL = {"region": "tag_0", "filter": "ambient"}
 
 
-@needs_polyfem
 @pytest.mark.parametrize("engine", ENGINES)
 def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path, engine):
     coords0, edges0 = interface_polyline_2d(jagged2d, SEL)

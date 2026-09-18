@@ -27,10 +27,9 @@ namespace wmtk::components::polyfem_ops {
 namespace {
 
 /// The operation's own parameters: everything the dispatcher does not own. `application` and
-/// `operation` pick the code path, `inputs_only` and `polyfem_backend` are C++-engine switches
-/// with no counterpart in pysimwild, and `input_dir` is injected into every job by the JSON app
-/// (app/main.cpp) -- none of the five may be offered to the pysimwild spec, which is strict and
-/// knows none of them.
+/// `operation` pick the code path, `inputs_only` is a C++-engine switch with no counterpart in
+/// pysimwild, and `input_dir` is injected into every job by the JSON app (app/main.cpp) -- none of
+/// the four may be offered to the pysimwild spec, which is strict and knows none of them.
 ///
 /// `input_dir` is dropped rather than used to resolve relative paths, which is what the other
 /// components do with it: pysimwild opens `input` and `output` exactly as written, and resolving
@@ -41,7 +40,6 @@ nlohmann::json operation_params(const nlohmann::json& json_params)
     out.erase("application");
     out.erase("operation");
     out.erase("inputs_only");
-    out.erase("polyfem_backend");
     out.erase("input_dir");
     return out;
 }
@@ -287,8 +285,7 @@ void polyfem_ops(nlohmann::json json_params)
         spec_engine.strict = true;
 
         nlohmann::json dispatch = nlohmann::json::object();
-        for (const char* key :
-             {"application", "input", "output", "operation", "inputs_only", "polyfem_backend"}) {
+        for (const char* key : {"application", "input", "output", "operation", "inputs_only"}) {
             if (json_params.contains(key)) {
                 dispatch[key] = json_params[key];
             }
@@ -320,18 +317,11 @@ void polyfem_ops(nlohmann::json json_params)
     const std::string input = params["input"];
     const std::string output = params["output"];
 
-    // Which polyfem: the one linked into this process (the default) or a child running
-    // $POLYFEM_BIN. Both produce the same files from the same JSON; the subprocess one is kept
-    // because it is the only way to check that, and it is what the Python engine does.
-    //
-    // $POLYFEM_BIN is resolved BEFORE anything is generated, as `run()` does (`polyfem =
-    // polyfem_bin()` sits right after the input path is resolved): a missing binary must fail on
-    // an untouched output directory, not half way through writing the inputs. The in-process
-    // backend needs no binary and so never looks at the variable.
-    const bool subprocess = json_params.value("polyfem_backend", "in_process") == "subprocess";
+    // The polyfem linked into this process. The Python engine runs $POLYFEM_BIN instead; this one
+    // needs no binary and never looks at the variable.
     std::unique_ptr<PolyfemBackend> backend;
     if (!inputs_only) {
-        backend = subprocess ? subprocess_backend(polyfem_bin()) : in_process_backend();
+        backend = in_process_backend();
     }
 
     if (operation == "minimum_separation") {

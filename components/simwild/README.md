@@ -179,8 +179,8 @@ The wrapper also provides PolyFEM-backed operations: `minimum_separation`,
 same .msh-in/.msh-out interface; parameters are validated against the
 `spec.json` packaged with each op.
 
-These ops locate the PolyFEM binary **only** through the `POLYFEM_BIN`
-environment variable and raise if it is unset:
+The Python implementations of these ops locate the PolyFEM binary **only**
+through the `POLYFEM_BIN` environment variable and raise if it is unset:
 
 ```bash
 export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin
@@ -199,7 +199,8 @@ implementation, which is the default and stays the reference, and a C++ port
 of it in the WMTK component `polyfem_ops`. Pass `engine="cpp"` to either
 wrapper to run the port instead — same parameters, same output files in the
 same places. It needs the toolkit built with `-DWMTK_WITH_POLYFEM=ON`;
-without that the call raises and names the option. `engine` is a wrapper
+without that the call raises and names the option. It runs the polyfem it is
+linked against, so it needs no `POLYFEM_BIN`. `engine` is a wrapper
 argument, not a `spec.json` parameter.
 
 #### 9. Minimum Separation
@@ -252,4 +253,6 @@ python -m pytest tests
 
 Tier-1 runs anywhere (the bindings are found in `<toolkit>/build/bin`
 automatically if not installed). The end-to-end tests (measured minimum
-separation, smoothing roughness decrease) run iff `POLYFEM_BIN` is exported.
+separation, smoothing roughness decrease) run their Python-engine half iff
+`POLYFEM_BIN` is exported, and their C++-engine half iff the toolkit was built
+with `-DWMTK_WITH_POLYFEM=ON`.

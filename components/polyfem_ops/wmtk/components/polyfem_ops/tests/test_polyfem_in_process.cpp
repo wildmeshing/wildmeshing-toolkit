@@ -8,12 +8,15 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <vector>
 
 using wmtk::components::polyfem_ops::in_process_backend;
-using wmtk::components::polyfem_ops::parse_active_distance;
 using wmtk::components::polyfem_ops::split_lines;
 
 namespace {
@@ -119,6 +122,22 @@ std::string read_file(const std::filesystem::path& path)
     return ss.str();
 }
 
+/// The active distance on the LAST line of polyfem's output that carries one -- it logs
+/// "Minimum distance during solve: <d>, active distance: <a>, dhat: <h>" after every Newton step,
+/// and the converged state is the last -- read with `strtod`, which stops at the comma. polyfem
+/// prints the value with enough digits to round trip, so this recovers the double exactly.
+std::optional<double> logged_active_distance(const std::vector<std::string>& lines)
+{
+    static const std::string marker = "active distance:";
+    for (auto it = lines.rbegin(); it != lines.rend(); ++it) {
+        const size_t at = it->rfind(marker);
+        if (at != std::string::npos) {
+            return std::strtod(it->c_str() + at + marker.size(), nullptr);
+        }
+    }
+    return std::nullopt;
+}
+
 } // namespace
 
 // The in-process backend reports the active distance off the contact form instead of off the log
@@ -148,14 +167,15 @@ TEST_CASE("polyfem_ops in-process active distance is the logged one", "[componen
     REQUIRE(result.returncode == 0);
     REQUIRE(result.active_distance.has_value());
 
-    // What the subprocess backend would have read out of the same solve's output.
-    const std::optional<double> logged = parse_active_distance(result.lines);
+    // What the Python engine reads out of the executable's output for the same solve.
+    const std::optional<double> logged = logged_active_distance(result.lines);
     REQUIRE(logged.has_value());
     CHECK(*result.active_distance == *logged);
 
     // ... and the log file on disk carries that same output, which is what makes the file still
     // worth keeping: it is the same text, not a summary of it.
-    const std::optional<double> from_file = parse_active_distance(split_lines(read_file(log_path)));
+    const std::optional<double> from_file =
+        logged_active_distance(split_lines(read_file(log_path)));
     REQUIRE(from_file.has_value());
     CHECK(*from_file == *logged);
 }

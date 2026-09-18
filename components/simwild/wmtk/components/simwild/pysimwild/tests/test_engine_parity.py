@@ -802,13 +802,11 @@ def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_
 # --------------------------------------------------------------------------
 #
 # Everything above stops at the generated polyfem inputs, which are byte-identical. Everything
-# below runs polyfem, and every case below runs it THREE ways: the Python engine, which launches
-# $POLYFEM_BIN as a child process; the C++ engine reaching polyfem in this process (its default,
-# `polyfem_backend="in_process"`); and the C++ engine launching the same child ($POLYFEM_BIN,
-# `polyfem_backend="subprocess"`). The three must agree, and that is where "identical" stops being
-# available: the contact assembly
-# sums per-collision-pair contributions in an order that depends on thread scheduling, so two runs
-# of ONE binary on ONE machine do not agree bit for bit.
+# below runs polyfem, and every case below runs it TWO ways: the Python engine, which launches
+# $POLYFEM_BIN as a child process, and the C++ engine, which reaches the polyfem linked into this
+# process. The two must agree, and that is where "identical" stops being available: the contact
+# assembly sums per-collision-pair contributions in an order that depends on thread scheduling, so
+# two runs of ONE binary on ONE machine do not agree bit for bit.
 #
 # The two tolerance constants below are measured. Each of the four solver cases -- the dhat ramp,
 # the stiffness loop, the protected-region case and the smoothing case -- was run five times with
@@ -821,9 +819,9 @@ def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_
 #   C++ against C++         7.6e-11   dhat case, active distances (coordinates 5.8e-11)
 #   Python against C++      7.1e-11   dhat case, active distances (coordinates 6.5e-11)
 #
-# Ten times the widest of those, rounded up to a power of ten, is 1e-9 for BOTH pairings -- which
-# is where the tolerances already were, so the measurement says they were right and does not
-# support loosening either of them. They apply ONLY to quantities the solver's output feeds. (The
+# Ten times the widest of those, rounded up to a power of ten, is 1e-9 -- which is where the
+# tolerance already was, so the measurement says it was right and does not support loosening it.
+# It applies ONLY to quantities the solver's output feeds. (The
 # smoothing case has no contact and therefore no contact assembly; its deformed meshes agree to
 # 2.9e-15 across the two engines, and the already-separated probe case moves nothing at all.)
 #
@@ -849,79 +847,17 @@ def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_
 # dhat case's iteration 1 came out as 0.0013792959880998634 from the Python engine against
 # 0.00137929599125299 from the C++ one, 2.3e-9 relative, over the bound. Both engines had solved
 # the same dhat (0.00145, equal to the last bit), taken the same 16 Newton steps and stopped on the
-# same criterion, and the two C++ backends agreed with each other to 1.1e-11 in that same run, so
-# it was the Python run that drifted and not the port. That one observation is the reason the
-# bound is measured rather than guessed, and the forty runs of the measurement above all stayed at
-# least thirteen times inside it. It is not loosened past what those runs justify: a failure here
-# is a report about the solver, not about the glue, and the C++-against-C++ half of the comparison
-# is the one that is really tight.
+# same criterion, and the C++ engine's two backends of the time -- in process, and a child running
+# the same binary -- agreed with each other to 1.1e-11 in that same run, so it was the Python run
+# that drifted and not the port. That one observation is the reason the bound is measured rather
+# than guessed, and the forty runs of the measurement above all stayed at least thirteen times
+# inside it. It is not loosened past what those runs justify: a failure here is a report about the
+# solver, not about the glue.
 
-# The bound on each pairing, for the quantities the solver's output feeds -- the active distances,
-# the dhat values that are computed from one, the deformed coordinates and the final barrier
-# stiffness. Everything else in this section is compared exactly. See the measurement above.
-RTOL_CPP_VS_CPP = 1e-9  # the in-process C++ backend against the subprocess one
-RTOL_PYTHON_VS_CPP = 1e-9  # the Python engine against either C++ backend
-
-SOLUTION_ENV = "STUB_SOLUTION"
-
-# A stand-in for PolyFEM_bin. It exists so the deformed-mesh write-back can be compared for EXACT
-# equality: the write-back is deterministic, but two real solves are not, so the only way to feed
-# both engines the same displacements is to feed both engines the same solution.txt. The stub
-# copies a prepared one into the output directory and prints the phrase `check_polyfem_success`
-# accepts; the C++ engine reaches it exactly as it reaches the real binary, through $POLYFEM_BIN.
-_STUB_POLYFEM = """#!{python}
-import os
-import shutil
-import sys
-from pathlib import Path
-
-argv = sys.argv[1:]
-out_dir = Path(argv[argv.index("-o") + 1])
-out_dir.mkdir(parents=True, exist_ok=True)
-shutil.copyfile(os.environ["{env}"], out_dir / "solution.txt")
-print("[polyfem] [info] [SparseNewton] Finished: Gradient vector norm too small took 0s")
-"""
-
-
-def _write_stub_polyfem(path):
-    import stat
-    import sys
-    path.write_text(_STUB_POLYFEM.format(python=sys.executable, env=SOLUTION_ENV))
-    path.chmod(path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
-    return path
-
-
-def _synthetic_solution(path, n_nodes, dim):
-    """A solution.txt of deterministic pseudo-random displacements in SOLVER units.
-
-    The generator is a 64-bit linear congruential one (Knuth's MMIX constants) whose fraction is
-    then scaled by sqrt(2) and offset by a sine, so no displacement is exactly representable and
-    none of the additions in the write-back is exact. Each value is written with `repr`, the
-    shortest decimal that round-trips, so `np.loadtxt` and `strtod` both recover the same double
-    and the two engines start from bit-identical input.
-    """
-    rows = []
-    state = 0x853C49E6748FEA9B
-    for i in range(n_nodes):
-        row = []
-        for d in range(dim):
-            state = (6364136223846793005 * state + 1442695040888963407) % (1 << 64)
-            frac = (state >> 11) / float(1 << 53)
-            row.append((frac - 0.5) * 2e-3 * math.sqrt(2.0) + 1e-4 * math.sin(3.0 * i + d))
-        rows.append(row)
-    path.write_text("\n".join(" ".join(repr(v) for v in row) for row in rows) + "\n")
-    return np.array(rows)
-
-
-def _msh_node_count(path):
-    gmsh.initialize()
-    try:
-        gmsh.open(str(path))
-        node_tags, _, _ = gmsh.model.mesh.getNodes()
-        return len(node_tags)
-    finally:
-        gmsh.finalize()
-
+# The bound for the quantities the solver's output feeds -- the active distances, the dhat values
+# that are computed from one, the deformed coordinates and the final barrier stiffness. Everything
+# else in this section is compared exactly. See the measurement above.
+RTOL_PYTHON_VS_CPP = 1e-9  # the Python engine against the C++ one
 
 def _run_python_engine(mesh, operation, options, root):
     """The Python engine end to end -- the outer loop (or the single solve) and then the deformed
@@ -938,12 +874,8 @@ def _run_python_engine(mesh, operation, options, root):
 
 
 def _run_cpp_engine(mesh, operation, root, **options):
-    """The C++ engine end to end. Returns the deformed mesh.
-
-    `polyfem_backend="in_process"` (the default) reaches the polyfem this component is linked
-    against; `polyfem_backend="subprocess"` runs $POLYFEM_BIN as a child, which is what the Python
-    engine always does.
-    """
+    """The C++ engine end to end, on the polyfem this component is linked against. Returns the
+    deformed mesh."""
     _run_cpp(mesh, operation, root, inputs_only=False, **options)
     return root / "out.msh"
 
@@ -1072,37 +1004,32 @@ def _assert_steered_on_the_logged_distance(root, trail):
 
 
 # --------------------------------------------------------------------------
-# The write-back on its own, with no solver in the picture
+# The write-back on its own: both engines applied to one solution
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
 @pytest.mark.parametrize("mesh_fixture, dim", [("boxes3d", 3), ("jagged2d", 2)])
-def test_deformed_msh_write_back_matches(request, tmp_path, monkeypatch, mesh_fixture, dim):
+def test_deformed_msh_write_back_matches(request, tmp_path, mesh_fixture, dim):
     """Both engines apply the SAME solution.txt to the SAME mesh, and each is checked against the
-    coordinates that computation must give -- no solver is involved, so every step from there on is
-    deterministic and both engines can be held to an exact value rather than to each other.
+    coordinates that computation must give -- from the solution on, every step is deterministic, so
+    both engines can be held to an exact value rather than to each other.
 
-    The C++ write-back is reached through the operation, with $POLYFEM_BIN pointed at a stub that
-    only copies the prepared solution.txt into place (see `_STUB_POLYFEM`); the Python side is
-    asked for `step_write_deformed_msh` directly, which is the same function its run() calls.
+    The solution is a real one: the C++ engine runs the smoothing operation, and its write-back
+    reads the solution.txt polyfem wrote, at 100 significant digits -- far past the 17 a double
+    needs, so the file carries every value exactly. The Python side is then asked for
+    `step_write_deformed_msh` directly on that same file, which is the same function its run()
+    calls, so no binary is needed here.
     """
     from simwild.polyfem_ops.polyfem_utils import step_write_deformed_msh
 
     mesh = request.getfixturevalue(mesh_fixture)
     scale = 1e-3
-    solution = tmp_path / "solution.txt"
-    _synthetic_solution(solution, _msh_node_count(mesh), dim)
+    cpp_out = _run_cpp_engine(mesh, "laplacian_smoothing", tmp_path / "cpp",
+                              interfaces=[{"region": "tag_0", "filter": "ambient"}], scale=scale)
+    solution = tmp_path / "cpp" / "smooth_output" / "solution.txt"
 
     py_out = tmp_path / "py_deformed.msh"
     step_write_deformed_msh(Path(mesh), solution, py_out, scale)
-
-    monkeypatch.setenv("POLYFEM_BIN", str(_write_stub_polyfem(tmp_path / "stub_polyfem")))
-    monkeypatch.setenv(SOLUTION_ENV, str(solution))
-    # The subprocess backend on purpose: the stub IS the child process, and it is the only way to
-    # put a prepared solution.txt in front of the write-back instead of a solved one.
-    cpp_out = _run_cpp_engine(mesh, "laplacian_smoothing", tmp_path / "cpp",
-                              polyfem_backend="subprocess",
-                              interfaces=[{"region": "tag_0", "filter": "ambient"}], scale=scale)
 
     py, cpp = _gmsh_reduced_mesh(py_out), _gmsh_reduced_mesh(cpp_out)
     _assert_same_mesh_structure(py, cpp, "deformed meshes")
@@ -1161,27 +1088,17 @@ SEP_BASE = {"collision_pairs": BOTH_SKINS, "sep": 1.5e-3, "scale": 1e-3, "rtol":
 def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options, label):
     py_root = tmp_path / f"py_{label}"
     cpp_root = tmp_path / f"cpp_{label}"
-    sub_root = tmp_path / f"sub_{label}"
 
     py_msh = _run_python_engine(boxes3d, "minimum_separation", {**SEP_BASE, **options}, py_root)
     py_trail = _decision_trail(capfd.readouterr().out)
     cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", cpp_root, **{**SEP_BASE, **options})
     cpp_trail = _decision_trail(capfd.readouterr().out)
-    sub_msh = _run_cpp_engine(boxes3d, "minimum_separation", sub_root,
-                              polyfem_backend="subprocess", **{**SEP_BASE, **options})
-    sub_trail = _decision_trail(capfd.readouterr().out)
 
     assert py_trail, "the python engine printed no decisions"
     dhat_pinned = options["strategy"] == "stiffness"
     _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, RTOL_PYTHON_VS_CPP,
                         dhat_pinned=dhat_pinned)
-    # The two C++ backends against each other: same code above the boundary, same JSON on disk,
-    # one reaching polyfem in this process and one through a child. Everything the loop decides is
-    # compared exactly; only what the solver measured carries the contact assembly's noise.
-    _assert_loops_agree(sub_root, cpp_root, sub_trail, cpp_trail, RTOL_CPP_VS_CPP,
-                        dhat_pinned=dhat_pinned)
     _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
-    _assert_deformed_meshes_close(sub_msh, cpp_msh, RTOL_CPP_VS_CPP)
     _assert_steered_on_the_logged_distance(cpp_root, cpp_trail)
 
     # The stiffness loop's kappa lives only in the trail above at seven digits; its full-precision
@@ -1192,12 +1109,10 @@ def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options
         def final_kappa(root):
             doc = json.loads((root / "sep_input" / "separation.json").read_text())
             return doc["solver"]["contact"]["barrier_stiffness"]
-        cpp_kappa = final_kappa(cpp_root)
-        for name, other, rtol in (("python", final_kappa(py_root), RTOL_PYTHON_VS_CPP),
-                                  ("subprocess", final_kappa(sub_root), RTOL_CPP_VS_CPP)):
-            rel = abs(other - cpp_kappa) / abs(other)
-            assert rel <= rtol, (
-                f"final barrier stiffness differs from {name} by {rel:.3e} relative")
+        py_kappa, cpp_kappa = final_kappa(py_root), final_kappa(cpp_root)
+        rel = abs(py_kappa - cpp_kappa) / abs(py_kappa)
+        assert rel <= RTOL_PYTHON_VS_CPP, (
+            f"final barrier stiffness differs from python by {rel:.3e} relative")
 
 
 def _group_volume(msh, group):
@@ -1216,7 +1131,6 @@ def _group_volume(msh, group):
 
 
 @needs_polyfem_ops
-@needs_polyfem
 def test_minimum_separation_neohookean_holds_body_volume(boxes3d, tmp_path):
     """The measurement the `use_nh_body` spec entry claims, reproduced on this fixture.
 
@@ -1254,17 +1168,12 @@ def test_laplacian_smoothing_end_to_end_matches(jagged2d, tmp_path):
     cpp_msh = _run_cpp_engine(jagged2d, "laplacian_smoothing", tmp_path / "cpp",
                               interfaces=[{"region": "tag_0", "filter": "ambient"}],
                               weight_laplacian=1e3)
-    sub_msh = _run_cpp_engine(jagged2d, "laplacian_smoothing", tmp_path / "sub",
-                              polyfem_backend="subprocess",
-                              interfaces=[{"region": "tag_0", "filter": "ambient"}],
-                              weight_laplacian=1e3)
 
-    for root in (tmp_path / "py", tmp_path / "cpp", tmp_path / "sub"):
+    for root in (tmp_path / "py", tmp_path / "cpp"):
         assert (root / "smooth_output" / "polyfem.log").is_file(), f"{root.name}: no polyfem.log"
         assert not list((root / "smooth_output").glob("polyfem_iter_*.log")), (
             f"{root.name}: smoothing must not run an outer loop")
     _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
-    _assert_deformed_meshes_close(sub_msh, cpp_msh, RTOL_CPP_VS_CPP)
 
 
 @needs_polyfem_ops
@@ -1276,20 +1185,15 @@ def test_minimum_separation_probe_already_separated_matches(boxes3d, tmp_path, c
     options = {**SEP_BASE, "sep": 5e-4, "strategy": "dhat"}
     py_root = tmp_path / "py"
     cpp_root = tmp_path / "cpp"
-    sub_root = tmp_path / "sub"
 
     py_msh = _run_python_engine(boxes3d, "minimum_separation", options, py_root)
     py_trail = _decision_trail(capfd.readouterr().out)
     cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", cpp_root, **options)
     cpp_trail = _decision_trail(capfd.readouterr().out)
-    sub_msh = _run_cpp_engine(boxes3d, "minimum_separation", sub_root,
-                              polyfem_backend="subprocess", **options)
-    sub_trail = _decision_trail(capfd.readouterr().out)
 
     assert py_trail == cpp_trail
-    assert sub_trail == cpp_trail
     assert len(py_trail) == 1 and "already separated" in py_trail[0][1], py_trail
-    for root in (py_root, cpp_root, sub_root):
+    for root in (py_root, cpp_root):
         assert (root / "sep_output" / "polyfem_probe.log").is_file()
         assert not list((root / "sep_output").glob("polyfem_iter_*.log")), (
             f"{root.name}: the loop ran although the bodies were already separated")
@@ -1298,8 +1202,7 @@ def test_minimum_separation_probe_already_separated_matches(boxes3d, tmp_path, c
     # and the deformed mesh is the input mesh back again. No solver measurement reaches these
     # coordinates, and the `moved` check below pins each mesh to the input on its own.
     _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
-    _assert_deformed_meshes_close(sub_msh, cpp_msh, RTOL_CPP_VS_CPP)
     original = _gmsh_reduced_mesh(boxes3d)
-    for msh in (py_msh, cpp_msh, sub_msh):
+    for msh in (py_msh, cpp_msh):
         moved = np.max(np.abs(_gmsh_reduced_mesh(msh)["coords"] - original["coords"]))
         assert moved <= 1e-9, f"{msh.name}: nodes moved by {moved:.3e} although nothing should"

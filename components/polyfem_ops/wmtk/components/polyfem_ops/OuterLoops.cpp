@@ -69,8 +69,10 @@ void require_one_iteration(const int64_t n)
     }
 }
 
-/// The two hdf5 files polyfem carries a warm start through: it writes `curr` because the document
-/// names it as `output/data/state` and reads `prev` back as `input/data/state`.
+/// The two hdf5 files the executable carries a warm start through: it writes `curr` because the
+/// document names it as `output/data/state` and reads `prev` back as `input/data/state`. The loops
+/// still name them so the document stays the Python engine's; the backend blanks both and keeps
+/// the states in memory.
 struct WarmStartPaths
 {
     std::filesystem::path curr;
@@ -78,16 +80,17 @@ struct WarmStartPaths
 };
 
 /// The warm-start block both loops open with, in the order both Python loops write it: name the
-/// two state files, clear whatever a previous (possibly crashed) run left in them -- otherwise the
-/// loop would warm start from that run's last accepted solve and silently begin at the wrong
-/// initial configuration -- and point `output/data/state` at the one polyfem writes.
+/// two state files, drop any warm start left over -- the Python unlinks the files here, since
+/// otherwise the loop would warm start from a previous run's last accepted solve and silently
+/// begin at the wrong initial configuration -- and point `output/data/state` at the one polyfem
+/// writes.
 WarmStartPaths open_warm_start(
     PolyfemBackend& backend,
     OrderedJson& curr_json,
     const std::filesystem::path& sim_out_dir)
 {
     const WarmStartPaths paths{sim_out_dir / "curr_state.hdf5", sim_out_dir / "prev_state.hdf5"};
-    backend.reset_warm_start(paths.curr, paths.prev);
+    backend.reset_warm_start();
     curr_json["output"]["data"]["state"] = paths.curr.string();
     return paths;
 }
@@ -96,8 +99,8 @@ WarmStartPaths open_warm_start(
  * @brief One solve of an outer loop, and nothing either loop decides.
  *
  * The committed warm start goes into the document exactly when there is one (so the file on disk
- * is the same on both backends), the document is written to `sep_json_path`, polyfem runs with its
- * own per-iteration log, and its output is checked. Both Python loops do these four steps
+ * is the one the Python engine writes), the document is written to `sep_json_path`, polyfem runs
+ * with its own per-iteration log, and its output is checked. Both Python loops do these four steps
  * identically; what they do with the answer is where they part.
  *
  * @return the active distance polyfem reported, or nothing when it reported none -- the loops stop
@@ -223,7 +226,7 @@ void run_polyfem_dhat(
                 "Probe: initial gap {} >= sep {:.6e} — already separated. Stopping.",
                 gap_line.has_value() ? fmt::format("{:.6e}", gap0) : "not within dhat",
                 sep);
-            backend.reset_warm_start(state.curr, state.prev);
+            backend.reset_warm_start();
             return;
         }
         logger().info("Probe: initial gap {:.6e}", gap0);
@@ -318,7 +321,7 @@ void run_polyfem_dhat(
     }
 
     log_if_out_of_iterations(last_iter, n_iterations, active_dist);
-    backend.reset_warm_start(state.curr, state.prev);
+    backend.reset_warm_start();
 }
 
 void run_polyfem_stiffness(
@@ -407,7 +410,7 @@ void run_polyfem_stiffness(
     }
 
     log_if_out_of_iterations(last_iter, n_iterations, active_dist);
-    backend.reset_warm_start(state.curr, state.prev);
+    backend.reset_warm_start();
 }
 
 } // namespace wmtk::components::polyfem_ops
