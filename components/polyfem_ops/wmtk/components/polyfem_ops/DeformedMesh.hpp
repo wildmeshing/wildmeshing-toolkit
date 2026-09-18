@@ -48,13 +48,14 @@ std::vector<std::vector<double>> load_solution_txt(const std::filesystem::path& 
  * untouched. The write-back is deliberately applied to the original multi-tag mesh rather than to
  * the reduced one, which is what preserves the caller's full tag set on the output.
  *
- * Written as ASCII msh 4.1 with the output stream's precision set to 16, because that is exactly
- * the "%.16g" gmsh's own ASCII writer uses and the Python engine writes this file through gmsh.
- * The choice is load-bearing rather than cosmetic: measured on 300 pseudo-random coordinates, 122
- * of them do not survive a %.16g round trip, so a full-precision (binary) write here would put
- * values in the file that differ from the oracle's in the last bits for about 40% of the
- * coordinates. Every other section -- entities, physical groups and names, element blocks -- is
- * carried over from the input unchanged.
+ * Written as ASCII msh 4.1 -- the format gmsh writes, so the file stays readable by everything
+ * that read it before -- but with every double printed as the shortest decimal that reads back as
+ * the same double (`python_repr`), so the file carries the computed coordinates exactly. The
+ * Python engine writes this file through gmsh, whose ASCII writer prints "%.16g" and so loses the
+ * last bits of about 40% of the coordinates (measured: 122 of 300 pseudo-random values do not
+ * survive that round trip). The two engines' deformed meshes therefore differ in the last bits of
+ * some coordinates, by design: this one is the exact result. Every other section -- entities,
+ * physical groups and names, element blocks -- is carried over from the input unchanged.
  */
 void write_deformed_msh(
     const std::filesystem::path& msh_path,
