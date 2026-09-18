@@ -268,6 +268,15 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
 
 bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
 {
+    // An interior swap is never given the absolute bar; clear whatever the last surface flip on
+    // this thread left behind, since the flag outlives one operation.
+    {
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.absolute_bar = false;
+        sides.sag_measured = false;
+        sides.worthwhile = false;
+        sides.saw_case = false;
+    }
     return swap_capture_tag(tids);
 }
 
@@ -278,6 +287,17 @@ bool TopoOffsetTetMesh::swap_before_surface(
     const size_t c,
     const size_t d)
 {
+    // Re-decided below, for this flip alone: the absolute quality bar applies exactly where the
+    // sag rule that pays for it applies. Cleared first, so a refusal on any path below leaves
+    // the base's strict-improvement rule in force. swap_before_interior() clears it too.
+    {
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.absolute_bar = false;
+        sides.sag_measured = false;
+        sides.worthwhile = false;
+        sides.saw_case = false;
+    }
+
     // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
     // the ring of a surface flip always spans band and background, which is what makes its faces
     // offset surface in the first place. Calling it here made every offset-surface flip
@@ -304,29 +324,90 @@ bool TopoOffsetTetMesh::swap_before_surface(
         return swap_reject(SwapReject::app_mask_mismatch);
     }
     // EXPERIMENTAL_ops_divergence_guard, the sag half of the acceptance rule for a flip OF THE
-    // OFFSET SURFACE. Together with TopoOffsetTetMesh::swap_quality_allowed(), which under the
-    // same flag lets such a flip through on an absolute stop_energy bar instead of on strict
-    // improvement, this is the whole rule: a surface flip is accepted when the cells it makes
-    // are under stop_energy AND it does not raise the local sag. Both halves are off by
-    // default, so a default run keeps the base's strict-improvement behaviour.
+    // OFFSET SURFACE. Together with the absolute quality bar -- swap_quality_allowed() and the
+    // swap_edge_44_energy() / swap_edge_56_energy() overrides, all three armed by the assignment
+    // at the end of this block -- it is the whole rule: such a flip is accepted when the cells
+    // it makes are under stop_energy AND it STRICTLY LOWERS the local sag. Both halves are off
+    // by default, so a default run keeps the base's strict-improvement behaviour.
     //
-    // A flip of the offset surface may not raise the sag of the pair of faces it
-    // re-triangulates. abc + abd become acd + bcd; no vertex moves, so every corner position is
-    // unchanged and both maxima are exact here. The comparison is against the state before this
-    // flip, not against the bar: an unresolved patch is guarded exactly as a resolved one is.
+    // WHY STRICT, AND NOT "does not raise". The base's own rule -- take a case only when its
+    // energy is below the energy of doing nothing -- is what makes a swap pass terminate: every
+    // accepted swap lowers a quantity bounded below. The absolute bar removes that guarantee, so
+    // the sag rule has to supply it, and `after <= before` does not. A flip whose two
+    // triangulations sag the same passes in BOTH directions and the pass flips it back and forth
+    // for ever. Not hypothetical: on the cube ~43% of the offset surface lies over a flat side,
+    // where Phi is affine and both triangulations sag zero to roundoff. A 5e-2 smoke run sat in
+    // one 4-4 pass for five minutes at full CPU, committing flips the whole time, until killed.
+    //
+    // Strict alone is finite but USELESS, which the first attempt at this proved. It does make a
+    // repeat impossible -- the flip takes abc, abd out of the multiset of offset-surface face
+    // sags and puts acd, bcd in, all four below the pair's old maximum, so sorted descending that
+    // multiset drops lexicographically at every accepted flip, and a swap pass adds no vertex so
+    // it has finitely many configurations. But "finite" is not "soon": on a flat side of the cube
+    // Phi is affine and BOTH triangulations sag zero to roundoff, so ~half the flips there pass
+    // `after < before` on a fall of 1e-13, each one re-queues its neighbours, and the pass runs
+    // for ever in any sense that matters. Measured on the 5e-2 cube at turn 2, of 2334 offset
+    // faces 998 (42.8%) sag <= 1e-12 and not one lies between 1e-12 and 1e-2, while only 197
+    // (8.4%) are over the tube at all. A run sat in that pass for 25 minutes, still committing.
+    //
+    // So a flip has to WIN something measurable, and the margin is the whole of it: accepted when
+    // max sag after <= max sag before - EXPERIMENTAL_flip_sag_margin and the cells it makes are
+    // under stop_energy, refused otherwise. Nothing here asks whether the pair was over the bar,
+    // and nothing falls back on strict improvement in AMIPS.
+    //
+    // The margin is also what makes the pass finite. Every accepted flip drops the pair's max sag
+    // by at least the margin and sag is bounded below by zero, so a face can only be flipped so
+    // many times. Strict monotonicity alone is not enough, which was learned the hard way:
+    // instrumented on the cube at target_distance_rel 1e-3, ONE swap pass accepted 3020000 surface
+    // flips, of which 3019913 (99.997%) won less than 1e-12 of the bar -- every one of them
+    // monotone, the rule held exactly -- and the pass never finished. Two diagonals of a small quad
+    // on a quarter-cylinder sag almost the same, so a flip there changes nothing a criterion can
+    // see.
+    //
+    // The default sits in an empty gap in that distribution. Of the 87 flips that won more than
+    // 1e-12, 47 won at least 1e-4 and NOT ONE landed between 1e-9 and 1e-4, so 1e-4 keeps every
+    // flip that did real work and drops every one that was roundoff.
+    //
+    // abc + abd become acd + bcd; no vertex moves, so every corner position is unchanged and
+    // both maxima are exact here. The comparison is against the state before this flip, not
+    // against the bar: an unresolved patch is guarded exactly as a resolved one is. An
+    // unmeasurable face is +inf, so inf -> inf is now refused where it used to tie.
     //
     // The gate comes before the four sag evaluations: BOTH re-triangulated faces must lie
     // exactly on the offset surface, band on one side and background on the other, asked live of
     // the tags rather than read from the cached m_surface_class -- these operations run between
     // one labelling pass and the next, which is the reason face_is_offset_surface_live() exists.
+    // It also scopes the quality bar, since only a flip reaching the assignment below is given
+    // it: a flip of the input complex or of a region boundary keeps the base's strict rule.
     if (m_offset_params.experimental_ops_divergence_guard &&
         face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
         const double before = std::max(offset_face_sag(a, b, c), offset_face_sag(a, b, d));
         const double after = std::max(offset_face_sag(a, c, d), offset_face_sag(b, c, d));
-        if (after > before) {
+        // THE WHOLE SAG RULE: the flip must win at least EXPERIMENTAL_flip_sag_margin of the
+        // bar, whether the pair started over the bar or under it. Written as a negated <= so a
+        // NaN on either side refuses. A flip that misses it is refused outright -- there is no
+        // falling back on AMIPS, because a flip of the offset surface is there to move the
+        // surface, and one that moves it by less than the margin is noise rather than work.
+        if (!(after <= before - m_offset_params.experimental_flip_sag_margin)) {
             ++iter_cnt_swap_guard_reject;
+            // Told apart for the funnel: a real fall that missed the margin, against a tie or a
+            // rise. The first is what the margin is for; the second the guard always refused.
+            if (after < before) ++funnel_under_margin;
             return swap_reject(SwapReject::app_sag_raised);
         }
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.sag_measured = true;
+        sides.sag_before = before;
+        sides.sag_after = after;
+        // Having paid the margin, the flip is judged on the absolute bar rather than on strict
+        // improvement in AMIPS. EVERY flip that reaches here gets it; there is no longer a
+        // second, narrower class that has to beat AMIPS instead. An unmeasurable pair is +inf,
+        // and inf <= inf - margin is false, so it never reaches this line.
+        sides.absolute_bar = true;
+        sides.worthwhile = true;
+        sides.kind = static_cast<int>(tids.size());
+        ++funnel_offered;
+        if (sides.kind >= 3 && sides.kind <= 5) ++funnel_kind[size_t(sides.kind - 3)];
     }
 
     // Non-offset surface flips are not refused categorically: the shared swap checks both new
@@ -628,6 +709,141 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::rest_energy_fo
     return std::make_shared<RestAMIPSEnergy3D>(std::move(cells), w);
 }
 
+double TopoOffsetTetMesh::swap_edge_44_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
+{
+    // See the declaration. op_case 0 is the base asking what the CURRENT cells score, to seed the
+    // `energy < min_energy` test it then applies to each candidate; reporting the bar instead
+    // turns that same test into the absolute rule, for surface flips under the guard only.
+    const double e = TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
+    if (!swap_surface_flip_absolute_bar()) return e;
+    if (op_case >= 1) {
+        // a case that survived swap_edge_44_accept_case(), i.e. one that really does make the
+        // (c,d) diagonal. Counted once per flip, for the funnel.
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        if (sides.worthwhile) {
+            if (!sides.saw_case) {
+                sides.saw_case = true;
+                ++funnel_cases;
+            }
+            // what the base's own energy says about this case, which is what its
+            // `energy < min_energy` test then acts on.
+            if (!std::isfinite(e))
+                ++funnel_case_inf;
+            else if (e >= m_params.stop_energy)
+                ++funnel_case_over;
+            else
+                ++funnel_case_ok;
+        }
+    }
+    return op_case == 0 ? m_params.stop_energy : e;
+}
+
+double TopoOffsetTetMesh::swap_edge_56_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
+{
+    const double e = TetOptimizerMesh::swap_edge_56_energy(tets, op_case);
+    if (!swap_surface_flip_absolute_bar()) return e;
+    if (op_case >= 1) {
+        // a case that survived swap_edge_56_accept_case(), i.e. one that really does make the
+        // (c,d) diagonal. Counted once per flip, for the funnel.
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        if (sides.worthwhile) {
+            if (!sides.saw_case) {
+                sides.saw_case = true;
+                ++funnel_cases;
+            }
+            // what the base's own energy says about this case, which is what its
+            // `energy < min_energy` test then acts on.
+            if (!std::isfinite(e))
+                ++funnel_case_inf;
+            else if (e >= m_params.stop_energy)
+                ++funnel_case_over;
+            else
+                ++funnel_case_ok;
+        }
+    }
+    return op_case == 0 ? m_params.stop_energy : e;
+}
+
+std::string TopoOffsetTetMesh::flip_funnel_report() const
+{
+    // See the declaration for how to read it.
+    return fmt::format(
+        "worthwhile offered {} (3-2 {}, 4-4 {}, 5-6 {}) -> a case was scored for {} -> reached "
+        "the quality gate {} -> passed it {} -> committed {} | cases: inverted {}, finite but "
+        "over stop_energy {}, under it {} | refused for a fall under the margin {}",
+        funnel_offered.load(),
+        funnel_kind[0].load(),
+        funnel_kind[1].load(),
+        funnel_kind[2].load(),
+        funnel_cases.load(),
+        funnel_quality.load(),
+        funnel_quality_ok.load(),
+        funnel_committed.load(),
+        funnel_case_inf.load(),
+        funnel_case_over.load(),
+        funnel_case_ok.load(),
+        funnel_under_margin.load());
+}
+
+void TopoOffsetTetMesh::flip_funnel_reset()
+{
+    funnel_offered = 0;
+    for (auto& k : funnel_kind) k = 0;
+    funnel_cases = 0;
+    funnel_case_inf = 0;
+    funnel_case_over = 0;
+    funnel_case_ok = 0;
+    funnel_quality = 0;
+    funnel_quality_ok = 0;
+    funnel_committed = 0;
+    funnel_under_margin = 0;
+}
+
+void TopoOffsetTetMesh::flip_trace_record(const double before, const double after)
+{
+    // See the declaration. The fall is what the flip won on the pair it re-triangulated; the
+    // rule in swap_before_surface() refuses anything that is not strictly positive, so
+    // flip_trace_nonmono staying 0 is the check that the rule is doing what it says. Anything
+    // else there means an accepted flip rested on a measurement that was no longer true -- the
+    // pass runs on 10 threads and the measurement is taken in the before-hook.
+    const double fall = before - after;
+    if (!(fall > 0.0)) {
+        ++flip_trace_nonmono;
+    } else {
+        static constexpr double kEdges[7] = {1e-1, 1e-2, 1e-3, 1e-4, 1e-6, 1e-9, 1e-12};
+        size_t bucket = 7;
+        for (size_t i = 0; i < 7; ++i) {
+            if (fall >= kEdges[i]) {
+                bucket = i;
+                break;
+            }
+        }
+        ++flip_trace_dec[bucket];
+    }
+    if (before > 1.0) ++flip_trace_bar;
+
+    const long long n = ++flip_trace_n;
+    if (n % kFlipTraceEvery != 0) return;
+    logger().info(
+        "\t[flip trace] accepted {} | non-monotone {} | over the tube {} | fall >=1e-1 {}, "
+        ">=1e-2 {}, >=1e-3 {}, >=1e-4 {}, >=1e-6 {}, >=1e-9 {}, >=1e-12 {}, <1e-12 {}",
+        n,
+        flip_trace_nonmono.load(),
+        flip_trace_bar.load(),
+        flip_trace_dec[0].load(),
+        flip_trace_dec[1].load(),
+        flip_trace_dec[2].load(),
+        flip_trace_dec[3].load(),
+        flip_trace_dec[4].load(),
+        flip_trace_dec[5].load(),
+        flip_trace_dec[6].load(),
+        flip_trace_dec[7].load());
+}
+
 bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip)
 {
     if (!is_surface_flip) {
@@ -670,6 +886,8 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
     // surface faces, so a flip refused there is rolled back -- m_vertex_extra is registered in
     // m_vertex_attr_group, so these writes roll back with it.
     for (const size_t v : sides.abcd) refresh_offset_membership(v);
+    if (sides.sag_measured) flip_trace_record(sides.sag_before, sides.sag_after);
+    if (sides.worthwhile) ++funnel_committed;
     ++iter_cnt_swap;
     return true;
 }
@@ -4023,13 +4241,18 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // is never accepted, and the counters are reset each turn so the line is per-turn.
         logger().info("\t[swap reject] turn {}: {}", it + 1, swap_reject_report());
         swap_counters_reset();
+        if (m_offset_params.experimental_ops_divergence_guard) {
+            logger().info("\t[flip funnel] turn {}: {}", it + 1, flip_funnel_report());
+            flip_funnel_reset();
+        }
         // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
         // the key is off, which is the default.
         check_offset_membership(fmt::format("turn {}", it + 1).c_str());
         if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
-                "\t[ops guard] turn {}: {} collapse(s) and {} swap(s) refused for raising the "
-                "local sag of the offset surface ({} / {} in the run so far)",
+                "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
+                "offset surface and {} swap(s) for not lowering it by the margin ({} / {} in the "
+                "run so far)",
                 it + 1,
                 iter_cnt_collapse_guard_reject.load() - guard_c0,
                 iter_cnt_swap_guard_reject.load() - guard_s0,

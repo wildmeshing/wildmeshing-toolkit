@@ -681,6 +681,71 @@ public:
     /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
+
+    /// [flip trace]: is the swap pass walking the offset surface's sag down monotonically, and in
+    /// steps of what size? The per-turn lines cannot answer that, because a pass that does not
+    /// finish never reaches the end of its turn -- so this prints from INSIDE the pass, every
+    /// kFlipTraceEvery accepted flips. Live only where the guard measured a pair, i.e. only under
+    /// EXPERIMENTAL_ops_divergence_guard and only for flips of the offset surface.
+    ///
+    /// Counted at swap_after_cells(), which is past the sag refusal and past the quality gate but
+    /// still before the envelope check, so it overcounts by the after_envelope refusals -- tens
+    /// per turn against thousands of flips.
+    static constexpr long long kFlipTraceEvery = 20000;
+    std::atomic<long long> flip_trace_n{0}; ///< accepted offset-surface flips
+    std::atomic<long long> flip_trace_nonmono{
+        0}; ///< fall not > 0: MUST stay 0, the rule forbids it
+    std::atomic<long long> flip_trace_bar{0}; ///< of those, the ones over the tube (given the bar)
+    /// Accepted flips bucketed by the size of the fall, before - after: >=1e-1, >=1e-2, >=1e-3,
+    /// >=1e-4, >=1e-6, >=1e-9, >=1e-12, and everything below that.
+    std::array<std::atomic<long long>, 8> flip_trace_dec{};
+    void flip_trace_record(double before, double after);
+
+    /**
+     * @brief [flip funnel]: of the surface flips the guard judged worth doing, how many survive
+     * each later stage. Reset per turn and reported next to [swap reject].
+     *
+     * [swap reject] counts every refusal of every surface flip, most of which SHOULD be refused.
+     * This follows only the flips that passed the guard -- pair over the bar, fall at least
+     * EXPERIMENTAL_flip_sag_margin -- so a drop here is work the run wanted and did not get.
+     *
+     * Reading it. `offered` is set in swap_before_surface(), which is the app's first sight of a
+     * candidate; anything the base turned down earlier (valence, bbox, connectivity) never
+     * reaches it and is in [swap reject] instead. offered - quality is lost in the base's case
+     * search, i.e. no retetrahedralization that makes the (c,d) diagonal was found or every one
+     * was inverted. quality - quality_ok is refused on AMIPS against stop_energy. quality_ok -
+     * committed is swap_after_cells() refusing on the side/label capture. What the envelope
+     * check then refuses is past this hook and shows as after_envelope in [swap reject].
+     *
+     * The case that matters most is offered == committed with worthwhile flips still sitting in
+     * the mesh at the end of the pass: then nothing refused them and they were never presented,
+     * which puts the loss in the scheduler rather than in any rule here.
+     *
+     * `under_margin` says what the margin costs: flips REFUSED because the fall, though real,
+     * came in under it. Ties and rises are refused too but are not counted there -- the guard
+     * always refused those.
+     */
+    mutable std::atomic<long long> funnel_offered{0};
+    /// offered, split by swap kind: [0] = 3-2, [1] = 4-4, [2] = 5-6.
+    mutable std::array<std::atomic<long long>, 3> funnel_kind{};
+    /// of the 4-4 and 5-6 ones, those for which at least one case survived accept_case and was
+    /// scored. offered(4-4 + 5-6) - this is exactly what flip_wrong_case threw away.
+    mutable std::atomic<long long> funnel_cases{0};
+    /// The scored CASES of those flips, by what the base's own energy said about them. A case
+    /// that is not finite is one whose retetrahedralization inverts a cell -- swap_edge_*_energy
+    /// returns double::max() for that -- which is a geometric refusal, not a quality one. A
+    /// finite case at or above stop_energy is a genuinely bad retetrahedralization. Only a case
+    /// below stop_energy passes the base's `energy < min_energy` test under the absolute bar, so
+    /// case_ok is what can still become a swap.
+    mutable std::atomic<long long> funnel_case_inf{0};
+    mutable std::atomic<long long> funnel_case_over{0};
+    mutable std::atomic<long long> funnel_case_ok{0};
+    mutable std::atomic<long long> funnel_quality{0};
+    mutable std::atomic<long long> funnel_quality_ok{0};
+    mutable std::atomic<long long> funnel_committed{0};
+    mutable std::atomic<long long> funnel_under_margin{0};
+    std::string flip_funnel_report() const;
+    void flip_funnel_reset();
     /// Splits of an offset-surface edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
@@ -1101,11 +1166,59 @@ public:
     bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
         const override
     {
-        if (!is_surface_flip || !m_offset_params.experimental_ops_divergence_guard) {
+        if (!is_surface_flip || !swap_surface_flip_absolute_bar()) {
             return after < before;
         }
-        return after < m_params.stop_energy;
+        const bool ok = after < m_params.stop_energy;
+        if (m_swap_sides.local().worthwhile) {
+            ++funnel_quality;
+            if (ok) ++funnel_quality_ok;
+        }
+        return ok;
     }
+    /**
+     * @brief The absolute-bar rule again, one stage EARLIER, where the 4-4 and 5-6 swaps decide.
+     *
+     * swap_quality_allowed() above is the app's after-hook and is the whole story only for the
+     * 3-2 swap. TetMesh::swap_edge_44() and ::swap_edge_56() pick their retetrahedralization by
+     * seeding `min_energy` with the energy of DOING NOTHING and taking a case only when it is
+     * strictly lower (TetMeshSwapMeshConnectivity.cpp:534 and :756). That test runs BEFORE
+     * swap_edge_44_after(), so a surface flip that raises AMIPS never reaches the hook and the
+     * absolute bar could not fire: measured on the cube at 1e-3, of the valence-4 surface edges
+     * whose flip would cut sag, 93.5% raise max AMIPS and NOT ONE of those 3740 was ever taken,
+     * against 58.1% of the 260 that happened to lower it.
+     *
+     * So the bar is expressed in the currency that comparison speaks. For a surface flip under
+     * EXPERIMENTAL_ops_divergence_guard the baseline case (op_case 0, the existing cells) reports
+     * stop_energy instead of its own AMIPS, which turns the base's `energy < min_energy` into
+     * exactly "the cells this flip makes are under stop_energy". Nothing in the shared engine
+     * changes; TetWild and SimWild never see it, and neither does a default offsets run, because
+     * both conditions are required.
+     *
+     * The sag half lives in swap_before_surface(). It refuses any flip that does not strictly
+     * lower the pair's max sag by EXPERIMENTAL_flip_sag_margin, and every flip that does gets
+     * THIS override -- so the accepted rule is max sag after <= max sag before - margin AND max
+     * AMIPS after < stop_energy, with nothing asked about whether the pair was over the bar. A
+     * flip that misses the margin is refused by the guard outright rather than judged on AMIPS.
+     * The margin is what makes the pass converge, since each accepted flip spends at least that
+     * much of a quantity bounded below; the runs that proved a looser sag test does not converge
+     * are written out there.
+     *
+     * An inverted candidate is still refused: the base returns double::max() for one, which is
+     * not below stop_energy. A 5-6 surface flip gains a quality bar it never had, its after-hook
+     * having computed a max energy and discarded it since before this branch existed.
+     */
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    /// THE single test for "this flip gets the absolute bar", read by swap_quality_allowed() and
+    /// by both energy overrides. It is not recomputed here: swap_before_surface() has already
+    /// decided, and set the flag only after establishing all three conditions -- the guard is on,
+    /// both re-triangulated faces are live offset surface, and the flip strictly lowers their max
+    /// sag. Asking again from here could not check the second or the third, which is how the
+    /// first version of this handed the bar to input-complex and region flips as well.
+    bool swap_surface_flip_absolute_bar() const { return m_swap_sides.local().absolute_bar; }
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
     /**
@@ -1823,6 +1936,30 @@ private:
         /// -(a,b,c) -(a,b,d) +(a,c,d) +(b,c,d), so these four are exactly the vertices whose
         /// membership it can change, and swap_after_cells() refreshes them.
         std::array<size_t, 4> abcd{};
+        /// Set by swap_before_surface() for THIS flip alone, and read by
+        /// swap_surface_flip_absolute_bar(): true only once the flip has been found to be a flip
+        /// of the offset surface under EXPERIMENTAL_ops_divergence_guard whose sag strictly
+        /// falls. It is what pairs the two halves of the rule -- the quality bar is given out
+        /// only where the sag rule has just been paid. Cleared at the top of
+        /// swap_before_surface() and of swap_before_interior(), so it never outlives its flip.
+        bool absolute_bar = false;
+        /// The pair the guard measured for THIS flip, kept so swap_after_cells() can record what
+        /// an accepted flip actually won. sag_measured says the guard ran AND the flip passed its
+        /// refusal, so the two numbers mean something; all three are cleared with absolute_bar.
+        bool sag_measured = false;
+        double sag_before = 0.0;
+        double sag_after = 0.0;
+        /// [flip funnel]: this flip is one the guard judged WORTH DOING -- the pair sags over the
+        /// bar and the flip wins at least the margin, so it was handed the absolute quality bar.
+        /// Cleared with absolute_bar; read at each later stage to follow the flip through.
+        bool worthwhile = false;
+        /// [flip funnel]: set the first time swap_edge_44_energy() / swap_edge_56_energy() is
+        /// asked to score a CANDIDATE case (op_case >= 1) for this flip, so the funnel counts
+        /// flips for which the base found at least one retetrahedralization that survives
+        /// swap_edge_*_accept_case(), not cases. Never set for a 3-2, which has no case search.
+        bool saw_case = false;
+        /// tids.size() as swap_before_surface() saw it: 3, 4 or 5, i.e. which swap this is.
+        int kind = 0;
     };
     bool swap_capture_surface_sides(
         const std::vector<size_t>& tids,
@@ -1830,7 +1967,9 @@ private:
         size_t b,
         size_t c,
         size_t d);
-    wmtk::threading::enumerable_thread_specific<SwapSurfaceSides> m_swap_sides;
+    /// mutable: swap_quality_allowed() is a const hook and reads absolute_bar through
+    /// swap_surface_flip_absolute_bar(); .local() is not const-callable.
+    mutable wmtk::threading::enumerable_thread_specific<SwapSurfaceSides> m_swap_sides;
 
 public:
     // substructure functions

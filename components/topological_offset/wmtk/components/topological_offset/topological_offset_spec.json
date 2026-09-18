@@ -49,6 +49,7 @@
       "sag_halve_refinement",
       "pre_smooth",
       "EXPERIMENTAL_ops_divergence_guard",
+      "EXPERIMENTAL_flip_sag_margin",
       "max_iterations",
       "offset_envelope_rel",
       "length_rel",
@@ -400,6 +401,13 @@
     "type": "bool",
     "default": false,
     "doc": "EXPERIMENTAL. Single-phase loop only. true: an operation that lies exactly ON the offset surface is rejected outright when it would RAISE the local sag, where a simplex's sag is its own convergence ratio -- the sagitta of the field over it divided by front_conv_rel x target_distance, the same quantity the turn line reports, so 1 is the resolution bar. Splits are never rejected. SCOPE, checked first for every candidate and before any measurement: the guard applies only where the operation itself lies on the offset surface -- in 3D the collapsed edge must be an edge of a face with the offset band on one side and the background on the other, and both faces a flip re-triangulates must be such faces; in 2D the collapsed edge must itself be between a band triangle and a background one. Anything else is passed through untouched without walking a one-ring or evaluating the potential. The side is read live from the tags rather than from the cached surface class, because these operations run between one labelling pass and the next. A COLLAPSE is rejected when the maximum sag over the faces the survivor is left with is STRICTLY greater than the maximum sag over the union of the two endpoints' incident offset faces beforehand. The survivor keeps its own position and the removed vertex's faces are re-attached to it with every corner unmoved, so the result's sag is exact before the collapse runs: the test is made entirely in the before-half and nothing is ever rolled back. A SURFACE FLIP is rejected when the maximum sag over its two new faces is strictly greater than the maximum over its two old ones; no vertex moves in a flip, so there is no vertex test. An unmeasurable simplex counts as infinite sag, so an operation that makes a measurable neighbourhood unmeasurable is rejected, while one starting from an already unmeasurable neighbourhood is not. Nothing is compared against the bar: this guard is about not getting worse, so it acts on an unresolved front exactly as it does on a resolved one. In 2D the collapse half is the same with chords in place of faces (edge_conv_ratio, the sagitta at the midpoint); there is no 2D flip half, because an offset edge is surface-tracked and TriOptimizerMesh::swap_edge_before refuses it through is_edge_on_surface before the offset hook is reached. Rejections are counted per turn and for the run. false (the default): the passes exactly as they are. Replaces the older front_refuse_converged_collapse, which tested convergence against the bar rather than change against the state before the operation."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_flip_sag_margin",
+    "type": "float",
+    "default": 0.0001,
+    "min": 0.0,
+    "doc": "EXPERIMENTAL. 3D single-phase loop only; 2D does not read it. How much of the resolution bar a flip of the offset surface must WIN for EXPERIMENTAL_ops_divergence_guard to accept it. In the units the turn line reports, so 1 is the bar itself and the default 1e-4 is a ten-thousandth of it. The whole rule for such a flip is then: max sag after <= max sag before - this margin, AND the cells it creates are under stop_energy. A flip that misses the margin is refused outright; it does not fall back on the base's strict improvement in AMIPS, and whether the pair was over the bar plays no part. Ignored entirely when EXPERIMENTAL_ops_divergence_guard is false. WHY IT EXISTS: to keep noise out, and with it the pass does not finish. Two diagonals of a small quad on a curved part of the offset surface sag almost identically, so a flip between them moves nothing a criterion can see while still being a strict improvement. Measured on the cube at target_distance_rel 1e-3, one swap pass accepted 3020000 surface flips of which 3019913 (99.997%) won less than 1e-12 of the bar; every one was monotone and the pass never ended. The default sits in an empty gap: of the 87 that won more than 1e-12, 47 won at least 1e-4 and none landed between 1e-9 and 1e-4. 0 restores the behaviour that does not finish."
   },
   {
     "pointer": "/coarsen_pass",

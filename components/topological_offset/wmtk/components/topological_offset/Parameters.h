@@ -170,6 +170,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// endpoints had between them, or a surface flip whose two new faces are worse than the two
     /// old ones. Splits are never rejected. false = the operation passes exactly as they are.
     bool experimental_ops_divergence_guard;
+    /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
+    /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
+    /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
+    /// the whole rule; one that misses the margin is refused rather than falling back on AMIPS.
+    /// Without it the swap pass does not finish, on noise-sized flips that are all monotone.
+    double experimental_flip_sag_margin;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -236,6 +242,7 @@ struct Parameters : public wmtk::OptimizerParameters
         sag_halve_refinement = json_params["sag_halve_refinement"];
         pre_smooth = json_params["pre_smooth"];
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
+        experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
