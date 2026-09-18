@@ -369,7 +369,9 @@ bool TriOptimizerMesh::swap_edge_after(const Tuple& t)
         m_face_attribute[fid].tags = cache.face_tags;
         max_energy = std::max(q, max_energy);
     }
-    if (max_energy >= cache.max_energy) {
+    // 2D has no surface flip: swap_edge_before() refuses a surface edge outright, so the flag
+    // is always false here. See the hook's declaration.
+    if (!swap_quality_allowed(max_energy, cache.max_energy, /*is_surface_flip=*/false)) {
         return false;
     }
 

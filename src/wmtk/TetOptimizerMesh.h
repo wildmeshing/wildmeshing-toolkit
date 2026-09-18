@@ -14,6 +14,7 @@
 
 #include <igl/Timer.h>
 
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <functional>
@@ -566,6 +567,90 @@ protected:
     }
     /// Propagate application data to the cells made by a successful topological swap.
     virtual bool swap_after_cells(const std::vector<size_t>&, bool) { return true; }
+
+    // ---- SWAP REJECTION INSTRUMENTATION (debug; see swap_reject_report()) ----
+    // Every place a proposed swap can be turned down, counted. Added to find out why an offset
+    // surface flip is never accepted; the counters cost one relaxed atomic increment on a path
+    // that is already refusing the operation, and nothing reads them unless a caller asks.
+    //
+    // NOT covered, because they live in TetMesh below this class: the connectivity-level
+    // refusals inside TetMesh::swap_edge / _44 / _56 (the `affected.size() != N` valence tests
+    // and the `verts.size() != affected.size() + 2` boundary test). Those are reached only after
+    // a before-hook has passed, so they are recovered as before_pass - after_enter rather than
+    // by editing TetMesh.
+    enum class SwapReject : int {
+        base_before, // TetMesh::swap_*_before said no
+        valence, // wrong incident-tet count for this swap kind
+        bbox, // edge on the bounding box
+        surface_not_allowed, // has surface faces and allow_surface_swap() is false
+        prepare_flip, // prepare_surface_flip() refused (see the flip_* reasons)
+        interior_hook, // swap_before_interior() refused
+        flip_open_boundary, // flipping would change the surface's boundary loops
+        flip_not_two_surf, // not exactly two incident surface faces
+        flip_nonmanifold_edge, // more than two incident surface faces
+        flip_cd_nonmanifold, // a surface face already sits on the new edge (c,d)
+        flip_new_face_surface, // (a,c,d) or (b,c,d) is already tagged surface
+        flip_app_refused, // swap_before_surface() refused (see the app_* reasons)
+        flip_wrong_case, // 4-4 / 5-6: the retetrahedralization is not the one that makes
+        // the surface diagonal (c,d), so this case is not the flip
+        app_capture_label, // application: the swap ring spans two construction labels
+        app_capture_tag, // application: the swap ring spans two cell tags
+        app_fid_missing, // application: a face of the pair could not be found
+        app_class_mismatch, // application: the two faces are different tracked surfaces
+        app_mask_mismatch, // application: the two faces carry different boundary masks
+        app_sag_raised, // application: the flip would raise the local sag
+        after_inverted, // a created cell is inverted
+        after_quality, // swap_quality_allowed() said no
+        after_cells, // swap_after_cells() refused
+        after_envelope, // a new surface triangle left the envelope
+        COUNT
+    };
+    /// Counted alongside the reasons: how far proposals get. surface_attempt counts edges that
+    /// entered the surface branch at all, so "the surface never even presents a candidate" is
+    /// distinguishable from "candidates are presented and refused".
+    enum class SwapStage : int {
+        attempt,
+        surface_attempt,
+        before_pass,
+        after_enter,
+        accepted,
+        COUNT
+    };
+
+    static const char* swap_reject_name(SwapReject r);
+    static const char* swap_stage_name(SwapStage s);
+    bool swap_reject(SwapReject r) const
+    {
+        m_swap_reject[size_t(r)].fetch_add(1, std::memory_order_relaxed);
+        return false;
+    }
+    void swap_stage(SwapStage s) const
+    {
+        m_swap_stage[size_t(s)].fetch_add(1, std::memory_order_relaxed);
+    }
+    void swap_counters_reset();
+    /// One line per nonzero counter, for a per-turn log. Does not reset.
+    std::string swap_reject_report() const;
+
+    mutable std::array<std::atomic<long>, size_t(SwapReject::COUNT)> m_swap_reject{};
+    mutable std::array<std::atomic<long>, size_t(SwapStage::COUNT)> m_swap_stage{};
+
+    /// Whether a swap's quality outcome is acceptable, given the max cell energy over the cells
+    /// it creates and over the cells it destroyed. The default is STRICT improvement, which is
+    /// what every swap here required before this hook existed, so a subclass that does not
+    /// override it sees no change.
+    ///
+    /// `is_surface_flip` distinguishes a surface diagonal flip (see prepare_surface_flip) from an
+    /// interior swap, so an application can relax the rule for the surface it tracks without
+    /// touching interior swaps. The twin on the collapse side is collapse_quality_allowed().
+    ///
+    /// NOT consulted by swap_edge_56_after(), which has never had a quality gate: it computes a
+    /// max energy and discards it. That is pre-existing and is left alone rather than silently
+    /// changed, since it would move 5-6 behaviour for every consumer of this class.
+    virtual bool swap_quality_allowed(double after, double before, bool /*is_surface_flip*/) const
+    {
+        return after < before;
+    }
 
     struct SwapInfoCache
     {

@@ -1970,6 +1970,23 @@ public:
      */
     bool collapse_quality_allowed(size_t v1, size_t v2, double q, double ring_max) const override;
 
+    /// The 2D twin of TopoOffsetTetMesh::swap_quality_allowed(), kept so the two dimensions
+    /// carry the same rule, and like it gated on EXPERIMENTAL_ops_divergence_guard. It is
+    /// UNREACHABLE for an offset edge today, and not by oversight: a
+    /// 2D front is a curve with no diagonal to flip, and TriOptimizerMesh::swap_edge_before()
+    /// refuses any edge on a tracked surface outright via is_edge_on_surface(), so an offset
+    /// edge never reaches a swap at all. `is_surface_flip` is therefore always false here and
+    /// this always defers to the base's strict rule -- which is the 2D behaviour unchanged.
+    /// Should 2D ever gain a surface flip, this is where its acceptance rule belongs.
+    bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
+        const override
+    {
+        if (!is_surface_flip || !m_offset_params.experimental_ops_divergence_guard) {
+            return after < before;
+        }
+        return after < m_params.stop_energy;
+    }
+
     mutable std::atomic<size_t> m_deg_split_created{0};
     mutable std::atomic<size_t> m_deg_collapse_offered{0};
     mutable std::atomic<size_t> m_deg_collapse_allowed{0};

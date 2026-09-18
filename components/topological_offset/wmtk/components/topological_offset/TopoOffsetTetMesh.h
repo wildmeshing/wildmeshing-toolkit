@@ -1036,6 +1036,36 @@ public:
     /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
     /// surfaces need it: the offset surface is re-triangulated constantly.
     bool allow_surface_swap() const override { return true; }
+
+    /// EXPERIMENTAL_ops_divergence_guard, the swap half. UNDER THAT FLAG a flip OF THE OFFSET
+    /// SURFACE is accepted on an absolute quality bar rather than on strict improvement: the
+    /// cells it creates need only be under stop_energy, which is the bar the run is trying to
+    /// reach anyway. With the flag off, and for every interior swap either way, the base's
+    /// strict rule stands, so a default run is unchanged.
+    ///
+    /// Strict improvement made the surface flip unreachable in practice -- it is the only
+    /// operation that can re-triangulate the offset surface without moving a vertex, and across
+    /// whole runs on the deliverable cube not one was ever accepted (cnt_surface_flip 0 for
+    /// 3-2, 4-4 and 5-6 alike, with one pass logging 0 successes against 7636 failures). A rule
+    /// that can only ever accept an improvement cannot get a surface out of a local minimum.
+    ///
+    /// The other half of the acceptance rule is NOT here: the sag test lives in
+    /// swap_before_surface(), where it is exact because a flip moves no vertex, so both faces'
+    /// corners are unchanged and the "after" sag can be measured before anything is modified.
+    /// There is deliberately no PLACEMENT test: front_vertex_conv_ratio() under the default
+    /// residual_error criterion is band_vertex_residual(vid) over the bar, a function of the
+    /// vertex's position alone, and a swap moves no vertex -- so it cannot change. That is not
+    /// true of step_size_rel or the F-based criterion, which build phase_b_front_objective() and
+    /// so read the one-ring a flip re-triangulates; under those a flip can move the ratio and
+    /// this rule does not notice.
+    bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
+        const override
+    {
+        if (!is_surface_flip || !m_offset_params.experimental_ops_divergence_guard) {
+            return after < before;
+        }
+        return after < m_params.stop_energy;
+    }
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
     /**
@@ -1719,11 +1749,44 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
+    /// INTERIOR swaps only: the ring must be homogeneous in tag and in construction label, and
+    /// the single value of each is captured for swap_after_cells() to stamp on the new cells. A
+    /// ring that is not homogeneous has a region boundary or the offset surface running through
+    /// it, and an interior swap would move that boundary.
+    ///
+    /// DO NOT call this on the surface path. A face is on the offset surface exactly when one
+    /// incident cell is band and the other is not (cell_is_offset_band: label == 2), so the ring
+    /// around a surface-flip edge ALWAYS spans two labels and this always refuses -- which is
+    /// what made every offset-surface flip impossible until 2026-09-17. The surface path uses
+    /// swap_capture_surface_sides() instead.
     bool swap_capture_tag(const std::vector<size_t>& tids);
-    /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
+    /// The tag swap_after_cells writes onto the tets an INTERIOR swap created, chosen in `before`.
     wmtk::threading::enumerable_thread_specific<CellTag> m_swap_tag;
-    /// The construction label shared by every cell of the swap's ring, captured alongside.
+    /// The construction label shared by every cell of an interior swap's ring, captured alongside.
     wmtk::threading::enumerable_thread_specific<int> m_swap_label;
+
+    /// SURFACE flips: the two old surface faces split the edge ring into two arcs, each
+    /// homogeneous in tag and label, and the flip keeps both -- it only moves the diagonal
+    /// between them. A ring vertex strictly inside an arc identifies that arc's side; the flip's
+    /// four named vertices a, b, c, d do not, because a and b are the flipped edge and c and d
+    /// sit on the interface between the arcs. So each remaining ring vertex is mapped to the
+    /// (tag, label) of the cells it belongs to, and swap_after_cells() stamps each new cell from
+    /// a ring vertex it contains. Mirrors SimWildMesh::swap_before_surface(), which solves the
+    /// same problem for its tags; the offsets carry a construction label too, so both travel.
+    ///
+    /// Refuses only when one ring vertex is seen with two different sides, which is a genuinely
+    /// inconsistent neighbourhood rather than the ordinary two-sided ring.
+    struct SwapSurfaceSides
+    {
+        std::map<size_t, std::pair<CellTag, int>> by_vertex;
+    };
+    bool swap_capture_surface_sides(
+        const std::vector<size_t>& tids,
+        size_t a,
+        size_t b,
+        size_t c,
+        size_t d);
+    wmtk::threading::enumerable_thread_specific<SwapSurfaceSides> m_swap_sides;
 
 public:
     // substructure functions

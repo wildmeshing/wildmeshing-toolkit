@@ -206,6 +206,30 @@ void TopoOffsetTetMesh::label_offset_boundary()
         n_wall_band);
 }
 
+bool TopoOffsetTetMesh::swap_capture_surface_sides(
+    const std::vector<size_t>& tids,
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const size_t d)
+{
+    // See the declaration. The ring of a surface flip is two-sided BY CONSTRUCTION -- that is
+    // what makes its faces offset surface -- so demanding one tag and one label for the whole
+    // ring, as the interior rule does, can never be satisfied here. Map each ring vertex that is
+    // not one of a, b, c, d to the side it belongs to instead.
+    auto& sides = m_swap_sides.local();
+    sides.by_vertex.clear();
+    for (const size_t tid : tids) {
+        const std::pair<CellTag, int> side{m_tet_attribute[tid].tag, m_tet_attribute[tid].label};
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (v == a || v == b || v == c || v == d) continue;
+            const auto [it, inserted] = sides.by_vertex.try_emplace(v, side);
+            if (!inserted && it->second != side) return false;
+        }
+    }
+    return true;
+}
+
 bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
 {
     std::map<CellTag, size_t> tag_count;
@@ -218,14 +242,14 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
     // carrying whatever label was there before, so the label must be carried across explicitly. A
     // ring spanning two labels has a region boundary running through it, and is refused.
     if (labels.size() > 1) {
-        return false;
+        return swap_reject(SwapReject::app_capture_label);
     }
     m_swap_label.local() = *labels.begin();
     // A face between differently tagged tets is the offset surface, so a ring spanning two tags
     // has that surface running through it: refused, because one tag for the whole ring moves it.
     // Do not re-add "majority tag wins"; measured worse -- see git history of this file.
     if (tag_count.size() > 1) {
-        return false;
+        return swap_reject(SwapReject::app_capture_tag);
     }
 
     size_t max_count = 0;
@@ -252,8 +276,13 @@ bool TopoOffsetTetMesh::swap_before_surface(
     const size_t c,
     const size_t d)
 {
-    if (!swap_capture_tag(tids)) {
-        return false;
+    // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
+    // the ring of a surface flip always spans band and background, which is what makes its faces
+    // offset surface in the first place. Calling it here made every offset-surface flip
+    // impossible; the instrumentation counted 5642 of 5642 application refusals on its label
+    // test alone. See swap_capture_surface_sides().
+    if (!swap_capture_surface_sides(tids, a, b, c, d)) {
+        return swap_reject(SwapReject::app_capture_label);
     }
 
     // The flip replaces surface faces (a,b,c) and (a,b,d) with (a,c,d),(b,c,d). Both must belong
@@ -262,34 +291,39 @@ bool TopoOffsetTetMesh::swap_before_surface(
     const auto [ftup_abc, fid_abc] = tuple_from_face(std::array<size_t, 3>{{a, b, c}});
     const auto [ftup_abd, fid_abd] = tuple_from_face(std::array<size_t, 3>{{a, b, d}});
     if (fid_abc == static_cast<size_t>(-1) || fid_abd == static_cast<size_t>(-1)) {
-        return false;
+        return swap_reject(SwapReject::app_fid_missing);
     }
     if (m_face_attribute[fid_abc].m_surface_class != m_face_attribute[fid_abd].m_surface_class) {
-        return false;
+        return swap_reject(SwapReject::app_class_mismatch);
     }
     // A flip across a junction would detach the new diagonal from one of the boundaries the old
     // faces lay on: refuse when the two faces' boundary masks differ.
     if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
-        return false;
+        return swap_reject(SwapReject::app_mask_mismatch);
     }
-    // EXPERIMENTAL_ops_divergence_guard, the swap half: a flip of the offset surface may not
-    // raise the sag of the pair of faces it re-triangulates. abc + abd become acd + bcd; no
-    // vertex moves, so every corner position is unchanged and both maxima are exact here. The
-    // comparison is against the state before this flip, not against the bar: an unresolved
-    // patch is guarded exactly as a resolved one is.
+    // EXPERIMENTAL_ops_divergence_guard, the sag half of the acceptance rule for a flip OF THE
+    // OFFSET SURFACE. Together with TopoOffsetTetMesh::swap_quality_allowed(), which under the
+    // same flag lets such a flip through on an absolute stop_energy bar instead of on strict
+    // improvement, this is the whole rule: a surface flip is accepted when the cells it makes
+    // are under stop_energy AND it does not raise the local sag. Both halves are off by
+    // default, so a default run keeps the base's strict-improvement behaviour.
     //
-    // The gate is the same one the collapse half uses, and it comes before the four sag
-    // evaluations: BOTH re-triangulated faces must lie exactly on the offset surface, band on
-    // one side and background on the other, asked live of the tags rather than read from the
-    // cached m_surface_class -- these operations run between one labelling pass and the next,
-    // which is the reason face_is_offset_surface_live() exists.
+    // A flip of the offset surface may not raise the sag of the pair of faces it
+    // re-triangulates. abc + abd become acd + bcd; no vertex moves, so every corner position is
+    // unchanged and both maxima are exact here. The comparison is against the state before this
+    // flip, not against the bar: an unresolved patch is guarded exactly as a resolved one is.
+    //
+    // The gate comes before the four sag evaluations: BOTH re-triangulated faces must lie
+    // exactly on the offset surface, band on one side and background on the other, asked live of
+    // the tags rather than read from the cached m_surface_class -- these operations run between
+    // one labelling pass and the next, which is the reason face_is_offset_surface_live() exists.
     if (m_offset_params.experimental_ops_divergence_guard &&
         face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
         const double before = std::max(offset_face_sag(a, b, c), offset_face_sag(a, b, d));
         const double after = std::max(offset_face_sag(a, c, d), offset_face_sag(b, c, d));
         if (after > before) {
             ++iter_cnt_swap_guard_reject;
-            return false;
+            return swap_reject(SwapReject::app_sag_raised);
         }
     }
 
@@ -594,19 +628,39 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::rest_energy_fo
 
 bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip)
 {
-    const CellTag& tag = m_swap_tag.local();
-    const int label = m_swap_label.local();
-    for (const size_t t : tids) {
-        m_tet_attribute[t].tag = tag;
-        m_tet_attribute[t].label = label;
-        // deform_others: a swap rewires exactly these cells; their rest is stale.
-        stamp_rest_cell(t);
+    if (!is_surface_flip) {
+        // Interior: one tag and one label for the whole ring, captured by swap_capture_tag().
+        const CellTag& tag = m_swap_tag.local();
+        const int label = m_swap_label.local();
+        for (const size_t t : tids) {
+            m_tet_attribute[t].tag = tag;
+            m_tet_attribute[t].label = label;
+            // deform_others: a swap rewires exactly these cells; their rest is stale.
+            stamp_rest_cell(t);
+        }
+        ++iter_cnt_swap;
+        return true;
     }
 
-    // No offset-criterion acceptance for surface flips: the shared swap has already checked both
-    // new triangles against the face's envelope (see swap_before_surface()). `is_surface_flip`
-    // stays a parameter because the base reports it, but nothing here branches on it.
-    (void)is_surface_flip;
+    // Surface flip: the ring is two-sided and the flip keeps both sides, so each new cell takes
+    // the side of a ring vertex it contains (swap_capture_surface_sides()). A cell containing no
+    // ring vertex cannot be placed on a side and the flip is refused rather than guessed -- the
+    // base turns that into a rollback. Two ring vertices disagreeing inside one new cell means
+    // the flip would straddle the interface, which is the case this must not let through.
+    const auto& sides = m_swap_sides.local();
+    for (const size_t t : tids) {
+        const std::pair<CellTag, int>* side = nullptr;
+        for (const size_t v : oriented_tet_vids(t)) {
+            const auto it = sides.by_vertex.find(v);
+            if (it == sides.by_vertex.end()) continue;
+            if (side != nullptr && *side != it->second) return false;
+            side = &it->second;
+        }
+        if (side == nullptr) return false;
+        m_tet_attribute[t].tag = side->first;
+        m_tet_attribute[t].label = side->second;
+        stamp_rest_cell(t);
+    }
     ++iter_cnt_swap;
     return true;
 }
@@ -3876,6 +3930,11 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             ec.worst_placed_centroid.z(),
             ec.refinable.size(),
             ec.n_at_floor);
+        // Every place a proposed swap can be turned down, counted for this turn. See
+        // TetOptimizerMesh::SwapReject: this is instrumentation for why an offset-surface flip
+        // is never accepted, and the counters are reset each turn so the line is per-turn.
+        logger().info("\t[swap reject] turn {}: {}", it + 1, swap_reject_report());
+        swap_counters_reset();
         if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
                 "\t[ops guard] turn {}: {} collapse(s) and {} swap(s) refused for raising the "

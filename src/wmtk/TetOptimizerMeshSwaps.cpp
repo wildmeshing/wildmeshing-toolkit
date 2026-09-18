@@ -114,13 +114,14 @@ size_t TetOptimizerMesh::swap_all_edges_32()
 
 bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
 {
+    swap_stage(SwapStage::attempt);
     if (!TetMesh::swap_edge_before(t)) {
-        return false;
+        return swap_reject(SwapReject::base_before);
     }
 
     auto incident_tets = get_incident_tids_for_edge(t);
     if (incident_tets.size() != 3) {
-        return false;
+        return swap_reject(SwapReject::valence);
     }
 
     auto& cache = swap_cache.local();
@@ -128,7 +129,7 @@ bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
 
     // bbox edges are never swapped.
     if (is_edge_on_bbox(t)) {
-        return false;
+        return swap_reject(SwapReject::bbox);
     }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip (see
     // prepare_surface_flip). If disabled, keep the old behavior of rejecting all surface-edge
@@ -136,10 +137,11 @@ bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
     // mistaken for interior because of stale m_is_on_surface flags (which would tear the surface).
     const int n_surf_faces = edge_incident_surface_face_count(t);
     if (n_surf_faces > 0) {
-        if (!allow_surface_swap()) return false;
-        if (!prepare_surface_flip(t, incident_tets)) return false;
+        swap_stage(SwapStage::surface_attempt);
+        if (!allow_surface_swap()) return swap_reject(SwapReject::surface_not_allowed);
+        if (!prepare_surface_flip(t, incident_tets)) return swap_reject(SwapReject::prepare_flip);
     } else if (!swap_before_interior(incident_tets)) {
-        return false;
+        return swap_reject(SwapReject::interior_hook);
     }
 
     double max_energy = -1.0;
@@ -150,7 +152,76 @@ bool TetOptimizerMesh::swap_edge_before(const Tuple& t)
 
     face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
 
+    swap_stage(SwapStage::before_pass);
     return true;
+}
+
+const char* TetOptimizerMesh::swap_reject_name(const SwapReject r)
+{
+    switch (r) {
+    case SwapReject::base_before: return "base_before";
+    case SwapReject::valence: return "valence";
+    case SwapReject::bbox: return "bbox";
+    case SwapReject::surface_not_allowed: return "surface_not_allowed";
+    case SwapReject::prepare_flip: return "prepare_flip";
+    case SwapReject::interior_hook: return "interior_hook";
+    case SwapReject::flip_open_boundary: return "flip_open_boundary";
+    case SwapReject::flip_not_two_surf: return "flip_not_two_surf";
+    case SwapReject::flip_nonmanifold_edge: return "flip_nonmanifold_edge";
+    case SwapReject::flip_cd_nonmanifold: return "flip_cd_nonmanifold";
+    case SwapReject::flip_new_face_surface: return "flip_new_face_surface";
+    case SwapReject::flip_app_refused: return "flip_app_refused";
+    case SwapReject::flip_wrong_case: return "flip_wrong_case";
+    case SwapReject::app_capture_label: return "app_capture_label";
+    case SwapReject::app_capture_tag: return "app_capture_tag";
+    case SwapReject::app_fid_missing: return "app_fid_missing";
+    case SwapReject::app_class_mismatch: return "app_class_mismatch";
+    case SwapReject::app_mask_mismatch: return "app_mask_mismatch";
+    case SwapReject::app_sag_raised: return "app_sag_raised";
+    case SwapReject::after_inverted: return "after_inverted";
+    case SwapReject::after_quality: return "after_quality";
+    case SwapReject::after_cells: return "after_cells";
+    case SwapReject::after_envelope: return "after_envelope";
+    default: return "?";
+    }
+}
+
+const char* TetOptimizerMesh::swap_stage_name(const SwapStage s)
+{
+    switch (s) {
+    case SwapStage::attempt: return "attempt";
+    case SwapStage::surface_attempt: return "surface_attempt";
+    case SwapStage::before_pass: return "before_pass";
+    case SwapStage::after_enter: return "after_enter";
+    case SwapStage::accepted: return "accepted";
+    default: return "?";
+    }
+}
+
+void TetOptimizerMesh::swap_counters_reset()
+{
+    for (auto& c : m_swap_reject) c.store(0, std::memory_order_relaxed);
+    for (auto& c : m_swap_stage) c.store(0, std::memory_order_relaxed);
+}
+
+std::string TetOptimizerMesh::swap_reject_report() const
+{
+    std::string out;
+    for (int i = 0; i < int(SwapStage::COUNT); ++i) {
+        const long v = m_swap_stage[size_t(i)].load(std::memory_order_relaxed);
+        out += fmt::format("{}{}={}", out.empty() ? "" : " ", swap_stage_name(SwapStage(i)), v);
+    }
+    // before_pass counts proposals that cleared every before-hook; after_enter counts those that
+    // also cleared TetMesh's own connectivity tests, so the difference is exactly the
+    // connectivity-level refusal this class cannot see (valence, boundary). See SwapReject.
+    const long bp = m_swap_stage[size_t(SwapStage::before_pass)].load(std::memory_order_relaxed);
+    const long ae = m_swap_stage[size_t(SwapStage::after_enter)].load(std::memory_order_relaxed);
+    out += fmt::format(" connectivity={}", bp - ae);
+    for (int i = 0; i < int(SwapReject::COUNT); ++i) {
+        const long v = m_swap_reject[size_t(i)].load(std::memory_order_relaxed);
+        if (v != 0) out += fmt::format(" {}={}", swap_reject_name(SwapReject(i)), v);
+    }
+    return out;
 }
 
 bool TetOptimizerMesh::prepare_surface_flip(
@@ -165,7 +236,7 @@ bool TetOptimizerMesh::prepare_surface_flip(
 
     // Flipping an open-boundary edge would change the surface's boundary loops.
     if (is_open_boundary_edge(t)) {
-        return false;
+        return swap_reject(SwapReject::flip_open_boundary);
     }
 
     // The "ring" vertices are the incident-tet vertices other than a,b (deduplicated). This works
@@ -195,11 +266,11 @@ bool TetOptimizerMesh::prepare_surface_flip(
         } else if (n_surf == 1) {
             d = r;
         } else {
-            return false; // > 2 surface faces: non-manifold edge
+            return swap_reject(SwapReject::flip_nonmanifold_edge); // > 2: non-manifold edge
         }
         ++n_surf;
     }
-    if (n_surf != 2) return false;
+    if (n_surf != 2) return swap_reject(SwapReject::flip_not_two_surf);
 
     // The flip adds two surface faces (a,c,d),(b,c,d) on edge (c,d). If any surface face is
     // already incident to edge (c,d), the result is a non-manifold surface edge (> 2 surface
@@ -220,7 +291,7 @@ bool TetOptimizerMesh::prepare_surface_flip(
                     auto [wf, wfid] = tuple_from_face(std::array<size_t, 3>{{c, d, w}});
                     (void)wf;
                     if (wfid != static_cast<size_t>(-1) && m_face_attribute[wfid].m_is_surface_fs)
-                        return false;
+                        return swap_reject(SwapReject::flip_cd_nonmanifold);
                 }
             }
         }
@@ -242,12 +313,12 @@ bool TetOptimizerMesh::prepare_surface_flip(
             (void)ftup;
             return fid != static_cast<size_t>(-1) && m_face_attribute[fid].m_is_surface_fs;
         };
-        if (face_is_surface(a, c, d)) return false;
-        if (face_is_surface(b, c, d)) return false;
+        if (face_is_surface(a, c, d)) return swap_reject(SwapReject::flip_new_face_surface);
+        if (face_is_surface(b, c, d)) return swap_reject(SwapReject::flip_new_face_surface);
     }
 
     if (!swap_before_surface(incident_tets, a, b, c, d)) {
-        return false;
+        return swap_reject(SwapReject::flip_app_refused);
     }
 
     cache.is_surface_flip = true;
@@ -263,8 +334,9 @@ bool TetOptimizerMesh::swap_edge_44_accept_case(const std::array<size_t, 2>& new
     const auto& cache = swap_cache.local();
     if (!cache.is_surface_flip) return true; // interior edge: keep pure min-energy behavior
     // Surface flip: accept only the diagonal that creates the new surface edge (c,d).
-    return (new_edge[0] == cache.sf_c && new_edge[1] == cache.sf_d) ||
-           (new_edge[0] == cache.sf_d && new_edge[1] == cache.sf_c);
+    const bool ok = (new_edge[0] == cache.sf_c && new_edge[1] == cache.sf_d) ||
+                    (new_edge[0] == cache.sf_d && new_edge[1] == cache.sf_c);
+    return ok ? true : swap_reject(SwapReject::flip_wrong_case);
 }
 
 bool TetOptimizerMesh::swap_edge_56_accept_case(const std::array<size_t, 3>& new_face)
@@ -282,14 +354,16 @@ bool TetOptimizerMesh::swap_edge_56_accept_case(const std::array<size_t, 3>& new
     else if (apex == cache.sf_d)
         other = cache.sf_c;
     else
-        return false;
-    return new_face[1] == other || new_face[2] == other;
+        return swap_reject(SwapReject::flip_wrong_case);
+    if (new_face[1] == other || new_face[2] == other) return true;
+    return swap_reject(SwapReject::flip_wrong_case);
 }
 
 bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
 {
+    swap_stage(SwapStage::after_enter);
     if (!TetMesh::swap_edge_after(t)) {
-        return false;
+        return swap_reject(SwapReject::base_before);
     }
 
     const auto& cache = swap_cache.local();
@@ -302,28 +376,30 @@ bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
     double max_energy = -1.0;
     for (const Tuple& l : twotets) {
         if (is_inverted(l)) {
-            return false;
+            return swap_reject(SwapReject::after_inverted);
         }
         const double q = get_quality(l);
         set_cell_quality(l.tid(*this), q);
         max_energy = std::max(q, max_energy);
     }
-    if (max_energy >= cache.max_energy) {
-        return false;
+    if (!swap_quality_allowed(max_energy, cache.max_energy, cache.is_surface_flip)) {
+        return swap_reject(SwapReject::after_quality);
     }
 
     std::vector<size_t> new_tids;
     new_tids.reserve(twotets.size());
     for (const Tuple& tet : twotets) new_tids.push_back(tet.tid(*this));
     if (!swap_after_cells(new_tids, cache.is_surface_flip)) {
-        return false;
+        return swap_reject(SwapReject::after_cells);
     }
 
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the
         // Hausdorff envelope, exactly like a surface-edge collapse.
-        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d)) return false;
-        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d)) return false;
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d))
+            return swap_reject(SwapReject::after_envelope);
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d))
+            return swap_reject(SwapReject::after_envelope);
     }
 
     tracker_assign_after(*this, twotets, cache.changed_faces, m_face_attribute);
@@ -353,6 +429,7 @@ bool TetOptimizerMesh::swap_edge_after(const Tuple& t)
 
     cnt_swap++;
 
+    swap_stage(SwapStage::accepted);
     return true;
 }
 
@@ -542,8 +619,9 @@ size_t TetOptimizerMesh::swap_all_edges_44()
 
 bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
 {
+    swap_stage(SwapStage::attempt);
     if (!TetMesh::swap_edge_44_before(t)) {
-        return false;
+        return swap_reject(SwapReject::base_before);
     }
 
     auto& cache = swap_cache.local();
@@ -551,12 +629,12 @@ bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
 
     auto incident_tets = get_incident_tids_for_edge(t);
     if (incident_tets.size() != 4) {
-        return false;
+        return swap_reject(SwapReject::valence);
     }
 
     // bbox edges are never swapped.
     if (is_edge_on_bbox(t)) {
-        return false;
+        return swap_reject(SwapReject::bbox);
     }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip. The base 4-4
     // swap is steered to the case that creates the new surface edge (c,d) by
@@ -564,10 +642,11 @@ bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
     // direct incident-surface-face count so a genuine surface edge is never mistaken for interior.
     const int n_surf_faces = edge_incident_surface_face_count(t);
     if (n_surf_faces > 0) {
-        if (!allow_surface_swap()) return false;
-        if (!prepare_surface_flip(t, incident_tets)) return false;
+        swap_stage(SwapStage::surface_attempt);
+        if (!allow_surface_swap()) return swap_reject(SwapReject::surface_not_allowed);
+        if (!prepare_surface_flip(t, incident_tets)) return swap_reject(SwapReject::prepare_flip);
     } else if (!swap_before_interior(incident_tets)) {
-        return false;
+        return swap_reject(SwapReject::interior_hook);
     }
 
     auto max_energy = -1.0;
@@ -578,38 +657,43 @@ bool TetOptimizerMesh::swap_edge_44_before(const Tuple& t)
 
     face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
 
+    swap_stage(SwapStage::before_pass);
     return true;
 }
 
 bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
 {
-    if (!TetMesh::swap_edge_44_after(t)) return false;
+    swap_stage(SwapStage::after_enter);
+    if (!TetMesh::swap_edge_44_after(t)) return swap_reject(SwapReject::base_before);
 
     auto incident_tets = get_incident_tets_for_edge(t);
 
     auto& cache = swap_cache.local();
     auto max_energy = -1.0;
     for (auto& l : incident_tets) {
-        if (is_inverted(l)) return false;
+        if (is_inverted(l)) return swap_reject(SwapReject::after_inverted);
         auto q = get_quality(l);
         set_cell_quality(l.tid(*this), q);
         max_energy = std::max(q, max_energy);
     }
 
-    if (max_energy >= cache.max_energy) {
-        return false;
+    if (!swap_quality_allowed(max_energy, cache.max_energy, cache.is_surface_flip)) {
+        return swap_reject(SwapReject::after_quality);
     }
 
     std::vector<size_t> new_tids;
     new_tids.reserve(incident_tets.size());
     for (const Tuple& tet : incident_tets) new_tids.push_back(tet.tid(*this));
-    if (!swap_after_cells(new_tids, cache.is_surface_flip)) return false;
+    if (!swap_after_cells(new_tids, cache.is_surface_flip))
+        return swap_reject(SwapReject::after_cells);
 
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope,
         // exactly like a surface-edge collapse / the 3->2 surface flip.
-        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d)) return false;
-        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d)) return false;
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d))
+            return swap_reject(SwapReject::after_envelope);
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d))
+            return swap_reject(SwapReject::after_envelope);
     }
 
     tracker_assign_after(*this, incident_tets, cache.changed_faces, m_face_attribute);
@@ -632,6 +716,7 @@ bool TetOptimizerMesh::swap_edge_44_after(const Tuple& t)
     }
 
     cnt_swap++;
+    swap_stage(SwapStage::accepted);
     return true;
 }
 
@@ -664,8 +749,9 @@ size_t TetOptimizerMesh::swap_all_edges_56()
 
 bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
 {
+    swap_stage(SwapStage::attempt);
     if (!TetMesh::swap_edge_56_before(t)) {
-        return false;
+        return swap_reject(SwapReject::base_before);
     }
 
     auto& cache = swap_cache.local();
@@ -673,11 +759,11 @@ bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
 
     const auto incident_tets = get_incident_tids_for_edge(t);
     if (incident_tets.size() != 5) {
-        return false;
+        return swap_reject(SwapReject::valence);
     }
     // bbox edges are never swapped.
     if (is_edge_on_bbox(t)) {
-        return false;
+        return swap_reject(SwapReject::bbox);
     }
     // Surface edges are allowed only as a topology-preserving surface diagonal flip. The base 5-6
     // swap is steered to the fan that creates the new surface edge (c,d) by
@@ -685,10 +771,11 @@ bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
     // incident-surface-face count so a genuine surface edge is never mistaken for interior.
     const int n_surf_faces = edge_incident_surface_face_count(t);
     if (n_surf_faces > 0) {
-        if (!allow_surface_swap()) return false;
-        if (!prepare_surface_flip(t, incident_tets)) return false;
+        swap_stage(SwapStage::surface_attempt);
+        if (!allow_surface_swap()) return swap_reject(SwapReject::surface_not_allowed);
+        if (!prepare_surface_flip(t, incident_tets)) return swap_reject(SwapReject::prepare_flip);
     } else if (!swap_before_interior(incident_tets)) {
-        return false;
+        return swap_reject(SwapReject::interior_hook);
     }
 
     double max_energy = -1.0;
@@ -699,13 +786,15 @@ bool TetOptimizerMesh::swap_edge_56_before(const Tuple& t)
 
     face_attribute_tracker(*this, incident_tets, m_face_attribute, cache.changed_faces);
 
+    swap_stage(SwapStage::before_pass);
     return true;
 }
 
 bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
 {
+    swap_stage(SwapStage::after_enter);
     if (!TetMesh::swap_edge_56_after(t)) {
-        return false;
+        return swap_reject(SwapReject::base_before);
     }
 
     /**
@@ -726,12 +815,14 @@ bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
         max_energy = std::max(q, max_energy);
     }
 
-    if (!swap_after_cells(tids, cache.is_surface_flip)) return false;
+    if (!swap_after_cells(tids, cache.is_surface_flip)) return swap_reject(SwapReject::after_cells);
 
     if (cache.is_surface_flip) {
         // The two new surface faces (a,c,d),(b,c,d) must stay within the Hausdorff envelope.
-        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d)) return false;
-        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d)) return false;
+        if (surface_triangle_is_outside(cache.sf_a, cache.sf_c, cache.sf_d))
+            return swap_reject(SwapReject::after_envelope);
+        if (surface_triangle_is_outside(cache.sf_b, cache.sf_c, cache.sf_d))
+            return swap_reject(SwapReject::after_envelope);
     }
 
     tracker_assign_after(*this, tids, cache.changed_faces, m_face_attribute);
@@ -754,6 +845,7 @@ bool TetOptimizerMesh::swap_edge_56_after(const Tuple& t)
     }
 
     cnt_swap++;
+    swap_stage(SwapStage::accepted);
     return true;
 }
 
