@@ -69,6 +69,83 @@ void require_one_iteration(const int64_t n)
     }
 }
 
+/// The two hdf5 files polyfem carries a warm start through: it writes `curr` because the document
+/// names it as `output/data/state` and reads `prev` back as `input/data/state`.
+struct WarmStartPaths
+{
+    std::filesystem::path curr;
+    std::filesystem::path prev;
+};
+
+/// The warm-start block both loops open with, in the order both Python loops write it: name the
+/// two state files, clear whatever a previous (possibly crashed) run left in them -- otherwise the
+/// loop would warm start from that run's last accepted solve and silently begin at the wrong
+/// initial configuration -- and point `output/data/state` at the one polyfem writes.
+WarmStartPaths open_warm_start(
+    PolyfemBackend& backend,
+    OrderedJson& curr_json,
+    const std::filesystem::path& sim_out_dir)
+{
+    const WarmStartPaths paths{sim_out_dir / "curr_state.hdf5", sim_out_dir / "prev_state.hdf5"};
+    backend.reset_warm_start(paths.curr, paths.prev);
+    curr_json["output"]["data"]["state"] = paths.curr.string();
+    return paths;
+}
+
+/**
+ * @brief One solve of an outer loop, and nothing either loop decides.
+ *
+ * The committed warm start goes into the document exactly when there is one (so the file on disk
+ * is the same on both backends), the document is written to `sep_json_path`, polyfem runs with its
+ * own per-iteration log, and its output is checked. Both Python loops do these four steps
+ * identically; what they do with the answer is where they part.
+ *
+ * @return the active distance polyfem reported, or nothing when it reported none -- the loops stop
+ * on that, and the message they both print for it is here so there is one copy of it.
+ */
+std::optional<double> solve_iteration(
+    PolyfemBackend& backend,
+    OrderedJson& curr_json,
+    const std::filesystem::path& sep_json_path,
+    const std::filesystem::path& sim_out_dir,
+    const WarmStartPaths& state,
+    const int64_t iter)
+{
+    if (backend.has_warm_start()) {
+        curr_json["input"]["data"]["state"] = state.prev.string();
+    }
+    write_polyfem_json(sep_json_path, curr_json);
+
+    const SolveResult result = backend.solve(
+        sep_json_path,
+        sim_out_dir,
+        sim_out_dir / fmt::format("polyfem_iter_{}.log", iter));
+    check_polyfem_success(result.returncode, result.lines, allow_out_of_iterations(curr_json));
+
+    if (!result.active_distance.has_value()) {
+        logger().info("No active distance found in output — contact not triggered. Stopping.");
+    }
+    return result.active_distance;
+}
+
+/// The message both loops end on when they used up their allowance. Read after the loop, so it
+/// fires on a `break` at the last index too: a run that reached its target on its final allowance
+/// still prints it. Measured on the boxes3d stiffness case, which succeeds at iteration 3 of 4 and
+/// prints it.
+void log_if_out_of_iterations(
+    const int64_t last_iter,
+    const int64_t n_iterations,
+    const double active_dist)
+{
+    if (last_iter == n_iterations - 1) {
+        logger().info(
+            "Reached maximum iterations ({}) without achieving desired separation. Final active "
+            "distance: {:.6e}",
+            last_iter + 1,
+            active_dist);
+    }
+}
+
 } // namespace
 
 void run_polyfem_single(
@@ -107,14 +184,8 @@ void run_polyfem_dhat(
     // The Python's `curr_json = sep_json.copy()` is SHALLOW, so its writes land in `sep_json` too;
     // one mutable document gives the same sequence of files on disk.
     OrderedJson& curr_json = sep_json;
-    const std::filesystem::path curr_state_path = sim_out_dir / "curr_state.hdf5";
-    const std::filesystem::path prev_state_path = sim_out_dir / "prev_state.hdf5";
-    // Clear stale state from a previous (possibly crashed) run: otherwise the loop would warm
-    // start from the last run's last accepted solve and silently start from the wrong initial
-    // configuration.
-    backend.reset_warm_start(curr_state_path, prev_state_path);
+    const WarmStartPaths state = open_warm_start(backend, curr_json, sim_out_dir);
     double committed_dhat = init_dhat;
-    curr_json["output"]["data"]["state"] = curr_state_path.string();
     double alpha = 1.0;
     std::optional<double> line_search_step;
     std::optional<double> prev_active;
@@ -140,7 +211,7 @@ void run_polyfem_dhat(
                 "Probe: initial gap {} >= sep {:.6e} — already separated. Stopping.",
                 gap_line.has_value() ? fmt::format("{:.6e}", gap0) : "not within dhat",
                 sep);
-            backend.reset_warm_start(curr_state_path, prev_state_path);
+            backend.reset_warm_start(state.curr, state.prev);
             return;
         }
         logger().info("Probe: initial gap {:.6e}", gap0);
@@ -160,20 +231,9 @@ void run_polyfem_dhat(
     int64_t last_iter = -1;
     for (int64_t iter = 0; iter < n_iterations; ++iter) {
         last_iter = iter;
-        if (backend.has_warm_start()) {
-            curr_json["input"]["data"]["state"] = prev_state_path.string();
-        }
-        write_polyfem_json(sep_json_path, curr_json);
-
-        const SolveResult result = backend.solve(
-            sep_json_path,
-            sim_out_dir,
-            sim_out_dir / fmt::format("polyfem_iter_{}.log", iter));
-        check_polyfem_success(result.returncode, result.lines, allow_out_of_iterations(curr_json));
-
-        const std::optional<double> parsed = result.active_distance;
+        const std::optional<double> parsed =
+            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter);
         if (!parsed.has_value()) {
-            logger().info("No active distance found in output — contact not triggered. Stopping.");
             break;
         }
         active_dist = *parsed;
@@ -245,18 +305,8 @@ void run_polyfem_dhat(
         }
     }
 
-    // Read after the loop, so this fires on a `break` at the last index too: a run that reached
-    // its target on its final allowance still prints the message. Measured on the boxes3d
-    // stiffness case, which succeeds at iteration 3 of 4 and prints it.
-    if (last_iter == n_iterations - 1) {
-        logger().info(
-            "Reached maximum iterations ({}) without achieving desired separation. Final active "
-            "distance: {:.6e}",
-            last_iter + 1,
-            active_dist);
-    }
-
-    backend.reset_warm_start(curr_state_path, prev_state_path);
+    log_if_out_of_iterations(last_iter, n_iterations, active_dist);
+    backend.reset_warm_start(state.curr, state.prev);
 }
 
 void run_polyfem_stiffness(
@@ -280,10 +330,7 @@ void run_polyfem_stiffness(
     sep_json["contact"]["dhat"] = dhat;
 
     OrderedJson& curr_json = sep_json;
-    const std::filesystem::path curr_state_path = sim_out_dir / "curr_state.hdf5";
-    const std::filesystem::path prev_state_path = sim_out_dir / "prev_state.hdf5";
-    backend.reset_warm_start(curr_state_path, prev_state_path);
-    curr_json["output"]["data"]["state"] = curr_state_path.string();
+    const WarmStartPaths state = open_warm_start(backend, curr_json, sim_out_dir);
     std::optional<double> prev_kappa;
     std::optional<double> prev_deficit;
 
@@ -294,21 +341,12 @@ void run_polyfem_stiffness(
     int64_t last_iter = -1;
     for (int64_t iter = 0; iter < n_iterations; ++iter) {
         last_iter = iter;
-        if (backend.has_warm_start()) {
-            curr_json["input"]["data"]["state"] = prev_state_path.string();
-        }
+        // This loop's own mutation, made before the document is written: `solve_iteration` writes
+        // it, so the barrier stiffness has to be in it by then.
         curr_json["solver"]["contact"]["barrier_stiffness"] = kappa;
-        write_polyfem_json(sep_json_path, curr_json);
-
-        const SolveResult result = backend.solve(
-            sep_json_path,
-            sim_out_dir,
-            sim_out_dir / fmt::format("polyfem_iter_{}.log", iter));
-        check_polyfem_success(result.returncode, result.lines, allow_out_of_iterations(curr_json));
-
-        const std::optional<double> parsed = result.active_distance;
+        const std::optional<double> parsed =
+            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter);
         if (!parsed.has_value()) {
-            logger().info("No active distance found in output — contact not triggered. Stopping.");
             break;
         }
         active_dist = *parsed;
@@ -356,15 +394,8 @@ void run_polyfem_stiffness(
             kappa);
     }
 
-    if (last_iter == n_iterations - 1) {
-        logger().info(
-            "Reached maximum iterations ({}) without achieving desired separation. Final active "
-            "distance: {:.6e}",
-            last_iter + 1,
-            active_dist);
-    }
-
-    backend.reset_warm_start(curr_state_path, prev_state_path);
+    log_if_out_of_iterations(last_iter, n_iterations, active_dist);
+    backend.reset_warm_start(state.curr, state.prev);
 }
 
 } // namespace wmtk::components::polyfem_ops

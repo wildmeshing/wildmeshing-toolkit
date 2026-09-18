@@ -565,22 +565,33 @@ def _gmsh_reduced_mesh(path):
         gmsh.finalize()
 
 
+def _assert_same_mesh_structure(py, cpp, what):
+    """Everything about two .msh files that does not depend on a coordinate: the node tags in file
+    order, the physical groups, and each group's elements with their ids and vertex tuples.
+
+    Both the reduced meshes and the deformed ones are held to this exactly; only their coordinates
+    are compared differently, which is why that comparison stays with each caller. `what` names the
+    pair in the failure messages ("reduced meshes", "deformed meshes").
+    """
+    assert py["node_tags"] == cpp["node_tags"], f"the {what} list their nodes differently"
+    assert [(t, n) for t, n, _ in py["groups"]] == [(t, n) for t, n, _ in cpp["groups"]], (
+        f"the {what}' physical groups differ")
+    for (_, name, py_elems), (_, _, cpp_elems) in zip(py["groups"], cpp["groups"]):
+        assert len(py_elems) == len(cpp_elems), (
+            f"group {name}: {len(py_elems)} elements from python, {len(cpp_elems)} from c++")
+        for i, (a, b) in enumerate(zip(py_elems, cpp_elems)):
+            assert a == b, f"group {name}: element {i} is {a} from python and {b} from c++"
+
+
 def _assert_reduced_msh_identical(py_msh, cpp_msh):
     assert py_msh.is_file(), "the Python engine did not write the reduced mesh"
     assert cpp_msh.is_file(), "the C++ engine did not write the reduced mesh"
     py, cpp = _gmsh_reduced_mesh(py_msh), _gmsh_reduced_mesh(cpp_msh)
     assert py["dim"] == cpp["dim"]
-    assert py["node_tags"] == cpp["node_tags"], "the reduced meshes list their nodes differently"
+    _assert_same_mesh_structure(py, cpp, "reduced meshes")
     assert np.array_equal(py["coords"], cpp["coords"]), (
         "the reduced meshes' coordinates differ; max relative difference "
         f"{np.max(np.abs(py['coords'] - cpp['coords']) / np.where(py['coords'] != 0, np.abs(py['coords']), 1.0)):.3e}")
-    assert [(t, n) for t, n, _ in py["groups"]] == [(t, n) for t, n, _ in cpp["groups"]], (
-        "the reduced meshes' physical groups differ")
-    for (tag, name, py_elems), (_, _, cpp_elems) in zip(py["groups"], cpp["groups"]):
-        assert len(py_elems) == len(cpp_elems), (
-            f"group {name}: {len(py_elems)} elements from python, {len(cpp_elems)} from c++")
-        for i, (a, b) in enumerate(zip(py_elems, cpp_elems)):
-            assert a == b, f"group {name}: element {i} is {a} from python and {b} from c++"
 
 
 def _normalise_paths(value, root):
@@ -1002,10 +1013,7 @@ def _assert_deformed_meshes_close(py_msh, cpp_msh, rtol):
     they are the solution, and the solution carries the contact assembly's run-to-run noise.
     """
     py, cpp = _gmsh_reduced_mesh(py_msh), _gmsh_reduced_mesh(cpp_msh)
-    assert py["node_tags"] == cpp["node_tags"], "the deformed meshes list their nodes differently"
-    assert [(t, n) for t, n, _ in py["groups"]] == [(t, n) for t, n, _ in cpp["groups"]]
-    for (_, name, py_elems), (_, _, cpp_elems) in zip(py["groups"], cpp["groups"]):
-        assert py_elems == cpp_elems, f"group {name}: the elements differ"
+    _assert_same_mesh_structure(py, cpp, "deformed meshes")
     diff = np.max(np.abs(py["coords"] - cpp["coords"])
                   / np.maximum(np.abs(py["coords"]), 1.0))
     assert diff <= rtol, f"deformed coordinates differ by {diff:.3e} relative (tolerance {rtol:.0e})"
@@ -1097,7 +1105,7 @@ def test_deformed_msh_write_back_matches(request, tmp_path, monkeypatch, mesh_fi
                               interfaces=[{"region": "tag_0", "filter": "ambient"}], scale=scale)
 
     py, cpp = _gmsh_reduced_mesh(py_out), _gmsh_reduced_mesh(cpp_out)
-    assert py["node_tags"] == cpp["node_tags"], "the deformed meshes list their nodes differently"
+    _assert_same_mesh_structure(py, cpp, "deformed meshes")
 
     # What the write-back has to produce: the original coordinate plus the displacement in mesh
     # units, `u / scale`, componentwise, with the components the solution does not carry (z in 2D)
@@ -1121,10 +1129,6 @@ def test_deformed_msh_write_back_matches(request, tmp_path, monkeypatch, mesh_fi
         "the python coordinates are not original + u/scale through %.16g; max relative difference "
         "{:.3e}".format(np.max(np.abs(py["coords"] - rounded)
                                / np.maximum(np.abs(rounded), 1.0))))
-    assert [(t, n) for t, n, _ in py["groups"]] == [(t, n) for t, n, _ in cpp["groups"]], (
-        "the deformed meshes' physical groups differ")
-    for (_, name, py_elems), (_, _, cpp_elems) in zip(py["groups"], cpp["groups"]):
-        assert py_elems == cpp_elems, f"group {name}: the elements differ"
     if dim == 2:
         # The solution has two columns, so the third coordinate is carried over untouched.
         assert np.array_equal(cpp["coords"][:, 2], np.zeros(len(cpp["coords"])))

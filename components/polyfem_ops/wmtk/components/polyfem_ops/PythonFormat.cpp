@@ -72,6 +72,28 @@ void shortest_digits(double value, std::string& digits, int& decpt)
 
 } // namespace
 
+std::string python_list(const std::set<std::string>& values)
+{
+    std::string out = "[";
+    bool first = true;
+    for (const auto& s : values) {
+        if (!first) out += ", ";
+        first = false;
+        out += "'" + s + "'";
+    }
+    return out + "]";
+}
+
+std::string python_list(const std::vector<int64_t>& values)
+{
+    std::string out = "[";
+    for (size_t i = 0; i < values.size(); ++i) {
+        if (i != 0) out += ", ";
+        out += std::to_string(values[i]);
+    }
+    return out + "]";
+}
+
 std::string python_repr(double value)
 {
     // repr() of a non-finite float; these cannot reach an OBJ from a valid mesh, but the

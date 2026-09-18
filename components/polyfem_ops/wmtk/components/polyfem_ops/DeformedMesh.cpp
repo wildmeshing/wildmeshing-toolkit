@@ -1,6 +1,7 @@
 #include "DeformedMesh.hpp"
 
 #include "PythonFormat.hpp"
+#include "TaggedMesh.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -59,19 +60,7 @@ MshNodes read_msh_nodes(const std::string& msh_path)
     }
 
     MshNodes out;
-    out.tags = tags;
-    const int64_t max_tag = *std::max_element(tags.begin(), tags.end());
-    if (max_tag != n) {
-        std::vector<int64_t> sorted_tags = tags;
-        std::sort(sorted_tags.begin(), sorted_tags.end());
-        for (size_t i = 0; i < sorted_tags.size(); ++i) {
-            out.tag_to_idx[sorted_tags[i]] = static_cast<int64_t>(i);
-        }
-    } else {
-        for (const int64_t t : tags) {
-            out.tag_to_idx[t] = t - 1;
-        }
-    }
+    out.tag_to_idx = node_tag_to_index(tags);
 
     out.coords.assign(static_cast<size_t>(n), {0.0, 0.0, 0.0});
     for (size_t i = 0; i < tags.size(); ++i) {

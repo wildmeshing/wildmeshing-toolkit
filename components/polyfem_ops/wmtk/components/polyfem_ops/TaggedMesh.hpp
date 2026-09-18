@@ -5,6 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <array>
 #include <map>
 #include <optional>
 #include <set>
@@ -16,6 +17,46 @@ namespace wmtk::components::polyfem_ops {
 /// The set of physical-group NAMES carried by one cell. The Python side uses a frozenset of
 /// strings for the same thing (mesh_core.TaggedMesh.prim_tags).
 using TagNames = std::set<std::string>;
+
+/**
+ * @brief One .msh, read the way every mirrored Python function that opens one reads it: gmsh's
+ * node list in file order and the cells of every physical group of the mesh's own dimension,
+ * group by group (ascending tag, as `gmsh.model.getPhysicalGroups` hands them back), entity by
+ * entity (ascending tag, as `gmsh.model.getEntitiesForPhysicalGroup` hands them back), element by
+ * element.
+ *
+ * `mesh_core.TaggedMesh.__init__`, `polyfem_utils.get_mesh_info` and
+ * `polyfem_utils._write_polyfem_reduced_msh` each open the file and walk it themselves, and the
+ * three walk it in exactly this order; what differs between them is only what they record per
+ * element, so the traversal is done once here and each mirror keeps its own recording step.
+ */
+struct GroupedMsh
+{
+    int dim = 3;
+    std::vector<int64_t> node_tags; ///< file order
+    std::vector<std::array<double, 3>> node_coords; ///< file order, always three components
+    /// One entry per (group, entity, element) in traversal order: the group's name and tag, the
+    /// element's own tag and its vertex tags in the order the file stores them.
+    struct Item
+    {
+        std::string group_name;
+        int64_t group_tag = 0;
+        int64_t element_tag = 0;
+        std::vector<int64_t> nodes;
+    };
+    std::vector<Item> items;
+    /// group tag -> name, in ascending tag order; a group with no name keeps the empty string,
+    /// exactly as `gmsh.model.getPhysicalName` returns it.
+    std::vector<std::pair<int64_t, std::string>> groups;
+};
+
+GroupedMsh read_grouped(const std::string& msh_path);
+
+/// gmsh node tag -> 0-based node id, the rule `polyfem_utils.read_msh_nodes` and
+/// `mesh_core.TaggedMesh` both apply: `tag - 1` when the largest tag equals the node count (the
+/// contiguous case, which is what polyfem's MshReader assumes, so the constraint columns
+/// reference the right FE nodes), otherwise the rank in sorted tag order.
+std::map<int64_t, int64_t> node_tag_to_index(const std::vector<int64_t>& tags);
 
 /**
  * @brief A parsed tag expression, evaluable over a cell's set of group names.

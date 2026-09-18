@@ -72,6 +72,51 @@ std::array<int64_t, 2> undirected(int64_t a, int64_t b)
     return {std::min(a, b), std::max(a, b)};
 }
 
+/**
+ * @brief Append `face` to `faces3d` (3D) or `edges2d` (2D), wound so that its normal points along
+ * `outward`.
+ *
+ * Both interface passes below decide the winding this way and differ only in where `outward`
+ * comes from: the two incident cell centroids for an explicit selection, the incident physical
+ * tags for the legacy auto-detect. In 3D the face normal itself is tested against `outward`; in 2D
+ * it is the edge's LEFT normal against `-outward`, which is the legacy GCP convention (the left
+ * normal points toward the region).
+ *
+ * `-outward` is a negation rather than the opposite subtraction, which is what the selection pass
+ * used to write: IEEE negation is exact and round-to-nearest is symmetric about zero, so
+ * `-(outside - inside)` and `inside - outside` are the same double except for the sign of a zero,
+ * and a signed zero cannot change a `< 0` test or the sign of the sum it enters.
+ */
+void push_oriented(
+    const TaggedMesh& mesh,
+    const std::vector<int64_t>& face,
+    const Vec3& outward,
+    std::vector<std::array<int64_t, 3>>& faces3d,
+    std::vector<std::array<int64_t, 2>>& edges2d)
+{
+    const int64_t a = face[0];
+    const int64_t b = face[1];
+    if (mesh.mesh_dim == 3) {
+        const int64_t c = face[2];
+        const Vec3 pa = row3(mesh.coords, a);
+        const Vec3 n = cross3(sub3(row3(mesh.coords, b), pa), sub3(row3(mesh.coords, c), pa));
+        if (dot3(n, outward) < 0) {
+            faces3d.push_back({a, c, b});
+        } else {
+            faces3d.push_back({a, b, c});
+        }
+    } else {
+        const double tx = mesh.coords(b, 0) - mesh.coords(a, 0);
+        const double ty = mesh.coords(b, 1) - mesh.coords(a, 1);
+        // left normal of the edge tangent
+        if (dot2(-ty, tx, -outward.x, -outward.y) < 0) {
+            edges2d.push_back({b, a});
+        } else {
+            edges2d.push_back({a, b});
+        }
+    }
+}
+
 /// (oriented_faces_3d, oriented_edges_2d, tags_rows) for explicit selections. Mirrors
 /// `constraints._selected_interfaces`. Orientation: 3D normals point out of the region; 2D
 /// left-normals point toward the region (legacy GCP convention).
@@ -97,29 +142,7 @@ void selected_interfaces(
     for (const auto& r : records) {
         const Vec3 inside = to_vec3(mesh.centroid(r.a_prim));
         const Vec3 outside = to_vec3(mesh.centroid(r.b_prim));
-        if (mesh.mesh_dim == 3) {
-            const int64_t a = r.face[0];
-            const int64_t b = r.face[1];
-            const int64_t c = r.face[2];
-            const Vec3 pa = row3(mesh.coords, a);
-            const Vec3 n = cross3(sub3(row3(mesh.coords, b), pa), sub3(row3(mesh.coords, c), pa));
-            if (dot3(n, sub3(outside, inside)) < 0) {
-                faces3d.push_back({a, c, b});
-            } else {
-                faces3d.push_back({a, b, c});
-            }
-        } else {
-            const int64_t a = r.face[0];
-            const int64_t b = r.face[1];
-            const double tx = mesh.coords(b, 0) - mesh.coords(a, 0);
-            const double ty = mesh.coords(b, 1) - mesh.coords(a, 1);
-            // left normal of the edge tangent
-            if (dot2(-ty, tx, inside.x - outside.x, inside.y - outside.y) < 0) {
-                edges2d.push_back({b, a});
-            } else {
-                edges2d.push_back({a, b});
-            }
-        }
+        push_oriented(mesh, r.face, sub3(outside, inside), faces3d, edges2d);
         tags.push_back(r.ids);
     }
 }
@@ -177,29 +200,25 @@ void auto_interfaces(
             outward = sub3(mean_of(lo), mean_of(hi));
         }
 
-        if (mesh.mesh_dim == 3) {
-            const int64_t a = fr[0];
-            const int64_t b = fr[1];
-            const int64_t c = fr[2];
-            const Vec3 pa = row3(mesh.coords, a);
-            const Vec3 n = cross3(sub3(row3(mesh.coords, b), pa), sub3(row3(mesh.coords, c), pa));
-            if (dot3(n, outward) < 0) {
-                faces3d.push_back({a, c, b});
-            } else {
-                faces3d.push_back({a, b, c});
-            }
-        } else {
-            const int64_t a = fr[0];
-            const int64_t b = fr[1];
-            const double tx = mesh.coords(b, 0) - mesh.coords(a, 0);
-            const double ty = mesh.coords(b, 1) - mesh.coords(a, 1);
-            if (dot2(-ty, tx, -outward.x, -outward.y) < 0) {
-                edges2d.push_back({b, a});
-            } else {
-                edges2d.push_back({a, b});
-            }
-        }
+        push_oriented(mesh, fr, outward, faces3d, edges2d);
         tags.emplace_back(unique.begin(), unique.end());
+    }
+}
+
+/// The collision proxy's own vertex list and its edge list over those local indices. Mirrors the
+/// `collision_node_ids` / `collision_edges_local` pair `constraints.load_mesh` builds the same way
+/// in both of its branches: the proxy vertices are the sorted vertex set of the primitives the OBJ
+/// writes (the faces in 3D, the edges in 2D), and every interface edge is then re-indexed against
+/// them.
+void build_collision_proxy(const std::set<int64_t>& proxy_verts, LoadedMesh& out)
+{
+    out.collision_node_ids.assign(proxy_verts.begin(), proxy_verts.end()); // std::set == sorted()
+    std::unordered_map<int64_t, int64_t> g2l;
+    for (size_t i = 0; i < out.collision_node_ids.size(); ++i) {
+        g2l[out.collision_node_ids[i]] = static_cast<int64_t>(i);
+    }
+    for (const auto& e : out.interface_edges) {
+        out.collision_edges_local.push_back({g2l[e[0]], g2l[e[1]]});
     }
 }
 
@@ -365,14 +384,7 @@ LoadedMesh load_mesh(const std::string& msh_path, const std::vector<Selection>& 
         if (!out.interface_faces.empty()) {
             std::set<int64_t> verts;
             for (const auto& f : out.interface_faces) verts.insert(f.begin(), f.end());
-            out.collision_node_ids.assign(verts.begin(), verts.end());
-            std::unordered_map<int64_t, int64_t> g2l;
-            for (size_t i = 0; i < out.collision_node_ids.size(); ++i) {
-                g2l[out.collision_node_ids[i]] = static_cast<int64_t>(i);
-            }
-            for (const auto& e : out.interface_edges) {
-                out.collision_edges_local.push_back({g2l[e[0]], g2l[e[1]]});
-            }
+            build_collision_proxy(verts, out);
         }
     } else {
         // The loop pass preserves the explicit per-edge orientation and throws on contradictions;
@@ -397,14 +409,7 @@ LoadedMesh load_mesh(const std::string& msh_path, const std::vector<Selection>& 
         if (!out.interface_edges.empty()) {
             std::set<int64_t> verts;
             for (const auto& e : out.interface_edges) verts.insert(e.begin(), e.end());
-            out.collision_node_ids.assign(verts.begin(), verts.end());
-            std::unordered_map<int64_t, int64_t> g2l;
-            for (size_t i = 0; i < out.collision_node_ids.size(); ++i) {
-                g2l[out.collision_node_ids[i]] = static_cast<int64_t>(i);
-            }
-            for (const auto& e : out.interface_edges) {
-                out.collision_edges_local.push_back({g2l[e[0]], g2l[e[1]]});
-            }
+            build_collision_proxy(verts, out);
         }
     }
 

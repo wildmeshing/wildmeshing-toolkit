@@ -240,13 +240,39 @@ std::vector<std::string> write_protected_pins(
     return pin_paths;
 }
 
-/// The reduced mesh pysimwild writes next to the other generated inputs: `<input stem>_polyfem.msh`
-/// in the simulation input directory.
-std::filesystem::path reduced_msh_path(
+/// The reduced mesh and the material groups read back off it, which is what `build_polyfem_json`
+/// is given.
+struct ReducedMesh
+{
+    std::filesystem::path path;
+    MeshInfo info;
+};
+
+/**
+ * @brief Write the mesh polyfem actually solves on and read its material groups back. Both
+ * operations do this, in this order, for the same reason.
+ *
+ * The volumetric solve never runs on the caller's multi-tag mesh: WMTK writes one copy of a
+ * multi-tagged cell per tag, and polyfem reads the copies as distinct elements -- it double-counts
+ * AMIPS in separation and segfaults during constraint setup in smoothing. Collision filtering is
+ * unaffected either way, because it works on the proxy mesh and not on body ids.
+ *
+ * The file is `<input stem>_polyfem.msh` in the simulation input directory, where pysimwild puts
+ * it next to the other generated inputs.
+ */
+ReducedMesh write_reduced_mesh(
     const std::string& input,
+    const std::vector<std::string>& ambient_like_tags,
     const std::filesystem::path& sim_in_dir)
 {
-    return sim_in_dir / (std::filesystem::path(input).stem().string() + "_polyfem.msh");
+    ReducedMesh out;
+    out.path = sim_in_dir / (std::filesystem::path(input).stem().string() + "_polyfem.msh");
+    logger().info("[reduce mesh for polyfem]");
+    write_polyfem_reduced_msh(input, out.path.string(), ambient_like_tags);
+
+    out.info = get_mesh_info(out.path.string());
+    logger().info("Reduced material tags : {}  dim={}", out.info.tags, out.info.dim);
+    return out;
 }
 
 } // namespace
@@ -335,24 +361,16 @@ void polyfem_ops(nlohmann::json json_params)
             /*smooth_positions=*/false,
             /*skip_collision_artifacts=*/false);
 
-        // The volumetric solve runs on the REDUCED two-body mesh: WMTK writes one copy of a
-        // multi-tagged cell per tag, and polyfem would read the copies as distinct elements.
-        // Collision filtering is unaffected -- it works on the proxy mesh, not on body ids.
-        const std::filesystem::path polyfem_msh = reduced_msh_path(input, sim_in_dir);
-        logger().info("[reduce mesh for polyfem]");
-        const std::vector<std::string> ambient_like = params["ambient_like_tags"];
-        write_polyfem_reduced_msh(input, polyfem_msh.string(), ambient_like);
-
-        const MeshInfo info = get_mesh_info(polyfem_msh.string());
-        logger().info("Reduced material tags : {}  dim={}", info.tags, info.dim);
+        const ReducedMesh reduced =
+            write_reduced_mesh(input, params["ambient_like_tags"], sim_in_dir);
 
         OrderedJson cfg = minimum_separation_cfg(params, polyfem_pairs);
         cfg["amips_weights"] = resolve_amips_weights(cfg);
         OrderedJson sep_json = build_polyfem_json(
             cfg,
-            polyfem_msh,
+            reduced.path,
             sim_in_dir,
-            info,
+            reduced.info,
             sim_out_dir / "solution.txt");
 
         // The pins are written after the JSON and their paths are appended to it, as in run():
@@ -412,15 +430,8 @@ void polyfem_ops(nlohmann::json json_params)
             params["smooth_positions"],
             /*skip_collision_artifacts=*/true);
 
-        // Same duplicate-cell reduction as separation: polyfem segfaults during constraint setup
-        // on the multi-tag copies.
-        const std::filesystem::path polyfem_msh = reduced_msh_path(input, sim_in_dir);
-        logger().info("[reduce mesh for polyfem]");
-        const std::vector<std::string> ambient_like = params["ambient_like_tags"];
-        write_polyfem_reduced_msh(input, polyfem_msh.string(), ambient_like);
-
-        const MeshInfo info = get_mesh_info(polyfem_msh.string());
-        logger().info("Reduced material tags : {}  dim={}", info.tags, info.dim);
+        const ReducedMesh reduced =
+            write_reduced_mesh(input, params["ambient_like_tags"], sim_in_dir);
 
         // The reduced mesh's two groups are "ambient" and "body", which is the scheme
         // build_polyfem_json looks weights up in, so the resolved pair replaces whatever the
@@ -429,9 +440,9 @@ void polyfem_ops(nlohmann::json json_params)
         cfg["amips_weights"] = resolve_amips_weights(cfg);
         const OrderedJson sim_json = build_polyfem_json(
             cfg,
-            polyfem_msh,
+            reduced.path,
             sim_in_dir,
-            info,
+            reduced.info,
             sim_out_dir / "solution.txt");
         const std::filesystem::path sim_json_path = sim_in_dir / "smoothing.json";
         write_polyfem_json(sim_json_path, sim_json);

@@ -1,6 +1,7 @@
 #include "MeshReduction.hpp"
 
 #include "NumpyCompat.hpp"
+#include "PythonFormat.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -8,138 +9,16 @@
 
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
 
 namespace wmtk::components::polyfem_ops {
 
 namespace {
-
-/// One .msh, read the way both mirrored Python functions read it: gmsh's node list in file order
-/// and the cells of every physical group of the mesh's own dimension, group by group (ascending
-/// tag, as `gmsh.model.getPhysicalGroups` hands them back), entity by entity (ascending tag, as
-/// `gmsh.model.getEntitiesForPhysicalGroup` hands them back), element by element.
-struct GroupedMsh
-{
-    int dim = 3;
-    std::vector<int64_t> node_tags; ///< file order
-    std::vector<std::array<double, 3>> node_coords; ///< file order, always three components
-    /// One entry per (group, entity, element) in traversal order: the group's name and tag, the
-    /// element's own tag and its vertex tags in the order the file stores them.
-    struct Item
-    {
-        std::string group_name;
-        int64_t group_tag = 0;
-        int64_t element_tag = 0;
-        std::vector<int64_t> nodes;
-    };
-    std::vector<Item> items;
-    /// group tag -> name, in ascending tag order; a group with no name keeps the empty string,
-    /// exactly as `gmsh.model.getPhysicalName` returns it.
-    std::vector<std::pair<int64_t, std::string>> groups;
-};
-
-GroupedMsh read_grouped(const std::string& msh_path)
-{
-    if (!std::filesystem::exists(msh_path)) {
-        log_and_throw_error("File {} does not exist.", msh_path);
-    }
-    const mshio::MshSpec spec = mshio::load_msh(msh_path);
-
-    GroupedMsh out;
-    for (const auto& block : spec.nodes.entity_blocks) {
-        for (size_t i = 0; i < block.num_nodes_in_block; ++i) {
-            out.node_tags.push_back(static_cast<int64_t>(block.tags[i]));
-            out.node_coords.push_back(
-                {block.data[3 * i], block.data[3 * i + 1], block.data[3 * i + 2]});
-        }
-    }
-
-    // Auto-detect the mesh dimension: 3D iff any volume physical group exists, else 2D.
-    out.dim = 2;
-    for (const auto& ph : spec.physical_groups) {
-        if (ph.dim == 3) {
-            out.dim = 3;
-            break;
-        }
-    }
-    const int elem_type = out.dim == 3 ? 4 : 2; // gmsh element types: 4 = tet, 2 = triangle
-    const size_t npp = out.dim == 3 ? 4 : 3;
-
-    std::vector<const mshio::PhysicalGroup*> groups;
-    for (const auto& ph : spec.physical_groups) {
-        if (ph.dim == out.dim) groups.push_back(&ph);
-    }
-    std::sort(groups.begin(), groups.end(), [](const auto* a, const auto* b) {
-        return a->tag < b->tag;
-    });
-
-    std::map<int, std::vector<int>> entity_to_groups;
-    if (out.dim == 3) {
-        for (const auto& e : spec.entities.volumes) entity_to_groups[e.tag] = e.physical_group_tags;
-    } else {
-        for (const auto& e : spec.entities.surfaces) {
-            entity_to_groups[e.tag] = e.physical_group_tags;
-        }
-    }
-
-    for (const auto* ph : groups) {
-        out.groups.emplace_back(ph->tag, ph->name);
-        for (const auto& [ent_tag, group_tags] : entity_to_groups) {
-            if (std::find(group_tags.begin(), group_tags.end(), ph->tag) == group_tags.end()) {
-                continue;
-            }
-            for (const auto& block : spec.elements.entity_blocks) {
-                if (block.entity_dim != out.dim || block.entity_tag != ent_tag ||
-                    block.element_type != elem_type) {
-                    continue;
-                }
-                for (size_t j = 0; j < block.num_elements_in_block; ++j) {
-                    const size_t off = j * (npp + 1);
-                    GroupedMsh::Item item;
-                    item.group_name = ph->name;
-                    item.group_tag = ph->tag;
-                    item.element_tag = static_cast<int64_t>(block.data[off]);
-                    item.nodes.reserve(npp);
-                    for (size_t k = 0; k < npp; ++k) {
-                        item.nodes.push_back(static_cast<int64_t>(block.data[off + 1 + k]));
-                    }
-                    out.items.push_back(std::move(item));
-                }
-            }
-        }
-    }
-    return out;
-}
 
 std::vector<int64_t> sorted_copy(const std::vector<int64_t>& v)
 {
     std::vector<int64_t> out = v;
     std::sort(out.begin(), out.end());
     return out;
-}
-
-/// Python's `str(sorted(vt))` / `str(sorted(non_ambient))` for the refusal message: the message is
-/// the only place the two engines can be told apart by eye, so it is spelled the same.
-std::string python_list(const std::vector<int64_t>& v)
-{
-    std::string out = "[";
-    for (size_t i = 0; i < v.size(); ++i) {
-        if (i != 0) out += ", ";
-        out += std::to_string(v[i]);
-    }
-    return out + "]";
-}
-
-std::string python_list(const std::set<std::string>& v)
-{
-    std::string out = "[";
-    bool first = true;
-    for (const auto& s : v) {
-        if (!first) out += ", ";
-        first = false;
-        out += "'" + s + "'";
-    }
-    return out + "]";
 }
 
 } // namespace

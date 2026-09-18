@@ -1,5 +1,7 @@
 #include "TaggedMesh.hpp"
 
+#include "PythonFormat.hpp"
+
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -24,16 +26,6 @@ std::string strip(const std::string& s)
     while (b < e && is_ws(static_cast<unsigned char>(s[b]))) ++b;
     while (e > b && is_ws(static_cast<unsigned char>(s[e - 1]))) --e;
     return s.substr(b, e - b);
-}
-
-std::string join_sorted(const std::set<std::string>& v)
-{
-    std::string out;
-    for (const auto& s : v) {
-        if (!out.empty()) out += ", ";
-        out += "'" + s + "'";
-    }
-    return "[" + out + "]";
 }
 
 /// The 3-of-4 (3D) or 2-of-3 (2D) sub-tuples of a cell, in `itertools.combinations` order --
@@ -67,6 +59,107 @@ std::vector<int64_t> sorted_key(const std::vector<int64_t>& v)
 }
 
 } // namespace
+
+// ---------------------------------------------------------------------------
+// Reading a .msh
+// ---------------------------------------------------------------------------
+
+GroupedMsh read_grouped(const std::string& msh_path)
+{
+    if (!std::filesystem::exists(msh_path)) {
+        log_and_throw_error("File {} does not exist.", msh_path);
+    }
+    const mshio::MshSpec spec = mshio::load_msh(msh_path);
+
+    GroupedMsh out;
+    for (const auto& block : spec.nodes.entity_blocks) {
+        for (size_t i = 0; i < block.num_nodes_in_block; ++i) {
+            out.node_tags.push_back(static_cast<int64_t>(block.tags[i]));
+            out.node_coords.push_back(
+                {block.data[3 * i], block.data[3 * i + 1], block.data[3 * i + 2]});
+        }
+    }
+
+    // Auto-detect the mesh dimension: 3D iff any volume physical group exists, else 2D.
+    out.dim = 2;
+    for (const auto& ph : spec.physical_groups) {
+        if (ph.dim == 3) {
+            out.dim = 3;
+            break;
+        }
+    }
+    const int elem_type = out.dim == 3 ? 4 : 2; // gmsh element types: 4 = tet, 2 = triangle
+    const size_t npp = out.dim == 3 ? 4 : 3;
+
+    // gmsh.model.getPhysicalGroups(dim) hands back the groups of that dimension ordered by tag;
+    // mshio hands back file order, which gmsh writes sorted the same way. Sorting makes the cell
+    // order -- and with it face_repr, and with it the OBJ -- independent of the writer.
+    std::vector<const mshio::PhysicalGroup*> groups;
+    for (const auto& ph : spec.physical_groups) {
+        if (ph.dim == out.dim) groups.push_back(&ph);
+    }
+    std::sort(groups.begin(), groups.end(), [](const auto* a, const auto* b) {
+        return a->tag < b->tag;
+    });
+
+    // entity tag -> the physical groups it belongs to, for the entities of dimension out.dim.
+    std::map<int, std::vector<int>> entity_to_groups;
+    if (out.dim == 3) {
+        for (const auto& e : spec.entities.volumes) entity_to_groups[e.tag] = e.physical_group_tags;
+    } else {
+        for (const auto& e : spec.entities.surfaces) {
+            entity_to_groups[e.tag] = e.physical_group_tags;
+        }
+    }
+
+    for (const auto* ph : groups) {
+        out.groups.emplace_back(ph->tag, ph->name);
+        // gmsh.model.getEntitiesForPhysicalGroup(dim, tag), in ascending entity-tag order.
+        for (const auto& [ent_tag, group_tags] : entity_to_groups) {
+            if (std::find(group_tags.begin(), group_tags.end(), ph->tag) == group_tags.end()) {
+                continue;
+            }
+            for (const auto& block : spec.elements.entity_blocks) {
+                if (block.entity_dim != out.dim || block.entity_tag != ent_tag ||
+                    block.element_type != elem_type) {
+                    continue;
+                }
+                for (size_t j = 0; j < block.num_elements_in_block; ++j) {
+                    const size_t off = j * (npp + 1);
+                    GroupedMsh::Item item;
+                    item.group_name = ph->name;
+                    item.group_tag = ph->tag;
+                    item.element_tag = static_cast<int64_t>(block.data[off]);
+                    item.nodes.reserve(npp);
+                    for (size_t k = 0; k < npp; ++k) {
+                        item.nodes.push_back(static_cast<int64_t>(block.data[off + 1 + k]));
+                    }
+                    out.items.push_back(std::move(item));
+                }
+            }
+        }
+    }
+    return out;
+}
+
+std::map<int64_t, int64_t> node_tag_to_index(const std::vector<int64_t>& tags)
+{
+    std::map<int64_t, int64_t> out;
+    const int64_t n = static_cast<int64_t>(tags.size());
+    const int64_t max_tag = *std::max_element(tags.begin(), tags.end());
+    if (max_tag != n) {
+        std::vector<int64_t> sorted_tags = tags;
+        std::sort(sorted_tags.begin(), sorted_tags.end());
+        for (size_t i = 0; i < sorted_tags.size(); ++i) {
+            out[sorted_tags[i]] = static_cast<int64_t>(i);
+        }
+    } else {
+        for (const int64_t t : tags) {
+            out[t] = t - 1;
+        }
+    }
+    return out;
+}
 
 // ---------------------------------------------------------------------------
 // Tag expressions
@@ -136,7 +229,7 @@ Selection normalize_selection(const nlohmann::json& spec)
             log_and_throw_error(
                 "selection {}: unknown key(s) {}",
                 spec.dump(),
-                join_sorted(extra));
+                python_list(extra));
         }
         if (!spec["region"].is_string() ||
             (spec.contains("filter") && !spec["filter"].is_null() &&
@@ -236,127 +329,52 @@ void assign_selection_ids(
 
 TaggedMesh::TaggedMesh(const std::string& msh_path)
 {
-    if (!std::filesystem::exists(msh_path)) {
-        log_and_throw_error("File {} does not exist.", msh_path);
-    }
-    const mshio::MshSpec spec = mshio::load_msh(msh_path);
+    const GroupedMsh in = read_grouped(msh_path);
 
     // --- nodes -------------------------------------------------------------
-    // gmsh.model.mesh.getNodes() returns the node blocks in file order; mshio keeps the same.
-    std::vector<int64_t> int_tags;
-    std::vector<std::array<double, 3>> raw;
-    for (const auto& block : spec.nodes.entity_blocks) {
-        for (size_t i = 0; i < block.num_nodes_in_block; ++i) {
-            int_tags.push_back(static_cast<int64_t>(block.tags[i]));
-            raw.push_back({block.data[3 * i], block.data[3 * i + 1], block.data[3 * i + 2]});
-        }
-    }
-    total_n_nodes = static_cast<int64_t>(int_tags.size());
+    total_n_nodes = static_cast<int64_t>(in.node_tags.size());
     if (total_n_nodes == 0) {
         log_and_throw_error("No nodes found in {}", msh_path);
     }
-
-    // polyfem MshReader uses node_id = tag - 1 for contiguous meshes; match it so constraint
-    // columns reference the right FE nodes. Otherwise fall back to the rank in sorted tag order.
-    const int64_t max_tag = *std::max_element(int_tags.begin(), int_tags.end());
-    if (max_tag != total_n_nodes) {
-        std::vector<int64_t> sorted_tags = int_tags;
-        std::sort(sorted_tags.begin(), sorted_tags.end());
-        for (size_t i = 0; i < sorted_tags.size(); ++i) {
-            node_tag_to_idx[sorted_tags[i]] = static_cast<int64_t>(i);
-        }
-    } else {
-        for (const int64_t t : int_tags) {
-            node_tag_to_idx[t] = t - 1;
-        }
-    }
+    node_tag_to_idx = node_tag_to_index(in.node_tags);
 
     // --- dimension and coordinates ----------------------------------------
-    mesh_dim = 2;
-    for (const auto& ph : spec.physical_groups) {
-        if (ph.dim == 3) {
-            mesh_dim = 3;
-            break;
-        }
-    }
+    mesh_dim = in.dim;
     coords = MatrixXd::Zero(total_n_nodes, mesh_dim);
-    for (size_t i = 0; i < int_tags.size(); ++i) {
-        const int64_t idx = node_tag_to_idx.at(int_tags[i]);
+    for (size_t i = 0; i < in.node_tags.size(); ++i) {
+        const int64_t idx = node_tag_to_idx.at(in.node_tags[i]);
         for (int d = 0; d < mesh_dim; ++d) {
-            coords(idx, d) = raw[i][d];
+            coords(idx, d) = in.node_coords[i][d];
         }
     }
 
     // --- cells -------------------------------------------------------------
-    const int elem_type = mesh_dim == 3 ? 4 : 2; // gmsh element types: 4 = tet, 2 = triangle
-    const size_t npp = mesh_dim == 3 ? 4 : 3;
-
-    // gmsh.model.getPhysicalGroups(dim) hands back the groups of that dimension ordered by tag;
-    // mshio hands back file order, which gmsh writes sorted the same way. Sorting makes the
-    // cell order -- and with it face_repr, and with it the OBJ -- independent of the writer.
-    std::vector<const mshio::PhysicalGroup*> groups;
-    for (const auto& ph : spec.physical_groups) {
-        if (ph.dim == mesh_dim) groups.push_back(&ph);
-    }
-    std::sort(groups.begin(), groups.end(), [](const auto* a, const auto* b) {
-        return a->tag < b->tag;
-    });
-
-    // entity tag -> the physical groups it belongs to, for the entities of dimension mesh_dim.
-    std::map<int, std::vector<int>> entity_to_groups;
-    if (mesh_dim == 3) {
-        for (const auto& e : spec.entities.volumes) {
-            entity_to_groups[e.tag] = e.physical_group_tags;
-        }
-    } else {
-        for (const auto& e : spec.entities.surfaces) {
-            entity_to_groups[e.tag] = e.physical_group_tags;
-        }
+    // Every group of the mesh's own dimension is named, whether or not it carries a cell, as the
+    // Python's `names` dict is; the traversal lists them in ascending tag order.
+    for (const auto& [tag, name] : in.groups) {
+        names[name] = tag;
     }
 
     // cell node-tag set -> cell index. WMTK writes one copy of a multi-tagged cell per tag; the
     // copies share a node set, so this map is what merges them (Python: `canonical`).
     std::map<std::vector<int64_t>, int64_t> canonical;
-
-    for (const auto* ph : groups) {
-        names[ph->name] = ph->tag;
-        // gmsh.model.getEntitiesForPhysicalGroup(dim, tag), in ascending entity-tag order.
-        for (const auto& [ent_tag, group_tags] : entity_to_groups) {
-            if (std::find(group_tags.begin(), group_tags.end(), ph->tag) == group_tags.end()) {
-                continue;
+    for (const auto& item : in.items) {
+        const std::vector<int64_t> vt = sorted_key(item.nodes);
+        auto [it, inserted] = canonical.emplace(vt, static_cast<int64_t>(prim_nodes.size()));
+        if (inserted) {
+            std::vector<int64_t> nodes;
+            nodes.reserve(item.nodes.size());
+            for (const int64_t t : item.nodes) {
+                nodes.push_back(node_tag_to_idx.at(t));
             }
-            for (const auto& block : spec.elements.entity_blocks) {
-                if (block.entity_dim != mesh_dim || block.entity_tag != ent_tag ||
-                    block.element_type != elem_type) {
-                    continue;
-                }
-                for (size_t j = 0; j < block.num_elements_in_block; ++j) {
-                    const size_t off = j * (npp + 1) + 1; // skip the element tag
-                    std::vector<int64_t> node_tags;
-                    node_tags.reserve(npp);
-                    for (size_t k = 0; k < npp; ++k) {
-                        node_tags.push_back(static_cast<int64_t>(block.data[off + k]));
-                    }
-                    const std::vector<int64_t> vt = sorted_key(node_tags);
-                    auto [it, inserted] =
-                        canonical.emplace(vt, static_cast<int64_t>(prim_nodes.size()));
-                    if (inserted) {
-                        std::vector<int64_t> nodes;
-                        nodes.reserve(npp);
-                        for (const int64_t t : node_tags) {
-                            nodes.push_back(node_tag_to_idx.at(t));
-                        }
-                        prim_nodes.push_back(std::move(nodes));
-                        prim_tags.emplace_back();
-                    }
-                    prim_tags[it->second].insert(ph->name);
-                }
-            }
+            prim_nodes.push_back(std::move(nodes));
+            prim_tags.emplace_back();
         }
+        prim_tags[it->second].insert(item.group_name);
     }
 
     // --- face adjacency ----------------------------------------------------
-    const size_t nppf = npp - 1;
+    const size_t nppf = (mesh_dim == 3 ? 4 : 3) - 1;
     std::map<std::vector<int64_t>, int64_t> face_index;
     for (size_t p = 0; p < prim_nodes.size(); ++p) {
         for (const auto& fn : combinations(prim_nodes[p], nppf)) {
@@ -441,8 +459,8 @@ compile_selection(const Selection& sel, const TaggedMesh& mesh)
                 "selection {}='{}' references unknown tag(s) {}; available: {}",
                 parts[i].first,
                 expr,
-                join_sorted(unknown),
-                join_sorted(available));
+                python_list(unknown),
+                python_list(available));
         }
         preds[i] = compiled;
     }

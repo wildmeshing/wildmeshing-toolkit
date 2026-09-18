@@ -31,17 +31,20 @@ const std::regex& ansi_re()
     return re;
 }
 
-/// `str.strip()` with no argument: Python strips exactly these six whitespace characters, and the
-/// '\r' matters -- under the Python's pty every line ends "\r\n".
+/// The six characters Python calls whitespace, which is what `str.strip()` and `str.split()` with
+/// no argument both go by. The '\r' matters -- under the Python's pty every line ends "\r\n".
+bool is_python_space(const char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
+}
+
+/// `str.strip()` with no argument.
 std::string python_strip(const std::string& s)
 {
-    const auto is_space = [](char c) {
-        return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
-    };
     size_t b = 0;
     size_t e = s.size();
-    while (b < e && is_space(s[b])) ++b;
-    while (e > b && is_space(s[e - 1])) --e;
+    while (b < e && is_python_space(s[b])) ++b;
+    while (e > b && is_python_space(s[e - 1])) --e;
     return s.substr(b, e - b);
 }
 
@@ -319,13 +322,10 @@ std::optional<double> parse_active_distance(const std::vector<std::string>& line
     // `line.split(marker)[-1]`: everything after the LAST occurrence in that line.
     const std::string tail = found->substr(found->rfind(marker) + marker.size());
     // `str.split()` with no argument: skip leading whitespace, then take up to the next run.
-    const auto is_space = [](char c) {
-        return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
-    };
     size_t b = 0;
-    while (b < tail.size() && is_space(tail[b])) ++b;
+    while (b < tail.size() && is_python_space(tail[b])) ++b;
     size_t e = b;
-    while (e < tail.size() && !is_space(tail[e])) ++e;
+    while (e < tail.size() && !is_python_space(tail[e])) ++e;
     if (b == e) {
         // `.split()[0]` on an all-whitespace remainder is an IndexError in the Python; it cannot
         // happen with polyfem's own line, which always has the value right after the marker.

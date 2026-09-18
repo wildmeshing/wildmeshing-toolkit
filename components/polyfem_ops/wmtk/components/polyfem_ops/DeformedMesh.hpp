@@ -9,10 +9,10 @@
 
 namespace wmtk::components::polyfem_ops {
 
-/// What `polyfem_utils.read_msh_nodes` returns, in the order of its 3-tuple.
+/// What `polyfem_utils.read_msh_nodes` returns. Its 3-tuple also carries the node tags in file
+/// order, which no caller reads; that one is not mirrored.
 struct MshNodes
 {
-    std::vector<int64_t> tags; ///< the gmsh node tags, in file order
     std::vector<std::array<double, 3>> coords; ///< indexed by `tag_to_idx`, always 3 components
     std::map<int64_t, int64_t> tag_to_idx; ///< node tag -> row index
 };
@@ -20,10 +20,10 @@ struct MshNodes
 /**
  * @brief Read every node of a .msh. Mirrors `polyfem_utils.read_msh_nodes`.
  *
- * The index rule is the Python's: `tag - 1` when the largest tag equals the node count (the
- * contiguous case, which is also what polyfem's MshReader assumes), otherwise the rank in sorted
- * tag order. `solution.txt` is written in that same order -- polyfem's `reorder_nodes` puts it
- * back into input-node order -- so the rule is what lines the displacements up with the mesh.
+ * The index rule is `node_tag_to_index` (TaggedMesh.hpp), which the Python applies here and in
+ * `mesh_core.TaggedMesh` alike. `solution.txt` is written in that same order -- polyfem's
+ * `reorder_nodes` puts it back into input-node order -- so the rule is what lines the
+ * displacements up with the mesh.
  */
 MshNodes read_msh_nodes(const std::string& msh_path);
 

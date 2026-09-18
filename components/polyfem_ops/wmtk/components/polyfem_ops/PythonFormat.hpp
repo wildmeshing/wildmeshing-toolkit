@@ -1,8 +1,22 @@
 #pragma once
 
+#include <cstdint>
+#include <set>
 #include <string>
+#include <vector>
 
 namespace wmtk::components::polyfem_ops {
+
+/**
+ * @brief `str(sorted(x))` for a set of names or a list of node tags: Python's list repr.
+ *
+ * The messages that interpolate these are the only place the two engines can be told apart by
+ * eye, so they are spelled the same: square brackets around the lot, ", " between the items, and
+ * single quotes around each string. Both containers iterate sorted already -- a std::set does, and
+ * every caller's vector is sorted before it gets here -- which is the `sorted()`.
+ */
+std::string python_list(const std::set<std::string>& values);
+std::string python_list(const std::vector<int64_t>& values);
 
 /**
  * @brief Format a double exactly as CPython's `repr()` does.
