@@ -8,9 +8,11 @@
 #include <string>
 #include <vector>
 
+using polysolve::nonlinear::Status;
 using wmtk::components::polyfem_ops::check_polyfem_success;
 using wmtk::components::polyfem_ops::numpy_isclose;
 using wmtk::components::polyfem_ops::parse_active_distance;
+using wmtk::components::polyfem_ops::statuses_from_log;
 
 namespace {
 
@@ -40,13 +42,19 @@ const std::vector<std::string>& real_log()
     return captured;
 }
 
+/// The subprocess backend's path: the statuses are recovered from the captured lines.
+void check_log(int returncode, const std::vector<std::string>& log, bool allow_out_of_iterations)
+{
+    check_polyfem_success(returncode, statuses_from_log(log), log, allow_out_of_iterations);
+}
+
 } // namespace
 
 TEST_CASE("polyfem_ops check_polyfem_success phrases", "[components][polyfem_ops]")
 {
     // The two phrases the Python accepts unconditionally.
-    CHECK_NOTHROW(check_polyfem_success(0, real_log(), false));
-    CHECK_NOTHROW(check_polyfem_success(
+    CHECK_NOTHROW(check_log(0, real_log(), false));
+    CHECK_NOTHROW(check_log(
         0,
         lines({"[polyfem] [info] Finished: Gradient vector norm too small took 1s"}),
         false));
@@ -55,17 +63,34 @@ TEST_CASE("polyfem_ops check_polyfem_success phrases", "[components][polyfem_ops
     // launches passes (the built JSON always sets solver.nonlinear.allow_out_of_iterations).
     const auto out_of_iterations =
         lines({"[polyfem] [info] Finished: Iteration limit reached took 12s (iters=1000)"});
-    CHECK_THROWS(check_polyfem_success(0, out_of_iterations, false));
-    CHECK_NOTHROW(check_polyfem_success(0, out_of_iterations, true));
+    CHECK_THROWS(check_log(0, out_of_iterations, false));
+    CHECK_NOTHROW(check_log(0, out_of_iterations, true));
 
     // A real failure: an accepted phrase but a non-zero exit code, and a rejected phrase.
-    CHECK_THROWS(check_polyfem_success(1, real_log(), true));
-    CHECK_THROWS(check_polyfem_success(
+    CHECK_THROWS(check_log(1, real_log(), true));
+    CHECK_THROWS(check_log(
         0,
         lines({"[polyfem] [warning] Finished: Not descent direction", "[polyfem] [error] failed"}),
         true));
     // No "Finished:" line at all -- the Python reports the missing line as None and still throws.
-    CHECK_THROWS(check_polyfem_success(0, lines({"[polyfem] [info] reading mesh"}), true));
+    CHECK_THROWS(check_log(0, lines({"[polyfem] [info] reading mesh"}), true));
+}
+
+TEST_CASE("polyfem_ops check_polyfem_success statuses", "[components][polyfem_ops]")
+{
+    // The in-process backend's path: the statuses polyfem recorded, one per subsolve. Any one
+    // accepted status is enough, as any one accepted phrase is in the log.
+    CHECK_NOTHROW(check_polyfem_success(0, {Status::RelGradNormTolerance}, {}, false));
+    CHECK_NOTHROW(check_polyfem_success(
+        0,
+        {Status::LineSearchFailed, Status::GradNormTolerance},
+        {},
+        false));
+    CHECK_THROWS(check_polyfem_success(0, {Status::IterationLimit}, {}, false));
+    CHECK_NOTHROW(check_polyfem_success(0, {Status::IterationLimit}, {}, true));
+    CHECK_THROWS(check_polyfem_success(1, {Status::RelGradNormTolerance}, {}, true));
+    CHECK_THROWS(check_polyfem_success(0, {Status::FDeltaTolerance}, {}, true));
+    CHECK_THROWS(check_polyfem_success(0, {}, {}, true));
 }
 
 TEST_CASE("polyfem_ops parse_active_distance", "[components][polyfem_ops]")

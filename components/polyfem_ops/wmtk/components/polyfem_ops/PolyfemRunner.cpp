@@ -197,10 +197,11 @@ public:
         }
         log_file.flush();
 
-        SolveResult result{returncode, split_lines(captured), std::nullopt};
+        SolveResult result{returncode, split_lines(captured), std::nullopt, {}};
         // The child reports the active distance the only way it can, by printing it; this is the
         // parse the two Python loops do on the very same text.
         result.active_distance = parse_active_distance(result.lines);
+        result.statuses = statuses_from_log(result.lines);
         return result;
     }
 
@@ -261,26 +262,17 @@ std::vector<std::string> split_lines(const std::string& text)
 
 void check_polyfem_success(
     int returncode,
+    const std::vector<polysolve::nonlinear::Status>& statuses,
     const std::vector<std::string>& lines,
     bool allow_out_of_iterations)
 {
-    std::string stdout_text;
-    for (const auto& line : lines) {
-        stdout_text += line;
-    }
-
-    std::vector<std::string> success_phrases = {
-        "Finished: Gradient vector norm too small",
-        "Finished: Relative gradient vector too small"};
-    if (allow_out_of_iterations) {
-        success_phrases.push_back("Finished: Iteration limit reached");
-    }
-    if (returncode == 0) {
-        for (const auto& phrase : success_phrases) {
-            if (stdout_text.find(phrase) != std::string::npos) {
-                return;
-            }
-        }
+    using polysolve::nonlinear::Status;
+    const auto accepted = [allow_out_of_iterations](const Status s) {
+        return s == Status::GradNormTolerance || s == Status::RelGradNormTolerance ||
+               (allow_out_of_iterations && s == Status::IterationLimit);
+    };
+    if (returncode == 0 && std::any_of(statuses.begin(), statuses.end(), accepted)) {
+        return;
     }
 
     std::optional<std::string> finished_line;
@@ -302,6 +294,27 @@ void check_polyfem_success(
         "PolyFEM failed (return code {}); last Finished line: {}",
         returncode,
         python_repr_str(finished_line));
+}
+
+std::vector<polysolve::nonlinear::Status> statuses_from_log(const std::vector<std::string>& lines)
+{
+    using polysolve::nonlinear::Status;
+    const std::array<Status, 3> accepted = {
+        Status::GradNormTolerance,
+        Status::RelGradNormTolerance,
+        Status::IterationLimit};
+    std::vector<Status> statuses;
+    for (const auto& line : lines) {
+        for (const Status s : accepted) {
+            const std::string phrase = fmt::format(
+                "Finished: {}",
+                polysolve::nonlinear::status_message(s));
+            if (line.find(phrase) != std::string::npos) {
+                statuses.push_back(s);
+            }
+        }
+    }
+    return statuses;
 }
 
 std::optional<double> parse_active_distance(const std::vector<std::string>& lines)

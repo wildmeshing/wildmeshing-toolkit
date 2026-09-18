@@ -120,7 +120,11 @@ std::optional<double> solve_iteration(
         sep_json_path,
         sim_out_dir,
         sim_out_dir / fmt::format("polyfem_iter_{}.log", iter));
-    check_polyfem_success(result.returncode, result.lines, allow_out_of_iterations(curr_json));
+    check_polyfem_success(
+        result.returncode,
+        result.statuses,
+        result.lines,
+        allow_out_of_iterations(curr_json));
 
     if (!result.active_distance.has_value()) {
         logger().info("No active distance found in output — contact not triggered. Stopping.");
@@ -159,7 +163,11 @@ void run_polyfem_single(
 
     const SolveResult result =
         backend.solve(sim_json_path, sim_out_dir, sim_out_dir / "polyfem.log");
-    check_polyfem_success(result.returncode, result.lines, allow_out_of_iterations(sim_json));
+    check_polyfem_success(
+        result.returncode,
+        result.statuses,
+        result.lines,
+        allow_out_of_iterations(sim_json));
 }
 
 void run_polyfem_dhat(
@@ -203,7 +211,11 @@ void run_polyfem_dhat(
         write_polyfem_json(sep_json_path, probe_json);
         const SolveResult probe =
             backend.solve(sep_json_path, sim_out_dir, sim_out_dir / "polyfem_probe.log");
-        check_polyfem_success(probe.returncode, probe.lines, /*allow_out_of_iterations=*/true);
+        check_polyfem_success(
+            probe.returncode,
+            probe.statuses,
+            probe.lines,
+            /*allow_out_of_iterations=*/true);
         const std::optional<double> gap_line = probe.active_distance;
         const double gap0 = gap_line.value_or(INF);
         if (!(gap0 < sep)) {

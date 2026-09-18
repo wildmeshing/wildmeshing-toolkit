@@ -3,7 +3,6 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <polyfem/State.hpp>
-#include <polyfem/solver/forms/ContactForm.hpp>
 #include <polyfem/solver/forms/SmoothContactForm.hpp>
 #include <polyfem/time_integrator/ImplicitTimeIntegrator.hpp>
 #include <polyfem/utils/Logger.hpp>
@@ -58,7 +57,7 @@ std::optional<double> active_distance_from_contact_form(
 
 /**
  * @brief The sink that turns polyfem's own log records into `polyfem_iter_<i>.log` (and into the
- * lines `check_polyfem_success` reads).
+ * lines whose last "Finished:" line `check_polyfem_success` quotes when a solve failed).
  *
  * The subprocess backend copies the child's stdout into that file. In process there is no child
  * stdout to copy, so the text is taken where it is produced: spdlog's default pattern formats each
@@ -122,38 +121,6 @@ private:
     std::vector<std::string> m_lines;
     bool m_stopped = false;
 };
-
-/**
- * @brief Leave polyfem's process-wide collision-set cache at a configuration no solve can start
- * from. Called at the end of every in-process solve.
- *
- * `SmoothContactForm::update_collision_set` (and the two other contact forms, identically) caches
- * the displaced surface it last built a collision set for in a FUNCTION-LOCAL `static`, so the
- * cache is shared by every form in the process and outlives the State that filled it. The
- * executable never notices -- each solve is its own process and the cache starts empty -- but two
- * solves in one process do: the next solve's first evaluation hits the previous solve's entry and
- * runs with an EMPTY collision set. It is not a rare coincidence either, it is the normal case,
- * because a warm-started solve starts exactly where the solve it warm starts from ended. Measured
- * on the boxes3d dhat case before this call existed: the first loop solve saw no contact at all,
- * reported a zero gradient, stopped at iteration 0 and the loop gave up with "contact not
- * triggered".
- *
- * The cache compares whole matrices, so writing any configuration into it that no solve can begin
- * at closes the hole. This uses the rest surface translated by its own bounding-box diagonal,
- * which lies outside the mesh's extent and so differs both from the rest state and from every
- * committed solution. Fixing the static itself would be a change to polyfem, which this step does
- * not make.
- */
-void poison_collision_set_cache(polyfem::solver::ContactForm& form, const int ndof)
-{
-    const Eigen::MatrixXd rest = form.compute_displaced_surface(Eigen::VectorXd::Zero(ndof));
-    if (rest.rows() == 0) {
-        // No surface to cache: an empty matrix can never compare equal to the next solve's.
-        return;
-    }
-    const double diagonal = (rest.colwise().maxCoeff() - rest.colwise().minCoeff()).norm();
-    form.solution_changed(Eigen::VectorXd::Constant(ndof, diagonal));
-}
 
 /// polyfem's default log level (json-specs/log.json: /output/log/level defaults to "debug"). The
 /// executable only overrides it when `--log_level` is passed and the subprocess backend never
@@ -292,7 +259,7 @@ public:
 
         SolveResult result;
         try {
-            result.active_distance = run_solve(args, capture, wants_warm_start);
+            result = run_solve(args, capture, wants_warm_start);
         } catch (const std::exception& e) {
             // The subprocess reports this as a dead child (an uncaught exception aborts main, so
             // the Python sees return code -6); in process there is no signal to report, so the
@@ -326,9 +293,9 @@ public:
 
 private:
     /// main.cpp's `forward_simulation` for a JSON input, with the initial condition handed over in
-    /// memory. Returns the active distance, which is read off the contact form before the State is
-    /// destroyed.
-    std::optional<double> run_solve(
+    /// memory. Returns the active distance and the subsolve statuses, both read off the State
+    /// before it is destroyed; `returncode` and `lines` are the caller's.
+    SolveResult run_solve(
         const nlohmann::json& args,
         const std::shared_ptr<LogCapture>& capture,
         const bool wants_warm_start)
@@ -393,12 +360,17 @@ private:
             m_last = std::move(next);
         }
 
-        const std::optional<double> active = active_distance_from_contact_form(state, sol);
-        if (state.solve_data.contact_form != nullptr) {
-            // AFTER the active distance is read: this overwrites the form's collision set.
-            poison_collision_set_cache(*state.solve_data.contact_form, int(sol.size()));
+        SolveResult result;
+        result.active_distance = active_distance_from_contact_form(state, sol);
+        // One entry per AL, reduced and lagging subsolve; an entry lacks a status only when no
+        // solver ran (polyfem's ALSolver::record_solver_info).
+        for (const auto& entry : state.stats.solver_info) {
+            const auto& info = entry.at("info");
+            if (info.contains("status")) {
+                result.statuses.push_back(info.at("status").get<polysolve::nonlinear::Status>());
+            }
         }
-        return active;
+        return result;
     }
 
     std::optional<SolverState> m_last; ///< polyfem's curr_state.hdf5

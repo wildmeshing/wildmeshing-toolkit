@@ -1,5 +1,7 @@
 #pragma once
 
+#include <polysolve/nonlinear/Criteria.hpp>
+
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -22,11 +24,14 @@ std::string polyfem_bin();
 /// returns -- the exit code and the output lines, each still carrying its trailing newline, as the
 /// Python's `lines` do -- and `active_distance` is the value the dhat and stiffness loops steer
 /// on, filled by the backend rather than parsed by the caller (see `PolyfemBackend::solve`).
+/// `statuses` is polysolve's termination status of every nonlinear subsolve that returned, in
+/// order; it is what `check_polyfem_success` decides on.
 struct SolveResult
 {
     int returncode = 0;
     std::vector<std::string> lines;
     std::optional<double> active_distance;
+    std::vector<polysolve::nonlinear::Status> statuses;
 };
 
 /**
@@ -108,14 +113,25 @@ std::unique_ptr<PolyfemBackend> in_process_backend();
  * @brief Throw unless polyfem converged. Mirrors `polyfem_utils.check_polyfem_success`, including
  * the banner it prints before throwing and the text of the exception.
  *
- * Two "Finished:" phrases count as success -- the absolute and the relative gradient tolerance --
- * and `allow_out_of_iterations` adds the iteration limit to them. The phrase is searched for in
- * the CONCATENATED output, not line by line, and the exit code must also be 0.
+ * The rule is the Python's: the exit code is 0 and some subsolve ended on the absolute or the
+ * relative gradient tolerance, or, with `allow_out_of_iterations`, on the iteration limit. The
+ * Python reads that off the "Finished: <status message>" lines polysolve logs when a subsolve
+ * returns; this reads the same statuses from `statuses`. `lines` only supply the last
+ * "Finished:" line the failure message quotes.
  */
 void check_polyfem_success(
     int returncode,
+    const std::vector<polysolve::nonlinear::Status>& statuses,
     const std::vector<std::string>& lines,
     bool allow_out_of_iterations);
+
+/**
+ * @brief The statuses `check_polyfem_success` accepts, recovered from logged "Finished:" lines --
+ * how the SUBPROCESS backend fills `SolveResult::statuses`, since the child reports them only in
+ * its log. A line counts when it contains "Finished: " followed by polysolve's `status_message`
+ * of an accepted status, which is the phrase the Python searches for.
+ */
+std::vector<polysolve::nonlinear::Status> statuses_from_log(const std::vector<std::string>& lines);
 
 /**
  * @brief The active distance polyfem reported, or nothing when it never did. Mirrors the two
