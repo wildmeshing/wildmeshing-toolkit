@@ -87,8 +87,8 @@ const OrderedJson& opt_defaults()
         out["nh_poisson"] = s.at("nh_poisson");
         out["save_vtu"] = s.at("save_vtu");
         // ---- engine-only knobs (no spec counterpart) ----
-        out["amips_weight_bg"] = 1e-6; // tag 0 (background)
-        out["amips_weight_body"] = 1e0; // all other tags
+        out["amips_weight_bg"] = 1e-6; // the "ambient" group
+        out["amips_weight_body"] = 1e0; // the "body" group
         // NOT the spec default (that is -1 = auto): this is the resolved auto value for
         // strategy="dhat", which never adjusts kappa.
         out["barrier_stiffness"] = 1e6;
@@ -202,6 +202,11 @@ OrderedJson build_polyfem_json(
     for (const int64_t tag : info.tags) {
         const auto name_it = tag_to_name.find(tag);
         const bool has_name = name_it != tag_to_name.end();
+        // Which material is the ambient one is decided by its group NAME, as the Python decides
+        // it. The reduced mesh this JSON is built on has exactly two physical groups, 1 =
+        // "ambient" and 2 = "body", so the `tag == 0` test both engines used to make never fired
+        // and ambient silently took the body's default AMIPS weight.
+        const bool is_ambient = has_name && name_it->second == "ambient";
         // The Python also tries `amips_weights_cfg.get(tag)` with the INT key between these two;
         // a dict parsed from JSON can never have one, so the lookup is by the tag SPELLED OUT and
         // then by the group name.
@@ -213,7 +218,7 @@ OrderedJson build_polyfem_json(
             w = amips_weights_cfg.at(name_it->second);
         }
         if (w.is_null()) {
-            w = tag == 0 ? opt.at("amips_weight_bg") : opt.at("amips_weight_body");
+            w = is_ambient ? opt.at("amips_weight_bg") : opt.at("amips_weight_body");
         }
         const auto vol_it = info.tag_to_volume.find(tag);
         const double vol_mesh = vol_it != info.tag_to_volume.end() ? vol_it->second : 0.0;
@@ -235,8 +240,17 @@ OrderedJson build_polyfem_json(
         // AMIPS measures element SHAPE only: it is invariant under uniform scaling, so a body can
         // inflate for free. NeoHookean adds the missing volumetric term, which is what keeps a
         // body moving rigidly instead of swelling when contact pushes on all of its sides.
+        //
+        // The option turns EVERY group NeoHookean, ambient included, as the Python does, because
+        // polyfem cannot solve a mixed list: State::formulation() accepts an array of differing
+        // materials only when every entry is one of AssemblerUtils::elastic_materials(), AMIPS is
+        // not one of them and MultiModel has no assembler to dispatch it to, so an AMIPS ambient
+        // beside a NeoHookean body aborts the solve with "multimaterial supported only for
+        // LinearElasticity and NeoHookean". All-NeoHookean is also the configuration the
+        // volume-ratio measurement in the spec doc was made in. Each group is normalized by ITS
+        // OWN rest volume, exactly as the AMIPS weights are.
         OrderedJson material;
-        if (use_nh_body && tag != 0) {
+        if (use_nh_body) {
             OrderedJson E = nh_youngs;
             if (amips_norm_by_volume && vol_solver > 0) {
                 E = E.get<double>() / vol_solver; // same currency as the other penalties
@@ -379,6 +393,9 @@ OrderedJson minimum_separation_cfg(const nlohmann::json& params, const OrderedJs
     cfg["max_stiffness_multiplier"] = params["max_stiffness_multiplier"];
     cfg["protected_regions"] = params["protected_regions"];
     cfg["ambient_like_tags"] = params["ambient_like_tags"];
+    cfg["use_nh_body"] = params["use_nh_body"];
+    cfg["nh_youngs"] = params["nh_youngs"];
+    cfg["nh_poisson"] = params["nh_poisson"];
     cfg["output_msh"] = params["output"].get<std::string>() + ".msh";
     if (params["init_dhat"].get<double>() > 0) {
         cfg["init_dhat"] = params["init_dhat"];

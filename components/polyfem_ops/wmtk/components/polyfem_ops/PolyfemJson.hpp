@@ -77,11 +77,10 @@ OrderedJson build_polyfem_json(
  * @brief The engine configuration `simwild.minimum_separation` builds from the validated spec
  * parameters, with the mutations `minimum_separation.run` makes to it before the solve.
  *
- * The renames are the Python's (`use_fitting` -> `useFitting`, and so on) and so is what is left
- * out: `use_nh_body`, `nh_youngs` and `nh_poisson` are declared by the spec but never copied into
- * the configuration, so they cannot reach `build_polyfem_json` and the bodies stay AMIPS whatever
- * the caller asks for. That is mirrored rather than repaired -- the Python is the oracle, and a
- * C++ that honoured the three keys would write a materials block the Python never writes.
+ * The renames are the Python's (`use_fitting` -> `useFitting`, and so on), and so is the mapping
+ * of `use_nh_body`, `nh_youngs` and `nh_poisson`: the Python wrapper used to declare those three
+ * in its spec and then leave them out of the configuration, so the bodies stayed AMIPS whatever
+ * the caller asked for. Both engines now pass them through.
  */
 OrderedJson minimum_separation_cfg(const nlohmann::json& params, const OrderedJson& polyfem_pairs);
 

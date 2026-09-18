@@ -264,8 +264,8 @@ OPT_DEFAULTS = {
     "nh_poisson":         _SPEC["nh_poisson"],
     "save_vtu":           _SPEC["save_vtu"],
     # ---- engine-only knobs (no spec counterpart) ----
-    "amips_weight_bg":    1e-6,   # tag 0 (background)
-    "amips_weight_body":  1e0,    # all other tags
+    "amips_weight_bg":    1e-6,   # the "ambient" group
+    "amips_weight_body":  1e0,    # the "body" group
     # NOT the spec default (that is -1 = auto): this is the resolved auto
     # value for strategy="dhat", which never adjusts kappa (too-soft stalls
     # at the ramp's fixed point; over-stiff only makes the gap hug dhat).
@@ -503,12 +503,19 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
     materials = []
     for tag in material_tags:
         name = tag_to_name.get(int(tag))
+        # Which material is the ambient one is decided by its group NAME. The
+        # reduced mesh this JSON is built on has exactly two physical groups,
+        # 1 = "ambient" and 2 = "body" (_write_polyfem_reduced_msh writes those
+        # tags and names), so the `tag == 0` test this used to make never fired
+        # and ambient silently took the body's default AMIPS weight.
+        is_ambient = name == "ambient"
         w = (amips_weights_cfg.get(str(tag))
              if str(tag) in amips_weights_cfg
              else amips_weights_cfg.get(tag,
                   amips_weights_cfg.get(name) if name else None))
         if w is None:
-            w = OPT_DEFAULTS["amips_weight_bg"] if tag == 0 else OPT_DEFAULTS["amips_weight_body"]
+            w = (OPT_DEFAULTS["amips_weight_bg"] if is_ambient
+                 else OPT_DEFAULTS["amips_weight_body"])
         vol_solver = tag_to_volume.get(int(tag), 0.0) * scale ** mesh_dim
         if amips_norm_by_volume:
             if vol_solver > 0:
@@ -522,10 +529,20 @@ def build_polyfem_json(cfg: dict, msh_path: Path, out_dir: Path,
         # scaling, so a body can inflate for free. NeoHookean adds the
         # missing volumetric term, which is what keeps a body moving rigidly
         # instead of swelling when contact pushes on all of its sides.
-        # Ambient always stays AMIPS — its job is only to remain well-shaped
-        # while it absorbs the motion; making it elastic would fight the
-        # separation itself.
-        if use_nh_body and tag != 0:
+        #
+        # The option turns EVERY group NeoHookean, ambient included, because
+        # polyfem cannot solve a mixed list: State::formulation() accepts an
+        # array of differing materials only when every entry is one of
+        # AssemblerUtils::elastic_materials(), AMIPS is not one of them and
+        # MultiModel has no assembler to dispatch it to, so an AMIPS ambient
+        # beside a NeoHookean body aborts the solve with "multimaterial
+        # supported only for LinearElasticity and NeoHookean". All-NeoHookean
+        # is also the configuration the volume-ratio measurement in the spec
+        # doc was made in: on the two-box fixture the bodies keep 0.985 and
+        # 0.989 of their rest volume, where AMIPS everywhere lets them shrink
+        # to 0.807 and 0.810. Each group is normalized by ITS OWN rest volume,
+        # exactly as the AMIPS weights are.
+        if use_nh_body:
             E = nh_youngs
             if amips_norm_by_volume and vol_solver > 0:
                 E = E / vol_solver      # same currency as the other penalties

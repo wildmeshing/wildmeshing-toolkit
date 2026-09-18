@@ -37,7 +37,8 @@ import pytest
 
 # The irrational-coordinate meshes below are the conftest fixtures with bent coordinates, built
 # from the same two helpers; pytest puts this directory on sys.path, so conftest imports directly.
-from conftest import _tet_grid, _write_groups_msh, needs_polyfem
+from conftest import (_polyfem_ops_available, _tet_grid, _write_groups_msh,
+                      needs_polyfem)
 
 from simwild.polyfem_ops import constraints as mic
 from simwild.polyfem_ops import spec as _spec
@@ -50,19 +51,6 @@ from simwild.polyfem_ops.minimum_separation import run as run_python_separation
 from simwild.polyfem_ops.polyfem_utils import (OPT_DEFAULTS, _resolve_amips_weights,
                                                _write_polyfem_reduced_msh,
                                                build_polyfem_json, get_mesh_info)
-
-
-def _polyfem_ops_available():
-    """The component is optional (WMTK_WITH_POLYFEM); without it the application name is unknown."""
-    try:
-        import wildmeshing
-    except ImportError:
-        return False
-    try:
-        wildmeshing.wildmeshing({"application": "polyfem_ops"})
-    except RuntimeError as exc:
-        return "Application polyfem_ops unknown" not in str(exc)
-    return True
 
 
 needs_polyfem_ops = pytest.mark.skipif(
@@ -420,9 +408,9 @@ def _python_cfg(operation, p, apply_run_mutations=True):
     id pairs it produced itself).
 
     Everything here is a transcription of simwild.py and of the top of run(); the renames are the
-    Python's (`use_fitting` -> `useFitting`), and so is what is dropped: `use_nh_body`,
-    `nh_youngs` and `nh_poisson` are declared by the minimum_separation spec but never copied into
-    the configuration, so they cannot reach the JSON builder through the operation at all.
+    Python's (`use_fitting` -> `useFitting`), and `use_nh_body`, `nh_youngs` and `nh_poisson` are
+    passed through unrenamed -- the wrapper used to declare them in its spec and then leave them
+    out of this dict, so the option could not reach the JSON builder at all.
     """
     if operation == "minimum_separation":
         cfg = {
@@ -449,6 +437,9 @@ def _python_cfg(operation, p, apply_run_mutations=True):
             "max_stiffness_multiplier": p["max_stiffness_multiplier"],
             "protected_regions": p["protected_regions"],
             "ambient_like_tags": p["ambient_like_tags"],
+            "use_nh_body": p["use_nh_body"],
+            "nh_youngs": p["nh_youngs"],
+            "nh_poisson": p["nh_poisson"],
             "output_msh": f"{p['output']}.msh",
         }
         if p["init_dhat"] > 0:
@@ -667,9 +658,6 @@ def _assert_polyfem_inputs_match(mesh, operation, options, tmp_path, label):
 @needs_polyfem_ops
 @pytest.mark.parametrize("options, label", [
     ({}, "default"),
-    # Declared by the spec but never mapped into the engine configuration, so both engines must
-    # write the same AMIPS materials as the default case; see _python_cfg.
-    ({"use_nh_body": True}, "use_nh_body"),
     # Changes the constraint matrices, not the JSON: the key the JSON reads
     # (`amips_normalize_by_volume`) is a different, engine-only one.
     ({"normalize_penalties": False}, "unnormalized"),
@@ -695,6 +683,48 @@ def test_minimum_separation_polyfem_inputs_match(boxes3d, tmp_path, options, lab
     _assert_polyfem_inputs_match(
         boxes3d, "minimum_separation", {"collision_pairs": BOTH_SKINS, "sep": 1.5, **options},
         tmp_path, label)
+
+
+@needs_polyfem_ops
+@pytest.mark.parametrize("options, label", [
+    ({"use_nh_body": True}, "nh_defaults"),
+    ({"use_nh_body": True, "nh_youngs": 2.5e-3, "nh_poisson": 0.3}, "nh_non_default"),
+])
+def test_minimum_separation_neohookean_materials(boxes3d, tmp_path, options, label):
+    """`use_nh_body` makes EVERY group NeoHookean -- identically on the two engines, which
+    `_assert_polyfem_inputs_match` decides, and with a modulus per group that carries that group's
+    own volume normalization, which is what the rest of this test checks.
+
+    Ambient is NeoHookean too, rather than staying AMIPS, because polyfem cannot solve a mixed
+    list: `State::formulation()` accepts an array of differing materials only when every entry is
+    one of `AssemblerUtils::elastic_materials()`, AMIPS is not one of them, and an AMIPS ambient
+    beside a NeoHookean body aborts the solve with "multimaterial supported only for
+    LinearElasticity and NeoHookean".
+    """
+    scale = OPT_DEFAULTS["scale"]
+    _, cpp_text = _assert_polyfem_inputs_match(
+        boxes3d, "minimum_separation",
+        {"collision_pairs": BOTH_SKINS, "sep": 1.5, **options}, tmp_path, label)
+
+    sim_in_name = SIM_DIRS["minimum_separation"][0]
+    reduced = next((tmp_path / f"py_{label}" / sim_in_name).glob("*_polyfem.msh"))
+    _, mesh_dim, name_to_tag, _, tag_to_volume = get_mesh_info(str(reduced))
+    materials = {m["id"]: m for m in json.loads(cpp_text)["materials"]}
+    assert sorted(materials) == sorted(name_to_tag.values()), (
+        f"materials {sorted(materials)}, reduced-mesh tags {sorted(name_to_tag.values())}")
+
+    # Every modulus is in the same normalized currency as the AMIPS weights it replaces: divided
+    # by that group's own rest volume in solver units (mesh units * scale), which is what the
+    # default `amips_normalize_by_volume` asks for. The two groups have very different volumes --
+    # 624 ambient tets against 48 body ones -- so this is also what catches a shared divisor.
+    for group in ("ambient", "body"):
+        tag = name_to_tag[group]
+        volume = tag_to_volume[tag] * scale ** mesh_dim
+        assert materials[tag] == {
+            "id": tag, "type": "NeoHookean",
+            "E": options.get("nh_youngs", OPT_DEFAULTS["nh_youngs"]) / volume,
+            "nu": options.get("nh_poisson", OPT_DEFAULTS["nh_poisson"]),
+            "rho": 1.0}, f"the {group} material"
 
 
 @needs_polyfem_ops
@@ -767,14 +797,24 @@ def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_
 # `polyfem_backend="subprocess"`). The three must agree, and that is where "identical" stops being
 # available: the contact assembly
 # sums per-collision-pair contributions in an order that depends on thread scheduling, so two runs
-# of ONE binary on ONE machine do not agree bit for bit. Measured, two identical Python runs of the
-# boxes3d dhat case: the three iterations' active distances differed by 2.3e-11, 7.7e-12 and 7.9e-12
-# relative. Measured across the two engines over repeated runs of the four separation cases below:
-# active distances up to 4.0e-11 relative, deformed-mesh coordinates up to 7.1e-11. The tolerances
-# below are 1e-9, about fourteen times the widest of those, and they apply ONLY to quantities the
-# solver's output feeds. (The smoothing case has no contact and therefore no contact assembly; its
-# two deformed meshes agree to 1.1e-15, and the already-separated probe case to zero, because
-# nothing moves there at all.)
+# of ONE binary on ONE machine do not agree bit for bit.
+#
+# The two tolerance constants below are measured. Each of the four solver cases -- the dhat ramp,
+# the stiffness loop, the protected-region case and the smoothing case -- was run five times with
+# the Python engine and five times with the C++ in-process engine, and every pair of runs was
+# compared on exactly what the tests below compare: each iteration's active distance and dhat, read
+# out of that solve's log, and the deformed mesh's coordinates. The widest relative difference over
+# all of those pairs:
+#
+#   Python against Python   6.6e-11   dhat case, coordinates (active distances 4.6e-11)
+#   C++ against C++         7.6e-11   dhat case, active distances (coordinates 5.8e-11)
+#   Python against C++      7.1e-11   dhat case, active distances (coordinates 6.5e-11)
+#
+# Ten times the widest of those, rounded up to a power of ten, is 1e-9 for BOTH pairings -- which
+# is where the tolerances already were, so the measurement says they were right and does not
+# support loosening either of them. They apply ONLY to quantities the solver's output feeds. (The
+# smoothing case has no contact and therefore no contact assembly; its deformed meshes agree to
+# 2.9e-15 across the two engines, and the already-separated probe case moves nothing at all.)
 #
 # What IS asserted exactly:
 #   - the decision trail: every line the loop prints, in order, from the marker onwards. That is
@@ -792,17 +832,24 @@ def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_
 # from c++, 1.2e-11 relative (2.5e-13 on a repeat). Those are compared to 1e-9 like the distances
 # they come from.
 #
-# One caveat on that tolerance, measured while the in-process backend was added: 1e-9 is NOT far
-# above the worst case, it is close to it. In one full-suite run the dhat case's iteration 1 came
-# out as 0.0013792959880998634 from the Python engine against 0.00137929599125299 from the C++ one,
-# 2.3e-9 relative -- over the tolerance. Both engines solved the same dhat (0.00145, equal to the
-# last bit), took the same 16 Newton steps and stopped on the same criterion, and the two C++
-# backends agreed with each other to 1.1e-11 in that same run, so it was the Python run that
-# drifted and not the port. The solver stops at a relative gradient of 1e-8, so where the iterate
-# lands is only pinned to about that: four repeats per engine on an idle machine stay inside
-# 2.3e-11, but the floor of a run-against-run comparison of a converged solution is nearer 1e-9
-# than 1e-11. The tolerance is left where it is; a rare failure here means the solver, not the
-# glue, and the C++-against-C++ half of the comparison is the one that is really tight.
+# What the measurement does not say is that the Python-against-C++ bound is comfortable. The solver
+# stops at a relative gradient of 1e-8, so the converged point of any single run is only pinned to
+# about that, and once -- in a full-suite run made while the in-process backend was added -- the
+# dhat case's iteration 1 came out as 0.0013792959880998634 from the Python engine against
+# 0.00137929599125299 from the C++ one, 2.3e-9 relative, over the bound. Both engines had solved
+# the same dhat (0.00145, equal to the last bit), taken the same 16 Newton steps and stopped on the
+# same criterion, and the two C++ backends agreed with each other to 1.1e-11 in that same run, so
+# it was the Python run that drifted and not the port. That one observation is the reason the
+# bound is measured rather than guessed, and the forty runs of the measurement above all stayed at
+# least thirteen times inside it. It is not loosened past what those runs justify: a failure here
+# is a report about the solver, not about the glue, and the C++-against-C++ half of the comparison
+# is the one that is really tight.
+
+# The bound on each pairing, for the quantities the solver's output feeds -- the active distances,
+# the dhat values that are computed from one, the deformed coordinates and the final barrier
+# stiffness. Everything else in this section is compared exactly. See the measurement above.
+RTOL_CPP_VS_CPP = 1e-9  # the in-process C++ backend against the subprocess one
+RTOL_PYTHON_VS_CPP = 1e-9  # the Python engine against either C++ backend
 
 SOLUTION_ENV = "STUB_SOLUTION"
 
@@ -947,7 +994,7 @@ def _log_values(log_path):
             float(last.split("dhat:")[-1].split()[0].rstrip(",;").replace(",", "")))
 
 
-def _assert_deformed_meshes_close(py_msh, cpp_msh, rtol=1e-9):
+def _assert_deformed_meshes_close(py_msh, cpp_msh, rtol):
     """The two deformed meshes: identical structure, coordinates within `rtol`.
 
     The structure -- node tags in file order, physical groups and their elements -- is asserted
@@ -965,9 +1012,9 @@ def _assert_deformed_meshes_close(py_msh, cpp_msh, rtol=1e-9):
     return diff
 
 
-def _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, dhat_pinned=False):
+def _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, rtol, dhat_pinned=False):
     """The two engines' solver loops: the same decisions, the same number of solves, and dhat and
-    the active distances within 1e-9 relative -- exactly where the section header above says dhat
+    the active distances within `rtol` relative -- exactly where the section header above says dhat
     is exact. `dhat_pinned` is the stiffness strategy, which never moves dhat at all."""
     assert py_trail == cpp_trail, (
         "the loops decided differently\npython: {}\nc++   : {}".format(
@@ -991,9 +1038,9 @@ def _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, dhat_pinned=Fals
                 f"iteration {i}: dhat {py_dhat!r} from python, {cpp_dhat!r} from c++")
         else:
             rel = abs(py_dhat - cpp_dhat) / abs(py_dhat)
-            assert rel <= 1e-9, f"iteration {i}: dhat values differ by {rel:.3e} relative"
+            assert rel <= rtol, f"iteration {i}: dhat values differ by {rel:.3e} relative"
         rel = abs(py_active - cpp_active) / abs(py_active)
-        assert rel <= 1e-9, f"iteration {i}: active distances differ by {rel:.3e} relative"
+        assert rel <= rtol, f"iteration {i}: active distances differ by {rel:.3e} relative"
         worst = max(worst, rel)
     return worst
 
@@ -1023,8 +1070,9 @@ def _assert_steered_on_the_logged_distance(root, trail):
 @needs_polyfem_ops
 @pytest.mark.parametrize("mesh_fixture, dim", [("boxes3d", 3), ("jagged2d", 2)])
 def test_deformed_msh_write_back_matches(request, tmp_path, monkeypatch, mesh_fixture, dim):
-    """Both engines apply the SAME solution.txt to the SAME mesh and must produce the same mesh --
-    exactly, because no solver is involved and every step from there on is deterministic.
+    """Both engines apply the SAME solution.txt to the SAME mesh, and each is checked against the
+    coordinates that computation must give -- no solver is involved, so every step from there on is
+    deterministic and both engines can be held to an exact value rather than to each other.
 
     The C++ write-back is reached through the operation, with $POLYFEM_BIN pointed at a stub that
     only copies the prepared solution.txt into place (see `_STUB_POLYFEM`); the Python side is
@@ -1050,14 +1098,29 @@ def test_deformed_msh_write_back_matches(request, tmp_path, monkeypatch, mesh_fi
 
     py, cpp = _gmsh_reduced_mesh(py_out), _gmsh_reduced_mesh(cpp_out)
     assert py["node_tags"] == cpp["node_tags"], "the deformed meshes list their nodes differently"
-    # Exactly equal, to the last bit. The Python writes this file through gmsh, whose ASCII msh
-    # writer prints every coordinate with "%.16g" and so drops the last bits of about 40% of them
-    # (measured: 122 of 300 pseudo-random values do not survive the round trip); the C++ writer
-    # matches by writing ASCII msh 4.1 with the output stream's precision set to 16.
-    assert np.array_equal(py["coords"], cpp["coords"]), (
-        "deformed coordinates differ; max relative difference {:.3e}".format(
-            np.max(np.abs(py["coords"] - cpp["coords"])
-                   / np.maximum(np.abs(py["coords"]), 1.0))))
+
+    # What the write-back has to produce: the original coordinate plus the displacement in mesh
+    # units, `u / scale`, componentwise, with the components the solution does not carry (z in 2D)
+    # left untouched. The two engines deliberately differ in the last bits of some coordinates.
+    # The C++ writes every coordinate as the shortest decimal that reads back as the same double,
+    # so its file carries that value exactly; the Python writes the file through gmsh, whose ASCII
+    # msh writer prints "%.16g" and so loses the last bits of about 40% of them (measured: 122 of
+    # 300 pseudo-random values do not survive that round trip). Both are asserted: the C++ against
+    # the exact value, the Python against the same value put through that rounding.
+    original = _gmsh_reduced_mesh(mesh)
+    assert cpp["node_tags"] == original["node_tags"], "the write-back renumbered the nodes"
+    # The fixtures number their nodes 1..n, which is the row order of solution.txt.
+    u = np.loadtxt(solution)[np.array(original["node_tags"]) - 1]
+    exact = original["coords"].copy()
+    exact[:, :dim] += u / scale
+    assert np.array_equal(cpp["coords"], exact), (
+        "the c++ coordinates are not original + u/scale; max relative difference {:.3e}".format(
+            np.max(np.abs(cpp["coords"] - exact) / np.maximum(np.abs(exact), 1.0))))
+    rounded = np.vectorize(lambda v: float(f"{v:.16g}"))(exact)
+    assert np.array_equal(py["coords"], rounded), (
+        "the python coordinates are not original + u/scale through %.16g; max relative difference "
+        "{:.3e}".format(np.max(np.abs(py["coords"] - rounded)
+                               / np.maximum(np.abs(rounded), 1.0))))
     assert [(t, n) for t, n, _ in py["groups"]] == [(t, n) for t, n, _ in cpp["groups"]], (
         "the deformed meshes' physical groups differ")
     for (_, name, py_elems), (_, _, cpp_elems) in zip(py["groups"], cpp["groups"]):
@@ -1087,6 +1150,9 @@ SEP_BASE = {"collision_pairs": BOTH_SKINS, "sep": 1.5e-3, "scale": 1e-3, "rtol":
     # A hard-pinned region: the contact pushes only the unprotected side, and the extra
     # `constraints.hard` block has to reach polyfem identically from both engines.
     ({"strategy": "dhat", "protected_regions": ["tag_1"]}, "protected"),
+    # Every group NeoHookean instead of AMIPS: a different materials block, hence a different
+    # energy and a different ramp, and the check that polyfem accepts what that option writes.
+    ({"strategy": "dhat", "use_nh_body": True}, "neohookean"),
 ])
 def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options, label):
     py_root = tmp_path / f"py_{label}"
@@ -1103,13 +1169,15 @@ def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options
 
     assert py_trail, "the python engine printed no decisions"
     dhat_pinned = options["strategy"] == "stiffness"
-    _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, dhat_pinned=dhat_pinned)
+    _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, RTOL_PYTHON_VS_CPP,
+                        dhat_pinned=dhat_pinned)
     # The two C++ backends against each other: same code above the boundary, same JSON on disk,
     # one reaching polyfem in this process and one through a child. Everything the loop decides is
     # compared exactly; only what the solver measured carries the contact assembly's noise.
-    _assert_loops_agree(sub_root, cpp_root, sub_trail, cpp_trail, dhat_pinned=dhat_pinned)
-    _assert_deformed_meshes_close(py_msh, cpp_msh)
-    _assert_deformed_meshes_close(sub_msh, cpp_msh)
+    _assert_loops_agree(sub_root, cpp_root, sub_trail, cpp_trail, RTOL_CPP_VS_CPP,
+                        dhat_pinned=dhat_pinned)
+    _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
+    _assert_deformed_meshes_close(sub_msh, cpp_msh, RTOL_CPP_VS_CPP)
     _assert_steered_on_the_logged_distance(cpp_root, cpp_trail)
 
     # The stiffness loop's kappa lives only in the trail above at seven digits; its full-precision
@@ -1121,10 +1189,54 @@ def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options
             doc = json.loads((root / "sep_input" / "separation.json").read_text())
             return doc["solver"]["contact"]["barrier_stiffness"]
         cpp_kappa = final_kappa(cpp_root)
-        for name, other in (("python", final_kappa(py_root)), ("subprocess", final_kappa(sub_root))):
+        for name, other, rtol in (("python", final_kappa(py_root), RTOL_PYTHON_VS_CPP),
+                                  ("subprocess", final_kappa(sub_root), RTOL_CPP_VS_CPP)):
             rel = abs(other - cpp_kappa) / abs(other)
-            assert rel <= 1e-9, (
+            assert rel <= rtol, (
                 f"final barrier stiffness differs from {name} by {rel:.3e} relative")
+
+
+def _group_volume(msh, group):
+    """The volume of one physical group of a tet .msh, summed over its elements in file order."""
+    mesh = _gmsh_reduced_mesh(msh)
+    by_tag = dict(zip(mesh["node_tags"], mesh["coords"]))
+    for _, name, elements in mesh["groups"]:
+        if name != group:
+            continue
+        total = 0.0
+        for _, verts in elements:
+            a, b, c, d = (by_tag[v] for v in verts)
+            total += abs(np.linalg.det(np.stack([b - a, c - a, d - a]))) / 6.0
+        return total
+    raise AssertionError(f"{msh} has no physical group {group}")
+
+
+@needs_polyfem_ops
+@needs_polyfem
+def test_minimum_separation_neohookean_holds_body_volume(boxes3d, tmp_path):
+    """The measurement the `use_nh_body` spec entry claims, reproduced on this fixture.
+
+    AMIPS scores element SHAPE only and is invariant under uniform scaling, so a body pushed on
+    all sides can change volume for free; NeoHookean's volumetric term makes that cost energy. The
+    number per body is its deformed volume over its rest volume at the end of the same dhat ramp
+    the end-to-end test runs. One engine is enough here: the two write the same simulation JSON,
+    which every test above this one asserts, so this runs the C++ one in this process.
+    """
+    ratios = {}
+    for label, options in (("amips", {}), ("neohookean", {"use_nh_body": True})):
+        msh = _run_cpp_engine(boxes3d, "minimum_separation", tmp_path / label,
+                              **{**SEP_BASE, "strategy": "dhat", **options})
+        ratios[label] = {body: _group_volume(msh, body) / _group_volume(boxes3d, body)
+                         for body in ("tag_0", "tag_1")}
+
+    # Measured on this fixture: AMIPS lets the two bodies shrink to 0.807 and 0.810 of their rest
+    # volume, NeoHookean holds them at 0.985 and 0.989 (tag_0 and tag_1). The spec entry claims
+    # 0.83 and 0.95-0.98 from an earlier run of the same experiment. Only the ORDER is asserted:
+    # the ratios themselves depend on where the dhat ramp stops, which is a solver measurement.
+    for body in ("tag_0", "tag_1"):
+        assert ratios["neohookean"][body] > ratios["amips"][body], (
+            f"{body}: NeoHookean kept {ratios['neohookean'][body]:.4f} of the rest volume, AMIPS "
+            f"kept {ratios['amips'][body]:.4f}; the volumetric term is not doing its job")
 
 
 @needs_polyfem_ops
@@ -1147,8 +1259,8 @@ def test_laplacian_smoothing_end_to_end_matches(jagged2d, tmp_path):
         assert (root / "smooth_output" / "polyfem.log").is_file(), f"{root.name}: no polyfem.log"
         assert not list((root / "smooth_output").glob("polyfem_iter_*.log")), (
             f"{root.name}: smoothing must not run an outer loop")
-    _assert_deformed_meshes_close(py_msh, cpp_msh)
-    _assert_deformed_meshes_close(sub_msh, cpp_msh)
+    _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
+    _assert_deformed_meshes_close(sub_msh, cpp_msh, RTOL_CPP_VS_CPP)
 
 
 @needs_polyfem_ops
@@ -1179,9 +1291,10 @@ def test_minimum_separation_probe_already_separated_matches(boxes3d, tmp_path, c
             f"{root.name}: the loop ran although the bodies were already separated")
 
     # Nothing moved: the probe solves at zero barrier stiffness, so its solution is the rest state
-    # and the deformed mesh is the input mesh back again.
-    _assert_deformed_meshes_close(py_msh, cpp_msh)
-    _assert_deformed_meshes_close(sub_msh, cpp_msh)
+    # and the deformed mesh is the input mesh back again. No solver measurement reaches these
+    # coordinates, and the `moved` check below pins each mesh to the input on its own.
+    _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
+    _assert_deformed_meshes_close(sub_msh, cpp_msh, RTOL_CPP_VS_CPP)
     original = _gmsh_reduced_mesh(boxes3d)
     for msh in (py_msh, cpp_msh, sub_msh):
         moved = np.max(np.abs(_gmsh_reduced_mesh(msh)["coords"] - original["coords"]))

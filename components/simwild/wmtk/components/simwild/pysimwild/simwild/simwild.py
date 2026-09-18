@@ -594,6 +594,9 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
             "max_stiffness_multiplier": p["max_stiffness_multiplier"],
             "protected_regions": p["protected_regions"],
             "ambient_like_tags": p["ambient_like_tags"],
+            "use_nh_body": p["use_nh_body"],
+            "nh_youngs": p["nh_youngs"],
+            "nh_poisson": p["nh_poisson"],
             "output_msh": f"{p['output']}.msh",
         }
         if p["init_dhat"] > 0:
