@@ -257,6 +257,16 @@
         ]
     },
     {
+        "pointer": "/protected_regions/*/region",
+        "type": "string",
+        "doc": "Boolean cell expression for the cells whose nodes are held."
+    },
+    {
+        "pointer": "/protected_regions/*/axes",
+        "type": "string",
+        "doc": "Components to hold, any subset of xyz (e.g. \"z\" or \"xy\"); the others stay free, so the region can slide along them. Omit to hold every component."
+    },
+    {
         "pointer": "/ambient_like_tags",
         "type": "list",
         "default": [],
