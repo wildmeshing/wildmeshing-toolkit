@@ -706,6 +706,9 @@ public:
         m_vertex_connectivity.clear_refused();
         m_tet_connectivity.clear_refused();
     }
+    /// The largest vertex / tet slot request refused since the last clear (0 if none).
+    size_t refused_vert_request() const { return m_vertex_connectivity.refused_need(); }
+    size_t refused_tet_request() const { return m_tet_connectivity.refused_need(); }
 
     size_t request_tet_slots(size_t n);
     size_t request_vert_slots(size_t n);

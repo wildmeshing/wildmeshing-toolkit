@@ -69,13 +69,21 @@ public:
     /**
      * @name Exhaustion flag
      *
-     * Set by `request` when it refuses, cleared by the owner at a pass boundary. A plain flag
-     * rather than a count: the response to exhaustion is to consolidate, which re-derives the
-     * capacity from the real element count, so the size of the shortfall is not an input.
+     * Set by `request` when it refuses, cleared by the owner at a pass boundary, together with
+     * the LARGEST request refused since the last clear. The response to exhaustion is to
+     * consolidate, which re-derives the capacity as preallocation_factor x live count -- and at
+     * factor 1.0 that leaves no free slot, so a retry would be refused again, forever (measured:
+     * 4952 retries in 10 minutes, "storage 15758 -> 15758", on presmooth3d/cylinder). The owner
+     * therefore also guarantees room for refused_need() after consolidating.
      * @{
      */
     bool refused() const { return m_refused.load(std::memory_order_relaxed); }
-    void clear_refused() { m_refused.store(false, std::memory_order_relaxed); }
+    size_t refused_need() const { return m_refused_need.load(std::memory_order_relaxed); }
+    void clear_refused()
+    {
+        m_refused.store(false, std::memory_order_relaxed);
+        m_refused_need.store(0, std::memory_order_relaxed);
+    }
     /** @} */
 
     T& operator[](size_t i) { return m_data[i]; }
@@ -116,6 +124,10 @@ public:
             // overflow; `first <= cap` always holds, so `cap - first` is well defined.
             if (first > cap || n > cap - first) {
                 m_refused.store(true, std::memory_order_relaxed);
+                size_t prev = m_refused_need.load(std::memory_order_relaxed);
+                while (prev < n &&
+                       !m_refused_need.compare_exchange_weak(prev, n, std::memory_order_relaxed)) {
+                }
                 return INVALID_SLOT;
             }
         } while (!m_live.compare_exchange_weak(
@@ -137,6 +149,7 @@ private:
     std::vector<T> m_data;
     std::atomic<size_t> m_live{0};
     std::atomic<bool> m_refused{false};
+    std::atomic<size_t> m_refused_need{0};
 };
 
 } // namespace wmtk

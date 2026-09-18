@@ -227,12 +227,24 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
         // no churn left to reclaim.
         //
         // Consolidate renumbers, so the abandoned operations' tuples are gone; the group is
-        // re-run instead, which re-collects them against the enlarged storage. Every retry
-        // grows the storage by the factor, so the chain makes progress and terminates.
+        // re-run instead, which re-collects them against the enlarged storage.
+        //
+        // Consolidating alone does NOT guarantee progress: it sizes the storage to
+        // preallocation_factor x live count, which at factor 1.0 leaves no free slot, so the
+        // retry was refused again forever (measured in 3D: 4952 retries in 10 minutes, storage
+        // unchanged, on presmooth3d/cylinder). So after consolidating, room for the largest
+        // refused request is guaranteed as well: the operation that was refused then fits, each
+        // retry completes at least one operation, and the chain terminates. At the default
+        // factor the consolidation already leaves far more than any single request, and this
+        // changes nothing. As in TetOptimizerMesh::local_operations().
         if (slots_exhausted()) {
             const size_t live_before = tri_capacity();
             const size_t store_before = tri_storage_capacity();
+            const size_t need_verts = refused_vert_request();
+            const size_t need_tris = refused_tri_request();
             consolidate_mesh();
+            ensure_free_vert_capacity(need_verts);
+            ensure_free_tri_capacity(need_tris);
             clear_slots_exhausted();
             logger().info(
                 "{} pass exhausted its preallocated slots: {} of {} faces reclaimed as "

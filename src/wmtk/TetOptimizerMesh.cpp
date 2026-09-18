@@ -233,12 +233,24 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         // no churn left to reclaim.
         //
         // Consolidate renumbers, so the abandoned operations' tuples are gone; the group is
-        // re-run instead, which re-collects them against the enlarged storage. Every retry
-        // grows the storage by the factor, so the chain makes progress and terminates.
+        // re-run instead, which re-collects them against the enlarged storage.
+        //
+        // Consolidating alone does NOT guarantee progress: it sizes the storage to
+        // preallocation_factor x live count, which at factor 1.0 leaves no free slot, so the
+        // retry was refused again forever (measured: 4952 retries in 10 minutes, storage
+        // unchanged, on presmooth3d/cylinder). So after consolidating, room for the largest
+        // refused request is guaranteed as well: the operation that was refused then fits, each
+        // retry completes at least one operation, and the chain terminates. At the default
+        // factor the consolidation already leaves far more than any single request, and this
+        // changes nothing.
         if (slots_exhausted()) {
             const size_t live_before = tet_capacity();
             const size_t store_before = tet_storage_capacity();
+            const size_t need_verts = refused_vert_request();
+            const size_t need_tets = refused_tet_request();
             consolidate_mesh();
+            ensure_free_vert_capacity(need_verts);
+            ensure_free_tet_capacity(need_tets);
             clear_slots_exhausted();
             logger().info(
                 "{} pass exhausted its preallocated slots: {} of {} tets reclaimed as "
