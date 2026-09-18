@@ -507,7 +507,40 @@ def _run_polyfem_op(op_name, params, engine):
     return p
 
 
-def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
+def _polyfem_engine(op_name, engine, python_engine):
+    """Pick the implementation `engine` names and return it as the callable
+    _run_polyfem_op runs on the validated parameters.
+
+    "python" is `python_engine`, the glue in simwild.polyfem_ops that is the
+    reference for both; "cpp" is its port in the wmtk component polyfem_ops,
+    reached through wildmeshing, which validates the same parameters against the
+    same spec.json itself and writes the same files in the same places. The
+    choice is made here, above the validator: `engine` is a wrapper argument and
+    is never part of the validated parameter dict."""
+    if engine == "python":
+        return python_engine
+    if engine != "cpp":
+        raise ValueError(f'engine must be "python" or "cpp", got {engine!r}')
+
+    def run_cpp(p):
+        try:
+            wildmeshing({"application": "polyfem_ops",
+                         "operation": op_name, **p})
+        except RuntimeError as exc:
+            # The component is optional, and without it wmtk does not know the
+            # application name at all; say which option builds it in.
+            if "Application polyfem_ops unknown" not in str(exc):
+                raise
+            raise RuntimeError(
+                'engine="cpp" needs the wildmeshing module built with the '
+                "polyfem_ops component: configure the toolkit with "
+                "-DWMTK_WITH_POLYFEM=ON and rebuild.") from exc
+
+    return run_cpp
+
+
+def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
+                       engine="python"):
     """
     Push collision bodies apart to a target separation (polyfem: AMIPS +
     fitting + Laplacian + GCP contact with a dhat line-search).
@@ -528,10 +561,15 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
       (scale, use_laplacian, weight_*, rtol, max_iterations, strategy
       ["dhat" default | "stiffness" experimental], ...). PolyFEM binary:
       export POLYFEM_BIN.
+    - engine: Which implementation runs the op — "python" (default) or "cpp",
+      the C++ port of it in the wmtk component polyfem_ops, which takes the
+      same parameters and writes the same files and needs the toolkit built
+      with -DWMTK_WITH_POLYFEM=ON. A wrapper argument, not a spec parameter:
+      it is not offered to either validator.
     """
     from .polyfem_ops import minimum_separation as _op
 
-    def engine(p):
+    def python_engine(p):
         cfg = {
             "input_msh": p["input"],
             "collision_pairs": p["collision_pairs"],
@@ -565,10 +603,12 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
 
     j = {"input": mesh, "collision_pairs": collision_pairs, "sep": sep,
          "output": output, **others}
-    _run_polyfem_op("minimum_separation", j, engine)
+    _run_polyfem_op("minimum_separation", j,
+                    _polyfem_engine("minimum_separation", engine, python_engine))
 
 
-def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
+def laplacian_smoothing(mesh, interfaces=[], output="out", others={},
+                        engine="python"):
     """
     Fair material interfaces with a single polyfem solve (AMIPS + fitting +
     Laplacian; no contact).
@@ -582,10 +622,15 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
     - output: Output path stem; writes <output>.msh (artifacts next to it).
     - others: Additional parameters — see polyfem_ops/laplacian_smoothing/spec.json
       (weight_laplacian, smooth_positions, ...). PolyFEM binary: export POLYFEM_BIN.
+    - engine: Which implementation runs the op — "python" (default) or "cpp",
+      the C++ port of it in the wmtk component polyfem_ops, which takes the
+      same parameters and writes the same files and needs the toolkit built
+      with -DWMTK_WITH_POLYFEM=ON. A wrapper argument, not a spec parameter:
+      it is not offered to either validator.
     """
     from .polyfem_ops import laplacian_smoothing as _op
 
-    def engine(p):
+    def python_engine(p):
         cfg = {
             "input_msh": p["input"],
             "scale": p["scale"],
@@ -607,7 +652,8 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
         _op.run(cfg, out_dir=Path(out_dir))
 
     j = {"input": mesh, "interfaces": interfaces, "output": output, **others}
-    _run_polyfem_op("laplacian_smoothing", j, engine)
+    _run_polyfem_op("laplacian_smoothing", j,
+                    _polyfem_engine("laplacian_smoothing", engine, python_engine))
 
 
 if __name__ == "__main__":

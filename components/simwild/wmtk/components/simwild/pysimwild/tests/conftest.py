@@ -37,6 +37,37 @@ needs_polyfem = pytest.mark.skipif(
 
 
 # --------------------------------------------------------------------------
+# Engines
+# --------------------------------------------------------------------------
+
+def _polyfem_ops_available():
+    """The C++ port of the polyfem ops is an optional component
+    (WMTK_WITH_POLYFEM); without it wmtk does not know the application name."""
+    try:
+        import wildmeshing
+    except ImportError:
+        return False
+    try:
+        wildmeshing.wildmeshing({"application": "polyfem_ops"})
+    except RuntimeError as exc:
+        return "Application polyfem_ops unknown" not in str(exc)
+    return True
+
+
+# The `engine` values the simwild wrappers accept: the Python glue (the
+# reference implementation) and its C++ port. Parametrizing a test over this
+# runs it once per engine and puts the engine name in the test id; the C++ half
+# skips when the toolkit was built without the component.
+ENGINES = [
+    "python",
+    pytest.param("cpp", marks=pytest.mark.skipif(
+        not _polyfem_ops_available(),
+        reason="the wildmeshing module was built without the polyfem_ops "
+               "component (configure with -DWMTK_WITH_POLYFEM=ON)")),
+]
+
+
+# --------------------------------------------------------------------------
 # Mesh writers
 # --------------------------------------------------------------------------
 

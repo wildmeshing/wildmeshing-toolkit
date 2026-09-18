@@ -194,6 +194,14 @@ Selections everywhere are _the boundary of `region`, kept where the outside
 cell satisfies `filter`_ — both are Boolean tag expressions (`&`, `|`, `!`,
 parentheses); a bare string is a region (whole boundary).
 
+`minimum_separation` and `laplacian_smoothing` exist twice: the Python
+implementation, which is the default and stays the reference, and a C++ port
+of it in the WMTK component `polyfem_ops`. Pass `engine="cpp"` to either
+wrapper to run the port instead — same parameters, same output files in the
+same places. It needs the toolkit built with `-DWMTK_WITH_POLYFEM=ON`;
+without that the call raises and names the option. `engine` is a wrapper
+argument, not a `spec.json` parameter.
+
 #### 9. Minimum Separation
 
 Deform regions apart until a target minimum distance `sep` is reached

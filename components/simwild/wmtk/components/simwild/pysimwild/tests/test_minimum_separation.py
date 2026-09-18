@@ -1,11 +1,14 @@
-"""Tier 2 — end-to-end minimum separation: run ms.run on two interior boxes
-with a 1-unit gap and verify the achieved separation. Needs PolyFEM."""
+"""Tier 2 — end-to-end minimum separation: run the wrapper on two interior
+boxes with a 1-unit gap and verify the achieved separation. Every case runs
+once per engine ("python", the reference glue, and "cpp", its port in the wmtk
+component polyfem_ops): the assertions below are physical, so they hold for
+either implementation. Needs PolyFEM."""
 import numpy as np
 import pytest
 
-from simwild.polyfem_ops import minimum_separation as ms
+from simwild import simwild as wm
 
-from conftest import needs_polyfem
+from conftest import ENGINES, needs_polyfem
 from geo import min_separation_3d, signed_volumes
 
 SEL_A = {"region": "tag_0", "filter": "ambient"}
@@ -13,32 +16,26 @@ SEL_B = {"region": "tag_1", "filter": "ambient"}
 SCALE = 1e-3            # mesh units -> solver units
 GAP0 = 1.0              # built into the fixture
 SEP = 1.5e-3            # solver units: target gap of 1.5 mesh units
+RTOL = 1e-1             # relative tolerance on the achieved separation
 
 
 @needs_polyfem
-@pytest.mark.parametrize("strategy,extra", [
-    ("dhat", {}),
-    ("stiffness", {}),
-])
-def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy, extra):
+@pytest.mark.parametrize("engine", ENGINES)
+@pytest.mark.parametrize("strategy", ["dhat", "stiffness"])
+def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy, engine):
     out_msh = tmp_path / "separated.msh"
-    cfg = {
-        "input_msh": str(boxes3d),
-        "collision_pairs": [[SEL_A, SEL_B]],
-        "sep": SEP,
-        "scale": SCALE,
-        "useFitting": True,
-        "useLaplacian": True,
-        "normalizePenalties": True,
-        "rtol": 1e-1,
-        "max_iterations": 6,
-        "strategy": strategy,
-        "output_msh": str(out_msh),
-        **extra,
-    }
     vol_before = signed_volumes(boxes3d)
 
-    ms.run(cfg, out_dir=tmp_path / "sep")
+    wm.minimum_separation(
+        mesh=str(boxes3d),
+        collision_pairs=[[SEL_A, SEL_B]],
+        sep=SEP,
+        output=str(tmp_path / "separated"),
+        others={"scale": SCALE, "use_fitting": True, "use_laplacian": True,
+                "normalize_penalties": True, "rtol": RTOL,
+                "max_iterations": 6, "strategy": strategy},
+        engine=engine,
+    )
 
     assert out_msh.exists()
 
@@ -46,12 +43,12 @@ def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy, extra):
     gap = min_separation_3d(out_msh, SEL_A, SEL_B)
     target_mesh_units = SEP / SCALE
     assert gap > GAP0 * 1.05, "bodies did not move apart"
-    assert gap >= target_mesh_units * (1.0 - cfg["rtol"] - 0.05), (
+    assert gap >= target_mesh_units * (1.0 - RTOL - 0.05), (
         f"achieved gap {gap:.4f} < target {target_mesh_units:.4f}")
     if strategy == "stiffness":
         # sep is a hard floor and dhat = sep*(1+rtol) caps the overshoot
         # structurally (contact force vanishes beyond dhat).
-        assert gap <= target_mesh_units * (1.0 + cfg["rtol"]) * 1.02, (
+        assert gap <= target_mesh_units * (1.0 + RTOL) * 1.02, (
             f"gap {gap:.4f} exceeds the structural bound")
 
     # 2. No element inverted (signs of signed volumes preserved).
@@ -72,31 +69,29 @@ def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy, extra):
 
 
 @needs_polyfem
-def test_minimum_separation_protected_region(boxes3d, tmp_path):
+@pytest.mark.parametrize("engine", ENGINES)
+def test_minimum_separation_protected_region(boxes3d, tmp_path, engine):
     """protected_regions: tag_1 is hard-pinned — tag_0 does all the moving
     and every node of tag_1's cells stays exactly at rest."""
     from simwild.polyfem_ops.mesh_core import TaggedMesh, select_region_nodes
 
     out_msh = tmp_path / "separated.msh"
-    cfg = {
-        "input_msh": str(boxes3d),
-        "collision_pairs": [[SEL_A, SEL_B]],
-        "sep": SEP,
-        "scale": SCALE,
-        "rtol": 1e-1,
-        "max_iterations": 8,
-        "strategy": "stiffness",
-        "protected_regions": ["tag_1"],
-        "output_msh": str(out_msh),
-    }
     before = TaggedMesh(str(boxes3d))
     pin_ids = select_region_nodes(before, ["tag_1"])
 
-    ms.run(cfg, out_dir=tmp_path / "sep")
+    wm.minimum_separation(
+        mesh=str(boxes3d),
+        collision_pairs=[[SEL_A, SEL_B]],
+        sep=SEP,
+        output=str(tmp_path / "separated"),
+        others={"scale": SCALE, "rtol": RTOL, "max_iterations": 8,
+                "strategy": "stiffness", "protected_regions": ["tag_1"]},
+        engine=engine,
+    )
 
     gap = min_separation_3d(out_msh, SEL_A, SEL_B)
     target_mesh_units = SEP / SCALE
-    assert gap >= target_mesh_units * (1.0 - cfg["rtol"] - 0.05), (
+    assert gap >= target_mesh_units * (1.0 - RTOL - 0.05), (
         f"achieved gap {gap:.4f} < target {target_mesh_units:.4f}")
 
     after = TaggedMesh(str(out_msh))

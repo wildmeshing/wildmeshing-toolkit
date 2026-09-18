@@ -1,13 +1,14 @@
 """Tier 2 — end-to-end Laplacian smoothing: fair a staircase tag_0/ambient
-interface (2D) and verify roughness drops while the mesh stays valid.
-Needs PolyFEM. Also exercises the 2D pipeline path of minimum_separation."""
+interface (2D) and verify roughness drops while the mesh stays valid. The case
+runs once per engine ("python", the reference glue, and "cpp", its port in the
+wmtk component polyfem_ops); the assertions are physical and hold for either.
+Needs PolyFEM. This is also the 2D path of the polyfem pipeline."""
 import numpy as np
 import pytest
 
-from simwild.polyfem_ops import minimum_separation as ms
-from simwild.polyfem_ops.laplacian_smoothing import run as ls_run
+from simwild import simwild as wm
 
-from conftest import needs_polyfem
+from conftest import ENGINES, needs_polyfem
 from geo import (interface_polyline_2d, polyline_length, roughness_2d,
                  signed_volumes)
 
@@ -15,23 +16,23 @@ SEL = {"region": "tag_0", "filter": "ambient"}
 
 
 @needs_polyfem
-def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path):
+@pytest.mark.parametrize("engine", ENGINES)
+def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path, engine):
     coords0, edges0 = interface_polyline_2d(jagged2d, SEL)
     rough0 = roughness_2d(coords0, edges0)
     len0 = polyline_length(coords0, edges0)
     assert rough0 > np.pi, "fixture should start visibly jagged"
 
     out_msh = tmp_path / "smoothed.msh"
-    ls_run({
-        "input_msh": str(jagged2d),
-        "interfaces": [SEL],
-        "useFitting": True,
-        "useLaplacian": True,
-        "weight_laplacian": 1e3,
-        "normalizePenalties": True,
-        "scale": 1e-3,
-        "output_msh": str(out_msh),
-    }, out_dir=tmp_path / "smooth")
+    wm.laplacian_smoothing(
+        mesh=str(jagged2d),
+        interfaces=[SEL],
+        output=str(tmp_path / "smoothed"),
+        others={"use_fitting": True, "use_laplacian": True,
+                "weight_laplacian": 1e3, "normalize_penalties": True,
+                "scale": 1e-3},
+        engine=engine,
+    )
 
     assert out_msh.exists()
 
