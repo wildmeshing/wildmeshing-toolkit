@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -339,6 +340,17 @@ public:
     bool m_freeze_front = false;
     /// True only inside the cap phase; see optimize_offset_single_phase().
     bool m_cap_phase = false;
+    /**
+     * @brief True only inside remesh_refined_march(): TetWild on the constructed mesh with the
+     * front held in its own tube as the input surface is in its own.
+     *
+     * The hooks it changes, each for the reason given where it is read:
+     * optimization_bare_coarsen_passes(), collapse_before_vertex() (the front's length limit),
+     * collapse_after_connectivity(), collapse_edge_before() / swap_before_surface() (the
+     * front_refuse_converged_collapse guard), smooth_after() (the residual diagnostic) and
+     * smoothing_energy_envelope(). Nothing else reads it.
+     */
+    bool m_remesh_pass = false;
 
     /**
      * @brief Which boundaries the region-class envelopes hold, and how they are built.
@@ -375,7 +387,9 @@ public:
     /// holds every tag boundary as it always did), WallComplex when deform_others switches it at
     /// construction, envelope_setup() fresh at the final pass. The tracked-face flags are left
     /// alone: they are the topology the operations maintain. `when` labels the log line.
-    void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
+    /// `width` > 0 replaces envelope_size as the tubes' half-width; only the refined march's
+    /// remesh pass passes one (its own tol, see remesh_refined_march()).
+    void build_boundary_envelopes(const char* when, EnvelopeSetup setup, double width = -1.);
 
     /**
      * @brief The tube the offset surface may not leave during the operation passes, of
@@ -387,8 +401,9 @@ public:
     std::shared_ptr<SampleEnvelope> m_offset_envelope;
 
     /// Rebuild m_offset_envelope from the current offset-surface faces, and drop the
-    /// intersections memoized against the old one.
-    void rebuild_offset_envelope();
+    /// intersections memoized against the old one. `width` > 0 replaces offset_envelope_rel x
+    /// target_distance as the half-width; only the refined march's remesh pass passes one.
+    void rebuild_offset_envelope(double width = -1.);
 
     /// Hard error if any vertex is on both the input complex and the offset surface -- a state
     /// no placement satisfies. Called at construction and after every phase.
@@ -624,6 +639,20 @@ public:
     /// Operations refused because they would have left an offset-surface face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
+    /// Collapses collapse_before_vertex() refused because they would put one vertex on both
+    /// tracked surfaces (the input complex and the front), and because the removed vertex would
+    /// leave its own surface class (input, offset or region). Counted in every pass; reported by
+    /// the refined march's remesh pass, where they are the evidence that the two surfaces were
+    /// kept apart.
+    std::atomic<int> iter_cnt_collapse_both_surfaces_reject{0};
+    std::atomic<int> iter_cnt_collapse_class_reject{0};
+    /// Forensics, no effect on any decision. split_after_cells() labels a split midpoint by where
+    /// the split EDGE lies. These count the splits where the older endpoint rule (on a surface if
+    /// both endpoints are) would have said otherwise: chords, edges joining two vertices of a
+    /// surface through a region, whose midpoints are off it. Reset and reported by the refined
+    /// march's remesh pass and by optimize_offset().
+    std::atomic<int> iter_cnt_split_front_chord{0};
+    std::atomic<int> iter_cnt_split_input_chord{0};
     /// front_refuse_converged_collapse: operations refused because a resolved patch of the front
     /// would have come out unresolved.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
@@ -638,6 +667,11 @@ public:
     {
         bool is_edge_on_region = false;
         bool is_edge_on_offset = false;
+        /// The edge lies in the input complex: both ends are input vertices and some tet
+        /// containing it is a cell of the complex (label 1, a solid) or some face containing it is
+        /// a complex face (face_is_complex_boundary: a solid's boundary or a sheet). What
+        /// split_after_cells() sets the midpoint's m_is_on_input from.
+        bool is_edge_in_input = false;
         std::map<simplex::Edge, TetAttributes> tets;
         /// Diagnostic: the parents' worst AMIPS before the split, so split_after_vertex() can
         /// say whether a needle child came from a healthy parent or an already unscoreable one.
@@ -653,27 +687,68 @@ public:
     /**
      * @brief Construction placement under sphere_trace_initialization: sphere tracing along the
      * edge from p_in (the endpoint in the input complex, label != 0) towards p_out (the
-     * background endpoint) for the point where d(x) = target_distance, d(x) the distance to the
+     * background endpoint) for the point where d(x) = D, d(x) the distance to the
      * input complex through m_input_complex_bvh. From t = 0 the trace evaluates d at the current
-     * point and steps forward by target_distance - d, the largest step that cannot cross the
-     * level set (d is 1-Lipschitz); it stops when |d - target_distance| <=
-     * sphere_trace_target_rel_tol x target_distance and returns true with p_new there. It returns
+     * point and steps forward by D - d, the largest step that cannot cross the
+     * level set (d is 1-Lipschitz); it stops when |d - D| <=
+     * sphere_trace_target_rel_tol x D and returns true with p_new there. It returns
      * false, p_new untouched, as soon as the current point reaches or passes p_out (t >= L: the
      * level set is not on the edge) or would move behind p_in (d(p_in) already beyond the target);
      * the caller then places the plain midpoint. Every step taken is longer than the tolerance, so
-     * the trace ends within L / (tol x target_distance) steps; `steps` returns how many it took.
+     * the trace ends within L / (tol x D) steps; `steps` returns how many it took.
      * No snapping away from the endpoints: a point found arbitrarily close to p_out is used as is.
+     *
+     * Under refined_marching the tolerance is always
+     * dropped and the trace runs to the precision of double arithmetic instead; the invariant and
+     * the measurement are in the comment at the top of the function.
+     *
+     * When a step no longer moves the point forward the trace hands over to BISECTION of the
+     * bracket it has built (d < D at one end, d > D at the other), which terminates on the floor of
+     * double arithmetic and needs no iteration cap; `bisection_steps`, if a pointer is passed,
+     * returns how many midpoints that took. The derivation is in the comment at the top of the
+     * function.
+     *
+     * D is an argument rather than target_distance read from the parameters because the refined
+     * march traces to its own march_distance; marching_target_distance() is what every caller
+     * passes.
      */
     bool edge_split_sphere_trace(
         const Vector3d& p_in,
         const Vector3d& p_out,
+        const double D,
         Vector3d& p_new,
-        size_t& steps) const;
+        size_t& steps,
+        size_t* bisection_steps = nullptr) const;
+    /// What the marching traces to: target_distance, or m_march_distance once
+    /// refine_for_marching() has computed one. The one place that decision is made.
+    double marching_target_distance() const
+    {
+        return m_march_distance > 0. ? m_march_distance : m_offset_params.target_distance;
+    }
     /// marching_tets() tallies for the construction log: edges placed on the level set / at the
     /// midpoint because the trace left the edge, and the trace steps (total, max). Reset at the
     /// start of marching_tets().
     size_t m_marching_root_splits = 0, m_marching_midpoint_splits = 0;
     size_t m_marching_trace_steps = 0, m_marching_trace_steps_max = 0;
+    /// How many marched edges the sphere trace could not place by stepping alone, so that
+    /// edge_split_sphere_trace() finished them by bisecting its bracket, and how many bisection
+    /// midpoints that cost in total (those evaluations are also counted in m_marching_trace_steps).
+    /// Reported by marching_tets() whether zero or not. Reset with the counters above.
+    size_t m_marching_trace_bisected_edges = 0, m_marching_trace_bisection_steps = 0;
+    /// The MARCH DISTANCE, and only that: the distance from the input complex at which the refined
+    /// march builds its front, refined_marching_distance_fraction x B (see refine_for_marching()).
+    /// -1 while no refined march has run, so marching_target_distance() answers target_distance
+    /// for every existing run.
+    double m_march_distance = -1.;
+    /// refined_marching only: how often the double position inverted or flattened an incident tet
+    /// and the vertex had to go to the exact rational point of the edge instead. Reported by the
+    /// marching's log line; zero on every mesh measured so far.
+    size_t m_marching_rational_fallbacks = 0;
+    /// The vertex the last marching split created, and every vertex this marching created. The
+    /// refined march re-marches the one-ring of the first; validate_refined_marching() uses the
+    /// second to tell which faces of the band are front pieces.
+    size_t m_marching_last_new_vid = 0;
+    std::vector<size_t> m_marching_new_verts;
 
     /**
      * @brief Reject any collapse that violates the substructure link condition, and remember the
@@ -1028,7 +1103,12 @@ public:
     std::shared_ptr<SampleEnvelope> smoothing_energy_envelope(const size_t vid) const override
     {
         if (m_vertex_extra[vid].m_is_on_offset && !vertex_is_on_region(vid)) {
-            return nullptr;
+            // The refined march's remesh pass holds the front as TetWild holds its input: a front
+            // vertex is smoothed as if interior and then projected back onto the front as
+            // constructed, the surface its tube (m_offset_envelope, half-width tol) is built
+            // around. Without the pull the only thing keeping it there would be the containment
+            // test, which refuses the move instead of correcting it.
+            return m_remesh_pass ? m_offset_envelope : nullptr;
         }
         const uint64_t mask = vertex_boundary_mask(vid);
         if (mask == 0) {
@@ -1494,7 +1574,13 @@ public:
     /// TetWild's bare collapse passes are off for the offset, as TriWild's are in 2D: with no
     /// length gate the quality test alone demolishes the band, and the sizing field cannot
     /// refuse a collapse.
-    bool optimization_bare_coarsen_passes() const override { return false; }
+    ///
+    /// On in the refined march's remesh pass, which exists to remove what the march's
+    /// bisections left: there the front is held by its own tube as the input is, which is the
+    /// condition under which TetWild runs these passes, and mesh_improvement() leaves its loop
+    /// as soon as the max energy is under stop_energy -- without the opening pass a mesh that
+    /// starts under it would never see a collapse.
+    bool optimization_bare_coarsen_passes() const override { return m_remesh_pass; }
 
     /// Max of the two normalized criteria (AMIPS over stop, residual over tolerance) on this
     /// face; >= 1 means it fails at least one. The coarsen-mode collapse accept reads it.
@@ -1542,6 +1628,18 @@ public:
      * <output>_input_complex.vtu and the phi grid.
      */
     void write_debug_frame(const std::string& label);
+
+    /**
+     * @brief One info line per pipeline stage: "[stage] <name> | V vertices, T tets | dt s", the
+     * live element counts after the stage and the wall time since the previous stage line (0 on
+     * the first). Logging only; it never changes the mesh. Called unconditionally at every point
+     * a construction frame could be written, and by the driver after the offset potential and
+     * after the optimization, so a run's cost and size can be followed stage by stage without
+     * writing frames. Under DEBUG_output a frame write is counted in the following stage's time.
+     */
+    void log_stage(const std::string& stage);
+    std::chrono::steady_clock::time_point m_stage_clock{};
+    bool m_stage_clock_started = false;
 
     /**
      * @brief initialize TetMesh from vertex, tet, and tag data
@@ -1610,9 +1708,20 @@ public:
      */
     void pre_optimize_input_mesh();
 
+    /**
+     * @brief refined_marching_remesh: TetWild over the mesh the refined march constructed, with
+     * two separate envelopes of half-width tol (the refined march's own), one around the front
+     * and one around the input surface and the domain wall. Removes the elements the march's
+     * bisections created while holding both surfaces where the march put them. The 2D twin is
+     * TopoOffsetTriMesh::remesh_refined_march(); see the spec entry and the comment at the top of
+     * the definition in RefinedMarch3d.cpp.
+     */
+    void remesh_refined_march();
+
     /// Construction, start to finish: the optional pre-optimize pass, the simplicial embedding,
-    /// marching_tets(), the re-embedding and the offset tagging. The optimization is
-    /// optimize_offset(), which the driver calls afterwards.
+    /// marching_tets(), the re-embedding and the offset tagging, and under
+    /// refined_marching_remesh remesh_refined_march(). The optimization is optimize_offset(),
+    /// which the driver calls afterwards.
     void execute_offset(const std::filesystem::path& output_file);
 
     /// Marching tets: every edge with one endpoint in the input complex (label 1/2) and the
@@ -1622,11 +1731,93 @@ public:
     /// complex frontier vertex (the split-off halves) becomes the band (label 2).
     void marching_tets();
 
+    /**
+     * @brief The refined march (refined_marching): bisect the background mesh until the surface
+     * marching_tets() is about to place is everywhere within tol of the level set d(x) =
+     * march_distance.
+     *
+     * Runs between the simplicial embedding and the marching, on the background mesh, before any
+     * front vertex exists. Terms as in the spec: an INSIDE vertex is one of the input complex
+     * (label != 0), an OUTSIDE vertex is any other; a MARCHED edge has one end of each kind, an
+     * UNMARCHED edge has both ends alike; the ROOT of a marched edge is the point on it where
+     * d(x) = march_distance; a BAND CELL is a tet with at least one inside and one outside vertex;
+     * its FRONT PIECE is the triangle on its three roots, or the quadrilateral on its four roots
+     * (two inside vertices, two outside) cut into two triangles by a fixed diagonal.
+     *
+     * march_distance = refined_marching_distance_fraction x refined_marching_bound(); tol =
+     * refined_marching_tol_rel x march_distance. Every front triangle carries a CERTIFIED RESIDUAL
+     * -- an upper bound on |d - march_distance| over the whole of it, edges and interior alike,
+     * derived in the comment on certified_residual() in RefinedMarch3d.cpp and computed rather than
+     * sampled: the inward part is march_distance - dist(piece, input complex) EXACTLY, and the
+     * outward part is a proven bound that is zero wherever one input primitive is nearest on all of
+     * the piece. A piece fails while its residual exceeds tol; the worst one is repaired first, by
+     * bisecting the longest unmarched edge of its cell. That is one rule for every failure: it
+     * halves the cell's longest span, which the earlier per-side rule did not, and on
+     * presmooth3d/cylinder and /sphere at tol_rel 0.01 that per-side rule never terminated (it
+     * settled into a two-cycle that re-created the same failing chord forever). Ties go to the
+     * lowest vertex ids of the edge to bisect, so the run is deterministic. Only the cells a
+     * bisection changed are re-marched.
+     */
+    void refine_for_marching();
+    /**
+     * @brief B: the smallest Euclidean distance from the input complex to any FAR simplex -- a
+     * vertex, edge or face of a band cell with no vertex on the complex.
+     *
+     * march_distance stays under B, and that is what makes the refined march well posed: every
+     * outside vertex of a band cell is then farther from the complex than march_distance, so every
+     * marched edge has a root on it and every front piece stays inside its own band cell. An
+     * overestimate of B would put the surface outside the band, so this is an exact closest-point
+     * distance between simplices (ExactSimplexDistance.hpp) and never a sampled one. Brute force
+     * over the pairs, with a bounding-sphere rejection; the log line says how long it took.
+     */
+    double refined_marching_bound() const;
+    /**
+     * @brief Diagnostic only, after the marching: what the refined march actually achieved.
+     *
+     * The loop tests a bound on each front piece; this measures the whole of every piece by dense
+     * sampling -- 65 points along each side and a barycentric grid over each triangle -- and
+     * reports the largest |d - march_distance| as a fraction of march_distance, how many pieces are
+     * over tol, the smallest dihedral angle in the mesh and the number of inverted or zero-volume
+     * tets under the exact orientation predicate. Reads the mesh, changes nothing.
+     */
+    void validate_refined_marching() const;
+
     //// simplicial embedding stuff
     bool is_simplicially_embedded() const;
     bool tet_is_simp_emb(const Tuple& t) const;
     void simplicial_embedding();
     //// simplicial embedding stuff
+
+    /**
+     * @brief Construction only: grow the storage so that the next split_edge(e) finds every slot
+     * it requests -- 1 vertex (TetMeshEdgeSplittingConn.cpp:41) and one tet per tet incident to e
+     * (the 2n children replace the n parents, TetMeshEdgeSplittingConn.cpp:47-48, and
+     * operation_update_connectivity_impl requests the difference,
+     * TetMeshSwapMeshConnectivity.cpp:71-73). Called immediately before every construction edge
+     * split: the simplicial embedding (both times), the refined march's bisections and the
+     * march. The face and tet splits reserve at their one call site, simplicial_embedding().
+     *
+     * INVARIANT: construction never depends on preallocation_factor. The mesh keeps each element
+     * type in a fixed-size slot array (wmtk::SlotPool) sized to preallocation_factor x the live
+     * count at load and at every consolidate_mesh(), and an operation that needs more slots than
+     * remain is refused before it mutates anything. The optimization is built around that
+     * refusal: the operation is retried after the next consolidation. Construction is not: every
+     * construction split is mandatory, and a refusal aborts the run. Growing the storage
+     * (TetMesh::ensure_free_vert_capacity / ensure_free_tet_capacity, geometric growth, so
+     * amortised constant per split) changes no element and no id, so the result is the same at
+     * every factor and a split that had the room is unaffected.
+     *
+     * Measured with the slots left to the factor, construction only: marching_tets() refused on
+     * presmooth3d/cube at every factor up to 4 and on presmooth3d/cylinder up to 2; the refined
+     * march's bisection loop aborted at 1.0 (the key's documented minimum) on the Kuhn cube and
+     * presmooth3d/cylinder -- its retry consolidated, which at 1.0 re-reserves no headroom; on an
+     * input complex of scattered cells the embedding's tet split refused at 1.0 and its face
+     * split at 1.5. At the default 6 the march refused on the Kuhn L-block after the refined
+     * march: 10392 vertex slots, all handed out, at its 8660th of 12502 edges. With the
+     * reservation every one of these runs completes, and its output .msh is the same at 1, 1.5,
+     * 2, 4, 6 and 12.
+     */
+    void reserve_edge_split(const Tuple& e);
 
     /// update 'tags' data for tets in the offset region (tets labelled 2)
     void set_offset_tet_tags();
@@ -1655,6 +1846,10 @@ private:
         size_t v1_id;
         size_t v2_id;
         Vector3d new_v_pos;
+        /// Where new_v_pos sits on the edge, v1 -> v2, in [0, 1]. Only the refined march's
+        /// rational fallback reads it: it needs the same point in exact arithmetic, and a
+        /// parameter along the edge is the one description of it that cannot leave the edge.
+        double new_v_t = 0.5;
         VertexExtra new_v_extra;
         int64_t corr_input_vid = -1; ///< marching: the split edge's endpoint on the complex
 
@@ -1689,6 +1884,8 @@ private:
         std::map<simplex::Edge, EdgeAttributes> existing_e;
         std::map<simplex::Face, FaceSnapshot> existing_f;
         int splitf_label;
+        /// The split face is a front triangle (face_is_offset), read before it is replaced.
+        bool splitf_on_offset = false;
         std::map<size_t, TetAttributes> tets;
     };
     wmtk::threading::enumerable_thread_specific<FaceSplitCache> face_split_cache;

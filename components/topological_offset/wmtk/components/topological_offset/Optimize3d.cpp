@@ -272,8 +272,10 @@ bool TopoOffsetTetMesh::swap_before_surface(
     }
     // front_refuse_converged_collapse: two resolved offset faces may not be flipped into a pair
     // of which one sags over the tube. No vertex moves in a flip, so the new faces' sag is
-    // known here; the corners' ratios are taken as unchanged.
-    if (m_offset_params.front_refuse_converged_collapse &&
+    // known here; the corners' ratios are taken as unchanged. Not in the refined march's remesh
+    // pass: "resolved" is measured against the level set at target_distance, and the front there
+    // sits at march_distance; its own tube holds it instead (the shared swap's containment check).
+    if (m_offset_params.front_refuse_converged_collapse && !m_remesh_pass &&
         m_face_attribute[fid_abc].m_surface_class == OFFSET_SURFACE_CLASS &&
         front_face_converged(a, b, c) && front_face_converged(a, b, d)) {
         const double r1 = face_conv_ratio(a, c, d), r2 = face_conv_ratio(b, c, d);
@@ -647,9 +649,11 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
+    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse(). Not
+    // in the refined march's remesh pass, for the reason given in swap_before_surface(); left
+    // unarmed, the after-half in collapse_edge_after() does not run either.
     m_collapse_guard_armed.local() = 0;
-    if (m_offset_params.front_refuse_converged_collapse &&
+    if (m_offset_params.front_refuse_converged_collapse && !m_remesh_pass &&
         front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
@@ -760,25 +764,32 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         const bool input = VE[v1_id].m_is_on_input || VE[v2_id].m_is_on_input;
         const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
         if (input && offset) {
+            ++iter_cnt_collapse_both_surfaces_reject;
             return false;
         }
     }
 
     // The front is always length-limited, whatever the pass says: it deliberately has no
     // envelope while it moves, so its sizing field is the only thing bounding its resolution.
-    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
+    // Except in the refined march's remesh pass, where it does have one: m_offset_envelope,
+    // half-width tol, held by every operation's containment check -- so the front is coarsened
+    // by TetWild's unlimited collapse passes exactly as the input surface is.
+    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset && !m_remesh_pass) {
         return false;
     }
 
     // The base only knows that both endpoints are on SOME tracked surface. A vertex may not leave
     // the particular surface it belongs to, and each class is checked separately.
     if (VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
+        ++iter_cnt_collapse_class_reject;
         return false;
     }
     if (VE[v1_id].m_is_on_offset && !VE[v2_id].m_is_on_offset) {
+        ++iter_cnt_collapse_class_reject;
         return false;
     }
     if (VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
+        ++iter_cnt_collapse_class_reject;
         return false;
     }
 
@@ -799,8 +810,10 @@ bool TopoOffsetTetMesh::collapse_after_connectivity(
     // No offset criterion gates a collapse inside the loop: the offset envelope holds the
     // surface, so containment is the shared pass's job. Coarsening keeps an absolute bar,
     // because it runs after the loop and trades elements for nothing but the promise that the
-    // result is still good. As in 2D.
-    if (m_coarsen_mode && m_offset_potential) {
+    // result is still good. As in 2D. Not in the refined march's remesh pass: the bar measures
+    // the front against the level set at target_distance, and the front there sits at
+    // march_distance (the potential does not exist yet either); the front's own tube is its bar.
+    if (m_coarsen_mode && m_offset_potential && !m_remesh_pass) {
         double after = 0.;
         for (const Tuple& f : offset_surface_faces_live_at(v2_id)) {
             after = std::max(after, face_criterion_rel(f));
@@ -1006,6 +1019,16 @@ bool TopoOffsetTetMesh::smooth_after(const Tuple& t)
     }
     // Phase A is TetWild: the shared smoother, with the front held by m_offset_envelope and
     // carrying no offset term of its own.
+    //
+    // The refined march's remesh pass is the same move without the residual diagnostic below: it
+    // runs inside execute_offset(), before init_offset_potential(), so there is no field to
+    // measure a residual against (and the front there sits at march_distance, not at
+    // target_distance).
+    if (m_remesh_pass) {
+        const bool ok = TetOptimizerMesh::smooth_after(t);
+        if (ok && ve.m_is_on_offset) ++m_smooth_trace.offset_accepted;
+        return ok;
+    }
     const double before = ve.m_is_on_offset ? band_vertex_residual(vid) : 0.;
     const bool ok = TetOptimizerMesh::smooth_after(t);
     if (!ve.m_is_on_offset) {
@@ -3502,7 +3525,7 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTetMesh::released_envelope() const
     return m_released_envelope;
 }
 
-void TopoOffsetTetMesh::rebuild_offset_envelope()
+void TopoOffsetTetMesh::rebuild_offset_envelope(const double width)
 {
     // The released boundaries' ops-only tube: mark and rebuild NOW, at this consistent moment.
     m_released_tube_dirty.store(true, std::memory_order_release);
@@ -3532,12 +3555,24 @@ void TopoOffsetTetMesh::rebuild_offset_envelope()
     }
 
     // A straight fraction of target_distance and nothing else: both are distances in model
-    // units, so offset_envelope_rel is a pure percentage. As in 2D.
+    // units, so offset_envelope_rel is a pure percentage. As in 2D. A given width replaces it
+    // (the refined march's remesh pass, which holds the front to its own tol).
     const double eps =
-        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+        width > 0. ? width
+                   : std::max(
+                         m_offset_params.offset_envelope_rel * m_offset_params.target_distance,
+                         1e-12);
 
     m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true);
     m_offset_envelope->init(verts, tris, eps);
+    if (width > 0.) {
+        logger().info(
+            "\t[offset envelope] rebuilt: {} faces, {} (eps {:.6g}, given)",
+            tris.size(),
+            m_offset_envelope->use_exact ? "EXACT" : "sampled",
+            eps);
+        return;
+    }
     logger().info(
         "\t[offset envelope] rebuilt: {} faces, {} (eps {:.6g} = "
         "offset_envelope_rel {:.4} x target_distance {:.6g})",
@@ -3561,6 +3596,21 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
     write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+}
+
+void TopoOffsetTetMesh::log_stage(const std::string& stage)
+{
+    const auto now = std::chrono::steady_clock::now();
+    const double dt =
+        m_stage_clock_started ? std::chrono::duration<double>(now - m_stage_clock).count() : 0.;
+    m_stage_clock = now;
+    m_stage_clock_started = true;
+    logger().info(
+        "[stage] {:<20} | {:>9} vertices {:>10} tets | {:9.3f} s",
+        stage,
+        get_vertices().size(),
+        get_tets().size(),
+        dt);
 }
 
 void TopoOffsetTetMesh::optimize_offset_single_phase()
@@ -4034,7 +4084,16 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
+    iter_cnt_split_front_chord = 0;
+    iter_cnt_split_input_chord = 0;
     optimize_offset_single_phase();
+    // The chord measurement (see iter_cnt_split_front_chord): how many split midpoints the
+    // endpoint rule flagged as on a surface whose face set does not contain the split edge.
+    logger().info(
+        "\t[labels] split midpoints flagged by the endpoint rule although the edge lies on no face "
+        "of that surface (chords): front {}, input {}",
+        iter_cnt_split_front_chord.load(),
+        iter_cnt_split_input_chord.load());
 
     log_smooth_trace();
     logger().info(

@@ -71,14 +71,23 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
     } else if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
         const bool in1 = m_vertex_extra[cache.v1_id].label != 0;
         const bool in2 = m_vertex_extra[cache.v2_id].label != 0;
+        const double D = marching_target_distance();
         bool on_level = false;
         size_t steps = 0;
+        // How many of those steps were bisections of the bracket rather than sphere-trace steps,
+        // i.e. how much of the placement the sphere trace did not manage on its own. Reported by
+        // marching_tets(), as a count of edges and a count of steps, zero or not.
+        size_t bisections = 0;
         if (in1 != in2) {
-            on_level = in1 ? edge_split_sphere_trace(p1, p2, p_new, steps)
-                           : edge_split_sphere_trace(p2, p1, p_new, steps);
+            on_level = in1 ? edge_split_sphere_trace(p1, p2, D, p_new, steps, &bisections)
+                           : edge_split_sphere_trace(p2, p1, D, p_new, steps, &bisections);
         }
         m_marching_trace_steps += steps;
         m_marching_trace_steps_max = std::max(m_marching_trace_steps_max, steps);
+        if (bisections > 0) {
+            ++m_marching_trace_bisected_edges;
+            m_marching_trace_bisection_steps += bisections;
+        }
         if (on_level) {
             ++m_marching_root_splits;
         } else {
@@ -89,8 +98,22 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
         log_and_throw_error("Invalid edge split mode.");
     }
     cache.new_v_pos = p_new;
+    // Where that is on the edge. Only the refined march's rational fallback reads it, and it
+    // needs a description of the point that cannot leave the edge; see marching_split_edge_after.
+    {
+        const Vector3d e12 = p2 - p1;
+        const double len2 = e12.squaredNorm();
+        cache.new_v_t = len2 > 0. ? std::clamp((p_new - p1).dot(e12) / len2, 0., 1.) : 0.5;
+    }
     cache.new_v_extra = VertexExtra();
     cache.new_v_extra.label = m_edge_attribute[e_id].label;
+    // On the input complex exactly when the split edge is. Construction keeps the labels exact --
+    // an edge of the complex has label 1 -- so the flag follows the label, the same rule
+    // mark_input_complex_vertices() derives it by at load. Without this a vertex the refined
+    // march bisected onto an input edge carried label 1 and no flag (1861 of them on
+    // presmooth3d/cylinder), and the never-on-both-surfaces rule, which reads the flag, did not
+    // know the vertex was on the input.
+    cache.new_v_extra.m_is_on_input = cache.new_v_extra.label == 1;
     // On both boundaries only if the whole edge was: the midpoint's mask is the AND.
     cache.new_v_extra.m_boundary_mask =
         m_vertex_extra[cache.v1_id].m_boundary_mask & m_vertex_extra[cache.v2_id].m_boundary_mask;
@@ -157,21 +180,81 @@ bool TopoOffsetTetMesh::marching_split_edge_before(const Tuple& t)
 bool TopoOffsetTetMesh::edge_split_sphere_trace(
     const Vector3d& p_in,
     const Vector3d& p_out,
+    const double D,
     Vector3d& p_new,
-    size_t& steps) const
+    size_t& steps,
+    size_t* bisection_steps) const
 {
     // Sphere tracing: d is 1-Lipschitz, so from a point at distance d the level set
-    // d = target_distance is at least target_distance - d away in every direction, and stepping
+    // d = D is at least D - d away in every direction, and stepping
     // exactly that far along the edge can never cross it. The step is positive while the trace
-    // has not converged (target_distance - d > tol), so t grows by more than tol each time and
+    // has not converged (D - d > tol), so t grows by more than tol each time and
     // the loop ends within L / tol steps, one way or the other.
-    const double D = m_offset_params.target_distance;
-    const double tol = std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
+    //
+    // The refined march drops that tolerance and always runs to the precision of double arithmetic
+    // instead. It must: the refinement's own tolerance must stay above the roots' placement error,
+    // and a trace stopped at a tolerance can leave that error above it -- measured on
+    // presmooth2d/square at distance fraction 0.1 and tol_rel 0.002 with a trace tolerance of 0.01:
+    // 853000 bisections in 5 hours with the worst certified residual frozen at 2.18e-4, the trace's
+    // own error, against a bar of 4.56e-5. With no tolerance the roots are exact to the last bit
+    // and every refinement tolerance terminates. INVARIANT: under the refined march the traced
+    // points are the ROOTS -- the points of the marched edges where d = march_distance -- and the
+    // roots are the CORNERS of the front pieces, so the trace's own placement error is a floor on
+    // what the certified residual of a piece can ever reach: give the trace a tolerance of the size
+    // of the refinement's tolerance and the loop bisects to chase the roots' own error.
+    // Measured on presmooth3d/cylinder (distance_fraction 0.5, tol_rel 0.01, max_rounds 0): with
+    // the default sphere_trace_target_rel_tol of 0.01 the loop needs 4129 bisections and makes
+    // 24088 front pieces, against 2978 and 14058 with the exact trace -- 39% more bisections and
+    // 71% more front pieces for the cheaper trace, which costs 3.3 steps per marched edge against
+    // 15.3 (63 at most).
+    //
+    // WHERE IT STOPS, and why the rule is not "t is unchanged". In exact arithmetic the step
+    // D - d is never negative (sphere tracing cannot cross the level set), so t only ever
+    // increases; the trace has therefore hit the floor of double arithmetic at the first step
+    // that fails to increase t. That is the rule, and it holds no constant. Stopping only on
+    // t + (D - d) == t does NOT terminate: measured on presmooth2d/circle with the cap lifted to
+    // 2 million steps, the average marched edge took 1.52 million steps and still never reached
+    // that equality, because the iteration settles into a cycle over two or four ADJACENT doubles
+    // -- |d - D| already down at 1 to 4 units in the last place of D (1.4e-17 to 5.6e-17 there),
+    // t stepping one unit in the last place back and forth forever. The point is converged to the
+    // last bit at that moment; it is the equality that is unreachable, not the root.
+    //
+    // WHERE IT GOES WHEN THE STEP STOPS WORKING, and why no iteration cap is needed. Sphere
+    // tracing is the fast iteration, not the terminating one, so it is backed by a BRACKET. A
+    // marched edge runs from an endpoint ON the input complex, where d = 0 < D, towards an endpoint
+    // the marching classified as outside, so d - D changes sign along it and a point with d = D
+    // lies between. Every forward step keeps that bracket valid: the step cannot cross the root, so
+    // the point it lands on still has d < D and only moves the near end of the bracket up. The
+    // first step that fails to move the point forward is one of two things, and they are told apart
+    // by the sign of D - d, not by how far t moved:
+    //   * d > D -- the trace crossed the root by a rounding error. That point closes the bracket
+    //     from above and the loop BISECTS the bracket. Bisection terminates unconditionally: the
+    //     width halves every step and cannot halve below the gap between two adjacent doubles, so
+    //     the midpoint coincides with an end and the loop stops on that coincidence. The count is
+    //     bounded: the root has t >= D (d is 1-Lipschitz and d = 0 at t = 0), so that gap is at
+    //     least D x 2^-53, and a bracket no wider than the edge length L reaches it within about
+    //     53 + log2(L / D) halvings. That is a property of double arithmetic, not a tuned
+    //     constant, and it is what replaces the 200-step cap this function used to carry.
+    //   * d < D -- the step is forward but smaller than the gap to the next double, so the root is
+    //     inside the same double as t. There is no bracket left to subdivide and t is the answer.
+    // `bisection_steps`, when the caller asks for it, returns how many midpoints this call had to
+    // evaluate, so a march can report how much of its placement the sphere trace did not do by
+    // itself. Under the exact trace the cycle described above stalls on the d > D side with the two
+    // ends already adjacent doubles, so the usual answer is zero.
+    const bool exact_trace = m_offset_params.refined_marching;
+    const double tol =
+        exact_trace ? 0. : std::clamp(m_offset_params.sphere_trace_target_rel_tol, 0., 1.) * D;
     const Vector3d dir = p_out - p_in;
     const double L = dir.norm();
     steps = 0;
+    if (bisection_steps) *bisection_steps = 0;
     if (!(L > 0.)) return false;
     const Vector3d u = dir / L;
+    // The bracket, in the edge parameter t: d < D at t_lo, d > D at t_hi. t_lo starts at the
+    // endpoint on the input complex, where d = 0 < D. t_hi is never read before the trace sets it
+    // from a point it evaluated itself, so the far endpoint's distance is never assumed.
+    double t_lo = 0.;
+    double t_hi = L;
     double t = 0.;
     while (true) {
         const Vector3d p = p_in + t * u;
@@ -181,11 +264,56 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
             p_new = p;
             return true;
         }
-        t += D - d;
+        const double t_next = t + (D - d);
         // Past (or at) the far endpoint: the level set is not on this edge. Behind the near
         // endpoint: d(p_in) is already beyond the target, the same conclusion.
-        if (t >= L || t < 0.) return false;
+        if (t_next >= L || t_next < 0.) return false;
+        if (d < D) {
+            if (t_next > t) {
+                // A forward step: the near end of the bracket moves up to the point just tested.
+                t_lo = t;
+                t = t_next;
+                continue;
+            }
+            // Forward, but the step vanished in double arithmetic: the root is inside the same
+            // double as t, so t is the converged answer and no bracket is left to subdivide.
+            p_new = p;
+            return true;
+        }
+        // d > D (d == D returned above): the trace has crossed the root by a rounding error and
+        // has no forward step left. This point closes the bracket from above. It is reached only
+        // after at least one forward step, because at t = 0 either d < D, or d == D (returned
+        // above), or d > D with t_next < 0 (returned above) -- so t_lo and t_hi are distinct.
+        t_hi = t;
+        break;
     }
+    size_t bisections = 0;
+    while (true) {
+        const double t_mid = t_lo + 0.5 * (t_hi - t_lo);
+        // The bracket can no longer be subdivided in double arithmetic: the midpoint is one of the
+        // two ends. This is the only exit, and it is always reached (see above).
+        if (!(t_mid > t_lo) || !(t_mid < t_hi)) break;
+        const Vector3d p_mid = p_in + t_mid * u;
+        const double d_mid = m_input_complex_bvh->dist(p_mid);
+        ++steps;
+        ++bisections;
+        if (std::abs(d_mid - D) <= tol) {
+            p_new = p_mid;
+            if (bisection_steps) *bisection_steps = bisections;
+            return true;
+        }
+        (d_mid < D ? t_lo : t_hi) = t_mid;
+    }
+    if (bisection_steps) *bisection_steps = bisections;
+    // The OUTSIDE end of the bracket, t_hi, for two reasons. It is the side the stalled trace
+    // itself stopped on, so a call whose bracket was already two adjacent doubles -- the common
+    // case under the exact trace -- places the vertex exactly where this function placed it before
+    // the bisection existed. And it is strictly inside the edge: t_hi only ever holds a parameter
+    // that was checked against the far endpoint (t_next < L) or a midpoint of the bracket, while
+    // t_lo is still 0 -- the endpoint on the input complex itself -- when the trace stalls on its
+    // second evaluation.
+    p_new = p_in + t_hi * u;
+    return true;
 }
 
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
@@ -215,22 +343,66 @@ bool TopoOffsetTetMesh::marching_split_edge_after(const Tuple& t)
     const size_t v2_id = cache.v2_id;
 
     const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(t);
+    // Which vertex this split created. refine_for_marching() re-marches its one-ring, and
+    // marching_tets() collects them for validate_refined_marching().
+    m_marching_last_new_vid = v_id;
 
     /// check inversion & rounding
+    //
+    // Which position is tested differs by path, deliberately. The default path tests the
+    // MIDPOINT and refuses on failure -- the caller throws -- and the position the vertex
+    // finally keeps, a traced root, is never tested; that is what every existing run measured.
+    // refined_marching tests the position the vertex keeps, and on failure places it at the
+    // exact rational point of the edge at the same parameter instead of refusing, the way the
+    // shared engine's split does (TetOptimizerMesh::split_edge_after): a point of the edge
+    // cannot invert a tet that was valid before the split, so the bisection always succeeds and
+    // the refinement loop can keep refining exactly where the mesh is worst.
+    const bool refined = m_offset_params.refined_marching;
     set_vertex_position(
         v_id,
-        (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2);
+        refined ? cache.new_v_pos
+                : (m_vertex_attribute[v1_id].m_posf + m_vertex_attribute[v2_id].m_posf) / 2);
 
+    bool inverted = false;
     for (const Tuple& tt : locs) {
         if (is_inverted(tt)) {
-            return false;
+            inverted = true;
+            break;
         }
+    }
+    if (inverted && !refined) {
+        return false;
     }
 
     // vertex attribute
     m_vertex_extra[v_id] = cache.new_v_extra;
     m_vertex_extra[v_id].m_corr_input_vid = cache.corr_input_vid;
-    set_vertex_position(v_id, cache.new_v_pos);
+    if (!refined) {
+        set_vertex_position(v_id, cache.new_v_pos);
+    } else if (inverted) {
+        ++m_marching_rational_fallbacks;
+        const Vector3r& e1 = m_vertex_attribute[v1_id].m_pos;
+        const Vector3r& e2 = m_vertex_attribute[v2_id].m_pos;
+        // The double position of the vertex is off the edge by a rounding error, and that error
+        // is what flattened the tet. The exact point of the edge at the same parameter is the
+        // same point to within that error and lies ON the edge, so it cannot invert anything.
+        // The vertex stays un-rounded (m_pos exact, m_is_rounded false) until a later round().
+        m_vertex_attribute[v_id].m_pos = e1 + Rational(cache.new_v_t) * (e2 - e1);
+        m_vertex_attribute[v_id].m_is_rounded = false;
+        m_vertex_attribute[v_id].m_posf = to_double(m_vertex_attribute[v_id].m_pos);
+        // Un-rounded now, so is_inverted takes its rational path: this re-check is exact. It can
+        // only fail if an incident tet was already inverted before the split.
+        for (const Tuple& tt : locs) {
+            if (is_inverted(tt)) {
+                log_and_throw_error(
+                    "marching_split_edge_after: the exact point of edge ({}, {}) still inverts "
+                    "tet {} -- an incident tet was already inverted before the split",
+                    v1_id,
+                    v2_id,
+                    tt.tid(*this));
+            }
+        }
+    }
     m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     m_vertex_attribute[v_id].on_bbox_faces = wmtk::set_intersection(
         m_vertex_attribute[v1_id].on_bbox_faces,
@@ -308,6 +480,7 @@ bool TopoOffsetTetMesh::split_face_before(const Tuple& t)
     // get split face tags (used a bunch later)
     size_t split_f_id = t.fid(*this);
     cache.splitf_label = m_face_extra[split_f_id].label;
+    cache.splitf_on_offset = face_is_offset(split_f_id);
 
     // new vertex
     cache.v1_id = t.vid(*this);
@@ -391,15 +564,17 @@ bool TopoOffsetTetMesh::split_face_after(const Tuple& t)
          m_vertex_attribute[v3_id].m_posf) /
             3);
     m_vertex_extra[v_id].label = cache.splitf_label;
-    // On the offset surface exactly when the whole face is, the AND of its corners -- the same
-    // rule split_edge_after() applies to its two. It matters because split_face() is no longer
-    // construction-only: the cap phase splits front faces at their centroids, and without this
-    // the new vertex is not a front vertex, so nothing places it on the level set and nothing
-    // measures it (it sat at 0.6 of target_distance while the criterion reported the front
-    // resolved).
-    m_vertex_extra[v_id].m_is_on_offset = m_vertex_extra[v1_id].m_is_on_offset &&
-                                          m_vertex_extra[v2_id].m_is_on_offset &&
-                                          m_vertex_extra[v3_id].m_is_on_offset;
+    // On the input complex exactly when the split face is, by its label, as in the edge split.
+    // Assigned, not left alone -- the slot may be recycled and carry a dead vertex's flag.
+    m_vertex_extra[v_id].m_is_on_input = cache.splitf_label == 1;
+    // On the offset surface exactly when the split face is a front triangle, read in
+    // split_face_before() -- the face's own class, not its corners, for the reason
+    // split_after_cells() gives for edges: three front vertices can span a triangle that crosses
+    // a region. It matters because split_face() is no longer construction-only: the cap phase
+    // splits front faces at their centroids, and without this the new vertex is not a front
+    // vertex, so nothing places it on the level set and nothing measures it (it sat at 0.6 of
+    // target_distance while the criterion reported the front resolved).
+    m_vertex_extra[v_id].m_is_on_offset = cache.splitf_on_offset;
     // Interior to the split face, so on exactly the boundaries the whole face is on: the AND of
     // its corners. Assigned, not OR'd -- the slot may be recycled.
     m_vertex_extra[v_id].m_boundary_mask = m_vertex_extra[v1_id].m_boundary_mask &
@@ -519,6 +694,11 @@ bool TopoOffsetTetMesh::split_tet_after(const Tuple& t)
          m_vertex_attribute[cache.v_ids[2]].m_posf + m_vertex_attribute[cache.v_ids[3]].m_posf) /
             4);
     m_vertex_extra[v_id].label = tet_label;
+    // Inside the split tet: on the input complex exactly when the tet is (label 1, a cell of a
+    // solid complex), and never on the front. Both assigned -- the slot may be recycled and carry
+    // a dead vertex's flags.
+    m_vertex_extra[v_id].m_is_on_input = tet_label == 1;
+    m_vertex_extra[v_id].m_is_on_offset = false;
     // Strictly interior to a tet: on no boundary at all. Assigned -- the slot may be recycled.
     // As in split_face_after(), split_tet() runs only during construction, so there are no
     // surface flags to derive; nothing in the optimization creates a tet-interior vertex.
@@ -573,6 +753,21 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     cache.tets.clear();
     cache.is_edge_on_region = is_edge_on_region(edge);
     cache.is_edge_on_offset = is_edge_on_offset(edge);
+    cache.is_edge_in_input = false;
+    {
+        const size_t a = edge.vid(*this), b = edge.switch_vertex(*this).vid(*this);
+        if (m_vertex_extra[a].m_is_on_input && m_vertex_extra[b].m_is_on_input) {
+            for (const Tuple& tt : parents) {
+                if (m_tet_attribute[tt.tid(*this)].label == 1) cache.is_edge_in_input = true;
+                for (const size_t x : oriented_tet_vids(tt)) {
+                    if (x == a || x == b) continue;
+                    if (face_is_complex_boundary(std::get<0>(tuple_from_face({{a, b, x}})))) {
+                        cache.is_edge_in_input = true;
+                    }
+                }
+            }
+        }
+    }
     // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
     // came from a parent that was already unscoreable, or from a healthy one.
     cache.parent_q_max = -1.;
@@ -597,18 +792,30 @@ bool TopoOffsetTetMesh::split_after_cells(
     const size_t v_id,
     const std::vector<Tuple>&)
 {
-    // The new vertex's offset membership is derived from its endpoints, never from the cache: a
-    // vertex placed on an edge lies on whichever tracked surfaces both endpoints lie on. 3D marks
-    // m_is_on_offset once in optimize_offset() and has no fallback, unlike 2D which re-derives
-    // the whole front from the face labels every iteration.
-    m_vertex_extra[v_id].m_is_on_offset =
-        m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
-    // The input complex, the same way: a midpoint is on it only if the whole edge was. Written
-    // here because this is the hook that has the endpoints, and because the AND keeps the
-    // never-both invariant true across a split -- an edge running from the complex to the offset
-    // surface produces a midpoint on neither, which is what it geometrically is.
-    m_vertex_extra[v_id].m_is_on_input =
-        m_vertex_extra[v1_id].m_is_on_input && m_vertex_extra[v2_id].m_is_on_input;
+    // The midpoint lies on a surface exactly when the split EDGE lies in it, which
+    // split_before_cells() decided from the faces and cells around the edge before they were
+    // replaced: on the front iff a front triangle contains the edge, on the input complex iff an
+    // input cell or input face contains it. Not from the endpoints: two vertices of a surface can
+    // be joined by an edge that crosses a region -- a chord across a bend of the surface -- and
+    // its midpoint is then in that region, off the surface. The endpoint rule this replaces
+    // labelled such midpoints as on the surface: measured, 70 front and 40 input mislabels on
+    // presmooth3d/sheet at max_rounds 3 (0 on cube, prism, and the remesh pass on cylinder and
+    // sphere). Both flags still require both endpoints on the surface (the cached tests check it),
+    // so an edge from the complex to the front still yields a midpoint on neither, and the
+    // never-both invariant survives the split.
+    {
+        const auto& c = m_opt_split_cache.local();
+        const bool front_by_ends =
+            m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
+        const bool input_by_ends =
+            m_vertex_extra[v1_id].m_is_on_input && m_vertex_extra[v2_id].m_is_on_input;
+        m_vertex_extra[v_id].m_is_on_offset = c.is_edge_on_offset;
+        m_vertex_extra[v_id].m_is_on_input = c.is_edge_in_input;
+        // Forensics: the chords the endpoint rule would have mislabelled, see
+        // iter_cnt_split_front_chord.
+        if (front_by_ends && !c.is_edge_on_offset) ++iter_cnt_split_front_chord;
+        if (input_by_ends && !c.is_edge_in_input) ++iter_cnt_split_input_chord;
+    }
     // Churn instrumentation, read only by collapse_after_vertex(). Assigned, never OR'd: v_id may
     // be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
     m_vertex_extra[v_id].m_born_epoch = m_op_epoch;

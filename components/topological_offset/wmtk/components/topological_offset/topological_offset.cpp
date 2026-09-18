@@ -80,6 +80,16 @@ void topological_offset(nlohmann::json json_params)
         logger().info("===============================");
     }
 
+    // refined_marching_remesh holds the front in a tube of the refined march's own tol, which
+    // exists only when the refined march ran; without it the key has nothing to mean.
+    if (params.refined_marching_remesh && !params.refined_marching) {
+        log_and_throw_error(
+            "refined_marching_remesh is true but refined_marching is false: the remesh pass holds "
+            "the front and the input surface to the refined march's own tolerance "
+            "(refined_marching_tol_rel x march_distance), which only the refined march defines. "
+            "Set refined_marching true, or refined_marching_remesh false.");
+    }
+
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
 
@@ -166,6 +176,7 @@ void topological_offset(nlohmann::json json_params)
         // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
         mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+        mesh.log_stage("offset_potential");
 
         // inversion check
         auto tris = mesh.get_faces();
@@ -204,6 +215,7 @@ void topological_offset(nlohmann::json json_params)
         // resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
             mesh.optimize_offset(output_filename);
+            mesh.log_stage("optimization");
 
             // As in 3D: the check above ran on the offset as constructed, and optimization
             // re-triangulates it, so the property has to be re-established afterwards.
@@ -388,6 +400,7 @@ void topological_offset(nlohmann::json json_params)
         // Now that the offset exists, the potential can be built against it.
         mesh.init_offset_potential();
         mesh.write_phi_grid(output_filename.string(), mesh.m_offset_params.phi_grid_resolution);
+        mesh.log_stage("offset_potential");
 
         // checks
         {
@@ -444,6 +457,7 @@ void topological_offset(nlohmann::json json_params)
         // mesh's resolution; false is for inspecting the constructed offset.
         if (mesh.m_offset_params.optimize_offset) {
             mesh.optimize_offset(output_filename);
+            mesh.log_stage("optimization");
 
             // The manifoldness check above ran on the offset as constructed. Optimization then
             // re-triangulates it -- splits, collapses and four kinds of swap all touch the

@@ -105,6 +105,40 @@ struct Parameters : public wmtk::OptimizerParameters
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
     bool sphere_trace_initialization;
     double sphere_trace_target_rel_tol; ///< |d - target| <= tol x target ends the trace
+    /// See the spec: the refined march. Between the simplicial embedding and the marching, the
+    /// background mesh is bisected until the surface the marching is about to place is everywhere
+    /// within tol of the level set d(x) = march_distance, and the marching then places its
+    /// vertices at d(x) = march_distance instead of d(x) = target_distance. Off leaves
+    /// construction exactly as it was.
+    bool refined_marching = false;
+    /// The MARCH DISTANCE -- the distance from the input complex at which the refined march builds
+    /// its front -- as a fraction of B: march_distance = this x B, B the smallest exact distance
+    /// from the input complex to any far simplex of a band cell (no vertex on the complex). In
+    /// (0, 1): march_distance under B is what puts every root on its marched edge. Only read when
+    /// refined_marching is true.
+    double refined_marching_distance_fraction = 0.5;
+    /// tol = this x march_distance: a front piece fails while its certified residual -- an upper
+    /// bound on max over the piece of |d - march_distance|, see refine_for_marching() -- is above
+    /// tol. Only read when refined_marching is true.
+    double refined_marching_tol_rel = 0.01;
+    /// 3D only, and only read when refined_marching is true. Longest-edge PROPAGATION: before an
+    /// edge is bisected, every band face containing it of which it is not a longest edge has its
+    /// own longest edge bisected first, recursively. A BAND FACE is the triangle of three
+    /// equally-labelled vertices of a band cell with one inside and three outside vertices, or
+    /// three inside and one outside. Propagation is what the termination proof rests on: it makes
+    /// every band face a longest-edge bisection of an initial band face, so Rosenberg-Stenger
+    /// bounds its angles from below and its area from below, which bounds the number of splits.
+    /// Only band faces are propagated through; the internal cut faces of split tetrahedra are
+    /// never band faces, so the recursion cannot run through them. false reproduces the earlier,
+    /// unproven behaviour (bisect the picked edge directly) and exists only for ablation.
+    bool refined_marching_propagate = true;
+    /// Only valid when refined_marching is true. After construction, one TetWild pass (TriWild in
+    /// 2D) over the constructed mesh with two separate envelopes of half-width tol
+    /// (tol = refined_marching_tol_rel x march_distance, the march's own): one around the front,
+    /// one around the input surface and the domain wall. It remeshes what the march's bisections
+    /// left against the target edge length while holding both surfaces where the march put them.
+    /// See the spec doc and remesh_refined_march() (RefinedMarch3d.cpp, RefinedMarch2d.cpp).
+    bool refined_marching_remesh = false;
     /// EXPERIMENTAL. Makes the marching construction all-or-nothing: normally a sphere trace that
     /// leaves its edge falls back to the midpoint for THAT edge alone, so one construction can
     /// mix vertices sitting on the level set with vertices sitting at edge midpoints. With this
@@ -226,6 +260,11 @@ struct Parameters : public wmtk::OptimizerParameters
         save_offset_correspondence = json_params["save_offset_correspondence"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
+        refined_marching = json_params["refined_marching"];
+        refined_marching_distance_fraction = json_params["refined_marching_distance_fraction"];
+        refined_marching_tol_rel = json_params["refined_marching_tol_rel"];
+        refined_marching_propagate = json_params["refined_marching_propagate"];
+        refined_marching_remesh = json_params["refined_marching_remesh"];
         experimental_consistent_construction_split =
             json_params["EXPERIMENTAL_consistent_construction_split"];
         output_path = json_params["output"];

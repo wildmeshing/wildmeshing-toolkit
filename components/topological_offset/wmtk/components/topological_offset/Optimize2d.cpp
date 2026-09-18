@@ -699,8 +699,11 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     //
     // Coarsening keeps an absolute bar: it runs after the loop, so a collapse leaving any offset
     // face over tolerance is a regression with fewer elements, not a saving. face_criterion_rel()
-    // is the max of AMIPS and the offset residual, each over its own tolerance.
-    if (m_coarsen_mode && m_offset_potential) {
+    // is the max of AMIPS and the offset residual, each over its own tolerance. Not in the refined
+    // march's remesh pass: the bar measures the front against the level set at target_distance,
+    // and the front there sits at march_distance (the potential does not exist yet either); the
+    // front's own tube is its bar. As in 3D, where the bar is in collapse_after_connectivity().
+    if (m_coarsen_mode && m_offset_potential && !m_remesh_pass) {
         double after = 0.;
         for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
             after = std::max(after, face_criterion_rel(fid));
@@ -733,9 +736,13 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
+    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse(). Not
+    // in the refined march's remesh pass: "resolved" is measured against the level set at
+    // target_distance, and the front there sits at march_distance; its own tube holds it instead
+    // (the shared collapse's containment check). Left unarmed, the after-half in
+    // collapse_edge_after() does not run either. As in 3D.
     m_collapse_guard_armed.local() = 0;
-    if (m_offset_params.front_refuse_converged_collapse &&
+    if (m_offset_params.front_refuse_converged_collapse && !m_remesh_pass &&
         front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
@@ -852,6 +859,7 @@ bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t 
         const bool input = VE[v1_id].m_is_on_input || VE[v2_id].m_is_on_input;
         const bool offset = VE[v1_id].m_is_on_offset || VE[v2_id].m_is_on_offset;
         if (input && offset) {
+            ++iter_cnt_collapse_both_surfaces_reject;
             return false;
         }
     }
@@ -860,8 +868,11 @@ bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t 
     // held by its tags' envelopes, which bound how far it can be decimated whatever the length
     // gate does; the front deliberately has no envelope in Phase B -- it is the surface the
     // optimization exists to move -- so its sizing field is the only thing bounding its
-    // resolution, and a pass with the length gate off would remove that too.
-    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset) {
+    // resolution, and a pass with the length gate off would remove that too. Except in the
+    // refined march's remesh pass, where it does have one: m_offset_envelope, half-width tol, held
+    // by every operation's containment check -- so the front is coarsened by TriWild's unlimited
+    // collapse passes exactly as the input is. As in 3D.
+    if (!m_collapse_limit_length && VE[v1_id].m_is_on_offset && !m_remesh_pass) {
         return false;
     }
 
@@ -869,12 +880,15 @@ bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t 
     // the particular surface it belongs to, and each class is checked separately because a vertex
     // can be on more than one: satisfying the union is not enough.
     if (VE[v1_id].m_is_on_input && !VE[v2_id].m_is_on_input) {
+        ++iter_cnt_collapse_class_reject;
         return false;
     }
     if (VE[v1_id].m_is_on_offset && !VE[v2_id].m_is_on_offset) {
+        ++iter_cnt_collapse_class_reject;
         return false;
     }
     if (VE[v1_id].m_is_on_region && !VE[v2_id].m_is_on_region) {
+        ++iter_cnt_collapse_class_reject;
         return false;
     }
     return true;
@@ -981,11 +995,17 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     const auto& e = split_cache.local().old_e_attrs;
     m_vertex_extra[v_id].m_is_on_offset =
         e.m_is_surface_fs && e.m_surface_class == OFFSET_SURFACE_CLASS;
-    // Class 0 covers the input complex AND every other region boundary, so the two flags are
-    // narrowed from the ENDPOINTS rather than read off the class: a midpoint is on the complex
-    // only if the whole edge was, which is the same AND rule the boundary mask follows.
-    m_vertex_extra[v_id].m_is_on_input =
-        m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input;
+    // Class 0 covers the input complex AND every other region boundary, so the input flag cannot
+    // be read off the class. It is where the split EDGE lies, decided in split_edge_before() from
+    // the triangles around it (an input triangle contains it, or it is an input edge): not from
+    // the endpoints, because two input vertices can be joined by a chord through another region,
+    // whose midpoint is off the complex. As in 3D's split_after_cells(), which measured the
+    // endpoint rule's mislabels.
+    if (m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input &&
+        !c.edge_in_input) {
+        ++iter_cnt_split_input_chord;
+    }
+    m_vertex_extra[v_id].m_is_on_input = c.edge_in_input;
     // ... but m_is_on_region is the split edge's own class, not an endpoint AND: a bare AND
     // over-claims on a chord whose two ends happen to share a region, which is what the mask gate
     // exists to prevent. 3D reads is_edge_on_region() for the same reason.
@@ -1129,6 +1149,16 @@ bool TopoOffsetTriMesh::smooth_after(const Tuple& t)
     }
     // Phase A is TriWild: the shared smoother, with the front held by m_offset_envelope and
     // carrying no offset term of its own.
+    //
+    // The refined march's remesh pass is the same move without the residual diagnostic below: it
+    // runs inside execute_offset(), before init_offset_potential(), so there is no field to
+    // measure a residual against (and the front there sits at march_distance, not at
+    // target_distance). As in 3D.
+    if (m_remesh_pass) {
+        const bool ok = TriOptimizerMesh::smooth_after(t);
+        if (ok && ve.m_is_on_offset) ++m_smooth_trace.offset_accepted;
+        return ok;
+    }
     const double before = ve.m_is_on_offset ? band_vertex_residual(vid) : 0.;
     const bool ok = TriOptimizerMesh::smooth_after(t);
     if (!ve.m_is_on_offset) {
@@ -3765,7 +3795,7 @@ std::shared_ptr<SampleEnvelope> TopoOffsetTriMesh::released_envelope() const
     return m_released_envelope;
 }
 
-void TopoOffsetTriMesh::rebuild_offset_envelope()
+void TopoOffsetTriMesh::rebuild_offset_envelope(const double width)
 {
     // The released boundaries' ops-only tube: mark and rebuild NOW, at this consistent moment
     // (this function is only called between passes), so op passes that follow judge against
@@ -3809,12 +3839,24 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
     // criterion -- chaining it to a criterion that is itself a fraction of a measured reference
     // would make the Phase A tube depend on how bad construction happened to be. And it is NOT
     // envelope_size_rel, a fraction of the bounding-box diagonal, which is what m_envelope (the
-    // input-complex tube) is built from.
+    // input-complex tube) is built from. A given width replaces it (the refined march's remesh
+    // pass, which holds the front to its own tol). As in 3D.
     const double eps =
-        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+        width > 0. ? width
+                   : std::max(
+                         m_offset_params.offset_envelope_rel * m_offset_params.target_distance,
+                         1e-12);
 
     m_offset_envelope = std::make_shared<SampleEnvelope>(/*exact=*/true); // see the tag envelopes
     m_offset_envelope->init(verts, segs, eps);
+    if (width > 0.) {
+        logger().info(
+            "\t[offset envelope] rebuilt: {} segments, {} (eps {:.6g}, given)",
+            segs.size(),
+            m_offset_envelope->use_exact ? "EXACT" : "sampled",
+            eps);
+        return;
+    }
     logger().info(
         "\t[offset envelope] rebuilt: {} segments, {} (eps {:.6g} = "
         "offset_envelope_rel {:.4} x target_distance {:.6g})",
@@ -3838,6 +3880,21 @@ void TopoOffsetTriMesh::write_debug_frame(const std::string& label)
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
     write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+}
+
+void TopoOffsetTriMesh::log_stage(const std::string& stage)
+{
+    const auto now = std::chrono::steady_clock::now();
+    const double dt =
+        m_stage_clock_started ? std::chrono::duration<double>(now - m_stage_clock).count() : 0.;
+    m_stage_clock = now;
+    m_stage_clock_started = true;
+    logger().info(
+        "[stage] {:<20} | {:>9} vertices {:>10} triangles | {:9.3f} s",
+        stage,
+        get_vertices().size(),
+        get_faces().size(),
+        dt);
 }
 
 void TopoOffsetTriMesh::optimize_offset_single_phase()
@@ -4250,7 +4307,15 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         write_smoothing_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
     }
 
+    iter_cnt_split_input_chord = 0;
     optimize_offset_single_phase();
+    // As in 3D: how many split midpoints the older endpoint rule would have put on the input
+    // complex although the split edge crossed another region (the front flag in 2D already comes
+    // from the split edge's own class, so it has no such count).
+    logger().info(
+        "\t[labels] split midpoints the endpoint rule would have put on the input although the "
+        "edge lies in no input triangle and is no input edge (chords): {}",
+        iter_cnt_split_input_chord.load());
 
     // Cumulative over the whole run, not per iteration: the engine loop has no per-iteration
     // hook, and the per-pass numbers it logs itself carry the history.

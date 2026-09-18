@@ -13,11 +13,15 @@ set(SRC_FILES
 	TopoOffsetTetMesh.cpp
 	Optimize3d.cpp
 	FrontSmooth3d.cpp
+	RefinedMarch3d.cpp
 	Optimize2d.cpp
 
 	TopoOffsetTriMesh.h
 	TopoOffsetTriMesh.cpp
 	FrontSmooth2d.cpp
+	RefinedMarch2d.cpp
+
+	ExactSimplexDistance.hpp
 
 	Parameters.h
 

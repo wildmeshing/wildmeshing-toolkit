@@ -404,9 +404,37 @@ public:
         m_vertex_connectivity.clear_refused();
         m_tri_connectivity.clear_refused();
     }
+    /// The largest vertex / triangle slot request refused since the last clear (0 if none).
+    size_t refused_vert_request() const { return m_vertex_connectivity.refused_need(); }
+    size_t refused_tri_request() const { return m_tri_connectivity.refused_need(); }
 
     size_t request_tri_slots(size_t n);
     size_t request_vert_slots(size_t n);
+
+    // Construction helpers (single-threaded ONLY), the twins of TetMesh's
+    // ensure_free_tet_capacity / ensure_free_vert_capacity: guarantee at least `extra` free
+    // triangle/vertex slots beyond the current used count, growing the storage geometrically if
+    // necessary, with the attributes sized as init() and consolidate_mesh() size them (edges
+    // 3 per triangle). Unlike request_*_slots these never fail; they are for a mesh being built
+    // rather than edited by concurrent operations.
+    void ensure_free_tri_capacity(size_t extra)
+    {
+        const size_t need = m_tri_connectivity.live() + extra;
+        if (m_tri_connectivity.capacity() >= need) return;
+        const size_t newcap = std::max(need, m_tri_connectivity.capacity() * 2 + 1);
+        m_tri_connectivity.resize(newcap);
+        if (p_face_attrs) p_face_attrs->resize(newcap);
+        if (p_edge_attrs) p_edge_attrs->resize(3 * newcap);
+    }
+    void ensure_free_vert_capacity(size_t extra)
+    {
+        const size_t need = m_vertex_connectivity.live() + extra;
+        if (m_vertex_connectivity.capacity() >= need) return;
+        const size_t newcap = std::max(need, m_vertex_connectivity.capacity() * 2 + 1);
+        m_vertex_connectivity.resize(newcap);
+        resize_mutex(newcap);
+        if (p_vertex_attrs) p_vertex_attrs->resize(newcap);
+    }
 
 private:
     size_t reserved_capacity(size_t live_count) const

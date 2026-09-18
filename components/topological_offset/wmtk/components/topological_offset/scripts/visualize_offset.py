@@ -1125,6 +1125,21 @@ def main():
         ps.set_navigation_style("planar")
     ps.set_ground_plane_mode("none")
 
+    # 3D ONLY: a clipping plane with a draggable gizmo, and an opacity for the cells. In 3D the band
+    # hides the front and the front hides the input; cutting the scene open and making the cells
+    # see-through is the only way to watch the march from inside. The plane starts through the
+    # middle of the first frame, cutting off everything above it; drag or rotate the gizmo to move
+    # it, or untick it in the panel. The opacity applies to the two cell layers (background mesh,
+    # offset band), not to the surfaces, so the front stays solid inside see-through cells.
+    clip_plane = None
+    if dim == 3:
+        clip_plane = ps.add_scene_slice_plane()
+        clip_plane.set_draw_plane(False)
+        clip_plane.set_draw_widget(True)
+        p0 = frames[0][1]
+        clip_plane.set_pose(tuple(0.5 * (p0.min(axis=0) + p0.max(axis=0))), (0.0, 0.0, -1.0))
+        clip_plane.set_active(True)
+
     registered = []
     extra_qs = [] # per frame: quantity handles the sizing toggle flips, see register_frame
     for k, (path, points, d, groups, surf, delta, prov, err, mesh, sizing, diags) in enumerate(frames):
@@ -1186,8 +1201,19 @@ def main():
     # boundaries move -- the band overwrites tags and Phase A collapses cells -- so "has the
     # dragon changed?" needs the input drawn beside it, and this is the input as the run loaded it.
     ref_structs = []
+    ref_read = None
     if input_ref is not None and input_ref.is_file():
-        rp, rdim, rgroups = read_groups(input_ref)[:3]
+        # An optional layer: a reference the reader cannot parse is reported and skipped, the same
+        # as a missing one, rather than taking the frames down with it. Measured: meshio's own
+        # gmsh 4.1 writer produces files its reader rejects (KeyError in the physical-tag table),
+        # and the Kuhn-grid fixtures are such files.
+        try:
+            ref_read = read_groups(input_ref)[:3]
+        except Exception as err:
+            print("input geometry (reference): %s could not be read (%s: %s); layer skipped"
+                  % (input_ref, type(err).__name__, err))
+    if ref_read is not None:
+        rp, rdim, rgroups = ref_read
         rows = {}
         for g, cells in rgroups.items():
             for r in cells:
@@ -1212,7 +1238,7 @@ def main():
             s.set_enabled(False)
             ref_structs.append(s)
         print("input geometry (reference): %s, %d tag boundaries" % (input_ref, len(ref_structs)))
-    elif input_ref is not None:
+    elif input_ref is not None and not input_ref.is_file():
         print("input geometry (reference): %s not found" % input_ref)
 
     # Which LAYERS are on is one choice for the whole series; which FRAME is showing is another.
@@ -1236,6 +1262,9 @@ def main():
     # not an arbitrary cutoff. The offset spec's default is 100; a config that set it wins.
     state["bad quality (red)"] = False
     state["bad threshold"] = float(cfg.get("stop_energy", 100.0))
+    state["clip plane"] = clip_plane is not None
+    state["cell opacity"] = 1.0
+    CELL_LAYERS = ("background mesh (tags as cell layers)", "offset band (filled, pale blue)")
 
     has_quality = any("quality" in ex for ex in extra_qs)
 
@@ -1281,6 +1310,10 @@ def main():
         for k, layers in enumerate(registered):
             for label, s in layers.items():
                 s.set_enabled(k == cur and state.get(label, False))
+                # Set on every frame's cell layers, so a lazy frame swap -- which registers
+                # fresh structures -- and scrubbing both keep the chosen opacity.
+                if dim == 3 and label in CELL_LAYERS:
+                    s.set_transparency(state["cell opacity"])
         rebuild_bad()  # the highlight follows the frame, so it is rebuilt with it
         if phi_struct is not None:
             phi_struct.set_enabled(state["smooth offset potential"])
@@ -1355,6 +1388,17 @@ def main():
                 state["tick"] += 1
                 if state["tick"] % 6 == 0:  # ~10 fps at a 60 Hz draw
                     show_frame((state["frame"] + 1) % n_frames)
+        if clip_plane is not None:
+            psim.Separator()
+            changed, state["clip plane"] = psim.Checkbox(
+                "clip plane (drag / rotate the gizmo)", state["clip plane"])
+            if changed:
+                clip_plane.set_active(state["clip plane"])
+                clip_plane.set_draw_widget(state["clip plane"])
+            changed, v = psim.SliderFloat("cell opacity", state["cell opacity"], 0.0, 1.0)
+            if changed:
+                state["cell opacity"] = v
+                apply_visibility()
         psim.Separator()
         for label, _ in LAYERS:
             if not any(label in layers for layers in registered):

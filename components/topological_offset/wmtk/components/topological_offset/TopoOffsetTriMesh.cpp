@@ -227,9 +227,12 @@ bool TopoOffsetTriMesh::edge_is_complex_boundary(const Tuple& e) const
     return m_edge_extra[e.eid(*this)].label == 1;
 }
 
-void TopoOffsetTriMesh::build_boundary_envelopes(const char* when, const EnvelopeSetup setup)
+void TopoOffsetTriMesh::build_boundary_envelopes(
+    const char* when,
+    const EnvelopeSetup setup,
+    const double width)
 {
-    m_envelope_eps = m_offset_params.envelope_size;
+    m_envelope_eps = width > 0. ? width : m_offset_params.envelope_size;
 
     // Fresh: every mask from the tracked edges as they stand, nothing carried over.
     for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].m_boundary_mask = 0;
@@ -991,11 +994,13 @@ double TopoOffsetTriMesh::max_band_vertex_distance() const
 
 void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
 {
+    log_stage("input");
     // Before any of the construction, optionally improve the mesh it runs on: the marching puts
     // the offset on this triangulation's own cell boundaries, so its quality decides how far the
     // constructed offset lands from the complex and therefore how large dhat has to be.
     if (m_offset_params.pre_optimize_input) {
         pre_optimize_input_mesh();
+        log_stage("pre_optimized");
         if (m_offset_params.debug_output) {
             write_debug_frame("pre_optimized");
         }
@@ -1009,8 +1014,22 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
         bool dummy = is_simplicially_embedded();
     }
     consolidate_mesh();
+    log_stage("simplicial_embedding");
     if (m_offset_params.debug_output) {
         write_debug_frame("simplicial_embedding");
+    }
+
+    // refined_marching: bisect the background mesh until the front the marching is about to place
+    // is within tol of the level set d(x) = march_distance. Only midpoint bisections of unmarched
+    // edges, so the mesh stays simplicially embedded and every label travels as it does above. As
+    // in 3D.
+    if (m_offset_params.refined_marching) {
+        refine_for_marching();
+        consolidate_mesh();
+        log_stage("refined_background");
+        if (m_offset_params.debug_output) {
+            write_debug_frame("refined_background");
+        }
     }
 
     // initialize offset
@@ -1019,12 +1038,20 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
     // the placement at all, and carrying the boundary out to target_distance is the optimization
     // phase's job. sphere_trace_initialization: the vertex goes to the point of the edge where
     // d(x) = target_distance within sphere_trace_target_rel_tol (sphere tracing from the complex
-    // end), to the midpoint on an edge the trace leaves.
-    m_edge_split_mode = m_offset_params.sphere_trace_initialization ? EdgeSplitMode::SphereTrace
-                                                                    : EdgeSplitMode::Midpoint;
+    // end), to the midpoint on an edge the trace leaves. refined_marching traces the same way but
+    // to its own march_distance, and the refinement above is what makes that placement accurate, so
+    // it needs the traced placement whatever sphere_trace_initialization says.
+    m_edge_split_mode =
+        (m_offset_params.sphere_trace_initialization || m_offset_params.refined_marching)
+            ? EdgeSplitMode::SphereTrace
+            : EdgeSplitMode::Midpoint;
     marching_tris();
+    if (m_offset_params.refined_marching) {
+        validate_refined_marching();
+    }
     m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
     consolidate_mesh();
+    log_stage("marching");
     if (m_offset_params.debug_output) {
         write_debug_frame("marching");
     }
@@ -1043,14 +1070,27 @@ void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
     // only consolidate on an already-embedded mesh would be the debug one -- and consolidating
     // renumbers, which changes the order later passes enumerate operations in, i.e. the run.
     consolidate_mesh();
+    log_stage("re_embedded");
     if (m_offset_params.debug_output) {
         write_debug_frame("re_embedded");
     }
 
     set_offset_tri_tags();
     consolidate_mesh();
+    log_stage("offset_tagged");
     if (m_offset_params.debug_output) {
         write_debug_frame("offset_tagged");
+    }
+
+    // refined_marching_remesh: TriWild over the mesh the march's bisections left, against the
+    // target edge length, with both curves held in their own tubes of the march's tol; see
+    // remesh_refined_march(). As in 3D.
+    if (m_offset_params.refined_marching_remesh) {
+        remesh_refined_march();
+        log_stage("remesh");
+        if (m_offset_params.debug_output) {
+            write_debug_frame("remesh");
+        }
     }
 
     assert(ambient_assert());
@@ -1102,6 +1142,13 @@ bool TopoOffsetTriMesh::tri_is_simp_emb(const Tuple& t) const
 }
 
 
+void TopoOffsetTriMesh::reserve_edge_split(const Tuple& e)
+{
+    ensure_free_vert_capacity(1);
+    ensure_free_tri_capacity(get_incident_fids_for_edge(e).size());
+}
+
+
 void TopoOffsetTriMesh::simplicial_embedding()
 {
     // identify tris to split
@@ -1133,6 +1180,11 @@ void TopoOffsetTriMesh::simplicial_embedding()
         const auto& vs = f.vertices();
         Tuple t = tuple_from_vids(vs[0], vs[1], vs[2]);
         std::vector<Tuple> garbage;
+        // Construction reserves its own slots, see reserve_edge_split(): a face split requests 1
+        // vertex and 2 triangles (TriMesh.cpp:1694-1696). As in 3D, where the face and tet splits
+        // reserve the same way.
+        ensure_free_vert_capacity(1);
+        ensure_free_tri_capacity(2);
         if (!split_face(t, garbage)) {
             log_and_throw_error("face split failed! (simplicial_embedding)");
         }
@@ -1157,6 +1209,7 @@ void TopoOffsetTriMesh::simplicial_embedding()
     for (const simplex::Edge& e : edges_to_split) {
         Tuple t = get_tuple_from_edge(e);
         std::vector<Tuple> garbage;
+        reserve_edge_split(t);
         if (!split_edge(t, garbage)) {
             log_and_throw_error("edge split failed! (simplicial_embedding)");
         }
@@ -1171,6 +1224,10 @@ void TopoOffsetTriMesh::marching_tris()
     m_marching_midpoint_splits = 0;
     m_marching_trace_steps = 0;
     m_marching_trace_steps_max = 0;
+    m_marching_trace_bisected_edges = 0;
+    m_marching_trace_bisection_steps = 0;
+    m_marching_rational_fallbacks = 0;
+    m_marching_new_verts.clear();
     // mark edges to split
     std::vector<simplex::Edge> e_to_split;
     auto edges = get_edges();
@@ -1216,6 +1273,7 @@ void TopoOffsetTriMesh::marching_tris()
             if (!edge_split_sphere_trace(
                     m_vertex_attribute[v_in].m_posf,
                     m_vertex_attribute[v_out].m_posf,
+                    marching_target_distance(),
                     p_probe,
                     steps)) {
                 ++untraceable;
@@ -1250,26 +1308,59 @@ void TopoOffsetTriMesh::marching_tris()
         // split edge
         garbage.clear();
         Tuple t = get_tuple_from_edge(e);
+        reserve_edge_split(t);
         if (split_edge(t, garbage)) { // this should never fail
             frontier_verts.push_back(v_in);
+            // The vertex this split placed on the offset boundary; validate_refined_marching()
+            // reads the list to tell which edges of the band are front pieces. As in 3D.
+            m_marching_new_verts.push_back(m_marching_last_new_vid);
         } else {
             log_and_throw_error("edge split failed! (marching_tris)");
         }
     }
     if (m_edge_split_mode == EdgeSplitMode::SphereTrace) {
+        // What stopped each trace, not what the tolerance parameter says: under
+        // refined_marching the tolerance is not read at all.
+        const std::string stop_rule =
+            m_offset_params.refined_marching
+                ? std::string(
+                      "the step stopped moving the point in double arithmetic "
+                      "(refined_marching: roots to machine precision)")
+                : fmt::format(
+                      "|d(x) - target_distance| <= {} x target_distance",
+                      m_offset_params.sphere_trace_target_rel_tol);
         logger().info(
             "\t[construction] sphere_trace_initialization: {} of {} marched edges placed where "
-            "|d(x) - target_distance| <= {} x target_distance, {} at the midpoint (the trace left "
+            "{}, {} at the midpoint (the trace left "
             "the edge) | trace steps: {} total, {} max, {:.1f} per edge",
             m_marching_root_splits,
             e_to_split.size(),
-            m_offset_params.sphere_trace_target_rel_tol,
+            stop_rule,
             m_marching_midpoint_splits,
             m_marching_trace_steps,
             m_marching_trace_steps_max,
             e_to_split.empty() ? 0. : double(m_marching_trace_steps) / double(e_to_split.size()));
+        // Forensics, not a defect: the bisection of the bracket is how the trace terminates, so a
+        // non-zero count is the mechanism working. Logged at info either way, so that a run which
+        // needed it and a run which did not are told apart from the log alone. As in 3D.
+        logger().info(
+            "\t[construction] sphere_trace_initialization: {} of {} marched edges needed the "
+            "bisection fallback (the sphere-trace step stopped moving the point forward), {} "
+            "bisection steps in total; those steps are included in the trace steps above",
+            m_marching_trace_bisected_edges,
+            e_to_split.size(),
+            m_marching_trace_bisection_steps);
     } else {
         logger().info("\t[construction] {} marched edges split at the midpoint", e_to_split.size());
+    }
+    if (m_offset_params.refined_marching) {
+        logger().info(
+            "\t[construction] refined_marching: the trace above went to march_distance = {}, "
+            "not to target_distance = {} | exact-rational fallbacks (the double position "
+            "inverted or flattened an incident triangle): {}",
+            marching_target_distance(),
+            m_offset_params.target_distance,
+            m_marching_rational_fallbacks);
     }
     // Leave the mode as it was found: the consistency flag may have forced it to Midpoint above,
     // and that decision belongs to this march alone.
@@ -1386,17 +1477,18 @@ bool TopoOffsetTriMesh::offset_is_manifold()
 
 bool TopoOffsetTriMesh::invariants(const std::vector<Tuple>& tris)
 {
-    wmtk::utils::predicates::exactinit();
+    // Invariant: a triangle is valid iff its orientation is positive in the arithmetic that holds
+    // its true position -- exact double predicate when all three vertices are rounded, rational
+    // otherwise. is_inverted() is exactly that test; the earlier version of this function read
+    // m_posf whatever m_is_rounded said, so an un-rounded vertex (a vertex the exact-rational
+    // fallback placed, whose double image can be flat while the triangle is valid exactly) was
+    // judged on a position the mesh does not use. TriMesh::split_edge calls this immediately after
+    // the split hook, so that test refused precisely the splits the fallback had just made valid
+    // (measured in 3D on presmooth3d/sphere, bisection 2124; same mechanism one dimension down).
+    // The two tests can only differ on a triangle with an un-rounded vertex; runs that round every
+    // vertex are bit-identical either way (verified: presmooth2d circle/square/line).
     for (const Tuple& t : tris) {
-        auto vs = oriented_tri_vids(t);
-
-        auto res = wmtk::utils::predicates::orient2d(
-            m_vertex_attribute[vs[0]].m_posf,
-            m_vertex_attribute[vs[1]].m_posf,
-            m_vertex_attribute[vs[2]].m_posf);
-        if (res != wmtk::utils::predicates::Orientation::POSITIVE) {
-            return false;
-        }
+        if (is_inverted(t)) return false;
     }
     return true;
 }
@@ -1576,7 +1668,13 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         for (size_t k = 0; k < vs.size(); ++k) {
             CR(k, 0) = RL(k, 0) = GN(k, 0) = MA(k, 0) = CD(k, 0) = -1.;
             const size_t vid = vs[k].vid(*this);
-            if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) {
+            // Not before the potential exists: the refined march's remesh pass
+            // (remesh_refined_march()) runs inside execute_offset(), ahead of
+            // init_offset_potential(), with the front already marked, and its frames are written
+            // here. Every other frame with a marked front comes from optimize_offset(), after the
+            // potential is built, so this skips nothing it used to write. As in 3D.
+            if (!m_offset_potential || !m_vertex_extra[vid].m_is_on_offset ||
+                !m_vertex_attribute[vid].m_is_rounded) {
                 continue;
             }
             const Vector2d p = m_vertex_attribute[vid].m_posf;
@@ -1631,7 +1729,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
             if (packed[va] < 0 || packed[vb] < 0) continue;
             fe.push_back({packed[va], packed[vb]});
-            fe_sag.push_back(front(va) && front(vb) ? edge_conv_ratio(va, vb) : -1.);
+            fe_sag.push_back(
+                m_offset_potential && front(va) && front(vb) ? edge_conv_ratio(va, vb) : -1.);
             fe_len.push_back(
                 (m_vertex_attribute[va].m_posf - m_vertex_attribute[vb].m_posf).norm());
         }
