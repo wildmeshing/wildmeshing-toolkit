@@ -8,9 +8,11 @@
       "operation"
     ],
     "optional": [
-      "output"
+      "output",
+      "inputs_only",
+      "polyfem_backend"
     ],
-    "doc": "Dispatcher for the polyfem-backed simwild operations. Only these keys are validated here; an operation's own parameters are validated by the operation against the pysimwild spec.json that defines them."
+    "doc": "Dispatcher for the polyfem-backed simwild operations. Only these keys are validated here; an operation's own parameters are validated by the operation against the pysimwild spec.json that defines them. `inputs_only` and `polyfem_backend` are validated here and not there because they are C++-engine switches that pysimwild has no key for, and the pysimwild specs are strict: offering them to them would be rejected."
   },
   {
     "pointer": "/application",
@@ -27,6 +29,22 @@
     "type": "string",
     "default": "out",
     "doc": "Output path stem: the deformed mesh is written to <output>.msh and working artifacts next to it."
+  },
+  {
+    "pointer": "/inputs_only",
+    "type": "bool",
+    "default": false,
+    "doc": "Write the generated polyfem inputs to <directory of output>/sep_input or /smooth_input and return without solving. C++ engine only: it exists so the generated inputs can be diffed byte for byte against the ones pysimwild writes, which is how this port is checked."
+  },
+  {
+    "pointer": "/polyfem_backend",
+    "type": "string",
+    "options": [
+      "in_process",
+      "subprocess"
+    ],
+    "default": "in_process",
+    "doc": "How polyfem is reached. `in_process` calls the polyfem this component is linked against; `subprocess` runs $POLYFEM_BIN as a child, which is what the Python engine does and what this one did before the two were compared. Both read the same generated JSON and write the same files; the switch exists so a test can run one input through both."
   },
   {
     "pointer": "/operation",
