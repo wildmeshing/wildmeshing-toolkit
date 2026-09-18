@@ -4285,7 +4285,24 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         }
         // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
         // no face left to resolve -- then quality with the front frozen (below).
-        if (ec.converged_single() && lowered_prev == 0) {
+        //
+        // `lowered_prev == 0` is one turn of hysteresis, and EXPERIMENTAL_exit_when_criteria_met
+        // drops it. It can only ever be the PREVIOUS turn's lowering: converged_single() requires
+        // an empty refinable set, so a turn that meets the criterion ran no refinement of its own
+        // and left lowered_last_turn at 0. What the default therefore demands is two consecutive
+        // turns without a lowering, the second of them converged.
+        //
+        // That is worth something because the tail churns rather than settles: measured on the
+        // cube at target_distance_rel 1e-3, the split pass mints a fresh crop of over-tube faces
+        // on the quarter-cylinders every turn and the collapse pass clears them, with NOT ONE
+        // face surviving from one pass to the next, so the turn-end count wanders (5, 2, 0, 2)
+        // and a single clean turn is partly luck. It also costs: the loop can sit for many turns
+        // waiting for two of them to line up. TetWild's loop takes the other choice -- it breaks
+        // the moment its max energy is under stop_energy, because that number is a property of
+        // the mesh it is holding, where refinable is a request for work on the next turn.
+        const bool exit_grace =
+            m_offset_params.experimental_exit_when_criteria_met || lowered_prev == 0;
+        if (ec.converged_single() && exit_grace) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the

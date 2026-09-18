@@ -50,6 +50,7 @@
       "pre_smooth",
       "EXPERIMENTAL_ops_divergence_guard",
       "EXPERIMENTAL_flip_sag_margin",
+      "EXPERIMENTAL_exit_when_criteria_met",
       "max_iterations",
       "offset_envelope_rel",
       "length_rel",
@@ -408,6 +409,12 @@
     "default": 0.0001,
     "min": 0.0,
     "doc": "EXPERIMENTAL. 3D single-phase loop only; 2D does not read it. How much of the resolution bar a flip of the offset surface must WIN for EXPERIMENTAL_ops_divergence_guard to accept it. In the units the turn line reports, so 1 is the bar itself and the default 1e-4 is a ten-thousandth of it. The whole rule for such a flip is then: max sag after <= max sag before - this margin, AND the cells it creates are under stop_energy. A flip that misses the margin is refused outright; it does not fall back on the base's strict improvement in AMIPS, and whether the pair was over the bar plays no part. Ignored entirely when EXPERIMENTAL_ops_divergence_guard is false. WHY IT EXISTS: to keep noise out, and with it the pass does not finish. Two diagonals of a small quad on a curved part of the offset surface sag almost identically, so a flip between them moves nothing a criterion can see while still being a strict improvement. Measured on the cube at target_distance_rel 1e-3, one swap pass accepted 3020000 surface flips of which 3019913 (99.997%) won less than 1e-12 of the bar; every one was monotone and the pass never ended. The default sits in an empty gap: of the 87 that won more than 1e-12, 47 won at least 1e-4 and none landed between 1e-9 and 1e-4. 0 restores the behaviour that does not finish."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_exit_when_criteria_met",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL. Single-phase loop only. How the loop is allowed to STOP once the front meets its criterion. false (the default): the turn that meets it must also follow a turn in which no sizing scalar was lowered, so the loop needs the criterion met and the previous turn already quiet -- one turn of hysteresis. true: the loop exits on the first turn that meets the criterion, whatever the previous turn did, which is how TetWild's own loop stops (it breaks the moment max energy is under stop_energy and every vertex is rounded, and its stuck-refine is a response to being above the bar rather than a term in the stopping test). The criterion itself is unchanged either way: every front vertex within front_conv_rel x target_distance, none unmeasurable, and no face left to resolve. WHY IT EXISTS: the default's extra turn is there because the offsets criterion carries a request for work into the next turn -- refinement is decided at the end of a turn and only executed by the next turn's split pass -- whereas TetWild's max AMIPS is a property of the mesh in hand. Measured on the cube at target_distance_rel 1e-3, the split pass mints a fresh crop of over-tube faces every turn on the quarter-cylinders and the collapse pass clears them again, with NOT ONE face surviving from one pass to the next, so the count at turn end is near-random in the tail (5, 2, 0, 2) and the hysteresis can cost many turns waiting for two of them to line up. A turn that meets the criterion has an empty refinable set by construction, so it never has a pending refinement of its own; what the default waits on is the turn BEFORE it."
   },
   {
     "pointer": "/coarsen_pass",

@@ -176,6 +176,11 @@ struct Parameters : public wmtk::OptimizerParameters
     /// the whole rule; one that misses the margin is refused rather than falling back on AMIPS.
     /// Without it the swap pass does not finish, on noise-sized flips that are all monotone.
     double experimental_flip_sag_margin;
+    /// EXPERIMENTAL, 3D only. See the spec: true lets the single-phase loop exit on the FIRST
+    /// turn that meets the front criterion, the way TetWild's loop stops on its own metric.
+    /// false (the default) additionally requires that the previous turn lowered no sizing
+    /// scalar, which is one turn of hysteresis against the tail's churn.
+    bool experimental_exit_when_criteria_met;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -243,6 +248,7 @@ struct Parameters : public wmtk::OptimizerParameters
         pre_smooth = json_params["pre_smooth"];
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
         experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
+        experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
