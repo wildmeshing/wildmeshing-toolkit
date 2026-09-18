@@ -219,6 +219,8 @@ bool TopoOffsetTetMesh::swap_capture_surface_sides(
     // not one of a, b, c, d to the side it belongs to instead.
     auto& sides = m_swap_sides.local();
     sides.by_vertex.clear();
+    // Carried to swap_after_cells(), which refreshes exactly these four; see SwapSurfaceSides.
+    sides.abcd = {{a, b, c, d}};
     for (const size_t tid : tids) {
         const std::pair<CellTag, int> side{m_tet_attribute[tid].tag, m_tet_attribute[tid].label};
         for (const size_t v : oriented_tet_vids(tid)) {
@@ -661,6 +663,13 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         m_tet_attribute[t].label = side->second;
         stamp_rest_cell(t);
     }
+    // Only now, with every new cell's label written: the refresh reads labels, so it has to run
+    // after the loop that sets them. The flip's net surface change is -(a,b,c) -(a,b,d) +(a,c,d)
+    // +(b,c,d), so a and b can lose their last offset face and c and d can gain their first; no
+    // other vertex's answer moves. This runs before the base's Hausdorff check on the two new
+    // surface faces, so a flip refused there is rolled back -- m_vertex_extra is registered in
+    // m_vertex_attr_group, so these writes roll back with it.
+    for (const size_t v : sides.abcd) refresh_offset_membership(v);
     ++iter_cnt_swap;
     return true;
 }
@@ -810,6 +819,20 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
         m_collapse_parent_flatness.local() = f;
     }
 
+    // The link of the edge about to be collapsed: the only vertices besides v2 whose offset
+    // membership this collapse can change. Captured here because the edge no longer exists in
+    // collapse_after_vertex(), which is where the refresh runs. See m_collapse_edge_link.
+    {
+        std::vector<size_t>& link = m_collapse_edge_link.local();
+        link.clear();
+        for (const size_t tid : get_incident_tids_for_edge(v1_id, v2_id)) {
+            for (const size_t w : oriented_tet_vids(tid)) {
+                if (w != v1_id && w != v2_id) link.push_back(w);
+            }
+        }
+        wmtk::vector_unique(link);
+    }
+
     const auto& VE = m_vertex_extra;
 
     // v1 is the vertex the collapse removes; it merges into v2, which keeps its position. A
@@ -901,8 +924,17 @@ void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
     m_vertex_extra[v2_id].m_is_on_input =
         m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
-    m_vertex_extra[v2_id].m_is_on_offset =
-        m_vertex_extra.at(v1_id).m_is_on_offset || m_vertex_extra.at(v2_id).m_is_on_offset;
+    // The offset half is NOT an OR: it is re-derived from the labels, for v2 and for the link of
+    // the edge that just died. An OR can only ever add the flag, so a collapse that takes a
+    // vertex off the offset surface used to leave it flagged for the rest of the run -- counted
+    // by energy_criterion(), smoothed as a front vertex, and unable to satisfy a criterion that
+    // measures its distance to a level set it is no longer on. That is what stalled the cube at
+    // target_distance_rel 1e-3 with the front already placed. See refresh_offset_membership().
+    refresh_offset_membership(v2_id);
+    for (const size_t w : m_collapse_edge_link.local()) {
+        if (w == v1_id || w == v2_id) continue;
+        refresh_offset_membership(w);
+    }
     m_vertex_extra[v2_id].m_is_on_region =
         m_vertex_extra.at(v1_id).m_is_on_region || m_vertex_extra.at(v2_id).m_is_on_region;
     // The survivor now carries both vertices' geometry, so it lies on the union of their
@@ -917,8 +949,8 @@ void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge
 {
     const auto& cache = m_opt_split_cache.local();
     // The base has already set m_is_on_surface, which is the union; this says which. The offset
-    // half is never rewritten here -- split_after_cells() derived it from the two endpoints, and
-    // that is the authority.
+    // half is never rewritten here -- split_after_cells() took it from the same cached edge
+    // property this line uses, and that is the authority.
     m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     if (is_edge_open_boundary) {
         m_vertex_attribute[v_id].m_order = 2;
@@ -3443,6 +3475,62 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
     return result;
 }
 
+bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
+{
+    // No `seen` set: a face reached twice is simply tested twice, and the first live one ends the
+    // walk. The set exists in offset_surface_faces_live_at() to avoid duplicate entries in the
+    // list it returns, which is not a concern here.
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        const auto tv = oriented_tet_vids(tid);
+        for (int skip = 0; skip < 4; ++skip) {
+            if (tv[size_t(skip)] == vid) continue;
+            const auto [ft, fid] = tuple_from_face(face_corners_from(tv, skip));
+            (void)fid;
+            if (face_is_offset_surface_live(ft)) return true;
+        }
+    }
+    return false;
+}
+
+void TopoOffsetTetMesh::refresh_offset_membership(const size_t vid)
+{
+    m_vertex_extra[vid].m_is_on_offset = vertex_has_live_offset_face(vid);
+}
+
+std::pair<size_t, size_t> TopoOffsetTetMesh::offset_membership_mismatches() const
+{
+    size_t flagged_not_live = 0, live_not_flagged = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const bool live = vertex_has_live_offset_face(vid);
+        const bool flag = m_vertex_extra[vid].m_is_on_offset;
+        if (flag && !live) ++flagged_not_live;
+        if (live && !flag) ++live_not_flagged;
+    }
+    return {flagged_not_live, live_not_flagged};
+}
+
+void TopoOffsetTetMesh::check_offset_membership(const char* when) const
+{
+    if (!m_params.perform_sanity_checks) return;
+    const auto [flagged_not_live, live_not_flagged] = offset_membership_mismatches();
+    logger().info(
+        "\t[sanity] offset membership @ {}: flagged but not on the surface {}, on the surface but "
+        "not flagged {}",
+        when,
+        flagged_not_live,
+        live_not_flagged);
+    if (flagged_not_live != 0 || live_not_flagged != 0) {
+        log_and_throw_error(
+            "offset membership is out of step @ {}: {} vertices carry m_is_on_offset with no live "
+            "offset-surface face, {} have one without the flag. The propagation in "
+            "split_after_cells / collapse_after_vertex / swap_after_cells missed a case.",
+            when,
+            flagged_not_live,
+            live_not_flagged);
+    }
+}
+
 /// The outer-angle threshold, in degrees, above which an offset-surface edge counts as folded
 /// over: the angle between its two faces measured through ONE of the two sides. 180 is flat and
 /// 360 is the two faces exactly on top of each other. Because the two sides sum to 360, "over
@@ -3935,6 +4023,9 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // is never accepted, and the counters are reset each turn so the line is per-turn.
         logger().info("\t[swap reject] turn {}: {}", it + 1, swap_reject_report());
         swap_counters_reset();
+        // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
+        // the key is off, which is the default.
+        check_offset_membership(fmt::format("turn {}", it + 1).c_str());
         if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
                 "\t[ops guard] turn {}: {} collapse(s) and {} swap(s) refused for raising the "
@@ -4037,6 +4128,11 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // label the offset surface, and with it the vertices the optimization places
     logger().info("\tLabel offset faces...");
     label_offset_boundary();
+    // The baseline the propagation has to hold from here on. label_offset_boundary() marks the
+    // flag from m_face_extra's construction labels; this asks the live cell-label test the same
+    // question, so a disagreement at turn 0 would mean the two disagree about what the offset
+    // surface IS, before any operation has run.
+    check_offset_membership("construction");
 
     init_vertex_order();
 

@@ -578,6 +578,33 @@ public:
     std::vector<std::array<size_t, 3>> offset_surface_faces() const;
     /// The live offset-surface faces incident to vid.
     std::vector<Tuple> offset_surface_faces_live_at(size_t vid) const;
+    /// Whether ANY live offset-surface face is incident to vid. The same question
+    /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
+    /// operation hooks, where the list would be allocated and thrown away.
+    bool vertex_has_live_offset_face(size_t vid) const;
+    /**
+     * @brief Re-derive m_is_on_offset for one vertex from the cell labels, exactly.
+     *
+     * THE definition of the flag, and the only thing that writes it after
+     * label_offset_boundary(): a vertex is on the offset surface iff some incident face has the
+     * band on one side and a non-complex cell on the other. Called from the three hooks where an
+     * operation can change the answer -- see the note above m_collapse_edge_link.
+     *
+     * Reads labels, never the flag it is writing and never the cached face class, so a wrong
+     * value cannot propagate and any vertex an operation touches is corrected whatever it carried
+     * before.
+     *
+     * It deliberately does NOT touch m_vertex_attribute[vid].m_is_on_surface, which is the base's
+     * union over every tracked surface (input, region, offset); clearing that from here would
+     * unhold a vertex that is still on a region boundary. See the CLAUDE.md note.
+     */
+    void refresh_offset_membership(size_t vid);
+    /// perform_sanity_checks: how many vertices carry m_is_on_offset without a live offset face,
+    /// and how many are the other way round. Whole-mesh, O(V x ring); zero is the invariant.
+    std::pair<size_t, size_t> offset_membership_mismatches() const;
+    /// Log offset_membership_mismatches() and throw when it is not {0, 0}. perform_sanity_checks
+    /// only.
+    void check_offset_membership(const char* when) const;
 
     /**
      * @brief Per-vertex 0/1: is this vertex an endpoint of a COLLAPSED (folded-over) offset
@@ -887,6 +914,19 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
+    /**
+     * @brief The link of the collapsed edge, captured in collapse_before_vertex().
+     *
+     * Which vertices a collapse can move off the offset surface, exactly: the faces that DIE are
+     * the ones carrying both endpoints, (v1, v2, w) for w in the link, so only v2 and those w can
+     * lose their last surface face. A face (v1, a, b) with neither corner on the edge does not
+     * die -- it is relabelled onto v2 -- so a and b keep it and are unaffected. Nothing but v2
+     * can gain, since faces only ever move from v1 to v2.
+     *
+     * Captured before the collapse because the edge is gone by collapse_after_vertex(), which is
+     * where the refresh runs.
+     */
+    mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
     /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio measures it, with an
     /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
     double offset_face_sag(size_t a, size_t b, size_t c) const;
@@ -1779,6 +1819,10 @@ private:
     struct SwapSurfaceSides
     {
         std::map<size_t, std::pair<CellTag, int>> by_vertex;
+        /// a, b, c, d as prepare_surface_flip named them. The flip's net surface change is
+        /// -(a,b,c) -(a,b,d) +(a,c,d) +(b,c,d), so these four are exactly the vertices whose
+        /// membership it can change, and swap_after_cells() refreshes them.
+        std::array<size_t, 4> abcd{};
     };
     bool swap_capture_surface_sides(
         const std::vector<size_t>& tids,
