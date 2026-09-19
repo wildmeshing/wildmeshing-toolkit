@@ -370,7 +370,9 @@ public:
      * switches the setup at construction, and fresh at the start of the final pass. The offset
      * tube is separate and unchanged.
      */
-    enum class EnvelopeSetup { PerTag, WallComplex };
+    /// PerTagAndComplex: every tag boundary (PerTag) AND the input complex (WallComplex's complex
+    /// tube) -- what the refined march's remesh pass holds, since that pass must move no surface.
+    enum class EnvelopeSetup { PerTag, WallComplex, PerTagAndComplex };
     EnvelopeSetup envelope_setup() const
     {
         return m_offset_params.deform_others ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
@@ -653,6 +655,11 @@ public:
     /// march's remesh pass and by optimize_offset().
     std::atomic<int> iter_cnt_split_front_chord{0};
     std::atomic<int> iter_cnt_split_input_chord{0};
+    /// MEASUREMENT: of the splits counted in iter_cnt_split_input_chord, those whose midpoint lies
+    /// ON the input complex (exact distance <= 1e-9 x edge length): not chords, but edges of the
+    /// complex whose construction label the optimization failed to carry (sheet faces in 3D,
+    /// curve edges in 2D), so the edge test called them off the input. Diagnostic only.
+    std::atomic<int> iter_cnt_split_input_on_input{0};
     /// front_refuse_converged_collapse: operations refused because a resolved patch of the front
     /// would have come out unresolved.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
@@ -673,6 +680,11 @@ public:
         /// split_after_cells() sets the midpoint's m_is_on_input from.
         bool is_edge_in_input = false;
         std::map<simplex::Edge, TetAttributes> tets;
+        /// The construction labels of every face and edge of the parents, keyed by their
+        /// vertices, read before the parents are replaced. split_after_cells() writes them onto
+        /// the children by the rules at merge_labels().
+        std::map<simplex::Face, int> face_labels;
+        std::map<simplex::Edge, int> edge_labels;
         /// Diagnostic: the parents' worst AMIPS before the split, so split_after_vertex() can
         /// say whether a needle child came from a healthy parent or an already unscoreable one.
         double parent_q_max = -1.;
@@ -681,6 +693,76 @@ public:
         double parent_flatness = 1.;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache> m_opt_split_cache;
+
+    /**
+     * @brief The construction labels of vertices, edges and faces through the optimization's
+     * split, collapse and swap -- carried as the cell label is, so that every label is what
+     * construction's rule would give the mesh as it stands.
+     *
+     * CONSTRUCTION'S RULE: a simplex has label 1 if it is in the input complex (a face, edge or
+     * vertex of a label-1 cell, or a lower-dimensional piece the selection names: a sheet's
+     * faces), else 2 if it is in the closure of a band cell (label 2), else 0. The construction
+     * splits in this file keep it exactly. The shared operations carry only the cell label and
+     * their own FaceAttributes, and a face or edge slot is the lowest incident tet's (tid x 4 +
+     * local, tid x 6 + local): an operation that replaces tets re-slots every face and edge whose
+     * lowest tet changed, so a label not written back holds whatever the slot's last occupant
+     * had. For a solid complex that is harmless, the cell labels decide; for a sheet the face
+     * label is the only record of the complex. Measured before this carrying: of the split
+     * midpoints the edge test put off the input although their exact distance to it is 0,
+     * presmooth3d/sheet at max_rounds 3 had 34, the refined march's two-envelope pass on it 7, and
+     * that pass left 0 of the 377 input-complex faces in the complex tube.
+     *
+     * The rules, one per kind of new simplex:
+     *   * a simplex inside an old simplex of the same dimension (a half of a split face or edge,
+     *     a face or edge a swap or collapse only re-slots) keeps that simplex's label;
+     *   * a simplex inside an old cell (the cut face and the new edges inside a split tet, a
+     *     swap's interior faces and edges) takes the cell's label;
+     *   * a collapse maps (v1, x, y) onto (v2, x, y) and v1 onto v2; the simplex both land on
+     *     takes merge_labels() of the two;
+     *   * a surface flip (only a sheet's faces and region faces the band swallowed reach one,
+     *     see swap_capture_tag()) replaces two tracked faces by two new ones covering the same
+     *     surface, which take the old faces' label, and so does the new diagonal between them.
+     */
+    static int merge_labels(const int a, const int b)
+    {
+        return (a == 1 || b == 1) ? 1 : std::max(a, b); // 1 over 2 over 0
+    }
+    /// The label of the live face / edge with these vertices, read through its canonical slot.
+    int face_label_at(const std::array<size_t, 3>& vids) const
+    {
+        return m_face_extra[std::get<1>(tuple_from_face(vids))].label;
+    }
+    int edge_label_at(const size_t a, const size_t b) const
+    {
+        return m_edge_attribute[tuple_from_edge({{a, b}}).eid(*this)].label;
+    }
+    /// The labels of every face and edge of these tets, keyed by vertices.
+    void snapshot_labels(
+        const std::vector<size_t>& tids,
+        std::map<simplex::Face, int>& faces,
+        std::map<simplex::Edge, int>& edges) const;
+    /// What collapse_edge_after() writes, captured by collapse_edge_before(): the merged faces
+    /// (v2, a, b) and edges (v2, x), the link edges (a, b) of the removed tets, whose lowest tet
+    /// may have been one of them, and the survivor's own label.
+    struct CollapseLabels
+    {
+        int survivor = 0;
+        std::vector<std::pair<std::array<size_t, 3>, int>> faces;
+        std::vector<std::pair<std::array<size_t, 2>, int>> edges;
+    };
+    wmtk::threading::enumerable_thread_specific<CollapseLabels> m_collapse_labels;
+    /// What swap_after_cells() writes, captured by the swap's before-hooks: the ring's faces and
+    /// edges by vertices, and for a surface flip the new surface faces (a, c, d), (b, c, d), the
+    /// new diagonal (c, d) and the old surface faces' label.
+    struct SwapLabels
+    {
+        std::map<simplex::Face, int> faces;
+        std::map<simplex::Edge, int> edges;
+        bool surface_flip = false;
+        size_t a = 0, b = 0, c = 0, d = 0;
+        int surface = 0;
+    };
+    wmtk::threading::enumerable_thread_specific<SwapLabels> m_swap_labels;
 
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);

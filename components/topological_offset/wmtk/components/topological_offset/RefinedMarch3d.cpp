@@ -799,9 +799,12 @@ void TopoOffsetTetMesh::remesh_refined_march()
     // march_distance (tol from the march, tol from the tube) and the input surface within tol of
     // the input.
     //   * the front's tube: m_offset_envelope, rebuilt here around the front faces with width tol;
-    //   * the input surface and the domain wall: build_boundary_envelopes(envelope_setup()) with
-    //     width tol -- the input complex's boundary and the wall in their own tubes under
-    //     deform_others (the default), each tag boundary in its own under PerTag.
+    //   * every tag boundary and the input complex, the domain wall included:
+    //     build_boundary_envelopes(PerTagAndComplex) with width tol, whatever deform_others says.
+    //     The pass only simplifies the mesh, so it must move no surface; deform_others lets the
+    //     optimization push the offset into other regions, and under it (WallComplex) the outlines
+    //     of regions that are neither the input nor the band are held by nothing -- measured on
+    //     presmooth2d/line: the outlines of 'left' and 'right' moved up to 0.23 during the pass.
     // Every operation checks a tracked face against the tube of the surface it belongs to through
     // one dispatch, surface_envelope_for_face() -> containment_for(face mask, all corners on the
     // front), which in Phase A answers m_offset_envelope for a front face and the face's own
@@ -810,9 +813,10 @@ void TopoOffsetTetMesh::remesh_refined_march()
     //     face on the split edge;
     //   * collapse: TetOptimizerMesh::collapse_edge_after() checks every tracked face around the
     //     removed vertex, re-attached to the survivor;
-    //   * swap: the shared surface flips check both new triangles (swap_edge_after, 44, 56); in
-    //     practice swap_capture_tag() refuses every flip of either surface, whose ring spans two
-    //     cell labels;
+    //   * swap: the shared surface flips check both new triangles (swap_edge_after, 44, 56).
+    //     swap_capture_tag() refuses every flip of the front and of a solid complex's boundary,
+    //     whose ring spans two cell labels; a sheet's faces have the band on both sides and are
+    //     flipped (presmooth3d/sheet: 40 flips in this pass), see swap_before_surface();
     //   * smooth: smooth_vertex_3d() pulls a vertex onto smoothing_energy_envelope() (the front's
     //     tube for a front vertex, see there; the worst-violated region tube for a region vertex)
     //     and checks every tracked face at the vertex against smoothing_containment_envelope() =
@@ -858,14 +862,23 @@ void TopoOffsetTetMesh::remesh_refined_march()
     for (const Tuple& v : get_vertices()) m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
 
     rebuild_offset_envelope(tol);
-    build_boundary_envelopes("refined_marching_remesh", envelope_setup(), tol);
+    build_boundary_envelopes("refined_marching_remesh", EnvelopeSetup::PerTagAndComplex, tol);
 
     iter_cnt_collapse_both_surfaces_reject = 0;
     iter_cnt_collapse_class_reject = 0;
     iter_cnt_split_front_chord = 0;
     iter_cnt_split_input_chord = 0;
+    iter_cnt_split_input_on_input = 0;
     const int splits0 = iter_cnt_split.load(), collapses0 = iter_cnt_collapse.load(),
               swaps0 = iter_cnt_swap.load();
+    // The input complex's faces as the labels say, before and after: the operations carry the
+    // labels, so a count that collapses to 0 on a sheet means a label was lost.
+    const auto count_complex_faces = [this]() {
+        size_t n = 0;
+        for (const Tuple& f : get_faces()) n += face_is_complex_boundary(f) ? 1 : 0;
+        return n;
+    };
+    const size_t complex_faces_before = count_complex_faces();
     m_ab_round = 0;
     const double before = std::get<0>(optimization_quality_stats());
     logger().info(
@@ -900,6 +913,13 @@ void TopoOffsetTetMesh::remesh_refined_march()
         iter_cnt_collapse_class_reject.load(),
         iter_cnt_split_front_chord.load(),
         iter_cnt_split_input_chord.load());
+    logger().info(
+        "\t[labels] of those input chords, {} have their midpoint ON the input complex: a lost "
+        "construction label, not a chord | input-complex faces (face_is_complex_boundary): {} "
+        "before the pass, {} after",
+        iter_cnt_split_input_on_input.load(),
+        complex_faces_before,
+        count_complex_faces());
 
     m_phase = saved_phase;
     m_edge_split_mode = saved_mode;
@@ -908,33 +928,11 @@ void TopoOffsetTetMesh::remesh_refined_march()
     consolidate_mesh();
     check_no_vertex_on_both_surfaces("refined_marching_remesh");
 
-    // What the rest of the run reads, put back the way construction leaves it.
-    //
-    // The construction labels of vertices, edges and faces: the shared operations write only the
-    // cell label (split_after_cells(), swap_after_cells(); a collapse keeps its survivors), so a
-    // recycled slot holds whatever its last occupant had, and the driver's connected-component
-    // check and label_offset_boundary() read them next. Re-derived from the cells by the rule
-    // construction follows for a complex made of cells: 1 in the closure of an input cell, else 2
-    // in the closure of a band cell, else 0. A vertex still flagged as on the input complex is 1
-    // too, which keeps a sheet's vertices -- a complex with no cells -- on it.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
-    for (const Tuple& e : get_edges()) m_edge_attribute[e.eid(*this)].label = 0;
-    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
-    for (const Tuple& t : get_tets()) {
-        const size_t tid = t.tid(*this);
-        const int l = m_tet_attribute[tid].label;
-        if (l == 0) continue;
-        const auto raise = [l](int& x) {
-            if (x != 1) x = l; // 1 over 2 over 0
-        };
-        for (const size_t v : oriented_tet_vids(tid)) raise(m_vertex_extra[v].label);
-        for (int i = 0; i < 6; ++i)
-            raise(m_edge_attribute[tuple_from_edge(tid, i).eid(*this)].label);
-        for (int i = 0; i < 4; ++i) raise(m_face_extra[tuple_from_face(tid, i).fid(*this)].label);
-    }
-    for (const Tuple& v : get_vertices()) {
-        if (m_vertex_extra[v.vid(*this)].m_is_on_input) m_vertex_extra[v.vid(*this)].label = 1;
-    }
+    // What the rest of the run reads, put back the way construction leaves it. The construction
+    // labels need nothing: every operation of the pass carried them (see merge_labels()), which is
+    // what the driver's connected-component check, label_offset_boundary() and
+    // face_is_complex_boundary() read next. They used to be re-derived here from the cells, which
+    // loses a sheet -- a complex with no cells: 0 of its faces were left in the complex tube.
     // The sheet flag is geometric and nothing propagates it (see FaceExtra::on_sheet); the
     // region tubes below read it.
     classify_sheet_faces();

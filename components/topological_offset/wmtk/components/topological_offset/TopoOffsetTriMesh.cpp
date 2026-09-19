@@ -277,6 +277,13 @@ void TopoOffsetTriMesh::build_boundary_envelopes(
             }
             // The band's output tags are not region boundaries: the front is the offset tube's.
             for (const int64_t t : m_offset_output_tag_ids) keys.erase(t);
+            // PerTagAndComplex (the refined march's remesh pass): the input complex as well, as in
+            // 3D -- after construction a curve complex is no tag boundary (the band overwrites the
+            // tags on both of its sides), so PerTag alone held nothing of it.
+            if (setup == EnvelopeSetup::PerTagAndComplex && edge_is_complex_boundary(e)) {
+                keys.insert(m_complex_tag);
+                ++n_complex;
+            }
         }
         const size_t v1 = e.vid(*this);
         const size_t v2 = e.switch_vertex(*this).vid(*this);
@@ -325,7 +332,9 @@ void TopoOffsetTriMesh::build_boundary_envelopes(
         "\t[envelopes @ {}] {}: {} region-boundary segments tracked ({} on the wall), eps {:.6g}, "
         "{} |{}{}",
         when,
-        setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
+        setup == EnvelopeSetup::WallComplex        ? "wall + input complex"
+        : setup == EnvelopeSetup::PerTagAndComplex ? "per tag + input complex"
+                                                   : "per tag",
         n_tracked,
         n_wall,
         m_envelope_eps,

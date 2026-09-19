@@ -445,7 +445,9 @@ public:
      * switches the setup at construction, and fresh at the start of the final pass. The offset
      * tube is separate and unchanged.
      */
-    enum class EnvelopeSetup { PerTag, WallComplex };
+    /// PerTagAndComplex: every tag boundary (PerTag) AND the input complex (WallComplex's complex
+    /// tube) -- what the refined march's remesh pass holds, since that pass must move no surface.
+    enum class EnvelopeSetup { PerTag, WallComplex, PerTagAndComplex };
     EnvelopeSetup envelope_setup() const
     {
         return m_offset_params.deform_others ? EnvelopeSetup::WallComplex : EnvelopeSetup::PerTag;
@@ -741,6 +743,11 @@ public:
     /// endpoints are) would have labelled a chord's midpoint as on the input. Reported by
     /// optimize_offset() and by the refined march's remesh pass.
     std::atomic<int> iter_cnt_split_input_chord{0};
+    /// MEASUREMENT: of the splits counted in iter_cnt_split_input_chord, those whose midpoint lies
+    /// ON the input complex (exact distance <= 1e-9 x edge length): not chords, but edges of the
+    /// complex whose construction label the optimization failed to carry (sheet faces in 3D,
+    /// curve edges in 2D), so the edge test called them off the input. Diagnostic only.
+    std::atomic<int> iter_cnt_split_input_on_input{0};
     /// Collapses collapse_before_vertex() refused because they would put one vertex on both
     /// tracked surfaces (the input complex and the front), and because the removed vertex would
     /// leave its own surface class (input, offset or region). Counted in every pass; reported by
@@ -768,6 +775,11 @@ public:
         /// a curve selection). Read before the split replaces the triangles; what
         /// split_after_vertex() sets the midpoint's m_is_on_input from.
         bool edge_in_input = false;
+        /// The construction labels of the split edge and of the parents' other edges, keyed by
+        /// their vertices, read before the parents are replaced. split_adjust_position() writes
+        /// them onto the children by the rules at merge_labels().
+        int edge_label = 0;
+        std::map<simplex::Edge, int> edge_labels;
         /// Diagnostic: the two parent faces' AMIPS before the split, so split_after_vertex() can
         /// say whether a needle child came from a healthy parent or an already unscoreable one.
         double parent_q_max = -1.;
@@ -776,6 +788,55 @@ public:
         double parent_flatness = 1.;
     };
     wmtk::threading::enumerable_thread_specific<OptSplitCache2d> m_opt_split_cache;
+
+    /**
+     * @brief The construction labels of vertices and edges through the optimization's split,
+     * collapse and swap -- carried as the face label is, so that every label is what
+     * construction's rule would give the mesh as it stands. The 3D twin is
+     * TopoOffsetTetMesh::merge_labels(), which states the rule and the rules per operation.
+     *
+     * Here the face label needs nothing new: a split carries it (split_adjust_position()), and
+     * a collapse or a flip keeps the fids of the faces it leaves. The edge label does: an edge's
+     * slot is its lowest incident face's (fid x 3 + local), so an operation that replaces faces
+     * re-slots every edge whose lowest face changed, and a label not written back holds whatever
+     * the slot's last occupant had. For a complex made of triangles that is harmless, the face
+     * labels decide; for a curve the edge label is the only record of the complex. Measured
+     * before this carrying: split midpoints the edge test put off the input although their exact
+     * distance to it is 0, 4 on presmooth2d/line_presmooth and 5 on presmooth2d/cap/box at
+     * max_rounds 5.
+     *
+     * Per operation: a split's halves keep the split edge's label, its new edge (m, apex) inside
+     * a parent face takes that face's; a collapse maps (v1, x) onto (v2, x) and v1 onto v2, and
+     * what both land on takes merge_labels() of the two; a flip's new diagonal lies inside its two
+     * faces and takes their label -- the base refuses every tracked edge, and an edge between
+     * differently labelled faces is tracked (the front, or the boundary of the complex), so the
+     * two agree.
+     */
+    static int merge_labels(const int a, const int b)
+    {
+        return (a == 1 || b == 1) ? 1 : std::max(a, b); // 1 over 2 over 0
+    }
+    /// The label of the live edge (a, b), read through its canonical slot.
+    int edge_label_at(const size_t a, const size_t b) const
+    {
+        return m_edge_extra[std::get<1>(tuple_from_edge({{a, b}}))].label;
+    }
+    /// What collapse_edge_after() writes, captured by collapse_edge_before(): the merged edges
+    /// (v2, x) and the survivor's own label.
+    struct CollapseLabels2d
+    {
+        int survivor = 0;
+        std::vector<std::pair<std::array<size_t, 2>, int>> edges;
+    };
+    wmtk::threading::enumerable_thread_specific<CollapseLabels2d> m_collapse_labels;
+    /// What swap_edge_after() writes, captured by swap_edge_before(): the labels of the four
+    /// edges around the flipped one, and the new diagonal's.
+    struct SwapLabels2d
+    {
+        std::vector<std::pair<std::array<size_t, 2>, int>> edges;
+        int diagonal = 0;
+    };
+    wmtk::threading::enumerable_thread_specific<SwapLabels2d> m_swap_labels;
 
     bool marching_split_edge_before(const Tuple& t);
     bool marching_split_edge_after(const Tuple& t);

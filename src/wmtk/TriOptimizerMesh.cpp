@@ -166,6 +166,9 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
     sanity_checks();
     update_attributes();
     size_t retry_count = 0;
+    // The largest request each pool has refused during the current retry chain; see the
+    // exhaustion branch below. Reset when an operation group completes without exhaustion.
+    size_t pending_verts = 0, pending_tris = 0;
     for (int i = 0; i < ops.size(); ++i) {
         if (retry_count > 0) {
             logger().info(
@@ -240,11 +243,16 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
         if (slots_exhausted()) {
             const size_t live_before = tri_capacity();
             const size_t store_before = tri_storage_capacity();
-            const size_t need_verts = refused_vert_request();
-            const size_t need_tris = refused_tri_request();
+            // Accumulated over the whole retry chain, not just this retry: an operation asks one
+            // pool and then the other, and consolidating re-sizes BOTH to factor x live count,
+            // taking back the room made in the first. As in TetOptimizerMesh, where it was
+            // measured (storage alternating for 15458 retries when only the last refusal was
+            // honoured).
+            pending_verts = std::max(pending_verts, refused_vert_request());
+            pending_tris = std::max(pending_tris, refused_tri_request());
             consolidate_mesh();
-            ensure_free_vert_capacity(need_verts);
-            ensure_free_tri_capacity(need_tris);
+            ensure_free_vert_capacity(pending_verts);
+            ensure_free_tri_capacity(pending_tris);
             clear_slots_exhausted();
             logger().info(
                 "{} pass exhausted its preallocated slots: {} of {} faces reclaimed as "
@@ -258,6 +266,8 @@ std::tuple<double, double> TriOptimizerMesh::local_operations(
             ++retry_count;
         } else {
             retry_count = 0;
+            pending_verts = 0;
+            pending_tris = 0;
         }
     }
 

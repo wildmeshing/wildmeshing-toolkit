@@ -1004,6 +1004,11 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
     if (m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input &&
         !c.edge_in_input) {
         ++iter_cnt_split_input_chord;
+        const Vector2d a = m_vertex_attribute[c.v1_id].m_posf,
+                       b = m_vertex_attribute[c.v2_id].m_posf;
+        if (m_input_complex_bvh->dist(0.5 * (a + b)) <= 1e-9 * (a - b).norm()) {
+            ++iter_cnt_split_input_on_input;
+        }
     }
     m_vertex_extra[v_id].m_is_on_input = c.edge_in_input;
     // ... but m_is_on_region is the split edge's own class, not an endpoint AND: a bare AND
@@ -1648,14 +1653,14 @@ void TopoOffsetTriMesh::pre_optimize_input_mesh()
     m_phase = saved_phase;
     consolidate_mesh();
 
-    // Re-derive the construction labels, because the optimization does not maintain them. No
-    // operation propagates VertexExtra2d::label, and marching_tris() decides which edges to split
-    // from exactly that label -- this pass is the first optimization that runs BEFORE the
-    // marching, so leaving it stale gives a wrong crossing set and a band with holes.
+    // Re-derive the construction labels. marching_tris() decides which edges to split from
+    // exactly those labels -- this pass is the first optimization that runs BEFORE the marching,
+    // so a stale one gives a wrong crossing set and a band with holes.
     //
-    // Re-derived rather than propagated: the label is a function of the FACE TAGS, which the base
-    // does propagate through split and collapse, and label_input_complex() is the authority on
-    // that function. Cleared first because it only ever writes 1 and has no path back to 0.
+    // Re-derived although the operations carry them (see merge_labels()): the label is a function
+    // of the FACE TAGS, which the base does propagate through split and collapse, and
+    // label_input_complex() is the authority on that function. Cleared first because it only
+    // ever writes 1 and has no path back to 0.
     for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
     for (const Tuple& e : get_edges()) m_edge_extra[e.eid(*this)].label = 0;
     for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
@@ -4308,6 +4313,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     }
 
     iter_cnt_split_input_chord = 0;
+    iter_cnt_split_input_on_input = 0;
     optimize_offset_single_phase();
     // As in 3D: how many split midpoints the older endpoint rule would have put on the input
     // complex although the split edge crossed another region (the front flag in 2D already comes
@@ -4316,6 +4322,10 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         "\t[labels] split midpoints the endpoint rule would have put on the input although the "
         "edge lies in no input triangle and is no input edge (chords): {}",
         iter_cnt_split_input_chord.load());
+    logger().info(
+        "\t[labels] of those input chords, {} have their midpoint ON the input complex: a lost "
+        "construction label, not a chord",
+        iter_cnt_split_input_on_input.load());
 
     // Cumulative over the whole run, not per iteration: the engine loop has no per-iteration
     // hook, and the per-pass numbers it logs itself carry the history.

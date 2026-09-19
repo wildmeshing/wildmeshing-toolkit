@@ -238,9 +238,36 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
     return true;
 }
 
+void TopoOffsetTetMesh::snapshot_labels(
+    const std::vector<size_t>& tids,
+    std::map<simplex::Face, int>& faces,
+    std::map<simplex::Edge, int>& edges) const
+{
+    faces.clear();
+    edges.clear();
+    for (const size_t tid : tids) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const std::array<size_t, 3> v = get_face_vids(f);
+            faces.try_emplace(simplex::Face(v[0], v[1], v[2]), m_face_extra[f.fid(*this)].label);
+        }
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            edges.try_emplace(
+                simplex::Edge(e.vid(*this), e.switch_vertex(*this).vid(*this)),
+                m_edge_attribute[e.eid(*this)].label);
+        }
+    }
+}
+
 bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
 {
-    return swap_capture_tag(tids);
+    if (!swap_capture_tag(tids)) return false;
+    // The ring's face and edge labels, for swap_after_cells(); see merge_labels().
+    SwapLabels& s = m_swap_labels.local();
+    snapshot_labels(tids, s.faces, s.edges);
+    s.surface_flip = false;
+    return true;
 }
 
 bool TopoOffsetTetMesh::swap_before_surface(
@@ -290,6 +317,21 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // mask to the per-tag envelopes, and that envelope is the geometric constraint. The
     // class-match and mask-match refusals above are the topology half. No offset criterion is
     // captured here; placement accuracy is the smoothing passes' job.
+    //
+    // Which tracked faces reach this point: swap_capture_tag() refuses a ring spanning two tags or
+    // two labels, so the offset surface (band against outside), the boundary of a solid complex
+    // (label 1 against 2) and every region boundary the band has not swallowed (two tags) are
+    // never flipped. What is left lies inside one tag and one label: a sheet the complex is made
+    // of (its faces label 1, the band on both sides), and region faces the band grew over. The
+    // flip hands their surface to (a, c, d), (b, c, d); swap_after_cells() carries the label.
+    SwapLabels& s = m_swap_labels.local();
+    snapshot_labels(tids, s.faces, s.edges);
+    s.surface_flip = true;
+    s.a = a;
+    s.b = b;
+    s.c = c;
+    s.d = d;
+    s.surface = merge_labels(m_face_extra[fid_abc].label, m_face_extra[fid_abd].label);
     return true;
 }
 
@@ -595,10 +637,34 @@ bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool i
         stamp_rest_cell(t);
     }
 
+    // The faces and edges of the new cells, by the rules at merge_labels(): one the ring already
+    // had keeps its label (the swap only re-slots it); a new one lies inside the ring, whose cells
+    // all carry `label` (swap_capture_tag()). A surface flip then hands the old surface faces'
+    // label to the two faces that replace them and to the new diagonal between those.
     // No offset-criterion acceptance for surface flips: the shared swap has already checked both
-    // new triangles against the face's envelope (see swap_before_surface()). `is_surface_flip`
-    // stays a parameter because the base reports it, but nothing here branches on it.
-    (void)is_surface_flip;
+    // new triangles against the face's envelope (see swap_before_surface()).
+    const SwapLabels& s = m_swap_labels.local();
+    for (const size_t t : tids) {
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(t, j);
+            const std::array<size_t, 3> v = get_face_vids(f);
+            const auto it = s.faces.find(simplex::Face(v[0], v[1], v[2]));
+            m_face_extra[f.fid(*this)].label = it != s.faces.end() ? it->second : label;
+        }
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(t, j);
+            const auto it =
+                s.edges.find(simplex::Edge(e.vid(*this), e.switch_vertex(*this).vid(*this)));
+            m_edge_attribute[e.eid(*this)].label = it != s.edges.end() ? it->second : label;
+        }
+    }
+    if (is_surface_flip && s.surface_flip) {
+        for (const size_t apex : {s.a, s.b}) {
+            m_face_extra[std::get<1>(tuple_from_face({{apex, s.c, s.d}}))].label = s.surface;
+        }
+        m_edge_attribute[tuple_from_edge({{s.c, s.d}}).eid(*this)].label =
+            merge_labels(s.surface, label);
+    }
     ++iter_cnt_swap;
     return true;
 }
@@ -609,6 +675,22 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
+    // The labels collapse_edge_before() captured, onto the simplices they now belong to; see
+    // merge_labels(). The base has just written its own FaceAttributes onto the same merged
+    // faces, and refused the collapse if one of them no longer exists, so every lookup here hits.
+    {
+        const CollapseLabels& c = m_collapse_labels.local();
+        for (const auto& [vids, l] : c.faces) {
+            if (const auto found = try_tuple_from_face(vids)) {
+                m_face_extra[std::get<1>(*found)].label = l;
+            }
+        }
+        for (const auto& [vids, l] : c.edges) {
+            const Tuple e = tuple_from_edge(vids);
+            if (e.is_valid(*this)) m_edge_attribute[e.eid(*this)].label = l;
+        }
+        m_vertex_extra[v2_id].label = c.survivor;
+    }
     // front_refuse_converged_collapse, the after-half: the survivor's Newton-step ratio on its
     // new ring. Returning false here rolls the collapse back (connectivity and every
     // registered attribute, m_vertex_extra included).
@@ -657,6 +739,35 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
         front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
+    }
+    // The labels collapse_edge_after() writes, read while the removed tets still exist; see
+    // merge_labels(). The removed tets are those on the edge, (v1, v2, a, b): each merges
+    // (v1, a, b) into (v2, a, b) and (v1, x) into (v2, x) for x = a, b -- the faces the base
+    // merges its own FaceAttributes for -- and takes itself out of the tets of (a, b), which may
+    // move that edge's slot. Every other face and edge keeps its slot: the tets at v1 not on the
+    // edge keep their ids and v1's position in them.
+    {
+        const size_t v1 = collapse_cache.local().v1_id, v2 = collapse_cache.local().v2_id;
+        CollapseLabels& c = m_collapse_labels.local();
+        c.faces.clear();
+        c.edges.clear();
+        c.survivor = merge_labels(m_vertex_extra[v1].label, m_vertex_extra[v2].label);
+        for (const size_t tid : get_incident_tids_for_edge(v1, v2)) {
+            std::array<size_t, 2> ab{{0, 0}};
+            size_t k = 0;
+            for (const size_t x : oriented_tet_vids(tid)) {
+                if (x != v1 && x != v2 && k < 2) ab[k++] = x;
+            }
+            const size_t a = ab[0], b = ab[1];
+            c.faces.push_back(
+                {{{v2, a, b}},
+                 merge_labels(face_label_at({{v1, a, b}}), face_label_at({{v2, a, b}}))});
+            c.edges.push_back({{{a, b}}, edge_label_at(a, b)});
+            for (const size_t x : ab) {
+                c.edges.push_back(
+                    {{{v2, x}}, merge_labels(edge_label_at(v1, x), edge_label_at(v2, x))});
+            }
+        }
     }
     return true;
 }
@@ -1470,9 +1581,11 @@ void TopoOffsetTetMesh::pre_optimize_input_mesh()
     m_phase = saved_phase;
     consolidate_mesh();
 
-    // Re-derive the construction labels, because the optimization does not maintain them: no
-    // operation propagates the label, and marching_tets() decides which edges to split from
-    // exactly that label. Cleared first because label_input_complex() only ever writes 1.
+    // Re-derive the construction labels. The operations carry them (see merge_labels()), but
+    // before construction the label is a function of the tags, which this pass leaves alone, and
+    // label_input_complex() is the authority on that function -- marching_tets() decides which
+    // edges to split from exactly that label. Cleared first because label_input_complex() only
+    // ever writes 1.
     for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
     for (const Tuple& e : get_edges()) m_edge_attribute[e.eid(*this)].label = 0;
     for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
@@ -4086,6 +4199,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
 
     iter_cnt_split_front_chord = 0;
     iter_cnt_split_input_chord = 0;
+    iter_cnt_split_input_on_input = 0;
     optimize_offset_single_phase();
     // The chord measurement (see iter_cnt_split_front_chord): how many split midpoints the
     // endpoint rule flagged as on a surface whose face set does not contain the split edge.
@@ -4094,6 +4208,10 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         "of that surface (chords): front {}, input {}",
         iter_cnt_split_front_chord.load(),
         iter_cnt_split_input_chord.load());
+    logger().info(
+        "\t[labels] of those input chords, {} have their midpoint ON the input complex: a lost "
+        "construction label, not a chord",
+        iter_cnt_split_input_on_input.load());
 
     log_smooth_trace();
     logger().info(

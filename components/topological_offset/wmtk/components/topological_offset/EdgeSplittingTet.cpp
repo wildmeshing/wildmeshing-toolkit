@@ -780,9 +780,15 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     // Key each parent by the edge OPPOSITE the one being split: that edge survives the split
     // and is shared by exactly the two children of this parent, so it names them afterwards.
     const simplex::Edge e(edge.vid(*this), edge.switch_vertex(*this).vid(*this));
+    std::vector<size_t> parent_tids;
+    parent_tids.reserve(parents.size());
     for (const Tuple& tt : parents) {
         cache.tets[simplex_from_tet(tt).opposite_edge(e)] = m_tet_attribute.at(tt.tid(*this));
+        parent_tids.push_back(tt.tid(*this));
     }
+    // ... and the construction labels of their faces and edges, which split_after_cells() writes
+    // onto the children.
+    snapshot_labels(parent_tids, cache.face_labels, cache.edge_labels);
     return true;
 }
 
@@ -790,7 +796,7 @@ bool TopoOffsetTetMesh::split_after_cells(
     const size_t v1_id,
     const size_t v2_id,
     const size_t v_id,
-    const std::vector<Tuple>&)
+    const std::vector<Tuple>& children)
 {
     // The midpoint lies on a surface exactly when the split EDGE lies in it, which
     // split_before_cells() decided from the faces and cells around the edge before they were
@@ -814,7 +820,14 @@ bool TopoOffsetTetMesh::split_after_cells(
         // Forensics: the chords the endpoint rule would have mislabelled, see
         // iter_cnt_split_front_chord.
         if (front_by_ends && !c.is_edge_on_offset) ++iter_cnt_split_front_chord;
-        if (input_by_ends && !c.is_edge_in_input) ++iter_cnt_split_input_chord;
+        if (input_by_ends && !c.is_edge_in_input) {
+            ++iter_cnt_split_input_chord;
+            const Vector3d a = m_vertex_attribute[v1_id].m_posf,
+                           b = m_vertex_attribute[v2_id].m_posf;
+            if (m_input_complex_bvh->dist(0.5 * (a + b)) <= 1e-9 * (a - b).norm()) {
+                ++iter_cnt_split_input_on_input;
+            }
+        }
     }
     // Churn instrumentation, read only by collapse_after_vertex(). Assigned, never OR'd: v_id may
     // be a recycled slot whose previous occupant was born long ago. See m_born_epoch.
@@ -839,6 +852,66 @@ bool TopoOffsetTetMesh::split_after_cells(
             m_tet_attribute[tt.tid(*this)] = it->second;
         }
     }
+
+    // The children's faces and edges and the midpoint, by the rules at merge_labels(): a child
+    // simplex without the midpoint is a parent's, re-slotted; one with it lies in the split edge
+    // (the two halves and the midpoint itself: the edge's label), in a split face (v_end, m, x),
+    // inside (v1, v2, x) (that face's label), or inside a parent cell -- the cut face (m, x, y),
+    // (x, y) the parent's edge opposite the split one (the cell's label).
+    const auto find_label = [](const auto& labels, const auto& key, int& out) {
+        const auto it = labels.find(key);
+        if (it == labels.end()) return false;
+        out = it->second;
+        return true;
+    };
+    int split_edge_label = 0;
+    if (!find_label(cache.edge_labels, simplex::Edge(v1_id, v2_id), split_edge_label)) {
+        return false; // no record to inherit from; refuse rather than mislabel
+    }
+    const auto is_end = [&](const size_t x) { return x == v1_id || x == v2_id; };
+    for (const Tuple& tt : children) {
+        const size_t tid = tt.tid(*this);
+        for (int j = 0; j < 4; ++j) {
+            const Tuple f = tuple_from_face(tid, j);
+            const std::array<size_t, 3> fv = get_face_vids(f);
+            const bool has_mid = fv[0] == v_id || fv[1] == v_id || fv[2] == v_id;
+            std::array<size_t, 2> o{{0, 0}}; // with the midpoint: the other two corners
+            for (size_t i = 0, k = 0; has_mid && i < 3; ++i) {
+                if (fv[i] != v_id) o[k++] = fv[i];
+            }
+            int l = 0;
+            bool found = false;
+            if (!has_mid) {
+                found = find_label(cache.face_labels, simplex::Face(fv[0], fv[1], fv[2]), l);
+            } else if (is_end(o[0]) || is_end(o[1])) {
+                const size_t x = is_end(o[0]) ? o[1] : o[0];
+                found = find_label(cache.face_labels, simplex::Face(v1_id, v2_id, x), l);
+            } else if (const auto it = cache.tets.find(simplex::Edge(o[0], o[1]));
+                       it != cache.tets.end()) {
+                l = it->second.label;
+                found = true;
+            }
+            if (!found) return false;
+            m_face_extra[f.fid(*this)].label = l;
+        }
+        for (int j = 0; j < 6; ++j) {
+            const Tuple e = tuple_from_edge(tid, j);
+            const size_t a = e.vid(*this), b = e.switch_vertex(*this).vid(*this);
+            int l = 0;
+            bool found = false;
+            if (a != v_id && b != v_id) {
+                found = find_label(cache.edge_labels, simplex::Edge(a, b), l);
+            } else if (const size_t x = (a == v_id) ? b : a; is_end(x)) {
+                l = split_edge_label;
+                found = true;
+            } else {
+                found = find_label(cache.face_labels, simplex::Face(v1_id, v2_id, x), l);
+            }
+            if (!found) return false;
+            m_edge_attribute[e.eid(*this)].label = l;
+        }
+    }
+    m_vertex_extra[v_id].label = split_edge_label;
     return true;
 }
 

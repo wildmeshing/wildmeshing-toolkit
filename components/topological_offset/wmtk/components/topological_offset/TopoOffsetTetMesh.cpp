@@ -337,6 +337,15 @@ void TopoOffsetTetMesh::build_boundary_envelopes(
             }
             // The band's output tags are not region boundaries: the front is the offset tube's.
             for (const int64_t t : m_offset_output_tag_ids) keys.erase(t);
+            // PerTagAndComplex (the refined march's remesh pass): the input complex as well. After
+            // construction it is a tag boundary only if it is a solid's -- the band overwrites the
+            // tags on both sides of a sheet -- so PerTag alone held nothing of a sheet: measured on
+            // presmooth3d/sheet, 9 of the 164 sheet faces left within tol after the pass, against
+            // all 164 under WallComplex.
+            if (setup == EnvelopeSetup::PerTagAndComplex && face_is_complex_boundary(f)) {
+                keys.insert(m_complex_tag);
+                ++n_complex;
+            }
         }
         const auto vs = get_face_vids(f);
         const uint64_t bits = tag_bits(keys);
@@ -373,7 +382,9 @@ void TopoOffsetTetMesh::build_boundary_envelopes(
         "\t[envelopes @ {}] {}: {} region-boundary faces tracked ({} on the wall), eps {:.6g}, "
         "{} |{}{}",
         when,
-        setup == EnvelopeSetup::WallComplex ? "wall + input complex" : "per tag",
+        setup == EnvelopeSetup::WallComplex        ? "wall + input complex"
+        : setup == EnvelopeSetup::PerTagAndComplex ? "per tag + input complex"
+                                                   : "per tag",
         n_tracked,
         n_wall,
         m_envelope_eps,

@@ -607,9 +607,12 @@ void TopoOffsetTriMesh::remesh_refined_march()
     // input.
     //   * the front's tube: m_offset_envelope, rebuilt here around the front segments with width
     //     tol -- a polyline envelope, where 3D's is built on triangles;
-    //   * the input and the domain wall: build_boundary_envelopes(envelope_setup()) with width tol
-    //     -- the input complex's boundary and the wall in their own tubes under deform_others (the
-    //     default), each tag boundary in its own under PerTag.
+    //   * every tag boundary and the input complex, the domain wall included:
+    //     build_boundary_envelopes(PerTagAndComplex) with width tol, whatever deform_others says,
+    //     for the reason given in 3D: the pass only simplifies the mesh and must move no curve
+    //     (measured
+    //     here, on presmooth2d/line: under WallComplex the outlines of 'left' and 'right' moved up
+    //     to 0.23).
     // Every operation checks a tracked edge against the tube of the curve it belongs to through
     // one dispatch, surface_envelope_for_edge() -> containment_for(edge mask, both ends on the
     // front), which in Phase A answers m_offset_envelope for a front edge and the edge's own
@@ -672,7 +675,7 @@ void TopoOffsetTriMesh::remesh_refined_march()
     for (const Tuple& v : get_vertices()) m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
 
     rebuild_offset_envelope(tol);
-    build_boundary_envelopes("refined_marching_remesh", envelope_setup(), tol);
+    build_boundary_envelopes("refined_marching_remesh", EnvelopeSetup::PerTagAndComplex, tol);
 
     iter_cnt_collapse_both_surfaces_reject = 0;
     iter_cnt_collapse_class_reject = 0;
@@ -680,6 +683,7 @@ void TopoOffsetTriMesh::remesh_refined_march()
     // class here (split_adjust_position()), never an endpoint rule, so the front has no chords to
     // count.
     iter_cnt_split_input_chord = 0;
+    iter_cnt_split_input_on_input = 0;
     const int splits0 = iter_cnt_split.load(), collapses0 = iter_cnt_collapse.load(),
               swaps0 = iter_cnt_swap.load();
     m_ab_round = 0;
@@ -714,6 +718,10 @@ void TopoOffsetTriMesh::remesh_refined_march()
         iter_cnt_collapse_both_surfaces_reject.load(),
         iter_cnt_collapse_class_reject.load(),
         iter_cnt_split_input_chord.load());
+    logger().info(
+        "\t[labels] of those input chords, {} have their midpoint ON the input complex: a lost "
+        "construction label, not a chord",
+        iter_cnt_split_input_on_input.load());
 
     m_phase = saved_phase;
     m_edge_split_mode = saved_mode;

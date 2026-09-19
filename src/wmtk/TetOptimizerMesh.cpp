@@ -164,6 +164,9 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
     sanity_checks();
     update_attributes();
     size_t retry_count = 0;
+    // The largest request each pool has refused during the current retry chain; see the
+    // exhaustion branch below. Reset when an operation group completes without exhaustion.
+    size_t pending_verts = 0, pending_tets = 0;
     for (int i = 0; i < int(ops.size()); ++i) {
         if (retry_count > 0) {
             logger().info(
@@ -246,11 +249,17 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
         if (slots_exhausted()) {
             const size_t live_before = tet_capacity();
             const size_t store_before = tet_storage_capacity();
-            const size_t need_verts = refused_vert_request();
-            const size_t need_tets = refused_tet_request();
+            // Accumulated over the whole retry chain, not just this retry: an operation asks one
+            // pool and then the other, so after room is made in the first, the next retry is
+            // refused by the second -- and consolidating re-sizes BOTH pools to factor x live
+            // count, taking back the room made in the first. Measured at factor 1.0 on
+            // presmooth3d/cylinder: storage alternating 62992 -> 125985 -> 62992 for 15458
+            // retries when only the last refusal was honoured.
+            pending_verts = std::max(pending_verts, refused_vert_request());
+            pending_tets = std::max(pending_tets, refused_tet_request());
             consolidate_mesh();
-            ensure_free_vert_capacity(need_verts);
-            ensure_free_tet_capacity(need_tets);
+            ensure_free_vert_capacity(pending_verts);
+            ensure_free_tet_capacity(pending_tets);
             clear_slots_exhausted();
             logger().info(
                 "{} pass exhausted its preallocated slots: {} of {} tets reclaimed as "
@@ -264,6 +273,8 @@ std::tuple<double, double> TetOptimizerMesh::local_operations(
             ++retry_count;
         } else {
             retry_count = 0;
+            pending_verts = 0;
+            pending_tets = 0;
         }
     }
 
