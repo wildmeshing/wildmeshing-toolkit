@@ -557,7 +557,12 @@ bool TopoOffsetTetMesh::split_before_cells(const Tuple& edge, const std::vector<
     auto& cache = m_opt_split_cache.local();
     cache.tets.clear();
     cache.is_edge_on_region = is_edge_on_region(edge);
-    cache.is_edge_on_offset = is_edge_on_offset(edge);
+    // THE LIVE predicate, not is_edge_on_offset(): that one short-circuits on m_is_on_offset of
+    // both endpoints, and this value is what writes that flag on the child. Deriving the flag
+    // from itself could never correct a wrong one. edge_is_offset_surface_live() reads cell
+    // labels only.
+    cache.is_edge_on_offset =
+        edge_is_offset_surface_live(edge.vid(*this), edge.switch_vertex(*this).vid(*this));
     // parent_q_max is diagnostic: split_after_vertex() uses it to say whether a needle child
     // came from a parent that was already unscoreable, or from a healthy one.
     cache.parent_q_max = -1.;
@@ -582,12 +587,16 @@ bool TopoOffsetTetMesh::split_after_cells(
     const size_t v_id,
     const std::vector<Tuple>&)
 {
-    // The new vertex's offset membership is derived from its endpoints, never from the cache: a
-    // vertex placed on an edge lies on whichever tracked surfaces both endpoints lie on. 3D marks
-    // m_is_on_offset once in optimize_offset() and has no fallback, unlike 2D which re-derives
-    // the whole front from the face labels every iteration.
-    m_vertex_extra[v_id].m_is_on_offset =
-        m_vertex_extra[v1_id].m_is_on_offset && m_vertex_extra[v2_id].m_is_on_offset;
+    // The new vertex is on the offset surface exactly when the edge it was placed on was: a
+    // split subdivides the surface's faces and moves none of them, so the child inherits the
+    // EDGE's membership. split_before_cells() measured that live, before the split.
+    //
+    // It used to be the AND of the two endpoints' flags, which is an over-approximation -- two
+    // surface vertices joined by an edge running through the band interior are not a surface
+    // edge, and splitting one minted a child flagged m_is_on_offset that had never been on the
+    // surface. Rare (22 of 404851 such edges on the stalled 1e-3 cube) but permanent, since
+    // nothing cleared the flag. The region half two lines down already worked this way.
+    m_vertex_extra[v_id].m_is_on_offset = m_opt_split_cache.local().is_edge_on_offset;
     // The input complex, the same way: a midpoint is on it only if the whole edge was. Written
     // here because this is the hook that has the endpoints, and because the AND keeps the
     // never-both invariant true across a split -- an edge running from the complex to the offset

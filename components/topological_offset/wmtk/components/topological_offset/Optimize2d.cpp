@@ -7,12 +7,14 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <limits>
 #include <map>
 #include <queue>
 #include <set>
+#include <vector>
 
 namespace wmtk::components::topological_offset {
 
@@ -161,7 +163,7 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
-    // front_refuse_converged_collapse has no swap half here, unlike the 3D twin
+    // EXPERIMENTAL_ops_divergence_guard has no swap half here, unlike the 3D twin
     // (swap_before_surface()). There a flip re-triangulates the offset SURFACE and keeps it, so
     // it can mint a sagging face; a 2D front is a curve with no such freedom. An offset edge
     // does not reach this hook at all: it carries m_is_surface_fs with both ends
@@ -678,17 +680,9 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::collapse_edge_after(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the after-half: the survivor's Newton-step ratio on its
-    // new ring. Returning false here rolls the collapse back (connectivity and every registered
-    // attribute, m_vertex_extra included).
-    if (m_offset_params.front_refuse_converged_collapse && m_collapse_guard_armed.local()) {
-        m_collapse_guard_armed.local() = 0;
-        const double r = front_vertex_conv_ratio(collapse_cache.local().v2_id);
-        if (!front_placed_by_ratio(r)) {
-            ++iter_cnt_collapse_guard_reject;
-            return false;
-        }
-    }
+    // EXPERIMENTAL_ops_divergence_guard has no after-half: the survivor does not move and the
+    // removed vertex's chords are re-attached to it unchanged, so the whole comparison is exact
+    // in collapse_edge_before() and no collapse is ever rolled back for it. As in 3D.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[collapse_cache.local().v2_id].m_sizing_scalar =
             m_collapse_survivor_sizing.local();
@@ -733,10 +727,9 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
-    m_collapse_guard_armed.local() = 0;
-    if (m_offset_params.front_refuse_converged_collapse &&
-        front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+    // EXPERIMENTAL_ops_divergence_guard; see ops_guard_refuses_collapse().
+    if (m_offset_params.experimental_ops_divergence_guard &&
+        ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
     }
@@ -755,57 +748,60 @@ std::vector<TopoOffsetTriMesh::Tuple> TopoOffsetTriMesh::offset_surface_edges_li
     return result;
 }
 
-void TopoOffsetTriMesh::snapshot_front_convergence()
+double TopoOffsetTriMesh::offset_edge_sag(const size_t a, const size_t b) const
 {
-    m_front_conv_snapshot.assign(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        m_front_conv_snapshot[vid] = front_vertex_conv_ratio(vid);
-    }
-}
-
-bool TopoOffsetTriMesh::front_vertex_converged_snapshot(const size_t vid) const
-{
-    if (vid >= m_front_conv_snapshot.size()) return false;
-    return front_placed_by_ratio(m_front_conv_snapshot[vid]);
-}
-
-bool TopoOffsetTriMesh::front_edge_converged(const size_t a, const size_t b) const
-{
-    if (!front_vertex_converged_snapshot(a) || !front_vertex_converged_snapshot(b)) {
-        return false;
-    }
+    // EXPERIMENTAL_ops_divergence_guard: one chord's sag, as edge_conv_ratio measures it (the
+    // sagitta at the midpoint over front_conv_rel x target_distance). An unmeasurable chord is
+    // infinite, so losing measurability counts as getting worse, while a neighbourhood that was
+    // already unmeasurable is never made worse -- infinity is not strictly greater than
+    // infinity. The 3D twin is offset_face_sag(), which measures at the centroid instead.
     const double r = edge_conv_ratio(a, b);
-    return r >= 0. && r <= 1.;
+    if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
+    return r;
 }
 
-bool TopoOffsetTriMesh::front_guard_refuses_collapse(const size_t v1, const size_t v2)
+double TopoOffsetTriMesh::max_offset_edge_sag(const std::vector<std::array<size_t, 2>>& edges) const
 {
-    // Only a front-to-front collapse re-triangulates the front. v1 is removed, v2 survives at
-    // its own position (the base moves nothing), so every front edge around the pair that does
-    // not join them is re-attached to v2 with the same endpoint positions: the result's sag can
-    // be read before the collapse runs. The 3D twin predicts faces; here the front is a curve,
-    // so the pair's two surviving chords are what is predicted.
-    const auto front = [&](const size_t v) {
-        return m_vertex_extra[v].m_is_on_offset && m_vertex_attribute[v].m_is_rounded;
-    };
-    if (!front(v1) || !front(v2)) return false;
-    std::vector<std::array<size_t, 2>> edges;
+    double worst = 0.;
+    for (const std::array<size_t, 2>& e : edges) {
+        worst = std::max(worst, offset_edge_sag(e[0], e[1]));
+    }
+    return worst;
+}
+
+bool TopoOffsetTriMesh::ops_guard_refuses_collapse(const size_t v1, const size_t v2) const
+{
+    // EXPERIMENTAL_ops_divergence_guard, the collapse half; the 3D twin predicts faces, here the
+    // front is a curve so the prediction is over chords. v1 is removed and v2 survives at its
+    // own position -- the base moves no vertex in a collapse -- so every chord the survivor ends
+    // up with is one of the chords around the pair now, with v1 relabelled to v2 and both
+    // endpoints unmoved. The "after" sag is therefore exact before anything is modified.
+
+    // THE GATE, and it is deliberately the first thing here: the guard applies only to a
+    // candidate that lies exactly ON the offset surface, which in 2D means the collapsed edge is
+    // itself between a band triangle and a background one (edge_is_offset_surface_live: band on
+    // one side, and the other side neither band nor input complex). Everything below -- a
+    // one-ring walk per endpoint and a sag evaluation per chord, each of which evaluates the
+    // potential and its gradient -- is skipped for every other candidate. The 3D twin gates on
+    // edge_is_offset_surface_live(v1, v2), where the surface is made of faces and the edge
+    // qualifies by being an edge of one.
+    const auto found = try_tuple_from_edge({{v1, v2}});
+    if (!found || !edge_is_offset_surface_live(std::get<0>(*found))) return false;
+
+    std::vector<std::array<size_t, 2>> before;
     std::set<size_t> seen;
     for (const size_t v : {v1, v2}) {
         for (const Tuple& e : offset_surface_edges_live_at(v)) {
             if (!seen.insert(e.eid(*this)).second) continue;
-            edges.push_back(get_edge_vids(e));
+            before.push_back(get_edge_vids(e));
         }
     }
-    if (edges.empty()) return false;
-    // The guard protects a resolved neighbourhood only: with any chord around either endpoint
-    // unresolved the pass is free to act, as it is with the key off.
-    for (const std::array<size_t, 2>& e : edges) {
-        if (!front_edge_converged(e[0], e[1])) return false;
-    }
-    for (std::array<size_t, 2> e : edges) {
+    // Nothing of the offset surface is touched: not this guard's business.
+    if (before.empty()) return false;
+
+    std::vector<std::array<size_t, 2>> after;
+    after.reserve(before.size());
+    for (std::array<size_t, 2> e : before) {
         bool has1 = false, has2 = false;
         for (const size_t v : e) {
             has1 = has1 || v == v1;
@@ -815,11 +811,10 @@ bool TopoOffsetTriMesh::front_guard_refuses_collapse(const size_t v1, const size
         for (size_t& v : e) {
             if (v == v1) v = v2;
         }
-        const double r = edge_conv_ratio(e[0], e[1]);
-        if (!(r >= 0. && r <= 1.)) return true; // over the tube, or unmeasurable
+        after.push_back(e);
     }
-    m_collapse_guard_armed.local() = 1; // the survivor's own ratio is tested after the collapse
-    return false;
+    // Strictly greater: a collapse that leaves the worst chord exactly as bad is allowed.
+    return max_offset_edge_sag(after) > max_offset_edge_sag(before);
 }
 
 bool TopoOffsetTriMesh::collapse_before_vertex(const size_t v1_id, const size_t v2_id)
@@ -3620,6 +3615,61 @@ bool TopoOffsetTriMesh::edge_is_offset_surface_live(const Tuple& e) const
     return !face_is_input_complex(a ? fb : fa);
 }
 
+/// The outer-angle threshold, in degrees, above which the offset curve counts as folded over at
+/// a vertex: the angle between its two incident offset edges measured through ONE of the two
+/// sides. 180 is straight and 360 is the two edges exactly on top of each other. Because the two
+/// sides sum to 360, "over 330 on one side" is the same statement as "under 30 unsigned", which
+/// is what the code tests -- see offset_surface_foldover_labels() for why the side is not
+/// determined. Optimize3d.cpp carries the same constant; the two values must stay equal.
+static constexpr double FOLDOVER_OUTER_ANGLE_DEG = 330.;
+
+std::vector<char> TopoOffsetTriMesh::offset_surface_foldover_labels() const
+{
+    std::vector<char> fold(vert_capacity(), 0);
+
+    // Per curve vertex, its neighbours across live offset edges.
+    struct VertexEdges
+    {
+        int n = 0;
+        std::array<size_t, 2> nbr{{0, 0}};
+    };
+    std::vector<VertexEdges> at(vert_capacity());
+    for (const Tuple& e : get_edges()) {
+        if (!edge_is_offset_surface_live(e)) continue;
+        const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
+        const auto record = [&](const size_t v, const size_t other) {
+            VertexEdges& ve = at[v];
+            if (ve.n < 2) ve.nbr[size_t(ve.n)] = other;
+            ++ve.n; // counted past 2 on purpose, so a non-manifold vertex can be recognised
+        };
+        record(va, vb);
+        record(vb, va);
+    }
+
+    // A fold is the two edges lying on top of each other, and WHICH side is pinched is not part
+    // of it -- the band's side or the background's. See the 3D twin, where the measured folds
+    // turned out to pinch the BACKGROUND, so a test written around a pinched band missed every
+    // one of them. The two sides sum to 360, so "over the threshold through one side" is exactly
+    // "under 360 minus it unsigned", and the unsigned angle catches the fold either way without
+    // having to decide which side is which.
+    const double coincidence_deg = 360. - FOLDOVER_OUTER_ANGLE_DEG;
+    for (size_t vid = 0; vid < at.size(); ++vid) {
+        const VertexEdges& ve = at[vid];
+        // Not two edges means the angle is not defined -- a curve end, or a non-manifold vertex.
+        // Not measurable is not a fold.
+        if (ve.n != 2) continue;
+        const Vector2d p = m_vertex_attribute[vid].m_posf;
+        const Vector2d w0 = m_vertex_attribute[ve.nbr[0]].m_posf - p;
+        const Vector2d w1 = m_vertex_attribute[ve.nbr[1]].m_posf - p;
+        const double l0 = w0.norm(), l1 = w1.norm();
+        if (!(l0 > 0.) || !(l1 > 0.) || !std::isfinite(l0) || !std::isfinite(l1)) continue;
+        const double ang =
+            std::acos(std::clamp((w0 / l0).dot(w1 / l1), -1., 1.)) * 180. / M_PI; // [0, 180]
+        if (ang < coincidence_deg) fold[vid] = 1;
+    }
+    return fold;
+}
+
 void TopoOffsetTriMesh::check_no_vertex_on_both_surfaces(const char* when) const
 {
     // A vertex on both surfaces is unsatisfiable: it sits at distance 0 from the input complex,
@@ -3813,6 +3863,67 @@ void TopoOffsetTriMesh::rebuild_offset_envelope()
         m_offset_params.target_distance);
 }
 
+namespace {
+/// Cheap existence test for a companion frame; <filesystem> is not used in this component.
+bool debug_frame_file_exists(const std::string& p)
+{
+    std::ifstream f(p);
+    return f.good();
+}
+
+/// DEBUG_output only. Splice a VTK FieldData string array carrying this frame's pass label into
+/// a .vtu paraviewo has just closed, so ParaView can display it per timestep: add an Annotate
+/// Attribute Data filter, association Field Data, array frame_label.
+///
+/// Why splice rather than write it properly: paraviewo's VTUWriter exposes only numeric point
+/// and cell fields (Eigen::MatrixXd), with no FieldData and no string support, and it is a
+/// third-party dependency outside this component. The .vtu is XML, so the block goes in here.
+/// format="ascii" keeps it out of the appended-data section, so the binary offsets paraviewo
+/// already wrote stay valid. VTK encodes a string as its character codes, space separated and
+/// null terminated, which also makes the label XML-safe whatever it contains.
+///
+/// The <UnstructuredGrid> anchor sits in the first few hundred bytes, so only the head is held
+/// in memory and the body -- tens of megabytes on a large frame -- is streamed through.
+bool inject_frame_label(const std::string& path, const std::string& label)
+{
+    static const std::string anchor = "<UnstructuredGrid>";
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return false;
+    std::string head(4096, '\0');
+    in.read(&head[0], static_cast<std::streamsize>(head.size()));
+    head.resize(static_cast<size_t>(in.gcount()));
+    const size_t at = head.find(anchor);
+    if (at == std::string::npos) return false;
+    const size_t cut = at + anchor.size();
+
+    std::string codes;
+    for (const char c : label) {
+        codes += std::to_string(static_cast<unsigned>(static_cast<unsigned char>(c))) + " ";
+    }
+    codes += "0";
+
+    const std::string tmp = path + ".lbl";
+    {
+        std::ofstream out(tmp, std::ios::binary);
+        if (!out) return false;
+        out.write(head.data(), static_cast<std::streamsize>(cut));
+        out << "\n  <FieldData>\n    <Array type=\"String\" Name=\"frame_label\" "
+               "NumberOfTuples=\"1\" format=\"ascii\">\n      "
+            << codes << "\n    </Array>\n  </FieldData>";
+        out.write(head.data() + cut, static_cast<std::streamsize>(head.size() - cut));
+        std::vector<char> buf(size_t(1) << 16);
+        while (in.read(buf.data(), static_cast<std::streamsize>(buf.size())) || in.gcount() > 0) {
+            out.write(buf.data(), in.gcount());
+        }
+        if (!out) return false;
+    }
+    in.close();
+    if (std::rename(tmp.c_str(), path.c_str()) == 0) return true;
+    std::remove(tmp.c_str()); // leave the frame paraviewo wrote rather than a half-named file
+    return false;
+}
+} // namespace
+
 void TopoOffsetTriMesh::append_frame_label(const size_t idx, const std::string& label) const
 {
     std::ofstream f(
@@ -3825,7 +3936,62 @@ void TopoOffsetTriMesh::write_debug_frame(const std::string& label)
 {
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
-    write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+    const std::string base = m_offset_params.output_path + fmt::format("_{:05d}", idx);
+    write_vtu(base);
+    // Record what this frame actually wrote, then refresh the ParaView collections. Which
+    // companions exist is dimension-specific and some are conditional, so they are discovered
+    // from disk rather than hard-coded here.
+    if (m_debug_frame_labels.size() <= idx) m_debug_frame_labels.resize(idx + 1);
+    m_debug_frame_labels[idx] = label;
+    for (const char* sfx : {"", "_surf", "_off", "_edge", "_front"}) {
+        const std::string p = base + sfx + ".vtu";
+        if (!debug_frame_file_exists(p)) continue;
+        // The label goes INTO the frame as FieldData, not only into the .pvd: a .pvd DataSet's
+        // name= attribute does reach the reader, but as a vtkCharArray, which ParaView's
+        // annotation renders as the first character's numeric code rather than the text, and an
+        // XML comment is discarded outright. See inject_frame_label().
+        inject_frame_label(p, label);
+        m_debug_pvd_series[sfx].push_back(idx);
+    }
+    write_debug_pvd();
+}
+
+void TopoOffsetTriMesh::write_debug_pvd() const
+{
+    // DEBUG_output only. ParaView detects a file series only when the frame index sits
+    // IMMEDIATELY before the extension. The main frames are <output>_NNNNN.vtu and group fine,
+    // but every companion is <output>_NNNNN_off.vtu -- index in the middle, suffix after it --
+    // so ParaView opens each companion as its own dataset instead of one time series. A .pvd
+    // collection names the files explicitly, which sidesteps the naming rule entirely.
+    // Rewritten after EVERY frame, not once at the end: these runs are killed often, and a
+    // killed run should still leave a series that opens.
+    const std::string& out = m_offset_params.output_path;
+    // file= is resolved relative to the .pvd, so it carries the bare name, not output_path.
+    const std::string stem = out.substr(out.find_last_of("/\\") + 1);
+    for (const auto& [sfx, idxs] : m_debug_pvd_series) {
+        if (idxs.size() < 2) continue; // a single frame is not a series
+        std::ofstream f(out + (sfx.empty() ? std::string("_main") : sfx) + ".pvd", std::ios::trunc);
+        if (!f) continue;
+        f << "<?xml version=\"1.0\"?>\n"
+             "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n"
+             "  <Collection>\n";
+        for (const size_t i : idxs) {
+            f << fmt::format(
+                "    <DataSet timestep=\"{}\" group=\"\" part=\"0\" file=\"{}_{:05d}{}.vtu\"/>",
+                i,
+                stem,
+                i,
+                sfx);
+            // The frame's label, so the .pvd also says which pass produced each timestep. A
+            // label containing "--" would close the XML comment early, so it is left out.
+            const std::string lab = i < m_debug_frame_labels.size() ? m_debug_frame_labels[i] : "";
+            if (!lab.empty() && lab.find("--") == std::string::npos) {
+                f << fmt::format("  <!-- {} -->", lab);
+            }
+            f << "\n";
+        }
+        f << "  </Collection>\n</VTKFile>\n";
+    }
 }
 
 void TopoOffsetTriMesh::optimize_offset_single_phase()
@@ -3906,13 +4072,6 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
-            // front_refuse_converged_collapse: the "was resolved" half of the guard is read from
-            // the front as it stands when the collapse group begins. Only that group: the 3D twin
-            // snapshots for the swap group as well, which has no guard here -- see
-            // swap_edge_before().
-            if (m_offset_params.front_refuse_converged_collapse && gi == 1) {
-                snapshot_front_convergence();
-            }
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -3955,10 +4114,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.worst_placed_mid.y(),
             ec.refinable.size(),
             ec.n_at_floor);
-        if (m_offset_params.front_refuse_converged_collapse) {
+        if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
-                "\t[front guard] turn {}: {} collapse(s) refused for un-resolving a resolved "
-                "patch of the front ({} in the run so far)",
+                "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
+                "offset surface ({} in the run so far)",
                 it + 1,
                 iter_cnt_collapse_guard_reject.load() - guard_c0,
                 iter_cnt_collapse_guard_reject.load());
@@ -4166,9 +4325,10 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    if (m_offset_params.front_refuse_converged_collapse) {
+    if (m_offset_params.experimental_ops_divergence_guard) {
         logger().info(
-            "front guard (front_refuse_converged_collapse): {} collapses refused",
+            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses refused for raising the "
+            "local sag",
             iter_cnt_collapse_guard_reject.load());
     }
     // No push_back here: op_counts is a per-round series recorded inside the driver loop, so
@@ -4252,6 +4412,42 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy);
+    }
+
+    // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
+    // the delivered mesh, not a debug curiosity, so it is reported whether or not debug_output
+    // wrote the per-vertex field. Run here, at the end of optimize_offset, so it describes the
+    // mesh the driver is about to write: after the finishing pass, not at the loop's verdict.
+    // Reported for a run that did not converge too, where a fold is if anything more likely.
+    // See offset_surface_foldover_labels() for what the angle is and why its side is not
+    // determined. Costs one pass over the live offset simplices, once, with no field evaluation.
+    {
+        const std::vector<char> fold = offset_surface_foldover_labels();
+        size_t n_fold = 0;
+        size_t first = std::numeric_limits<size_t>::max();
+        for (size_t vid = 0; vid < fold.size(); ++vid) {
+            if (!fold[vid]) continue;
+            ++n_fold;
+            if (first == std::numeric_limits<size_t>::max()) first = vid;
+        }
+        if (n_fold > 0) {
+            const auto& p = m_vertex_attribute[first].m_posf;
+            logger().warn(
+                "[foldover] the offset surface is folded back on itself at {} vertex(es): {} "
+                "meet within {} degrees of coincident (over {} degrees through one side). "
+                "First at v{} ({:.4}, {:.4}{}). {}",
+                n_fold,
+                "two offset edges at a curve vertex",
+                360. - FOLDOVER_OUTER_ANGLE_DEG,
+                FOLDOVER_OUTER_ANGLE_DEG,
+                first,
+                p[0],
+                p[1],
+                "",
+                m_offset_params.debug_output
+                    ? "The per-vertex flag offset_foldover is on the debug frames."
+                    : "Set DEBUG_output to get the per-vertex offset_foldover field.");
+        }
     }
 
     // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log

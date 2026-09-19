@@ -463,6 +463,20 @@ protected:
     }
     virtual void collapse_after_vertex(size_t, size_t) {}
 
+    /// Whether a swap's quality outcome is acceptable, given the max face energy over the faces
+    /// it creates and over the faces it destroyed. The default is STRICT improvement, which is
+    /// what the swap required before this hook existed, so a subclass that does not override it
+    /// sees no change. The twin on the collapse side is collapse_quality_allowed().
+    ///
+    /// `is_surface_flip` is the 3D twin's parameter and is ALWAYS false here: 2D has no surface
+    /// flip. swap_edge_before() refuses any edge on a tracked surface outright
+    /// (is_edge_on_surface), so a surface edge never reaches this hook. The parameter is kept so
+    /// the two dimensions carry the same signature.
+    virtual bool swap_quality_allowed(double after, double before, bool /*is_surface_flip*/) const
+    {
+        return after < before;
+    }
+
     virtual bool split_adjust_position(size_t, const std::vector<Tuple>&) { return true; }
     virtual void split_after_vertex(size_t) {}
 
