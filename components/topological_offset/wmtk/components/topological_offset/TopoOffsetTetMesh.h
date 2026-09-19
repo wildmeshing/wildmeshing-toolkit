@@ -607,6 +607,36 @@ public:
     void check_offset_membership(const char* when) const;
 
     /**
+     * @brief Faces that vertex_has_live_offset_face() / offset_surface_faces_live_at() asked for
+     * and the connectivity did not have.
+     *
+     * Both walk a vertex's one-ring of tets and then step across each face to the tet on the
+     * other side, so they read two and three hops out from the seed. The collapse and swap passes
+     * guarantee only `{v1, v2} u N(v1) u N(v2)` -- see "Ring lockers -- NOT balls" in TetMesh.h --
+     * so at num_threads > 0 a neighbouring thread can be shrinking a vertex fan these walks are
+     * reading, and the face lookup misses. A miss is taken as "not a live offset face", which is
+     * what TetMesh.h's try_tuple_from_face doc calls the legitimate answer.
+     *
+     * Counted because a miss means the m_is_on_offset just written was derived from a stale read
+     * and may be wrong. Zero is the expected value. Non-zero says the walks are racing the pass,
+     * and the remedy is to widen the collapse pass's lock (collapse_all_edges_impl's
+     * exact_ball_lock), which is shared code and not an offsets-side change.
+     *
+     * History: before 2026-09-18 neither walk checked for a miss. The asserting tuple_from_face
+     * returns a default Tuple under NDEBUG, whose m_global_tid is size_t(-1), and
+     * switch_tetrahedron() indexed m_tet_connectivity with it -- one element below the vector's
+     * base. That was the SIGSEGV on the cube at target_distance_rel 1e-3.
+     */
+    mutable std::atomic<long long> m_offset_face_lookup_misses{0};
+    /// face_is_offset_surface_live() calls handed an invalid Tuple (m_global_tid == size_t(-1)).
+    /// Defence in depth behind the two walks above: with both of them checking their lookups this
+    /// should stay 0, and a future caller that forgets gets `false` instead of a wild read.
+    mutable std::atomic<long long> m_offset_face_invalid_tuple{0};
+    /// Log the two counters above, run totals, and only when either is non-zero -- a clean run
+    /// prints nothing. Not gated on perform_sanity_checks: these are free unless they fire.
+    void report_offset_face_lookup_misses(const char* when) const;
+
+    /**
      * @brief Per-vertex 0/1: is this vertex an endpoint of a COLLAPSED (folded-over) offset
      * surface edge? Debug-frame diagnostic; see write_vtu(). Costs one pass over the live
      * offset faces, no field evaluation.

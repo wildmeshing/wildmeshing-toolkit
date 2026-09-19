@@ -3620,6 +3620,14 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
 bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
 {
     const size_t ta = f.tid(*this);
+    // Defence in depth behind the two walks that feed this: a default-constructed Tuple carries
+    // m_global_tid == size_t(-1), which is the same sentinel TetMesh::Tuple::is_valid() tests
+    // first, and switch_tetrahedron() below would index m_tet_connectivity with it. Refusing it
+    // here means a caller that forgets to check a lookup gets `false`, not a wild read.
+    if (ta == std::numeric_limits<size_t>::max()) {
+        ++m_offset_face_invalid_tuple;
+        return false;
+    }
     const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
     if (!opp) {
         // Domain boundary. A band cell here means the band was clipped by the bounding box, and
@@ -3685,7 +3693,14 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
         const auto tv = oriented_tet_vids(tid);
         for (int skip = 0; skip < 4; ++skip) {
             if (tv[size_t(skip)] == vid) continue;
-            const auto [ft, fid] = tuple_from_face(face_corners_from(tv, skip));
+            // try_ rather than the asserting tuple_from_face: see the note in
+            // vertex_has_live_offset_face() below and m_offset_face_lookup_misses.
+            const auto found = try_tuple_from_face(face_corners_from(tv, skip));
+            if (!found) {
+                ++m_offset_face_lookup_misses;
+                continue;
+            }
+            const auto& [ft, fid] = *found;
             if (!seen.insert(fid).second) continue;
             if (face_is_offset_surface_live(ft)) result.push_back(ft);
         }
@@ -3698,13 +3713,24 @@ bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
     // No `seen` set: a face reached twice is simply tested twice, and the first live one ends the
     // walk. The set exists in offset_surface_faces_live_at() to avoid duplicate entries in the
     // list it returns, which is not a concern here.
+    //
+    // try_ rather than the asserting tuple_from_face: refresh_offset_membership() calls this from
+    // the after-half of a collapse and of a swap, which is exactly the caller TetMesh.h's
+    // try_tuple_from_face doc names as one for which a missing face is an answer rather than a
+    // bug. Under NDEBUG -- which is every Release build -- the asserting form's assert is gone
+    // and it returns a default Tuple whose m_global_tid is size_t(-1); face_is_offset_surface_live
+    // then indexed m_tet_connectivity with it. See m_offset_face_lookup_misses.
     for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
         const auto tv = oriented_tet_vids(tid);
         for (int skip = 0; skip < 4; ++skip) {
             if (tv[size_t(skip)] == vid) continue;
-            const auto [ft, fid] = tuple_from_face(face_corners_from(tv, skip));
-            (void)fid;
-            if (face_is_offset_surface_live(ft)) return true;
+            const auto found = try_tuple_from_face(face_corners_from(tv, skip));
+            if (!found) {
+                // The connectivity does not have this face, so it is not a live offset face.
+                ++m_offset_face_lookup_misses;
+                continue;
+            }
+            if (face_is_offset_surface_live(std::get<0>(*found))) return true;
         }
     }
     return false;
@@ -3747,6 +3773,22 @@ void TopoOffsetTetMesh::check_offset_membership(const char* when) const
             flagged_not_live,
             live_not_flagged);
     }
+}
+
+void TopoOffsetTetMesh::report_offset_face_lookup_misses(const char* when) const
+{
+    const long long misses = m_offset_face_lookup_misses.load();
+    const long long invalid = m_offset_face_invalid_tuple.load();
+    if (misses == 0 && invalid == 0) return;
+    logger().warn(
+        "\t[offset face lookup] {}: {} face(s) asked for by the offset-membership walks were not "
+        "in the connectivity, {} invalid tuple(s) refused by face_is_offset_surface_live (run "
+        "totals). Both walks read past what the pass locks, so at num_threads > 0 this is a stale "
+        "read and the m_is_on_offset written from it may be wrong. See "
+        "m_offset_face_lookup_misses.",
+        when,
+        misses,
+        invalid);
 }
 
 /// The outer-angle threshold, in degrees, above which an offset-surface edge counts as folded
@@ -4248,6 +4290,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
         // the key is off, which is the default.
         check_offset_membership(fmt::format("turn {}", it + 1).c_str());
+        // Not gated on the key: silent unless a face lookup actually missed this run.
+        report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
         if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
                 "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
@@ -4373,6 +4417,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // question, so a disagreement at turn 0 would mean the two disagree about what the offset
     // surface IS, before any operation has run.
     check_offset_membership("construction");
+    report_offset_face_lookup_misses("construction");
 
     init_vertex_order();
 
