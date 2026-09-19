@@ -46,25 +46,18 @@ bool TopoOffsetTriMesh::split_edge_before(const Tuple& t)
         const bool ends_on_input =
             m_vertex_extra[c.v1_id].m_is_on_input && m_vertex_extra[c.v2_id].m_is_on_input;
         // Is the edge itself a piece of the complex (a curve, which lies in no input triangle)?
-        // Read from its construction label -- except in the refined march's remesh pass, which
-        // splits and collapses along a curve many times over, and no operation writes the edge
-        // label: a child of a split curve edge lands in a new slot holding whatever its last
-        // occupant had, so its own split read label 0 and left the midpoint off the input.
-        // Measured on presmooth2d/line_presmooth (the "left & right" curve): 3 such midpoints in
-        // one pass, and the complex tube rebuilt after it held 2 of the curve's 6 segments; with
-        // the rule below, 0 and all 6. The pass reads the edge's track instead, which every
-        // operation maintains: a tracked,
-        // non-front edge with both ends on the input is a piece of it -- the rule, and why it is
-        // exact, are where remesh_refined_march() re-derives the labels. Outside the pass the
-        // label is read as before, so every other run is unchanged.
+        // Read from its construction label, which the operations carry (see merge_labels()).
         const size_t eid = t.eid(*this);
-        const bool edge_is_piece =
-            m_remesh_pass ? (m_edge_attribute[eid].m_is_surface_fs && !edge_is_offset(eid))
-                          : m_edge_extra[eid].label == 1;
-        c.edge_in_input = ends_on_input && edge_is_piece;
+        c.split_edge_label = m_edge_extra[eid].label;
+        c.edge_in_input = ends_on_input && c.split_edge_label == 1;
+        c.edge_labels.clear();
         for (const size_t fid : get_incident_fids_for_edge(t)) {
             const size_t apex = simplex_from_face(fid).opposite_vertex(edge).id();
             c.face_label[apex] = m_face_extra[fid].label;
+            // The parent's two other edges, which the split only re-slots.
+            for (const size_t end : {c.v1_id, c.v2_id}) {
+                c.edge_labels[simplex::Edge(end, apex)] = edge_label_at(end, apex);
+            }
             if (ends_on_input && m_face_extra[fid].label == 1) c.edge_in_input = true;
             c.parent_q_max = std::max(c.parent_q_max, get_quality(fid));
             c.parent_flatness = std::min(c.parent_flatness, face_flatness(fid));

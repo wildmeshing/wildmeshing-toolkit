@@ -730,53 +730,12 @@ void TopoOffsetTriMesh::remesh_refined_march()
     consolidate_mesh();
     check_no_vertex_on_both_surfaces("refined_marching_remesh");
 
-    // What the rest of the run reads, put back the way construction leaves it.
-    //
-    // The construction labels of vertices and edges. Here 2D differs from 3D, which re-derives
-    // the face labels as well: the shared 2D operations keep the FACE label exact -- a split
-    // carries each parent's onto its two children (split_adjust_position()), and a collapse or a
-    // flip keeps the ids of the faces it leaves -- but nothing writes a vertex or an edge label,
-    // so a recycled slot holds whatever its last occupant had. label_offset_boundary() (a front
-    // edge is an edge of label 2 between differently labelled faces), assign_band_regions()
-    // (vertex label 1 seeds the band's regions) and edge_is_complex_boundary() read them next.
-    // Re-derived from the faces by the rule construction follows: 1 in the closure of an input
-    // face, else 2 in the closure of a band face, else 0.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
-    for (const Tuple& e : get_edges()) m_edge_extra[e.eid(*this)].label = 0;
-    for (const Tuple& f : get_faces()) {
-        const size_t fid = f.fid(*this);
-        const int l = m_face_extra[fid].label;
-        if (l == 0) continue;
-        const auto raise = [l](int& x) {
-            if (x != 1) x = l; // 1 over 2 over 0
-        };
-        for (const size_t v : oriented_tri_vids(fid)) raise(m_vertex_extra[v].label);
-        for (int i = 0; i < 3; ++i) raise(m_edge_extra[tuple_from_edge(fid, i).eid(*this)].label);
-    }
-    // A vertex still flagged as on the input complex is 1 too, which keeps a curve's vertices --
-    // a complex with no faces -- on it, as in 3D (a sheet's).
-    for (const Tuple& v : get_vertices()) {
-        if (m_vertex_extra[v.vid(*this)].m_is_on_input) m_vertex_extra[v.vid(*this)].label = 1;
-    }
-    // ... and so is an EDGE of such a complex, which lies in no input face and so gets 2 or 0
-    // above. Needed because edge_is_complex_boundary() reads exactly these edges' label: left at
-    // 2, the curve would drop out of the complex tube built below and out of every later
-    // WallComplex rebuild, and split_edge_before() would stop flagging its midpoints as on the
-    // input. The rule, and why it is exact: construction tracks every such edge -- it is a tag
-    // boundary (the left|right interface) or on the curve group (init_surfaces_and_boundaries())
-    // -- and both its ends are input vertices; the pass keeps a tracked edge tracked (split
-    // children inherit it, a collapse merges it, a flip never touches one) and never takes a
-    // vertex off the input (collapse_before_vertex()). So such an edge is a tracked, non-front
-    // edge whose two ends are input vertices. The edges of a complex made of triangles pass the
-    // same test, and are 1 already.
-    for (const Tuple& e : get_edges()) {
-        const size_t eid = e.eid(*this);
-        if (!m_edge_attribute[eid].m_is_surface_fs || edge_is_offset(eid)) continue;
-        if (m_vertex_extra[e.vid(*this)].m_is_on_input &&
-            m_vertex_extra[e.switch_vertex(*this).vid(*this)].m_is_on_input) {
-            m_edge_extra[eid].label = 1;
-        }
-    }
+    // What the rest of the run reads, put back the way construction leaves it. The construction
+    // labels need nothing: every operation of the pass carried them (see merge_labels() in the
+    // header), which is what label_offset_boundary(), assign_band_regions() and
+    // edge_is_complex_boundary() read next. They used to be re-derived here from the faces, plus
+    // an endpoint rule to recover a curve complex's edges (a curve lies in no input face); with
+    // the edges carried, neither is needed. As in 3D.
     // The curve flag is geometric and nothing propagates it (see EdgeExtra2d::on_curve); the
     // region tubes below read it under PerTag. The 3D twin re-derives its sheet flag here.
     classify_curve_edges();

@@ -762,6 +762,11 @@ public:
     struct OptSplitCache2d
     {
         std::map<size_t, int> face_label;
+        /// The construction labels of the parents' edges, keyed by vertices, and of the split
+        /// edge itself; split_adjust_position() writes them onto the children (see
+        /// merge_labels()).
+        std::map<simplex::Edge, int> edge_labels;
+        int split_edge_label = 0;
         size_t v1_id = 0;
         size_t v2_id = 0;
         /// The endpoints' mask AND, captured before the split (3D's rule at both of its split
@@ -775,11 +780,6 @@ public:
         /// a curve selection). Read before the split replaces the triangles; what
         /// split_after_vertex() sets the midpoint's m_is_on_input from.
         bool edge_in_input = false;
-        /// The construction labels of the split edge and of the parents' other edges, keyed by
-        /// their vertices, read before the parents are replaced. split_adjust_position() writes
-        /// them onto the children by the rules at merge_labels().
-        int edge_label = 0;
-        std::map<simplex::Edge, int> edge_labels;
         /// Diagnostic: the two parent faces' AMIPS before the split, so split_after_vertex() can
         /// say whether a needle child came from a healthy parent or an already unscoreable one.
         double parent_q_max = -1.;
@@ -821,6 +821,10 @@ public:
     {
         return m_edge_extra[std::get<1>(tuple_from_edge({{a, b}}))].label;
     }
+    void set_edge_label(const size_t a, const size_t b, const int label)
+    {
+        m_edge_extra[std::get<1>(tuple_from_edge({{a, b}}))].label = label;
+    }
     /// What collapse_edge_after() writes, captured by collapse_edge_before(): the merged edges
     /// (v2, x) and the survivor's own label.
     struct CollapseLabels2d
@@ -830,11 +834,10 @@ public:
     };
     wmtk::threading::enumerable_thread_specific<CollapseLabels2d> m_collapse_labels;
     /// What swap_edge_after() writes, captured by swap_edge_before(): the labels of the four
-    /// edges around the flipped one, and the new diagonal's.
+    /// edges around the flipped one, and the new diagonal's (the last entry).
     struct SwapLabels2d
     {
         std::vector<std::pair<std::array<size_t, 2>, int>> edges;
-        int diagonal = 0;
     };
     wmtk::threading::enumerable_thread_specific<SwapLabels2d> m_swap_labels;
 

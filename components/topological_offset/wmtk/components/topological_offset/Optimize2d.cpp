@@ -168,6 +168,23 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
     // m_is_on_surface, so TriOptimizerMesh::swap_edge_before() above already refused it through
     // is_edge_on_surface(). A flip of any other edge moves no vertex and changes no front chord,
     // so it cannot un-resolve the front.
+    //
+    // The labels swap_edge_after() writes; see merge_labels(). The quad's four boundary edges
+    // are only re-slotted and keep their labels; the new diagonal (c, d) lies inside the quad,
+    // whose two triangles carry the same label (a label boundary is a tracked edge, which the
+    // base refuses to flip), and takes it.
+    {
+        const size_t a = t.vid(*this), b = t.switch_vertex(*this).vid(*this);
+        SwapLabels2d& s = m_swap_labels.local();
+        s.edges.clear();
+        for (const auto& [p, q] :
+             std::array<std::array<size_t, 2>, 4>{{{{a, c}}, {{c, b}}, {{b, d}}, {{d, a}}}}) {
+            s.edges.push_back({{{p, q}}, edge_label_at(p, q)});
+        }
+        s.edges.push_back(
+            {{{c, d}},
+             merge_labels(m_face_extra[t.fid(*this)].label, m_face_extra[opp->fid(*this)].label)});
+    }
     return true;
 }
 
@@ -669,6 +686,12 @@ bool TopoOffsetTriMesh::swap_edge_after(const Tuple& t)
     // deform_others: a swap rewires exactly these two faces; their rest is stale.
     stamp_rest_face(t.fid(*this));
     if (const std::optional<Tuple> opp = t.switch_face(*this)) stamp_rest_face(opp->fid(*this));
+    // The labels swap_edge_before() captured, onto the re-slotted edges and the new diagonal.
+    for (const auto& [vids, label] : m_swap_labels.local().edges) {
+        if (const auto found = try_tuple_from_edge(vids)) {
+            m_edge_extra[std::get<1>(*found)].label = label;
+        }
+    }
     ++iter_cnt_swap;
     return true;
 }
@@ -718,6 +741,17 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     for (const size_t fid : get_one_ring_fids_for_vertex(t)) {
         stamp_rest_face(fid);
     }
+    // The labels collapse_edge_before() captured, onto the edges they now belong to; see
+    // merge_labels().
+    {
+        const CollapseLabels2d& c = m_collapse_labels.local();
+        for (const auto& [vids, label] : c.edges) {
+            if (const auto found = try_tuple_from_edge(vids)) {
+                m_edge_extra[std::get<1>(*found)].label = label;
+            }
+        }
+        m_vertex_extra[collapse_cache.local().v2_id].label = c.survivor;
+    }
     return true;
 }
 
@@ -746,6 +780,22 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
         front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
+    }
+    // The labels collapse_edge_after() writes, read while the removed triangles still exist; see
+    // merge_labels(). The removed triangles are those on the edge, (v1, v2, x): each merges
+    // (v1, x) into (v2, x). Every other edge keeps its slot -- the triangles at v1 not on the
+    // edge keep their ids and v1's position in them.
+    {
+        const size_t v1 = collapse_cache.local().v1_id, v2 = collapse_cache.local().v2_id;
+        CollapseLabels2d& c = m_collapse_labels.local();
+        c.edges.clear();
+        c.survivor = merge_labels(m_vertex_extra[v1].label, m_vertex_extra[v2].label);
+        const simplex::Edge e(v1, v2);
+        for (const size_t fid : get_incident_fids_for_edge(t)) {
+            const size_t x = simplex_from_face(fid).opposite_vertex(e).id();
+            c.edges.push_back(
+                {{{v2, x}}, merge_labels(edge_label_at(v1, x), edge_label_at(v2, x))});
+        }
     }
     return true;
 }
@@ -1029,6 +1079,25 @@ bool TopoOffsetTriMesh::split_adjust_position(const size_t v_id, const std::vect
             const auto it = c.face_label.find(apex);
             if (it == c.face_label.end()) continue; // unreachable; leave the slot alone
             m_face_extra[fid].label = it->second;
+        }
+    }
+    // The children's edges and the midpoint, by the rules at merge_labels(): the two halves of
+    // the split edge and the midpoint take its label; the new edge from the midpoint to an apex
+    // lies inside that parent triangle and takes the triangle's label; the parent's other edges
+    // are only re-slotted and keep theirs.
+    m_vertex_extra[v_id].label = c.split_edge_label;
+    for (const size_t endpoint : {c.v1_id, c.v2_id}) {
+        set_edge_label(endpoint, v_id, c.split_edge_label);
+        const simplex::Edge new_edge(endpoint, v_id);
+        for (const size_t fid : get_incident_fids_for_edge(endpoint, v_id)) {
+            const size_t apex = simplex_from_face(fid).opposite_vertex(new_edge).id();
+            if (const auto fl = c.face_label.find(apex); fl != c.face_label.end()) {
+                set_edge_label(v_id, apex, fl->second);
+            }
+            if (const auto el = c.edge_labels.find(simplex::Edge(endpoint, apex));
+                el != c.edge_labels.end()) {
+                set_edge_label(endpoint, apex, el->second);
+            }
         }
     }
     return true; // the position itself is the base's business, and it is happy with it
