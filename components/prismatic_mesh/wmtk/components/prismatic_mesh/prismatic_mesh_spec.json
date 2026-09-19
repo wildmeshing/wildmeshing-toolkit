@@ -8,7 +8,11 @@
             "output"
         ],
         "optional": [
-            "input_dir"
+            "input_dir",
+            "thicknessratio",
+            "iterations",
+            "min_tet_volume",
+            "smoothing_max_backtracks"
         ]
     },
     {
@@ -33,5 +37,29 @@
         "type": "string",
         "default": "",
         "doc": "Base directory for input; set by wmtk_app to the JSON directory."
+    },
+    {
+        "pointer": "/thicknessratio",
+        "type": "float",
+        "default": 0.1,
+        "doc": "Positive target thickness relative to the mean length of unique input surface edges."
+    },
+    {
+        "pointer": "/iterations",
+        "type": "int",
+        "default": 5,
+        "doc": "Number of collapse/smoothing iterations; 0 computes targets without optimization."
+    },
+    {
+        "pointer": "/min_tet_volume",
+        "type": "float",
+        "default": 1e-12,
+        "doc": "Nonnegative strict lower bound on signed tetrahedron volume, in coordinate units cubed."
+    },
+    {
+        "pointer": "/smoothing_max_backtracks",
+        "type": "int",
+        "default": 40,
+        "doc": "Maximum smoothing step halvings after the full target step; between 0 and 60."
     }
 ]

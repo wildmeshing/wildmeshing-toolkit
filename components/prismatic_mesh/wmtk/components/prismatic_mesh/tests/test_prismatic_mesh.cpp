@@ -34,6 +34,9 @@ struct File
     {
         std::error_code ec;
         std::filesystem::remove(path, ec);
+        std::filesystem::remove(
+            path.parent_path() / (path.stem().string() + "_offset_faces.vtu"),
+            ec);
     }
 };
 std::string replace(std::string s, const std::string& from, const std::string& to)
@@ -122,6 +125,68 @@ TEST_CASE("keeping an empty offset band produces an empty active mesh")
     REQUIRE(data.offset_tet_tags.empty());
     REQUIRE(data.input_cells.empty());
     REQUIRE(data.vertex_tags == std::vector<int>{1, -1, -1, 2, 2});
+}
+
+TEST_CASE(
+    "offset faces are classified by correspondence equality and shared faces are counted once")
+{
+    File file(fixture);
+    auto data = load_prismatic_mesh(file.path);
+    // The two tetrahedra share face {0,1,2}. Classify it even though it is not a boundary face:
+    // the definition only requires three offset vertices.
+    data.vertex_tags = {2, 2, 2, 1, -1};
+    int expected = 1;
+    SECTION("three different")
+    {
+        data.corr_input_vid = {10, 20, 30, -1, -1};
+    }
+    SECTION("first two equal")
+    {
+        data.corr_input_vid = {10, 10, 30, -1, -1};
+        expected = 2;
+    }
+    SECTION("last two equal")
+    {
+        data.corr_input_vid = {10, 30, 30, -1, -1};
+        expected = 2;
+    }
+    SECTION("first and last equal")
+    {
+        data.corr_input_vid = {10, 30, 10, -1, -1};
+        expected = 2;
+    }
+    SECTION("all equal")
+    {
+        data.corr_input_vid = {10, 10, 10, -1, -1};
+        expected = 3;
+    }
+    label_offset_faces(data);
+    size_t offset_count = 0;
+    for (const auto& face : data.mesh->get_faces()) {
+        const int tag = data.offset_face_tags.at(face.fid(*data.mesh));
+        if (tag == -1) continue;
+        REQUIRE(tag == expected);
+        REQUIRE_FALSE(face.is_boundary_face(*data.mesh));
+        ++offset_count;
+    }
+    REQUIRE(offset_count == 1);
+    data.vertex_tags[0] = 1;
+    label_offset_faces(data);
+    for (const auto& face : data.mesh->get_faces()) {
+        REQUIRE(data.offset_face_tags.at(face.fid(*data.mesh)) == -1);
+    }
+}
+
+TEST_CASE("offset face labeling handles missing correspondence and empty meshes")
+{
+    File file(fixture);
+    auto data = load_prismatic_mesh(file.path);
+    data.vertex_tags = {2, 2, 2, 1, -1};
+    REQUIRE_THROWS(label_offset_faces(data));
+    data.offset_tet_tags = {-1, -1};
+    keep_offset_band(data);
+    label_offset_faces(data);
+    REQUIRE(data.offset_face_tags.empty());
 }
 
 TEST_CASE("prismatic mesh rejects invalid correspondence and mesh arrays")

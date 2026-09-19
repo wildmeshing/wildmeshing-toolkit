@@ -10,4 +10,7 @@ add_component_test(${COMPONENT_NAME})
 
 target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE
     test_prismatic_mesh.cpp
+    test_target_positions.cpp
+    test_optimization.cpp
+    test_unlock.cpp
 )

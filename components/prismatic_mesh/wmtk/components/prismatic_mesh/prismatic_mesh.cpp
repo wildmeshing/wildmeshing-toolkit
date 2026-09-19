@@ -43,7 +43,11 @@ void prismatic_mesh(nlohmann::json json_params)
         "Input cells: {}; offset band cells: {}",
         std::count(input.input_cells.begin(), input.input_cells.end(), 1),
         std::count(input.offset_tet_tags.begin(), input.offset_tet_tags.end(), 1));
-    prism_main(input);
+    OptimizationOptions optimization;
+    optimization.iterations = json_params["iterations"].get<int>();
+    optimization.min_tet_volume = json_params["min_tet_volume"].get<double>();
+    optimization.smoothing_max_backtracks = json_params["smoothing_max_backtracks"].get<int>();
+    prism_main(input, json_params["thicknessratio"].get<double>(), optimization);
     write_prismatic_mesh(input, output_path);
     logger().info("Wrote result mesh: {}", output_path.string());
 }

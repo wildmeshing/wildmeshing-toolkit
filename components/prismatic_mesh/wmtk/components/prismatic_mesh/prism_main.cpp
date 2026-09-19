@@ -30,16 +30,64 @@ void keep_offset_band(PrismaticMeshInput& input)
     input.tetrahedra = std::move(tetrahedra);
     input.input_cells = std::move(input_cells);
     input.offset_tet_tags = std::move(offset_tet_tags);
+    input.offset_face_tags.clear();
+    input.offset_components.clear();
+    input.input_to_components.clear();
+    input.vertex_component_ids.clear();
+    input.singular_vertex_tags.clear();
+    input.optimal_normals.resize(0, 3);
+    input.target_positions.resize(0, 3);
+    input.input_average_edge_length = 0;
+    input.target_thickness = 0;
+    input.optimization_iterations.clear();
 }
 
-void prism_main(PrismaticMeshInput& input)
+void label_offset_faces(PrismaticMeshInput& input)
+{
+    input.offset_face_tags.assign(4 * input.mesh->tet_capacity(), -1);
+    std::array<size_t, 3> counts = {0, 0, 0};
+    for (const auto& face : input.mesh->get_faces()) {
+        const auto vertices = input.mesh->get_face_vertices(face);
+        std::array<int64_t, 3> correspondence;
+        bool is_offset = true;
+        for (size_t j = 0; j < 3; ++j) {
+            const size_t v = vertices[j].vid(*input.mesh);
+            if (input.vertex_tags.at(v) != 2) {
+                is_offset = false;
+                break;
+            }
+            correspondence[j] = input.corr_input_vid.at(v);
+        }
+        if (!is_offset) continue;
+        for (const auto id : correspondence) {
+            if (id < 0) log_and_throw_error("Offset face has a vertex without correspondence.");
+        }
+        const auto a = correspondence[0], b = correspondence[1], c = correspondence[2];
+        const int tag = (a == b && b == c) ? 3 : ((a == b || b == c || a == c) ? 2 : 1);
+        input.offset_face_tags[face.fid(*input.mesh)] = tag;
+        ++counts[tag - 1];
+    }
+    logger().info(
+        "Offset faces: {} bijective (1), {} with two equal correspondences (2), {} with all equal "
+        "(3)",
+        counts[0],
+        counts[1],
+        counts[2]);
+}
+
+void prism_main(
+    PrismaticMeshInput& input,
+    double thicknessratio,
+    const OptimizationOptions& optimization)
 {
     keep_offset_band(input);
     logger().info(
         "Kept offset band: {} tetrahedra, {} active vertices",
         input.tetrahedra.rows(),
         input.mesh->get_vertices().size());
-    // The band mesh and correspondence are ready for subsequent prism construction here.
+    label_offset_faces(input);
+    evaluate_target_positions(input, thicknessratio);
+    optimize_prismatic_mesh(input, optimization);
 }
 
 } // namespace wmtk::components::prismatic_mesh

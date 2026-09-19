@@ -11,6 +11,9 @@ set(SRC_FILES
     read_vtu.cpp
     write_vtu.cpp
     prism_main.cpp
+    target_positions.cpp
+    optimization.cpp
+    unlock.cpp
     prismatic_mesh_spec.json
 )
 
