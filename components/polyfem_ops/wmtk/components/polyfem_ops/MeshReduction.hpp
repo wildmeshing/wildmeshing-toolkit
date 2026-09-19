@@ -2,6 +2,8 @@
 
 #include "TaggedMesh.hpp"
 
+#include <mshio/mshio.h>
+
 #include <map>
 #include <set>
 #include <string>
@@ -32,7 +34,7 @@ ReducedBody classify_reduced_cell(
 
 /**
  * @brief Reduce a multi-tag mesh to the 2-body ("ambient"/"body") mesh polyfem solves on. Mirrors
- * `polyfem_utils._write_polyfem_reduced_msh`.
+ * `polyfem_utils._write_polyfem_reduced_msh` up to the write.
  *
  * WMTK's `write_msh_groups` writes one copy of a multi-tagged cell per tag; polyfem reads the
  * copies as distinct elements, double-counting AMIPS and corrupting assembly. Cells are therefore
@@ -44,15 +46,18 @@ ReducedBody classify_reduced_cell(
  * makes polyfem's `in_node_to_node` the identity (input vertex id i <-> gmsh tag i+1) for both the
  * original and the reduced mesh -- the collision artifacts index either one.
  *
- * Written with mshio in BINARY msh 4.1: mshio's ASCII writer prints coordinates through a default
- * ostream, which keeps 6 significant digits and would round every coordinate away. Binary stores
- * the doubles themselves, so the reduced mesh carries exactly the coordinates the input had, which
- * is at least as faithful as the gmsh ASCII (%.16g) the Python engine writes.
+ * The result is the file's content as mshio saves it, set up for BINARY msh 4.1: mshio's ASCII
+ * writer prints coordinates through a default ostream, which keeps 6 significant digits and would
+ * round every coordinate away. Binary stores the doubles themselves, so the reduced mesh carries
+ * exactly the coordinates the input had, which is at least as faithful as the gmsh ASCII (%.16g)
+ * the Python engine writes -- and it is what makes the file and this content the same mesh.
  */
-void write_polyfem_reduced_msh(
+mshio::MshSpec polyfem_reduced_msh(
     const std::string& input_msh,
-    const std::string& output_msh,
     const std::vector<std::string>& ambient_like_tags);
+
+/// Save the reduced mesh to `output_msh`.
+void write_polyfem_reduced_msh(const std::string& output_msh, const mshio::MshSpec& reduced);
 
 /// What `polyfem_utils.get_mesh_info` returns, in the same order as its 5-tuple.
 struct MeshInfo
@@ -74,5 +79,9 @@ struct MeshInfo
  * arithmetic are part of the contract; see `numpy_det3` for the 3D determinant.
  */
 MeshInfo get_mesh_info(const std::string& msh_path);
+
+/// `get_mesh_info` on the mesh a .msh would be saved from. `read_grouped` walks a loaded file and
+/// a spec in memory with the same code, so the volumes are summed in the same order either way.
+MeshInfo get_mesh_info(const mshio::MshSpec& spec);
 
 } // namespace wmtk::components::polyfem_ops

@@ -30,26 +30,6 @@ std::vector<int32_t> as_int32(const std::vector<int64_t>& ids)
     return out;
 }
 
-/// Write the four A_triplets datasets plus local2global and b, the layout every constraint file
-/// shares (polyfem SolveData.cpp).
-void write_constraint_file(
-    const std::string& path,
-    const std::vector<int32_t>& local2global,
-    const Triplets& a,
-    const std::array<int64_t, 2>& shape,
-    const std::vector<double>& b,
-    int64_t b_rows,
-    int64_t b_cols)
-{
-    h5pp::File file(path, h5pp::FileAccess::REPLACE);
-    file.writeDataset(local2global, "local2global");
-    file.writeDataset(a.rows, "A_triplets/rows");
-    file.writeDataset(a.cols, "A_triplets/cols");
-    file.writeDataset(a.values, "A_triplets/values");
-    file.writeDataset(std::vector<int64_t>{shape[0], shape[1]}, "A_triplets/shape");
-    file.writeDataset(b, "b", {b_rows, b_cols});
-}
-
 /// One row of the CSR form of a COO matrix: the column indices in ascending order and their
 /// values. Mirrors what `scipy.sparse.coo_matrix(...).tocsr()` produces -- scipy's coo_tocsr
 /// buckets the entries by row keeping their COO order, and the sum_duplicates() that follows
@@ -88,8 +68,7 @@ CsrRows to_csr(const Triplets& t, int64_t n)
 
 } // namespace
 
-void write_fitting_constraint_hdf5(
-    const std::string& path,
+ConstraintHdf5 fitting_constraint(
     const std::vector<int64_t>& node_ids,
     int dim,
     const MatrixXd& coords,
@@ -116,18 +95,16 @@ void write_fitting_constraint_hdf5(
         }
     }
 
-    write_constraint_file(
-        path,
+    return ConstraintHdf5{
         as_int32(node_ids),
-        a,
+        std::move(a),
         {n, n},
         std::vector<double>(static_cast<size_t>(n * dim), 0.0),
         n,
-        dim);
+        dim};
 }
 
-void write_laplacian_constraint_hdf5(
-    const std::string& path,
+ConstraintHdf5 laplacian_constraint(
     const std::vector<int64_t>& node_ids,
     const MatrixXd& coords,
     const std::vector<std::array<int64_t, 2>>& interface_edges,
@@ -210,18 +187,16 @@ void write_laplacian_constraint_hdf5(
         }
     }
 
-    write_constraint_file(path, as_int32(node_ids), a, {n, n}, b, n, dim);
+    return ConstraintHdf5{as_int32(node_ids), std::move(a), {n, n}, std::move(b), n, dim};
 }
 
-void write_pin_constraint_hdf5(
-    const std::string& path,
+ConstraintHdf5 pin_constraint(
     const std::vector<int64_t>& node_ids,
     int dim,
     const std::optional<std::vector<int>>& axes)
 {
     const int64_t n = static_cast<int64_t>(node_ids.size());
     Triplets a;
-    std::string what;
     int64_t b_rows = n;
     int64_t b_cols = dim;
     std::array<int64_t, 2> shape{n, n};
@@ -234,7 +209,6 @@ void write_pin_constraint_hdf5(
             a.rows[static_cast<size_t>(i)] = static_cast<int32_t>(i);
             a.cols[static_cast<size_t>(i)] = static_cast<int32_t>(i);
         }
-        what = "all axes";
     } else {
         const std::vector<int>& ax = *axes;
         if (ax.empty() || std::any_of(ax.begin(), ax.end(), [dim](int a_) {
@@ -257,44 +231,57 @@ void write_pin_constraint_hdf5(
         shape = {m, n * dim};
         b_rows = m;
         b_cols = 1;
-        for (const int axis : ax) {
-            what += "xyz"[axis];
-        }
     }
 
-    write_constraint_file(
-        path,
+    return ConstraintHdf5{
         as_int32(node_ids),
-        a,
+        std::move(a),
         shape,
         std::vector<double>(static_cast<size_t>(b_rows * b_cols), 0.0),
         b_rows,
-        b_cols);
-    logger().info("  pinned     : {}  ({} nodes, {})", path, n, what);
+        b_cols};
 }
 
-void write_linear_map_hdf5(
-    const std::string& path,
-    const std::vector<int64_t>& node_ids,
-    int64_t total_n_nodes)
+void write_constraint_hdf5(const std::string& path, const ConstraintHdf5& constraint)
+{
+    h5pp::File file(path, h5pp::FileAccess::REPLACE);
+    file.writeDataset(constraint.local2global, "local2global");
+    file.writeDataset(constraint.a.rows, "A_triplets/rows");
+    file.writeDataset(constraint.a.cols, "A_triplets/cols");
+    file.writeDataset(constraint.a.values, "A_triplets/values");
+    file.writeDataset(
+        std::vector<int64_t>{constraint.shape[0], constraint.shape[1]},
+        "A_triplets/shape");
+    file.writeDataset(constraint.b, "b", {constraint.b_rows, constraint.b_cols});
+}
+
+LinearMapHdf5 linear_map(const std::vector<int64_t>& node_ids, int64_t total_n_nodes)
 {
     const int64_t n = static_cast<int64_t>(node_ids.size());
-    std::vector<int32_t> rows(static_cast<size_t>(n));
+    LinearMapHdf5 map;
+    map.rows.resize(static_cast<size_t>(n));
     for (int64_t i = 0; i < n; ++i) {
-        rows[static_cast<size_t>(i)] = static_cast<int32_t>(i);
+        map.rows[static_cast<size_t>(i)] = static_cast<int32_t>(i);
     }
-    const std::vector<int32_t> cols = as_int32(node_ids);
-    const std::vector<double> values(static_cast<size_t>(n), 1.0);
-    const std::vector<int64_t> shape{n, total_n_nodes};
+    map.cols = as_int32(node_ids);
+    map.values.assign(static_cast<size_t>(n), 1.0);
+    map.shape = {n, total_n_nodes};
+    return map;
+}
 
+void write_linear_map_hdf5(const std::string& path, const LinearMapHdf5& map)
+{
     h5pp::File file(path, h5pp::FileAccess::REPLACE);
-    file.writeDataset(rows, "weight_triplets/rows");
-    file.writeDataset(cols, "weight_triplets/cols");
-    file.writeDataset(values, "weight_triplets/values");
+    file.writeDataset(map.rows, "weight_triplets/rows");
+    file.writeDataset(map.cols, "weight_triplets/cols");
+    file.writeDataset(map.values, "weight_triplets/values");
     // An ATTRIBUTE on the group, not a dataset -- polyfem CollisionProxy.cpp reads it there.
-    file.writeAttribute(shape, "weight_triplets", "shape");
+    file.writeAttribute(
+        std::vector<int64_t>{map.shape[0], map.shape[1]},
+        "weight_triplets",
+        "shape");
 
-    logger().info("  linear map : {}  (shape [{}, {}])", path, n, total_n_nodes);
+    logger().info("  linear map : {}  (shape [{}, {}])", path, map.shape[0], map.shape[1]);
 }
 
 } // namespace wmtk::components::polyfem_ops

@@ -49,9 +49,8 @@ ReducedBody classify_reduced_cell(
     return ReducedBody::skip; // tagless cell
 }
 
-void write_polyfem_reduced_msh(
+mshio::MshSpec polyfem_reduced_msh(
     const std::string& input_msh,
-    const std::string& output_msh,
     const std::vector<std::string>& ambient_like_tags)
 {
     const GroupedMsh in = read_grouped(input_msh);
@@ -148,20 +147,31 @@ void write_polyfem_reduced_msh(
     spec.elements.num_elements = ambient_prims.size() + body_prims.size();
     spec.elements.min_element_tag = 1;
     spec.elements.max_element_tag = next_id - 1;
+    return spec;
+}
 
-    mshio::save_msh(output_msh, spec);
+void write_polyfem_reduced_msh(const std::string& output_msh, const mshio::MshSpec& reduced)
+{
+    mshio::save_msh(output_msh, reduced);
+    // The element blocks are one per non-empty group, entity 1 for ambient and 2 for body.
+    size_t n_ambient = 0;
+    size_t n_body = 0;
+    for (const auto& block : reduced.elements.entity_blocks) {
+        (block.entity_tag == 1 ? n_ambient : n_body) += block.num_elements_in_block;
+    }
+    const bool is_3d = !reduced.entities.volumes.empty();
     logger().info(
         "  reduced  : {}  ({} ambient + {} body {})",
         output_msh,
-        ambient_prims.size(),
-        body_prims.size(),
-        prim_dim == 3 ? "tets" : "triangles");
+        n_ambient,
+        n_body,
+        is_3d ? "tets" : "triangles");
 }
 
-MeshInfo get_mesh_info(const std::string& msh_path)
-{
-    const GroupedMsh in = read_grouped(msh_path);
+namespace {
 
+MeshInfo mesh_info(const GroupedMsh& in)
+{
     MeshInfo info;
     info.dim = in.dim;
     std::map<int64_t, size_t> row_of;
@@ -212,6 +222,18 @@ MeshInfo get_mesh_info(const std::string& msh_path)
     }
     info.tags.assign(tags.begin(), tags.end());
     return info;
+}
+
+} // namespace
+
+MeshInfo get_mesh_info(const std::string& msh_path)
+{
+    return mesh_info(read_grouped(msh_path));
+}
+
+MeshInfo get_mesh_info(const mshio::MshSpec& spec)
+{
+    return mesh_info(read_grouped(spec));
 }
 
 } // namespace wmtk::components::polyfem_ops

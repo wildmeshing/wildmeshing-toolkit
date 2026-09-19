@@ -36,12 +36,13 @@ include(CPM)
 CPMAddPackage(
     NAME polyfem
     GITHUB_REPOSITORY polyfem/polyfem
-    # 514729c8d = b0d511c4b (branch tip 2026-05-01) + two commits of 2026-09-16: spdlog 1.17 / fmt 11
+    # a3569a1a8 = b0d511c4b (branch tip 2026-05-01) + two commits of 2026-09-16: spdlog 1.17 / fmt 11
     # compatibility, and use_rest_shape_measure set only when the ipc-toolkit provides the field;
-    # + two of 2026-09-18 the in-process backend needs: each contact form keeps its collision-set
-    # cache in the form (it was a process-wide static), and ALSolver records the termination status
-    # of the solver that actually ran, which check_polyfem_success reads.
-    GIT_TAG 514729c8da627047000fa6d224f8896d7d14a942
+    # + three of 2026-09-18 the in-process backend needs: each contact form keeps its collision-set
+    # cache in the form (it was a process-wide static), ALSolver records the termination status
+    # of the solver that actually ran, which check_polyfem_success reads, and the constraints and
+    # the collision proxy can be handed to a State in memory instead of through files.
+    GIT_TAG a3569a1a891faccc46b7e556c6c07746d175d759
     OPTIONS
     "POLYFEM_WITH_TESTS OFF"
     "POLYFEM_WITH_PYTHON OFF"

@@ -69,8 +69,11 @@ GroupedMsh read_grouped(const std::string& msh_path)
     if (!std::filesystem::exists(msh_path)) {
         log_and_throw_error("File {} does not exist.", msh_path);
     }
-    const mshio::MshSpec spec = mshio::load_msh(msh_path);
+    return read_grouped(mshio::load_msh(msh_path));
+}
 
+GroupedMsh read_grouped(const mshio::MshSpec& spec)
+{
     GroupedMsh out;
     for (const auto& block : spec.nodes.entity_blocks) {
         for (size_t i = 0; i < block.num_nodes_in_block; ++i) {

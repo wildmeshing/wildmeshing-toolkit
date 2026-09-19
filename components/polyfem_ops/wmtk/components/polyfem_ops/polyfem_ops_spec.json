@@ -33,7 +33,7 @@
     "pointer": "/inputs_only",
     "type": "bool",
     "default": false,
-    "doc": "Write the generated polyfem inputs to <directory of output>/sep_input or /smooth_input and return without solving. C++ engine only: it exists so the generated inputs can be diffed byte for byte against the ones pysimwild writes, which is how this port is checked."
+    "doc": "Write the generated polyfem inputs to <directory of output>/sep_input or /smooth_input and return without solving. C++ engine only: it exists so the generated inputs can be diffed byte for byte against the ones pysimwild writes, which is how this port is checked. A normal run writes only the simulation JSON and interface_collision.obj there, and hands polyfem the other inputs in memory."
   },
   {
     "pointer": "/operation",

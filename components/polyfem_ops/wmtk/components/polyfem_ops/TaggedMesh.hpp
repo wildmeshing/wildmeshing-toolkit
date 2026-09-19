@@ -12,6 +12,10 @@
 #include <string>
 #include <vector>
 
+namespace mshio {
+struct MshSpec;
+}
+
 namespace wmtk::components::polyfem_ops {
 
 /// The set of physical-group NAMES carried by one cell. The Python side uses a frozenset of
@@ -51,6 +55,10 @@ struct GroupedMsh
 };
 
 GroupedMsh read_grouped(const std::string& msh_path);
+
+/// The same walk over a mesh already in memory: `read_grouped` is `mshio::load_msh` followed by
+/// this.
+GroupedMsh read_grouped(const mshio::MshSpec& spec);
 
 /// gmsh node tag -> 0-based node id, the rule `polyfem_utils.read_msh_nodes` and
 /// `mesh_core.TaggedMesh` both apply: `tag - 1` when the largest tag equals the node count (the

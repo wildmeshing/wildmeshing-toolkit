@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Hdf5Writers.hpp"
 #include "TaggedMesh.hpp"
 
 #include <array>
@@ -44,17 +45,28 @@ std::vector<std::array<int64_t, 2>> orient_edge_loops_2d(
  */
 LoadedMesh load_mesh(const std::string& msh_path, const std::vector<Selection>& selections);
 
-/// Mirrors `constraints.write_collision_mesh_obj`. Vertices are in mesh units (un-scaled);
-/// polyfem applies the geometry transformation from its JSON. Byte-identical to the Python
-/// writer, floats included -- see PythonFormat.hpp.
-void write_collision_mesh_obj(
-    const std::string& path,
+/// What interface_collision.obj holds, one entry per line of it: the "v" lines, then either the
+/// "f" lines (3D) or the "l" lines (2D), with the indices 0-based here and 1-based in the file.
+struct CollisionObj
+{
+    std::vector<std::array<double, 3>> vertices; ///< mesh units (un-scaled); z is 0 in 2D
+    std::vector<std::array<int64_t, 3>> faces;
+    std::vector<std::array<int64_t, 2>> edges;
+};
+
+/// Mirrors `constraints.write_collision_mesh_obj` up to the write: which vertices, faces and edges
+/// it writes, in its order. Vertices are in mesh units; polyfem applies the geometry
+/// transformation from its JSON.
+CollisionObj collision_mesh_obj(
     const MatrixXd& coords,
     const std::vector<int64_t>& node_ids,
     const std::vector<std::array<int64_t, 2>>& interface_edges,
     const std::vector<std::array<int64_t, 3>>& interface_faces,
     const std::vector<int64_t>& collision_node_ids,
     const std::vector<std::array<int64_t, 2>>& collision_edges_local);
+
+/// Write the OBJ, byte-identical to the Python writer, floats included -- see PythonFormat.hpp.
+void write_collision_mesh_obj(const std::string& path, const CollisionObj& obj);
 
 /// Mirrors `constraints.write_collision_body_ids_txt`: one space-separated line of collision body
 /// ids per face/edge, row order matching the OBJ.
@@ -73,22 +85,29 @@ void normalize_collision_pairs(
     std::vector<Selection>& unique,
     std::vector<std::array<int64_t, 2>>& polyfem_pairs);
 
+/// The polyfem inputs `constraints.make_interface_constraint` writes, one member per file.
+struct InterfaceConstraint
+{
+    ConstraintHdf5 fitting; ///< interface_constraint.hdf5
+    ConstraintHdf5 laplacian; ///< interface_constraint_laplacian.hdf5
+    CollisionObj collision_mesh; ///< interface_collision.obj
+    LinearMapHdf5 linear_map; ///< interface_linear_map.hdf5
+    std::vector<std::vector<int64_t>> collision_body_ids; ///< collision_body_ids.txt, line by line
+};
+
 /**
- * @brief Write the polyfem artifacts of `constraints.make_interface_constraint` into `out_dir`.
+ * @brief Mirrors `constraints.make_interface_constraint` up to the writes.
  *
- * interface_constraint.hdf5, interface_constraint_laplacian.hdf5 and interface_collision.obj
- * always; interface_linear_map.hdf5 and collision_body_ids.txt unless `skip_collision_artifacts`
- * (smoothing mode, where polyfem does not read them). The Python's `dim` argument is not
- * mirrored: no caller passes it, so it is always the mesh dimension.
+ * Which of the files get written, and whether they are written at all, is the caller's: see
+ * `prepare_operation` in polyfem_ops.cpp. The Python's `dim` argument is not mirrored: no caller
+ * passes it, so it is always the mesh dimension.
  */
-void make_interface_constraint(
+InterfaceConstraint make_interface_constraint(
     const std::string& mesh_path,
     const std::vector<Selection>& selections,
-    const std::string& out_dir,
     bool use_graph,
     bool normalize,
     double scale,
-    bool smooth_positions,
-    bool skip_collision_artifacts);
+    bool smooth_positions);
 
 } // namespace wmtk::components::polyfem_ops

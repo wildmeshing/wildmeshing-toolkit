@@ -3,8 +3,11 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <polyfem/State.hpp>
+#include <polyfem/mesh/GeometryReader.hpp>
+#include <polyfem/mesh/Mesh.hpp>
 #include <polyfem/solver/forms/SmoothContactForm.hpp>
 #include <polyfem/time_integrator/ImplicitTimeIntegrator.hpp>
+#include <polyfem/utils/JSONUtils.hpp>
 #include <polyfem/utils/Logger.hpp>
 
 #include <ipc/utils/logger.hpp>
@@ -18,6 +21,7 @@
 #include <fstream>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 
 namespace wmtk::components::polyfem_ops {
 
@@ -174,6 +178,272 @@ nlohmann::json load_simulation_json(const std::filesystem::path& json_path)
     return out;
 }
 
+/// The content `inputs` holds under the path `name`, which the simulation JSON gives as `what`.
+/// There is no fallback to the file: a missing entry is a path the operation named without
+/// generating its content, and reading whatever is on disk there instead could only hide that.
+template <typename Content>
+const Content& named_content(
+    const std::map<std::string, Content>& contents,
+    const nlohmann::json& name,
+    const std::string& what)
+{
+    const std::string path = name.get<std::string>();
+    const auto it = contents.find(path);
+    if (it == contents.end()) {
+        log_and_throw_error(
+            "the simulation JSON names {} as {}, but its content is not in memory",
+            path,
+            what);
+    }
+    return it->second;
+}
+
+/// What SolveData's file reader reads out of a constraint file (`read_constraint_file` in polyfem
+/// SolveData.cpp), from the arrays that file is written from.
+polyfem::solver::ConstraintData constraint_data(const ConstraintHdf5& c)
+{
+    polyfem::solver::ConstraintData d;
+    d.local2global.assign(c.local2global.begin(), c.local2global.end());
+    d.A.rows.assign(c.a.rows.begin(), c.a.rows.end());
+    d.A.cols.assign(c.a.cols.begin(), c.a.cols.end());
+    d.A.values = c.a.values;
+    d.A.shape = {long(c.shape[0]), long(c.shape[1])};
+    // The file stores b row-major, and h5pp reads it back into a column-major matrix entry for
+    // entry, so b(i, j) is the file's row i, column j.
+    d.b.resize(c.b_rows, c.b_cols);
+    for (int64_t i = 0; i < c.b_rows; ++i) {
+        for (int64_t j = 0; j < c.b_cols; ++j) {
+            d.b(i, j) = c.b[size_t(i * c.b_cols + j)];
+        }
+    }
+    return d;
+}
+
+/**
+ * @brief The collision proxy `State::build_collision_mesh` reads out of its three files, from the
+ * content those files are written from.
+ *
+ * The mesh is what `read_surface_mesh` returns for the OBJ. `OBJReader` keeps all three numbers of
+ * a "v" line, and the third column, 0 in 2D, is dropped later by the code both routes share; the
+ * "f" and "l" lists become matrices through `igl::list_to_matrix`, which turns an empty list into
+ * a 0 x 0 matrix; and `find_codim_vertices` marks every vertex that no edge and no face uses.
+ * The vertex coordinates need no parse: the OBJ prints each one as the shortest decimal that reads
+ * back as the same double, so the file and this content carry the same values (compared exactly,
+ * on coordinates that are not integers, in tests/test_polyfem_in_process.cpp).
+ */
+polyfem::mesh::CollisionProxyData collision_proxy(
+    const CollisionObj& obj,
+    const LinearMapHdf5& map,
+    const std::vector<std::vector<int64_t>>* body_ids)
+{
+    polyfem::mesh::CollisionProxyData p;
+    p.vertices.resize(Eigen::Index(obj.vertices.size()), 3);
+    for (size_t i = 0; i < obj.vertices.size(); ++i) {
+        for (int d = 0; d < 3; ++d) {
+            p.vertices(Eigen::Index(i), d) = obj.vertices[i][size_t(d)];
+        }
+    }
+    if (!obj.faces.empty()) {
+        p.faces.resize(Eigen::Index(obj.faces.size()), 3);
+        for (size_t i = 0; i < obj.faces.size(); ++i) {
+            for (int k = 0; k < 3; ++k) p.faces(Eigen::Index(i), k) = int(obj.faces[i][size_t(k)]);
+        }
+    }
+    if (!obj.edges.empty()) {
+        p.codim_edges.resize(Eigen::Index(obj.edges.size()), 2);
+        for (size_t i = 0; i < obj.edges.size(); ++i) {
+            for (int k = 0; k < 2; ++k) {
+                p.codim_edges(Eigen::Index(i), k) = int(obj.edges[i][size_t(k)]);
+            }
+        }
+    }
+    std::vector<bool> is_codim(obj.vertices.size(), true);
+    for (const auto& f : obj.faces) {
+        for (const int64_t v : f) is_codim[size_t(v)] = false;
+    }
+    for (const auto& e : obj.edges) {
+        for (const int64_t v : e) is_codim[size_t(v)] = false;
+    }
+    std::vector<int> codim;
+    for (size_t v = 0; v < is_codim.size(); ++v) {
+        if (is_codim[v]) codim.push_back(int(v));
+    }
+    p.codim_vertices = Eigen::Map<const Eigen::VectorXi>(codim.data(), Eigen::Index(codim.size()));
+
+    p.weight_values =
+        Eigen::Map<const Eigen::VectorXd>(map.values.data(), Eigen::Index(map.values.size()));
+    p.weight_rows = Eigen::Map<const Eigen::Matrix<int32_t, Eigen::Dynamic, 1>>(
+                        map.rows.data(),
+                        Eigen::Index(map.rows.size()))
+                        .cast<int>();
+    p.weight_cols = Eigen::Map<const Eigen::Matrix<int32_t, Eigen::Dynamic, 1>>(
+                        map.cols.data(),
+                        Eigen::Index(map.cols.size()))
+                        .cast<int>();
+    p.weight_shape = {long(map.shape[0]), long(map.shape[1])};
+
+    if (body_ids != nullptr) {
+        for (const auto& ids : *body_ids) {
+            p.collision_body_ids.emplace_back(ids.begin(), ids.end());
+        }
+    }
+    return p;
+}
+
+/**
+ * @brief The reduced mesh as `polyfem::mesh::Mesh::create(path)` reads it out of the file saved
+ * from `spec`: `MshReader::load`'s vertices, cells and body ids, for the only cells the reduced
+ * mesh has (linear triangles, or linear tetrahedra).
+ *
+ * `Mesh::create(path)` then also attaches the higher-order nodes and the cell weights of the
+ * file. That step is not repeated here, and the one trace it leaves is `Mesh::orders()`: all ones
+ * from the file on a 3D mesh, empty from `Mesh::create(V, F)`. Every element is linear, so an
+ * empty order list and a list of ones build the same basis, and the State comparison in
+ * tests/test_polyfem_in_process.cpp finds no other difference.
+ */
+std::unique_ptr<polyfem::mesh::Mesh> reduced_mesh(const mshio::MshSpec& spec)
+{
+    const int n_vertices = int(spec.nodes.num_nodes);
+    const int max_tag = int(spec.nodes.max_node_tag);
+    int dim = -1;
+    for (const auto& block : spec.elements.entity_blocks) {
+        dim = std::max(dim, block.entity_dim);
+    }
+
+    // Node placement is MshReader's own rule: the gmsh tag minus one when the tags are exactly
+    // 1..n, otherwise the order of appearance, with the same warning.
+    if (n_vertices != max_tag) {
+        polyfem::logger().warn(
+            "MSH file contains more node tags than nodes, condensing nodes which will break input "
+            "node ordering.");
+    }
+    Eigen::MatrixXd vertices(n_vertices, dim);
+    std::vector<int> tag_to_index(size_t(max_tag) + 1, -1);
+    int index = 0;
+    for (const auto& block : spec.nodes.entity_blocks) {
+        for (size_t i = 0; i < block.num_nodes_in_block; ++i) {
+            const int node_id = n_vertices != max_tag ? index++ : int(block.tags[i]) - 1;
+            for (int d = 0; d < dim; ++d) vertices(node_id, d) = block.data[3 * i + size_t(d)];
+            tag_to_index[block.tags[i]] = node_id;
+        }
+    }
+
+    // Each entity's body id is its first physical group, 0 when it has none.
+    std::unordered_map<int, int> entity_to_body;
+    const auto map_entities = [&entity_to_body](const auto& entities) {
+        for (const auto& e : entities) {
+            entity_to_body[e.tag] =
+                e.physical_group_tags.empty() ? 0 : e.physical_group_tags.front();
+        }
+    };
+    if (dim == 2) {
+        map_entities(spec.entities.surfaces);
+    } else {
+        map_entities(spec.entities.volumes);
+    }
+
+    size_t n_cells = 0;
+    for (const auto& block : spec.elements.entity_blocks) {
+        if (block.entity_dim == dim) n_cells += block.num_elements_in_block;
+    }
+    const int cols = dim + 1;
+    Eigen::MatrixXi cells(Eigen::Index(n_cells), cols);
+    std::vector<int> body_ids(n_cells);
+    Eigen::Index c = 0;
+    for (const auto& block : spec.elements.entity_blocks) {
+        if (block.entity_dim != dim) continue;
+        const size_t stride = mshio::nodes_per_element(block.element_type) + 1;
+        const auto body = entity_to_body.find(block.entity_tag);
+        for (size_t j = 0; j < block.num_elements_in_block; ++j, ++c) {
+            for (int k = 0; k < cols; ++k) {
+                cells(c, k) = tag_to_index[block.data[j * stride + 1 + size_t(k)]];
+            }
+            body_ids[size_t(c)] = body != entity_to_body.end() ? body->second : 0;
+        }
+    }
+
+    std::unique_ptr<polyfem::mesh::Mesh> mesh =
+        polyfem::mesh::Mesh::create(vertices, cells, /*non_conforming=*/false);
+    mesh->set_body_ids(body_ids);
+    return mesh;
+}
+
+/**
+ * @brief The reduced mesh with the geometry entry `j_mesh` applied, as polyfem's `read_fem_mesh`
+ * (src/polyfem/mesh/GeometryReader.cpp) applies it to the mesh it loads from the file, done with
+ * polyfem's own public functions.
+ *
+ * `j_mesh` is the entry as State::init filled it in from polyfem's input spec. An operation writes
+ * only its mesh and a `{"scale": ...}` transformation, and on such an entry the one step of
+ * read_fem_mesh that changes the mesh is the affine transformation. It is repeated here in
+ * read_fem_mesh's order and arithmetic: the bounding box of the untransformed mesh, the unit
+ * scale, `construct_affine_transformation`, `Mesh::apply_affine_transformation`.
+ *
+ * Every other step read_fem_mesh (and read_fem_geometry, which calls it) can take is checked to
+ * do nothing on `j_mesh`, and a key that asks for more throws with its name: skipping it would
+ * build a mesh the file route does not. `advanced.refinement_location` is read only when n_refs
+ * is positive, so it needs no check.
+ */
+std::unique_ptr<polyfem::mesh::Mesh> fem_mesh(
+    const polyfem::Units& units,
+    const nlohmann::json& j_mesh,
+    const mshio::MshSpec& spec)
+{
+    const auto refuse = [](const std::string& key) {
+        log_and_throw_error(
+            "geometry[0].{} asks polyfem's geometry reader for a step the in-memory mesh does "
+            "not reproduce",
+            key);
+    };
+    // read_fem_geometry: the one entry must be a plain mesh that is part of the FE mesh.
+    if (j_mesh.at("type") != "mesh") refuse("type");
+    if (!j_mesh.at("enabled").get<bool>()) refuse("enabled");
+    if (j_mesh.at("is_obstacle").get<bool>()) refuse("is_obstacle");
+    // read_fem_mesh, in its order.
+    if (j_mesh.at("extract") != "volume") refuse("extract");
+    if (j_mesh.at("advanced").at("normalize_mesh").get<bool>()) refuse("advanced.normalize_mesh");
+    if (j_mesh.at("n_refs").get<int>() > 0) refuse("n_refs");
+    if (j_mesh.at("advanced").at("min_component").get<int>() != -1) {
+        refuse("advanced.min_component");
+    }
+    if (j_mesh.at("advanced").at("force_linear_geometry").get<bool>()) {
+        refuse("advanced.force_linear_geometry");
+    }
+    if (polyfem::utils::is_param_valid(j_mesh, "point_selection")) refuse("point_selection");
+    if (!j_mesh.at("curve_selection").is_null()) refuse("curve_selection");
+    if (polyfem::utils::is_param_valid(j_mesh, "surface_selection")) refuse("surface_selection");
+    // State::init fills an absent volume_selection as {"id_offset": 0} (measured on every case of
+    // tests/test_polyfem_in_process.cpp). read_fem_mesh sends that form to its id_offset branch,
+    // which at offset 0 leaves every body id as the mesh stores it, so skipping it is exact. Its
+    // other branch -- compute_body_ids over the listed selections, with the mesh's stored ids
+    // appended as the lowest priority -- is taken for any other volume_selection, refused here.
+    if (j_mesh.at("volume_selection") != nlohmann::json::object({{"id_offset", 0}})) {
+        refuse("volume_selection");
+    }
+
+    std::unique_ptr<polyfem::mesh::Mesh> mesh = reduced_mesh(spec);
+
+    polyfem::RowVectorNd min, max;
+    mesh->bounding_box(min, max);
+
+    const std::string unit = j_mesh.at("unit");
+    double unit_scale = 1;
+    if (!unit.empty()) {
+        unit_scale = polyfem::Units::convert(1, unit, units.length());
+    }
+
+    polyfem::MatrixNd A;
+    polyfem::VectorNd b;
+    polyfem::mesh::construct_affine_transformation(
+        unit_scale,
+        j_mesh.at("transformation"),
+        (max - min).cwiseAbs().transpose(),
+        A,
+        b);
+    mesh->apply_affine_transformation(A, b);
+    return mesh;
+}
+
 std::optional<double> active_distance_from_contact_form(
     const polyfem::State& state,
     const Eigen::MatrixXd& sol)
@@ -201,19 +471,22 @@ std::optional<double> active_distance_from_contact_form(
  * @brief The in-process backend: `src/polyfem/main.cpp`'s `forward_simulation`, call for call, on
  * a State built here.
  *
- * Three inputs still go through files because polyfem has no in-memory entry point for them and
- * this step adds none: the soft constraints, the hard pins and the collision proxy with its linear
- * map. The reduced mesh stays a file too -- see the comment on `run_solve` -- so the simulation
- * JSON is byte for byte the one the Python engine hands the executable, and polyfem's own readers
- * open all four.
+ * The simulation JSON is byte for byte the one the Python engine hands the executable, and it is
+ * still what says which inputs a solve reads, but no input is read from a file: the reduced mesh,
+ * the soft constraints, the hard pins and the collision proxy with its linear map and body ids all
+ * come out of `m_inputs`, under the paths the JSON names them by (`prepare_state`).
  *
- * What does NOT go through a file any more is the warm start: the JSON's `input/data/state` and
+ * Nor does the warm start go through a file: the JSON's `input/data/state` and
  * `output/data/state` are blanked in the in-memory copy of the arguments, and the three matrices
  * polyfem would have written to `curr_state.hdf5` are carried in `m_last` instead.
  */
 class InProcessBackend : public PolyfemBackend
 {
 public:
+    explicit InProcessBackend(SolveInputs inputs)
+        : m_inputs(std::move(inputs))
+    {}
+
     SolveResult solve(
         const std::filesystem::path& json_path,
         const std::filesystem::path& out_dir,
@@ -291,35 +564,16 @@ public:
     bool has_warm_start() const override { return m_committed.has_value(); }
 
 private:
-    /// main.cpp's `forward_simulation` for a JSON input, with the initial condition handed over in
-    /// memory. Returns the active distance and the subsolve statuses, both read off the State
-    /// before it is destroyed; `returncode` and `lines` are the caller's.
+    /// main.cpp's `forward_simulation` for a JSON input, with the inputs and the initial
+    /// condition handed over in memory. Returns the active distance and the subsolve statuses,
+    /// both read off the State before it is destroyed; `returncode` and `lines` are the caller's.
     SolveResult run_solve(
         const nlohmann::json& args,
         const std::shared_ptr<LogCapture>& capture,
         const bool wants_warm_start)
     {
         polyfem::State state;
-        state.init(args, /*strict_validation=*/true);
-        attach_sink(polyfem::logger(), capture);
-        attach_sink(ipc::logger(), capture);
-
-        // The reduced mesh stays a file. `load_mesh(V, F)` would skip `read_fem_geometry`, and
-        // with it `Mesh::create(path)`, which is what reads the .msh physical tags into the mesh's
-        // body ids -- the ids every material in this JSON is keyed by. The geometry block's
-        // `scale` is not the obstacle (it is an exactly reproducible per-coordinate product; see
-        // tests/test_polyfem_in_process.cpp, which measures both).
-        state.load_mesh(/*non_conforming=*/false, {}, {}, {});
-        if (state.mesh == nullptr) {
-            // main.cpp returns EXIT_FAILURE here; load_mesh has already logged why.
-            throw std::runtime_error("unable to load the mesh");
-        }
-        state.stats.compute_mesh_stats(*state.mesh);
-
-        state.build_basis();
-
-        state.assemble_rhs();
-        state.assemble_mass_mat();
+        prepare_state(state, args, m_inputs, capture);
 
         Eigen::MatrixXd sol;
         Eigen::MatrixXd pressure;
@@ -372,15 +626,112 @@ private:
         return result;
     }
 
+    const SolveInputs m_inputs; ///< every input file the simulation JSON names
     std::optional<SolverState> m_last; ///< polyfem's curr_state.hdf5
     std::optional<SolverState> m_committed; ///< polyfem's prev_state.hdf5
 };
 
 } // namespace
 
-std::unique_ptr<PolyfemBackend> in_process_backend()
+void prepare_state(
+    polyfem::State& state,
+    const nlohmann::json& args,
+    const SolveInputs& inputs,
+    const spdlog::sink_ptr& log_sink)
 {
-    return std::make_unique<InProcessBackend>();
+    // Every input the document names, looked up under the name the document gives it. The copy
+    // polyfem is initialised with names none of them: the constraint lists are emptied (the key
+    // itself is kept, because State::init decides has_constraints() on its presence) and the
+    // collision mesh is reduced to "enabled", which is how polyfem is told the proxy is in memory.
+    nlohmann::json polyfem_args = args;
+    const nlohmann::json& geometry = args.at("geometry");
+    if (!geometry.is_array() || geometry.size() != 1) {
+        log_and_throw_error("the simulation JSON must have exactly one geometry entry");
+    }
+    const mshio::MshSpec& msh =
+        named_content(inputs.meshes, geometry[0].at("mesh"), "geometry[0].mesh");
+
+    std::vector<polyfem::solver::ConstraintData> hard;
+    std::vector<polyfem::solver::ConstraintData> soft;
+    if (args.contains("constraints")) {
+        const nlohmann::json& constraints = args["constraints"];
+        if (constraints.contains("hard")) {
+            for (const auto& path : constraints["hard"]) {
+                hard.push_back(
+                    constraint_data(named_content(inputs.constraints, path, "constraints.hard")));
+            }
+            polyfem_args["constraints"]["hard"] = nlohmann::json::array();
+        }
+        if (constraints.contains("soft")) {
+            for (const auto& entry : constraints["soft"]) {
+                soft.push_back(constraint_data(named_content(
+                    inputs.constraints,
+                    entry.at("data"),
+                    "constraints.soft[*].data")));
+                soft.back().weight = entry.at("weight").get<double>();
+            }
+            polyfem_args["constraints"]["soft"] = nlohmann::json::array();
+        }
+    }
+
+    // The proxy's files are read exactly when polyfem's file route reads them: a collision mesh
+    // that is enabled (the spec's default) and names a mesh.
+    std::optional<polyfem::mesh::CollisionProxyData> proxy;
+    const nlohmann::json::json_pointer collision_mesh_ptr("/contact/collision_mesh");
+    if (args.contains(collision_mesh_ptr) && args.at(collision_mesh_ptr).value("enabled", true) &&
+        args.at(collision_mesh_ptr).contains("mesh")) {
+        const nlohmann::json& collision_mesh = args.at(collision_mesh_ptr);
+        const auto* body_ids = collision_mesh.contains("collision_body_ids")
+                                   ? &named_content(
+                                         inputs.collision_body_ids,
+                                         collision_mesh["collision_body_ids"],
+                                         "contact.collision_mesh.collision_body_ids")
+                                   : nullptr;
+        proxy = collision_proxy(
+            named_content(
+                inputs.collision_meshes,
+                collision_mesh["mesh"],
+                "contact.collision_mesh.mesh"),
+            named_content(
+                inputs.linear_maps,
+                collision_mesh.at("linear_map"),
+                "contact.collision_mesh.linear_map"),
+            body_ids);
+        polyfem_args[collision_mesh_ptr] = {{"enabled", true}};
+    }
+
+    // State::init's validation does not need the named files to exist: jse checks a "file" rule
+    // against the disk only when its skip_file_check is off, and it is on by default.
+    state.init(polyfem_args, /*strict_validation=*/true);
+    if (log_sink != nullptr) {
+        attach_sink(polyfem::logger(), log_sink);
+        attach_sink(ipc::logger(), log_sink);
+    }
+    state.in_memory_hard_constraints = std::move(hard);
+    state.in_memory_soft_constraints = std::move(soft);
+    state.in_memory_collision_proxy = std::move(proxy);
+
+    // `read_fem_geometry` for the one mesh, from memory: `read_fem_mesh` on the geometry entry as
+    // State::init filled it in (`fem_mesh`), and `read_fem_geometry` keeps a COPY of the first
+    // mesh. The copy is not a formality: a 2D mesh's copy() rebuilds it and orients its elements
+    // again. Measured on a 2D mesh under the mirroring scale [-1e-3, 1e-3]: from the file it
+    // loads, from memory without the copy it is refused with "element 0 is flipped".
+    // State::load_mesh keeps a mesh that is already set.
+    state.mesh =
+        fem_mesh(state.units, polyfem::utils::json_as_array(state.args["geometry"])[0], msh)
+            ->copy();
+    state.load_mesh(/*non_conforming=*/false, {}, {}, {});
+    state.stats.compute_mesh_stats(*state.mesh);
+
+    state.build_basis();
+
+    state.assemble_rhs();
+    state.assemble_mass_mat();
+}
+
+std::unique_ptr<PolyfemBackend> in_process_backend(SolveInputs inputs)
+{
+    return std::make_unique<InProcessBackend>(std::move(inputs));
 }
 
 } // namespace wmtk::components::polyfem_ops

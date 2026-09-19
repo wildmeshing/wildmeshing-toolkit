@@ -420,8 +420,7 @@ LoadedMesh load_mesh(const std::string& msh_path, const std::vector<Selection>& 
 // Writers
 // ---------------------------------------------------------------------------
 
-void write_collision_mesh_obj(
-    const std::string& path,
+CollisionObj collision_mesh_obj(
     const MatrixXd& coords,
     const std::vector<int64_t>& node_ids,
     const std::vector<std::array<int64_t, 2>>& interface_edges,
@@ -432,45 +431,65 @@ void write_collision_mesh_obj(
     const std::vector<int64_t>& verts = collision_node_ids.empty() ? node_ids : collision_node_ids;
     std::unordered_map<int64_t, int64_t> idx_map;
     for (size_t i = 0; i < verts.size(); ++i) {
-        idx_map[verts[i]] = static_cast<int64_t>(i) + 1; // OBJ is 1-based
+        idx_map[verts[i]] = static_cast<int64_t>(i);
     }
 
-    std::ofstream f(path, std::ios::binary); // binary: no CRLF translation, the bytes must match
-    if (!f) {
-        log_and_throw_error("Cannot open {} for writing", path);
-    }
-    f << "# Interface collision mesh\n";
+    CollisionObj obj;
     for (const int64_t nid : verts) {
         const double x = coords(nid, 0);
         const double y = coords(nid, 1);
         const double z = coords.cols() == 2 ? 0.0 : coords(nid, 2);
-        f << "v " << python_repr(x) << " " << python_repr(y) << " " << python_repr(z) << "\n";
+        obj.vertices.push_back({x, y, z});
     }
 
     if (!interface_faces.empty()) {
         for (const auto& t : interface_faces) {
             if (idx_map.count(t[0]) != 0 && idx_map.count(t[1]) != 0 &&
                 idx_map.count(t[2]) != 0) {
-                f << "f " << idx_map[t[0]] << " " << idx_map[t[1]] << " " << idx_map[t[2]] << "\n";
+                obj.faces.push_back({idx_map[t[0]], idx_map[t[1]], idx_map[t[2]]});
             }
         }
-        logger().info("  collision  : {}  ({} verts, {} faces)", path, verts.size(), interface_faces.size());
+    } else if (!collision_edges_local.empty()) {
+        obj.edges = collision_edges_local;
     } else {
-        size_t n_edges_out = 0;
-        if (!collision_edges_local.empty()) {
-            for (const auto& e : collision_edges_local) {
-                f << "l " << e[0] + 1 << " " << e[1] + 1 << "\n";
-            }
-            n_edges_out = collision_edges_local.size();
-        } else {
-            for (const auto& e : interface_edges) {
-                if (idx_map.count(e[0]) != 0 && idx_map.count(e[1]) != 0) {
-                    f << "l " << idx_map[e[0]] << " " << idx_map[e[1]] << "\n";
-                    ++n_edges_out;
-                }
+        for (const auto& e : interface_edges) {
+            if (idx_map.count(e[0]) != 0 && idx_map.count(e[1]) != 0) {
+                obj.edges.push_back({idx_map[e[0]], idx_map[e[1]]});
             }
         }
-        logger().info("  collision  : {}  ({} verts, {} edges)", path, verts.size(), n_edges_out);
+    }
+    return obj;
+}
+
+void write_collision_mesh_obj(const std::string& path, const CollisionObj& obj)
+{
+    std::ofstream f(path, std::ios::binary); // binary: no CRLF translation, the bytes must match
+    if (!f) {
+        log_and_throw_error("Cannot open {} for writing", path);
+    }
+    f << "# Interface collision mesh\n";
+    for (const auto& [x, y, z] : obj.vertices) {
+        f << "v " << python_repr(x) << " " << python_repr(y) << " " << python_repr(z) << "\n";
+    }
+    // OBJ is 1-based
+    for (const auto& t : obj.faces) {
+        f << "f " << t[0] + 1 << " " << t[1] + 1 << " " << t[2] + 1 << "\n";
+    }
+    for (const auto& e : obj.edges) {
+        f << "l " << e[0] + 1 << " " << e[1] + 1 << "\n";
+    }
+    if (!obj.faces.empty()) {
+        logger().info(
+            "  collision  : {}  ({} verts, {} faces)",
+            path,
+            obj.vertices.size(),
+            obj.faces.size());
+    } else {
+        logger().info(
+            "  collision  : {}  ({} verts, {} edges)",
+            path,
+            obj.vertices.size(),
+            obj.edges.size());
     }
 }
 
@@ -526,15 +545,13 @@ void normalize_collision_pairs(
     }
 }
 
-void make_interface_constraint(
+InterfaceConstraint make_interface_constraint(
     const std::string& mesh_path,
     const std::vector<Selection>& selections,
-    const std::string& out_dir,
     bool use_graph,
     bool normalize,
     double scale,
-    bool smooth_positions,
-    bool skip_collision_artifacts)
+    bool smooth_positions)
 {
     logger().info("Reading {} ...", mesh_path);
     const LoadedMesh m = load_mesh(mesh_path, selections);
@@ -551,11 +568,10 @@ void make_interface_constraint(
         "Found {} interface edges, {} interface nodes",
         m.interface_edges.size(),
         node_ids.size());
-    logger().info("Writing:");
 
+    InterfaceConstraint out;
     // `dim = mesh_dim`: the Python's `dim` override is never passed by an engine.
-    write_fitting_constraint_hdf5(
-        out_dir + "/interface_constraint.hdf5",
+    out.fitting = fitting_constraint(
         node_ids,
         m.mesh_dim,
         m.coords,
@@ -563,8 +579,7 @@ void make_interface_constraint(
         use_graph,
         normalize,
         m.interface_faces);
-    write_laplacian_constraint_hdf5(
-        out_dir + "/interface_constraint_laplacian.hdf5",
+    out.laplacian = laplacian_constraint(
         node_ids,
         m.coords,
         m.interface_edges,
@@ -573,27 +588,19 @@ void make_interface_constraint(
         normalize,
         m.interface_faces,
         smooth_positions);
-    // Always write the OBJ -- it is tiny and the only convenient way to see which faces the
-    // selection rule actually picked. Polyfem does not read it in smoothing mode.
-    write_collision_mesh_obj(
-        out_dir + "/interface_collision.obj",
+    out.collision_mesh = collision_mesh_obj(
         m.coords,
         node_ids,
         m.interface_edges,
         m.interface_faces,
         m.collision_node_ids,
         m.collision_edges_local);
-    if (!skip_collision_artifacts) {
-        // The proxy's own vertex list when there is one, falling back to the interface nodes --
-        // the two differ when a selected face has a vertex no selected EDGE reaches.
-        const std::vector<int64_t>& map_node_ids =
-            m.collision_node_ids.empty() ? node_ids : m.collision_node_ids;
-        write_linear_map_hdf5(
-            out_dir + "/interface_linear_map.hdf5",
-            map_node_ids,
-            m.total_n_nodes);
-        write_collision_body_ids_txt(out_dir + "/collision_body_ids.txt", m.face_tags);
-    }
+    // The proxy's own vertex list when there is one, falling back to the interface nodes -- the
+    // two differ when a selected face has a vertex no selected EDGE reaches.
+    out.linear_map =
+        linear_map(m.collision_node_ids.empty() ? node_ids : m.collision_node_ids, m.total_n_nodes);
+    out.collision_body_ids = m.face_tags;
+    return out;
 }
 
 } // namespace wmtk::components::polyfem_ops

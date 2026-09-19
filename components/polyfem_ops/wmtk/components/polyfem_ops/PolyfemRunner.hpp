@@ -1,12 +1,24 @@
 #pragma once
 
+#include "Hdf5Writers.hpp"
+#include "InterfaceSelection.hpp"
+#include "MeshReduction.hpp"
+
 #include <polysolve/nonlinear/Criteria.hpp>
 
+#include <spdlog/common.h>
+#include <nlohmann/json.hpp>
+
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
+
+namespace polyfem {
+class State;
+}
 
 namespace wmtk::components::polyfem_ops {
 
@@ -26,13 +38,33 @@ struct SolveResult
 };
 
 /**
+ * @brief The content of every input file an operation's simulation JSON names, keyed by the path
+ * the JSON names it by: `geometry[0].mesh` in `meshes`, each `constraints.hard[*]` and
+ * `constraints.soft[*].data` in `constraints`, and `contact.collision_mesh.{mesh, linear_map,
+ * collision_body_ids}` in the last three.
+ *
+ * Built once per operation, before its first solve, from the same arrays inputs_only writes to
+ * those paths. The outer loops never change it: between solves they rewrite `contact.dhat`, the
+ * barrier stiffness and the two warm-start paths, none of which names an input.
+ */
+struct SolveInputs
+{
+    std::map<std::string, mshio::MshSpec> meshes;
+    std::map<std::string, ConstraintHdf5> constraints;
+    std::map<std::string, CollisionObj> collision_meshes;
+    std::map<std::string, LinearMapHdf5> linear_maps;
+    std::map<std::string, std::vector<std::vector<int64_t>>> collision_body_ids;
+};
+
+/**
  * @brief The one and only way the outer loops reach polyfem: a simulation JSON goes in, the
  * solver's output and its active distance come back, and a copy of that output is left in
  * `log_path`.
  *
- * The warm start is here too. The loops still write the Python's state-file names into the
- * simulation JSON, so the document on disk stays the one the Python engine writes, but the
- * backend carries the solution from one solve to the next in memory (see PolyfemInProcess.cpp).
+ * The JSON is still the single description of what a solve reads, and the document on disk stays
+ * the one the Python engine writes, file names included. What the backend does not do is read
+ * those files: it holds their content (`SolveInputs`) and the warm start in memory, and hands both
+ * to polyfem from there (see PolyfemInProcess.cpp).
  */
 class PolyfemBackend
 {
@@ -67,12 +99,29 @@ public:
 
 /**
  * @brief The in-process backend: the same call sequence `src/polyfem/main.cpp` performs, on a
- * `polyfem::State` built in this process from the same JSON file.
+ * `polyfem::State` built in this process from the same JSON file and from `inputs`, which must
+ * hold the content of every input file that JSON names.
  *
  * Defined in PolyfemInProcess.cpp so that polyfem's headers stay out of this one. What it takes
  * from memory instead of from a file or a log is documented there.
  */
-std::unique_ptr<PolyfemBackend> in_process_backend();
+std::unique_ptr<PolyfemBackend> in_process_backend(SolveInputs inputs);
+
+/**
+ * @brief Everything the in-process backend does to a State before it solves: `State::init` on
+ * `args`, the inputs the JSON names taken from `inputs` (a name with no content there throws; the
+ * files are never read), the mesh, the basis and the assembly.
+ *
+ * `log_sink` is attached to polyfem's and ipc's loggers right after `State::init`, which replaces
+ * both; null attaches nothing. Declared here, and not only used inside the backend, so that a test
+ * can build a State exactly the way a solve does and compare it with one polyfem builds from the
+ * files.
+ */
+void prepare_state(
+    polyfem::State& state,
+    const nlohmann::json& args,
+    const SolveInputs& inputs,
+    const spdlog::sink_ptr& log_sink);
 
 /**
  * @brief Throw unless polyfem converged. Mirrors `polyfem_utils.check_polyfem_success`, including

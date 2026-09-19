@@ -168,7 +168,7 @@ std::filesystem::path sim_dir(const std::string& output, const std::string& subd
 }
 
 /**
- * @brief Write the protected_pin*.hdf5 files. Mirrors the `protected_regions` block of
+ * @brief The protected_pin*.hdf5 files. Mirrors the `protected_regions` block of
  * `minimum_separation.run`.
  *
  * Every node of a matching cell is pinned exactly at rest (a polyfem HARD constraint, held by the
@@ -180,13 +180,18 @@ std::filesystem::path sim_dir(const std::string& output, const std::string& subd
  * The Python's own check for unknown keys inside an entry is not mirrored: jse already rejects
  * them against the same spec, in strict mode, before this runs.
  *
- * @return the written file paths, in the order the Python appends them to `pin_paths`; they go
- * into the simulation JSON as `constraints.hard`.
+ * Each file is written in inputs_only mode; otherwise its content goes into `memory` under the
+ * same path instead.
+ *
+ * @return the file paths, in the order the Python appends them to `pin_paths`; they go into the
+ * simulation JSON as `constraints.hard`.
  */
-std::vector<std::string> write_protected_pins(
+std::vector<std::string> protected_pins(
     const std::string& input,
     const nlohmann::json& protected_regions,
-    const std::filesystem::path& sim_in_dir)
+    const std::filesystem::path& sim_in_dir,
+    const bool inputs_only,
+    SolveInputs& memory)
 {
     if (protected_regions.empty()) {
         return {};
@@ -228,27 +233,33 @@ std::vector<std::string> write_protected_pins(
         }
         const std::filesystem::path pin_path =
             sim_in_dir / ("protected_pin" + suffix + ".hdf5");
-        write_pin_constraint_hdf5(
-            pin_path.string(),
-            pin_ids,
-            mesh_for_pins.mesh_dim,
-            axes);
+        ConstraintHdf5 pin = pin_constraint(pin_ids, mesh_for_pins.mesh_dim, axes);
         pin_paths.push_back(std::filesystem::weakly_canonical(pin_path).string());
+        if (inputs_only) {
+            write_constraint_hdf5(pin_path.string(), pin);
+            logger().info(
+                "  pinned     : {}  ({} nodes, {})",
+                pin_path.string(),
+                pin_ids.size(),
+                axes.has_value() ? suffix.substr(1) : "all axes");
+        } else {
+            memory.constraints.emplace(pin_paths.back(), std::move(pin));
+        }
     }
     return pin_paths;
 }
 
-/// The reduced mesh and the material groups read back off it, which is what `build_polyfem_json`
-/// is given.
+/// The reduced mesh and its material groups, which is what `build_polyfem_json` is given.
 struct ReducedMesh
 {
     std::filesystem::path path;
+    mshio::MshSpec content;
     MeshInfo info;
 };
 
 /**
- * @brief Write the mesh polyfem actually solves on and read its material groups back. Both
- * operations do this, in this order, for the same reason.
+ * @brief The mesh polyfem actually solves on, and its material groups. Both operations do this,
+ * in this order, for the same reason.
  *
  * The volumetric solve never runs on the caller's multi-tag mesh: WMTK writes one copy of a
  * multi-tagged cell per tag, and polyfem reads the copies as distinct elements -- it double-counts
@@ -256,26 +267,77 @@ struct ReducedMesh
  * unaffected either way, because it works on the proxy mesh and not on body ids.
  *
  * The file is `<input stem>_polyfem.msh` in the simulation input directory, where pysimwild puts
- * it next to the other generated inputs.
+ * it next to the other generated inputs. inputs_only writes it and reads the groups back off it,
+ * as the Python does. A normal run writes no file and reads the groups off the content, in the
+ * same order: the per-group volume is a running sum that divides every AMIPS weight in the
+ * simulation JSON, so this is what keeps that JSON the same byte for byte in both modes (checked
+ * in tests/test_polyfem_in_process.cpp).
  */
-ReducedMesh write_reduced_mesh(
+ReducedMesh reduce_mesh(
     const std::string& input,
     const std::vector<std::string>& ambient_like_tags,
-    const std::filesystem::path& sim_in_dir)
+    const std::filesystem::path& sim_in_dir,
+    const bool inputs_only)
 {
     ReducedMesh out;
     out.path = sim_in_dir / (std::filesystem::path(input).stem().string() + "_polyfem.msh");
     logger().info("[reduce mesh for polyfem]");
-    write_polyfem_reduced_msh(input, out.path.string(), ambient_like_tags);
-
-    out.info = get_mesh_info(out.path.string());
+    out.content = polyfem_reduced_msh(input, ambient_like_tags);
+    if (inputs_only) {
+        write_polyfem_reduced_msh(out.path.string(), out.content);
+        out.info = get_mesh_info(out.path.string());
+    } else {
+        out.info = get_mesh_info(out.content);
+    }
     logger().info("Reduced material tags : {}  dim={}", out.info.tags, out.info.dim);
     return out;
 }
 
+/**
+ * @brief The files of `make_interface_constraint`, under the names `build_polyfem_json` gives
+ * them in `dir`: written in inputs_only mode, kept in `memory` under those names otherwise.
+ *
+ * `with_collision_proxy` is false in smoothing mode, whose simulation JSON has no contact block:
+ * polyfem reads neither the linear map nor the body ids there, and the Python does not write them.
+ */
+void emit_interface_constraint(
+    const InterfaceConstraint& generated,
+    const std::filesystem::path& dir,
+    const bool with_collision_proxy,
+    const bool inputs_only,
+    SolveInputs& memory)
+{
+    const auto path = [&dir](const char* name) { return (dir / name).string(); };
+    logger().info("Writing:");
+    // The OBJ is written in every mode, although a normal run hands polyfem the proxy from
+    // `memory` and never reads this file: it is the only convenient way to see which faces the
+    // selection picked, and the Python engine always writes it.
+    write_collision_mesh_obj(path("interface_collision.obj"), generated.collision_mesh);
+    if (inputs_only) {
+        write_constraint_hdf5(path("interface_constraint.hdf5"), generated.fitting);
+        write_constraint_hdf5(path("interface_constraint_laplacian.hdf5"), generated.laplacian);
+        if (with_collision_proxy) {
+            write_linear_map_hdf5(path("interface_linear_map.hdf5"), generated.linear_map);
+            write_collision_body_ids_txt(
+                path("collision_body_ids.txt"),
+                generated.collision_body_ids);
+        }
+        return;
+    }
+    memory.constraints.emplace(path("interface_constraint.hdf5"), generated.fitting);
+    memory.constraints.emplace(path("interface_constraint_laplacian.hdf5"), generated.laplacian);
+    if (with_collision_proxy) {
+        memory.collision_meshes.emplace(path("interface_collision.obj"), generated.collision_mesh);
+        memory.linear_maps.emplace(path("interface_linear_map.hdf5"), generated.linear_map);
+        memory.collision_body_ids.emplace(
+            path("collision_body_ids.txt"),
+            generated.collision_body_ids);
+    }
+}
+
 } // namespace
 
-void polyfem_ops(nlohmann::json json_params)
+PreparedOperation prepare_operation(nlohmann::json json_params)
 {
     // The dispatcher keys only; an operation's own parameters are validated below against the
     // pysimwild spec.json that defines them, which stays the single source of the rules.
@@ -295,8 +357,11 @@ void polyfem_ops(nlohmann::json json_params)
         }
     }
 
-    const std::string operation = json_params["operation"];
-    const bool inputs_only = json_params.value("inputs_only", false);
+    PreparedOperation out;
+    out.operation = json_params["operation"].get<std::string>();
+    out.inputs_only = json_params.value("inputs_only", false);
+    const std::string& operation = out.operation;
+    const bool inputs_only = out.inputs_only;
 
     nlohmann::json params = operation_params(json_params);
     const nlohmann::json op_spec = to_jse_spec(
@@ -314,15 +379,10 @@ void polyfem_ops(nlohmann::json json_params)
         params = spec_engine.inject_defaults(params, op_spec);
     }
 
-    const std::string input = params["input"];
-    const std::string output = params["output"];
-
-    // The polyfem linked into this process. The Python engine runs $POLYFEM_BIN instead; this one
-    // needs no binary and never looks at the variable.
-    std::unique_ptr<PolyfemBackend> backend;
-    if (!inputs_only) {
-        backend = in_process_backend();
-    }
+    out.input = params["input"].get<std::string>();
+    out.output = params["output"].get<std::string>();
+    const std::string& input = out.input;
+    const std::string& output = out.output;
 
     if (operation == "minimum_separation") {
         // One pass gives both: the deduped sides the collision proxy is built from, and the
@@ -334,123 +394,155 @@ void polyfem_ops(nlohmann::json json_params)
         const OrderedJson polyfem_pairs = pairs;
 
         const std::filesystem::path sim_in_dir = sim_dir(output, "sep_input");
-        const std::filesystem::path sim_out_dir = sim_dir(output, "sep_output");
+        out.sim_out_dir = sim_dir(output, "sep_output");
         logger().info("Input  : {}", input);
         logger().info("Output : {}.msh", output);
         // smooth_positions is false here and has no spec key: minimum_separation.run reads it
         // from cfg["smoothDisplacementsOrPositions"], whose OPT_DEFAULTS value is 0, and
         // simwild.py's minimum_separation engine never puts that key in cfg. Separation smooths
         // displacements (L u = 0), so the rest state stays an equilibrium of the penalty.
-        make_interface_constraint(
-            input,
-            sides,
-            sim_in_dir.string(),
-            params["use_graph_laplacian"],
-            params["normalize_penalties"],
-            params["scale"],
-            /*smooth_positions=*/false,
-            /*skip_collision_artifacts=*/false);
+        emit_interface_constraint(
+            make_interface_constraint(
+                input,
+                sides,
+                params["use_graph_laplacian"],
+                params["normalize_penalties"],
+                params["scale"],
+                /*smooth_positions=*/false),
+            sim_in_dir,
+            /*with_collision_proxy=*/true,
+            inputs_only,
+            out.inputs);
 
-        const ReducedMesh reduced =
-            write_reduced_mesh(input, params["ambient_like_tags"], sim_in_dir);
+        ReducedMesh reduced =
+            reduce_mesh(input, params["ambient_like_tags"], sim_in_dir, inputs_only);
 
-        OrderedJson cfg = minimum_separation_cfg(params, polyfem_pairs);
-        cfg["amips_weights"] = resolve_amips_weights(cfg);
-        OrderedJson sep_json = build_polyfem_json(
-            cfg,
+        out.cfg = minimum_separation_cfg(params, polyfem_pairs);
+        out.cfg["amips_weights"] = resolve_amips_weights(out.cfg);
+        out.sim_json = build_polyfem_json(
+            out.cfg,
             reduced.path,
             sim_in_dir,
             reduced.info,
-            sim_out_dir / "solution.txt");
+            out.sim_out_dir / "solution.txt");
+        if (!inputs_only) {
+            out.inputs.meshes.emplace(
+                out.sim_json["geometry"][0]["mesh"].get<std::string>(),
+                std::move(reduced.content));
+        }
 
-        // The pins are written after the JSON and their paths are appended to it, as in run():
+        // The pins are made after the JSON and their paths are appended to it, as in run():
         // `constraints.hard` belongs to the operation, not to the shared builder.
         const std::vector<std::string> pin_paths =
-            write_protected_pins(input, params["protected_regions"], sim_in_dir);
+            protected_pins(input, params["protected_regions"], sim_in_dir, inputs_only, out.inputs);
         if (!params["protected_regions"].empty()) {
-            sep_json["constraints"]["hard"] = pin_paths;
+            out.sim_json["constraints"]["hard"] = pin_paths;
         }
-        const std::filesystem::path sep_json_path = sim_in_dir / "separation.json";
-        write_polyfem_json(sep_json_path, sep_json);
-
-        if (!inputs_only) {
-            // The outer loop rewrites separation.json before every solve, so what stays on disk
-            // afterwards is the last iteration's document -- the same file the Python leaves.
-            const std::string strategy = cfg["strategy"];
-            if (strategy == "dhat") {
-                run_polyfem_dhat(*backend, sep_json, sep_json_path, sim_out_dir, cfg);
-            } else {
-                // jse has already refused anything but "dhat" and "stiffness" against the same
-                // spec `run()` checks by hand, so there is no third branch to raise on.
-                run_polyfem_stiffness(*backend, sep_json, sep_json_path, sim_out_dir, cfg);
-            }
-
-            logger().info("[write deformed msh]");
-            // Applied to the ORIGINAL mesh, which is what preserves the caller's full tag set on
-            // the output; the node tags match between the original and the reduced mesh, so
-            // solution.txt indexes consistently against either.
-            write_deformed_msh(
-                input,
-                sim_out_dir / "solution.txt",
-                output + ".msh",
-                cfg["scale"].get<double>());
-        }
+        out.sim_json_path = sim_in_dir / "separation.json";
     } else {
-        // Smoothing mode: polyfem does not read the collision artifacts (the linear map and the
-        // body ids), so those are skipped; the OBJ is still written, because it is how one sees
-        // which faces the selection picked.
+        // Smoothing mode: the simulation JSON has no contact block, so polyfem reads no collision
+        // proxy (see emit_interface_constraint).
         std::vector<Selection> interfaces;
         std::vector<int64_t> ids_per_input;
         assign_selection_ids(params["interfaces"], interfaces, ids_per_input);
 
         const std::filesystem::path sim_in_dir = sim_dir(output, "smooth_input");
-        const std::filesystem::path sim_out_dir = sim_dir(output, "smooth_output");
+        out.sim_out_dir = sim_dir(output, "smooth_output");
         logger().info("Input  : {}", input);
         logger().info("Output : {}.msh", output);
         // Positions mode by default (laplacian_smoothing.run's own default, and the spec's):
         // in displacement mode the rest configuration is already a minimum and the solve
         // terminates with a zero gradient, so nothing moves.
-        make_interface_constraint(
-            input,
-            interfaces,
-            sim_in_dir.string(),
-            params["use_graph_laplacian"],
-            params["normalize_penalties"],
-            params["scale"],
-            params["smooth_positions"],
-            /*skip_collision_artifacts=*/true);
+        emit_interface_constraint(
+            make_interface_constraint(
+                input,
+                interfaces,
+                params["use_graph_laplacian"],
+                params["normalize_penalties"],
+                params["scale"],
+                params["smooth_positions"]),
+            sim_in_dir,
+            /*with_collision_proxy=*/false,
+            inputs_only,
+            out.inputs);
 
-        const ReducedMesh reduced =
-            write_reduced_mesh(input, params["ambient_like_tags"], sim_in_dir);
+        ReducedMesh reduced =
+            reduce_mesh(input, params["ambient_like_tags"], sim_in_dir, inputs_only);
 
         // The reduced mesh's two groups are "ambient" and "body", which is the scheme
         // build_polyfem_json looks weights up in, so the resolved pair replaces whatever the
         // configuration carried.
-        OrderedJson cfg = laplacian_smoothing_cfg(params);
-        cfg["amips_weights"] = resolve_amips_weights(cfg);
-        const OrderedJson sim_json = build_polyfem_json(
-            cfg,
+        out.cfg = laplacian_smoothing_cfg(params);
+        out.cfg["amips_weights"] = resolve_amips_weights(out.cfg);
+        out.sim_json = build_polyfem_json(
+            out.cfg,
             reduced.path,
             sim_in_dir,
             reduced.info,
-            sim_out_dir / "solution.txt");
-        const std::filesystem::path sim_json_path = sim_in_dir / "smoothing.json";
-        write_polyfem_json(sim_json_path, sim_json);
-
+            out.sim_out_dir / "solution.txt");
         if (!inputs_only) {
-            // One solve, no contact and no outer loop: `step_run_polyfem_single` writes the same
-            // JSON again itself, which is mirrored rather than skipped so the two engines touch
-            // the file the same number of times.
-            run_polyfem_single(*backend, sim_json, sim_json_path, sim_out_dir);
-
-            logger().info("[write deformed msh]");
-            write_deformed_msh(
-                input,
-                sim_out_dir / "solution.txt",
-                output + ".msh",
-                cfg["scale"].get<double>());
+            out.inputs.meshes.emplace(
+                out.sim_json["geometry"][0]["mesh"].get<std::string>(),
+                std::move(reduced.content));
         }
+        out.sim_json_path = sim_in_dir / "smoothing.json";
     }
+    write_polyfem_json(out.sim_json_path, out.sim_json);
+    return out;
+}
+
+void polyfem_ops(nlohmann::json json_params)
+{
+    PreparedOperation prepared = prepare_operation(std::move(json_params));
+    if (prepared.inputs_only) {
+        return;
+    }
+
+    // The polyfem linked into this process. The Python engine runs $POLYFEM_BIN instead; this one
+    // needs no binary and never looks at the variable.
+    const std::unique_ptr<PolyfemBackend> backend = in_process_backend(std::move(prepared.inputs));
+
+    if (prepared.operation == "minimum_separation") {
+        // The outer loop rewrites separation.json before every solve, so what stays on disk
+        // afterwards is the last iteration's document -- the same file the Python leaves.
+        const std::string strategy = prepared.cfg["strategy"];
+        if (strategy == "dhat") {
+            run_polyfem_dhat(
+                *backend,
+                prepared.sim_json,
+                prepared.sim_json_path,
+                prepared.sim_out_dir,
+                prepared.cfg);
+        } else {
+            // jse has already refused anything but "dhat" and "stiffness" against the same
+            // spec `run()` checks by hand, so there is no third branch to raise on.
+            run_polyfem_stiffness(
+                *backend,
+                prepared.sim_json,
+                prepared.sim_json_path,
+                prepared.sim_out_dir,
+                prepared.cfg);
+        }
+    } else {
+        // One solve, no contact and no outer loop: `step_run_polyfem_single` writes the same
+        // JSON again itself, which is mirrored rather than skipped so the two engines touch the
+        // file the same number of times.
+        run_polyfem_single(
+            *backend,
+            prepared.sim_json,
+            prepared.sim_json_path,
+            prepared.sim_out_dir);
+    }
+
+    logger().info("[write deformed msh]");
+    // Applied to the ORIGINAL mesh, which is what preserves the caller's full tag set on the
+    // output; the node tags match between the original and the reduced mesh, so solution.txt
+    // indexes consistently against either.
+    write_deformed_msh(
+        prepared.input,
+        prepared.sim_out_dir / "solution.txt",
+        prepared.output + ".msh",
+        prepared.cfg["scale"].get<double>());
 }
 
 } // namespace wmtk::components::polyfem_ops
