@@ -10,5 +10,7 @@ testing — lives in the [SimWild component README](../../../../README.md)
 (`components/simwild/README.md`).
 
 Quick start: install the `wildmeshing` bindings, then `pip install -e .`
-from this directory; the PolyFEM-backed ops' Python engine (the default)
-additionally requires `export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin`.
+from this directory. The PolyFEM-backed ops need the bindings built with
+`-DWMTK_WITH_POLYFEM=ON`; their Python engine (`engine="python"`) and the full
+simulation instead require
+`export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin`.

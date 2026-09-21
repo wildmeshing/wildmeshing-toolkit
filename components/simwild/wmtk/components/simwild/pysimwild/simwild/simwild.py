@@ -541,7 +541,7 @@ def _polyfem_engine(op_name, engine, python_engine):
 
 
 def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
-                       engine="python"):
+                       engine="cpp"):
     """
     Push collision bodies apart to a target separation (polyfem: AMIPS +
     fitting + Laplacian + GCP contact with a dhat line-search).
@@ -562,11 +562,11 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
       (scale, use_laplacian, weight_*, rtol, max_iterations, strategy
       ["dhat" default | "stiffness" experimental], ...). PolyFEM binary
       (engine="python" only): export POLYFEM_BIN.
-    - engine: Which implementation runs the op — "python" (default) or "cpp",
-      the C++ port of it in the wmtk component polyfem_ops, which takes the
-      same parameters and writes the same files and needs the toolkit built
-      with -DWMTK_WITH_POLYFEM=ON. A wrapper argument, not a spec parameter:
-      it is not offered to either validator.
+    - engine: Which implementation runs the op — "cpp" (default), the C++
+      port in the wmtk component polyfem_ops, which needs the toolkit built
+      with -DWMTK_WITH_POLYFEM=ON, or "python", the glue it was ported from;
+      both take the same parameters and write the same files. A wrapper
+      argument, not a spec parameter: it is not offered to either validator.
     """
     from .polyfem_ops import minimum_separation as _op
 
@@ -612,7 +612,7 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
 
 
 def laplacian_smoothing(mesh, interfaces=[], output="out", others={},
-                        engine="python"):
+                        engine="cpp"):
     """
     Fair material interfaces with a single polyfem solve (AMIPS + fitting +
     Laplacian; no contact).
@@ -627,11 +627,11 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={},
     - others: Additional parameters — see polyfem_ops/laplacian_smoothing/spec.json
       (weight_laplacian, smooth_positions, ...). PolyFEM binary
       (engine="python" only): export POLYFEM_BIN.
-    - engine: Which implementation runs the op — "python" (default) or "cpp",
-      the C++ port of it in the wmtk component polyfem_ops, which takes the
-      same parameters and writes the same files and needs the toolkit built
-      with -DWMTK_WITH_POLYFEM=ON. A wrapper argument, not a spec parameter:
-      it is not offered to either validator.
+    - engine: Which implementation runs the op — "cpp" (default), the C++
+      port in the wmtk component polyfem_ops, which needs the toolkit built
+      with -DWMTK_WITH_POLYFEM=ON, or "python", the glue it was ported from;
+      both take the same parameters and write the same files. A wrapper
+      argument, not a spec parameter: it is not offered to either validator.
     """
     from .polyfem_ops import laplacian_smoothing as _op
 
