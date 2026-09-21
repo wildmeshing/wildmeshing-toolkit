@@ -1,36 +1,49 @@
-"""Tier 1 — make_interface_constraint artifacts on a synthetic 3D mesh,
-plus a self-check of the gap metric the separation test relies on."""
+"""Tier 1 — the interface artifacts the C++ engine writes for polyfem, on a
+synthetic 3D mesh, plus a self-check of the gap metric the separation test
+relies on. `inputs_only` makes the engine stop after writing them."""
 import numpy as np
 import h5py
 import pytest
 
-from simwild.polyfem_ops import constraints as mic
-
+from conftest import needs_polyfem_ops, run_cpp
 from geo import min_separation_3d
 
 SELS = [{"region": "tag_0", "filter": "ambient", "id": 1},
         {"region": "tag_1", "filter": "ambient", "id": 2}]
 
 
+def _obj(path):
+    """(vertices, faces) of an OBJ, faces as 0-based vertex indices."""
+    verts, faces = [], []
+    for line in open(path):
+        p = line.split()
+        if p and p[0] == "v":
+            verts.append([float(x) for x in p[1:4]])
+        elif p and p[0] == "f":
+            faces.append([int(x.split("/")[0]) - 1 for x in p[1:4]])
+    return np.array(verts), np.array(faces)
+
+
+def _body_ids(path):
+    return [[int(x) for x in ln.split()] for ln in open(path)]
+
+
 @pytest.fixture()
 def artifacts(boxes3d, tmp_path):
-    out = tmp_path / "constraints"
-    out.mkdir()
-    mic.make_interface_constraint(
-        mesh_path=str(boxes3d), selections=SELS, out_dir=str(out),
-        normalize=False, scale=1.0)
-    return out
+    # Scale 1: the collision proxy is then in mesh units, where the box
+    # centers below are.
+    run_cpp(boxes3d, "minimum_separation", tmp_path, collision_pairs=[SELS],
+            sep=1.5, normalize_penalties=False, scale=1.0)
+    return tmp_path / "sep_input"
 
 
-def test_skin_face_counts(boxes3d):
+@needs_polyfem_ops
+def test_skin_face_counts(artifacts):
     # Each body is a 1x2x2 box fully interior to the ambient grid; its skin
     # is 16 unit quads = 32 triangles under the Freudenthal split.
-    (_, _, _, _, dim, faces, _, _, face_tags) = mic.load_mesh(
-        str(boxes3d), selections=SELS)
-    assert dim == 3
-    ids = np.array([t[0] for t in face_tags])
-    assert (ids == 1).sum() == 32
-    assert (ids == 2).sum() == 32
+    ids = _body_ids(artifacts / "collision_body_ids.txt")
+    assert ids.count([1]) == 32
+    assert ids.count([2]) == 32
 
 
 def test_gap_metric_on_input(boxes3d):
@@ -39,6 +52,7 @@ def test_gap_metric_on_input(boxes3d):
                              {"region": "tag_1"}) == pytest.approx(1.0)
 
 
+@needs_polyfem_ops
 def test_fitting_constraint_is_positive_diagonal(artifacts):
     # Diagonal (rows == cols) with strictly positive per-node mass weights,
     # zero RHS -> penalizes any displacement of the interface nodes.
@@ -53,6 +67,7 @@ def test_fitting_constraint_is_positive_diagonal(artifacts):
         assert not f["b"][()].any()
 
 
+@needs_polyfem_ops
 def test_laplacian_rows_sum_to_zero(artifacts):
     import scipy.sparse as sp
     with h5py.File(artifacts / "interface_constraint_laplacian.hdf5") as f:
@@ -64,17 +79,10 @@ def test_laplacian_rows_sum_to_zero(artifacts):
     assert np.allclose(np.asarray(L.sum(axis=1)).ravel(), 0.0, atol=1e-10)
 
 
-def test_collision_proxy_outward_and_body_ids(artifacts, boxes3d):
-    verts, faces = [], []
-    for line in open(artifacts / "interface_collision.obj"):
-        p = line.split()
-        if p and p[0] == "v":
-            verts.append([float(x) for x in p[1:4]])
-        elif p and p[0] == "f":
-            faces.append([int(x.split("/")[0]) - 1 for x in p[1:4]])
-    V, F = np.array(verts), np.array(faces)
-    ids = [[int(x) for x in ln.split()]
-           for ln in open(artifacts / "collision_body_ids.txt")]
+@needs_polyfem_ops
+def test_collision_proxy_outward_and_body_ids(artifacts):
+    V, F = _obj(artifacts / "interface_collision.obj")
+    ids = _body_ids(artifacts / "collision_body_ids.txt")
     assert len(ids) == len(F) == 64
     assert {i for row in ids for i in row} == {1, 2}
 
@@ -86,22 +94,38 @@ def test_collision_proxy_outward_and_body_ids(artifacts, boxes3d):
         assert np.dot(n, (a + b + c) / 3.0 - centers[row[0]]) > 0
 
 
-def test_union_region_selects_both_skins(boxes3d):
+def _smoothing_faces(mesh, out_dir, interfaces):
+    """The collision-proxy faces the smoothing operation writes for
+    `interfaces`, each as the set of its vertex positions."""
+    run_cpp(mesh, "laplacian_smoothing", out_dir, interfaces=interfaces)
+    V, F = _obj(out_dir / "smooth_input" / "interface_collision.obj")
+    return {frozenset(map(tuple, V[f])) for f in F}
+
+
+@needs_polyfem_ops
+def test_union_region_selects_both_skins(boxes3d, tmp_path):
     # A union region: boundary of (tag_0 | tag_1) facing ambient = both skins.
-    (_, _, _, _, _, faces, _, _, tags) = mic.load_mesh(
-        boxes3d, selections=[{"region": "tag_0 | tag_1", "filter": "ambient"}])
-    assert len(faces) == 64
-    assert all(t == [1] for t in tags)
+    # Paired with itself it dedupes to one side, hence one body.
+    union = {"region": "tag_0 | tag_1", "filter": "ambient"}
+    run_cpp(boxes3d, "minimum_separation", tmp_path,
+            collision_pairs=[[union, union]], sep=1.5)
+    ids = _body_ids(tmp_path / "sep_input" / "collision_body_ids.txt")
+    assert len(ids) == 64
+    assert all(t == [1] for t in ids)
 
 
-def test_whole_boundary_and_filter_agree_on_interior_bodies(boxes3d):
+@needs_polyfem_ops
+def test_whole_boundary_and_filter_agree_on_interior_bodies(boxes3d, tmp_path):
     # Fully interior body: whole boundary == ambient-filtered boundary.
-    whole = mic.load_mesh(boxes3d, selections=["tag_0"])[5]
-    filtered = mic.load_mesh(
-        boxes3d, selections=[{"region": "tag_0", "filter": "ambient"}])[5]
-    assert sorted(map(sorted, whole)) == sorted(map(sorted, filtered))
+    whole = _smoothing_faces(boxes3d, tmp_path / "whole", ["tag_0"])
+    filtered = _smoothing_faces(boxes3d, tmp_path / "filtered",
+                                [{"region": "tag_0", "filter": "ambient"}])
+    assert len(whole) == 32
+    assert whole == filtered
 
 
-def test_underscore_rejected(boxes3d):
-    with pytest.raises(ValueError, match="ambient"):
-        mic.load_mesh(boxes3d, selections=[{"region": "tag_0", "filter": "_"}])
+@needs_polyfem_ops
+def test_underscore_rejected(boxes3d, tmp_path):
+    with pytest.raises(RuntimeError, match="ambient"):
+        run_cpp(boxes3d, "laplacian_smoothing", tmp_path,
+                interfaces=[{"region": "tag_0", "filter": "_"}])

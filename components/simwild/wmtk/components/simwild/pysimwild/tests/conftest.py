@@ -54,6 +54,12 @@ def _polyfem_ops_available():
     return True
 
 
+needs_polyfem_ops = pytest.mark.skipif(
+    not _polyfem_ops_available(),
+    reason="the wildmeshing module was built without the polyfem_ops "
+           "component (configure with -DWMTK_WITH_POLYFEM=ON)")
+
+
 # The `engine` values the simwild wrappers accept: the Python glue (the
 # reference implementation) and its C++ port. Parametrizing a test over this
 # runs it once per engine and puts the engine name in the test id. The Python
@@ -62,11 +68,25 @@ def _polyfem_ops_available():
 # component.
 ENGINES = [
     pytest.param("python", marks=needs_polyfem),
-    pytest.param("cpp", marks=pytest.mark.skipif(
-        not _polyfem_ops_available(),
-        reason="the wildmeshing module was built without the polyfem_ops "
-               "component (configure with -DWMTK_WITH_POLYFEM=ON)")),
+    pytest.param("cpp", marks=needs_polyfem_ops),
 ]
+
+
+def run_cpp(mesh, operation, out_dir, **params):
+    """Run the C++ engine with output `out_dir/out`. By default it stops after
+    writing the generated polyfem inputs, under out_dir/sep_input (minimum
+    separation) or out_dir/smooth_input (smoothing); pass inputs_only=False to
+    solve as well."""
+    import wildmeshing
+    out_dir.mkdir(parents=True, exist_ok=True)
+    wildmeshing.wildmeshing({
+        "application": "polyfem_ops",
+        "operation": operation,
+        "input": str(mesh),
+        "output": str(out_dir / "out"),
+        "inputs_only": True,
+        **params,
+    })
 
 
 # --------------------------------------------------------------------------

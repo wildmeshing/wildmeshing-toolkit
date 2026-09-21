@@ -1,17 +1,21 @@
-"""Byte parity between the Python glue and the C++ port of it.
+"""Byte parity between the Python engine and the C++ port of it.
 
 The polyfem operations' glue — reading the tagged .msh, picking interface faces from region/filter
-selections, orienting them, building the constraint matrices and writing the artifacts — exists
-twice: in `simwild.polyfem_ops` (the oracle) and in the wmtk component `polyfem_ops` reached
-through `wildmeshing.wildmeshing(...)`. These tests run both on the same mesh with the same
-options and require the produced files to be identical: byte for byte for the two text artifacts,
-and dataset for dataset (same names, same dtypes, same shapes, exactly equal values) for the
-HDF5s. That is the only check that catches a face written in a different order, a normal flipped
-the other way, a float printed with one digit fewer, or a sum accumulated in another order.
+selections, orienting them, building the constraint matrices and writing the artifacts — was
+written in `simwild.polyfem_ops` (the oracle) and ported to the wmtk component `polyfem_ops`
+reached through `wildmeshing.wildmeshing(...)`. These tests hold the C++ engine to the Python
+engine's results on the same mesh with the same options: byte for byte for the two text
+artifacts, and dataset for dataset (same names, same dtypes, same shapes, exactly equal values)
+for the HDF5s. That is the only check that catches a face written in a different order, a normal
+flipped the other way, a float printed with one digit fewer, or a sum accumulated in another
+order.
+
+The Python engine's results are RECORDED (the goldens, see the next section), so the Python
+engine does not have to run, or even exist, for the C++ one to be checked against it.
 
 The C++ engine writes its generated polyfem inputs under `<dirname(output)>/sep_input` (minimum
 separation) or `<dirname(output)>/smooth_input` (smoothing) and returns without solving when
-`inputs_only` is set; the Python side is asked for the same artifacts through
+`inputs_only` is set; the Python side was asked for the same artifacts through
 `make_interface_constraint` and, for the protected-region pins, through the same calls
 `minimum_separation.run` makes.
 
@@ -28,6 +32,7 @@ what is asserted exactly, what is not, and the measurements behind both.
 import json
 import math
 import os
+import shutil
 from pathlib import Path
 
 import gmsh
@@ -37,8 +42,7 @@ import pytest
 
 # The irrational-coordinate meshes below are the conftest fixtures with bent coordinates, built
 # from the same two helpers; pytest puts this directory on sys.path, so conftest imports directly.
-from conftest import (_polyfem_ops_available, _tet_grid, _write_groups_msh,
-                      needs_polyfem)
+from conftest import _tet_grid, _write_groups_msh, needs_polyfem_ops, run_cpp
 
 from simwild.polyfem_ops import constraints as mic
 from simwild.polyfem_ops import spec as _spec
@@ -53,10 +57,41 @@ from simwild.polyfem_ops.polyfem_utils import (OPT_DEFAULTS, _resolve_amips_weig
                                                build_polyfem_json, get_mesh_info)
 
 
-needs_polyfem_ops = pytest.mark.skipif(
-    not _polyfem_ops_available(),
-    reason="the wildmeshing module was built without the polyfem_ops component "
-           "(configure with -DWMTK_WITH_POLYFEM=ON)")
+# --------------------------------------------------------------------------
+# The goldens: the Python engine's results, recorded
+# --------------------------------------------------------------------------
+#
+# One directory per case under $POLYFEM_OPS_GOLDENS, holding exactly what that case compares plus
+# the input mesh it was computed from. They live outside the repository, which keeps no binary
+# test data, so only a machine that has them runs these comparisons; without the variable every
+# test that needs them skips. With POLYFEM_OPS_GOLDENS_RECORD=1 as well, each case first runs the
+# Python engine into its directory -- the end-to-end cases need $POLYFEM_BIN for that, the binary
+# the Python engine runs -- and then compares as usual. metadata.json beside the case directories
+# says what recorded them.
+
+GOLDENS = os.environ.get("POLYFEM_OPS_GOLDENS")
+RECORD = os.environ.get("POLYFEM_OPS_GOLDENS_RECORD") == "1"
+needs_goldens = pytest.mark.skipif(
+    not GOLDENS,
+    reason="export POLYFEM_OPS_GOLDENS=/path/to/goldens to compare against the Python engine's "
+           "recorded results")
+
+
+def _golden(case, mesh):
+    """The golden directory of `case`. Recording empties it and stores the input mesh; either way
+    the mesh this run built must be the one the goldens were computed from, or no comparison
+    below would mean anything."""
+    golden = Path(GOLDENS) / case
+    if RECORD:
+        shutil.rmtree(golden, ignore_errors=True)
+        golden.mkdir(parents=True)
+        shutil.copyfile(mesh, golden / "input.msh")
+    assert (golden / "input.msh").is_file(), f"{case} has no recorded result in {GOLDENS}"
+    recorded, built = _gmsh_reduced_mesh(golden / "input.msh"), _gmsh_reduced_mesh(mesh)
+    _assert_same_mesh_structure(recorded, built, "recorded and current input meshes")
+    assert np.array_equal(recorded["coords"], built["coords"]), (
+        f"{case}: this run's input mesh is not the one the goldens were recorded on")
+    return golden
 
 
 BOTH_SKINS = [[{"region": "tag_0", "filter": "ambient"},
@@ -191,19 +226,6 @@ def _run_python_protected_pins(mesh, protected, out_dir, mesh_dim):
     return written
 
 
-def _run_cpp(mesh, operation, out_dir, **params):
-    import wildmeshing
-    out_dir.mkdir(parents=True, exist_ok=True)
-    wildmeshing.wildmeshing({
-        "application": "polyfem_ops",
-        "operation": operation,
-        "input": str(mesh),
-        "output": str(out_dir / "out"),
-        "inputs_only": True,
-        **params,
-    })
-
-
 # --------------------------------------------------------------------------
 # Comparisons
 # --------------------------------------------------------------------------
@@ -269,6 +291,7 @@ def _assert_hdf5_identical(py_dir, cpp_dir, name):
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
+@needs_goldens
 @pytest.mark.parametrize("pairs, options, label", [
     (BOTH_SKINS, {}, "two_skins"),
     (UNION_WITH_ITSELF, {}, "union_with_itself"),
@@ -280,21 +303,22 @@ def test_minimum_separation_inputs_match(boxes3d, tmp_path, pairs, options, labe
     # itself dedupes to one selection and one body (id 1), so both files must still agree.
     # `normalize_penalties` off drops both normalizations, and `use_graph_laplacian` on replaces
     # the igl mass and cotangent matrices with the identity and unit edge weights.
-    sides, _ = _normalize_collision_pairs(pairs)
-    py_dir = tmp_path / f"py_{label}"
+    golden = _golden(f"minimum_separation_inputs/{label}", boxes3d)
+    if RECORD:
+        sides, _ = _normalize_collision_pairs(pairs)
+        _run_python(boxes3d, sides, golden, "minimum_separation", options)
     cpp_root = tmp_path / f"cpp_{label}"
-    _run_python(boxes3d, sides, py_dir, "minimum_separation", options)
-    _run_cpp(boxes3d, "minimum_separation", cpp_root,
-             collision_pairs=pairs, sep=1.5, **options)
+    run_cpp(boxes3d, "minimum_separation", cpp_root, collision_pairs=pairs, sep=1.5, **options)
 
     cpp_dir = cpp_root / "sep_input"
-    _assert_identical(py_dir, cpp_dir, "interface_collision.obj")
-    _assert_identical(py_dir, cpp_dir, "collision_body_ids.txt")
+    _assert_identical(golden, cpp_dir, "interface_collision.obj")
+    _assert_identical(golden, cpp_dir, "collision_body_ids.txt")
     for name in CONSTRAINT_FILES + [LINEAR_MAP]:
-        _assert_hdf5_identical(py_dir, cpp_dir, name)
+        _assert_hdf5_identical(golden, cpp_dir, name)
 
 
 @needs_polyfem_ops
+@needs_goldens
 @pytest.mark.parametrize("protected, expected, label", [
     (["tag_1"], ["protected_pin.hdf5"], "bare_expression"),
     ([{"region": "tag_1", "axes": "z"}], ["protected_pin_z.hdf5"], "one_axis"),
@@ -305,18 +329,17 @@ def test_minimum_separation_protected_pins_match(boxes3d, tmp_path, protected, e
     # A bare expression pins every component (b has `dim` columns); an `axes` subset pins
     # flattened degrees of freedom (b has one column). Entries with different axes land in
     # different files, which is why the third case produces two.
-    sides, _ = _normalize_collision_pairs(BOTH_SKINS)
-    py_dir = tmp_path / f"py_{label}"
+    golden = _golden(f"minimum_separation_protected_pins/{label}", boxes3d)
+    if RECORD:
+        written = _run_python_protected_pins(boxes3d, protected, golden, mesh_dim=3)
+        assert sorted(written) == sorted(expected)
     cpp_root = tmp_path / f"cpp_{label}"
-    _run_python(boxes3d, sides, py_dir, "minimum_separation", {})
-    written = _run_python_protected_pins(boxes3d, protected, py_dir, mesh_dim=3)
-    assert sorted(written) == sorted(expected)
-    _run_cpp(boxes3d, "minimum_separation", cpp_root,
-             collision_pairs=BOTH_SKINS, sep=1.5, protected_regions=protected)
+    run_cpp(boxes3d, "minimum_separation", cpp_root,
+            collision_pairs=BOTH_SKINS, sep=1.5, protected_regions=protected)
 
     cpp_dir = cpp_root / "sep_input"
     for name in expected:
-        _assert_hdf5_identical(py_dir, cpp_dir, name)
+        _assert_hdf5_identical(golden, cpp_dir, name)
 
 
 # --------------------------------------------------------------------------
@@ -324,6 +347,7 @@ def test_minimum_separation_protected_pins_match(boxes3d, tmp_path, protected, e
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
+@needs_goldens
 @pytest.mark.parametrize("mesh_fixture, interfaces, options, label", [
     ("jagged2d", [{"region": "tag_0", "filter": "ambient"}], {}, "2d_selected"),
     ("jagged2d", [{"region": "tag_0", "filter": "ambient"}],
@@ -338,19 +362,20 @@ def test_laplacian_smoothing_inputs_match(request, tmp_path, mesh_fixture, inter
     # exercise the edge-loop pass, which the 3D path does not have. Positions mode (the default)
     # puts -L (scale * rest coordinates) in `b`; displacement mode leaves it zero.
     mesh = request.getfixturevalue(mesh_fixture)
-    norm, _ = assign_selection_ids(interfaces)
-    py_dir = tmp_path / f"py_{label}"
+    golden = _golden(f"laplacian_smoothing_inputs/{label}", mesh)
+    if RECORD:
+        norm, _ = assign_selection_ids(interfaces)
+        _run_python(mesh, norm, golden, "laplacian_smoothing", options)
     cpp_root = tmp_path / f"cpp_{label}"
-    _run_python(mesh, norm, py_dir, "laplacian_smoothing", options)
-    _run_cpp(mesh, "laplacian_smoothing", cpp_root, interfaces=interfaces, **options)
+    run_cpp(mesh, "laplacian_smoothing", cpp_root, interfaces=interfaces, **options)
 
     cpp_dir = cpp_root / "smooth_input"
-    _assert_identical(py_dir, cpp_dir, "interface_collision.obj")
+    _assert_identical(golden, cpp_dir, "interface_collision.obj")
     for name in CONSTRAINT_FILES:
-        _assert_hdf5_identical(py_dir, cpp_dir, name)
+        _assert_hdf5_identical(golden, cpp_dir, name)
     # Smoothing mode writes no collision artifacts: polyfem does not read them there.
     for name in ("collision_body_ids.txt", LINEAR_MAP):
-        assert not (py_dir / name).exists()
+        assert not (golden / name).exists()
         assert not (cpp_dir / name).exists()
 
 
@@ -359,38 +384,42 @@ def test_laplacian_smoothing_inputs_match(request, tmp_path, mesh_fixture, inter
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
+@needs_goldens
 def test_minimum_separation_irrational_coordinates_match(boxes3d_irrational, tmp_path):
     # The grid fixtures have integer coordinates, where every edge length, area and cotangent is
     # exact and a rounding difference cannot show. This one is where the two libigl builds are
     # actually compared: the C++ links libigl 2.6.0 and the Python wheel is 2.6.3, built with
     # different flags, and igl.massmatrix / igl.cotmatrix decide every value in both files.
-    sides, _ = _normalize_collision_pairs(BOTH_SKINS)
-    py_dir = tmp_path / "py_irrational_3d"
+    golden = _golden("minimum_separation_inputs/irrational_3d", boxes3d_irrational)
+    if RECORD:
+        sides, _ = _normalize_collision_pairs(BOTH_SKINS)
+        _run_python(boxes3d_irrational, sides, golden, "minimum_separation", {})
     cpp_root = tmp_path / "cpp_irrational_3d"
-    _run_python(boxes3d_irrational, sides, py_dir, "minimum_separation", {})
-    _run_cpp(boxes3d_irrational, "minimum_separation", cpp_root,
-             collision_pairs=BOTH_SKINS, sep=1.5)
+    run_cpp(boxes3d_irrational, "minimum_separation", cpp_root,
+            collision_pairs=BOTH_SKINS, sep=1.5)
 
     cpp_dir = cpp_root / "sep_input"
-    _assert_identical(py_dir, cpp_dir, "interface_collision.obj")
+    _assert_identical(golden, cpp_dir, "interface_collision.obj")
     for name in CONSTRAINT_FILES + [LINEAR_MAP]:
-        _assert_hdf5_identical(py_dir, cpp_dir, name)
+        _assert_hdf5_identical(golden, cpp_dir, name)
 
 
 @needs_polyfem_ops
+@needs_goldens
 def test_laplacian_smoothing_irrational_coordinates_match(jagged2d_irrational, tmp_path):
     # 2D has no igl in it: the mass is half an edge length per endpoint and the stiffness weight
     # is its reciprocal, both from np.linalg.norm, and `b` is the sparse product. Irrational
     # coordinates are what make those roundings visible.
-    py_dir = tmp_path / "py_irrational_2d"
+    golden = _golden("laplacian_smoothing_inputs/irrational_2d", jagged2d_irrational)
+    if RECORD:
+        _run_python(jagged2d_irrational, None, golden, "laplacian_smoothing", {})
     cpp_root = tmp_path / "cpp_irrational_2d"
-    _run_python(jagged2d_irrational, None, py_dir, "laplacian_smoothing", {})
-    _run_cpp(jagged2d_irrational, "laplacian_smoothing", cpp_root, interfaces=[])
+    run_cpp(jagged2d_irrational, "laplacian_smoothing", cpp_root, interfaces=[])
 
     cpp_dir = cpp_root / "smooth_input"
-    _assert_identical(py_dir, cpp_dir, "interface_collision.obj")
+    _assert_identical(golden, cpp_dir, "interface_collision.obj")
     for name in CONSTRAINT_FILES:
-        _assert_hdf5_identical(py_dir, cpp_dir, name)
+        _assert_hdf5_identical(golden, cpp_dir, name)
 
 
 # --------------------------------------------------------------------------
@@ -634,30 +663,34 @@ def _assert_json_identical(py_doc, cpp_doc, path="doc"):
 
 
 def _assert_polyfem_inputs_match(mesh, operation, options, tmp_path, label):
-    """Run both engines on the same mesh and options and compare the reduced mesh and the
-    simulation JSON. Returns the two JSON texts with the output directory normalised away."""
+    """Compare the C++ engine's reduced mesh and simulation JSON with the Python engine's, for the
+    same mesh and options. Returns the two JSON texts with the output directory normalised away."""
     sim_in_name, _, json_name = SIM_DIRS[operation]
-    py_root = tmp_path / f"py_{label}"
+    reduced_name = Path(mesh).stem + "_polyfem.msh"
+    golden = _golden(f"{operation}_polyfem_inputs/{label}", mesh)
+    if RECORD:
+        py_root = tmp_path / f"py_{label}"
+        py_doc, py_msh = _run_python_polyfem_inputs(mesh, operation, options, py_root)
+        assert py_msh.name == reduced_name
+        # Record what the engine WRITES, so the document goes through json.dumps first: the
+        # volumes it computes are numpy scalars, which serialize as plain floats (np.float64 is a
+        # float subclass) and must be read back as such before the types can be compared. The
+        # run's own directory is replaced by a marker, since the C++ run writes elsewhere.
+        (golden / json_name).write_text(
+            _normalise_paths(json.dumps(py_doc, indent=4), py_root.resolve()))
+        shutil.copyfile(py_msh, golden / reduced_name)
     cpp_root = tmp_path / f"cpp_{label}"
-
-    py_doc, py_msh = _run_python_polyfem_inputs(mesh, operation, options, py_root)
-    _run_cpp(mesh, operation, cpp_root, **options)
+    run_cpp(mesh, operation, cpp_root, **options)
 
     cpp_dir = cpp_root / sim_in_name
-    cpp_text = (cpp_dir / json_name).read_text()
-    # Compare what each engine WRITES, so the Python side goes through json.dumps first: the
-    # volumes it computes are numpy scalars, which serialize as plain floats (np.float64 is a
-    # float subclass) and must be read back as such before the types can be compared.
-    py_text = json.dumps(py_doc, indent=4)
-    _assert_json_identical(_normalise_paths(json.loads(py_text), py_root.resolve()),
-                           _normalise_paths(json.loads(cpp_text), cpp_root.resolve()))
-    _assert_reduced_msh_identical(py_msh, cpp_dir / py_msh.name)
+    py_norm = (golden / json_name).read_text()
+    cpp_norm = _normalise_paths((cpp_dir / json_name).read_text(), cpp_root.resolve())
+    _assert_json_identical(json.loads(py_norm), json.loads(cpp_norm))
+    _assert_reduced_msh_identical(golden / reduced_name, cpp_dir / reduced_name)
     # The contract above is the parsed document; this is the stronger statement that happens to
     # hold on every case here, and it is asserted so that a formatting drift -- nlohmann's float
     # serializer against CPython's repr, or a change of indent -- is reported as itself rather
     # than passing unnoticed.
-    py_norm = _normalise_paths(py_text, py_root.resolve())
-    cpp_norm = _normalise_paths(cpp_text, cpp_root.resolve())
     assert py_norm == cpp_norm, f"{json_name} differs byte for byte although it parses equal"
     return py_norm, cpp_norm
 
@@ -667,6 +700,7 @@ def _assert_polyfem_inputs_match(mesh, operation, options, tmp_path, label):
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
+@needs_goldens
 @pytest.mark.parametrize("options, label", [
     ({}, "default"),
     # Changes the constraint matrices, not the JSON: the key the JSON reads
@@ -697,6 +731,7 @@ def test_minimum_separation_polyfem_inputs_match(boxes3d, tmp_path, options, lab
 
 
 @needs_polyfem_ops
+@needs_goldens
 @pytest.mark.parametrize("options, label", [
     ({"use_nh_body": True}, "nh_defaults"),
     ({"use_nh_body": True, "nh_youngs": 2.5e-3, "nh_poisson": 0.3}, "nh_non_default"),
@@ -717,8 +752,9 @@ def test_minimum_separation_neohookean_materials(boxes3d, tmp_path, options, lab
         boxes3d, "minimum_separation",
         {"collision_pairs": BOTH_SKINS, "sep": 1.5, **options}, tmp_path, label)
 
+    # The C++ engine's reduced mesh, which the call above found identical to the Python one.
     sim_in_name = SIM_DIRS["minimum_separation"][0]
-    reduced = next((tmp_path / f"py_{label}" / sim_in_name).glob("*_polyfem.msh"))
+    reduced = next((tmp_path / f"cpp_{label}" / sim_in_name).glob("*_polyfem.msh"))
     _, mesh_dim, name_to_tag, _, tag_to_volume = get_mesh_info(str(reduced))
     materials = {m["id"]: m for m in json.loads(cpp_text)["materials"]}
     assert sorted(materials) == sorted(name_to_tag.values()), (
@@ -739,6 +775,7 @@ def test_minimum_separation_neohookean_materials(boxes3d, tmp_path, options, lab
 
 
 @needs_polyfem_ops
+@needs_goldens
 @pytest.mark.parametrize("protected, label", [
     (["tag_1"], "bare_expression"),
     ([{"region": "tag_1", "axes": "z"}], "one_axis"),
@@ -759,6 +796,7 @@ def test_minimum_separation_hard_constraints_match(boxes3d, tmp_path, protected,
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
+@needs_goldens
 @pytest.mark.parametrize("options, label", [
     ({}, "default"),
     ({"smooth_positions": False}, "displacements"),
@@ -778,6 +816,7 @@ def test_laplacian_smoothing_polyfem_inputs_match(jagged2d, tmp_path, options, l
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
+@needs_goldens
 def test_minimum_separation_polyfem_inputs_irrational(boxes3d_irrational, tmp_path):
     # On the integer grids every tet volume is exact and the running sum cannot round. Here each
     # term is an absolute `np.linalg.det` over three edge vectors -- which numpy evaluates as
@@ -790,6 +829,7 @@ def test_minimum_separation_polyfem_inputs_irrational(boxes3d_irrational, tmp_pa
 
 
 @needs_polyfem_ops
+@needs_goldens
 def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_path):
     # 2D areas are half an absolute cross product of two edge vectors: two rounded products and a
     # subtraction, never a fused multiply-add, then the running sum over the file order.
@@ -802,11 +842,11 @@ def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_
 # --------------------------------------------------------------------------
 #
 # Everything above stops at the generated polyfem inputs, which are byte-identical. Everything
-# below runs polyfem, and every case below runs it TWO ways: the Python engine, which launches
-# $POLYFEM_BIN as a child process, and the C++ engine, which reaches the polyfem linked into this
-# process. The two must agree, and that is where "identical" stops being available: the contact
-# assembly sums per-collision-pair contributions in an order that depends on thread scheduling, so
-# two runs of ONE binary on ONE machine do not agree bit for bit.
+# below runs polyfem, and every case below compares two runs: the C++ engine's, which reaches the
+# polyfem linked into this process, and the recorded one of the Python engine, which launched
+# $POLYFEM_BIN as a child process. The two must agree, and that is where "identical" stops being
+# available: the contact assembly sums per-collision-pair contributions in an order that depends
+# on thread scheduling, so two runs of ONE binary on ONE machine do not agree bit for bit.
 #
 # The two tolerance constants below are measured. Each of the four solver cases -- the dhat ramp,
 # the stiffness loop, the protected-region case and the smoothing case -- was run five times with
@@ -876,7 +916,7 @@ def _run_python_engine(mesh, operation, options, root):
 def _run_cpp_engine(mesh, operation, root, **options):
     """The C++ engine end to end, on the polyfem this component is linked against. Returns the
     deformed mesh."""
-    _run_cpp(mesh, operation, root, inputs_only=False, **options)
+    run_cpp(mesh, operation, root, inputs_only=False, **options)
     return root / "out.msh"
 
 
@@ -900,7 +940,8 @@ DECISION_MARKERS = (
 
 
 def _decision_trail(captured):
-    """The loop's decisions, in order, as (marker, text from the marker to the end of the line).
+    """The loop's decisions, in order, as [marker, text from the marker to the end of the line]
+    (lists, so that a trail read back from a golden's JSON compares equal).
 
     This is the whole observable behaviour of the outer loop: which solve overshot and was rolled
     back, which committed, what dhat or barrier stiffness the next one got and why it stopped.
@@ -910,7 +951,7 @@ def _decision_trail(captured):
         for marker in DECISION_MARKERS:
             at = line.find(marker)
             if at >= 0:
-                trail.append((marker, line[at:].rstrip()))
+                trail.append([marker, line[at:].rstrip()])
                 break
     return trail
 
@@ -933,8 +974,13 @@ def _log_values(log_path):
         if "active distance:" in line:
             last = line
     assert last is not None, f"{log_path.name} has no active distance line"
-    return (float(last.split("active distance:")[-1].split()[0].rstrip(",;").replace(",", "")),
-            float(last.split("dhat:")[-1].split()[0].rstrip(",;").replace(",", "")))
+    return [float(last.split("active distance:")[-1].split()[0].rstrip(",;").replace(",", "")),
+            float(last.split("dhat:")[-1].split()[0].rstrip(",;").replace(",", ""))]
+
+
+def _solve_values(root):
+    """[active distance, dhat] of every solve of a minimum-separation loop, in order."""
+    return [_log_values(log) for log in _iteration_logs(root / "sep_output")]
 
 
 def _assert_deformed_meshes_close(py_msh, cpp_msh, rtol):
@@ -952,24 +998,23 @@ def _assert_deformed_meshes_close(py_msh, cpp_msh, rtol):
     return diff
 
 
-def _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, rtol, dhat_pinned=False):
-    """The two engines' solver loops: the same decisions, the same number of solves, and dhat and
-    the active distances within `rtol` relative -- exactly where the section header above says dhat
-    is exact. `dhat_pinned` is the stiffness strategy, which never moves dhat at all."""
+def _assert_loops_agree(py_run, cpp_run, rtol, dhat_pinned=False):
+    """The two engines' solver loops, each given as {"trail": _decision_trail, "solves":
+    _solve_values}: the same decisions, the same number of solves, and dhat and the active
+    distances within `rtol` relative -- exactly where the section header above says dhat is exact.
+    `dhat_pinned` is the stiffness strategy, which never moves dhat at all."""
+    py_trail, cpp_trail = py_run["trail"], cpp_run["trail"]
     assert py_trail == cpp_trail, (
         "the loops decided differently\npython: {}\nc++   : {}".format(
             "\n        ".join(t for _, t in py_trail),
             "\n        ".join(t for _, t in cpp_trail)))
 
-    py_logs = _iteration_logs(py_root / "sep_output")
-    cpp_logs = _iteration_logs(cpp_root / "sep_output")
-    assert len(py_logs) == len(cpp_logs) > 0, (
-        f"{len(py_logs)} solves from python, {len(cpp_logs)} from c++")
+    py_solves, cpp_solves = py_run["solves"], cpp_run["solves"]
+    assert len(py_solves) == len(cpp_solves) > 0, (
+        f"{len(py_solves)} solves from python, {len(cpp_solves)} from c++")
 
     worst = 0.0
-    for i, (py_log, cpp_log) in enumerate(zip(py_logs, cpp_logs)):
-        py_active, py_dhat = _log_values(py_log)
-        cpp_active, cpp_dhat = _log_values(cpp_log)
+    for i, ((py_active, py_dhat), (cpp_active, cpp_dhat)) in enumerate(zip(py_solves, cpp_solves)):
         if dhat_pinned or i == 0:
             # Neither of these reads a solver measurement -- the stiffness strategy pins dhat at
             # sep*(1+rtol), and the first dhat of the ramp is dhat_growth times the probe's
@@ -1069,8 +1114,14 @@ SEP_BASE = {"collision_pairs": BOTH_SKINS, "sep": 1.5e-3, "scale": 1e-3, "rtol":
             "max_iterations": 4}
 
 
+def _final_kappa(root):
+    """The barrier stiffness of the last solve: the last value written into the simulation JSON."""
+    doc = json.loads((root / "sep_input" / "separation.json").read_text())
+    return doc["solver"]["contact"]["barrier_stiffness"]
+
+
 @needs_polyfem_ops
-@needs_polyfem
+@needs_goldens
 @pytest.mark.parametrize("options, label", [
     # The dhat ramp: a zero-stiffness probe, one overshoot that is rolled back and halved, a
     # commit that bisects the bracket, and a stop inside the tolerance band.
@@ -1086,19 +1137,29 @@ SEP_BASE = {"collision_pairs": BOTH_SKINS, "sep": 1.5e-3, "scale": 1e-3, "rtol":
     ({"strategy": "dhat", "use_nh_body": True}, "neohookean"),
 ])
 def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options, label):
-    py_root = tmp_path / f"py_{label}"
-    cpp_root = tmp_path / f"cpp_{label}"
+    # A golden run is what this compares: the decision trail, every solve's (active distance,
+    # dhat) at full precision, the final barrier stiffness, and the deformed mesh (out.msh).
+    golden = _golden(f"minimum_separation_end_to_end/{label}", boxes3d)
+    if RECORD:
+        py_root = tmp_path / f"py_{label}"
+        py_msh = _run_python_engine(boxes3d, "minimum_separation", {**SEP_BASE, **options},
+                                    py_root)
+        py_trail = _decision_trail(capfd.readouterr().out)
+        assert py_trail, "the python engine printed no decisions"
+        (golden / "run.json").write_text(json.dumps(
+            {"trail": py_trail, "solves": _solve_values(py_root),
+             "final_barrier_stiffness": _final_kappa(py_root)}, indent=1) + "\n")
+        shutil.copyfile(py_msh, golden / "out.msh")
+    py_run = json.loads((golden / "run.json").read_text())
 
-    py_msh = _run_python_engine(boxes3d, "minimum_separation", {**SEP_BASE, **options}, py_root)
-    py_trail = _decision_trail(capfd.readouterr().out)
+    cpp_root = tmp_path / f"cpp_{label}"
     cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", cpp_root, **{**SEP_BASE, **options})
     cpp_trail = _decision_trail(capfd.readouterr().out)
 
-    assert py_trail, "the python engine printed no decisions"
     dhat_pinned = options["strategy"] == "stiffness"
-    _assert_loops_agree(py_root, cpp_root, py_trail, cpp_trail, RTOL_PYTHON_VS_CPP,
-                        dhat_pinned=dhat_pinned)
-    _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
+    _assert_loops_agree(py_run, {"trail": cpp_trail, "solves": _solve_values(cpp_root)},
+                        RTOL_PYTHON_VS_CPP, dhat_pinned=dhat_pinned)
+    _assert_deformed_meshes_close(golden / "out.msh", cpp_msh, RTOL_PYTHON_VS_CPP)
     _assert_steered_on_the_logged_distance(cpp_root, cpp_trail)
 
     # The stiffness loop's kappa lives only in the trail above at seven digits; its full-precision
@@ -1106,10 +1167,7 @@ def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options
     # deficit, so it inherits the noise: measured 1.9e-12 relative on this case, which stays inside
     # 1e-9 only because the multiplier hits its max_stiffness_multiplier clamp.
     if dhat_pinned:
-        def final_kappa(root):
-            doc = json.loads((root / "sep_input" / "separation.json").read_text())
-            return doc["solver"]["contact"]["barrier_stiffness"]
-        py_kappa, cpp_kappa = final_kappa(py_root), final_kappa(cpp_root)
+        py_kappa, cpp_kappa = py_run["final_barrier_stiffness"], _final_kappa(cpp_root)
         rel = abs(py_kappa - cpp_kappa) / abs(py_kappa)
         assert rel <= RTOL_PYTHON_VS_CPP, (
             f"final barrier stiffness differs from python by {rel:.3e} relative")
@@ -1158,42 +1216,50 @@ def test_minimum_separation_neohookean_holds_body_volume(boxes3d, tmp_path):
 
 
 @needs_polyfem_ops
-@needs_polyfem
+@needs_goldens
 def test_laplacian_smoothing_end_to_end_matches(jagged2d, tmp_path):
     """Smoothing is the single-solve path: no loop, no contact, one polyfem.log, then the
-    write-back. The deformed mesh is the whole observable result."""
-    py_msh = _run_python_engine(jagged2d, "laplacian_smoothing",
-                                {"interfaces": [{"region": "tag_0", "filter": "ambient"}],
-                                 "weight_laplacian": 1e3}, tmp_path / "py")
-    cpp_msh = _run_cpp_engine(jagged2d, "laplacian_smoothing", tmp_path / "cpp",
-                              interfaces=[{"region": "tag_0", "filter": "ambient"}],
-                              weight_laplacian=1e3)
+    write-back. The deformed mesh is the whole observable result, and the whole golden."""
+    options = {"interfaces": [{"region": "tag_0", "filter": "ambient"}], "weight_laplacian": 1e3}
+    golden = _golden("laplacian_smoothing_end_to_end", jagged2d)
+    roots = [tmp_path / "cpp"]
+    if RECORD:
+        py_msh = _run_python_engine(jagged2d, "laplacian_smoothing", options, tmp_path / "py")
+        shutil.copyfile(py_msh, golden / "out.msh")
+        roots.append(tmp_path / "py")
+    cpp_msh = _run_cpp_engine(jagged2d, "laplacian_smoothing", tmp_path / "cpp", **options)
 
-    for root in (tmp_path / "py", tmp_path / "cpp"):
+    for root in roots:
         assert (root / "smooth_output" / "polyfem.log").is_file(), f"{root.name}: no polyfem.log"
         assert not list((root / "smooth_output").glob("polyfem_iter_*.log")), (
             f"{root.name}: smoothing must not run an outer loop")
-    _assert_deformed_meshes_close(py_msh, cpp_msh, RTOL_PYTHON_VS_CPP)
+    _assert_deformed_meshes_close(golden / "out.msh", cpp_msh, RTOL_PYTHON_VS_CPP)
 
 
 @needs_polyfem_ops
-@needs_polyfem
+@needs_goldens
 def test_minimum_separation_probe_already_separated_matches(boxes3d, tmp_path, capfd):
     """The probe path: the bodies start 1 mesh unit apart, which at scale 1e-3 is a gap of 1e-3
     solver units, so a target of 5e-4 is already met. The probe measures the gap, reports it and
-    the loop never starts -- nothing moves, on either engine."""
+    the loop never starts -- nothing moves, on either engine. The golden is the trail and the
+    deformed mesh."""
     options = {**SEP_BASE, "sep": 5e-4, "strategy": "dhat"}
-    py_root = tmp_path / "py"
-    cpp_root = tmp_path / "cpp"
-
-    py_msh = _run_python_engine(boxes3d, "minimum_separation", options, py_root)
-    py_trail = _decision_trail(capfd.readouterr().out)
-    cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", cpp_root, **options)
+    golden = _golden("minimum_separation_probe_already_separated", boxes3d)
+    roots = [tmp_path / "cpp"]
+    if RECORD:
+        py_msh = _run_python_engine(boxes3d, "minimum_separation", options, tmp_path / "py")
+        (golden / "run.json").write_text(json.dumps(
+            {"trail": _decision_trail(capfd.readouterr().out)}, indent=1) + "\n")
+        shutil.copyfile(py_msh, golden / "out.msh")
+        roots.append(tmp_path / "py")
+    py_trail = json.loads((golden / "run.json").read_text())["trail"]
+    py_msh = golden / "out.msh"
+    cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", tmp_path / "cpp", **options)
     cpp_trail = _decision_trail(capfd.readouterr().out)
 
     assert py_trail == cpp_trail
     assert len(py_trail) == 1 and "already separated" in py_trail[0][1], py_trail
-    for root in (py_root, cpp_root):
+    for root in roots:
         assert (root / "sep_output" / "polyfem_probe.log").is_file()
         assert not list((root / "sep_output").glob("polyfem_iter_*.log")), (
             f"{root.name}: the loop ran although the bodies were already separated")

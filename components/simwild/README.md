@@ -252,7 +252,15 @@ python -m pytest tests
 ```
 
 Tier-1 runs anywhere (the bindings are found in `<toolkit>/build/bin`
-automatically if not installed). The end-to-end tests (measured minimum
+automatically if not installed); its tests of the C++ engine need the toolkit
+built with `-DWMTK_WITH_POLYFEM=ON`. The end-to-end tests (measured minimum
 separation, smoothing roughness decrease) run their Python-engine half iff
 `POLYFEM_BIN` is exported, and their C++-engine half iff the toolkit was built
-with `-DWMTK_WITH_POLYFEM=ON`.
+with that option.
+
+`tests/test_engine_parity.py` holds the C++ engine to the Python engine's
+recorded results (goldens): generated inputs byte for byte, loop decisions
+exactly, solver results to 1e-9 relative. The goldens live outside the
+repository, in the directory named by `POLYFEM_OPS_GOLDENS`; without it those
+tests skip. `POLYFEM_OPS_GOLDENS_RECORD=1` re-records them from the Python
+engine (which needs `POLYFEM_BIN`) and then compares.

@@ -9,7 +9,7 @@ import pytest
 from simwild import simwild as wm
 
 from conftest import ENGINES
-from geo import min_separation_3d, signed_volumes
+from geo import min_separation_3d, region_node_coords, signed_volumes
 
 SEL_A = {"region": "tag_0", "filter": "ambient"}
 SEL_B = {"region": "tag_1", "filter": "ambient"}
@@ -71,11 +71,7 @@ def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy, engine):
 def test_minimum_separation_protected_region(boxes3d, tmp_path, engine):
     """protected_regions: tag_1 is hard-pinned — tag_0 does all the moving
     and every node of tag_1's cells stays exactly at rest."""
-    from simwild.polyfem_ops.mesh_core import TaggedMesh, select_region_nodes
-
     out_msh = tmp_path / "separated.msh"
-    before = TaggedMesh(str(boxes3d))
-    pin_ids = select_region_nodes(before, ["tag_1"])
 
     wm.minimum_separation(
         mesh=str(boxes3d),
@@ -92,10 +88,16 @@ def test_minimum_separation_protected_region(boxes3d, tmp_path, engine):
     assert gap >= target_mesh_units * (1.0 - RTOL - 0.05), (
         f"achieved gap {gap:.4f} < target {target_mesh_units:.4f}")
 
-    after = TaggedMesh(str(out_msh))
-    drift = np.abs(after.coords[pin_ids] - before.coords[pin_ids]).max()
+    # The write-back keeps every node tag, so a node is the same node in both
+    # files.
+    def displacement(region):
+        before = region_node_coords(boxes3d, region)
+        after = region_node_coords(out_msh, region)
+        assert after.keys() == before.keys()
+        return max(np.abs(after[t] - before[t]).max() for t in before)
+
+    drift = displacement("tag_1")
     assert drift < 1e-9, f"protected tag_1 nodes moved by {drift:.3e}"
     # and the unprotected side really did the moving
-    moved_ids = select_region_nodes(before, ["tag_0"])
-    moved = np.abs(after.coords[moved_ids] - before.coords[moved_ids]).max()
+    moved = displacement("tag_0")
     assert moved > 0.1, "tag_0 did not move"

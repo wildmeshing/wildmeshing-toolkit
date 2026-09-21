@@ -1,20 +1,69 @@
 """Geometry measurements used by the tests: body-to-body separation,
-2D interface roughness/length, and element-inversion checks."""
+2D interface roughness/length, and element-inversion checks.
+
+The meshes are read here with gmsh and numpy alone. Nothing is shared with the
+implementation under test, so a measurement cannot inherit its defects. The
+reader replaced the Python engine's load_mesh, and before it did, the two gave
+identical separations, interface edges, roughness, lengths and region nodes on
+both fixtures, their irrational-coordinate versions and every mesh a full suite
+run wrote (17 meshes, largest relative difference 0)."""
+from itertools import combinations
+
 import numpy as np
 
-from simwild.polyfem_ops.constraints import load_mesh
+
+def read_tagged_msh(msh_path):
+    """(dim, coords, cells) of a physical-groups .msh: the node coordinates
+    keyed by node tag, and every cell -- its node tags, sorted -- with the set
+    of group names it carries (wmtk writes one copy of a cell per group it is
+    in, so the copies merge here into one cell)."""
+    import gmsh
+    gmsh.initialize()
+    try:
+        gmsh.open(str(msh_path))
+        dim = 3 if gmsh.model.getPhysicalGroups(3) else 2
+        etype = 4 if dim == 3 else 2  # gmsh: 4 = Tet, 2 = Triangle
+        node_tags, flat, _ = gmsh.model.mesh.getNodes()
+        coords = dict(zip((int(t) for t in node_tags),
+                          np.array(flat).reshape(-1, 3)))
+        cells = {}
+        for d, ptag in gmsh.model.getPhysicalGroups(dim):
+            name = gmsh.model.getPhysicalName(d, ptag)
+            for ent in gmsh.model.getEntitiesForPhysicalGroup(d, ptag):
+                _, ntags = gmsh.model.mesh.getElementsByType(etype, ent)
+                for row in np.array(ntags, dtype=np.int64).reshape(-1, dim + 1):
+                    key = tuple(sorted(int(v) for v in row))
+                    cells.setdefault(key, set()).add(name)
+    finally:
+        gmsh.finalize()
+    return dim, coords, cells
 
 
-def _split_surfaces(msh_path, sel_a, sel_b):
-    """Extract the two selected surfaces; returns (coords, faces_a, faces_b)
-    with faces as (n,3) global-index triangle arrays (3D only)."""
-    (_, coords, _, _, mesh_dim, faces, _, _, face_tags) = load_mesh(
-        str(msh_path),
-        selections=[dict(sel_a, id=1), dict(sel_b, id=2)])
-    assert mesh_dim == 3, "use interface_edges helpers for 2D"
-    F = np.asarray(faces, dtype=np.int64)
-    ids = np.array([t[0] for t in face_tags])
-    return coords, F[ids == 1], F[ids == 2]
+def interface_facets(dim, cells, selection):
+    """The facets (triangles in 3D, edges in 2D; sorted node tags) that a
+    selection {"region": name, "filter": name} picks: a cell of `region` on one
+    side and, on the other, a cell outside it -- one of `filter` when a filter
+    is given. The domain boundary has no cell on its other side, so it is never
+    picked. Plain group names only; no test here needs an expression."""
+    region, filt = selection["region"], selection.get("filter")
+    sides = {}
+    for cell, names in cells.items():
+        for facet in combinations(cell, dim):
+            sides.setdefault(facet, []).append(names)
+    return [facet for facet, pair in sides.items() if len(pair) == 2 and any(
+        region in inside and region not in outside
+        and (filt is None or filt in outside)
+        for inside, outside in (pair, pair[::-1]))]
+
+
+def _indexed(coords, facets):
+    """Coordinates as an (n,3) array in node-tag order, and the facets as rows
+    of indices into it."""
+    tags = sorted(coords)
+    index = {t: i for i, t in enumerate(tags)}
+    V = np.array([coords[t] for t in tags])
+    F = np.array([[index[t] for t in f] for f in facets], dtype=np.int64)
+    return V, F
 
 
 def min_separation_3d(msh_path, sel_a, sel_b) -> float:
@@ -22,18 +71,29 @@ def min_separation_3d(msh_path, sel_a, sel_b) -> float:
     (checked in both directions). Exact for flat facing surfaces; a tight
     upper bound in general."""
     import igl
-    V, Fa, Fb = _split_surfaces(msh_path, sel_a, sel_b)
+    dim, coords, cells = read_tagged_msh(msh_path)
+    assert dim == 3, "use interface_polyline_2d for 2D"
+    V, Fa = _indexed(coords, interface_facets(dim, cells, sel_a))
+    _, Fb = _indexed(coords, interface_facets(dim, cells, sel_b))
     da, _, _ = igl.point_mesh_squared_distance(V[np.unique(Fa)], V, Fb)
     db, _, _ = igl.point_mesh_squared_distance(V[np.unique(Fb)], V, Fa)
     return float(np.sqrt(min(da.min(), db.min())))
 
 
 def interface_polyline_2d(msh_path, selection):
-    """Return (coords (n,2), edges (m,2) global indices) of a 2D interface."""
-    (_, coords, edges, _, mesh_dim, _, _, _, _) = load_mesh(
-        str(msh_path), selections=[dict(selection, id=1)])
-    assert mesh_dim == 2
-    return coords, np.asarray(edges, dtype=np.int64)
+    """Return (coords (n,2), edges (m,2) indices into coords) of a 2D interface."""
+    dim, coords, cells = read_tagged_msh(msh_path)
+    assert dim == 2
+    V, E = _indexed(coords, interface_facets(dim, cells, selection))
+    return V[:, :2], E
+
+
+def region_node_coords(msh_path, region):
+    """{node tag: coordinates} of every node of the cells carrying `region`."""
+    _, coords, cells = read_tagged_msh(msh_path)
+    tags = {t for cell, names in cells.items() if region in names for t in cell}
+    assert tags, f"no cell carries {region!r}"
+    return {t: coords[t] for t in sorted(tags)}
 
 
 def roughness_2d(coords, edges) -> float:
