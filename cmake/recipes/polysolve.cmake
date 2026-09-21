@@ -20,7 +20,13 @@ include(CPM)
 CPMAddPackage(
     NAME polysolve
     GITHUB_REPOSITORY polyfem/polysolve
-    GIT_TAG 231f7e8ed6fc36aad41f21d9b3bf0cdf7816f78c
+    # 1b01e6cec = 231f7e8 + one upstream commit, taken for its fix of the MSVC build against the Eigen
+    # commit pinned in recipes/eigen.cmake: 231f7e8 pre-declares Eigen::SparseQR with Eigen 3.4.0's
+    # template-parameter names, which that Eigen commit renamed, and MSVC rejects the mismatch
+    # (C2653/C2976 in linear/Solver.cpp; both Windows CI jobs failed, run 35389234357). Its other
+    # changes: an option that is off by default (allow_non_grad_convergence, which only picks the log
+    # level of the final message), and polysolve's own Eigen/json recipes, which wmtk's recipes preempt.
+    GIT_TAG 1b01e6cec13c6813ae48846d1f98654bbbf1402b
     OPTIONS
     "POLYSOLVE_WITH_ACCELERATE ${WMTK_POLYSOLVE_WITH_ACCELERATE}"
     "POLYSOLVE_WITH_CHOLMOD OFF"

@@ -34,14 +34,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # polyfem_flag: the polyfem_ops component (WMTK_WITH_POLYFEM) is opt-in because it roughly
+        # doubles the build, so one Linux and one macOS Release entry turn it on to run its tests,
+        # and every other entry keeps building the default configuration. Not on Windows: the
+        # polyfem it pins (branch uday/imagesim) has never been built with MSVC. Those two entries
+        # also build the Python module (WMTK_PYBIND), against the Python that "Set up Python"
+        # installs ($pythonLocation), for the pysimwild tests at the end.
         include:
           - os: ubuntu-latest
             config: Debug
             integration_tests_flag: &integration_tests_off ""
+            polyfem_flag: &polyfem_off ""
             name: Linux
           - os: ubuntu-latest
             config: Release
             integration_tests_flag: &integration_tests_on "-DWMTK_BUILD_INTEGRATION_TESTS=ON"
+            polyfem_flag: &polyfem_on "-DWMTK_WITH_POLYFEM=ON -DWMTK_PYBIND=ON -DPython_EXECUTABLE=$pythonLocation/bin/python"
             name: Linux
           # arm64 runners. Until these existed the matrix covered Linux only on x86-64 and
           # arm64 only on macOS, so no job compiled the combination -- which is exactly where
@@ -51,10 +59,12 @@ jobs:
           - os: ubuntu-24.04-arm
             config: Debug
             integration_tests_flag: *integration_tests_off
+            polyfem_flag: *polyfem_off
             name: Linux arm64
           - os: ubuntu-24.04-arm
             config: Release
             integration_tests_flag: *integration_tests_on
+            polyfem_flag: *polyfem_off
             name: Linux arm64
     steps:
       - name: Checkout repository
@@ -81,6 +91,12 @@ jobs:
           # ccache --max-size=20.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
+      - name: Set up Python
+        if: matrix.polyfem_flag != ''
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
       - name: Configure
         run: |
           mkdir -p build
@@ -88,7 +104,8 @@ jobs:
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
-            ${{ matrix.integration_tests_flag }}
+            ${{ matrix.integration_tests_flag }} \
+            ${{ matrix.polyfem_flag }}
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats
@@ -118,6 +135,21 @@ jobs:
             echo "::endgroup::"
           done
 
+      # The pysimwild suite, on the entry that built the polyfem_ops component and the Python
+      # module: it runs the C++ engine through the Python wrappers. Its parity tests skip here
+      # (their goldens live outside the repository), and so do the Python-engine halves of the
+      # end-to-end tests (no polyfem program here). After the backtrace step, so that a Python
+      # failure does not re-run every C++ test binary under gdb. The apt packages are the X11/GL
+      # libraries libgmsh.so from gmsh's pip package links against (its NEEDED entries).
+      - name: Python tests (pysimwild)
+        if: matrix.polyfem_flag != ''
+        run: |
+          sudo apt-get -o Acquire::Retries=3 install -y libglu1-mesa libxrender1 libxcursor1 \
+            libxfixes3 libxext6 libxft2 libfontconfig1 libxinerama1
+          python -m pip install numpy scipy h5py pytest gmsh libigl
+          cd components/simwild/wmtk/components/simwild/pysimwild
+          PYTHONPATH="$PWD:$GITHUB_WORKSPACE/build/bin" python -m pytest tests -rs
+
       # Interactive access to the runner, manual runs only. Never triggers on a push or a PR:
       # workflow_dispatch is the only event that defines these inputs, and they default to false.
       - name: Debug over SSH (tmate)
@@ -144,9 +176,11 @@ jobs:
           - os: macos-latest
             config: Debug
             integration_tests_flag: *integration_tests_off
+            polyfem_flag: *polyfem_off
           - os: macos-latest
             config: Release
             integration_tests_flag: *integration_tests_on
+            polyfem_flag: *polyfem_on
 
     steps:
       - name: Checkout repository
@@ -172,6 +206,12 @@ jobs:
           # ccache --max-size=20.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
+      - name: Set up Python
+        if: matrix.polyfem_flag != ''
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
       - name: Configure
         run: |
           mkdir -p build
@@ -179,7 +219,8 @@ jobs:
           cmake .. \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
-            ${{ matrix.integration_tests_flag }}
+            ${{ matrix.integration_tests_flag }} \
+            ${{ matrix.polyfem_flag }}
 
       - name: Build
         run: cd build; make -j2; ccache --show-stats
@@ -208,6 +249,15 @@ jobs:
             lldb -b -o run -o "thread backtrace all" -- "$bin" 2>&1 | tail -80 || true
             echo "::endgroup::"
           done
+
+      # The pysimwild suite; see the Linux job's step of the same name. gmsh's macOS pip package
+      # needs no extra libraries.
+      - name: Python tests (pysimwild)
+        if: matrix.polyfem_flag != ''
+        run: |
+          python -m pip install numpy scipy h5py pytest gmsh libigl
+          cd components/simwild/wmtk/components/simwild/pysimwild
+          PYTHONPATH="$PWD:$GITHUB_WORKSPACE/build/bin" python -m pytest tests -rs
 
       # Interactive access to the runner, manual runs only. Never triggers on a push or a PR:
       # workflow_dispatch is the only event that defines these inputs, and they default to false.
