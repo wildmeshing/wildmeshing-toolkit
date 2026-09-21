@@ -108,7 +108,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// on, the march is probed first, and a single untraceable edge sends EVERY edge to its
     /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
     /// See the spec doc, and marching_tris() / marching_tets().
-    bool experimental_consistent_construction_split = false;
+    bool experimental_consistent_construction_split = true;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -169,6 +169,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// local sag -- a collapse whose survivor is left with a worse maximum than the two
     /// endpoints had between them, or a surface flip whose two new faces are worse than the two
     /// old ones. Splits are never rejected. false = the operation passes exactly as they are.
+    /// Default true.
     bool experimental_ops_divergence_guard;
     /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
     /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
@@ -178,8 +179,8 @@ struct Parameters : public wmtk::OptimizerParameters
     double experimental_flip_sag_margin;
     /// EXPERIMENTAL, 3D only. See the spec: true lets the single-phase loop exit on the FIRST
     /// turn that meets the front criterion, the way TetWild's loop stops on its own metric.
-    /// false (the default) additionally requires that the previous turn lowered no sizing
-    /// scalar, which is one turn of hysteresis against the tail's churn.
+    /// false additionally requires that the previous turn lowered no sizing scalar, which is one
+    /// turn of hysteresis against the tail's churn. Default true.
     bool experimental_exit_when_criteria_met;
 
     VectorXd box_min;
