@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <functional>
@@ -20,6 +21,7 @@
 #include <set>
 #include <tuple>
 #include <unordered_map>
+#include <vector>
 
 namespace wmtk::components::topological_offset {
 
@@ -204,6 +206,32 @@ void TopoOffsetTetMesh::label_offset_boundary()
         n_wall_band);
 }
 
+bool TopoOffsetTetMesh::swap_capture_surface_sides(
+    const std::vector<size_t>& tids,
+    const size_t a,
+    const size_t b,
+    const size_t c,
+    const size_t d)
+{
+    // See the declaration. The ring of a surface flip is two-sided BY CONSTRUCTION -- that is
+    // what makes its faces offset surface -- so demanding one tag and one label for the whole
+    // ring, as the interior rule does, can never be satisfied here. Map each ring vertex that is
+    // not one of a, b, c, d to the side it belongs to instead.
+    auto& sides = m_swap_sides.local();
+    sides.by_vertex.clear();
+    // Carried to swap_after_cells(), which refreshes exactly these four; see SwapSurfaceSides.
+    sides.abcd = {{a, b, c, d}};
+    for (const size_t tid : tids) {
+        const std::pair<CellTag, int> side{m_tet_attribute[tid].tag, m_tet_attribute[tid].label};
+        for (const size_t v : oriented_tet_vids(tid)) {
+            if (v == a || v == b || v == c || v == d) continue;
+            const auto [it, inserted] = sides.by_vertex.try_emplace(v, side);
+            if (!inserted && it->second != side) return false;
+        }
+    }
+    return true;
+}
+
 bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
 {
     std::map<CellTag, size_t> tag_count;
@@ -216,14 +244,14 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
     // carrying whatever label was there before, so the label must be carried across explicitly. A
     // ring spanning two labels has a region boundary running through it, and is refused.
     if (labels.size() > 1) {
-        return false;
+        return swap_reject(SwapReject::app_capture_label);
     }
     m_swap_label.local() = *labels.begin();
     // A face between differently tagged tets is the offset surface, so a ring spanning two tags
     // has that surface running through it: refused, because one tag for the whole ring moves it.
     // Do not re-add "majority tag wins"; measured worse -- see git history of this file.
     if (tag_count.size() > 1) {
-        return false;
+        return swap_reject(SwapReject::app_capture_tag);
     }
 
     size_t max_count = 0;
@@ -240,6 +268,15 @@ bool TopoOffsetTetMesh::swap_capture_tag(const std::vector<size_t>& tids)
 
 bool TopoOffsetTetMesh::swap_before_interior(const std::vector<size_t>& tids)
 {
+    // An interior swap is never given the absolute bar; clear whatever the last surface flip on
+    // this thread left behind, since the flag outlives one operation.
+    {
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.absolute_bar = false;
+        sides.sag_measured = false;
+        sides.worthwhile = false;
+        sides.saw_case = false;
+    }
     return swap_capture_tag(tids);
 }
 
@@ -250,37 +287,127 @@ bool TopoOffsetTetMesh::swap_before_surface(
     const size_t c,
     const size_t d)
 {
-    if (!swap_capture_tag(tids)) {
-        return false;
+    // Re-decided below, for this flip alone: the absolute quality bar applies exactly where the
+    // sag rule that pays for it applies. Cleared first, so a refusal on any path below leaves
+    // the base's strict-improvement rule in force. swap_before_interior() clears it too.
+    {
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.absolute_bar = false;
+        sides.sag_measured = false;
+        sides.worthwhile = false;
+        sides.saw_case = false;
+    }
+
+    // NOT swap_capture_tag(): that is the interior rule, and on this path it can never pass --
+    // the ring of a surface flip always spans band and background, which is what makes its faces
+    // offset surface in the first place. Calling it here made every offset-surface flip
+    // impossible; the instrumentation counted 5642 of 5642 application refusals on its label
+    // test alone. See swap_capture_surface_sides().
+    if (!swap_capture_surface_sides(tids, a, b, c, d)) {
+        return swap_reject(SwapReject::app_capture_label);
     }
 
     // The flip replaces surface faces (a,b,c) and (a,b,d) with (a,c,d),(b,c,d). Both must belong
     // to the same tracked surface: a mixed flip would hand a triangle of the input complex to the
     // offset surface, or the reverse, moving the line where one meets the other.
-    const size_t fid_abc = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, c}}));
-    const size_t fid_abd = std::get<1>(tuple_from_face(std::array<size_t, 3>{{a, b, d}}));
+    const auto [ftup_abc, fid_abc] = tuple_from_face(std::array<size_t, 3>{{a, b, c}});
+    const auto [ftup_abd, fid_abd] = tuple_from_face(std::array<size_t, 3>{{a, b, d}});
     if (fid_abc == static_cast<size_t>(-1) || fid_abd == static_cast<size_t>(-1)) {
-        return false;
+        return swap_reject(SwapReject::app_fid_missing);
     }
     if (m_face_attribute[fid_abc].m_surface_class != m_face_attribute[fid_abd].m_surface_class) {
-        return false;
+        return swap_reject(SwapReject::app_class_mismatch);
     }
     // A flip across a junction would detach the new diagonal from one of the boundaries the old
     // faces lay on: refuse when the two faces' boundary masks differ.
     if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
-        return false;
+        return swap_reject(SwapReject::app_mask_mismatch);
     }
-    // front_refuse_converged_collapse: two resolved offset faces may not be flipped into a pair
-    // of which one sags over the tube. No vertex moves in a flip, so the new faces' sag is
-    // known here; the corners' ratios are taken as unchanged.
-    if (m_offset_params.front_refuse_converged_collapse &&
-        m_face_attribute[fid_abc].m_surface_class == OFFSET_SURFACE_CLASS &&
-        front_face_converged(a, b, c) && front_face_converged(a, b, d)) {
-        const double r1 = face_conv_ratio(a, c, d), r2 = face_conv_ratio(b, c, d);
-        if (!(r1 >= 0. && r1 <= 1.) || !(r2 >= 0. && r2 <= 1.)) {
+    // EXPERIMENTAL_ops_divergence_guard, the sag half of the acceptance rule for a flip OF THE
+    // OFFSET SURFACE. Together with the absolute quality bar -- swap_quality_allowed() and the
+    // swap_edge_44_energy() / swap_edge_56_energy() overrides, all three armed by the assignment
+    // at the end of this block -- it is the whole rule: such a flip is accepted when the cells
+    // it makes are under stop_energy AND it STRICTLY LOWERS the local sag. Both halves are off
+    // by default, so a default run keeps the base's strict-improvement behaviour.
+    //
+    // WHY STRICT, AND NOT "does not raise". The base's own rule -- take a case only when its
+    // energy is below the energy of doing nothing -- is what makes a swap pass terminate: every
+    // accepted swap lowers a quantity bounded below. The absolute bar removes that guarantee, so
+    // the sag rule has to supply it, and `after <= before` does not. A flip whose two
+    // triangulations sag the same passes in BOTH directions and the pass flips it back and forth
+    // for ever. Not hypothetical: on the cube ~43% of the offset surface lies over a flat side,
+    // where Phi is affine and both triangulations sag zero to roundoff. A 5e-2 smoke run sat in
+    // one 4-4 pass for five minutes at full CPU, committing flips the whole time, until killed.
+    //
+    // Strict alone is finite but USELESS, which the first attempt at this proved. It does make a
+    // repeat impossible -- the flip takes abc, abd out of the multiset of offset-surface face
+    // sags and puts acd, bcd in, all four below the pair's old maximum, so sorted descending that
+    // multiset drops lexicographically at every accepted flip, and a swap pass adds no vertex so
+    // it has finitely many configurations. But "finite" is not "soon": on a flat side of the cube
+    // Phi is affine and BOTH triangulations sag zero to roundoff, so ~half the flips there pass
+    // `after < before` on a fall of 1e-13, each one re-queues its neighbours, and the pass runs
+    // for ever in any sense that matters. Measured on the 5e-2 cube at turn 2, of 2334 offset
+    // faces 998 (42.8%) sag <= 1e-12 and not one lies between 1e-12 and 1e-2, while only 197
+    // (8.4%) are over the tube at all. A run sat in that pass for 25 minutes, still committing.
+    //
+    // So a flip has to WIN something measurable, and the margin is the whole of it: accepted when
+    // max sag after <= max sag before - EXPERIMENTAL_flip_sag_margin and the cells it makes are
+    // under stop_energy, refused otherwise. Nothing here asks whether the pair was over the bar,
+    // and nothing falls back on strict improvement in AMIPS.
+    //
+    // The margin is also what makes the pass finite. Every accepted flip drops the pair's max sag
+    // by at least the margin and sag is bounded below by zero, so a face can only be flipped so
+    // many times. Strict monotonicity alone is not enough, which was learned the hard way:
+    // instrumented on the cube at target_distance_rel 1e-3, ONE swap pass accepted 3020000 surface
+    // flips, of which 3019913 (99.997%) won less than 1e-12 of the bar -- every one of them
+    // monotone, the rule held exactly -- and the pass never finished. Two diagonals of a small quad
+    // on a quarter-cylinder sag almost the same, so a flip there changes nothing a criterion can
+    // see.
+    //
+    // The default sits in an empty gap in that distribution. Of the 87 flips that won more than
+    // 1e-12, 47 won at least 1e-4 and NOT ONE landed between 1e-9 and 1e-4, so 1e-4 keeps every
+    // flip that did real work and drops every one that was roundoff.
+    //
+    // abc + abd become acd + bcd; no vertex moves, so every corner position is unchanged and
+    // both maxima are exact here. The comparison is against the state before this flip, not
+    // against the bar: an unresolved patch is guarded exactly as a resolved one is. An
+    // unmeasurable face is +inf, so inf -> inf is now refused where it used to tie.
+    //
+    // The gate comes before the four sag evaluations: BOTH re-triangulated faces must lie
+    // exactly on the offset surface, band on one side and background on the other, asked live of
+    // the tags rather than read from the cached m_surface_class -- these operations run between
+    // one labelling pass and the next, which is the reason face_is_offset_surface_live() exists.
+    // It also scopes the quality bar, since only a flip reaching the assignment below is given
+    // it: a flip of the input complex or of a region boundary keeps the base's strict rule.
+    if (m_offset_params.experimental_ops_divergence_guard &&
+        face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
+        const double before = std::max(offset_face_sag(a, b, c), offset_face_sag(a, b, d));
+        const double after = std::max(offset_face_sag(a, c, d), offset_face_sag(b, c, d));
+        // THE WHOLE SAG RULE: the flip must win at least EXPERIMENTAL_flip_sag_margin of the
+        // bar, whether the pair started over the bar or under it. Written as a negated <= so a
+        // NaN on either side refuses. A flip that misses it is refused outright -- there is no
+        // falling back on AMIPS, because a flip of the offset surface is there to move the
+        // surface, and one that moves it by less than the margin is noise rather than work.
+        if (!(after <= before - m_offset_params.experimental_flip_sag_margin)) {
             ++iter_cnt_swap_guard_reject;
-            return false;
+            // Told apart for the funnel: a real fall that missed the margin, against a tie or a
+            // rise. The first is what the margin is for; the second the guard always refused.
+            if (after < before) ++funnel_under_margin;
+            return swap_reject(SwapReject::app_sag_raised);
         }
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        sides.sag_measured = true;
+        sides.sag_before = before;
+        sides.sag_after = after;
+        // Having paid the margin, the flip is judged on the absolute bar rather than on strict
+        // improvement in AMIPS. EVERY flip that reaches here gets it; there is no longer a
+        // second, narrower class that has to beat AMIPS instead. An unmeasurable pair is +inf,
+        // and inf <= inf - margin is false, so it never reaches this line.
+        sides.absolute_bar = true;
+        sides.worthwhile = true;
+        sides.kind = static_cast<int>(tids.size());
+        ++funnel_offered;
+        if (sides.kind >= 3 && sides.kind <= 5) ++funnel_kind[size_t(sides.kind - 3)];
     }
 
     // Non-offset surface flips are not refused categorically: the shared swap checks both new
@@ -582,21 +709,185 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::rest_energy_fo
     return std::make_shared<RestAMIPSEnergy3D>(std::move(cells), w);
 }
 
+double TopoOffsetTetMesh::swap_edge_44_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
+{
+    // See the declaration. op_case 0 is the base asking what the CURRENT cells score, to seed the
+    // `energy < min_energy` test it then applies to each candidate; reporting the bar instead
+    // turns that same test into the absolute rule, for surface flips under the guard only.
+    const double e = TetOptimizerMesh::swap_edge_44_energy(tets, op_case);
+    if (!swap_surface_flip_absolute_bar()) return e;
+    if (op_case >= 1) {
+        // a case that survived swap_edge_44_accept_case(), i.e. one that really does make the
+        // (c,d) diagonal. Counted once per flip, for the funnel.
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        if (sides.worthwhile) {
+            if (!sides.saw_case) {
+                sides.saw_case = true;
+                ++funnel_cases;
+            }
+            // what the base's own energy says about this case, which is what its
+            // `energy < min_energy` test then acts on.
+            if (!std::isfinite(e))
+                ++funnel_case_inf;
+            else if (e >= m_params.stop_energy)
+                ++funnel_case_over;
+            else
+                ++funnel_case_ok;
+        }
+    }
+    return op_case == 0 ? m_params.stop_energy : e;
+}
+
+double TopoOffsetTetMesh::swap_edge_56_energy(
+    const std::vector<std::array<size_t, 4>>& tets,
+    const int op_case)
+{
+    const double e = TetOptimizerMesh::swap_edge_56_energy(tets, op_case);
+    if (!swap_surface_flip_absolute_bar()) return e;
+    if (op_case >= 1) {
+        // a case that survived swap_edge_56_accept_case(), i.e. one that really does make the
+        // (c,d) diagonal. Counted once per flip, for the funnel.
+        SwapSurfaceSides& sides = m_swap_sides.local();
+        if (sides.worthwhile) {
+            if (!sides.saw_case) {
+                sides.saw_case = true;
+                ++funnel_cases;
+            }
+            // what the base's own energy says about this case, which is what its
+            // `energy < min_energy` test then acts on.
+            if (!std::isfinite(e))
+                ++funnel_case_inf;
+            else if (e >= m_params.stop_energy)
+                ++funnel_case_over;
+            else
+                ++funnel_case_ok;
+        }
+    }
+    return op_case == 0 ? m_params.stop_energy : e;
+}
+
+std::string TopoOffsetTetMesh::flip_funnel_report() const
+{
+    // See the declaration for how to read it.
+    return fmt::format(
+        "worthwhile offered {} (3-2 {}, 4-4 {}, 5-6 {}) -> a case was scored for {} -> reached "
+        "the quality gate {} -> passed it {} -> committed {} | cases: inverted {}, finite but "
+        "over stop_energy {}, under it {} | refused for a fall under the margin {}",
+        funnel_offered.load(),
+        funnel_kind[0].load(),
+        funnel_kind[1].load(),
+        funnel_kind[2].load(),
+        funnel_cases.load(),
+        funnel_quality.load(),
+        funnel_quality_ok.load(),
+        funnel_committed.load(),
+        funnel_case_inf.load(),
+        funnel_case_over.load(),
+        funnel_case_ok.load(),
+        funnel_under_margin.load());
+}
+
+void TopoOffsetTetMesh::flip_funnel_reset()
+{
+    funnel_offered = 0;
+    for (auto& k : funnel_kind) k = 0;
+    funnel_cases = 0;
+    funnel_case_inf = 0;
+    funnel_case_over = 0;
+    funnel_case_ok = 0;
+    funnel_quality = 0;
+    funnel_quality_ok = 0;
+    funnel_committed = 0;
+    funnel_under_margin = 0;
+}
+
+void TopoOffsetTetMesh::flip_trace_record(const double before, const double after)
+{
+    // See the declaration. The fall is what the flip won on the pair it re-triangulated; the
+    // rule in swap_before_surface() refuses anything that is not strictly positive, so
+    // flip_trace_nonmono staying 0 is the check that the rule is doing what it says. Anything
+    // else there means an accepted flip rested on a measurement that was no longer true -- the
+    // pass runs on 10 threads and the measurement is taken in the before-hook.
+    const double fall = before - after;
+    if (!(fall > 0.0)) {
+        ++flip_trace_nonmono;
+    } else {
+        static constexpr double kEdges[7] = {1e-1, 1e-2, 1e-3, 1e-4, 1e-6, 1e-9, 1e-12};
+        size_t bucket = 7;
+        for (size_t i = 0; i < 7; ++i) {
+            if (fall >= kEdges[i]) {
+                bucket = i;
+                break;
+            }
+        }
+        ++flip_trace_dec[bucket];
+    }
+    if (before > 1.0) ++flip_trace_bar;
+
+    const long long n = ++flip_trace_n;
+    if (n % kFlipTraceEvery != 0) return;
+    logger().info(
+        "\t[flip trace] accepted {} | non-monotone {} | over the tube {} | fall >=1e-1 {}, "
+        ">=1e-2 {}, >=1e-3 {}, >=1e-4 {}, >=1e-6 {}, >=1e-9 {}, >=1e-12 {}, <1e-12 {}",
+        n,
+        flip_trace_nonmono.load(),
+        flip_trace_bar.load(),
+        flip_trace_dec[0].load(),
+        flip_trace_dec[1].load(),
+        flip_trace_dec[2].load(),
+        flip_trace_dec[3].load(),
+        flip_trace_dec[4].load(),
+        flip_trace_dec[5].load(),
+        flip_trace_dec[6].load(),
+        flip_trace_dec[7].load());
+}
+
 bool TopoOffsetTetMesh::swap_after_cells(const std::vector<size_t>& tids, bool is_surface_flip)
 {
-    const CellTag& tag = m_swap_tag.local();
-    const int label = m_swap_label.local();
-    for (const size_t t : tids) {
-        m_tet_attribute[t].tag = tag;
-        m_tet_attribute[t].label = label;
-        // deform_others: a swap rewires exactly these cells; their rest is stale.
-        stamp_rest_cell(t);
+    if (!is_surface_flip) {
+        // Interior: one tag and one label for the whole ring, captured by swap_capture_tag().
+        const CellTag& tag = m_swap_tag.local();
+        const int label = m_swap_label.local();
+        for (const size_t t : tids) {
+            m_tet_attribute[t].tag = tag;
+            m_tet_attribute[t].label = label;
+            // deform_others: a swap rewires exactly these cells; their rest is stale.
+            stamp_rest_cell(t);
+        }
+        ++iter_cnt_swap;
+        return true;
     }
 
-    // No offset-criterion acceptance for surface flips: the shared swap has already checked both
-    // new triangles against the face's envelope (see swap_before_surface()). `is_surface_flip`
-    // stays a parameter because the base reports it, but nothing here branches on it.
-    (void)is_surface_flip;
+    // Surface flip: the ring is two-sided and the flip keeps both sides, so each new cell takes
+    // the side of a ring vertex it contains (swap_capture_surface_sides()). A cell containing no
+    // ring vertex cannot be placed on a side and the flip is refused rather than guessed -- the
+    // base turns that into a rollback. Two ring vertices disagreeing inside one new cell means
+    // the flip would straddle the interface, which is the case this must not let through.
+    const auto& sides = m_swap_sides.local();
+    for (const size_t t : tids) {
+        const std::pair<CellTag, int>* side = nullptr;
+        for (const size_t v : oriented_tet_vids(t)) {
+            const auto it = sides.by_vertex.find(v);
+            if (it == sides.by_vertex.end()) continue;
+            if (side != nullptr && *side != it->second) return false;
+            side = &it->second;
+        }
+        if (side == nullptr) return false;
+        m_tet_attribute[t].tag = side->first;
+        m_tet_attribute[t].label = side->second;
+        stamp_rest_cell(t);
+    }
+    // Only now, with every new cell's label written: the refresh reads labels, so it has to run
+    // after the loop that sets them. The flip's net surface change is -(a,b,c) -(a,b,d) +(a,c,d)
+    // +(b,c,d), so a and b can lose their last offset face and c and d can gain their first; no
+    // other vertex's answer moves. This runs before the base's Hausdorff check on the two new
+    // surface faces, so a flip refused there is rolled back -- m_vertex_extra is registered in
+    // m_vertex_attr_group, so these writes roll back with it.
+    for (const size_t v : sides.abcd) refresh_offset_membership(v);
+    if (sides.sag_measured) flip_trace_record(sides.sag_before, sides.sag_after);
+    if (sides.worthwhile) ++funnel_committed;
     ++iter_cnt_swap;
     return true;
 }
@@ -607,17 +898,9 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
-    // front_refuse_converged_collapse, the after-half: the survivor's Newton-step ratio on its
-    // new ring. Returning false here rolls the collapse back (connectivity and every
-    // registered attribute, m_vertex_extra included).
-    if (m_offset_params.front_refuse_converged_collapse && m_collapse_guard_armed.local()) {
-        m_collapse_guard_armed.local() = 0;
-        const double r = front_vertex_conv_ratio(v2_id);
-        if (!front_placed_by_ratio(r)) {
-            ++iter_cnt_collapse_guard_reject;
-            return false;
-        }
-    }
+    // EXPERIMENTAL_ops_divergence_guard has no after-half: the survivor does not move and the
+    // removed vertex's faces are re-attached to it unchanged, so the whole comparison is exact
+    // in collapse_edge_before() and no collapse is ever rolled back for it.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
         m_vertex_attribute[v2_id].m_sizing_scalar = m_collapse_survivor_sizing.local();
     }
@@ -647,10 +930,9 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // front_refuse_converged_collapse, the before-half; see front_guard_refuses_collapse().
-    m_collapse_guard_armed.local() = 0;
-    if (m_offset_params.front_refuse_converged_collapse &&
-        front_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+    // EXPERIMENTAL_ops_divergence_guard; see ops_guard_refuses_collapse().
+    if (m_offset_params.experimental_ops_divergence_guard &&
+        ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
     }
@@ -663,72 +945,81 @@ std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
     return {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
 }
 
-void TopoOffsetTetMesh::snapshot_front_convergence()
+double TopoOffsetTetMesh::offset_face_sag(const size_t a, const size_t b, const size_t c) const
 {
-    m_front_conv_snapshot.assign(vert_capacity(), std::numeric_limits<double>::quiet_NaN());
-    for (const Tuple& v : get_vertices()) {
-        const size_t vid = v.vid(*this);
-        if (!m_vertex_extra[vid].m_is_on_offset || !m_vertex_attribute[vid].m_is_rounded) continue;
-        m_front_conv_snapshot[vid] = front_vertex_conv_ratio(vid);
-    }
-}
-
-bool TopoOffsetTetMesh::front_vertex_converged_snapshot(const size_t vid) const
-{
-    if (vid >= m_front_conv_snapshot.size()) return false;
-    const double r = m_front_conv_snapshot[vid];
-    return front_placed_by_ratio(r);
-}
-
-bool TopoOffsetTetMesh::front_face_converged(const size_t a, const size_t b, const size_t c) const
-{
-    if (!front_vertex_converged_snapshot(a) || !front_vertex_converged_snapshot(b) ||
-        !front_vertex_converged_snapshot(c)) {
-        return false;
-    }
+    // EXPERIMENTAL_ops_divergence_guard: one face's sag, as face_conv_ratio measures it (the
+    // sagitta at the centroid over front_conv_rel x target_distance). An unmeasurable face is
+    // infinite, so making a measurable neighbourhood unmeasurable counts as getting worse,
+    // while a neighbourhood that was already unmeasurable is never made "worse" by anything --
+    // infinity is not strictly greater than infinity, which is the comparison the guard makes.
     const double r = face_conv_ratio(a, b, c);
-    return r >= 0. && r <= 1.;
+    if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
+    return r;
 }
 
-bool TopoOffsetTetMesh::front_guard_refuses_collapse(const size_t v1, const size_t v2)
+double TopoOffsetTetMesh::max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const
 {
-    // Only a front-to-front collapse re-triangulates the front. v1 is removed, v2 survives at
-    // its own position (the base moves nothing), so every face around the pair that does not
-    // contain the edge is re-attached to v2 with the same corner positions: the result's sag
-    // can be read before the collapse runs.
-    const auto front = [&](const size_t v) {
-        return m_vertex_extra[v].m_is_on_offset && m_vertex_attribute[v].m_is_rounded;
-    };
-    if (!front(v1) || !front(v2)) return false;
-    std::vector<std::array<size_t, 3>> faces;
+    double worst = 0.;
+    for (const std::array<size_t, 3>& f : faces) {
+        worst = std::max(worst, offset_face_sag(f[0], f[1], f[2]));
+    }
+    return worst;
+}
+
+bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t v2) const
+{
+    // EXPERIMENTAL_ops_divergence_guard, the collapse half. v1 is removed and v2 survives at its
+    // own position -- the base moves no vertex in a collapse -- so every face the survivor ends
+    // up with is one of the faces around the pair now, with v1 relabelled to v2 and all three
+    // corner positions unchanged. That makes the "after" sag exact here, before anything is
+    // modified, so the whole test lives in the before-half and no collapse is rolled back.
+
+    // THE GATE, and it is deliberately the first thing here: the guard applies only to a
+    // candidate that lies exactly ON the offset surface, i.e. the collapsed edge is an edge of a
+    // face with the band on one side and the background on the other
+    // (face_is_offset_surface_live). Everything below -- two one-ring walks over the incident
+    // tets and a sag evaluation per face, each of which evaluates the potential and its gradient
+    // -- is skipped for every other candidate, which is the great majority of them. Before this
+    // gate existed the guard engaged on any collapse with EITHER endpoint incident to an offset
+    // face, which took in two further classes. One could never have been refused: with a single
+    // endpoint on the surface the relabel below is vacuous (the other endpoint is on none of the
+    // faces collected), so "after" always equalled "before". The other could: both endpoints on
+    // the surface with the edge itself running through the band interior does move the removed
+    // vertex's faces onto the survivor, and that collapse is now passed through unguarded. That
+    // narrowing is the point of the gate, not an oversight -- the guard is for operations ON the
+    // surface -- but it is the one behavioural change here, not just a saving.
+    if (!edge_is_offset_surface_live(v1, v2)) return false;
+
+    std::vector<std::array<size_t, 3>> before;
     std::set<size_t> seen;
     for (const size_t v : {v1, v2}) {
         for (const Tuple& f : offset_surface_faces_live_at(v)) {
             if (!seen.insert(f.fid(*this)).second) continue;
-            faces.push_back(face_vids(f));
+            before.push_back(face_vids(f));
         }
     }
-    if (faces.empty()) return false;
-    // The guard protects a resolved neighbourhood only: with any face around either endpoint
-    // unresolved the pass is free to act, as it is with the key off.
-    for (const std::array<size_t, 3>& f : faces) {
-        if (!front_face_converged(f[0], f[1], f[2])) return false;
-    }
-    for (std::array<size_t, 3> f : faces) {
+    // Unreachable through the gate above (an edge on the offset surface has an incident offset
+    // face at both of its ends), and kept so max_offset_face_sag() is never asked for the
+    // maximum of an empty set.
+    if (before.empty()) return false;
+
+    std::vector<std::array<size_t, 3>> after;
+    after.reserve(before.size());
+    for (std::array<size_t, 3> f : before) {
         bool has1 = false, has2 = false;
         for (const size_t v : f) {
             has1 = has1 || v == v1;
             has2 = has2 || v == v2;
         }
-        if (has1 && has2) continue; // the faces on the edge vanish
+        if (has1 && has2) continue; // the faces on the collapsed edge vanish
         for (size_t& v : f) {
             if (v == v1) v = v2;
         }
-        const double r = face_conv_ratio(f[0], f[1], f[2]);
-        if (!(r >= 0. && r <= 1.)) return true; // over the tube, or unmeasurable
+        after.push_back(f);
     }
-    m_collapse_guard_armed.local() = 1; // the survivor's own ratio is tested after the collapse
-    return false;
+    // Strictly greater: a collapse that leaves the worst face exactly as bad is allowed, so the
+    // passes can still coarsen freely wherever they are not making the front worse.
+    return max_offset_face_sag(after) > max_offset_face_sag(before);
 }
 
 bool TopoOffsetTetMesh::collapse_before_vertex(
@@ -744,6 +1035,20 @@ bool TopoOffsetTetMesh::collapse_before_vertex(
             f = std::min(f, tet_flatness(tid));
         }
         m_collapse_parent_flatness.local() = f;
+    }
+
+    // The link of the edge about to be collapsed: the only vertices besides v2 whose offset
+    // membership this collapse can change. Captured here because the edge no longer exists in
+    // collapse_after_vertex(), which is where the refresh runs. See m_collapse_edge_link.
+    {
+        std::vector<size_t>& link = m_collapse_edge_link.local();
+        link.clear();
+        for (const size_t tid : get_incident_tids_for_edge(v1_id, v2_id)) {
+            for (const size_t w : oriented_tet_vids(tid)) {
+                if (w != v1_id && w != v2_id) link.push_back(w);
+            }
+        }
+        wmtk::vector_unique(link);
     }
 
     const auto& VE = m_vertex_extra;
@@ -837,8 +1142,17 @@ void TopoOffsetTetMesh::collapse_after_vertex(const size_t v1_id, const size_t v
     // The base ORs its own m_is_on_surface, which is the union of the two; these say which.
     m_vertex_extra[v2_id].m_is_on_input =
         m_vertex_extra.at(v1_id).m_is_on_input || m_vertex_extra.at(v2_id).m_is_on_input;
-    m_vertex_extra[v2_id].m_is_on_offset =
-        m_vertex_extra.at(v1_id).m_is_on_offset || m_vertex_extra.at(v2_id).m_is_on_offset;
+    // The offset half is NOT an OR: it is re-derived from the labels, for v2 and for the link of
+    // the edge that just died. An OR can only ever add the flag, so a collapse that takes a
+    // vertex off the offset surface used to leave it flagged for the rest of the run -- counted
+    // by energy_criterion(), smoothed as a front vertex, and unable to satisfy a criterion that
+    // measures its distance to a level set it is no longer on. That is what stalled the cube at
+    // target_distance_rel 1e-3 with the front already placed. See refresh_offset_membership().
+    refresh_offset_membership(v2_id);
+    for (const size_t w : m_collapse_edge_link.local()) {
+        if (w == v1_id || w == v2_id) continue;
+        refresh_offset_membership(w);
+    }
     m_vertex_extra[v2_id].m_is_on_region =
         m_vertex_extra.at(v1_id).m_is_on_region || m_vertex_extra.at(v2_id).m_is_on_region;
     // The survivor now carries both vertices' geometry, so it lies on the union of their
@@ -853,8 +1167,8 @@ void TopoOffsetTetMesh::split_after_vertex(const size_t v_id, const bool is_edge
 {
     const auto& cache = m_opt_split_cache.local();
     // The base has already set m_is_on_surface, which is the union; this says which. The offset
-    // half is never rewritten here -- split_after_cells() derived it from the two endpoints, and
-    // that is the authority.
+    // half is never rewritten here -- split_after_cells() took it from the same cached edge
+    // property this line uses, and that is the authority.
     m_vertex_extra[v_id].m_is_on_region = cache.is_edge_on_region;
     if (is_edge_open_boundary) {
         m_vertex_attribute[v_id].m_order = 2;
@@ -3306,6 +3620,14 @@ void TopoOffsetTetMesh::log_worst_dist_vertex() const
 bool TopoOffsetTetMesh::face_is_offset_surface_live(const Tuple& f) const
 {
     const size_t ta = f.tid(*this);
+    // Defence in depth behind the two walks that feed this: a default-constructed Tuple carries
+    // m_global_tid == size_t(-1), which is the same sentinel TetMesh::Tuple::is_valid() tests
+    // first, and switch_tetrahedron() below would index m_tet_connectivity with it. Refusing it
+    // here means a caller that forgets to check a lookup gets `false`, not a wild read.
+    if (ta == std::numeric_limits<size_t>::max()) {
+        ++m_offset_face_invalid_tuple;
+        return false;
+    }
     const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
     if (!opp) {
         // Domain boundary. A band cell here means the band was clipped by the bounding box, and
@@ -3371,12 +3693,178 @@ std::vector<TopoOffsetTetMesh::Tuple> TopoOffsetTetMesh::offset_surface_faces_li
         const auto tv = oriented_tet_vids(tid);
         for (int skip = 0; skip < 4; ++skip) {
             if (tv[size_t(skip)] == vid) continue;
-            const auto [ft, fid] = tuple_from_face(face_corners_from(tv, skip));
+            // try_ rather than the asserting tuple_from_face: see the note in
+            // vertex_has_live_offset_face() below and m_offset_face_lookup_misses.
+            const auto found = try_tuple_from_face(face_corners_from(tv, skip));
+            if (!found) {
+                ++m_offset_face_lookup_misses;
+                continue;
+            }
+            const auto& [ft, fid] = *found;
             if (!seen.insert(fid).second) continue;
             if (face_is_offset_surface_live(ft)) result.push_back(ft);
         }
     }
     return result;
+}
+
+bool TopoOffsetTetMesh::vertex_has_live_offset_face(const size_t vid) const
+{
+    // No `seen` set: a face reached twice is simply tested twice, and the first live one ends the
+    // walk. The set exists in offset_surface_faces_live_at() to avoid duplicate entries in the
+    // list it returns, which is not a concern here.
+    //
+    // try_ rather than the asserting tuple_from_face: refresh_offset_membership() calls this from
+    // the after-half of a collapse and of a swap, which is exactly the caller TetMesh.h's
+    // try_tuple_from_face doc names as one for which a missing face is an answer rather than a
+    // bug. Under NDEBUG -- which is every Release build -- the asserting form's assert is gone
+    // and it returns a default Tuple whose m_global_tid is size_t(-1); face_is_offset_surface_live
+    // then indexed m_tet_connectivity with it. See m_offset_face_lookup_misses.
+    for (const size_t tid : get_one_ring_tids_for_vertex(vid)) {
+        const auto tv = oriented_tet_vids(tid);
+        for (int skip = 0; skip < 4; ++skip) {
+            if (tv[size_t(skip)] == vid) continue;
+            const auto found = try_tuple_from_face(face_corners_from(tv, skip));
+            if (!found) {
+                // The connectivity does not have this face, so it is not a live offset face.
+                ++m_offset_face_lookup_misses;
+                continue;
+            }
+            if (face_is_offset_surface_live(std::get<0>(*found))) return true;
+        }
+    }
+    return false;
+}
+
+void TopoOffsetTetMesh::refresh_offset_membership(const size_t vid)
+{
+    m_vertex_extra[vid].m_is_on_offset = vertex_has_live_offset_face(vid);
+}
+
+std::pair<size_t, size_t> TopoOffsetTetMesh::offset_membership_mismatches() const
+{
+    size_t flagged_not_live = 0, live_not_flagged = 0;
+    for (const Tuple& v : get_vertices()) {
+        const size_t vid = v.vid(*this);
+        const bool live = vertex_has_live_offset_face(vid);
+        const bool flag = m_vertex_extra[vid].m_is_on_offset;
+        if (flag && !live) ++flagged_not_live;
+        if (live && !flag) ++live_not_flagged;
+    }
+    return {flagged_not_live, live_not_flagged};
+}
+
+void TopoOffsetTetMesh::check_offset_membership(const char* when) const
+{
+    if (!m_params.perform_sanity_checks) return;
+    const auto [flagged_not_live, live_not_flagged] = offset_membership_mismatches();
+    logger().info(
+        "\t[sanity] offset membership @ {}: flagged but not on the surface {}, on the surface but "
+        "not flagged {}",
+        when,
+        flagged_not_live,
+        live_not_flagged);
+    if (flagged_not_live != 0 || live_not_flagged != 0) {
+        log_and_throw_error(
+            "offset membership is out of step @ {}: {} vertices carry m_is_on_offset with no live "
+            "offset-surface face, {} have one without the flag. The propagation in "
+            "split_after_cells / collapse_after_vertex / swap_after_cells missed a case.",
+            when,
+            flagged_not_live,
+            live_not_flagged);
+    }
+}
+
+void TopoOffsetTetMesh::report_offset_face_lookup_misses(const char* when) const
+{
+    const long long misses = m_offset_face_lookup_misses.load();
+    const long long invalid = m_offset_face_invalid_tuple.load();
+    if (misses == 0 && invalid == 0) return;
+    logger().warn(
+        "\t[offset face lookup] {}: {} face(s) asked for by the offset-membership walks were not "
+        "in the connectivity, {} invalid tuple(s) refused by face_is_offset_surface_live (run "
+        "totals). Both walks read past what the pass locks, so at num_threads > 0 this is a stale "
+        "read and the m_is_on_offset written from it may be wrong. See "
+        "m_offset_face_lookup_misses.",
+        when,
+        misses,
+        invalid);
+}
+
+/// The outer-angle threshold, in degrees, above which an offset-surface edge counts as folded
+/// over: the angle between its two faces measured through ONE of the two sides. 180 is flat and
+/// 360 is the two faces exactly on top of each other. Because the two sides sum to 360, "over
+/// 330 on one side" is the same statement as "under 30 unsigned", which is what the code tests --
+/// see offset_surface_foldover_labels() for why the side is not determined.
+/// Optimize2d.cpp carries the same constant; the two values must stay equal.
+static constexpr double FOLDOVER_OUTER_ANGLE_DEG = 330.;
+
+std::vector<char> TopoOffsetTetMesh::offset_surface_foldover_labels() const
+{
+    std::vector<char> fold(vert_capacity(), 0);
+
+    // Every live offset face against each of its three edges, so an edge arrives with the faces
+    // that actually carry it. A std::map keyed on the sorted vertex pair: the surface is a small
+    // part of the mesh and this runs once per debug frame.
+    struct EdgeFaces
+    {
+        int n = 0;
+        std::array<size_t, 2> opposite{{0, 0}}; // the two faces' third vertices
+    };
+    std::map<std::array<size_t, 2>, EdgeFaces> edges;
+    for (const Tuple& f : get_faces()) {
+        if (!face_is_offset_surface_live(f)) continue;
+        const auto fv = get_face_vids(f);
+        for (int i = 0; i < 3; ++i) {
+            const size_t a = fv[i], b = fv[(i + 1) % 3], c = fv[(i + 2) % 3];
+            std::array<size_t, 2> key{{a, b}};
+            if (key[0] > key[1]) std::swap(key[0], key[1]);
+            EdgeFaces& ef = edges[key];
+            if (ef.n < 2) ef.opposite[size_t(ef.n)] = c;
+            ++ef.n; // counted past 2 on purpose, so a non-manifold edge can be recognised
+        }
+    }
+
+    // A fold is the two faces lying on top of each other, and WHICH side is pinched is not part
+    // of it. MEASURED, on the cube at target_distance_rel 5e-2 with the construction probe off
+    // and the alignment term off: at every folded edge in that run it is the BACKGROUND that is
+    // pinched, not the band -- the two band tets sit at angles like 92 and 265 degrees around
+    // the edge, on either side of a sliver of outside a fraction of a degree wide. Measuring
+    // through the background there gives 0.67 degrees, not 359.33. So the side is deliberately
+    // not determined: the two sides sum to 360, "over 355 through one side" is exactly "under 5
+    // unsigned", and testing the unsigned angle catches the fold whichever wedge collapsed.
+    // This also drops the band-apex orientation the first version needed, which was the part
+    // that could be got wrong.
+    const double coincidence_deg = 360. - FOLDOVER_OUTER_ANGLE_DEG;
+    for (const auto& [e, ef] : edges) {
+        // Not two faces means the angle is not defined -- a domain-boundary rim, or a
+        // non-manifold edge. Not measurable is not a fold.
+        if (ef.n != 2) continue;
+        const Vector3d pa = m_vertex_attribute[e[0]].m_posf;
+        const Vector3d pb = m_vertex_attribute[e[1]].m_posf;
+        Vector3d dir = pb - pa;
+        const double elen = dir.norm();
+        if (!(elen > 0.)) continue;
+        dir /= elen;
+        // Each face's in-plane direction away from the edge, so the angle between them is the
+        // angle around the edge and not the angle between two arbitrary chords.
+        const auto perp = [&](const size_t opp_vid, Vector3d& u) -> bool {
+            const Vector3d w = m_vertex_attribute[opp_vid].m_posf - pa;
+            u = w - w.dot(dir) * dir;
+            const double len = u.norm();
+            if (!(len > 0.) || !std::isfinite(len)) return false;
+            u /= len;
+            return true;
+        };
+        Vector3d u0, u1;
+        if (!perp(ef.opposite[0], u0) || !perp(ef.opposite[1], u1)) continue;
+        const double ang = std::acos(std::clamp(u0.dot(u1), -1., 1.)) * 180. / M_PI; // [0, 180]
+        if (ang < coincidence_deg) {
+            fold[e[0]] = 1;
+            fold[e[1]] = 1;
+        }
+    }
+    return fold;
 }
 
 const OffsetPotential3D& TopoOffsetTetMesh::potential_for_face(const Tuple& f) const
@@ -3536,6 +4024,67 @@ void TopoOffsetTetMesh::rebuild_offset_envelope()
         m_offset_params.target_distance);
 }
 
+namespace {
+/// Cheap existence test for a companion frame; <filesystem> is not used in this component.
+bool debug_frame_file_exists(const std::string& p)
+{
+    std::ifstream f(p);
+    return f.good();
+}
+
+/// DEBUG_output only. Splice a VTK FieldData string array carrying this frame's pass label into
+/// a .vtu paraviewo has just closed, so ParaView can display it per timestep: add an Annotate
+/// Attribute Data filter, association Field Data, array frame_label.
+///
+/// Why splice rather than write it properly: paraviewo's VTUWriter exposes only numeric point
+/// and cell fields (Eigen::MatrixXd), with no FieldData and no string support, and it is a
+/// third-party dependency outside this component. The .vtu is XML, so the block goes in here.
+/// format="ascii" keeps it out of the appended-data section, so the binary offsets paraviewo
+/// already wrote stay valid. VTK encodes a string as its character codes, space separated and
+/// null terminated, which also makes the label XML-safe whatever it contains.
+///
+/// The <UnstructuredGrid> anchor sits in the first few hundred bytes, so only the head is held
+/// in memory and the body -- tens of megabytes on a large frame -- is streamed through.
+bool inject_frame_label(const std::string& path, const std::string& label)
+{
+    static const std::string anchor = "<UnstructuredGrid>";
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return false;
+    std::string head(4096, '\0');
+    in.read(&head[0], static_cast<std::streamsize>(head.size()));
+    head.resize(static_cast<size_t>(in.gcount()));
+    const size_t at = head.find(anchor);
+    if (at == std::string::npos) return false;
+    const size_t cut = at + anchor.size();
+
+    std::string codes;
+    for (const char c : label) {
+        codes += std::to_string(static_cast<unsigned>(static_cast<unsigned char>(c))) + " ";
+    }
+    codes += "0";
+
+    const std::string tmp = path + ".lbl";
+    {
+        std::ofstream out(tmp, std::ios::binary);
+        if (!out) return false;
+        out.write(head.data(), static_cast<std::streamsize>(cut));
+        out << "\n  <FieldData>\n    <Array type=\"String\" Name=\"frame_label\" "
+               "NumberOfTuples=\"1\" format=\"ascii\">\n      "
+            << codes << "\n    </Array>\n  </FieldData>";
+        out.write(head.data() + cut, static_cast<std::streamsize>(head.size() - cut));
+        std::vector<char> buf(size_t(1) << 16);
+        while (in.read(buf.data(), static_cast<std::streamsize>(buf.size())) || in.gcount() > 0) {
+            out.write(buf.data(), in.gcount());
+        }
+        if (!out) return false;
+    }
+    in.close();
+    if (std::rename(tmp.c_str(), path.c_str()) == 0) return true;
+    std::remove(tmp.c_str()); // leave the frame paraviewo wrote rather than a half-named file
+    return false;
+}
+} // namespace
+
 void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& label) const
 {
     std::ofstream f(
@@ -3548,7 +4097,62 @@ void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
 {
     const size_t idx = m_debug_seq++;
     append_frame_label(idx, label);
-    write_vtu(m_offset_params.output_path + fmt::format("_{:05d}", idx));
+    const std::string base = m_offset_params.output_path + fmt::format("_{:05d}", idx);
+    write_vtu(base);
+    // Record what this frame actually wrote, then refresh the ParaView collections. Which
+    // companions exist is dimension-specific and some are conditional, so they are discovered
+    // from disk rather than hard-coded here.
+    if (m_debug_frame_labels.size() <= idx) m_debug_frame_labels.resize(idx + 1);
+    m_debug_frame_labels[idx] = label;
+    for (const char* sfx : {"", "_surf", "_off", "_edge", "_front"}) {
+        const std::string p = base + sfx + ".vtu";
+        if (!debug_frame_file_exists(p)) continue;
+        // The label goes INTO the frame as FieldData, not only into the .pvd: a .pvd DataSet's
+        // name= attribute does reach the reader, but as a vtkCharArray, which ParaView's
+        // annotation renders as the first character's numeric code rather than the text, and an
+        // XML comment is discarded outright. See inject_frame_label().
+        inject_frame_label(p, label);
+        m_debug_pvd_series[sfx].push_back(idx);
+    }
+    write_debug_pvd();
+}
+
+void TopoOffsetTetMesh::write_debug_pvd() const
+{
+    // DEBUG_output only. ParaView detects a file series only when the frame index sits
+    // IMMEDIATELY before the extension. The main frames are <output>_NNNNN.vtu and group fine,
+    // but every companion is <output>_NNNNN_off.vtu -- index in the middle, suffix after it --
+    // so ParaView opens each companion as its own dataset instead of one time series. A .pvd
+    // collection names the files explicitly, which sidesteps the naming rule entirely.
+    // Rewritten after EVERY frame, not once at the end: these runs are killed often, and a
+    // killed run should still leave a series that opens.
+    const std::string& out = m_offset_params.output_path;
+    // file= is resolved relative to the .pvd, so it carries the bare name, not output_path.
+    const std::string stem = out.substr(out.find_last_of("/\\") + 1);
+    for (const auto& [sfx, idxs] : m_debug_pvd_series) {
+        if (idxs.size() < 2) continue; // a single frame is not a series
+        std::ofstream f(out + (sfx.empty() ? std::string("_main") : sfx) + ".pvd", std::ios::trunc);
+        if (!f) continue;
+        f << "<?xml version=\"1.0\"?>\n"
+             "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\">\n"
+             "  <Collection>\n";
+        for (const size_t i : idxs) {
+            f << fmt::format(
+                "    <DataSet timestep=\"{}\" group=\"\" part=\"0\" file=\"{}_{:05d}{}.vtu\"/>",
+                i,
+                stem,
+                i,
+                sfx);
+            // The frame's label, so the .pvd also says which pass produced each timestep. A
+            // label containing "--" would close the XML comment early, so it is left out.
+            const std::string lab = i < m_debug_frame_labels.size() ? m_debug_frame_labels[i] : "";
+            if (!lab.empty() && lab.find("--") == std::string::npos) {
+                f << fmt::format("  <!-- {} -->", lab);
+            }
+            f << "\n";
+        }
+        f << "  </Collection>\n</VTKFile>\n";
+    }
 }
 
 void TopoOffsetTetMesh::optimize_offset_single_phase()
@@ -3630,11 +4234,6 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
-            // front_refuse_converged_collapse: the "was resolved" half of the guard is read from
-            // the front as it stands when the collapse / swap group begins.
-            if (m_offset_params.front_refuse_converged_collapse && gi >= 1) {
-                snapshot_front_convergence();
-            }
             if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
@@ -3679,10 +4278,25 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             ec.worst_placed_centroid.z(),
             ec.refinable.size(),
             ec.n_at_floor);
-        if (m_offset_params.front_refuse_converged_collapse) {
+        // Every place a proposed swap can be turned down, counted for this turn. See
+        // TetOptimizerMesh::SwapReject: this is instrumentation for why an offset-surface flip
+        // is never accepted, and the counters are reset each turn so the line is per-turn.
+        logger().info("\t[swap reject] turn {}: {}", it + 1, swap_reject_report());
+        swap_counters_reset();
+        if (m_offset_params.experimental_ops_divergence_guard) {
+            logger().info("\t[flip funnel] turn {}: {}", it + 1, flip_funnel_report());
+            flip_funnel_reset();
+        }
+        // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
+        // the key is off, which is the default.
+        check_offset_membership(fmt::format("turn {}", it + 1).c_str());
+        // Not gated on the key: silent unless a face lookup actually missed this run.
+        report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
+        if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
-                "\t[front guard] turn {}: {} collapse(s) and {} swap(s) refused for un-resolving "
-                "a resolved patch of the front ({} / {} in the run so far)",
+                "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
+                "offset surface and {} swap(s) for not lowering it by the margin ({} / {} in the "
+                "run so far)",
                 it + 1,
                 iter_cnt_collapse_guard_reject.load() - guard_c0,
                 iter_cnt_swap_guard_reject.load() - guard_s0,
@@ -3715,7 +4329,24 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         }
         // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
         // no face left to resolve -- then quality with the front frozen (below).
-        if (ec.converged_single() && lowered_prev == 0) {
+        //
+        // `lowered_prev == 0` is one turn of hysteresis, and EXPERIMENTAL_exit_when_criteria_met
+        // drops it. It can only ever be the PREVIOUS turn's lowering: converged_single() requires
+        // an empty refinable set, so a turn that meets the criterion ran no refinement of its own
+        // and left lowered_last_turn at 0. What the default therefore demands is two consecutive
+        // turns without a lowering, the second of them converged.
+        //
+        // That is worth something because the tail churns rather than settles: measured on the
+        // cube at target_distance_rel 1e-3, the split pass mints a fresh crop of over-tube faces
+        // on the quarter-cylinders every turn and the collapse pass clears them, with NOT ONE
+        // face surviving from one pass to the next, so the turn-end count wanders (5, 2, 0, 2)
+        // and a single clean turn is partly luck. It also costs: the loop can sit for many turns
+        // waiting for two of them to line up. TetWild's loop takes the other choice -- it breaks
+        // the moment its max energy is under stop_energy, because that number is a property of
+        // the mesh it is holding, where refinable is a request for work on the next turn.
+        const bool exit_grace =
+            m_offset_params.experimental_exit_when_criteria_met || lowered_prev == 0;
+        if (ec.converged_single() && exit_grace) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the
@@ -3781,6 +4412,12 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // label the offset surface, and with it the vertices the optimization places
     logger().info("\tLabel offset faces...");
     label_offset_boundary();
+    // The baseline the propagation has to hold from here on. label_offset_boundary() marks the
+    // flag from m_face_extra's construction labels; this asks the live cell-label test the same
+    // question, so a disagreement at turn 0 would mean the two disagree about what the offset
+    // surface IS, before any operation has run.
+    check_offset_membership("construction");
+    report_offset_face_lookup_misses("construction");
 
     init_vertex_order();
 
@@ -3866,9 +4503,10 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    if (m_offset_params.front_refuse_converged_collapse) {
+    if (m_offset_params.experimental_ops_divergence_guard) {
         logger().info(
-            "front guard (front_refuse_converged_collapse): {} collapses and {} swaps refused",
+            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses and {} swaps refused "
+            "for raising the local sag",
             iter_cnt_collapse_guard_reject.load(),
             iter_cnt_swap_guard_reject.load());
     }
@@ -3947,6 +4585,42 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy);
+    }
+
+    // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
+    // the delivered mesh, not a debug curiosity, so it is reported whether or not debug_output
+    // wrote the per-vertex field. Run here, at the end of optimize_offset, so it describes the
+    // mesh the driver is about to write: after the finishing pass, not at the loop's verdict.
+    // Reported for a run that did not converge too, where a fold is if anything more likely.
+    // See offset_surface_foldover_labels() for what the angle is and why its side is not
+    // determined. Costs one pass over the live offset simplices, once, with no field evaluation.
+    {
+        const std::vector<char> fold = offset_surface_foldover_labels();
+        size_t n_fold = 0;
+        size_t first = std::numeric_limits<size_t>::max();
+        for (size_t vid = 0; vid < fold.size(); ++vid) {
+            if (!fold[vid]) continue;
+            ++n_fold;
+            if (first == std::numeric_limits<size_t>::max()) first = vid;
+        }
+        if (n_fold > 0) {
+            const auto& p = m_vertex_attribute[first].m_posf;
+            logger().warn(
+                "[foldover] the offset surface is folded back on itself at {} vertex(es): {} "
+                "meet within {} degrees of coincident (over {} degrees through one side). "
+                "First at v{} ({:.4}, {:.4}{}). {}",
+                n_fold,
+                "two faces of an offset-surface edge",
+                360. - FOLDOVER_OUTER_ANGLE_DEG,
+                FOLDOVER_OUTER_ANGLE_DEG,
+                first,
+                p[0],
+                p[1],
+                fmt::format(", {:.4}", p[2]),
+                m_offset_params.debug_output
+                    ? "The per-vertex flag offset_foldover is on the debug frames."
+                    : "Set DEBUG_output to get the per-vertex offset_foldover field.");
+        }
     }
 
     // Escalate to a hard failure if the caller asked for it, AFTER the warnings above so the log

@@ -1575,6 +1575,21 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         m_phase = saved_phase;
     }
 
+    // Collapsed-foldover flag, as point data: 1 where the offset curve has folded back on
+    // itself at this vertex (outer angle over the threshold), 0 elsewhere. DEBUG ONLY --
+    // computed only under debug_output, so a plain save_vtu run writes it as all 0 rather than
+    // paying for the curve walk. Packed like every other point field here, through `packed`.
+    // See offset_surface_foldover_labels() for what the angle is and how its side is decided.
+    Eigen::MatrixXd FOLD(vs.size(), 1);
+    FOLD.setZero();
+    if (m_offset_params.debug_output) {
+        const std::vector<char> fold = offset_surface_foldover_labels();
+        for (size_t k = 0; k < vs.size(); ++k) {
+            const size_t vid = vs[k].vid(*this);
+            if (vid < fold.size() && fold[vid]) FOLD(k, 0) = 1.;
+        }
+    }
+
     std::shared_ptr<paraviewo::ParaviewWriter> writer;
     writer = std::make_shared<paraviewo::VTUWriter>();
     writer->add_cell_field("amips", amips);
@@ -1589,6 +1604,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     writer->add_field("front_grad_norm", GN);
     writer->add_field("front_move_align", MA);
     writer->add_field("front_complex_distance", CD);
+    writer->add_field("offset_foldover", FOLD);
     writer->write_mesh(path + ".vtu", V, F, paraviewo::CellType::Triangle);
 
     // The front's per-EDGE sag, as a companion line mesh `<path>_front.vtu`. The resolution half
@@ -1635,6 +1651,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
             front_writer->add_cell_field("chord_length", LEN);
             front_writer->add_field("sizing_scalar", S);
             front_writer->add_field("front_complex_distance", CD);
+            front_writer->add_field("offset_foldover", FOLD);
             front_writer->write_mesh(front_path, V, FE, paraviewo::CellType::Line);
         }
     }

@@ -80,10 +80,10 @@ struct Parameters : public wmtk::OptimizerParameters
     // two of them meet.
     bool front_normal_projection = true;
     bool front_alignment_energy = true; ///< see the spec: needed at pressed seams, biased elsewhere
-    /// What a collapse's surviving vertex keeps as its sizing scalar. false (the default): its
-    /// own. true: the smaller of the two, which is the shared engine's rule -- refinement then
-    /// never relaxes behind a travelling front.
-    bool sizing_collapse_min = false;
+    /// What a collapse's surviving vertex keeps as its sizing scalar. true (the default): the
+    /// smaller of the two, which is the shared engine's rule -- refinement then never relaxes
+    /// behind a travelling front. false: the survivor's own.
+    bool sizing_collapse_min = true;
     /// Other input regions (no input-complex simplex, no wall contact) deform under smoothing
     /// against their rest shape instead of being envelope-held. See the spec doc.
     bool deform_others = true;
@@ -108,7 +108,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// on, the march is probed first, and a single untraceable edge sends EVERY edge to its
     /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
     /// See the spec doc, and marching_tris() / marching_tets().
-    bool experimental_consistent_construction_split = false;
+    bool experimental_consistent_construction_split = true;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -165,10 +165,23 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
-    /// See the spec: refuse a front collapse or surface flip whose neighbourhood was converged
-    /// (every front face around the endpoints within the tube, every corner within the bar)
-    /// and would not be afterwards. false = the operation passes as they are.
-    bool front_refuse_converged_collapse;
+    /// EXPERIMENTAL. See the spec: reject any operation on the offset surface that raises the
+    /// local sag -- a collapse whose survivor is left with a worse maximum than the two
+    /// endpoints had between them, or a surface flip whose two new faces are worse than the two
+    /// old ones. Splits are never rejected. false = the operation passes exactly as they are.
+    /// Default true.
+    bool experimental_ops_divergence_guard;
+    /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
+    /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
+    /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
+    /// the whole rule; one that misses the margin is refused rather than falling back on AMIPS.
+    /// Without it the swap pass does not finish, on noise-sized flips that are all monotone.
+    double experimental_flip_sag_margin;
+    /// EXPERIMENTAL, 3D only. See the spec: true lets the single-phase loop exit on the FIRST
+    /// turn that meets the front criterion, the way TetWild's loop stops on its own metric.
+    /// false additionally requires that the previous turn lowered no sizing scalar, which is one
+    /// turn of hysteresis against the tail's churn. Default true.
+    bool experimental_exit_when_criteria_met;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -234,7 +247,9 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         sag_halve_refinement = json_params["sag_halve_refinement"];
         pre_smooth = json_params["pre_smooth"];
-        front_refuse_converged_collapse = json_params["front_refuse_converged_collapse"];
+        experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
+        experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
+        experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];

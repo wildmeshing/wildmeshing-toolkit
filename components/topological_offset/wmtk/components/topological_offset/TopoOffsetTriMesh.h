@@ -682,6 +682,16 @@ public:
     int m_ab_round = 0;
     /// Monotonic frame counter for the debug timeline. Mutable because the write hook is const.
     mutable size_t m_debug_seq = 0;
+    /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
+    /// companion suffix, the frame indices that actually produced one. Both exist only to write
+    /// the ParaView collections -- see write_debug_pvd(). Same in 3D.
+    mutable std::vector<std::string> m_debug_frame_labels;
+    mutable std::map<std::string, std::vector<size_t>> m_debug_pvd_series;
+    /// DEBUG_output: rewrite <output>{_main,_off,_surf,_edge,_front}.pvd, a ParaView time
+    /// series over the debug frames. Needed because ParaView only groups a file series when the
+    /// index is immediately before the extension, which is false for every companion
+    /// (<output>_NNNNN_off.vtu). Called after every frame, so a killed run still opens.
+    void write_debug_pvd() const;
     /// Pass index within the current phase, and the (round, phase) it belongs to -- when those
     /// change the index restarts. All three exist only to name frames.
     mutable int m_debug_pass = 0;
@@ -708,9 +718,9 @@ public:
     /// Operations refused because they would have left an offset-boundary face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// front_refuse_converged_collapse: collapses refused because a resolved patch of the front
-    /// would have come out unresolved. No swap counter here: the 3D twin also guards the surface
-    /// flip, which has no 2D counterpart -- see swap_edge_before().
+    /// EXPERIMENTAL_ops_divergence_guard: collapses refused for raising the local sag of the
+    /// offset surface. No swap counter here: the 3D twin also guards the surface flip, which has
+    /// no 2D counterpart -- see swap_edge_before().
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     /// Splits of an offset-boundary edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
@@ -990,27 +1000,44 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// front_refuse_converged_collapse, per collapse: 1 when collapse_edge_before() found the
-    /// endpoints' front edges resolved and the predicted result edges within the tube, so that
-    /// collapse_edge_after() still has to test the survivor's ratio.
-    mutable wmtk::threading::enumerable_thread_specific<char> m_collapse_guard_armed;
-    /// front_refuse_converged_collapse: front_vertex_conv_ratio() at every front vertex as it
-    /// was at the start of the collapse group (NaN off the front), indexed by vid. The guard
-    /// reads "was this converged" from here rather than re-measuring inside every hook.
-    std::vector<double> m_front_conv_snapshot;
-    void snapshot_front_convergence();
-    /// The snapshot says vid is a front vertex whose ratio was finite and within the bar.
-    bool front_vertex_converged_snapshot(size_t vid) const;
-    /// A resolved front chord: both ends converged per the snapshot and the midpoint sag
-    /// (edge_conv_ratio) within the tube. The 3D twin tests a face at its centroid.
-    bool front_edge_converged(size_t a, size_t b) const;
+    /// EXPERIMENTAL_ops_divergence_guard: one chord's sag as edge_conv_ratio measures it, with
+    /// an unmeasurable chord reported as infinity so that losing measurability counts as
+    /// worsening. The 3D twin is offset_face_sag(), measured at the face centroid.
+    double offset_edge_sag(size_t a, size_t b) const;
+    /// The largest offset_edge_sag() over a set of chords given by their vertex pairs; 0 for an
+    /// empty set.
+    double max_offset_edge_sag(const std::vector<std::array<size_t, 2>>& edges) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
-    /// Returns true when the collapse must be refused; arms m_collapse_guard_armed when the
-    /// after-test still applies.
-    bool front_guard_refuses_collapse(size_t v1, size_t v2);
+    /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) is
+    /// itself an offset-surface edge -- band triangle on one side, background on the other --
+    /// which it checks first and cheaply: everything else returns false without walking a
+    /// one-ring or evaluating a potential. There is no after-half: the survivor keeps its
+    /// position, so the result is measured exactly before the collapse runs.
+    bool ops_guard_refuses_collapse(size_t v1, size_t v2) const;
     /// The live offset-surface edges incident to vid, deduplicated. The 3D twin is
     /// offset_surface_faces_live_at().
     std::vector<Tuple> offset_surface_edges_live_at(size_t vid) const;
+
+    /**
+     * @brief Per-vertex 0/1: has the offset curve folded back on itself at this vertex? Debug
+     * frame diagnostic; see write_vtu(). Costs one pass over the live offset edges, no field
+     * evaluation.
+     *
+     * A vertex on the offset curve carries two live offset edges. Measured through either
+     * side, the angle between them is 180 degrees where the curve is straight and 360 where the
+     * two edges lie on top of each other with that side pinched to nothing. Over
+     * FOLDOVER_OUTER_ANGLE_DEG through EITHER side is the fold, and the vertex gets 1.
+     *
+     * Which side is pinched is deliberately not determined; see the 3D twin, where the measured
+     * folds pinch the background rather than the band. Since the two sides sum to 360, the test
+     * is simply that the unsigned angle is under 360 minus the threshold. Vertices without
+     * exactly two live offset edges are left 0, as are degenerate edges: this is a diagnostic,
+     * and a number it cannot measure is not a fold.
+     *
+     * The 3D twin is TopoOffsetTetMesh::offset_surface_foldover_labels(), which asks the same
+     * question of an offset-surface EDGE's two faces and marks that edge's two endpoints.
+     */
+    std::vector<char> offset_surface_foldover_labels() const;
     void log_smooth_trace() const;
 
 
@@ -1942,6 +1969,23 @@ public:
      *    that produces another needle. The counters below say which clause did the admitting.
      */
     bool collapse_quality_allowed(size_t v1, size_t v2, double q, double ring_max) const override;
+
+    /// The 2D twin of TopoOffsetTetMesh::swap_quality_allowed(), kept so the two dimensions
+    /// carry the same rule, and like it gated on EXPERIMENTAL_ops_divergence_guard. It is
+    /// UNREACHABLE for an offset edge today, and not by oversight: a
+    /// 2D front is a curve with no diagonal to flip, and TriOptimizerMesh::swap_edge_before()
+    /// refuses any edge on a tracked surface outright via is_edge_on_surface(), so an offset
+    /// edge never reaches a swap at all. `is_surface_flip` is therefore always false here and
+    /// this always defers to the base's strict rule -- which is the 2D behaviour unchanged.
+    /// Should 2D ever gain a surface flip, this is where its acceptance rule belongs.
+    bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
+        const override
+    {
+        if (!is_surface_flip || !m_offset_params.experimental_ops_divergence_guard) {
+            return after < before;
+        }
+        return after < m_params.stop_energy;
+    }
 
     mutable std::atomic<size_t> m_deg_split_created{0};
     mutable std::atomic<size_t> m_deg_collapse_offered{0};

@@ -578,6 +578,85 @@ public:
     std::vector<std::array<size_t, 3>> offset_surface_faces() const;
     /// The live offset-surface faces incident to vid.
     std::vector<Tuple> offset_surface_faces_live_at(size_t vid) const;
+    /// Whether ANY live offset-surface face is incident to vid. The same question
+    /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
+    /// operation hooks, where the list would be allocated and thrown away.
+    bool vertex_has_live_offset_face(size_t vid) const;
+    /**
+     * @brief Re-derive m_is_on_offset for one vertex from the cell labels, exactly.
+     *
+     * THE definition of the flag, and the only thing that writes it after
+     * label_offset_boundary(): a vertex is on the offset surface iff some incident face has the
+     * band on one side and a non-complex cell on the other. Called from the three hooks where an
+     * operation can change the answer -- see the note above m_collapse_edge_link.
+     *
+     * Reads labels, never the flag it is writing and never the cached face class, so a wrong
+     * value cannot propagate and any vertex an operation touches is corrected whatever it carried
+     * before.
+     *
+     * It deliberately does NOT touch m_vertex_attribute[vid].m_is_on_surface, which is the base's
+     * union over every tracked surface (input, region, offset); clearing that from here would
+     * unhold a vertex that is still on a region boundary. See the CLAUDE.md note.
+     */
+    void refresh_offset_membership(size_t vid);
+    /// perform_sanity_checks: how many vertices carry m_is_on_offset without a live offset face,
+    /// and how many are the other way round. Whole-mesh, O(V x ring); zero is the invariant.
+    std::pair<size_t, size_t> offset_membership_mismatches() const;
+    /// Log offset_membership_mismatches() and throw when it is not {0, 0}. perform_sanity_checks
+    /// only.
+    void check_offset_membership(const char* when) const;
+
+    /**
+     * @brief Faces that vertex_has_live_offset_face() / offset_surface_faces_live_at() asked for
+     * and the connectivity did not have.
+     *
+     * Both walk a vertex's one-ring of tets and then step across each face to the tet on the
+     * other side, so they read two and three hops out from the seed. The collapse and swap passes
+     * guarantee only `{v1, v2} u N(v1) u N(v2)` -- see "Ring lockers -- NOT balls" in TetMesh.h --
+     * so at num_threads > 0 a neighbouring thread can be shrinking a vertex fan these walks are
+     * reading, and the face lookup misses. A miss is taken as "not a live offset face", which is
+     * what TetMesh.h's try_tuple_from_face doc calls the legitimate answer.
+     *
+     * Counted because a miss means the m_is_on_offset just written was derived from a stale read
+     * and may be wrong. Zero is the expected value. Non-zero says the walks are racing the pass,
+     * and the remedy is to widen the collapse pass's lock (collapse_all_edges_impl's
+     * exact_ball_lock), which is shared code and not an offsets-side change.
+     *
+     * History: before 2026-09-18 neither walk checked for a miss. The asserting tuple_from_face
+     * returns a default Tuple under NDEBUG, whose m_global_tid is size_t(-1), and
+     * switch_tetrahedron() indexed m_tet_connectivity with it -- one element below the vector's
+     * base. That was the SIGSEGV on the cube at target_distance_rel 1e-3.
+     */
+    mutable std::atomic<long long> m_offset_face_lookup_misses{0};
+    /// face_is_offset_surface_live() calls handed an invalid Tuple (m_global_tid == size_t(-1)).
+    /// Defence in depth behind the two walks above: with both of them checking their lookups this
+    /// should stay 0, and a future caller that forgets gets `false` instead of a wild read.
+    mutable std::atomic<long long> m_offset_face_invalid_tuple{0};
+    /// Log the two counters above, run totals, and only when either is non-zero -- a clean run
+    /// prints nothing. Not gated on perform_sanity_checks: these are free unless they fire.
+    void report_offset_face_lookup_misses(const char* when) const;
+
+    /**
+     * @brief Per-vertex 0/1: is this vertex an endpoint of a COLLAPSED (folded-over) offset
+     * surface edge? Debug-frame diagnostic; see write_vtu(). Costs one pass over the live
+     * offset faces, no field evaluation.
+     *
+     * An offset-surface edge carries two live offset faces. Measured through either side, the
+     * angle between them is 180 degrees where the surface is flat and 360 where the two faces
+     * lie on top of each other with that side pinched to nothing. Over FOLDOVER_OUTER_ANGLE_DEG
+     * through EITHER side is the fold, and every such edge's two endpoints get 1.
+     *
+     * Which side is pinched is deliberately not determined: on the cube the measured folds
+     * pinch the BACKGROUND, not the band, so a test written around a pinched band found none of
+     * them. Since the two sides sum to 360, the test is simply that the unsigned angle is under
+     * 360 minus the threshold. Vertices of an edge that does not carry exactly two live offset
+     * faces are left 0, as are degenerate faces: this is a diagnostic, and a number it cannot
+     * measure is not a fold.
+     *
+     * The 2D twin is TopoOffsetTriMesh::offset_surface_foldover_labels(), which asks the same
+     * question of a curve vertex's two incident offset edges.
+     */
+    std::vector<char> offset_surface_foldover_labels() const;
 
     /// {max_dist_err, avg_dist_err, max_phi_residual, avg_phi_residual, max_grad, avg_grad,
     /// max_grad_at_vertex, max_grad_in_face}. One entry for the whole run, as in 2D.
@@ -592,6 +671,16 @@ public:
     int m_ab_round = 0;
     /// Monotonic frame counter for the debug timeline.
     mutable size_t m_debug_seq = 0;
+    /// DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per
+    /// companion suffix, the frame indices that actually produced one. Both exist only to write
+    /// the ParaView collections -- see write_debug_pvd(). Same in 2D.
+    mutable std::vector<std::string> m_debug_frame_labels;
+    mutable std::map<std::string, std::vector<size_t>> m_debug_pvd_series;
+    /// DEBUG_output: rewrite <output>{_main,_off,_surf,_edge,_front}.pvd, a ParaView time
+    /// series over the debug frames. Needed because ParaView only groups a file series when the
+    /// index is immediately before the extension, which is false for every companion
+    /// (<output>_NNNNN_off.vtu). Called after every frame, so a killed run still opens.
+    void write_debug_pvd() const;
     /// Pass index within the current phase, and the (round, phase) it belongs to -- when those
     /// change the index restarts. All three exist only to name frames.
     mutable int m_debug_pass = 0;
@@ -618,10 +707,75 @@ public:
     /// Operations refused because they would have left an offset-surface face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// front_refuse_converged_collapse: operations refused because a resolved patch of the front
-    /// would have come out unresolved.
+    /// EXPERIMENTAL_ops_divergence_guard: operations refused for raising the local sag of the
+    /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
+
+    /// [flip trace]: is the swap pass walking the offset surface's sag down monotonically, and in
+    /// steps of what size? The per-turn lines cannot answer that, because a pass that does not
+    /// finish never reaches the end of its turn -- so this prints from INSIDE the pass, every
+    /// kFlipTraceEvery accepted flips. Live only where the guard measured a pair, i.e. only under
+    /// EXPERIMENTAL_ops_divergence_guard and only for flips of the offset surface.
+    ///
+    /// Counted at swap_after_cells(), which is past the sag refusal and past the quality gate but
+    /// still before the envelope check, so it overcounts by the after_envelope refusals -- tens
+    /// per turn against thousands of flips.
+    static constexpr long long kFlipTraceEvery = 20000;
+    std::atomic<long long> flip_trace_n{0}; ///< accepted offset-surface flips
+    std::atomic<long long> flip_trace_nonmono{
+        0}; ///< fall not > 0: MUST stay 0, the rule forbids it
+    std::atomic<long long> flip_trace_bar{0}; ///< of those, the ones over the tube (given the bar)
+    /// Accepted flips bucketed by the size of the fall, before - after: >=1e-1, >=1e-2, >=1e-3,
+    /// >=1e-4, >=1e-6, >=1e-9, >=1e-12, and everything below that.
+    std::array<std::atomic<long long>, 8> flip_trace_dec{};
+    void flip_trace_record(double before, double after);
+
+    /**
+     * @brief [flip funnel]: of the surface flips the guard judged worth doing, how many survive
+     * each later stage. Reset per turn and reported next to [swap reject].
+     *
+     * [swap reject] counts every refusal of every surface flip, most of which SHOULD be refused.
+     * This follows only the flips that passed the guard -- pair over the bar, fall at least
+     * EXPERIMENTAL_flip_sag_margin -- so a drop here is work the run wanted and did not get.
+     *
+     * Reading it. `offered` is set in swap_before_surface(), which is the app's first sight of a
+     * candidate; anything the base turned down earlier (valence, bbox, connectivity) never
+     * reaches it and is in [swap reject] instead. offered - quality is lost in the base's case
+     * search, i.e. no retetrahedralization that makes the (c,d) diagonal was found or every one
+     * was inverted. quality - quality_ok is refused on AMIPS against stop_energy. quality_ok -
+     * committed is swap_after_cells() refusing on the side/label capture. What the envelope
+     * check then refuses is past this hook and shows as after_envelope in [swap reject].
+     *
+     * The case that matters most is offered == committed with worthwhile flips still sitting in
+     * the mesh at the end of the pass: then nothing refused them and they were never presented,
+     * which puts the loss in the scheduler rather than in any rule here.
+     *
+     * `under_margin` says what the margin costs: flips REFUSED because the fall, though real,
+     * came in under it. Ties and rises are refused too but are not counted there -- the guard
+     * always refused those.
+     */
+    mutable std::atomic<long long> funnel_offered{0};
+    /// offered, split by swap kind: [0] = 3-2, [1] = 4-4, [2] = 5-6.
+    mutable std::array<std::atomic<long long>, 3> funnel_kind{};
+    /// of the 4-4 and 5-6 ones, those for which at least one case survived accept_case and was
+    /// scored. offered(4-4 + 5-6) - this is exactly what flip_wrong_case threw away.
+    mutable std::atomic<long long> funnel_cases{0};
+    /// The scored CASES of those flips, by what the base's own energy said about them. A case
+    /// that is not finite is one whose retetrahedralization inverts a cell -- swap_edge_*_energy
+    /// returns double::max() for that -- which is a geometric refusal, not a quality one. A
+    /// finite case at or above stop_energy is a genuinely bad retetrahedralization. Only a case
+    /// below stop_energy passes the base's `energy < min_energy` test under the absolute bar, so
+    /// case_ok is what can still become a swap.
+    mutable std::atomic<long long> funnel_case_inf{0};
+    mutable std::atomic<long long> funnel_case_over{0};
+    mutable std::atomic<long long> funnel_case_ok{0};
+    mutable std::atomic<long long> funnel_quality{0};
+    mutable std::atomic<long long> funnel_quality_ok{0};
+    mutable std::atomic<long long> funnel_committed{0};
+    mutable std::atomic<long long> funnel_under_margin{0};
+    std::string flip_funnel_report() const;
+    void flip_funnel_reset();
     /// Splits of an offset-surface edge: offered, accepted.
     std::atomic<int> iter_cnt_split_offset_before{0};
     std::atomic<int> iter_cnt_split_offset{0};
@@ -855,24 +1009,31 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// front_refuse_converged_collapse, per collapse: 1 when collapse_edge_before() found the
-    /// endpoints' front faces resolved and the predicted result faces within the tube, so that
-    /// collapse_edge_after() still has to test the survivor's ratio.
-    mutable wmtk::threading::enumerable_thread_specific<char> m_collapse_guard_armed;
-    /// front_refuse_converged_collapse: front_vertex_conv_ratio() at every front vertex as it
-    /// was at the start of the collapse / swap group (NaN off the front), indexed by vid. The
-    /// guard reads "was this converged" from here rather than re-measuring inside every hook.
-    std::vector<double> m_front_conv_snapshot;
-    void snapshot_front_convergence();
-    /// The snapshot says vid is a front vertex whose ratio was finite and within the bar.
-    bool front_vertex_converged_snapshot(size_t vid) const;
-    /// A resolved front face: every corner converged per the snapshot and the centroid sag
-    /// (face_conv_ratio) within the tube.
-    bool front_face_converged(size_t a, size_t b, size_t c) const;
+    /**
+     * @brief The link of the collapsed edge, captured in collapse_before_vertex().
+     *
+     * Which vertices a collapse can move off the offset surface, exactly: the faces that DIE are
+     * the ones carrying both endpoints, (v1, v2, w) for w in the link, so only v2 and those w can
+     * lose their last surface face. A face (v1, a, b) with neither corner on the edge does not
+     * die -- it is relabelled onto v2 -- so a and b keep it and are unaffected. Nothing but v2
+     * can gain, since faces only ever move from v1 to v2.
+     *
+     * Captured before the collapse because the edge is gone by collapse_after_vertex(), which is
+     * where the refresh runs.
+     */
+    mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
+    /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio measures it, with an
+    /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
+    double offset_face_sag(size_t a, size_t b, size_t c) const;
+    /// The largest offset_face_sag() over a set of faces given by their vertex triples; 0 for an
+    /// empty set.
+    double max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
-    /// Returns true when the collapse must be refused; arms m_collapse_guard_armed when the
-    /// after-test still applies.
-    bool front_guard_refuses_collapse(size_t v1, size_t v2);
+    /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
+    /// exactly on the offset surface, which it checks first and cheaply: everything else returns
+    /// false without walking a one-ring or evaluating a potential. There is no after-half: the
+    /// survivor keeps its position, so the result is measured exactly before the collapse runs.
+    bool ops_guard_refuses_collapse(size_t v1, size_t v2) const;
     /// The three corner ids of a face tuple.
     std::array<size_t, 3> face_vids(const Tuple& f) const;
     void log_smooth_trace() const;
@@ -1010,6 +1171,84 @@ public:
     /// Surface edges may be flipped, as a topology-preserving diagonal flip. Both tracked
     /// surfaces need it: the offset surface is re-triangulated constantly.
     bool allow_surface_swap() const override { return true; }
+
+    /// EXPERIMENTAL_ops_divergence_guard, the swap half. UNDER THAT FLAG a flip OF THE OFFSET
+    /// SURFACE is accepted on an absolute quality bar rather than on strict improvement: the
+    /// cells it creates need only be under stop_energy, which is the bar the run is trying to
+    /// reach anyway. With the flag off, and for every interior swap either way, the base's
+    /// strict rule stands, so a default run is unchanged.
+    ///
+    /// Strict improvement made the surface flip unreachable in practice -- it is the only
+    /// operation that can re-triangulate the offset surface without moving a vertex, and across
+    /// whole runs on the deliverable cube not one was ever accepted (cnt_surface_flip 0 for
+    /// 3-2, 4-4 and 5-6 alike, with one pass logging 0 successes against 7636 failures). A rule
+    /// that can only ever accept an improvement cannot get a surface out of a local minimum.
+    ///
+    /// The other half of the acceptance rule is NOT here: the sag test lives in
+    /// swap_before_surface(), where it is exact because a flip moves no vertex, so both faces'
+    /// corners are unchanged and the "after" sag can be measured before anything is modified.
+    /// There is deliberately no PLACEMENT test: front_vertex_conv_ratio() under the default
+    /// residual_error criterion is band_vertex_residual(vid) over the bar, a function of the
+    /// vertex's position alone, and a swap moves no vertex -- so it cannot change. That is not
+    /// true of step_size_rel or the F-based criterion, which build phase_b_front_objective() and
+    /// so read the one-ring a flip re-triangulates; under those a flip can move the ratio and
+    /// this rule does not notice.
+    bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
+        const override
+    {
+        if (!is_surface_flip || !swap_surface_flip_absolute_bar()) {
+            return after < before;
+        }
+        const bool ok = after < m_params.stop_energy;
+        if (m_swap_sides.local().worthwhile) {
+            ++funnel_quality;
+            if (ok) ++funnel_quality_ok;
+        }
+        return ok;
+    }
+    /**
+     * @brief The absolute-bar rule again, one stage EARLIER, where the 4-4 and 5-6 swaps decide.
+     *
+     * swap_quality_allowed() above is the app's after-hook and is the whole story only for the
+     * 3-2 swap. TetMesh::swap_edge_44() and ::swap_edge_56() pick their retetrahedralization by
+     * seeding `min_energy` with the energy of DOING NOTHING and taking a case only when it is
+     * strictly lower (TetMeshSwapMeshConnectivity.cpp:534 and :756). That test runs BEFORE
+     * swap_edge_44_after(), so a surface flip that raises AMIPS never reaches the hook and the
+     * absolute bar could not fire: measured on the cube at 1e-3, of the valence-4 surface edges
+     * whose flip would cut sag, 93.5% raise max AMIPS and NOT ONE of those 3740 was ever taken,
+     * against 58.1% of the 260 that happened to lower it.
+     *
+     * So the bar is expressed in the currency that comparison speaks. For a surface flip under
+     * EXPERIMENTAL_ops_divergence_guard the baseline case (op_case 0, the existing cells) reports
+     * stop_energy instead of its own AMIPS, which turns the base's `energy < min_energy` into
+     * exactly "the cells this flip makes are under stop_energy". Nothing in the shared engine
+     * changes; TetWild and SimWild never see it, and neither does a default offsets run, because
+     * both conditions are required.
+     *
+     * The sag half lives in swap_before_surface(). It refuses any flip that does not strictly
+     * lower the pair's max sag by EXPERIMENTAL_flip_sag_margin, and every flip that does gets
+     * THIS override -- so the accepted rule is max sag after <= max sag before - margin AND max
+     * AMIPS after < stop_energy, with nothing asked about whether the pair was over the bar. A
+     * flip that misses the margin is refused by the guard outright rather than judged on AMIPS.
+     * The margin is what makes the pass converge, since each accepted flip spends at least that
+     * much of a quantity bounded below; the runs that proved a looser sag test does not converge
+     * are written out there.
+     *
+     * An inverted candidate is still refused: the base returns double::max() for one, which is
+     * not below stop_energy. A 5-6 surface flip gains a quality bar it never had, its after-hook
+     * having computed a max energy and discarded it since before this branch existed.
+     */
+    double swap_edge_44_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    double swap_edge_56_energy(const std::vector<std::array<size_t, 4>>& tets, const int op_case)
+        override;
+    /// THE single test for "this flip gets the absolute bar", read by swap_quality_allowed() and
+    /// by both energy overrides. It is not recomputed here: swap_before_surface() has already
+    /// decided, and set the flag only after establishing all three conditions -- the guard is on,
+    /// both re-triangulated faces are live offset surface, and the flip strictly lowers their max
+    /// sag. Asking again from here could not check the second or the third, which is how the
+    /// first version of this handed the bar to input-complex and region flips as well.
+    bool swap_surface_flip_absolute_bar() const { return m_swap_sides.local().absolute_bar; }
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
     /**
@@ -1693,11 +1932,74 @@ private:
     };
     wmtk::threading::enumerable_thread_specific<TetSplitCache> tet_split_cache;
 
+    /// INTERIOR swaps only: the ring must be homogeneous in tag and in construction label, and
+    /// the single value of each is captured for swap_after_cells() to stamp on the new cells. A
+    /// ring that is not homogeneous has a region boundary or the offset surface running through
+    /// it, and an interior swap would move that boundary.
+    ///
+    /// DO NOT call this on the surface path. A face is on the offset surface exactly when one
+    /// incident cell is band and the other is not (cell_is_offset_band: label == 2), so the ring
+    /// around a surface-flip edge ALWAYS spans two labels and this always refuses -- which is
+    /// what made every offset-surface flip impossible until 2026-09-17. The surface path uses
+    /// swap_capture_surface_sides() instead.
     bool swap_capture_tag(const std::vector<size_t>& tids);
-    /// The tag swap_after_cells writes onto the tets the swap created, chosen in `before`.
+    /// The tag swap_after_cells writes onto the tets an INTERIOR swap created, chosen in `before`.
     wmtk::threading::enumerable_thread_specific<CellTag> m_swap_tag;
-    /// The construction label shared by every cell of the swap's ring, captured alongside.
+    /// The construction label shared by every cell of an interior swap's ring, captured alongside.
     wmtk::threading::enumerable_thread_specific<int> m_swap_label;
+
+    /// SURFACE flips: the two old surface faces split the edge ring into two arcs, each
+    /// homogeneous in tag and label, and the flip keeps both -- it only moves the diagonal
+    /// between them. A ring vertex strictly inside an arc identifies that arc's side; the flip's
+    /// four named vertices a, b, c, d do not, because a and b are the flipped edge and c and d
+    /// sit on the interface between the arcs. So each remaining ring vertex is mapped to the
+    /// (tag, label) of the cells it belongs to, and swap_after_cells() stamps each new cell from
+    /// a ring vertex it contains. Mirrors SimWildMesh::swap_before_surface(), which solves the
+    /// same problem for its tags; the offsets carry a construction label too, so both travel.
+    ///
+    /// Refuses only when one ring vertex is seen with two different sides, which is a genuinely
+    /// inconsistent neighbourhood rather than the ordinary two-sided ring.
+    struct SwapSurfaceSides
+    {
+        std::map<size_t, std::pair<CellTag, int>> by_vertex;
+        /// a, b, c, d as prepare_surface_flip named them. The flip's net surface change is
+        /// -(a,b,c) -(a,b,d) +(a,c,d) +(b,c,d), so these four are exactly the vertices whose
+        /// membership it can change, and swap_after_cells() refreshes them.
+        std::array<size_t, 4> abcd{};
+        /// Set by swap_before_surface() for THIS flip alone, and read by
+        /// swap_surface_flip_absolute_bar(): true only once the flip has been found to be a flip
+        /// of the offset surface under EXPERIMENTAL_ops_divergence_guard whose sag strictly
+        /// falls. It is what pairs the two halves of the rule -- the quality bar is given out
+        /// only where the sag rule has just been paid. Cleared at the top of
+        /// swap_before_surface() and of swap_before_interior(), so it never outlives its flip.
+        bool absolute_bar = false;
+        /// The pair the guard measured for THIS flip, kept so swap_after_cells() can record what
+        /// an accepted flip actually won. sag_measured says the guard ran AND the flip passed its
+        /// refusal, so the two numbers mean something; all three are cleared with absolute_bar.
+        bool sag_measured = false;
+        double sag_before = 0.0;
+        double sag_after = 0.0;
+        /// [flip funnel]: this flip is one the guard judged WORTH DOING -- the pair sags over the
+        /// bar and the flip wins at least the margin, so it was handed the absolute quality bar.
+        /// Cleared with absolute_bar; read at each later stage to follow the flip through.
+        bool worthwhile = false;
+        /// [flip funnel]: set the first time swap_edge_44_energy() / swap_edge_56_energy() is
+        /// asked to score a CANDIDATE case (op_case >= 1) for this flip, so the funnel counts
+        /// flips for which the base found at least one retetrahedralization that survives
+        /// swap_edge_*_accept_case(), not cases. Never set for a 3-2, which has no case search.
+        bool saw_case = false;
+        /// tids.size() as swap_before_surface() saw it: 3, 4 or 5, i.e. which swap this is.
+        int kind = 0;
+    };
+    bool swap_capture_surface_sides(
+        const std::vector<size_t>& tids,
+        size_t a,
+        size_t b,
+        size_t c,
+        size_t d);
+    /// mutable: swap_quality_allowed() is a const hook and reads absolute_bar through
+    /// swap_surface_flip_absolute_bar(); .local() is not const-callable.
+    mutable wmtk::threading::enumerable_thread_specific<SwapSurfaceSides> m_swap_sides;
 
 public:
     // substructure functions
