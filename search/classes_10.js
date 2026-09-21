@@ -37,5 +37,6 @@ var searchData=
   ['surfacetagattributes_34',['SurfaceTagAttributes',['../classwmtk_1_1_surface_tag_attributes.html',1,'wmtk']]],
   ['surfacetoposignature_35',['SurfaceTopoSignature',['../structwmtk_1_1utils_1_1_surface_topo_signature.html',1,'wmtk::utils']]],
   ['swapinfocache_36',['swapinfocache',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt_1_1_swap_info_cache.html',1,'app::interior_tet_opt::InteriorTetOpt::SwapInfoCache'],['../structharmonic__tet_1_1_harmonic_tet_1_1_swap_info_cache.html',1,'harmonic_tet::HarmonicTet::SwapInfoCache'],['../structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TetOptimizerMesh::SwapInfoCache'],['../structwmtk_1_1_tri_optimizer_mesh_1_1_swap_info_cache.html',1,'wmtk::TriOptimizerMesh::SwapInfoCache']]],
-  ['swaptagcache_37',['SwapTagCache',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html',1,'wmtk::components::simwild::SimWildMesh']]]
+  ['swapsurfacesides_37',['SwapSurfaceSides',['../structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_swap_surface_sides.html',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
+  ['swaptagcache_38',['SwapTagCache',['../structwmtk_1_1components_1_1simwild_1_1_sim_wild_mesh_1_1_swap_tag_cache.html',1,'wmtk::components::simwild::SimWildMesh']]]
 ];

@@ -79,7 +79,9 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-types">Protected Types</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
@@ -825,6 +827,53 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES_PER_CELL</b> = 4</td></tr>
 <tr class="separator:a02765ba8ad43dc9fec162a405e0e3ad6 inherit pub_static_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-types" name="pro-types"></a>
+Protected Types</h2></td></tr>
+<tr class="memitem:aa38c296b8a7dc398357e75f38a33ff78" id="r_aa38c296b8a7dc398357e75f38a33ff78"><td class="memItemLeft" align="right" valign="top"><a id="aa38c296b8a7dc398357e75f38a33ff78" name="aa38c296b8a7dc398357e75f38a33ff78"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>SwapReject</b> : int { <br />
+&#160;&#160;<b>base_before</b>
+, <b>valence</b>
+, <b>bbox</b>
+, <b>surface_not_allowed</b>
+, <br />
+&#160;&#160;<b>prepare_flip</b>
+, <b>interior_hook</b>
+, <b>flip_open_boundary</b>
+, <b>flip_not_two_surf</b>
+, <br />
+&#160;&#160;<b>flip_nonmanifold_edge</b>
+, <b>flip_cd_nonmanifold</b>
+, <b>flip_new_face_surface</b>
+, <b>flip_app_refused</b>
+, <br />
+&#160;&#160;<b>flip_wrong_case</b>
+, <b>app_capture_label</b>
+, <b>app_capture_tag</b>
+, <b>app_fid_missing</b>
+, <br />
+&#160;&#160;<b>app_class_mismatch</b>
+, <b>app_mask_mismatch</b>
+, <b>app_sag_raised</b>
+, <b>after_inverted</b>
+, <br />
+&#160;&#160;<b>after_quality</b>
+, <b>after_cells</b>
+, <b>after_envelope</b>
+, <b>COUNT</b>
+<br />
+ }</td></tr>
+<tr class="separator:aa38c296b8a7dc398357e75f38a33ff78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c99dc279e204f54c97cd632934a592d" id="r_a1c99dc279e204f54c97cd632934a592d"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d">SwapStage</a> : int { <br />
+&#160;&#160;<b>attempt</b>
+, <b>surface_attempt</b>
+, <b>before_pass</b>
+, <b>after_enter</b>
+, <br />
+&#160;&#160;<b>accepted</b>
+, <b>COUNT</b>
+<br />
+ }</td></tr>
+<tr class="separator:a1c99dc279e204f54c97cd632934a592d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a246bc0dcc48d4f91d2cb4a140896fc00" id="r_a246bc0dcc48d4f91d2cb4a140896fc00"><td class="memItemLeft" align="right" valign="top">std::vector&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a246bc0dcc48d4f91d2cb4a140896fc00">all_vertex_ids</a> () const override</td></tr>
@@ -893,6 +942,21 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>swap_before_s
 <tr class="memitem:a8042adafc7351b2ac23e2905b386929b" id="r_a8042adafc7351b2ac23e2905b386929b"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a8042adafc7351b2ac23e2905b386929b">swap_after_cells</a> (const std::vector&lt; size_t &gt; &amp;, bool)</td></tr>
 <tr class="memdesc:a8042adafc7351b2ac23e2905b386929b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Propagate application data to the cells made by a successful topological swap.  <br /></td></tr>
 <tr class="separator:a8042adafc7351b2ac23e2905b386929b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74683f57f851da74e49edb6806b5b416" id="r_a74683f57f851da74e49edb6806b5b416"><td class="memItemLeft" align="right" valign="top"><a id="a74683f57f851da74e49edb6806b5b416" name="a74683f57f851da74e49edb6806b5b416"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>swap_reject</b> (SwapReject r) const</td></tr>
+<tr class="separator:a74683f57f851da74e49edb6806b5b416"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e98fa54d571a3e1a4b336dcc9d64ef6" id="r_a2e98fa54d571a3e1a4b336dcc9d64ef6"><td class="memItemLeft" align="right" valign="top"><a id="a2e98fa54d571a3e1a4b336dcc9d64ef6" name="a2e98fa54d571a3e1a4b336dcc9d64ef6"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>swap_stage</b> (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d">SwapStage</a> s) const</td></tr>
+<tr class="separator:a2e98fa54d571a3e1a4b336dcc9d64ef6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb16ba96e11057e36a6c04da18ae4293" id="r_abb16ba96e11057e36a6c04da18ae4293"><td class="memItemLeft" align="right" valign="top"><a id="abb16ba96e11057e36a6c04da18ae4293" name="abb16ba96e11057e36a6c04da18ae4293"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>swap_counters_reset</b> ()</td></tr>
+<tr class="separator:abb16ba96e11057e36a6c04da18ae4293"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b7ad71ee4b944868cdc0928d7eb70da" id="r_a6b7ad71ee4b944868cdc0928d7eb70da"><td class="memItemLeft" align="right" valign="top"><a id="a6b7ad71ee4b944868cdc0928d7eb70da" name="a6b7ad71ee4b944868cdc0928d7eb70da"></a>
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>swap_reject_report</b> () const</td></tr>
+<tr class="memdesc:a6b7ad71ee4b944868cdc0928d7eb70da"><td class="mdescLeft">&#160;</td><td class="mdescRight">One line per nonzero counter, for a per-turn log. Does not reset. <br /></td></tr>
+<tr class="separator:a6b7ad71ee4b944868cdc0928d7eb70da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9d3d956e279b67688b3cc0210d00a07" id="r_ad9d3d956e279b67688b3cc0210d00a07"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad9d3d956e279b67688b3cc0210d00a07">swap_quality_allowed</a> (double after, double before, bool) const</td></tr>
+<tr class="separator:ad9d3d956e279b67688b3cc0210d00a07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>
@@ -916,10 +980,25 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_inse
 void&#160;</td><td class="memItemRight" valign="bottom"><b>resize_vertex_mutex</b> (size_t v)</td></tr>
 <tr class="separator:ad9d6052a670ae32551b614f1e291429c inherit pro_methods_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-methods" name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:a1a83d70cd8b4277184942e079687d844" id="r_a1a83d70cd8b4277184942e079687d844"><td class="memItemLeft" align="right" valign="top"><a id="a1a83d70cd8b4277184942e079687d844" name="a1a83d70cd8b4277184942e079687d844"></a>
+static const char *&#160;</td><td class="memItemRight" valign="bottom"><b>swap_reject_name</b> (SwapReject r)</td></tr>
+<tr class="separator:a1a83d70cd8b4277184942e079687d844"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4aa96ea5b1504755645e9d0548ed2c3" id="r_ad4aa96ea5b1504755645e9d0548ed2c3"><td class="memItemLeft" align="right" valign="top"><a id="ad4aa96ea5b1504755645e9d0548ed2c3" name="ad4aa96ea5b1504755645e9d0548ed2c3"></a>
+static const char *&#160;</td><td class="memItemRight" valign="bottom"><b>swap_stage_name</b> (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d">SwapStage</a> s)</td></tr>
+<tr class="separator:ad4aa96ea5b1504755645e9d0548ed2c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a928e9c3f7ca1270f4b4322362fd310b4" id="r_a928e9c3f7ca1270f4b4322362fd310b4"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a928e9c3f7ca1270f4b4322362fd310b4">m_op_epoch</a> = 0</td></tr>
 <tr class="separator:a928e9c3f7ca1270f4b4322362fd310b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac51b8a468448e85c040e70ef65cb94bb" id="r_ac51b8a468448e85c040e70ef65cb94bb"><td class="memItemLeft" align="right" valign="top"><a id="ac51b8a468448e85c040e70ef65cb94bb" name="ac51b8a468448e85c040e70ef65cb94bb"></a>
+std::array&lt; std::atomic&lt; long &gt;, size_t(SwapReject::COUNT)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_swap_reject</b> {}</td></tr>
+<tr class="separator:ac51b8a468448e85c040e70ef65cb94bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a880b06e4afb4dffc2a1f8079abcf766b" id="r_a880b06e4afb4dffc2a1f8079abcf766b"><td class="memItemLeft" align="right" valign="top"><a id="a880b06e4afb4dffc2a1f8079abcf766b" name="a880b06e4afb4dffc2a1f8079abcf766b"></a>
+std::array&lt; std::atomic&lt; long &gt;, size_t(SwapStage::COUNT)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_swap_stage</b> {}</td></tr>
+<tr class="separator:a880b06e4afb4dffc2a1f8079abcf766b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02edc7404afba3ef0519f973ac6c3d35" id="r_a02edc7404afba3ef0519f973ac6c3d35"><td class="memItemLeft" align="right" valign="top"><a id="a02edc7404afba3ef0519f973ac6c3d35" name="a02edc7404afba3ef0519f973ac6c3d35"></a>
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html">SwapInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>swap_cache</b></td></tr>
 <tr class="separator:a02edc7404afba3ef0519f973ac6c3d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -964,7 +1043,31 @@ Private Attributes</h2></td></tr>
 <p>Seeded by MOVING tetwild's implementation here, not by designing an abstraction: tetwild is the more heavily measured of the two, so the move leaves it byte-identical and confines any output change to the commit where simwild adopts the base.</p>
 <p>The 2D counterpart is <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share.">wmtk::TriOptimizerMesh</a>. The two are deliberately NOT unified with each other &ndash; see that class for why.</p>
 <p><b>Cell attributes stay per-application.</b> tetwild's tets carry winding numbers and a flood-fill id, simwild's carry a CellTag set, and an <a class="el" href="structwmtk_1_1_attribute_collection.html">AttributeCollection</a> member cannot change type in a derived class. The base therefore reaches the one field it needs &ndash; the quality &ndash; through <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a591913486d64d18d27b226d6cd9a19a9" title="The quality of cell tid, and how to write it.">cell_quality()</a>/set_cell_quality(). This keeps the shared pass, swap and smoothing implementations independent of the derived cell-attribute layout; the virtual dispatch is negligible beside their geometric predicates and energy evaluations. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="a1c99dc279e204f54c97cd632934a592d" name="a1c99dc279e204f54c97cd632934a592d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c99dc279e204f54c97cd632934a592d">&#9670;&#160;</a></span>SwapStage</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d">wmtk::TetOptimizerMesh::SwapStage</a> : int</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Counted alongside the reasons: how far proposals get. surface_attempt counts edges that entered the surface branch at all, so "the surface never even presents a candidate" is distinguishable from "candidates are presented and refused". </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="ad2307b1a0430c8654c98f7293a287537" name="ad2307b1a0430c8654c98f7293a287537"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad2307b1a0430c8654c98f7293a287537">&#9670;&#160;</a></span>active_quality_threshold()</h2>
 
@@ -2531,6 +2634,8 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#a6acc9c05a618e53d0981bbbac0b04f68">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa9ab79d53db0c6984ecadf27ad2f47d0">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="ae7281081a3374d2085805db993e1f178" name="ae7281081a3374d2085805db993e1f178"></a>
@@ -2693,6 +2798,8 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#af5111cc7b275fa5fed2af91a3fee265c">wmtk::TetMesh</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a12ae3242eaa931d5bd8d45ee81bce9b3">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
+
 </div>
 </div>
 <a id="a9ecefdda9ebaabbab6738d7fbf6df970" name="a9ecefdda9ebaabbab6738d7fbf6df970"></a>
@@ -2841,6 +2948,53 @@ Private Attributes</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_mesh.html#aa9fcc7dad32cfe8edc21ce8ebf912e99">wmtk::TetMesh</a>.</p>
+
+</div>
+</div>
+<a id="ad9d3d956e279b67688b3cc0210d00a07" name="ad9d3d956e279b67688b3cc0210d00a07"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9d3d956e279b67688b3cc0210d00a07">&#9670;&#160;</a></span>swap_quality_allowed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TetOptimizerMesh::swap_quality_allowed </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>after</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>before</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether a swap's quality outcome is acceptable, given the max cell energy over the cells it creates and over the cells it destroyed. The default is STRICT improvement, which is what every swap here required before this hook existed, so a subclass that does not override it sees no change.</p>
+<p><code>is_surface_flip</code> distinguishes a surface diagonal flip (see prepare_surface_flip) from an interior swap, so an application can relax the rule for the surface it tracks without touching interior swaps. The twin on the collapse side is collapse_quality_allowed().</p>
+<p>NOT consulted by <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a4f20ddf9112d9b625ff553fa39d31ba2" title="User specified modifications and desideratas for after a 5-6 edge swap.">swap_edge_56_after()</a>, which has never had a quality gate: it computes a max energy and discards it. That is pre-existing and is left alone rather than silently changed, since it would move 5-6 behaviour for every consumer of this class. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">wmtk::components::topological_offset::TopoOffsetTetMesh</a>.</p>
 
 </div>
 </div>

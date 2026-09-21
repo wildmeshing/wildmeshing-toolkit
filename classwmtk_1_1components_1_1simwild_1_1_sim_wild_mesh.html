@@ -1016,6 +1016,21 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_afte
 <tr class="memitem:a427c093773eb892ab7c0f779bbba4650 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a427c093773eb892ab7c0f779bbba4650"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a427c093773eb892ab7c0f779bbba4650">split_after_vertex</a> (size_t, bool)</td></tr>
 <tr class="memdesc:a427c093773eb892ab7c0f779bbba4650 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">Application metadata not represented by the shared vertex attributes.  <br /></td></tr>
 <tr class="separator:a427c093773eb892ab7c0f779bbba4650 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74683f57f851da74e49edb6806b5b416 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a74683f57f851da74e49edb6806b5b416"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>swap_reject</b> (SwapReject r) const</td></tr>
+<tr class="separator:a74683f57f851da74e49edb6806b5b416 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e98fa54d571a3e1a4b336dcc9d64ef6 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a2e98fa54d571a3e1a4b336dcc9d64ef6"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>swap_stage</b> (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d">SwapStage</a> s) const</td></tr>
+<tr class="separator:a2e98fa54d571a3e1a4b336dcc9d64ef6 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb16ba96e11057e36a6c04da18ae4293 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_abb16ba96e11057e36a6c04da18ae4293"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>swap_counters_reset</b> ()</td></tr>
+<tr class="separator:abb16ba96e11057e36a6c04da18ae4293 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b7ad71ee4b944868cdc0928d7eb70da inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a6b7ad71ee4b944868cdc0928d7eb70da"><td class="memItemLeft" align="right" valign="top">
+std::string&#160;</td><td class="memItemRight" valign="bottom"><b>swap_reject_report</b> () const</td></tr>
+<tr class="memdesc:a6b7ad71ee4b944868cdc0928d7eb70da inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">One line per nonzero counter, for a per-turn log. Does not reset. <br /></td></tr>
+<tr class="separator:a6b7ad71ee4b944868cdc0928d7eb70da inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9d3d956e279b67688b3cc0210d00a07 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ad9d3d956e279b67688b3cc0210d00a07"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#ad9d3d956e279b67688b3cc0210d00a07">swap_quality_allowed</a> (double after, double before, bool) const</td></tr>
+<tr class="separator:ad9d3d956e279b67688b3cc0210d00a07 inherit pro_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1_tet_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1_tet_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></td></tr>
 <tr class="memitem:a8e721b4f8d5679988869b984f03fe6e1 inherit pro_methods_classwmtk_1_1_tet_mesh" id="r_a8e721b4f8d5679988869b984f03fe6e1"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>triangle_insertion_before</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;faces)</td></tr>
@@ -1061,9 +1076,67 @@ static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>EDGES
 <tr class="memitem:a02765ba8ad43dc9fec162a405e0e3ad6 inherit pub_static_attribs_classwmtk_1_1_tet_mesh" id="r_a02765ba8ad43dc9fec162a405e0e3ad6"><td class="memItemLeft" align="right" valign="top">
 static constexpr int&#160;</td><td class="memItemRight" valign="bottom"><b>FACES_PER_CELL</b> = 4</td></tr>
 <tr class="separator:a02765ba8ad43dc9fec162a405e0e3ad6 inherit pub_static_attribs_classwmtk_1_1_tet_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_types_classwmtk_1_1_tet_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_types_classwmtk_1_1_tet_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Types inherited from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a></td></tr>
+<tr class="memitem:aa38c296b8a7dc398357e75f38a33ff78 inherit pro_types_classwmtk_1_1_tet_optimizer_mesh" id="r_aa38c296b8a7dc398357e75f38a33ff78"><td class="memItemLeft" align="right" valign="top"><a id="aa38c296b8a7dc398357e75f38a33ff78" name="aa38c296b8a7dc398357e75f38a33ff78"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>SwapReject</b> : int { <br />
+&#160;&#160;<b>base_before</b>
+, <b>valence</b>
+, <b>bbox</b>
+, <b>surface_not_allowed</b>
+, <br />
+&#160;&#160;<b>prepare_flip</b>
+, <b>interior_hook</b>
+, <b>flip_open_boundary</b>
+, <b>flip_not_two_surf</b>
+, <br />
+&#160;&#160;<b>flip_nonmanifold_edge</b>
+, <b>flip_cd_nonmanifold</b>
+, <b>flip_new_face_surface</b>
+, <b>flip_app_refused</b>
+, <br />
+&#160;&#160;<b>flip_wrong_case</b>
+, <b>app_capture_label</b>
+, <b>app_capture_tag</b>
+, <b>app_fid_missing</b>
+, <br />
+&#160;&#160;<b>app_class_mismatch</b>
+, <b>app_mask_mismatch</b>
+, <b>app_sag_raised</b>
+, <b>after_inverted</b>
+, <br />
+&#160;&#160;<b>after_quality</b>
+, <b>after_cells</b>
+, <b>after_envelope</b>
+, <b>COUNT</b>
+<br />
+ }</td></tr>
+<tr class="separator:aa38c296b8a7dc398357e75f38a33ff78 inherit pro_types_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c99dc279e204f54c97cd632934a592d inherit pro_types_classwmtk_1_1_tet_optimizer_mesh" id="r_a1c99dc279e204f54c97cd632934a592d"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d">SwapStage</a> : int { <br />
+&#160;&#160;<b>attempt</b>
+, <b>surface_attempt</b>
+, <b>before_pass</b>
+, <b>after_enter</b>
+, <br />
+&#160;&#160;<b>accepted</b>
+, <b>COUNT</b>
+<br />
+ }</td></tr>
+<tr class="separator:a1c99dc279e204f54c97cd632934a592d inherit pro_types_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_static_methods_classwmtk_1_1_tet_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_static_methods_classwmtk_1_1_tet_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Static Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a></td></tr>
+<tr class="memitem:a1a83d70cd8b4277184942e079687d844 inherit pro_static_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_a1a83d70cd8b4277184942e079687d844"><td class="memItemLeft" align="right" valign="top">
+static const char *&#160;</td><td class="memItemRight" valign="bottom"><b>swap_reject_name</b> (SwapReject r)</td></tr>
+<tr class="separator:a1a83d70cd8b4277184942e079687d844 inherit pro_static_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4aa96ea5b1504755645e9d0548ed2c3 inherit pro_static_methods_classwmtk_1_1_tet_optimizer_mesh" id="r_ad4aa96ea5b1504755645e9d0548ed2c3"><td class="memItemLeft" align="right" valign="top">
+static const char *&#160;</td><td class="memItemRight" valign="bottom"><b>swap_stage_name</b> (<a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a1c99dc279e204f54c97cd632934a592d">SwapStage</a> s)</td></tr>
+<tr class="separator:ad4aa96ea5b1504755645e9d0548ed2c3 inherit pro_static_methods_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classwmtk_1_1_tet_optimizer_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1_tet_optimizer_mesh')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html">wmtk::TetOptimizerMesh</a></td></tr>
 <tr class="memitem:a928e9c3f7ca1270f4b4322362fd310b4 inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a928e9c3f7ca1270f4b4322362fd310b4"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a928e9c3f7ca1270f4b4322362fd310b4">m_op_epoch</a> = 0</td></tr>
 <tr class="separator:a928e9c3f7ca1270f4b4322362fd310b4 inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac51b8a468448e85c040e70ef65cb94bb inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_ac51b8a468448e85c040e70ef65cb94bb"><td class="memItemLeft" align="right" valign="top">
+std::array&lt; std::atomic&lt; long &gt;, size_t(SwapReject::COUNT)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_swap_reject</b> {}</td></tr>
+<tr class="separator:ac51b8a468448e85c040e70ef65cb94bb inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a880b06e4afb4dffc2a1f8079abcf766b inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a880b06e4afb4dffc2a1f8079abcf766b"><td class="memItemLeft" align="right" valign="top">
+std::array&lt; std::atomic&lt; long &gt;, size_t(SwapStage::COUNT)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_swap_stage</b> {}</td></tr>
+<tr class="separator:a880b06e4afb4dffc2a1f8079abcf766b inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02edc7404afba3ef0519f973ac6c3d35 inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh" id="r_a02edc7404afba3ef0519f973ac6c3d35"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; <a class="el" href="structwmtk_1_1_tet_optimizer_mesh_1_1_swap_info_cache.html">SwapInfoCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>swap_cache</b></td></tr>
 <tr class="separator:a02edc7404afba3ef0519f973ac6c3d35 inherit pro_attribs_classwmtk_1_1_tet_optimizer_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>

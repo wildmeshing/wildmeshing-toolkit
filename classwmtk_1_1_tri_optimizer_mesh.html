@@ -745,6 +745,8 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_befo
 <tr class="memitem:aabe8f5736003e3653b009347cf47abd7" id="r_aabe8f5736003e3653b009347cf47abd7"><td class="memItemLeft" align="right" valign="top"><a id="aabe8f5736003e3653b009347cf47abd7" name="aabe8f5736003e3653b009347cf47abd7"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_after_vertex</b> (size_t, size_t)</td></tr>
 <tr class="separator:aabe8f5736003e3653b009347cf47abd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7207100bb68a33e571df720ae0545bbd" id="r_a7207100bb68a33e571df720ae0545bbd"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7207100bb68a33e571df720ae0545bbd">swap_quality_allowed</a> (double after, double before, bool) const</td></tr>
+<tr class="separator:a7207100bb68a33e571df720ae0545bbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef471b311594b1f0aacc6790b5691936" id="r_aef471b311594b1f0aacc6790b5691936"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#aef471b311594b1f0aacc6790b5691936">split_adjust_position</a> (size_t, const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;)</td></tr>
 <tr class="separator:aef471b311594b1f0aacc6790b5691936"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab659a3501dc528bc36a8968c92ada7fb" id="r_ab659a3501dc528bc36a8968c92ada7fb"><td class="memItemLeft" align="right" valign="top"><a id="ab659a3501dc528bc36a8968c92ada7fb" name="ab659a3501dc528bc36a8968c92ada7fb"></a>
@@ -1960,6 +1962,52 @@ Private Attributes</h2></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>true if the preparation succeed </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_mesh.html#a35127e4e7b1674f0c9c6351304bea0b6">wmtk::TriMesh</a>.</p>
+
+</div>
+</div>
+<a id="a7207100bb68a33e571df720ae0545bbd" name="a7207100bb68a33e571df720ae0545bbd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7207100bb68a33e571df720ae0545bbd">&#9670;&#160;</a></span>swap_quality_allowed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual bool wmtk::TriOptimizerMesh::swap_quality_allowed </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>after</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>before</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Whether a swap's quality outcome is acceptable, given the max face energy over the faces it creates and over the faces it destroyed. The default is STRICT improvement, which is what the swap required before this hook existed, so a subclass that does not override it sees no change. The twin on the collapse side is collapse_quality_allowed().</p>
+<p><code>is_surface_flip</code> is the 3D twin's parameter and is ALWAYS false here: 2D has no surface flip. <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a63d72ccedf89c33eca11de9f886fe281" title="User specified preparations and desideratas for an edge swap including 1.can&#39;t swap on boundary edge....">swap_edge_before()</a> refuses any edge on a tracked surface outright (is_edge_on_surface), so a surface edge never reaches this hook. The parameter is kept so the two dimensions carry the same signature. </p>
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af5c489741a962c29268265daf07ad823">wmtk::components::topological_offset::TopoOffsetTriMesh</a>.</p>
 
 </div>
 </div>

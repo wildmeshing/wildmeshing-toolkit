@@ -307,6 +307,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>log_worst_dist_vertex
 <tr class="separator:a2e8bf1ccd77703928c10575cfdbc4bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68fe276a1546b7d3c1b1ef0f3bc21998" id="r_a68fe276a1546b7d3c1b1ef0f3bc21998"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a68fe276a1546b7d3c1b1ef0f3bc21998">edge_is_offset_surface_live</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
 <tr class="separator:a68fe276a1546b7d3c1b1ef0f3bc21998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d6fa00bc3a07c5a1cd5fb4ca2e460a7" id="r_a4d6fa00bc3a07c5a1cd5fb4ca2e460a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d6fa00bc3a07c5a1cd5fb4ca2e460a7">write_debug_pvd</a> () const</td></tr>
+<tr class="separator:a4d6fa00bc3a07c5a1cd5fb4ca2e460a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88f9082c92ed850780ed44e420d3df01" id="r_a88f9082c92ed850780ed44e420d3df01"><td class="memItemLeft" align="right" valign="top"><a id="a88f9082c92ed850780ed44e420d3df01" name="a88f9082c92ed850780ed44e420d3df01"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>marching_split_edge_before</b> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
 <tr class="separator:a88f9082c92ed850780ed44e420d3df01"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -368,19 +370,17 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>ring_max_quality</b
 void&#160;</td><td class="memItemRight" valign="bottom"><b>record_flatness</b> (const char *op, double parent_flat, size_t child_fid) const</td></tr>
 <tr class="memdesc:a902b10c0d879bfe52af8419ba567f6e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Genesis: flatness transitions recorded at the operation hooks. {op, parent, child}. <br /></td></tr>
 <tr class="separator:a902b10c0d879bfe52af8419ba567f6e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad77d97bd1eb9c20cca9831617f94321d" id="r_ad77d97bd1eb9c20cca9831617f94321d"><td class="memItemLeft" align="right" valign="top"><a id="ad77d97bd1eb9c20cca9831617f94321d" name="ad77d97bd1eb9c20cca9831617f94321d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>snapshot_front_convergence</b> ()</td></tr>
-<tr class="separator:ad77d97bd1eb9c20cca9831617f94321d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4eb6271b494242479f79b3a5be2ff513" id="r_a4eb6271b494242479f79b3a5be2ff513"><td class="memItemLeft" align="right" valign="top"><a id="a4eb6271b494242479f79b3a5be2ff513" name="a4eb6271b494242479f79b3a5be2ff513"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_vertex_converged_snapshot</b> (size_t vid) const</td></tr>
-<tr class="memdesc:a4eb6271b494242479f79b3a5be2ff513"><td class="mdescLeft">&#160;</td><td class="mdescRight">The snapshot says vid is a front vertex whose ratio was finite and within the bar. <br /></td></tr>
-<tr class="separator:a4eb6271b494242479f79b3a5be2ff513"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1fbeb311386145c7f28d1ef2ea9bbe4" id="r_aa1fbeb311386145c7f28d1ef2ea9bbe4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa1fbeb311386145c7f28d1ef2ea9bbe4">front_edge_converged</a> (size_t a, size_t b) const</td></tr>
-<tr class="separator:aa1fbeb311386145c7f28d1ef2ea9bbe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac77f3b21fe84e24e30d981abbdba36f5" id="r_ac77f3b21fe84e24e30d981abbdba36f5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac77f3b21fe84e24e30d981abbdba36f5">front_guard_refuses_collapse</a> (size_t v1, size_t v2)</td></tr>
-<tr class="separator:ac77f3b21fe84e24e30d981abbdba36f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07e1ebddd679cd698ef8f0d4e0592251" id="r_a07e1ebddd679cd698ef8f0d4e0592251"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a07e1ebddd679cd698ef8f0d4e0592251">offset_edge_sag</a> (size_t a, size_t b) const</td></tr>
+<tr class="separator:a07e1ebddd679cd698ef8f0d4e0592251"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac89b010c5f1441d1a80e08b31ebee7c7" id="r_ac89b010c5f1441d1a80e08b31ebee7c7"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac89b010c5f1441d1a80e08b31ebee7c7">max_offset_edge_sag</a> (const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;edges) const</td></tr>
+<tr class="separator:ac89b010c5f1441d1a80e08b31ebee7c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5eac82cd5ec459ca61e510f1dd963bae" id="r_a5eac82cd5ec459ca61e510f1dd963bae"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5eac82cd5ec459ca61e510f1dd963bae">ops_guard_refuses_collapse</a> (size_t v1, size_t v2) const</td></tr>
+<tr class="separator:a5eac82cd5ec459ca61e510f1dd963bae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2e8ea96389182605c577fddfb0b58a9" id="r_af2e8ea96389182605c577fddfb0b58a9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af2e8ea96389182605c577fddfb0b58a9">offset_surface_edges_live_at</a> (size_t vid) const</td></tr>
 <tr class="separator:af2e8ea96389182605c577fddfb0b58a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a760428e23c4ca85901402e2d42150ffd" id="r_a760428e23c4ca85901402e2d42150ffd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a760428e23c4ca85901402e2d42150ffd">offset_surface_foldover_labels</a> () const</td></tr>
+<tr class="memdesc:a760428e23c4ca85901402e2d42150ffd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-vertex 0/1: has the offset curve folded back on itself at this vertex? Debug frame diagnostic; see write_vtu(). Costs one pass over the live offset edges, no field evaluation.  <br /></td></tr>
+<tr class="separator:a760428e23c4ca85901402e2d42150ffd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4569e9a0891bb03ddc73f91934a884c0" id="r_a4569e9a0891bb03ddc73f91934a884c0"><td class="memItemLeft" align="right" valign="top"><a id="a4569e9a0891bb03ddc73f91934a884c0" name="a4569e9a0891bb03ddc73f91934a884c0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>log_smooth_trace</b> () const</td></tr>
 <tr class="separator:a4569e9a0891bb03ddc73f91934a884c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -563,6 +563,8 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>edge_interpolation_
 <tr class="memitem:a2a016e57e63c93b973f4be890c716296" id="r_a2a016e57e63c93b973f4be890c716296"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2a016e57e63c93b973f4be890c716296">collapse_quality_allowed</a> (size_t v1, size_t v2, double q, double ring_max) const override</td></tr>
 <tr class="memdesc:a2a016e57e63c93b973f4be890c716296"><td class="mdescLeft">&#160;</td><td class="mdescRight">Instrumentation only: which operation manufactures the MAX_ENERGY needles.  <br /></td></tr>
 <tr class="separator:a2a016e57e63c93b973f4be890c716296"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5c489741a962c29268265daf07ad823" id="r_af5c489741a962c29268265daf07ad823"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af5c489741a962c29268265daf07ad823">swap_quality_allowed</a> (const double after, const double before, const bool is_surface_flip) const override</td></tr>
+<tr class="separator:af5c489741a962c29268265daf07ad823"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b9961c4cb9225e872e5a3a5a4a7bfea" id="r_a2b9961c4cb9225e872e5a3a5a4a7bfea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2b9961c4cb9225e872e5a3a5a4a7bfea">report_needle</a> (const char *op, size_t fid, double parent_q) const</td></tr>
 <tr class="memdesc:a2b9961c4cb9225e872e5a3a5a4a7bfea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Where the first needles come from &ndash; a tripwire, not a census.  <br /></td></tr>
 <tr class="separator:a2b9961c4cb9225e872e5a3a5a4a7bfea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1250,6 +1252,11 @@ MatrixXi&#160;</td><td class="memItemRight" valign="bottom"><b>m_F_envelope</b><
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>m_debug_seq</b> = 0</td></tr>
 <tr class="memdesc:a3a8a451cc76cee837c870835c7e5c8d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotonic frame counter for the debug timeline. Mutable because the write hook is const. <br /></td></tr>
 <tr class="separator:a3a8a451cc76cee837c870835c7e5c8d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a1da12c7e553a3963b67d6e8f8b31b5" id="r_a6a1da12c7e553a3963b67d6e8f8b31b5"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6a1da12c7e553a3963b67d6e8f8b31b5">m_debug_frame_labels</a></td></tr>
+<tr class="separator:a6a1da12c7e553a3963b67d6e8f8b31b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af33ec2797391d2db396b7cc9b1865adf" id="r_af33ec2797391d2db396b7cc9b1865adf"><td class="memItemLeft" align="right" valign="top"><a id="af33ec2797391d2db396b7cc9b1865adf" name="af33ec2797391d2db396b7cc9b1865adf"></a>
+std::map&lt; std::string, std::vector&lt; size_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_debug_pvd_series</b></td></tr>
+<tr class="separator:af33ec2797391d2db396b7cc9b1865adf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b6fe049eeb3e56e9ba0d7a79471ccb3" id="r_a0b6fe049eeb3e56e9ba0d7a79471ccb3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a0b6fe049eeb3e56e9ba0d7a79471ccb3">m_debug_pass</a> = 0</td></tr>
 <tr class="separator:a0b6fe049eeb3e56e9ba0d7a79471ccb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad772ee3c5956a55fa2fa975cb3268238" id="r_ad772ee3c5956a55fa2fa975cb3268238"><td class="memItemLeft" align="right" valign="top"><a id="ad772ee3c5956a55fa2fa975cb3268238" name="ad772ee3c5956a55fa2fa975cb3268238"></a>
@@ -1359,10 +1366,6 @@ std::atomic&lt; size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><
 <tr class="separator:aa5d583badc3beba89d2981296b16ca28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8d92fc0e149da9a2d9fa4720b0694af" id="r_ad8d92fc0e149da9a2d9fa4720b0694af"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad8d92fc0e149da9a2d9fa4720b0694af">m_collapse_survivor_sizing</a></td></tr>
 <tr class="separator:ad8d92fc0e149da9a2d9fa4720b0694af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb107e33548e6c3aaa85310037641914" id="r_afb107e33548e6c3aaa85310037641914"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#afb107e33548e6c3aaa85310037641914">m_collapse_guard_armed</a></td></tr>
-<tr class="separator:afb107e33548e6c3aaa85310037641914"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac88f1abc4c7715071229e7322d973920" id="r_ac88f1abc4c7715071229e7322d973920"><td class="memItemLeft" align="right" valign="top">std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac88f1abc4c7715071229e7322d973920">m_front_conv_snapshot</a></td></tr>
-<tr class="separator:ac88f1abc4c7715071229e7322d973920"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28d39e69c9fca7c401bd134b109403e5" id="r_a28d39e69c9fca7c401bd134b109403e5"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a28d39e69c9fca7c401bd134b109403e5">m_placement_env_entry_outside</a> {0}</td></tr>
 <tr class="separator:a28d39e69c9fca7c401bd134b109403e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af377832d8ccb1227ebd5aa78f0813280" id="r_af377832d8ccb1227ebd5aa78f0813280"><td class="memItemLeft" align="right" valign="top">std::atomic&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#af377832d8ccb1227ebd5aa78f0813280">m_placement_projected</a> {0}</td></tr>
@@ -2699,64 +2702,6 @@ template&lt;typename Visit &gt; </div>
 
 </div>
 </div>
-<a id="aa1fbeb311386145c7f28d1ef2ea9bbe4" name="aa1fbeb311386145c7f28d1ef2ea9bbe4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1fbeb311386145c7f28d1ef2ea9bbe4">&#9670;&#160;</a></span>front_edge_converged()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::front_edge_converged </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>b</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>A resolved front chord: both ends converged per the snapshot and the midpoint sag (edge_conv_ratio) within the tube. The 3D twin tests a face at its centroid. </p>
-
-</div>
-</div>
-<a id="ac77f3b21fe84e24e30d981abbdba36f5" name="ac77f3b21fe84e24e30d981abbdba36f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac77f3b21fe84e24e30d981abbdba36f5">&#9670;&#160;</a></span>front_guard_refuses_collapse()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::front_guard_refuses_collapse </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>v2</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>The guard's collapse test, run from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb3cf3ddec458e5b7b78947d7d0d34a4" title="Reject any collapse that violates the substructure link condition.">collapse_edge_before()</a>; see the key's spec doc. Returns true when the collapse must be refused; arms m_collapse_guard_armed when the after-test still applies. </p>
-
-</div>
-</div>
 <a id="a936de74a1eb2d3a7cb4d98d96632eee5" name="a936de74a1eb2d3a7cb4d98d96632eee5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a936de74a1eb2d3a7cb4d98d96632eee5">&#9670;&#160;</a></span>front_move_alignment()</h2>
 
@@ -3344,6 +3289,25 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="ac89b010c5f1441d1a80e08b31ebee7c7" name="ac89b010c5f1441d1a80e08b31ebee7c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac89b010c5f1441d1a80e08b31ebee7c7">&#9670;&#160;</a></span>max_offset_edge_sag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::max_offset_edge_sag </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 2 &gt; &gt; &amp;&#160;</td>
+          <td class="paramname"><em>edges</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The largest <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a07e1ebddd679cd698ef8f0d4e0592251">offset_edge_sag()</a> over a set of chords given by their vertex pairs; 0 for an empty set. </p>
+
+</div>
+</div>
 <a id="ad33dc7ca414b93e320cc5ed43bfe079f" name="ad33dc7ca414b93e320cc5ed43bfe079f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad33dc7ca414b93e320cc5ed43bfe079f">&#9670;&#160;</a></span>needle_forensics()</h2>
 
@@ -3380,6 +3344,35 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 <p>Population scan at a named moment, for the points no operation hook covers &ndash; after the pre-pass, after construction, at each collapse pass. Reports the count and the worst few. </p>
+
+</div>
+</div>
+<a id="a07e1ebddd679cd698ef8f0d4e0592251" name="a07e1ebddd679cd698ef8f0d4e0592251"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07e1ebddd679cd698ef8f0d4e0592251">&#9670;&#160;</a></span>offset_edge_sag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTriMesh::offset_edge_sag </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL_ops_divergence_guard: one chord's sag as edge_conv_ratio measures it, with an unmeasurable chord reported as infinity so that losing measurability counts as worsening. The 3D twin is offset_face_sag(), measured at the face centroid. </p>
 
 </div>
 </div>
@@ -3507,6 +3500,28 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="a760428e23c4ca85901402e2d42150ffd" name="a760428e23c4ca85901402e2d42150ffd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a760428e23c4ca85901402e2d42150ffd">&#9670;&#160;</a></span>offset_surface_foldover_labels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; char &gt; wmtk::components::topological_offset::TopoOffsetTriMesh::offset_surface_foldover_labels </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Per-vertex 0/1: has the offset curve folded back on itself at this vertex? Debug frame diagnostic; see write_vtu(). Costs one pass over the live offset edges, no field evaluation. </p>
+<p>A vertex on the offset curve carries two live offset edges. Measured through either side, the angle between them is 180 degrees where the curve is straight and 360 where the two edges lie on top of each other with that side pinched to nothing. Over FOLDOVER_OUTER_ANGLE_DEG through EITHER side is the fold, and the vertex gets 1.</p>
+<p>Which side is pinched is deliberately not determined; see the 3D twin, where the measured folds pinch the background rather than the band. Since the two sides sum to 360, the test is simply that the unsigned angle is under 360 minus the threshold. Vertices without exactly two live offset edges are left 0, as are degenerate edges: this is a diagnostic, and a number it cannot measure is not a fold.</p>
+<p>The 3D twin is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a3674ebc5f947ed793d663784c9b20195" title="Per-vertex 0/1: is this vertex an endpoint of a COLLAPSED (folded-over) offset surface edge?...">TopoOffsetTetMesh::offset_surface_foldover_labels()</a>, which asks the same question of an offset-surface EDGE's two faces and marks that edge's two endpoints. </p>
+
+</div>
+</div>
 <a id="a4cc47e628aad541ce946ca6fb81540de" name="a4cc47e628aad541ce946ca6fb81540de"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4cc47e628aad541ce946ca6fb81540de">&#9670;&#160;</a></span>offset_vertex_normal()</h2>
 
@@ -3526,6 +3541,35 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 <p>The normal at an offset vertex. Every caller that needs one goes through here, so switching the definition is a one-line edit rather than a hunt through the call sites. </p>
 <p>n is the unit vector from the nearest point on the input complex to the vertex &ndash; the direction the offset grew along. A property of the input geometry alone, so it does not move as the offset mesh is re-triangulated and it is defined for every band vertex whether or not it has live offset edges. Known weakness: it flips discontinuously across the medial axis, exactly where two offset fronts approach each other.</p>
 <dl class="section return"><dt>Returns</dt><dd>unit vector, or the zero vector where the definition cannot produce one. </dd></dl>
+
+</div>
+</div>
+<a id="a5eac82cd5ec459ca61e510f1dd963bae" name="a5eac82cd5ec459ca61e510f1dd963bae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5eac82cd5ec459ca61e510f1dd963bae">&#9670;&#160;</a></span>ops_guard_refuses_collapse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::ops_guard_refuses_collapse </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>v2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The guard's collapse test, run from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb3cf3ddec458e5b7b78947d7d0d34a4" title="Reject any collapse that violates the substructure link condition.">collapse_edge_before()</a>; see the key's spec doc. Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) is itself an offset-surface edge &ndash; band triangle on one side, background on the other &ndash; which it checks first and cheaply: everything else returns false without walking a one-ring or evaluating a potential. There is no after-half: the survivor keeps its position, so the result is measured exactly before the collapse runs. </p>
 
 </div>
 </div>
@@ -4669,6 +4713,51 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="af5c489741a962c29268265daf07ad823" name="af5c489741a962c29268265daf07ad823"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5c489741a962c29268265daf07ad823">&#9670;&#160;</a></span>swap_quality_allowed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::TopoOffsetTriMesh::swap_quality_allowed </td>
+          <td>(</td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>after</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const double&#160;</td>
+          <td class="paramname"><em>before</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>is_surface_flip</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">TopoOffsetTetMesh::swap_quality_allowed()</a>, kept so the two dimensions carry the same rule, and like it gated on EXPERIMENTAL_ops_divergence_guard. It is UNREACHABLE for an offset edge today, and not by oversight: a 2D front is a curve with no diagonal to flip, and <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a63d72ccedf89c33eca11de9f886fe281" title="User specified preparations and desideratas for an edge swap including 1.can&#39;t swap on boundary edge....">TriOptimizerMesh::swap_edge_before()</a> refuses any edge on a tracked surface outright via is_edge_on_surface(), so an offset edge never reaches a swap at all. <code>is_surface_flip</code> is therefore always false here and this always defers to the base's strict rule &ndash; which is the 2D behaviour unchanged. Should 2D ever gain a surface flip, this is where its acceptance rule belongs. </p>
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7207100bb68a33e571df720ae0545bbd">wmtk::TriOptimizerMesh</a>.</p>
+
+</div>
+</div>
 <a id="a4d48025e2cbe001b3bbb3f3f34bbf29a" name="a4d48025e2cbe001b3bbb3f3f34bbf29a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4d48025e2cbe001b3bbb3f3f34bbf29a">&#9670;&#160;</a></span>tag_bits()</h2>
 
@@ -4915,6 +5004,24 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="a4d6fa00bc3a07c5a1cd5fb4ca2e460a7" name="a4d6fa00bc3a07c5a1cd5fb4ca2e460a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d6fa00bc3a07c5a1cd5fb4ca2e460a7">&#9670;&#160;</a></span>write_debug_pvd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::write_debug_pvd </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>DEBUG_output: rewrite &lt;output&gt;{_main,_off,_surf,_edge,_front}.pvd, a ParaView time series over the debug frames. Needed because ParaView only groups a file series when the index is immediately before the extension, which is false for every companion (&lt;output&gt;_NNNNN_off.vtu). Called after every frame, so a killed run still opens. </p>
+
+</div>
+</div>
 <a id="ae51189302f0e207384ddd9bba79d7c21" name="ae51189302f0e207384ddd9bba79d7c21"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae51189302f0e207384ddd9bba79d7c21">&#9670;&#160;</a></span>write_phi_grid()</h2>
 
@@ -5034,7 +5141,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>front_refuse_converged_collapse: collapses refused because a resolved patch of the front would have come out unresolved. No swap counter here: the 3D twin also guards the surface flip, which has no 2D counterpart &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac7fa458ec03da89aa38538dd78b7905f" title="Reject a flip whose new edge already exists.">swap_edge_before()</a>. </p>
+<p>EXPERIMENTAL_ops_divergence_guard: collapses refused for raising the local sag of the offset surface. No swap counter here: the 3D twin also guards the surface flip, which has no 2D counterpart &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac7fa458ec03da89aa38538dd78b7905f" title="Reject a flip whose new edge already exists.">swap_edge_before()</a>. </p>
 
 </div>
 </div>
@@ -5090,29 +5197,6 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 <p>The turn the run is in, 1-based; 0 before the loop starts. Read only by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1148365246b4569aefcabc41dfed1950" title="Put the optimization&#39;s frames on the run&#39;s single debug timeline (see write_debug_frame()),...">write_smoothing_debug_output()</a>, to tag each frame with the turn it belongs to. </p>
-
-</div>
-</div>
-<a id="afb107e33548e6c3aaa85310037641914" name="afb107e33548e6c3aaa85310037641914"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb107e33548e6c3aaa85310037641914">&#9670;&#160;</a></span>m_collapse_guard_armed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classwmtk_1_1threading_1_1enumerable__thread__specific.html">wmtk::threading::enumerable_thread_specific</a>&lt;char&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_collapse_guard_armed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>front_refuse_converged_collapse, per collapse: 1 when <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aeb3cf3ddec458e5b7b78947d7d0d34a4" title="Reject any collapse that violates the substructure link condition.">collapse_edge_before()</a> found the endpoints' front edges resolved and the predicted result edges within the tube, so that <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ad14f55277b15130248b370fc7bfeab09" title="A collapse is accepted by the same criterion the smoothing minimises.">collapse_edge_after()</a> still has to test the survivor's ratio. </p>
 
 </div>
 </div>
@@ -5192,6 +5276,29 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="a6a1da12c7e553a3963b67d6e8f8b31b5" name="a6a1da12c7e553a3963b67d6e8f8b31b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a1da12c7e553a3963b67d6e8f8b31b5">&#9670;&#160;</a></span>m_debug_frame_labels</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::string&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_debug_frame_labels</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">mutable</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>DEBUG_output: the label of each debug frame, indexed by its sequence number, and, per companion suffix, the frame indices that actually produced one. Both exist only to write the ParaView collections &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d6fa00bc3a07c5a1cd5fb4ca2e460a7">write_debug_pvd()</a>. Same in 3D. </p>
+
+</div>
+</div>
 <a id="a0b6fe049eeb3e56e9ba0d7a79471ccb3" name="a0b6fe049eeb3e56e9ba0d7a79471ccb3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0b6fe049eeb3e56e9ba0d7a79471ccb3">&#9670;&#160;</a></span>m_debug_pass</h2>
 
@@ -5242,21 +5349,6 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 <p>Shared vertex array for every <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_tag_polyline2d.html" title="The per-tag boundary polyline, with the adjacency an arclength walk needs.">TagPolyline2d</a>: the positions as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#adcf5a59758fd47fda26157e9bcb0dc90" title="Classify every region boundary, build the per-tag containment envelopes, and tag the domain wall – on...">init_surfaces_and_boundaries()</a> saw them, indexed by the mesh vid at construction. Never renumbered &ndash; the envelopes hold the same snapshot, and both describe the input, not the live mesh. </p>
-
-</div>
-</div>
-<a id="ac88f1abc4c7715071229e7322d973920" name="ac88f1abc4c7715071229e7322d973920"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac88f1abc4c7715071229e7322d973920">&#9670;&#160;</a></span>m_front_conv_snapshot</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt;double&gt; wmtk::components::topological_offset::TopoOffsetTriMesh::m_front_conv_snapshot</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>front_refuse_converged_collapse: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa7620c0f305ceb682f3816c038dfd3cb">front_vertex_conv_ratio()</a> at every front vertex as it was at the start of the collapse group (NaN off the front), indexed by vid. The guard reads "was this converged" from here rather than re-measuring inside every hook. </p>
 
 </div>
 </div>
