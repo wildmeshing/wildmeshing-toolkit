@@ -1,5 +1,7 @@
 #include "TopoOffsetTetMesh.h"
 
+#include "Quadrics.hpp"
+
 #include <wmtk/optimization/AMIPSEnergy.hpp>
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -7,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -247,6 +250,207 @@ bool TopoOffsetTetMesh::smooth_front_vertex_phase_b(const Tuple& t)
     ++m_smooth_rejects.accepted;
     m_released_tube_dirty.store(true, std::memory_order_release); // the boundary may have moved
     return true;
+}
+
+std::array<OffsetSurfaceSample, 4> TopoOffsetTetMesh::offset_surface_samples(const Tuple& f) const
+{
+    const std::array<Tuple, 3> fv = get_face_vertices(f);
+    const Vector3d p0 = m_vertex_attribute[fv[0].vid(*this)].m_posf;
+    const Vector3d p1 = m_vertex_attribute[fv[1].vid(*this)].m_posf;
+    const Vector3d p2 = m_vertex_attribute[fv[2].vid(*this)].m_posf;
+    const Vector3d p_mid = (p0 + p1 + p2) / 3.;
+
+    constexpr double u = 0.1;
+    std::array<OffsetSurfaceSample, 4> samples;
+    samples[0].point = p_mid;
+    samples[0].weight = 1.;
+    samples[1].point = (1 - u) * p0 + u * p_mid;
+    samples[1].weight = u;
+    samples[2].point = (1 - u) * p1 + u * p_mid;
+    samples[2].weight = u;
+    samples[3].point = (1 - u) * p2 + u * p_mid;
+    samples[3].weight = u;
+
+    for (OffsetSurfaceSample& s : samples) {
+        s.nearest = m_input_complex_bvh->nearest_point(VectorXd(s.point));
+        const Vector3d diff = s.point - s.nearest;
+        const double dist = diff.norm();
+        // NOT the reference's plain .normalized(): a sample that lands ON the input complex has no
+        // direction, and normalizing a zero vector there would put NaNs into the quadric and from
+        // there into the vertex position. The reference's own `// TODO use distance to normalize`
+        // sits on that line. Zero marks the sample as unusable; the caller drops it.
+        s.normal = (dist < 1e-12) ? Vector3d::Zero() : Vector3d(diff / dist);
+    }
+    return samples;
+}
+
+bool TopoOffsetTetMesh::quadric_move_front_vertex(const size_t vid)
+{
+    // Error-quadric vertex relocation, Zint et al. 2023 Sec. 5.5, adapted to a tetrahedral
+    // background mesh as in Topological Offsets Sec. 5.3.3. WHERE THE REFERENCE IMPLEMENTATION AND
+    // THIS REPO'S OWN DELETED VERSION DISAGREE, THIS FOLLOWS THE REFERENCE -- see the table in
+    // .claude/CLAUDE.md, which also records what the deleted version measured against those
+    // choices and is the first place to look if this pass misbehaves.
+    const Vector3d p0 = m_vertex_attribute[vid].m_posf;
+
+    const std::vector<Tuple> offset_faces = offset_surface_faces_live_at(vid);
+    if (offset_faces.empty()) return false; // not on the live offset surface: nothing to do
+
+    const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(tuple_from_vertex(vid));
+    for (const Tuple& loc : locs) {
+        if (is_inverted_f(loc)) {
+            ++iter_cnt_quadric_pre_inverted;
+            return false;
+        }
+    }
+
+    // Laplacian centroid, restricted to neighbours that are also on the offset surface: pulling in
+    // input-complex or interior neighbours would drag the surface off its shape. This is what the
+    // reference gets for free by walking the link on its separate offset TriMesh.
+    Vector3d p_laplace = Vector3d::Zero();
+    {
+        int n_neighs = 0;
+        for (const size_t nb : get_one_ring_vids_for_vertex(vid)) {
+            if (!m_vertex_extra[nb].m_is_on_offset) continue;
+            p_laplace += m_vertex_attribute[nb].m_posf;
+            ++n_neighs;
+        }
+        if (n_neighs == 0) {
+            ++iter_cnt_quadric_no_neighbours;
+            return false;
+        }
+        p_laplace /= n_neighs;
+    }
+
+    // Every sample of every incident face is pooled before any plane is placed, because the target
+    // distance below is an aggregate over all of them.
+    struct WeightedSample
+    {
+        OffsetSurfaceSample s;
+        double area; // of the face the sample came from
+    };
+    std::vector<WeightedSample> samples;
+    samples.reserve(4 * offset_faces.size());
+    for (const Tuple& f : offset_faces) {
+        const std::array<Tuple, 3> face_verts = get_face_vertices(f);
+        const Vector3d p_a = m_vertex_attribute[face_verts[0].vid(*this)].m_posf;
+        const Vector3d p_b = m_vertex_attribute[face_verts[1].vid(*this)].m_posf;
+        const Vector3d p_c = m_vertex_attribute[face_verts[2].vid(*this)].m_posf;
+        // Twice the area, as the reference has it. The factor is the same for every sample of
+        // every face, so it scales the whole quadric and leaves the minimizer untouched.
+        const double area = (p_b - p_a).cross(p_c - p_a).norm();
+        for (const OffsetSurfaceSample& s : offset_surface_samples(f)) {
+            if (s.normal.squaredNorm() < 1e-20) continue; // sample sits on the complex: no normal
+            samples.push_back({s, area});
+        }
+    }
+    if (samples.empty()) {
+        ++iter_cnt_quadric_degenerate;
+        return false;
+    }
+
+    // ONE shared target distance for every plane, following the reference's vertex-level Quadrics
+    // constructor:
+    //     dist = sum(delta * area) / sum(area)        // area-weighted; delta is global here, so
+    //                                                 // this collapses to target_distance
+    //     dist = 0.5 * (dist + min sample distance)   // the reference's damping
+    // The damping is ADOPTED on Spencer's instruction. It is the most suspect part of this port:
+    // the deleted in-repo version dropped it and measured, on prism, max distance error 0.1647
+    // undamped against 0.3540 damped (avg 0.0595 against 0.0459) -- it buys average and costs more
+    // than twice the maximum, and the maximum is the criterion runs fail on. The reference can
+    // afford it because it runs distance adaptation first, so its dist_min already sits near
+    // delta; we skip adaptation, so this is a systematic pull toward wherever the surface
+    // currently is. IF max_dist_err STALLS OR REGRESSES WITH THIS PASS ON, DROP THIS LINE FIRST.
+    double dist_target = 0.;
+    {
+        double area_sum = 0.;
+        double dist_min = std::numeric_limits<double>::max();
+        for (const WeightedSample& ws : samples) {
+            dist_target += m_offset_params.target_distance * ws.area;
+            area_sum += ws.area;
+            dist_min = std::min(dist_min, (ws.s.point - ws.s.nearest).norm());
+        }
+        dist_target = (area_sum > 0.) ? dist_target / area_sum : m_offset_params.target_distance;
+        dist_target = 0.5 * (dist_target + dist_min);
+    }
+
+    Quadrics q(0., 0., 0., 0.);
+    for (const WeightedSample& ws : samples) {
+        const Vector3d target = ws.s.nearest + dist_target * ws.s.normal;
+        q += Quadrics(target, ws.s.normal) * (ws.s.weight * ws.area);
+    }
+
+    // Regularized at the Laplacian centroid, not at p0: the directions the planes leave
+    // unconstrained -- the tangential ones, which is the whole point of this pass -- fall back to
+    // the smoothed position rather than to where the vertex already is.
+    Vector3d p_target = q.solve(p_laplace, 1e-2);
+    if (!p_target.allFinite()) {
+        ++iter_cnt_quadric_degenerate;
+        return false;
+    }
+    // The reference's blend, halfway back toward where the vertex already is. No Laplacian
+    // term, unlike this repo's deleted version, which also mixed in u = 0.01 of p_laplace.
+    constexpr double w = 0.5;
+    p_target = (1. - w) * p0 + w * p_target;
+
+    // Geometric backoff, as the reference does it (u = 1/2, 1/4, ... 1/1024), NOT a bisection.
+    // A search that finds no legal step is a rejection, not a zero-length success.
+    const auto any_inverted = [&]() {
+        for (const Tuple& tet : locs) {
+            if (is_inverted(tet)) return true;
+        }
+        return false;
+    };
+    const std::shared_ptr<SampleEnvelope> hold = smoothing_containment_envelope(vid);
+    // The reference has no envelope here -- its offset surface is a separate child mesh whose only
+    // invariant is inversion. Ours is not separate: a front vertex can also sit on a region
+    // boundary or the domain wall, so it must pass the same containment test the 1-D placement
+    // applies in smooth_front_vertex_phase_b().
+    // The face SET does not change as the candidate moves, only the corner positions, so this is
+    // collected once rather than per backoff step -- it walks the one-ring.
+    const simplex::SimplexCollection held_surf =
+        hold ? get_surface_faces_for_vertex(vid) : simplex::SimplexCollection();
+    const auto outside_envelope = [&]() {
+        if (!hold) return false;
+        for (const simplex::Face& f : held_surf.faces()) {
+            const auto& fv = f.vertices();
+            const auto found = try_tuple_from_face({{fv[0], fv[1], fv[2]}});
+            if (!found) continue;
+            const size_t fid = std::get<1>(*found);
+            if (!m_face_attribute[fid].m_is_surface_fs || face_is_offset(fid)) continue;
+            const std::array<Vector3d, 3> tri = {
+                {m_vertex_attribute[fv[0]].m_posf,
+                 m_vertex_attribute[fv[1]].m_posf,
+                 m_vertex_attribute[fv[2]].m_posf}};
+            if (hold->is_outside(tri)) return true;
+        }
+        return false;
+    };
+
+    // At least one candidate was refused by the containment test rather than by inversion; used
+    // only to attribute the rejection in the counters.
+    bool envelope_blocked = false;
+    for (int i = -1; i < 10; ++i) {
+        const double u = (i < 0) ? 1. : 1. / double(2 << i);
+        set_vertex_position(vid, Vector3d((1. - u) * p0 + u * p_target));
+        if (any_inverted()) continue;
+        if (outside_envelope()) {
+            envelope_blocked = true;
+            continue;
+        }
+        for (const Tuple& loc : locs) set_cell_quality(loc.tid(*this), get_quality(loc));
+        ++iter_cnt_quadric_moved;
+        if (u < 1.) ++iter_cnt_quadric_backed_off;
+        m_released_tube_dirty.store(true, std::memory_order_release);
+        return true;
+    }
+    set_vertex_position(vid, p0);
+    if (envelope_blocked) {
+        ++iter_cnt_quadric_envelope;
+    } else {
+        ++iter_cnt_quadric_inverted;
+    }
+    return false;
 }
 
 double TopoOffsetTetMesh::front_move_alignment(const size_t vid) const

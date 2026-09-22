@@ -4,6 +4,7 @@
 #include <wmtk/optimization/SmoothVertex.hpp>
 #include <wmtk/optimization/solver.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/RunPass.hpp>
 #include <wmtk/utils/SizingField.hpp>
 #include <wmtk/utils/TetraQualityUtils.hpp>
 
@@ -4093,6 +4094,82 @@ void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& 
     if (f) f << fmt::format("{:05d}\t{}\n", idx, label);
 }
 
+void TopoOffsetTetMesh::surface_smoothing_pass()
+{
+    const std::string& method = m_offset_params.experimental_surface_smoothing_method;
+    if (method == "none") return;
+    if (method == "tangential") {
+        log_and_throw_error(
+            "EXPERIMENTAL_surface_smoothing_method 'tangential' is not implemented yet. Use "
+            "'quadrics', or 'none' for the loop as it was.");
+    }
+    if (method != "quadrics") {
+        log_and_throw_error(
+            "EXPERIMENTAL_surface_smoothing_method '{}' is not a method this build knows.",
+            method);
+    }
+    // The quadric's sample planes come from a closest-point query on the input complex and a step
+    // of the target distance along that direction -- the euclidean field, by construction. The
+    // smooth potential offers no such projection, so the pass has nothing to build planes from.
+    if (m_offset_params.offset_field != "euclidean") {
+        if (!m_quadric_field_warned.exchange(true)) {
+            logger().warn(
+                "\t[quadric] EXPERIMENTAL_surface_smoothing_method 'quadrics' needs offset_field "
+                "'euclidean' (its sample planes come from a closest-point query on the input "
+                "complex); offset_field is '{}', so the pass is skipped for this run.",
+                m_offset_params.offset_field);
+        }
+        return;
+    }
+    if (!m_input_complex_bvh) {
+        if (!m_quadric_field_warned.exchange(true)) {
+            logger().warn("\t[quadric] no input-complex BVH: the pass is skipped for this run.");
+        }
+        return;
+    }
+
+    m_surface_smoothing_ran.store(true);
+
+    std::vector<std::pair<std::string, Tuple>> ops;
+    for (const Tuple& loc : get_vertices()) {
+        const size_t vid = loc.vid(*this);
+        // The canonical live-front test, as smoothing_progress() uses it.
+        if (!m_vertex_extra[vid].m_is_on_offset) continue;
+        if (!m_vertex_attribute[vid].m_is_rounded) continue;
+        ops.emplace_back("offset_quadric", loc);
+    }
+    if (ops.empty()) return;
+
+    // VertexRing is the claim the quadric needs and the one smoothing already takes: it reads the
+    // one-ring's positions and writes only the centre vertex. The operation is registered on the
+    // executor here rather than in the shared op map, and captures `this` because the executor is
+    // templated on the optimizer base and cannot see a TopoOffsetTetMesh member (RunPass.hpp).
+    run_pass(
+        *this,
+        PassLock::VertexRing,
+        "quadric relocation operation",
+        [&](ExecutePass<TetOptimizerMesh>& executor, TetOptimizerMesh& mesh) {
+            executor.edit_operation_maps["offset_quadric"] =
+                [this](TetOptimizerMesh&, const Tuple& t) -> std::optional<std::vector<Tuple>> {
+                if (quadric_move_front_vertex(t.vid(*this))) return std::vector<Tuple>{};
+                return {};
+            };
+            executor(mesh, ops);
+        });
+
+    // One frame per pass, on the run's single timeline, so a quadric move is visible on its own
+    // rather than smeared into the first smoothing frame after it. The base writes its frames
+    // the same way (TetOptimizerMesh.cpp:209, :399); m_debug_pass_name is what the label's
+    // "_<op>" suffix comes from, and it is restored so the smoothing frames that follow keep
+    // their own name.
+    if (m_params.debug_output) {
+        const std::string saved_pass_name = m_debug_pass_name;
+        m_debug_pass_name = "quadric";
+        write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
+        m_debug_pass_name = saved_pass_name;
+    }
+}
+
 void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
 {
     const size_t idx = m_debug_seq++;
@@ -4231,10 +4308,35 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         rebuild_offset_envelope();
         const int guard_c0 = iter_cnt_collapse_guard_reject.load();
         const int guard_s0 = iter_cnt_swap_guard_reject.load();
+        const int quad_mv0 = iter_cnt_quadric_moved.load();
+        const int quad_bk0 = iter_cnt_quadric_backed_off.load();
+        const int quad_nn0 = iter_cnt_quadric_no_neighbours.load();
+        const int quad_dg0 = iter_cnt_quadric_degenerate.load();
+        const int quad_pi0 = iter_cnt_quadric_pre_inverted.load();
+        const int quad_iv0 = iter_cnt_quadric_inverted.load();
+        const int quad_en0 = iter_cnt_quadric_envelope.load();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
-            if (m_offset_params.adaptive_smoothing) {
+            if (m_offset_params.experimental_surface_smoothing_method != "none") {
+                // EXPERIMENTAL_surface_smoothing_method: the group's operations, then N passes
+                // that move the offset-surface vertices TANGENTIALLY, then the group's ordinary
+                // smoothing -- whose 1-D normal solve is what puts them back on the level set.
+                // The ops and the smoothing are split out of one local_operations() call to get
+                // in between them; with the key at its "none" default the branch below runs
+                // exactly as it always has, single call and all.
+                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
+                const int sm_passes =
+                    std::max(1, m_offset_params.experimental_surface_smoothing_passes);
+                for (int n = 0; n < sm_passes; ++n) {
+                    surface_smoothing_pass();
+                }
+                if (m_offset_params.adaptive_smoothing) {
+                    smooth_group_to_convergence(group_names[gi]);
+                } else {
+                    local_operations({{0, 0, 0, k}});
+                }
+            } else if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
@@ -4292,6 +4394,27 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         check_offset_membership(fmt::format("turn {}", it + 1).c_str());
         // Not gated on the key: silent unless a face lookup actually missed this run.
         report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
+        if (m_surface_smoothing_ran.load()) {
+            const int moved = iter_cnt_quadric_moved.load() - quad_mv0;
+            const int nn = iter_cnt_quadric_no_neighbours.load() - quad_nn0;
+            const int dg = iter_cnt_quadric_degenerate.load() - quad_dg0;
+            const int pi = iter_cnt_quadric_pre_inverted.load() - quad_pi0;
+            const int iv = iter_cnt_quadric_inverted.load() - quad_iv0;
+            const int en = iter_cnt_quadric_envelope.load() - quad_en0;
+            logger().info(
+                "\t[quadric] turn {}: {} vertices moved ({} refused: {} no-neighbours, {} "
+                "degenerate, {} pre-inverted, {} inverted, {} envelope), {} backed off by the "
+                "inversion search",
+                it + 1,
+                moved,
+                nn + dg + pi + iv + en,
+                nn,
+                dg,
+                pi,
+                iv,
+                en,
+                iter_cnt_quadric_backed_off.load() - quad_bk0);
+        }
         if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
                 "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
@@ -4477,6 +4600,15 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_swap = 0;
     iter_cnt_collapse_guard_reject = 0;
     iter_cnt_swap_guard_reject = 0;
+    iter_cnt_quadric_moved = 0;
+    iter_cnt_quadric_backed_off = 0;
+    iter_cnt_quadric_no_neighbours = 0;
+    iter_cnt_quadric_degenerate = 0;
+    iter_cnt_quadric_pre_inverted = 0;
+    iter_cnt_quadric_inverted = 0;
+    iter_cnt_quadric_envelope = 0;
+    m_quadric_field_warned = false;
+    m_surface_smoothing_ran = false;
     m_smooth_trace.reset();
     optimization_metrics.clear();
     op_counts.clear();
@@ -4503,6 +4635,22 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
+    if (m_surface_smoothing_ran.load()) {
+        logger().info(
+            "surface smoothing (EXPERIMENTAL_surface_smoothing_method '{}', {} pass(es) per "
+            "group): {} vertex moves accepted, of which {} had to be backed off by the inversion "
+            "search | refused: {} no-neighbours, {} degenerate, {} pre-inverted, {} inverted, {} "
+            "envelope",
+            m_offset_params.experimental_surface_smoothing_method,
+            std::max(1, m_offset_params.experimental_surface_smoothing_passes),
+            iter_cnt_quadric_moved.load(),
+            iter_cnt_quadric_backed_off.load(),
+            iter_cnt_quadric_no_neighbours.load(),
+            iter_cnt_quadric_degenerate.load(),
+            iter_cnt_quadric_pre_inverted.load(),
+            iter_cnt_quadric_inverted.load(),
+            iter_cnt_quadric_envelope.load());
+    }
     if (m_offset_params.experimental_ops_divergence_guard) {
         logger().info(
             "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses and {} swaps refused "

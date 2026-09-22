@@ -182,6 +182,16 @@ struct Parameters : public wmtk::OptimizerParameters
     /// false additionally requires that the previous turn lowered no sizing scalar, which is one
     /// turn of hysteresis against the tail's churn. Default true.
     bool experimental_exit_when_criteria_met;
+    /// EXPERIMENTAL, 3D only. See the spec: which extra pass, if any, moves the offset-surface
+    /// vertices before each smoothing block. "none" (the default) is the loop as it has always
+    /// been. "quadrics" runs the error-quadric relocation of Zint et al. 2023 Sec. 5.5, which
+    /// redistributes vertices TANGENTIALLY so the 1-D normal solve that follows can put them back
+    /// on the level set. "tangential" is reserved and throws.
+    std::string experimental_surface_smoothing_method;
+    /// EXPERIMENTAL, 3D only. See the spec: how many passes of
+    /// experimental_surface_smoothing_method to run per smoothing block. Ignored when the method
+    /// is "none".
+    int experimental_surface_smoothing_passes;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -250,6 +260,10 @@ struct Parameters : public wmtk::OptimizerParameters
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
         experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
         experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
+        experimental_surface_smoothing_method =
+            json_params["EXPERIMENTAL_surface_smoothing_method"];
+        experimental_surface_smoothing_passes =
+            json_params["EXPERIMENTAL_surface_smoothing_passes"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];

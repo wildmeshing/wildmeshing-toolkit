@@ -51,6 +51,8 @@
       "EXPERIMENTAL_ops_divergence_guard",
       "EXPERIMENTAL_flip_sag_margin",
       "EXPERIMENTAL_exit_when_criteria_met",
+      "EXPERIMENTAL_surface_smoothing_method",
+      "EXPERIMENTAL_surface_smoothing_passes",
       "max_iterations",
       "offset_envelope_rel",
       "length_rel",
@@ -415,6 +417,24 @@
     "type": "bool",
     "default": true,
     "doc": "EXPERIMENTAL. Single-phase loop only. How the loop is allowed to STOP once the front meets its criterion. false: the turn that meets it must also follow a turn in which no sizing scalar was lowered, so the loop needs the criterion met and the previous turn already quiet -- one turn of hysteresis. true (the default): the loop exits on the first turn that meets the criterion, whatever the previous turn did, which is how TetWild's own loop stops (it breaks the moment max energy is under stop_energy and every vertex is rounded, and its stuck-refine is a response to being above the bar rather than a term in the stopping test). The criterion itself is unchanged either way: every front vertex within front_conv_rel x target_distance, none unmeasurable, and no face left to resolve. WHY IT EXISTS: the false branch's extra turn is there because the offsets criterion carries a request for work into the next turn -- refinement is decided at the end of a turn and only executed by the next turn's split pass -- whereas TetWild's max AMIPS is a property of the mesh in hand. Measured on the cube at target_distance_rel 1e-3, the split pass mints a fresh crop of over-tube faces every turn on the quarter-cylinders and the collapse pass clears them again, with NOT ONE face surviving from one pass to the next, so the count at turn end is near-random in the tail (5, 2, 0, 2) and the hysteresis can cost many turns waiting for two of them to line up. A turn that meets the criterion has an empty refinable set by construction, so it never has a pending refinement of its own; what that branch waits on is the turn BEFORE it."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_surface_smoothing_method",
+    "type": "string",
+    "default": "none",
+    "options": [
+      "none",
+      "quadrics",
+      "tangential"
+    ],
+    "doc": "EXPERIMENTAL. 3D single-phase loop only; 2D does not read it. Which extra pass, if any, moves the offset-surface vertices immediately before each operation group's smoothing block. \"none\" (the default) is the loop exactly as it has always been: nothing extra runs and no behaviour changes. \"quadrics\" runs the error-quadric vertex relocation of Zint et al. 2023 Sec. 5.5, as adapted to a tetrahedral background mesh in Topological Offsets Sec. 5.3.3. For each offset-surface vertex it takes the Laplacian centroid of the vertex's offset-surface neighbours, builds one quadric from the tangent planes of the IDEAL offset surface sampled over every incident offset face (4 samples per face, the centroid at weight 1 and one near each corner at 0.1, each plane weighted by the face area and placed at the nearest point on the input complex stepped out by the shared target distance), solves it with an SVD pseudo-inverse regularized toward that centroid, blends the result halfway back toward the vertex's current position, and moves there -- backing the move off geometrically if it would invert an incident tet, and refusing it outright if no fraction clears. WHY IT EXISTS: the 1-D solve under front_normal_projection moves a front vertex only along the field normal, so it can fix a vertex's DISTANCE but never its position ALONG the front. The quadric pass moves vertices tangentially, toward where the geometry needs them, and the normal solve that runs straight afterwards puts them back on the level set. It requires offset_field \"euclidean\": the sample planes come from a closest-point query on the input complex, which the smooth potential does not provide, and under \"smooth\" the pass warns once and is skipped. \"tangential\" is reserved for a second method and currently throws."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_surface_smoothing_passes",
+    "type": "int",
+    "default": 1,
+    "min": 1,
+    "doc": "EXPERIMENTAL. 3D single-phase loop only; 2D does not read it. How many passes of EXPERIMENTAL_surface_smoothing_method to run per operation group, before that group's smoothing block. Ignored entirely when the method is \"none\". Each pass is a full sweep over every offset-surface vertex, so the cost scales with this directly."
   },
   {
     "pointer": "/coarsen_pass",

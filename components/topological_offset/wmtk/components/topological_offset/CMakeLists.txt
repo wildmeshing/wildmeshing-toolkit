@@ -13,6 +13,8 @@ set(SRC_FILES
 	TopoOffsetTetMesh.cpp
 	Optimize3d.cpp
 	FrontSmooth3d.cpp
+	Quadrics.hpp
+	Quadrics.cpp
 	Optimize2d.cpp
 
 	TopoOffsetTriMesh.h

@@ -88,6 +88,22 @@ public:
 };
 
 
+/// One sample of an offset-surface face, used to build the error quadric under
+/// EXPERIMENTAL_surface_smoothing_method "quadrics". `point` is the sample on the CURRENT face;
+/// `nearest` is its closest point on the input complex and `normal` the unit direction from that
+/// foot to the sample -- i.e. the gradient of the euclidean distance field, which is the normal of
+/// the ideal offset surface there. `weight` is the sample's share of its face (1 at the centroid,
+/// 0.1 near each corner). A sample sitting ON the input complex has no direction; `normal` is then
+/// exactly zero and the caller must drop it.
+struct OffsetSurfaceSample
+{
+    Vector3d point = Vector3d::Zero();
+    Vector3d nearest = Vector3d::Zero();
+    Vector3d normal = Vector3d::Zero();
+    double weight = 0.;
+};
+
+
 /// Per-face construction label; the surface tags themselves are the base's
 /// wmtk::SurfaceTagAttributes. Registered with m_face_attr_group.
 class FaceExtra
@@ -582,6 +598,19 @@ public:
     /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
     /// operation hooks, where the list would be allocated and thrown away.
     bool vertex_has_live_offset_face(size_t vid) const;
+    /// The 4 quadric samples of one offset-surface face: the centroid at weight 1, and one at
+    /// (1 - u) * corner + u * centroid with u = 0.1 at weight 0.1 for each corner. Each is
+    /// projected onto the input complex to give its foot and its offset normal. Follows the
+    /// reference implementation's get_triangle_samples_and_area().
+    std::array<OffsetSurfaceSample, 4> offset_surface_samples(const Tuple& f) const;
+    /// EXPERIMENTAL_surface_smoothing_method "quadrics": move ONE offset-surface vertex by the
+    /// error-quadric relocation of Zint et al. 2023 Sec. 5.5. Returns whether the vertex moved.
+    /// Reads the one-ring, so it must be called under a VertexRing claim.
+    bool quadric_move_front_vertex(size_t vid);
+    /// One full pass of experimental_surface_smoothing_method over every live offset-surface
+    /// vertex, run before a smoothing block. A no-op unless the method is "quadrics"; throws on
+    /// "tangential"; warns once and returns under offset_field "smooth".
+    void surface_smoothing_pass();
     /**
      * @brief Re-derive m_is_on_offset for one vertex from the cell labels, exactly.
      *
@@ -711,6 +740,25 @@ public:
     /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
+    /// EXPERIMENTAL_surface_smoothing_method "quadrics": outcomes of the quadric pass, run totals.
+    /// `backed_off` counts moves the inversion search had to shorten -- it accepts as little as
+    /// 1/1024 of the asked-for move, so a large count means the pass is reporting successes that
+    /// delivered almost none of the redistribution, which the acceptance count alone would hide.
+    std::atomic<int> iter_cnt_quadric_moved{0};
+    std::atomic<int> iter_cnt_quadric_backed_off{0};
+    std::atomic<int> iter_cnt_quadric_no_neighbours{0};
+    std::atomic<int> iter_cnt_quadric_degenerate{0};
+    std::atomic<int> iter_cnt_quadric_pre_inverted{0};
+    std::atomic<int> iter_cnt_quadric_inverted{0};
+    std::atomic<int> iter_cnt_quadric_envelope{0};
+    /// Latched so the "needs offset_field euclidean" warning is printed once per run, not once per
+    /// turn per group.
+    std::atomic<bool> m_quadric_field_warned{false};
+    /// Set the first time surface_smoothing_pass() gets past its skip checks and actually runs.
+    /// The per-turn and run-total lines are gated on it, so a run that asked for a method it
+    /// cannot use (offset_field "smooth") reports the one warning and then stays quiet, instead of
+    /// printing a row of all-zero counters every turn.
+    std::atomic<bool> m_surface_smoothing_ran{false};
 
     /// [flip trace]: is the swap pass walking the offset surface's sag down monotonically, and in
     /// steps of what size? The per-turn lines cannot answer that, because a pass that does not
