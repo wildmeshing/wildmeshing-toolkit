@@ -744,6 +744,16 @@ public:
     /// `backed_off` counts moves the inversion search had to shorten -- it accepts as little as
     /// 1/1024 of the asked-for move, so a large count means the pass is reporting successes that
     /// delivered almost none of the redistribution, which the acceptance count alone would hide.
+    /// EXPERIMENTAL_refinement_strat "split_longest": set for the duration of the forced-split
+    /// pass so the split hooks attribute their refusals to it. The ordinary split passes leave
+    /// it false and are unaffected.
+    std::atomic<bool> m_forced_split_pass{false};
+    /// Forced-split census, per pass: reached split_edge_before, refused there (the shared
+    /// high-valence gate), refused in split_edge_after (quality / envelope / inversion), taken.
+    std::atomic<int> iter_cnt_forced_split_attempted{0};
+    std::atomic<int> iter_cnt_forced_split_refused_before{0};
+    std::atomic<int> iter_cnt_forced_split_refused_after{0};
+    std::atomic<int> iter_cnt_forced_split_taken{0};
     std::atomic<int> iter_cnt_quadric_moved{0};
     std::atomic<int> iter_cnt_quadric_backed_off{0};
     std::atomic<int> iter_cnt_quadric_no_neighbours{0};
@@ -1073,9 +1083,6 @@ public:
     /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio measures it, with an
     /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
     double offset_face_sag(size_t a, size_t b, size_t c) const;
-    /// The largest offset_face_sag() over a set of faces given by their vertex triples; 0 for an
-    /// empty set.
-    double max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
     /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
     /// exactly on the offset surface, which it checks first and cheaply: everything else returns
@@ -1667,14 +1674,18 @@ public:
     /// turns across the chord. Same formula as 2D.
     double front_chord_target(size_t va, size_t vb, double len, double sag, double tube) const;
 
-    /// The resolution rule: sets the target length at each refinable face's three corners from
-    /// front_chord_target() over its longest edge with the centroid sag, graded outward.
-    /// Returns the vertices changed.
+    /// EXPERIMENTAL_refinement_strat "sizing_curvature": sets the target length at each
+    /// refinable face's three corners from front_chord_target() over its longest edge with the
+    /// centroid sag, graded outward. Returns the vertices changed.
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& faces);
-    /// sag_halve_refinement: halve the sizing scalar at the corners of every refinable face,
-    /// once per vertex per call, floored like refine_front_from_sag(), then graded outward.
-    /// Returns the number of vertices lowered.
+    /// EXPERIMENTAL_refinement_strat "sizing_half" (the default): halve the sizing scalar at the
+    /// corners of every refinable face, once per vertex per call, floored like
+    /// refine_front_from_sag(), then graded outward. Returns the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
+    /// EXPERIMENTAL_refinement_strat "split_longest" (3D only): leaves the sizing field alone
+    /// and splits each refinable face's longest edge, in its own forced-edge pass inside the
+    /// turn, before the turn's end frame. Returns the distinct edges offered.
+    size_t refine_front_by_splitting(const std::vector<EnergyCriterion::Refinable>& faces);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),

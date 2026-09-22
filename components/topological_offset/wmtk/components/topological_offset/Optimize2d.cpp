@@ -4128,8 +4128,18 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         const size_t lowered_prev = lowered_last_turn;
         lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
-            // sag_halve_refinement: halve the ends' scalars instead of the chord target.
-            const bool halve = m_offset_params.sag_halve_refinement;
+            // EXPERIMENTAL_refinement_strat, the shared key that replaced the bool
+            // sag_halve_refinement. 2D reads only the two SIZING strategies and its behaviour at
+            // the default is unchanged: "sizing_half" is the old true, "sizing_curvature" the
+            // old false. "split_longest" is 3D only and throws here rather than silently doing
+            // something else -- see .claude/CLAUDE.md on the unported 3D changes.
+            const std::string& strat = m_offset_params.experimental_refinement_strat;
+            if (strat == "split_longest") {
+                log_and_throw_error(
+                    "EXPERIMENTAL_refinement_strat 'split_longest' is implemented in 3D only; 2D "
+                    "takes 'sizing_half' or 'sizing_curvature'.");
+            }
+            const bool halve = strat == "sizing_half";
             const size_t n =
                 halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
             lowered_last_turn = n;
@@ -4142,7 +4152,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 ec.max_edge_placed,
                 ec.worst_placed_mid.x(),
                 ec.worst_placed_mid.y(),
-                halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
+                halve ? "sizing scalar halved (sizing_half)" : "target lowered (sizing_curvature)",
                 n);
         }
         // Termination: every front vertex's Newton step within the bar, none unmeasurable, and

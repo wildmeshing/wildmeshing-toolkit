@@ -1795,7 +1795,8 @@ public:
     /// The resolution rule: sets the target length at each refinable edge's ends from
     /// front_chord_target(), graded outward. Returns the vertices changed.
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& edges);
-    /// sag_halve_refinement: halve the sizing scalar at the ends of every refinable edge, once
+    /// EXPERIMENTAL_refinement_strat "sizing_half": halve the sizing scalar at the ends of
+    /// every refinable edge, once
     /// per vertex per call, floored like refine_front_from_sag(), then graded outward. Returns
     /// the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& edges);

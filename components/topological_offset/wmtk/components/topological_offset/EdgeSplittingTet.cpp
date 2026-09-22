@@ -16,6 +16,16 @@ bool TopoOffsetTetMesh::split_edge_before(const Tuple& t)
     // carries per-simplex labels the shared engine knows nothing about.
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
         if (is_edge_on_offset(t)) ++iter_cnt_split_offset_before;
+        // EXPERIMENTAL_refinement_strat "split_longest": census of the forced-split pass, so a
+        // refusal there can be attributed instead of inferred from the vertex count.
+        if (m_forced_split_pass.load(std::memory_order_relaxed)) {
+            ++iter_cnt_forced_split_attempted;
+            if (!TetOptimizerMesh::split_edge_before(t)) {
+                ++iter_cnt_forced_split_refused_before;
+                return false;
+            }
+            return true;
+        }
         // Nothing is frozen against splits: refining a surface is not moving it, so the midpoint
         // is checked against its tags' boundary envelopes like any other tracked geometry -- the
         // input complex and the domain wall alike, the wall being a region boundary like any
@@ -184,9 +194,12 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
+        const bool forced = m_forced_split_pass.load(std::memory_order_relaxed);
         if (!TetOptimizerMesh::split_edge_after(t)) {
+            if (forced) ++iter_cnt_forced_split_refused_after;
             return false;
         }
+        if (forced) ++iter_cnt_forced_split_taken;
         ++iter_cnt_split;
         // Read from the result, not from a cached flag: the new vertex is on the offset iff
         // split_after_cells() derived it so from the endpoints.

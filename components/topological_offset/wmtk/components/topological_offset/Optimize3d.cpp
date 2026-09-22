@@ -958,15 +958,6 @@ double TopoOffsetTetMesh::offset_face_sag(const size_t a, const size_t b, const 
     return r;
 }
 
-double TopoOffsetTetMesh::max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const
-{
-    double worst = 0.;
-    for (const std::array<size_t, 3>& f : faces) {
-        worst = std::max(worst, offset_face_sag(f[0], f[1], f[2]));
-    }
-    return worst;
-}
-
 bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t v2) const
 {
     // EXPERIMENTAL_ops_divergence_guard, the collapse half. v1 is removed and v2 survives at its
@@ -991,36 +982,50 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // surface -- but it is the one behavioural change here, not just a saving.
     if (!edge_is_offset_surface_live(v1, v2)) return false;
 
-    std::vector<std::array<size_t, 3>> before;
-    std::set<size_t> seen;
-    for (const size_t v : {v1, v2}) {
-        for (const Tuple& f : offset_surface_faces_live_at(v)) {
-            if (!seen.insert(f.fid(*this)).second) continue;
-            before.push_back(face_vids(f));
-        }
-    }
-    // Unreachable through the gate above (an edge on the offset surface has an incident offset
-    // face at both of its ends), and kept so max_offset_face_sag() is never asked for the
-    // maximum of an empty set.
-    if (before.empty()) return false;
+    // PAIRWISE, not max against max. Only the REMOVED vertex's faces change geometry: v2 keeps
+    // its own position and the base moves no vertex, so every offset face at v2 that does not
+    // carry the collapsed edge ends the collapse with all three corners exactly where they
+    // started -- comparing it would be comparing a face with itself. The faces at v1 each lose
+    // v1 and gain v2, and the faces carrying the edge itself vanish. So of the N offset faces at
+    // v1, the two on the edge go and the other N-2 are the entire geometric change this collapse
+    // makes to the offset surface, each with an exact before and an exact after available here.
+    //
+    // WHY THIS REPLACED A MAXIMUM. The old test compared max(before) against max(after) over the
+    // union of both endpoints' faces. Those two sets share every face away from the edge, so on
+    // a front where any face in the ring is already bad the maximum is saturated and a face
+    // going from well under the bar to many times it is invisible. Measured on the cube at
+    // target_distance_rel 1e-2 with EXPERIMENTAL_refinement_strat split_longest: with ~630 of
+    // ~1340 offset faces over the tube and the max pinned at 6.27x, ~500 forced splits per turn
+    // were collapsed straight back out and the sag did not move for 27 turns.
+    for (const Tuple& f : offset_surface_faces_live_at(v1)) {
+        const std::array<size_t, 3> before = face_vids(f);
+        bool has2 = false;
+        for (const size_t v : before) has2 = has2 || v == v2;
+        if (has2) continue; // carries the collapsed edge: this face vanishes
 
-    std::vector<std::array<size_t, 3>> after;
-    after.reserve(before.size());
-    for (std::array<size_t, 3> f : before) {
-        bool has1 = false, has2 = false;
-        for (const size_t v : f) {
-            has1 = has1 || v == v1;
-            has2 = has2 || v == v2;
-        }
-        if (has1 && has2) continue; // the faces on the collapsed edge vanish
-        for (size_t& v : f) {
+        std::array<size_t, 3> after = before;
+        for (size_t& v : after) {
             if (v == v1) v = v2;
         }
-        after.push_back(f);
+
+        const double s_before = offset_face_sag(before[0], before[1], before[2]);
+        const double s_after = offset_face_sag(after[0], after[1], after[2]);
+        // THE RULE, per face. 3D ONLY -- 2D still compares maxima and refuses on any rise; see
+        // the note in .claude/CLAUDE.md.
+        //   unresolved (s_before >= 1): allow when THIS face does not get worse. Equal is
+        //     allowed, so the passes can still coarsen where they are not hurting.
+        //   resolved (s_before < 1): allow any change that leaves THIS face resolved, even a
+        //     rise. Below the bar a rise costs nothing the convergence criterion can see.
+        // Both values are >= 0 and never NaN: offset_face_sag maps every non-finite or negative
+        // ratio to +infinity. A face that was already unmeasurable takes the first branch and
+        // may stay unmeasurable (infinity <= infinity); a resolved face that BECOMES
+        // unmeasurable takes the second and is refused, since infinity is not below the bar.
+        const bool allowed = (s_before >= 1.) ? (s_after <= s_before) : (s_after < 1.);
+        if (!allowed) return true;
     }
-    // Strictly greater: a collapse that leaves the worst face exactly as bad is allowed, so the
-    // passes can still coarsen freely wherever they are not making the front worse.
-    return max_offset_face_sag(after) > max_offset_face_sag(before);
+    // Every face that changes is acceptable -- including the vacuous case of no such face, which
+    // the gate above makes unreachable anyway.
+    return false;
 }
 
 bool TopoOffsetTetMesh::collapse_before_vertex(
@@ -3094,6 +3099,100 @@ size_t TopoOffsetTetMesh::refine_front_by_halving(
     return changed.size();
 }
 
+size_t TopoOffsetTetMesh::refine_front_by_splitting(
+    const std::vector<EnergyCriterion::Refinable>& faces)
+{
+    // EXPERIMENTAL_refinement_strat "split_longest". The sizing field is not touched -- it is
+    // pinned at 1.0 for the whole single-phase loop (see optimize_offset_single_phase) -- and
+    // each refinable face's longest edge is split HERE, inside the turn, before the turn's end
+    // frame. `a` and `b` ARE that longest edge: energy_criterion() picks the longest of the
+    // three and stores its two ends there. Several faces routinely name the same edge, hence
+    // the set.
+    std::set<std::array<size_t, 2>> want;
+    for (const EnergyCriterion::Refinable& r : faces) {
+        if (r.a == r.b) continue;
+        want.insert({{std::min(r.a, r.b), std::max(r.a, r.b)}});
+    }
+
+    std::vector<std::pair<std::string, Tuple>> ops;
+    ops.reserve(want.size());
+    m_force_split_edges.clear();
+    for (const std::array<size_t, 2>& e : want) {
+        const Tuple t = tuple_from_edge({{e[0], e[1]}});
+        if (!t.is_valid(*this)) continue; // the operation passes may have removed it
+        ops.emplace_back("edge_split", t);
+        // Marks these as forced for anything downstream that asks (the base's force-split
+        // tally). The LENGTH GATE is not the reason: it lives in split_all_edges'
+        // is_weight_up_to_date, and this pass never goes through split_all_edges.
+        m_force_split_edges.insert(simplex::Edge(e[0], e[1]));
+    }
+    if (ops.empty()) {
+        m_force_split_edges.clear();
+        return 0;
+    }
+
+    // THE HIGH-VALENCE CLAIM ARRAY IS PER PASS AND MUST BE RESET HERE. split_all_edges
+    // allocates a fresh zeroed one at the top of every split pass
+    // (TetOptimizerMeshSplit.cpp:23-36) because the gate lets a high-valence vertex absorb ONE
+    // valence-raising split per pass and marks it spent. This pass does not go through
+    // split_all_edges, so without this it would inherit the claims left by the turn's own split
+    // group -- every high-valence vertex already spent -- and refuse every forced edge whose
+    // link touches one, for a reason that belongs to a different pass. Measured before the fix:
+    // 106 of 488 offered edges refused on turn 1.
+    if (m_params.split_high_valence_threshold > 0) {
+        m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
+        m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
+    }
+    const size_t hv_before = m_high_valence_rejects.load();
+    iter_cnt_forced_split_attempted = 0;
+    iter_cnt_forced_split_refused_before = 0;
+    iter_cnt_forced_split_refused_after = 0;
+    iter_cnt_forced_split_taken = 0;
+
+    // EdgeRing is the claim a split takes. The executor's DEFAULTS are what make this a
+    // forced-edge pass and nothing more: is_weight_up_to_date returns true (so no length gate)
+    // and renew_neighbor_tuples returns {} (so a split enqueues nothing and cannot cascade).
+    // Each queued edge is therefore offered exactly once.
+    const size_t before_v = vert_capacity();
+    m_forced_split_pass.store(true, std::memory_order_relaxed);
+    run_pass(
+        *this,
+        PassLock::EdgeRing,
+        "front force-split operation",
+        [&](ExecutePass<TetOptimizerMesh>& executor, TetOptimizerMesh& mesh) {
+            executor(mesh, ops);
+        });
+    m_forced_split_pass.store(false, std::memory_order_relaxed);
+    m_force_split_edges.clear();
+    // Counted BEFORE the consolidation below, which compacts the array and would hide it.
+    const size_t added = vert_capacity() > before_v ? vert_capacity() - before_v : size_t(0);
+    const int attempted = iter_cnt_forced_split_attempted.load();
+    const int ref_before = iter_cnt_forced_split_refused_before.load();
+    const int ref_after = iter_cnt_forced_split_refused_after.load();
+    const int taken = iter_cnt_forced_split_taken.load();
+    const size_t hv = m_high_valence_rejects.load() - hv_before;
+
+    // The turn measured its criterion and printed its line before this pass ran, so the mesh the
+    // end frame is about to show is this one -- compacted, as every previous end frame was,
+    // since consolidate_mesh() ran earlier in the turn and these splits came after it.
+    consolidate_mesh();
+    // Every edge is accounted for: offered = never reached the hook + refused before + refused
+    // after + taken. "never reached" is the executor declining to run it at all -- a tuple the
+    // pass's own earlier splits invalidated, or a vertex lock it could not take.
+    logger().info(
+        "\t[split_longest] turn refinement: {} distinct longest edge(s) offered -> {} taken, "
+        "{} refused before ({} by the high-valence gate), {} refused after (quality / envelope "
+        "/ inversion), {} never reached the hook | {} vertices added",
+        ops.size(),
+        taken,
+        ref_before,
+        hv,
+        ref_after,
+        static_cast<int>(ops.size()) - attempted,
+        added);
+    return ops.size();
+}
+
 TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
     const std::vector<Vector3d>& before)
 {
@@ -4254,6 +4353,33 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         m_front_gradient_reference,
         m_offset_params.front_conv_criterion,
         m_offset_params.front_conv_rel);
+    // EXPERIMENTAL_refinement_strat: validate once, here, rather than only at the first turn
+    // that has something refinable -- a run that never refines should still refuse a strategy
+    // this build cannot carry out. jse already restricts the value to the spec's options, so
+    // this fires only for a build/spec mismatch.
+    {
+        const std::string& strat = m_offset_params.experimental_refinement_strat;
+        if (strat != "sizing_half" && strat != "sizing_curvature" && strat != "split_longest") {
+            log_and_throw_error(
+                "EXPERIMENTAL_refinement_strat '{}' is not a strategy this build knows.",
+                strat);
+        }
+        if (strat == "split_longest") {
+            // The strategy replaces the sizing field outright: it is set to 1.0 here and nothing
+            // in the loop lowers it again (the two sizing strategies are the only lowering sites
+            // in the turn body, and refine_sizing_around_worst belongs to mesh_improvement, i.e.
+            // Phase A, which this loop does not run). A split child takes the mean of its
+            // parents and a collapse survivor their min, so 1.0 everywhere is a fixed point:
+            // every vertex the loop creates is born at 1.0 too.
+            for (const Tuple& v : get_vertices()) {
+                m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
+            }
+            logger().info(
+                "\t[sizing] EXPERIMENTAL_refinement_strat 'split_longest': the sizing field is "
+                "pinned at 1.0 for the whole loop; the front is resolved by force-splitting each "
+                "refinable face's longest edge instead.");
+        }
+    }
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement() so
@@ -4417,38 +4543,59 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         }
         if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
-                "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
-                "offset surface and {} swap(s) for not lowering it by the margin ({} / {} in the "
-                "run so far)",
+                "\t[ops guard] turn {}: {} collapse(s) refused for leaving the offset surface "
+                "unresolved or worse and {} swap(s) for not lowering the local sag by the margin "
+                "({} / {} in the run so far)",
                 it + 1,
                 iter_cnt_collapse_guard_reject.load() - guard_c0,
                 iter_cnt_swap_guard_reject.load() - guard_s0,
                 iter_cnt_collapse_guard_reject.load(),
                 iter_cnt_swap_guard_reject.load());
         }
-        if (m_offset_params.debug_output) {
-            write_optimization_debug_output(fmt::format("phase_{}S", it + 1));
-        }
         const size_t lowered_prev = lowered_last_turn;
         lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
-            // sag_halve_refinement: halve the corners' scalars instead of the chord target.
-            const bool halve = m_offset_params.sag_halve_refinement;
-            const size_t n =
-                halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
+            // EXPERIMENTAL_refinement_strat picks how the refinable faces are resolved. The two
+            // sizing strategies lower the field and report vertices; split_longest queues edges
+            // and reports edges. Either way the count feeds lowered_last_turn, so the loop's one
+            // turn of hysteresis behaves the same under all three.
+            const std::string& strat = m_offset_params.experimental_refinement_strat;
+            size_t n = 0;
+            const char* what = nullptr;
+            if (strat == "sizing_half") {
+                n = refine_front_by_halving(ec.refinable);
+                what = "sizing scalar halved (sizing_half) at {} vertices";
+            } else if (strat == "sizing_curvature") {
+                n = refine_front_from_sag(ec.refinable);
+                what = "sizing target lowered (sizing_curvature) at {} vertices";
+            } else if (strat == "split_longest") {
+                n = refine_front_by_splitting(ec.refinable);
+                what = "longest edge queued for a force-split (split_longest): {} edges";
+            } else {
+                log_and_throw_error(
+                    "EXPERIMENTAL_refinement_strat '{}' is not a strategy this build knows.",
+                    strat);
+            }
             lowered_last_turn = n;
             logger().info(
                 "\t[resolution] turn {}: {} front face(s) with all corners placed sag "
                 "over the tube at the centroid (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> "
-                "{} at {} vertices",
+                "{}",
                 it + 1,
                 ec.refinable.size(),
                 ec.max_face_placed,
                 ec.worst_placed_centroid.x(),
                 ec.worst_placed_centroid.y(),
                 ec.worst_placed_centroid.z(),
-                halve ? "sizing scalar halved (sag_halve_refinement)" : "target lowered",
-                n);
+                fmt::format(fmt::runtime(what), n));
+        }
+        // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
+        // turn's final state, so what it carries is the sizing field the two sizing strategies
+        // just lowered, and under split_longest it is the exact geometry the next turn's split
+        // group starts from -- which is what makes it comparable with that group's own frame.
+        // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
+        if (m_offset_params.debug_output) {
+            write_optimization_debug_output(fmt::format("phase_{}S", it + 1));
         }
         // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
         // no face left to resolve -- then quality with the front frozen (below).
@@ -4653,8 +4800,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     }
     if (m_offset_params.experimental_ops_divergence_guard) {
         logger().info(
-            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses and {} swaps refused "
-            "for raising the local sag",
+            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses refused for leaving "
+            "the offset surface unresolved or worse, {} swaps for raising the local sag",
             iter_cnt_collapse_guard_reject.load(),
             iter_cnt_swap_guard_reject.load());
     }

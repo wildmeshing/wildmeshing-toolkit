@@ -158,10 +158,13 @@ struct Parameters : public wmtk::OptimizerParameters
     int adaptive_smoothing_max_passes; ///< cap on the passes per group
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
-    /// See the spec: true replaces the sag rule's chord target with a plain halving of the
-    /// sizing scalar at the ends / corners of every refinable edge / face, floored like the sag
-    /// rule.
-    bool sag_halve_refinement;
+    /// EXPERIMENTAL. See the spec: how a turn resolves the front faces/chords whose sag is over
+    /// the tube. "sizing_half" (the default) halves the sizing scalar at their corners,
+    /// "sizing_curvature" lowers it to the chord rule's curvature-derived target, and
+    /// "split_longest" (3D only) leaves the sizing field alone at 1.0 and force-splits each
+    /// simplex's longest edge instead. Replaces the old bool sag_halve_refinement, whose true /
+    /// false are now "sizing_half" / "sizing_curvature".
+    std::string experimental_refinement_strat;
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
@@ -255,7 +258,7 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
-        sag_halve_refinement = json_params["sag_halve_refinement"];
+        experimental_refinement_strat = json_params["EXPERIMENTAL_refinement_strat"];
         pre_smooth = json_params["pre_smooth"];
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
         experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
