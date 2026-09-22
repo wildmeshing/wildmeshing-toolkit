@@ -299,7 +299,7 @@ bool TopoOffsetTetMesh::quadric_move_front_vertex(const size_t vid)
     const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(tuple_from_vertex(vid));
     for (const Tuple& loc : locs) {
         if (is_inverted_f(loc)) {
-            ++iter_cnt_quadric_pre_inverted;
+            ++iter_cnt_surf_smooth_pre_inverted;
             return false;
         }
     }
@@ -316,7 +316,7 @@ bool TopoOffsetTetMesh::quadric_move_front_vertex(const size_t vid)
             ++n_neighs;
         }
         if (n_neighs == 0) {
-            ++iter_cnt_quadric_no_neighbours;
+            ++iter_cnt_surf_smooth_no_neighbours;
             return false;
         }
         p_laplace /= n_neighs;
@@ -345,7 +345,7 @@ bool TopoOffsetTetMesh::quadric_move_front_vertex(const size_t vid)
         }
     }
     if (samples.empty()) {
-        ++iter_cnt_quadric_degenerate;
+        ++iter_cnt_surf_smooth_degenerate;
         return false;
     }
 
@@ -385,7 +385,7 @@ bool TopoOffsetTetMesh::quadric_move_front_vertex(const size_t vid)
     // the smoothed position rather than to where the vertex already is.
     Vector3d p_target = q.solve(p_laplace, 1e-2);
     if (!p_target.allFinite()) {
-        ++iter_cnt_quadric_degenerate;
+        ++iter_cnt_surf_smooth_degenerate;
         return false;
     }
     // The reference's blend, halfway back toward where the vertex already is. No Laplacian
@@ -439,17 +439,197 @@ bool TopoOffsetTetMesh::quadric_move_front_vertex(const size_t vid)
             continue;
         }
         for (const Tuple& loc : locs) set_cell_quality(loc.tid(*this), get_quality(loc));
-        ++iter_cnt_quadric_moved;
-        if (u < 1.) ++iter_cnt_quadric_backed_off;
+        ++iter_cnt_surf_smooth_moved;
+        if (u < 1.) ++iter_cnt_surf_smooth_backed_off;
         m_released_tube_dirty.store(true, std::memory_order_release);
         return true;
     }
     set_vertex_position(vid, p0);
     if (envelope_blocked) {
-        ++iter_cnt_quadric_envelope;
+        ++iter_cnt_surf_smooth_envelope;
     } else {
-        ++iter_cnt_quadric_inverted;
+        ++iter_cnt_surf_smooth_inverted;
     }
+    return false;
+}
+
+bool TopoOffsetTetMesh::tangential_move_front_vertex(const size_t vid)
+{
+    // EXPERIMENTAL_surface_smoothing_method "tangential": move the vertex to the minimum of the
+    // 2-D AMIPS of its offset one-ring, projected into the LEVEL SET'S tangent plane at the
+    // vertex. It is a pure quality pass -- the offset field enters only as the plane it is
+    // confined to -- so it cannot slide the front off its level set the way a free 3-D solve
+    // does (see front_normal_projection in Parameters.h); the 1-D normal solve in the smoothing
+    // block immediately after is what puts the vertex back on the level set, and is the reason
+    // this pass may leave it off by the second-order drop the flat plane costs.
+    //
+    // Not a port: neither TetWild nor the topological-offsets reference implementation has a
+    // tangential pass. TetWild smooths a surface vertex with a FREE 3-D AMIPS Newton step and
+    // then snaps the result to the input with a BVH query (orig/VertexSmoother.cpp
+    // smoothSurface()), so its tangential motion is whatever survives that projection; the
+    // reference's offset smoothing is the quadric pass alone.
+    const Vector3d p0 = m_vertex_attribute[vid].m_posf;
+
+    const std::vector<Tuple> offset_faces = offset_surface_faces_live_at(vid);
+    if (offset_faces.empty()) return false; // not on the live offset surface: nothing to do
+
+    // A vertex an input envelope holds -- it also sits on a tag-region boundary or the domain
+    // wall -- has at most ONE tangential degree of freedom, the field's tangent plane cut by the
+    // sheet it is held on, and none at all on a crease or at a junction; that is exactly what
+    // front_vertex_move_direction() works out for the 1-D placement. A two-parameter move in the
+    // field's tangent plane would leave that sheet, so every backoff step would be refused by the
+    // containment test and the work would be wasted. Skipped up front and counted, so the census
+    // says how much of the front the pass is declining to touch rather than hiding it in
+    // `envelope`.
+    if (smoothing_containment_envelope(vid)) {
+        ++iter_cnt_surf_smooth_held;
+        return false;
+    }
+
+    const std::vector<Tuple> locs = get_one_ring_tets_for_vertex(tuple_from_vertex(vid));
+    for (const Tuple& loc : locs) {
+        if (is_inverted_f(loc)) {
+            ++iter_cnt_surf_smooth_pre_inverted;
+            return false;
+        }
+    }
+
+    // THE TANGENT PLANE IS THE FIELD'S, NOT THE MESH'S. n = grad Phi / |grad Phi| is the analytic
+    // normal of the level set the front is being placed on -- for the euclidean field it is
+    // exactly the unit direction from the nearest point of the input complex -- whereas the
+    // area-weighted normal of the incident faces is the normal of the surface the front currently
+    // IS, which on an unresolved front encodes the error rather than the target. Zero where the
+    // gradient does not exist: on the input complex itself, and on the medial axis, which is
+    // where a front vertex over a reentrant input feature sits. No plane there, so no move.
+    const Vector3d n_field = front_vertex_normal(vid);
+    if (!(n_field.squaredNorm() > 0.)) {
+        ++iter_cnt_surf_smooth_degenerate;
+        return false;
+    }
+    // The outward side of the offset surface, the same convention align_face_at() uses above: the
+    // euclidean field grows away from the input complex, the smooth potential falls toward it.
+    const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
+    const Vector3d n_out = s * n_field;
+
+    // An orthonormal basis of the tangent plane with t1 x t2 == n_out, so a face whose normal
+    // points outward projects to a COUNTER-CLOCKWISE 2-D triangle -- which is what
+    // AMIPSEnergy2D::is_step_valid() demands of every cell it is handed, for every cell.
+    const Vector3d seed =
+        (std::abs(n_out.x()) < 0.9) ? Vector3d(Vector3d::UnitX()) : Vector3d(Vector3d::UnitY());
+    Vector3d t1 = seed - seed.dot(n_out) * n_out;
+    const double t1n = t1.norm();
+    if (!(t1n > 0.) || !std::isfinite(t1n)) {
+        ++iter_cnt_surf_smooth_degenerate;
+        return false;
+    }
+    t1 /= t1n;
+    const Vector3d t2 = n_out.cross(t1);
+
+    // The projected one-ring in the layout AMIPS2D wants: the moving vertex first, at the origin,
+    // and the same first entry in every cell. offset_surface_faces_live_at() returns the fan
+    // UNORDERED, but AMIPS is a sum over independent triangles, so only each triangle's own
+    // winding matters and no fan ordering is needed.
+    //
+    // WHICH WAY ROUND A FACE GOES IS NOT get_face_vids()'s TO SAY: it hands back the corners in
+    // the connectivity's order, so the two that are not vid arrive in an order that carries no
+    // orientation at all. The winding is read off the BAND instead, exactly as align_face_at()
+    // above does it -- sigma orients the face's normal away from the band tet's centroid, which
+    // is the offset surface's outward side by definition. (Taking the sign of the projected area
+    // as the winding instead would be circular: it would silently flip every face into agreement
+    // and the test below would never fail.)
+    //
+    // With the face oriented, the sign of its projected area is then a real statement. The signed
+    // area is exactly (sigma * N) . n_out -- the components along n_out drop out of the cross
+    // product's projection onto n_out -- so one number says whether the face is modellable at
+    // all. Negative means the face's outward normal is past perpendicular to the field, i.e. it
+    // is folded over; near zero means it projects to a sliver whose 2-D AMIPS says nothing about
+    // the real triangle. Either way the flat tangent plane is not a model of this neighbourhood,
+    // so THE WHOLE VERTEX IS REFUSED rather than the face dropped: dropping it would leave a gap
+    // in the fan that AMIPS would happily pull the vertex out through.
+    constexpr double AREA_REL_TOL = 1e-6; // of |q1 - x| |q2 - x|, i.e. a sine
+    std::vector<std::array<double, 6>> cells;
+    cells.reserve(offset_faces.size());
+    for (const Tuple& f : offset_faces) {
+        const auto fvs = get_face_vids(f);
+        std::array<size_t, 2> q{{0, 0}};
+        int k = 0;
+        for (const size_t v : fvs) {
+            if (v == vid) continue;
+            if (k < 2) q[size_t(k)] = v;
+            ++k;
+        }
+        if (k != 2) { // vid is not a corner of a face the walk returned: not modellable
+            ++iter_cnt_surf_smooth_degenerate;
+            return false;
+        }
+        const Vector3d d1 = m_vertex_attribute[q[0]].m_posf - p0;
+        const Vector3d d2 = m_vertex_attribute[q[1]].m_posf - p0;
+        const Vector3d N = d1.cross(d2);
+        const size_t ta = f.tid(*this);
+        const std::optional<Tuple> opp = f.switch_tetrahedron(*this);
+        const size_t band_t = cell_is_offset_band(ta) ? ta : (opp ? opp->tid(*this) : ta);
+        Vector3d ct = Vector3d::Zero();
+        for (const size_t v : oriented_tet_vids(band_t)) ct += m_vertex_attribute[v].m_posf / 4.;
+        const Vector3d cf = p0 + (d1 + d2) / 3.; // the face's centroid
+        const double sigma = N.dot(cf - ct) >= 0. ? 1. : -1.;
+        const double scale = d1.norm() * d2.norm();
+        const double area2 = sigma * N.dot(n_out); // twice the projected signed area
+        if (!std::isfinite(area2) || !(area2 > AREA_REL_TOL * scale)) {
+            ++iter_cnt_surf_smooth_degenerate;
+            return false;
+        }
+        const Vector3d& a = (sigma > 0.) ? d1 : d2; // sigma < 0: swap, so the cell is CCW
+        const Vector3d& b = (sigma > 0.) ? d2 : d1;
+        cells.push_back({{0., 0., a.dot(t1), a.dot(t2), b.dot(t1), b.dot(t2)}});
+    }
+
+    // 2-D AMIPS against the equilateral reference (wmtk::AMIPS2D_energy), two unknowns, the same
+    // per-thread DenseNewton every other smooth in this file uses. Unweighted: this pass has no
+    // other term to balance against.
+    auto& solver = m_solver.local();
+    if (!solver) {
+        solver = optimization::create_basic_solver();
+    }
+    auto energy = std::make_shared<optimization::AMIPSEnergy2D>(cells, 1.);
+    Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
+    try {
+        solver->minimize(*energy, x);
+    } catch (const std::exception&) {
+        // polysolve reports a failed line search by throwing; the point it reached is still the
+        // best it found, and the checks below decide whether to keep it. As smooth_vertex_3d().
+    }
+    if (x.size() != 2 || !x.allFinite()) {
+        ++iter_cnt_surf_smooth_degenerate;
+        return false;
+    }
+    // No step cap and no blend back toward p0, unlike the quadric pass's w = 0.5: AMIPS diverges
+    // as any projected triangle degenerates, so its minimiser is strictly inside the projected
+    // fan and the move is bounded by the one-ring itself.
+    const Vector3d p_target = p0 + x(0) * t1 + x(1) * t2;
+
+    // The same geometric backoff the quadric pass uses (u = 1, 1/2, ... 1/1024), and the same
+    // rule: a search that finds no legal step is a rejection, not a zero-length success. No
+    // containment test here -- every vertex an envelope holds was skipped above, so
+    // smoothing_containment_envelope(vid) is null for everything that gets this far.
+    for (int i = -1; i < 10; ++i) {
+        const double u = (i < 0) ? 1. : 1. / double(2 << i);
+        set_vertex_position(vid, Vector3d((1. - u) * p0 + u * p_target));
+        bool inverted = false;
+        for (const Tuple& tet : locs) {
+            if (is_inverted(tet)) {
+                inverted = true;
+                break;
+            }
+        }
+        if (inverted) continue;
+        for (const Tuple& loc : locs) set_cell_quality(loc.tid(*this), get_quality(loc));
+        ++iter_cnt_surf_smooth_moved;
+        if (u < 1.) ++iter_cnt_surf_smooth_backed_off;
+        m_released_tube_dirty.store(true, std::memory_order_release);
+        return true;
+    }
+    set_vertex_position(vid, p0);
+    ++iter_cnt_surf_smooth_inverted;
     return false;
 }
 

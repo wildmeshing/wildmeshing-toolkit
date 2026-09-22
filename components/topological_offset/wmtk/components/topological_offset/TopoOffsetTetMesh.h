@@ -607,9 +607,14 @@ public:
     /// error-quadric relocation of Zint et al. 2023 Sec. 5.5. Returns whether the vertex moved.
     /// Reads the one-ring, so it must be called under a VertexRing claim.
     bool quadric_move_front_vertex(size_t vid);
+    /// EXPERIMENTAL_surface_smoothing_method "tangential": move ONE offset-surface vertex to the
+    /// minimum of the 2-D AMIPS of its projected offset one-ring, inside the level set's own
+    /// tangent plane at that vertex (the plane normal to grad Phi). Returns whether the vertex
+    /// moved. Reads the one-ring, so it must be called under a VertexRing claim.
+    bool tangential_move_front_vertex(size_t vid);
     /// One full pass of experimental_surface_smoothing_method over every live offset-surface
-    /// vertex, run before a smoothing block. A no-op unless the method is "quadrics"; throws on
-    /// "tangential"; warns once and returns under offset_field "smooth".
+    /// vertex, run before a smoothing block. A no-op under "none"; "quadrics" additionally warns
+    /// once and returns under offset_field "smooth" or without an input-complex BVH.
     void surface_smoothing_pass();
     /**
      * @brief Re-derive m_is_on_offset for one vertex from the cell labels, exactly.
@@ -740,7 +745,14 @@ public:
     /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
-    /// EXPERIMENTAL_surface_smoothing_method "quadrics": outcomes of the quadric pass, run totals.
+    /// EXPERIMENTAL_surface_smoothing_method: outcomes of the surface-smoothing pass, run totals.
+    /// ONE census, shared by both methods, because both have the same four-way outcome -- moved,
+    /// refused before the move, refused after it, or moved less than it asked for. Which
+    /// rejection reasons can fire depends on the method, and a reason the running method cannot
+    /// produce simply stays zero: `no_neighbours` is "quadrics" only (it is the Laplacian
+    /// centroid that needs them) and `held` is "tangential" only (see
+    /// tangential_move_front_vertex()), while `envelope` is in practice "quadrics" only, since
+    /// the tangential pass skips every vertex an envelope holds before it tries anything.
     /// `backed_off` counts moves the inversion search had to shorten -- it accepts as little as
     /// 1/1024 of the asked-for move, so a large count means the pass is reporting successes that
     /// delivered almost none of the redistribution, which the acceptance count alone would hide.
@@ -754,13 +766,14 @@ public:
     std::atomic<int> iter_cnt_forced_split_refused_before{0};
     std::atomic<int> iter_cnt_forced_split_refused_after{0};
     std::atomic<int> iter_cnt_forced_split_taken{0};
-    std::atomic<int> iter_cnt_quadric_moved{0};
-    std::atomic<int> iter_cnt_quadric_backed_off{0};
-    std::atomic<int> iter_cnt_quadric_no_neighbours{0};
-    std::atomic<int> iter_cnt_quadric_degenerate{0};
-    std::atomic<int> iter_cnt_quadric_pre_inverted{0};
-    std::atomic<int> iter_cnt_quadric_inverted{0};
-    std::atomic<int> iter_cnt_quadric_envelope{0};
+    std::atomic<int> iter_cnt_surf_smooth_moved{0};
+    std::atomic<int> iter_cnt_surf_smooth_backed_off{0};
+    std::atomic<int> iter_cnt_surf_smooth_no_neighbours{0};
+    std::atomic<int> iter_cnt_surf_smooth_degenerate{0};
+    std::atomic<int> iter_cnt_surf_smooth_pre_inverted{0};
+    std::atomic<int> iter_cnt_surf_smooth_inverted{0};
+    std::atomic<int> iter_cnt_surf_smooth_envelope{0};
+    std::atomic<int> iter_cnt_surf_smooth_held{0};
     /// Latched so the "needs offset_field euclidean" warning is printed once per run, not once per
     /// turn per group.
     std::atomic<bool> m_quadric_field_warned{false};

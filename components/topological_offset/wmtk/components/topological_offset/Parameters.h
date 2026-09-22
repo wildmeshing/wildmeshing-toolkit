@@ -189,7 +189,8 @@ struct Parameters : public wmtk::OptimizerParameters
     /// vertices before each smoothing block. "none" (the default) is the loop as it has always
     /// been. "quadrics" runs the error-quadric relocation of Zint et al. 2023 Sec. 5.5, which
     /// redistributes vertices TANGENTIALLY so the 1-D normal solve that follows can put them back
-    /// on the level set. "tangential" is reserved and throws.
+    /// on the level set. "tangential" does the same job with a different energy: the 2-D AMIPS of
+    /// the vertex's offset one-ring, projected into the level set's own tangent plane.
     std::string experimental_surface_smoothing_method;
     /// EXPERIMENTAL, 3D only. See the spec: how many passes of
     /// experimental_surface_smoothing_method to run per smoothing block. Ignored when the method
