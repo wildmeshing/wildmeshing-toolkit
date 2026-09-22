@@ -4,8 +4,8 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-// components
-#include "components_include.hpp"
+// components (generated per build folder, see components/CMakeLists.txt)
+#include <components_include.hpp>
 
 using namespace wmtk;
 
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 
     std::map<std::string, std::function<void(nlohmann::json)>> components_map;
     // include auto-generated map
-#include "components_map.hpp"
+#include <components_map.hpp>
 
     // read JSON input file
     nlohmann::json j;

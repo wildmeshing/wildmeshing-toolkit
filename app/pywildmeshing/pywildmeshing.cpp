@@ -10,8 +10,8 @@
 
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 
-// components
-#include "../components_include.hpp"
+// components (generated per build folder, see components/CMakeLists.txt)
+#include <components_include.hpp>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -24,7 +24,7 @@ void wmtk_wrapper(const py::dict& obj)
     using namespace wmtk;
     std::map<std::string, std::function<void(nlohmann::json)>> components_map;
     // include auto-generated map
-#include "../components_map.hpp"
+#include <components_map.hpp>
 
     // make sure input file contains the application name
     if (!j.contains("application")) {
