@@ -1,17 +1,18 @@
 """simwild.polyfem_ops — the polyfem-backed pipeline stages.
 
-Shared:
-    mesh_core       : TaggedMesh, tag expressions (via the wildmeshing
-                      bindings' Expression), region/filter face selection
-    constraints     : interface selection -> polyfem constraint artifacts
-    polyfem_utils   : process runner + convergence check, mesh queries,
-                      optimization-JSON builder, 2-body mesh reduction,
-                      solve steps, deformed-mesh write-back, deep merge
-    spec            : validator for the per-op spec.json rule files
+minimum_separation and laplacian_smoothing run in the wmtk component
+polyfem_ops (C++), reached through simwild.minimum_separation and
+simwild.laplacian_smoothing. Their parameter rules are the spec.json files in
+the two directories of the same names here, which the C++ build embeds.
 
-Ops (one package each, spec.json alongside the runner):
-    minimum_separation, laplacian_smoothing, polyfem_sim (+ its
-    msh_boundary_extractor preprocessing).
+In Python:
+    polyfem_sim     : full simulation of a finished mesh (+ its
+                      msh_boundary_extractor preprocessing); runs the binary
+                      named by $POLYFEM_BIN
+    mesh_core       : tag expressions (via the wildmeshing bindings'
+                      Expression), selection normalization and ids
+    polyfem_utils   : polyfem_sim's helpers: process runner, mesh query,
+                      JSON pieces, deep merge
 
 Selections everywhere use the region/filter format from mesh_core.
 """

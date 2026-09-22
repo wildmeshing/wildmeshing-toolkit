@@ -179,9 +179,13 @@ The wrapper also provides PolyFEM-backed operations: `minimum_separation`,
 same .msh-in/.msh-out interface; parameters are validated against the
 `spec.json` packaged with each op.
 
-The Python implementations of these ops (`polyfem_sim`, and the other two
-with `engine="python"`) locate the PolyFEM binary **only** through the
-`POLYFEM_BIN` environment variable and raise if it is unset:
+`minimum_separation` and `laplacian_smoothing` run in the WMTK component
+`polyfem_ops` (C++), which needs the toolkit built with
+`-DWMTK_WITH_POLYFEM=ON`; without that the call raises and names the option.
+They run the polyfem the component is linked against, so they need no
+PolyFEM binary. `polyfem_sim` is Python and locates the PolyFEM binary
+**only** through the `POLYFEM_BIN` environment variable, raising if it is
+unset:
 
 ```bash
 export POLYFEM_BIN=/path/to/polyfem/build/PolyFEM_bin
@@ -194,15 +198,6 @@ merging.)
 Selections everywhere are _the boundary of `region`, kept where the outside
 cell satisfies `filter`_ — both are Boolean tag expressions (`&`, `|`, `!`,
 parentheses); a bare string is a region (whole boundary).
-
-`minimum_separation` and `laplacian_smoothing` exist twice: a C++
-implementation in the WMTK component `polyfem_ops`, which is the default, and
-the Python implementation it was ported from. The C++ one needs the toolkit
-built with `-DWMTK_WITH_POLYFEM=ON`; without that the call raises and names
-the option. It runs the polyfem it is linked against, so it needs no
-`POLYFEM_BIN`. Pass `engine="python"` to either wrapper to run the Python one
-instead — same parameters, same output files in the same places. `engine` is
-a wrapper argument, not a `spec.json` parameter.
 
 #### 9. Minimum Separation
 
@@ -252,16 +247,15 @@ From `pysimwild/`:
 python -m pytest tests
 ```
 
-Tier-1 runs anywhere (the bindings are found in `<toolkit>/build/bin`
-automatically if not installed); its tests of the C++ engine need the toolkit
-built with `-DWMTK_WITH_POLYFEM=ON`. The end-to-end tests (measured minimum
-separation, smoothing roughness decrease) run their Python-engine half iff
-`POLYFEM_BIN` is exported, and their C++-engine half iff the toolkit was built
-with that option.
+The bindings are found in `<toolkit>/build/bin` automatically if not
+installed. Every test of `minimum_separation` and `laplacian_smoothing` needs
+the toolkit built with `-DWMTK_WITH_POLYFEM=ON` and skips without it; the
+selection-grammar tests run anywhere.
 
-`tests/test_engine_parity.py` holds the C++ engine to the Python engine's
-recorded results (goldens): generated inputs byte for byte, loop decisions
-exactly, solver results to 1e-9 relative. The goldens live outside the
-repository, in the directory named by `POLYFEM_OPS_GOLDENS`; without it those
-tests skip. `POLYFEM_OPS_GOLDENS_RECORD=1` re-records them from the Python
-engine (which needs `POLYFEM_BIN`) and then compares.
+`tests/test_engine_parity.py` holds the C++ engine to the results of the
+Python engine it was ported from, recorded before that engine was removed
+(goldens): generated inputs byte for byte, loop decisions exactly, solver
+results to 1e-9 relative. The goldens live outside the repository, in the
+directory named by `POLYFEM_OPS_GOLDENS`; without it those tests skip. The
+`metadata.json` there says how they were recorded and from which commit they
+can be re-recorded.

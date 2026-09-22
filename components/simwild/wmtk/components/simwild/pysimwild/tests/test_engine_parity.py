@@ -10,14 +10,13 @@ for the HDF5s. That is the only check that catches a face written in a different
 flipped the other way, a float printed with one digit fewer, or a sum accumulated in another
 order.
 
-The Python engine's results are RECORDED (the goldens, see the next section), so the Python
-engine does not have to run, or even exist, for the C++ one to be checked against it.
+The Python engine's results were RECORDED (the goldens, see the next section) before the Python
+engine was removed, so the C++ one is still checked against it.
 
 The C++ engine writes its generated polyfem inputs under `<dirname(output)>/sep_input` (minimum
 separation) or `<dirname(output)>/smooth_input` (smoothing) and returns without solving when
-`inputs_only` is set; the Python side was asked for the same artifacts through
-`make_interface_constraint` and, for the protected-region pins, through the same calls
-`minimum_separation.run` makes.
+`inputs_only` is set; the Python side's artifacts were recorded from `make_interface_constraint`
+and, for the protected-region pins, from the same calls `minimum_separation.run` made.
 
 The values in these files are float64 all the way down, so "exactly equal" means every last bit:
 the mass and stiffness matrices, the two normalizations (`np.sum` is a pairwise summation, not a
@@ -32,7 +31,6 @@ what is asserted exactly, what is not, and the measurements behind both.
 import json
 import math
 import os
-import shutil
 from pathlib import Path
 
 import gmsh
@@ -44,17 +42,7 @@ import pytest
 # from the same two helpers; pytest puts this directory on sys.path, so conftest imports directly.
 from conftest import _tet_grid, _write_groups_msh, needs_polyfem_ops, run_cpp
 
-from simwild.polyfem_ops import constraints as mic
-from simwild.polyfem_ops import spec as _spec
-from simwild.polyfem_ops.constraints import parse_axes, write_pin_constraint_hdf5
-from simwild.polyfem_ops.mesh_core import (TaggedMesh, assign_selection_ids,
-                                           select_region_nodes)
-from simwild.polyfem_ops.laplacian_smoothing import run as run_python_smoothing
-from simwild.polyfem_ops.minimum_separation import _normalize_collision_pairs
-from simwild.polyfem_ops.minimum_separation import run as run_python_separation
-from simwild.polyfem_ops.polyfem_utils import (OPT_DEFAULTS, _resolve_amips_weights,
-                                               _write_polyfem_reduced_msh,
-                                               build_polyfem_json, get_mesh_info)
+from simwild.polyfem_ops.polyfem_utils import get_mesh_info
 
 
 # --------------------------------------------------------------------------
@@ -64,13 +52,12 @@ from simwild.polyfem_ops.polyfem_utils import (OPT_DEFAULTS, _resolve_amips_weig
 # One directory per case under $POLYFEM_OPS_GOLDENS, holding exactly what that case compares plus
 # the input mesh it was computed from. They live outside the repository, which keeps no binary
 # test data, so only a machine that has them runs these comparisons; without the variable every
-# test that needs them skips. With POLYFEM_OPS_GOLDENS_RECORD=1 as well, each case first runs the
-# Python engine into its directory -- the end-to-end cases need $POLYFEM_BIN for that, the binary
-# the Python engine runs -- and then compares as usual. metadata.json beside the case directories
-# says what recorded them.
+# test that needs them skips. They were recorded by this file's recording mode at f1f2f3953c, which
+# ran the Python engine into each case's directory; re-recording needs a checkout of that commit
+# (or of 8894367b56, the last one with the Python engine). metadata.json beside the case
+# directories says what recorded them.
 
 GOLDENS = os.environ.get("POLYFEM_OPS_GOLDENS")
-RECORD = os.environ.get("POLYFEM_OPS_GOLDENS_RECORD") == "1"
 needs_goldens = pytest.mark.skipif(
     not GOLDENS,
     reason="export POLYFEM_OPS_GOLDENS=/path/to/goldens to compare against the Python engine's "
@@ -78,17 +65,13 @@ needs_goldens = pytest.mark.skipif(
 
 
 def _golden(case, mesh):
-    """The golden directory of `case`. Recording empties it and stores the input mesh; either way
-    the mesh this run built must be the one the goldens were computed from, or no comparison
-    below would mean anything."""
+    """The golden directory of `case`. The mesh this run built must be the one the goldens were
+    computed from, or no comparison below would mean anything."""
     golden = Path(GOLDENS) / case
-    if RECORD:
-        shutil.rmtree(golden, ignore_errors=True)
-        golden.mkdir(parents=True)
-        shutil.copyfile(mesh, golden / "input.msh")
     assert (golden / "input.msh").is_file(), f"{case} has no recorded result in {GOLDENS}"
     recorded, built = _gmsh_reduced_mesh(golden / "input.msh"), _gmsh_reduced_mesh(mesh)
-    _assert_same_mesh_structure(recorded, built, "recorded and current input meshes")
+    _assert_same_mesh_structure(recorded, built, "recorded and current input meshes",
+                                sides=("the recording", "this run"))
     assert np.array_equal(recorded["coords"], built["coords"]), (
         f"{case}: this run's input mesh is not the one the goldens were recorded on")
     return golden
@@ -175,58 +158,6 @@ def jagged2d_irrational(tmp_path):
 
 
 # --------------------------------------------------------------------------
-# Running the two engines
-# --------------------------------------------------------------------------
-
-def _python_options(operation, options):
-    """The make_interface_constraint arguments an engine derives from the spec options, as
-    minimum_separation.run and laplacian_smoothing.run derive them.
-
-    `smooth_positions` is the one that is not a plain rename: smoothing reads it from
-    cfg["smoothDisplacementsOrPositions"] and defaults it to positions mode (in displacement mode
-    the rest state is already a minimum, so nothing would move), while separation has no key for
-    it at all and OPT_DEFAULTS leaves it at displacement mode.
-    """
-    smoothing = operation == "laplacian_smoothing"
-    return dict(
-        use_graph=options.get("use_graph_laplacian", False),
-        normalize=options.get("normalize_penalties", True),
-        scale=options.get("scale", 0.001),
-        smooth_positions=smoothing and options.get("smooth_positions", True),
-        skip_collision_artifacts=smoothing,
-    )
-
-
-def _run_python(mesh, selections, out_dir, operation, options):
-    out_dir.mkdir(parents=True, exist_ok=True)
-    mic.make_interface_constraint(
-        mesh_path=str(mesh), selections=selections or None, out_dir=str(out_dir),
-        **_python_options(operation, options))
-
-
-def _run_python_protected_pins(mesh, protected, out_dir, mesh_dim):
-    """The `protected_regions` block of minimum_separation.run: group the entries by their parsed
-    axes, one file per group. Returns the file names it wrote."""
-    groups = {}
-    for entry in protected:
-        if isinstance(entry, dict):
-            expr, axes = entry["region"], parse_axes(entry.get("axes"), mesh_dim)
-        else:
-            expr, axes = entry, None
-        groups.setdefault(axes, []).append(expr)
-
-    mesh_for_pins = TaggedMesh(str(mesh))
-    written = []
-    for axes, exprs in groups.items():
-        pin_ids = select_region_nodes(mesh_for_pins, exprs)
-        suffix = "" if axes is None else "_" + "".join("xyz"[a] for a in axes)
-        name = f"protected_pin{suffix}.hdf5"
-        write_pin_constraint_hdf5(str(out_dir / name), pin_ids, mesh_dim, axes=axes)
-        written.append(name)
-    return written
-
-
-# --------------------------------------------------------------------------
 # Comparisons
 # --------------------------------------------------------------------------
 
@@ -304,9 +235,6 @@ def test_minimum_separation_inputs_match(boxes3d, tmp_path, pairs, options, labe
     # `normalize_penalties` off drops both normalizations, and `use_graph_laplacian` on replaces
     # the igl mass and cotangent matrices with the identity and unit edge weights.
     golden = _golden(f"minimum_separation_inputs/{label}", boxes3d)
-    if RECORD:
-        sides, _ = _normalize_collision_pairs(pairs)
-        _run_python(boxes3d, sides, golden, "minimum_separation", options)
     cpp_root = tmp_path / f"cpp_{label}"
     run_cpp(boxes3d, "minimum_separation", cpp_root, collision_pairs=pairs, sep=1.5, **options)
 
@@ -330,9 +258,6 @@ def test_minimum_separation_protected_pins_match(boxes3d, tmp_path, protected, e
     # flattened degrees of freedom (b has one column). Entries with different axes land in
     # different files, which is why the third case produces two.
     golden = _golden(f"minimum_separation_protected_pins/{label}", boxes3d)
-    if RECORD:
-        written = _run_python_protected_pins(boxes3d, protected, golden, mesh_dim=3)
-        assert sorted(written) == sorted(expected)
     cpp_root = tmp_path / f"cpp_{label}"
     run_cpp(boxes3d, "minimum_separation", cpp_root,
             collision_pairs=BOTH_SKINS, sep=1.5, protected_regions=protected)
@@ -363,9 +288,6 @@ def test_laplacian_smoothing_inputs_match(request, tmp_path, mesh_fixture, inter
     # puts -L (scale * rest coordinates) in `b`; displacement mode leaves it zero.
     mesh = request.getfixturevalue(mesh_fixture)
     golden = _golden(f"laplacian_smoothing_inputs/{label}", mesh)
-    if RECORD:
-        norm, _ = assign_selection_ids(interfaces)
-        _run_python(mesh, norm, golden, "laplacian_smoothing", options)
     cpp_root = tmp_path / f"cpp_{label}"
     run_cpp(mesh, "laplacian_smoothing", cpp_root, interfaces=interfaces, **options)
 
@@ -391,9 +313,6 @@ def test_minimum_separation_irrational_coordinates_match(boxes3d_irrational, tmp
     # actually compared: the C++ links libigl 2.6.0 and the Python wheel is 2.6.3, built with
     # different flags, and igl.massmatrix / igl.cotmatrix decide every value in both files.
     golden = _golden("minimum_separation_inputs/irrational_3d", boxes3d_irrational)
-    if RECORD:
-        sides, _ = _normalize_collision_pairs(BOTH_SKINS)
-        _run_python(boxes3d_irrational, sides, golden, "minimum_separation", {})
     cpp_root = tmp_path / "cpp_irrational_3d"
     run_cpp(boxes3d_irrational, "minimum_separation", cpp_root,
             collision_pairs=BOTH_SKINS, sep=1.5)
@@ -411,8 +330,6 @@ def test_laplacian_smoothing_irrational_coordinates_match(jagged2d_irrational, t
     # is its reciprocal, both from np.linalg.norm, and `b` is the sparse product. Irrational
     # coordinates are what make those roundings visible.
     golden = _golden("laplacian_smoothing_inputs/irrational_2d", jagged2d_irrational)
-    if RECORD:
-        _run_python(jagged2d_irrational, None, golden, "laplacian_smoothing", {})
     cpp_root = tmp_path / "cpp_irrational_2d"
     run_cpp(jagged2d_irrational, "laplacian_smoothing", cpp_root, interfaces=[])
 
@@ -420,141 +337,6 @@ def test_laplacian_smoothing_irrational_coordinates_match(jagged2d_irrational, t
     _assert_identical(golden, cpp_dir, "interface_collision.obj")
     for name in CONSTRAINT_FILES:
         _assert_hdf5_identical(golden, cpp_dir, name)
-
-
-# --------------------------------------------------------------------------
-# The other two generated inputs: the reduced mesh and the simulation JSON
-# --------------------------------------------------------------------------
-
-def _python_cfg(operation, p, apply_run_mutations=True):
-    """The engine configuration dict `simwild.minimum_separation` / `simwild.laplacian_smoothing`
-    build from the validated spec parameters, plus -- with `apply_run_mutations` -- the mutations
-    the operation's own run() makes to it before the simulation JSON is built.
-
-    The tests that only build the inputs need the mutated form, because they stop short of run()
-    and have to stand in for it; the tests that actually CALL run() need the unmutated form, since
-    run() would otherwise apply them a second time (and `_normalize_collision_pairs` rejects the
-    id pairs it produced itself).
-
-    Everything here is a transcription of simwild.py and of the top of run(); the renames are the
-    Python's (`use_fitting` -> `useFitting`), and `use_nh_body`, `nh_youngs` and `nh_poisson` are
-    passed through unrenamed -- the wrapper used to declare them in its spec and then leave them
-    out of this dict, so the option could not reach the JSON builder at all.
-    """
-    if operation == "minimum_separation":
-        cfg = {
-            "input_msh": p["input"],
-            "collision_pairs": p["collision_pairs"],
-            "sep": p["sep"],
-            "scale": p["scale"],
-            "useFitting": p["use_fitting"],
-            "useLaplacian": p["use_laplacian"],
-            "useGraphLaplacian": p["use_graph_laplacian"],
-            "normalizePenalties": p["normalize_penalties"],
-            "weight_fitting": p["weight_fitting"],
-            "weight_laplacian": p["weight_laplacian"],
-            "amips_weights": p["amips_weights"],
-            "max_iterations": p["max_iterations"],
-            "rtol": p["rtol"],
-            "nl_max_iterations": p["nl_max_iterations"],
-            "barrier_stiffness": p["barrier_stiffness"],
-            "alpha_n": p["alpha_n"],
-            "alpha_t": p["alpha_t"],
-            "save_vtu": p["save_vtu"],
-            "strategy": p["strategy"],
-            "dhat_growth": p["dhat_growth"],
-            "max_stiffness_multiplier": p["max_stiffness_multiplier"],
-            "protected_regions": p["protected_regions"],
-            "ambient_like_tags": p["ambient_like_tags"],
-            "use_nh_body": p["use_nh_body"],
-            "nh_youngs": p["nh_youngs"],
-            "nh_poisson": p["nh_poisson"],
-            "output_msh": f"{p['output']}.msh",
-        }
-        if p["init_dhat"] > 0:
-            cfg["init_dhat"] = p["init_dhat"]
-        if apply_run_mutations:
-            # run(): the sides are deduped into collision bodies and only the id pairs reach
-            # polyfem.
-            _, cfg["collision_pairs"] = _normalize_collision_pairs(cfg["collision_pairs"])
-            # run(): a barrier stiffness of <= 0 means auto, which resolves per strategy.
-            if cfg.get("barrier_stiffness", -1.0) <= 0:
-                cfg["barrier_stiffness"] = (
-                    1.0 if cfg["strategy"] == "stiffness" else OPT_DEFAULTS["barrier_stiffness"])
-        return cfg
-
-    cfg = {
-        "input_msh": p["input"],
-        "scale": p["scale"],
-        "useFitting": p["use_fitting"],
-        "useLaplacian": p["use_laplacian"],
-        "useGraphLaplacian": p["use_graph_laplacian"],
-        "normalizePenalties": p["normalize_penalties"],
-        "weight_fitting": p["weight_fitting"],
-        "weight_laplacian": p["weight_laplacian"],
-        "max_iterations": p["max_iterations"],
-        "smoothDisplacementsOrPositions": 1 if p["smooth_positions"] else 0,
-        "save_vtu": p["save_vtu"],
-        "ambient_like_tags": p["ambient_like_tags"],
-        "output_msh": f"{p['output']}.msh",
-    }
-    if p["interfaces"]:
-        cfg["interfaces"] = p["interfaces"]
-    if apply_run_mutations:
-        # run(): smoothing has no contact and no outer loop, so `max_iterations` is the polyfem
-        # nonlinear cap, and the body's element-quality guard defaults low so the fairing wins.
-        cfg["contact_enabled"] = False
-        if "max_iterations" in cfg and "nl_max_iterations" not in cfg:
-            cfg["nl_max_iterations"] = cfg["max_iterations"]
-        if "amips_body_weight" not in cfg and not any(
-                k != "ambient" for k in (cfg.get("amips_weights") or {})):
-            cfg["amips_body_weight"] = 1e-4
-    return cfg
-
-
-def _run_python_polyfem_inputs(mesh, operation, options, root):
-    """The reduced mesh and the simulation JSON a full run() would generate, without the solve.
-
-    In run()'s order: reduce the mesh to the two-body one polyfem solves on, read its material
-    tags/counts/volumes back, resolve the AMIPS weights to the reduced scheme, build the JSON, and
-    -- for `protected_regions` -- write the pin files and append their paths as `constraints.hard`.
-    The JSON returned is the one run() hands to the solver loop, before that loop mutates
-    `contact.dhat`, the barrier stiffness and the state paths.
-
-    Returns (json document, reduced mesh path).
-    """
-    sim_in_name, sim_out_name, _ = SIM_DIRS[operation]
-    p = _spec.validate(_spec.load_spec(operation),
-                       {"input": str(mesh), "output": str(root / "out"), **options})
-    cfg = _python_cfg(operation, p)
-
-    msh_path = Path(cfg["input_msh"]).resolve()
-    out_dir = Path(os.path.dirname(p["output"]) or ".")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_dir = out_dir.resolve()
-    sim_in_dir = (out_dir / sim_in_name).resolve()
-    sim_out_dir = (out_dir / sim_out_name).resolve()
-    sim_in_dir.mkdir(parents=True, exist_ok=True)
-    sim_out_dir.mkdir(parents=True, exist_ok=True)
-    sol_path = (sim_out_dir / "solution.txt").resolve()
-
-    polyfem_msh_path = (sim_in_dir / (msh_path.stem + "_polyfem.msh")).resolve()
-    _write_polyfem_reduced_msh(str(msh_path), str(polyfem_msh_path),
-                               ambient_like_tags=cfg.get("ambient_like_tags", []))
-
-    material_tags, mesh_dim, name_to_tag, tag_to_count, tag_to_volume = \
-        get_mesh_info(str(polyfem_msh_path))
-    cfg["amips_weights"] = _resolve_amips_weights(cfg)
-    doc = build_polyfem_json(cfg, polyfem_msh_path, sim_in_dir, material_tags, mesh_dim, sol_path,
-                             name_to_tag=name_to_tag, tag_to_count=tag_to_count,
-                             tag_to_volume=tag_to_volume)
-
-    protected = cfg.get("protected_regions", [])
-    if protected:
-        written = _run_python_protected_pins(mesh, protected, sim_in_dir, mesh_dim)
-        doc.setdefault("constraints", {})["hard"] = [
-            str((sim_in_dir / name).resolve()) for name in written]
-    return doc, polyfem_msh_path
 
 
 # --------------------------------------------------------------------------
@@ -594,22 +376,24 @@ def _gmsh_reduced_mesh(path):
         gmsh.finalize()
 
 
-def _assert_same_mesh_structure(py, cpp, what):
+def _assert_same_mesh_structure(py, cpp, what, sides=("python", "c++")):
     """Everything about two .msh files that does not depend on a coordinate: the node tags in file
     order, the physical groups, and each group's elements with their ids and vertex tuples.
 
     Both the reduced meshes and the deformed ones are held to this exactly; only their coordinates
     are compared differently, which is why that comparison stays with each caller. `what` names the
-    pair in the failure messages ("reduced meshes", "deformed meshes").
+    pair in the failure messages ("reduced meshes", "deformed meshes"), and `sides` names the two
+    meshes in them.
     """
+    a_name, b_name = sides
     assert py["node_tags"] == cpp["node_tags"], f"the {what} list their nodes differently"
     assert [(t, n) for t, n, _ in py["groups"]] == [(t, n) for t, n, _ in cpp["groups"]], (
         f"the {what}' physical groups differ")
     for (_, name, py_elems), (_, _, cpp_elems) in zip(py["groups"], cpp["groups"]):
         assert len(py_elems) == len(cpp_elems), (
-            f"group {name}: {len(py_elems)} elements from python, {len(cpp_elems)} from c++")
+            f"group {name}: {len(py_elems)} elements from {a_name}, {len(cpp_elems)} from {b_name}")
         for i, (a, b) in enumerate(zip(py_elems, cpp_elems)):
-            assert a == b, f"group {name}: element {i} is {a} from python and {b} from c++"
+            assert a == b, f"group {name}: element {i} is {a} from {a_name} and {b} from {b_name}"
 
 
 def _assert_reduced_msh_identical(py_msh, cpp_msh):
@@ -667,18 +451,9 @@ def _assert_polyfem_inputs_match(mesh, operation, options, tmp_path, label):
     same mesh and options. Returns the two JSON texts with the output directory normalised away."""
     sim_in_name, _, json_name = SIM_DIRS[operation]
     reduced_name = Path(mesh).stem + "_polyfem.msh"
+    # The recorded JSON is what the Python engine WROTE (json.dumps of its document), with its
+    # run's own directory replaced by the same marker, since the C++ run writes elsewhere.
     golden = _golden(f"{operation}_polyfem_inputs/{label}", mesh)
-    if RECORD:
-        py_root = tmp_path / f"py_{label}"
-        py_doc, py_msh = _run_python_polyfem_inputs(mesh, operation, options, py_root)
-        assert py_msh.name == reduced_name
-        # Record what the engine WRITES, so the document goes through json.dumps first: the
-        # volumes it computes are numpy scalars, which serialize as plain floats (np.float64 is a
-        # float subclass) and must be read back as such before the types can be compared. The
-        # run's own directory is replaced by a marker, since the C++ run writes elsewhere.
-        (golden / json_name).write_text(
-            _normalise_paths(json.dumps(py_doc, indent=4), py_root.resolve()))
-        shutil.copyfile(py_msh, golden / reduced_name)
     cpp_root = tmp_path / f"cpp_{label}"
     run_cpp(mesh, operation, cpp_root, **options)
 
@@ -747,7 +522,12 @@ def test_minimum_separation_neohookean_materials(boxes3d, tmp_path, options, lab
     beside a NeoHookean body aborts the solve with "multimaterial supported only for
     LinearElasticity and NeoHookean".
     """
-    scale = OPT_DEFAULTS["scale"]
+    # The defaults the engine fills in: the root-level ones of the operation's spec.json.
+    spec = (Path(__file__).resolve().parents[1]
+            / "simwild" / "polyfem_ops" / "minimum_separation" / "spec.json")
+    defaults = {r["pointer"][1:]: r["default"] for r in json.loads(spec.read_text())
+                if r["pointer"].count("/") == 1 and "default" in r}
+    scale = defaults["scale"]
     _, cpp_text = _assert_polyfem_inputs_match(
         boxes3d, "minimum_separation",
         {"collision_pairs": BOTH_SKINS, "sep": 1.5, **options}, tmp_path, label)
@@ -769,8 +549,8 @@ def test_minimum_separation_neohookean_materials(boxes3d, tmp_path, options, lab
         volume = tag_to_volume[tag] * scale ** mesh_dim
         assert materials[tag] == {
             "id": tag, "type": "NeoHookean",
-            "E": options.get("nh_youngs", OPT_DEFAULTS["nh_youngs"]) / volume,
-            "nu": options.get("nh_poisson", OPT_DEFAULTS["nh_poisson"]),
+            "E": options.get("nh_youngs", defaults["nh_youngs"]) / volume,
+            "nu": options.get("nh_poisson", defaults["nh_poisson"]),
             "rho": 1.0}, f"the {group} material"
 
 
@@ -898,19 +678,6 @@ def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_
 # that are computed from one, the deformed coordinates and the final barrier stiffness. Everything
 # else in this section is compared exactly. See the measurement above.
 RTOL_PYTHON_VS_CPP = 1e-9  # the Python engine against the C++ one
-
-def _run_python_engine(mesh, operation, options, root):
-    """The Python engine end to end -- the outer loop (or the single solve) and then the deformed
-    mesh -- on the same validated parameters the C++ engine is handed. Returns the deformed mesh."""
-    root.mkdir(parents=True, exist_ok=True)
-    p = _spec.validate(_spec.load_spec(operation),
-                       {"input": str(mesh), "output": str(root / "out"), **options})
-    cfg = _python_cfg(operation, p, apply_run_mutations=False)
-    if operation == "minimum_separation":
-        run_python_separation(cfg, out_dir=root)
-    else:
-        run_python_smoothing(cfg, out_dir=root)
-    return root / "out.msh"
 
 
 def _run_cpp_engine(mesh, operation, root, **options):
@@ -1049,46 +816,35 @@ def _assert_steered_on_the_logged_distance(root, trail):
 
 
 # --------------------------------------------------------------------------
-# The write-back on its own: both engines applied to one solution
+# The write-back on its own: one solution applied exactly
 # --------------------------------------------------------------------------
 
 @needs_polyfem_ops
 @pytest.mark.parametrize("mesh_fixture, dim", [("boxes3d", 3), ("jagged2d", 2)])
 def test_deformed_msh_write_back_matches(request, tmp_path, mesh_fixture, dim):
-    """Both engines apply the SAME solution.txt to the SAME mesh, and each is checked against the
-    coordinates that computation must give -- from the solution on, every step is deterministic, so
-    both engines can be held to an exact value rather than to each other.
+    """The deformed mesh is the input mesh with the solution added, exactly: from the solution on,
+    every step is deterministic, so the write-back is held to an exact value.
 
     The solution is a real one: the C++ engine runs the smoothing operation, and its write-back
     reads the solution.txt polyfem wrote, at 100 significant digits -- far past the 17 a double
-    needs, so the file carries every value exactly. The Python side is then asked for
-    `step_write_deformed_msh` directly on that same file, which is the same function its run()
-    calls, so no binary is needed here.
+    needs, so the file carries every value exactly.
     """
-    from simwild.polyfem_ops.polyfem_utils import step_write_deformed_msh
-
     mesh = request.getfixturevalue(mesh_fixture)
     scale = 1e-3
     cpp_out = _run_cpp_engine(mesh, "laplacian_smoothing", tmp_path / "cpp",
                               interfaces=[{"region": "tag_0", "filter": "ambient"}], scale=scale)
     solution = tmp_path / "cpp" / "smooth_output" / "solution.txt"
 
-    py_out = tmp_path / "py_deformed.msh"
-    step_write_deformed_msh(Path(mesh), solution, py_out, scale)
-
-    py, cpp = _gmsh_reduced_mesh(py_out), _gmsh_reduced_mesh(cpp_out)
-    _assert_same_mesh_structure(py, cpp, "deformed meshes")
+    original, cpp = _gmsh_reduced_mesh(mesh), _gmsh_reduced_mesh(cpp_out)
+    _assert_same_mesh_structure(original, cpp, "input and deformed meshes",
+                                sides=("the input", "the write-back"))
 
     # What the write-back has to produce: the original coordinate plus the displacement in mesh
     # units, `u / scale`, componentwise, with the components the solution does not carry (z in 2D)
-    # left untouched. The two engines deliberately differ in the last bits of some coordinates.
-    # The C++ writes every coordinate as the shortest decimal that reads back as the same double,
-    # so its file carries that value exactly; the Python writes the file through gmsh, whose ASCII
-    # msh writer prints "%.16g" and so loses the last bits of about 40% of them (measured: 122 of
-    # 300 pseudo-random values do not survive that round trip). Both are asserted: the C++ against
-    # the exact value, the Python against the same value put through that rounding.
-    original = _gmsh_reduced_mesh(mesh)
-    assert cpp["node_tags"] == original["node_tags"], "the write-back renumbered the nodes"
+    # left untouched. The C++ writes every coordinate as the shortest decimal that reads back as
+    # the same double, so its file carries that value exactly. (gmsh's ASCII msh writer, which the
+    # Python engine used, prints "%.16g" and loses the last bits of about 40% of them -- measured:
+    # 122 of 300 pseudo-random values do not survive that round trip.)
     # The fixtures number their nodes 1..n, which is the row order of solution.txt.
     u = np.loadtxt(solution)[np.array(original["node_tags"]) - 1]
     exact = original["coords"].copy()
@@ -1096,11 +852,6 @@ def test_deformed_msh_write_back_matches(request, tmp_path, mesh_fixture, dim):
     assert np.array_equal(cpp["coords"], exact), (
         "the c++ coordinates are not original + u/scale; max relative difference {:.3e}".format(
             np.max(np.abs(cpp["coords"] - exact) / np.maximum(np.abs(exact), 1.0))))
-    rounded = np.vectorize(lambda v: float(f"{v:.16g}"))(exact)
-    assert np.array_equal(py["coords"], rounded), (
-        "the python coordinates are not original + u/scale through %.16g; max relative difference "
-        "{:.3e}".format(np.max(np.abs(py["coords"] - rounded)
-                               / np.maximum(np.abs(rounded), 1.0))))
     if dim == 2:
         # The solution has two columns, so the third coordinate is carried over untouched.
         assert np.array_equal(cpp["coords"][:, 2], np.zeros(len(cpp["coords"])))
@@ -1140,17 +891,8 @@ def test_minimum_separation_end_to_end_matches(boxes3d, tmp_path, capfd, options
     # A golden run is what this compares: the decision trail, every solve's (active distance,
     # dhat) at full precision, the final barrier stiffness, and the deformed mesh (out.msh).
     golden = _golden(f"minimum_separation_end_to_end/{label}", boxes3d)
-    if RECORD:
-        py_root = tmp_path / f"py_{label}"
-        py_msh = _run_python_engine(boxes3d, "minimum_separation", {**SEP_BASE, **options},
-                                    py_root)
-        py_trail = _decision_trail(capfd.readouterr().out)
-        assert py_trail, "the python engine printed no decisions"
-        (golden / "run.json").write_text(json.dumps(
-            {"trail": py_trail, "solves": _solve_values(py_root),
-             "final_barrier_stiffness": _final_kappa(py_root)}, indent=1) + "\n")
-        shutil.copyfile(py_msh, golden / "out.msh")
     py_run = json.loads((golden / "run.json").read_text())
+    assert py_run["trail"], "the recorded python run has no decisions"
 
     cpp_root = tmp_path / f"cpp_{label}"
     cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", cpp_root, **{**SEP_BASE, **options})
@@ -1222,17 +964,12 @@ def test_laplacian_smoothing_end_to_end_matches(jagged2d, tmp_path):
     write-back. The deformed mesh is the whole observable result, and the whole golden."""
     options = {"interfaces": [{"region": "tag_0", "filter": "ambient"}], "weight_laplacian": 1e3}
     golden = _golden("laplacian_smoothing_end_to_end", jagged2d)
-    roots = [tmp_path / "cpp"]
-    if RECORD:
-        py_msh = _run_python_engine(jagged2d, "laplacian_smoothing", options, tmp_path / "py")
-        shutil.copyfile(py_msh, golden / "out.msh")
-        roots.append(tmp_path / "py")
-    cpp_msh = _run_cpp_engine(jagged2d, "laplacian_smoothing", tmp_path / "cpp", **options)
+    cpp_root = tmp_path / "cpp"
+    cpp_msh = _run_cpp_engine(jagged2d, "laplacian_smoothing", cpp_root, **options)
 
-    for root in roots:
-        assert (root / "smooth_output" / "polyfem.log").is_file(), f"{root.name}: no polyfem.log"
-        assert not list((root / "smooth_output").glob("polyfem_iter_*.log")), (
-            f"{root.name}: smoothing must not run an outer loop")
+    assert (cpp_root / "smooth_output" / "polyfem.log").is_file(), "no polyfem.log"
+    assert not list((cpp_root / "smooth_output").glob("polyfem_iter_*.log")), (
+        "smoothing must not run an outer loop")
     _assert_deformed_meshes_close(golden / "out.msh", cpp_msh, RTOL_PYTHON_VS_CPP)
 
 
@@ -1245,24 +982,17 @@ def test_minimum_separation_probe_already_separated_matches(boxes3d, tmp_path, c
     deformed mesh."""
     options = {**SEP_BASE, "sep": 5e-4, "strategy": "dhat"}
     golden = _golden("minimum_separation_probe_already_separated", boxes3d)
-    roots = [tmp_path / "cpp"]
-    if RECORD:
-        py_msh = _run_python_engine(boxes3d, "minimum_separation", options, tmp_path / "py")
-        (golden / "run.json").write_text(json.dumps(
-            {"trail": _decision_trail(capfd.readouterr().out)}, indent=1) + "\n")
-        shutil.copyfile(py_msh, golden / "out.msh")
-        roots.append(tmp_path / "py")
     py_trail = json.loads((golden / "run.json").read_text())["trail"]
     py_msh = golden / "out.msh"
-    cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", tmp_path / "cpp", **options)
+    cpp_root = tmp_path / "cpp"
+    cpp_msh = _run_cpp_engine(boxes3d, "minimum_separation", cpp_root, **options)
     cpp_trail = _decision_trail(capfd.readouterr().out)
 
     assert py_trail == cpp_trail
     assert len(py_trail) == 1 and "already separated" in py_trail[0][1], py_trail
-    for root in roots:
-        assert (root / "sep_output" / "polyfem_probe.log").is_file()
-        assert not list((root / "sep_output").glob("polyfem_iter_*.log")), (
-            f"{root.name}: the loop ran although the bodies were already separated")
+    assert (cpp_root / "sep_output" / "polyfem_probe.log").is_file()
+    assert not list((cpp_root / "sep_output").glob("polyfem_iter_*.log")), (
+        "the loop ran although the bodies were already separated")
 
     # Nothing moved: the probe solves at zero barrier stiffness, so its solution is the rest state
     # and the deformed mesh is the input mesh back again. No solver measurement reaches these

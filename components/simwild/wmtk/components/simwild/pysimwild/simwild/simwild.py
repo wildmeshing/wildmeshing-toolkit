@@ -492,59 +492,35 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
 
 
 # ---------------------------------------------------------------------------
-# Polyfem-based ops (validated against simwild/specs/*.json, same rule format
-# as simwild_spec.json; engine: minimum_separation.py)
+# Polyfem-based ops: the wmtk component polyfem_ops, which validates the
+# parameters against the op's spec.json (polyfem_ops/<op>/spec.json)
 # ---------------------------------------------------------------------------
 
-def _run_polyfem_op(op_name, params, engine):
-    """Validate `params` against the op's spec.json and run the engine on
-    the validated, defaults-filled dict. The Python engine runs the PolyFEM
-    binary named by $POLYFEM_BIN and raises if it is unset; the C++ engine is
-    linked against polyfem and needs no binary."""
-    from .polyfem_ops import spec as _spec
-    p = _spec.validate(_spec.load_spec(op_name), params)
-    _ensure_output_dir(p["output"])
-    engine(p)
-    return p
+def _run_polyfem_op(op_name, params):
+    """Run the C++ operation `op_name` on `params`. It validates them against
+    the op's spec.json itself and runs the polyfem it is linked against, so it
+    needs no PolyFEM binary."""
+    _ensure_output_dir(params["output"])
+    try:
+        wildmeshing({"application": "polyfem_ops", "operation": op_name,
+                     **params})
+    except RuntimeError as exc:
+        # The component is optional, and without it wmtk does not know the
+        # application name at all; say which option builds it in.
+        if "Application polyfem_ops unknown" not in str(exc):
+            raise
+        raise RuntimeError(
+            f"{op_name} needs the wildmeshing module built with the "
+            "polyfem_ops component: configure the toolkit with "
+            "-DWMTK_WITH_POLYFEM=ON and rebuild.") from exc
 
 
-def _polyfem_engine(op_name, engine, python_engine):
-    """Pick the implementation `engine` names and return it as the callable
-    _run_polyfem_op runs on the validated parameters.
-
-    "python" is `python_engine`, the glue in simwild.polyfem_ops that is the
-    reference for both; "cpp" is its port in the wmtk component polyfem_ops,
-    reached through wildmeshing, which validates the same parameters against the
-    same spec.json itself and writes the same files in the same places. The
-    choice is made here, above the validator: `engine` is a wrapper argument and
-    is never part of the validated parameter dict."""
-    if engine == "python":
-        return python_engine
-    if engine != "cpp":
-        raise ValueError(f'engine must be "python" or "cpp", got {engine!r}')
-
-    def run_cpp(p):
-        try:
-            wildmeshing({"application": "polyfem_ops",
-                         "operation": op_name, **p})
-        except RuntimeError as exc:
-            # The component is optional, and without it wmtk does not know the
-            # application name at all; say which option builds it in.
-            if "Application polyfem_ops unknown" not in str(exc):
-                raise
-            raise RuntimeError(
-                'engine="cpp" needs the wildmeshing module built with the '
-                "polyfem_ops component: configure the toolkit with "
-                "-DWMTK_WITH_POLYFEM=ON and rebuild.") from exc
-
-    return run_cpp
-
-
-def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
-                       engine="cpp"):
+def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
     """
     Push collision bodies apart to a target separation (polyfem: AMIPS +
-    fitting + Laplacian + GCP contact with a dhat line-search).
+    fitting + Laplacian + GCP contact with a dhat line-search). Runs in the
+    wmtk component polyfem_ops: needs the toolkit built with
+    -DWMTK_WITH_POLYFEM=ON.
 
     Parameters:
     - mesh: Input multi-tag mesh file path (.msh).
@@ -560,62 +536,18 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={},
     - output: Output path stem; writes <output>.msh (artifacts next to it).
     - others: Additional parameters — see polyfem_ops/minimum_separation/spec.json
       (scale, use_laplacian, weight_*, rtol, max_iterations, strategy
-      ["dhat" default | "stiffness" experimental], ...). PolyFEM binary
-      (engine="python" only): export POLYFEM_BIN.
-    - engine: Which implementation runs the op — "cpp" (default), the C++
-      port in the wmtk component polyfem_ops, which needs the toolkit built
-      with -DWMTK_WITH_POLYFEM=ON, or "python", the glue it was ported from;
-      both take the same parameters and write the same files. A wrapper
-      argument, not a spec parameter: it is not offered to either validator.
+      ["dhat" default | "stiffness" experimental], ...).
     """
-    from .polyfem_ops import minimum_separation as _op
-
-    def python_engine(p):
-        cfg = {
-            "input_msh": p["input"],
-            "collision_pairs": p["collision_pairs"],
-            "sep": p["sep"],
-            "scale": p["scale"],
-            "useFitting": p["use_fitting"],
-            "useLaplacian": p["use_laplacian"],
-            "useGraphLaplacian": p["use_graph_laplacian"],
-            "normalizePenalties": p["normalize_penalties"],
-            "weight_fitting": p["weight_fitting"],
-            "weight_laplacian": p["weight_laplacian"],
-            "amips_weights": p["amips_weights"],
-            "max_iterations": p["max_iterations"],
-            "rtol": p["rtol"],
-            "nl_max_iterations": p["nl_max_iterations"],
-            "barrier_stiffness": p["barrier_stiffness"],
-            "alpha_n": p["alpha_n"],
-            "alpha_t": p["alpha_t"],
-            "save_vtu": p["save_vtu"],
-            "strategy": p["strategy"],
-            "dhat_growth": p["dhat_growth"],
-            "max_stiffness_multiplier": p["max_stiffness_multiplier"],
-            "protected_regions": p["protected_regions"],
-            "ambient_like_tags": p["ambient_like_tags"],
-            "use_nh_body": p["use_nh_body"],
-            "nh_youngs": p["nh_youngs"],
-            "nh_poisson": p["nh_poisson"],
-            "output_msh": f"{p['output']}.msh",
-        }
-        if p["init_dhat"] > 0:
-            cfg["init_dhat"] = p["init_dhat"]
-        out_dir = os.path.dirname(p["output"]) or "."
-        _op.run(cfg, out_dir=Path(out_dir))
-
-    j = {"input": mesh, "collision_pairs": collision_pairs, "sep": sep,
-         "output": output, **others}
-    _run_polyfem_op("minimum_separation", j,
-                    _polyfem_engine("minimum_separation", engine, python_engine))
+    _run_polyfem_op("minimum_separation",
+                    {"input": mesh, "collision_pairs": collision_pairs,
+                     "sep": sep, "output": output, **others})
 
 
-def laplacian_smoothing(mesh, interfaces=[], output="out", others={},
-                        engine="cpp"):
+def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
     """
     Fair material interfaces with a single polyfem solve (AMIPS + fitting +
-    Laplacian; no contact).
+    Laplacian; no contact). Runs in the wmtk component polyfem_ops: needs the
+    toolkit built with -DWMTK_WITH_POLYFEM=ON.
 
     Parameters:
     - mesh: Input multi-tag mesh file path (.msh).
@@ -625,41 +557,11 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={},
       Empty = every material interface.
     - output: Output path stem; writes <output>.msh (artifacts next to it).
     - others: Additional parameters — see polyfem_ops/laplacian_smoothing/spec.json
-      (weight_laplacian, smooth_positions, ...). PolyFEM binary
-      (engine="python" only): export POLYFEM_BIN.
-    - engine: Which implementation runs the op — "cpp" (default), the C++
-      port in the wmtk component polyfem_ops, which needs the toolkit built
-      with -DWMTK_WITH_POLYFEM=ON, or "python", the glue it was ported from;
-      both take the same parameters and write the same files. A wrapper
-      argument, not a spec parameter: it is not offered to either validator.
+      (weight_laplacian, smooth_positions, ...).
     """
-    from .polyfem_ops import laplacian_smoothing as _op
-
-    def python_engine(p):
-        cfg = {
-            "input_msh": p["input"],
-            "scale": p["scale"],
-            "useFitting": p["use_fitting"],
-            "useLaplacian": p["use_laplacian"],
-            "useGraphLaplacian": p["use_graph_laplacian"],
-            "normalizePenalties": p["normalize_penalties"],
-            "weight_fitting": p["weight_fitting"],
-            "weight_laplacian": p["weight_laplacian"],
-            "max_iterations": p["max_iterations"],
-            "smoothDisplacementsOrPositions": 1 if p["smooth_positions"] else 0,
-            "save_vtu": p["save_vtu"],
-            "ambient_like_tags": p["ambient_like_tags"],
-            "output_msh": f"{p['output']}.msh",
-        }
-        if p["interfaces"]:
-            cfg["interfaces"] = p["interfaces"]
-        out_dir = os.path.dirname(p["output"]) or "."
-        _op.run(cfg, out_dir=Path(out_dir))
-
-    j = {"input": mesh, "interfaces": interfaces, "output": output, **others}
-    _run_polyfem_op("laplacian_smoothing", j,
-                    _polyfem_engine("laplacian_smoothing", engine, python_engine))
-
+    _run_polyfem_op("laplacian_smoothing",
+                    {"input": mesh, "interfaces": interfaces, "output": output,
+                     **others})
 
 if __name__ == "__main__":
     # Example usage of the wrapper functions for WMTK operations related to image simulation.

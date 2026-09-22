@@ -137,8 +137,7 @@ jobs:
 
       # The pysimwild suite, on the entry that built the polyfem_ops component and the Python
       # module: it runs the C++ engine through the Python wrappers. Its parity tests skip here
-      # (their goldens live outside the repository), and so do the Python-engine halves of the
-      # end-to-end tests (no polyfem program here). After the backtrace step, so that a Python
+      # (their goldens live outside the repository). After the backtrace step, so that a Python
       # failure does not re-run every C++ test binary under gdb. The apt packages are the X11/GL
       # libraries libgmsh.so from gmsh's pip package links against (its NEEDED entries).
       - name: Python tests (pysimwild)

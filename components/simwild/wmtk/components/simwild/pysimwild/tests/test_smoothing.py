@@ -1,22 +1,20 @@
 """Tier 2 — end-to-end Laplacian smoothing: fair a staircase tag_0/ambient
-interface (2D) and verify roughness drops while the mesh stays valid. The case
-runs once per engine ("python", the reference glue, and "cpp", its port in the
-wmtk component polyfem_ops); the assertions are physical and hold for either.
-Needs PolyFEM. This is also the 2D path of the polyfem pipeline."""
+interface (2D) and verify roughness drops while the mesh stays valid. Needs
+the wmtk component polyfem_ops (-DWMTK_WITH_POLYFEM=ON). This is also the 2D
+path of the polyfem pipeline."""
 import numpy as np
-import pytest
 
 from simwild import simwild as wm
 
-from conftest import ENGINES
+from conftest import needs_polyfem_ops
 from geo import (interface_polyline_2d, polyline_length, roughness_2d,
                  signed_volumes)
 
 SEL = {"region": "tag_0", "filter": "ambient"}
 
 
-@pytest.mark.parametrize("engine", ENGINES)
-def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path, engine):
+@needs_polyfem_ops
+def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path):
     coords0, edges0 = interface_polyline_2d(jagged2d, SEL)
     rough0 = roughness_2d(coords0, edges0)
     len0 = polyline_length(coords0, edges0)
@@ -30,7 +28,6 @@ def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path, engine):
         others={"use_fitting": True, "use_laplacian": True,
                 "weight_laplacian": 1e3, "normalize_penalties": True,
                 "scale": 1e-3},
-        engine=engine,
     )
 
     assert out_msh.exists()

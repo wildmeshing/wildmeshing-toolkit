@@ -1,9 +1,9 @@
-"""Fixtures: synthetic multi-tag meshes and PolyFEM discovery.
+"""Fixtures: synthetic multi-tag meshes, and the C++ engine (the wmtk
+component polyfem_ops) the polyfem tests run.
 
 Meshes are built directly with gmsh (Freudenthal/Kuhn tet grids, conforming
 across cells) so tests are deterministic and need no external data.
 """
-import os
 from itertools import permutations
 from pathlib import Path
 
@@ -25,24 +25,12 @@ except ImportError:
 
 
 # --------------------------------------------------------------------------
-# PolyFEM discovery
-# --------------------------------------------------------------------------
-
-POLYFEM_BIN = os.environ.get("POLYFEM_BIN")
-if POLYFEM_BIN and not Path(POLYFEM_BIN).is_file():
-    POLYFEM_BIN = None
-needs_polyfem = pytest.mark.skipif(
-    POLYFEM_BIN is None,
-    reason="export POLYFEM_BIN=/path/to/PolyFEM_bin to run the polyfem tests")
-
-
-# --------------------------------------------------------------------------
-# Engines
+# The C++ engine
 # --------------------------------------------------------------------------
 
 def _polyfem_ops_available():
-    """The C++ port of the polyfem ops is an optional component
-    (WMTK_WITH_POLYFEM); without it wmtk does not know the application name."""
+    """The polyfem ops are an optional component (WMTK_WITH_POLYFEM); without
+    it wmtk does not know the application name."""
     try:
         import wildmeshing
     except ImportError:
@@ -58,18 +46,6 @@ needs_polyfem_ops = pytest.mark.skipif(
     not _polyfem_ops_available(),
     reason="the wildmeshing module was built without the polyfem_ops "
            "component (configure with -DWMTK_WITH_POLYFEM=ON)")
-
-
-# The `engine` values the simwild wrappers accept: the Python glue (the
-# reference implementation) and its C++ port. Parametrizing a test over this
-# runs it once per engine and puts the engine name in the test id. The Python
-# half skips without $POLYFEM_BIN, the binary it runs; the C++ half is linked
-# against polyfem and skips only when the toolkit was built without the
-# component.
-ENGINES = [
-    pytest.param("python", marks=needs_polyfem),
-    pytest.param("cpp", marks=needs_polyfem_ops),
-]
 
 
 def run_cpp(mesh, operation, out_dir, **params):

@@ -14,11 +14,5 @@ dependencies = ["numpy>=2.0", "gmsh", "scipy", "h5py"]
 packages = [
     "simwild",
     "simwild.polyfem_ops",
-    "simwild.polyfem_ops.minimum_separation",
-    "simwild.polyfem_ops.laplacian_smoothing",
     "simwild.polyfem_ops.polyfem_sim",
 ]
-
-[tool.setuptools.package-data]
-"simwild.polyfem_ops.minimum_separation" = ["spec.json"]
-"simwild.polyfem_ops.laplacian_smoothing" = ["spec.json"]
