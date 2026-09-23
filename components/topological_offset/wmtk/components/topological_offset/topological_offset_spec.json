@@ -47,6 +47,8 @@
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
       "EXPERIMENTAL_refinement_strat",
+      "EXPERIMENTAL_resolution_criteria",
+      "EXPERIMENTAL_max_normal_deviation",
       "pre_smooth",
       "EXPERIMENTAL_ops_divergence_guard",
       "EXPERIMENTAL_flip_sag_margin",
@@ -397,6 +399,24 @@
       "split_longest"
     ],
     "doc": "EXPERIMENTAL. Single-phase loop only. How a turn resolves the refinable front simplices -- the faces (3D) / chords (2D) with every corner on the level set whose sag at the centroid / midpoint is over front_conv_rel x target_distance. Replaces the old bool sag_halve_refinement: its true is \"sizing_half\" and its false is \"sizing_curvature\", and the default is unchanged. \"sizing_half\" (the default): halve the sizing scalar at every corner of every refinable simplex, once per vertex per turn, floored at max(min_sizing_scalar, min_edge_length / l), then grade outward. Growth is about 2.3x per turn. \"sizing_curvature\": lower the scalar instead to the chord rule's target 3/4 L (tube/sag)^(1/p) capped at L/2, with the exponent p read from how the level set turns across the chord -- 2 on a smooth level set, 1 where the chord straddles a kink. Same floor and gradation. It is the sharper rule where the field is smooth and far the more aggressive where it is creased: on a polyhedral input p reads near 1 over half the refinable faces, which makes the target linear in the sag rather than its square root and has refined a whole domain in one turn. \"split_longest\" (3D ONLY; 2D throws): do not touch the sizing field at all. The field is set to 1.0 at every vertex when the loop starts and stays there, and each refinable face's longest edge is split instead, in a pass of its own at the end of the turn -- after the operation groups and before the turn's end debug frame, so that frame shows the split result. That pass offers each distinct longest edge exactly once with no length gate and no cascade; split_edge_before still applies, so the high-valence gate, the envelope and the class rules can still refuse one. NOTE the interaction this implies: with the field at 1.0 the ordinary split and collapse gates are both referred to l, so a forced half-length edge is a candidate for the next collapse pass. Refinement is then a race between the forced splits and the coarsening, which is the thing to watch in a run with this option on."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_resolution_criteria",
+    "type": "string",
+    "default": "sag",
+    "options": [
+      "sag",
+      "normal_deviation"
+    ],
+    "doc": "EXPERIMENTAL. 3D single-phase loop only; 2D does not read it. WHICH MEASURE decides that an offset-surface face is resolved. Whatever it is, it is reported as a multiple of the same bar front_conv_rel x target_distance, so 1.0 is the threshold, and it drives three things at once: the loop's own face criterion (EnergyCriterion::max_face / faces_ok(), so whether the loop may stop), which faces EXPERIMENTAL_refinement_strat is handed to refine, and what EXPERIMENTAL_ops_divergence_guard refuses to let a collapse or a surface flip make worse. \"sag\" is the default and is the loop exactly as it has always been: the offset field's sagitta at the face centroid measured against the mean of the field at its three corners, divided by |grad Phi| at the centroid to put it in length units (TopoOffsetTetMesh::face_conv_ratio). A negative return means unmeasurable, which the criterion counts and the ops guard treats as infinitely bad. The key exists so a second measure can be added at ONE place rather than by hunting down call sites: every consumer asks TopoOffsetTetMesh::face_resolution_ratio(), which is the only thing that reads this key. Two pieces of the refinement path are still specific to \"sag\" and a new option has to supply its own: front_chord_target(), which inverts the sag-to-edge-length relation through the measured kink exponent, and EnergyCriterion::Refinable::sag, which carries the measure back to the refinement strategies as a LENGTH rather than as a ratio. Both are commented as such. \"normal_deviation\" is PAPER DEFINITION 5 (Topological Offsets, Appendix A): the maximum angle, in degrees, between the offset field's normal at the face centroid and that normal at each of its three near-corner samples (1-u)*p_v + u*p_centroid with u = 0.1, divided by EXPERIMENTAL_max_normal_deviation so that 1.0 is again the threshold. The offset normal at a point is grad Phi / |grad Phi| there, taken from the face's own band-cell field exactly as \"sag\" does, which for the euclidean field is the unit direction from the nearest point of the input complex -- the paper's \"projection point on the offset\" -- and which also gives the smooth potential a normal, so unlike the quadric pass this criterion runs under either offset_field. BOTH TERMS ARE FIELD NORMALS; THE FACE'S OWN GEOMETRIC NORMAL DOES NOT APPEAR, and that is what makes the measure something refinement can satisfy: the field normal is continuous away from the input complex's features, so shrinking a face brings its samples together and drives the angle to zero. An earlier version of this code in this repo compared the face's own normal against the samples instead, i.e. misorientation, which refinement does not fix -- a smaller triangle in the same plane is just as misoriented -- so the sizing field could never drive it down and refinement chased such a face forever. A face whose centroid or any sample has no field direction is reported unmeasurable, as it is under \"sag\". PAIRING: the paper resolves a normal deviation over sigma_max by halving the target length, which is EXPERIMENTAL_refinement_strat \"sizing_half\" (the default); \"split_longest\" also works. \"sizing_curvature\" is REFUSED with this criteria and throws at startup, because its front_chord_target() inverts the sagitta's power law and has no meaning for an angle."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_max_normal_deviation",
+    "type": "float",
+    "default": 15.0,
+    "min": 0.0,
+    "max": 180.0,
+    "doc": "EXPERIMENTAL. 3D single-phase loop only; 2D does not read it. The bar for EXPERIMENTAL_resolution_criteria \"normal_deviation\", in DEGREES -- the paper's sigma_max. A face's normal deviation is reported as a multiple of this, so 1.0 is the threshold exactly as the tube is for \"sag\", and the loop may only stop below it. Read by nothing under \"sag\". The default 15 degrees is a working value, not the paper's: the paper reports average normal deviations below 20 degrees on its Thingi10k results and leaves sigma_max to the user."
   },
   {
     "pointer": "/pre_smooth",

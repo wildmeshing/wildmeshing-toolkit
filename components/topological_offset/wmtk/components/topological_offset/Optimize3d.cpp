@@ -382,8 +382,10 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // it: a flip of the input complex or of a region boundary keeps the base's strict rule.
     if (m_offset_params.experimental_ops_divergence_guard &&
         face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
-        const double before = std::max(offset_face_sag(a, b, c), offset_face_sag(a, b, d));
-        const double after = std::max(offset_face_sag(a, c, d), offset_face_sag(b, c, d));
+        const double before =
+            std::max(face_resolution_or_inf(a, b, c), face_resolution_or_inf(a, b, d));
+        const double after =
+            std::max(face_resolution_or_inf(a, c, d), face_resolution_or_inf(b, c, d));
         // THE WHOLE SAG RULE: the flip must win at least EXPERIMENTAL_flip_sag_margin of the
         // bar, whether the pair started over the bar or under it. Written as a negated <= so a
         // NaN on either side refuses. A flip that misses it is refused outright -- there is no
@@ -946,14 +948,41 @@ std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
     return {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
 }
 
-double TopoOffsetTetMesh::offset_face_sag(const size_t a, const size_t b, const size_t c) const
+double TopoOffsetTetMesh::face_resolution_ratio(const size_t a, const size_t b, const size_t c)
+    const
 {
-    // EXPERIMENTAL_ops_divergence_guard: one face's sag, as face_conv_ratio measures it (the
-    // sagitta at the centroid over front_conv_rel x target_distance). An unmeasurable face is
-    // infinite, so making a measurable neighbourhood unmeasurable counts as getting worse,
-    // while a neighbourhood that was already unmeasurable is never made "worse" by anything --
-    // infinity is not strictly greater than infinity, which is the comparison the guard makes.
-    const double r = face_conv_ratio(a, b, c);
+    // THE seam EXPERIMENTAL_resolution_criteria selects on, and the only reader of that key. See
+    // the declaration for what goes through here and for the two sag-specific pieces of the
+    // refinement path that do not.
+    const std::string& crit = m_offset_params.experimental_resolution_criteria;
+    if (crit == "sag") {
+        // The default, and the loop exactly as it has always been.
+        return face_conv_ratio(a, b, c);
+    }
+    if (crit == "normal_deviation") {
+        const double sigma = face_normal_deviation_deg(a, b, c);
+        if (!(sigma >= 0.) || !std::isfinite(sigma)) return -1.;
+        // Against its own bar, so that 1.0 is the threshold here exactly as it is for sag and
+        // every consumer can go on comparing to 1 without knowing which measure it got.
+        return sigma / normal_deviation_bar_deg();
+    }
+    // Unreachable through a validated config -- jse checks the value against the spec's `options`
+    // before the mesh is read -- but a build whose spec and code disagree must not silently fall
+    // back to sag and report numbers for a measure nobody asked for.
+    log_and_throw_error(
+        "EXPERIMENTAL_resolution_criteria '{}' is not a measure this build knows.",
+        crit);
+}
+
+double TopoOffsetTetMesh::face_resolution_or_inf(const size_t a, const size_t b, const size_t c)
+    const
+{
+    // EXPERIMENTAL_ops_divergence_guard: one face's resolution measure, whatever
+    // EXPERIMENTAL_resolution_criteria has it be. An unmeasurable face is infinite, so making a
+    // measurable neighbourhood unmeasurable counts as getting worse, while a neighbourhood that
+    // was already unmeasurable is never made "worse" by anything -- infinity is not strictly
+    // greater than infinity, which is the comparison the guard makes.
+    const double r = face_resolution_ratio(a, b, c);
     if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
     return r;
 }
@@ -1008,8 +1037,8 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
             if (v == v1) v = v2;
         }
 
-        const double s_before = offset_face_sag(before[0], before[1], before[2]);
-        const double s_after = offset_face_sag(after[0], after[1], after[2]);
+        const double s_before = face_resolution_or_inf(before[0], before[1], before[2]);
+        const double s_after = face_resolution_or_inf(after[0], after[1], after[2]);
         // THE RULE, per face. 3D ONLY -- 2D still compares maxima and refuses on any rise; see
         // the note in .claude/CLAUDE.md.
         //   unresolved (s_before >= 1): allow when THIS face does not get worse. Equal is
@@ -2831,7 +2860,9 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     for (const auto& f : offset_surface_faces()) {
         const size_t va = f[0], vb = f[1], vc = f[2];
         if (!front(va) || !front(vb) || !front(vc)) continue;
-        const double gn = face_conv_ratio(va, vb, vc); // centroid sag / tube
+        // Through the seam, not straight to face_conv_ratio: this one number is the loop's face
+        // criterion (max_face / faces_ok()) AND what decides which faces refinement is handed.
+        const double gn = face_resolution_ratio(va, vb, vc); // the measure / the bar
         if (gn < 0.) {
             ++s.n_unmeasurable;
             continue;
@@ -2869,15 +2900,33 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                     m_offset_params.min_sizing_scalar,
                     m_offset_params.min_edge_length / l);
                 const size_t lc = (la != va && lb != va) ? va : ((la != vb && lb != vb) ? vb : vc);
-                const double target = front_chord_target(la, lb, len, gn * s.tube, s.tube);
-                const double sn =
-                    std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 const double have = std::max(
                     {m_vertex_attribute[va].m_sizing_scalar,
                      m_vertex_attribute[vb].m_sizing_scalar,
                      m_vertex_attribute[vc].m_sizing_scalar});
+                // How short this face's chord would have to become, as a sizing scalar. THIS IS
+                // THE ONE PLACE THE MEASURE'S UNITS MATTER, which is why it dispatches: under
+                // "sag" the chord rule inverts the sagitta's power law to a length; an angle has
+                // no such inversion, so the paper's own rule for normal deviation is used
+                // instead -- Sec. 5.3.3 Step 1, "if ... a normal deviation above the
+                // user-defined maximum sigma_max, we divide the target length by two". The test
+                // below is then exactly "are the corners already at the floor".
+                double sn;
+                if (resolution_criteria_is_sag()) {
+                    const double target = front_chord_target(la, lb, len, gn * s.tube, s.tube);
+                    sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
+                } else {
+                    sn = std::clamp(0.5 * have, s_floor, m_offset_params.max_sizing_scalar);
+                }
                 if (sn < have) {
-                    s.refinable.push_back({la, lb, lc, gn * s.tube, len});
+                    // `measure` is in the criteria's own units -- see the field's doc. Under
+                    // "sag" that is the centroid sag as a LENGTH, which is what
+                    // refine_front_from_sag() inverts; under "normal_deviation" it is the angle
+                    // in degrees, and no strategy legal with that criteria reads it.
+                    const double measure = resolution_criteria_is_sag()
+                                               ? gn * s.tube
+                                               : gn * normal_deviation_bar_deg();
+                    s.refinable.push_back({la, lb, lc, measure, len});
                 } else {
                     ++s.n_at_floor;
                 }
@@ -2994,6 +3043,49 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     }
     const double sag = std::abs(vg - (va + vb + vc) / 3.) / gn;
     return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
+}
+
+double TopoOffsetTetMesh::face_normal_deviation_deg(const size_t a, const size_t b, const size_t c)
+    const
+{
+    // Paper Definition 5; see the declaration for why both terms are FIELD normals and what
+    // happened the one time they were not. The field is the face's own band cell's, the same
+    // selection face_conv_ratio() makes, so a face over a multi-region band is measured against
+    // the region it belongs to rather than against a global query.
+    const OffsetPotential3D& pot = potential_for_edge(a, b);
+    if (!(pot.target_level() > 0.)) return -1.;
+    const std::array<Vector3d, 3> corners = {
+        {m_vertex_attribute[a].m_posf, m_vertex_attribute[b].m_posf, m_vertex_attribute[c].m_posf}};
+    const Vector3d pg = (corners[0] + corners[1] + corners[2]) / 3.;
+    // The offset normal at a point: grad Phi / |grad Phi|. For the euclidean field that is
+    // exactly the unit direction from the nearest point of the input complex out to the point --
+    // the paper's "projection point on the offset" -- and it is also defined for the smooth
+    // potential, which is why this criterion, unlike the quadric pass, needs no closest-point
+    // query and runs under either offset_field.
+    const auto normal_at = [&](const Vector3d& p, Vector3d& n) -> bool {
+        const Vector3d g = pot.gradient(p);
+        const double gn = g.norm();
+        if (!(gn > 0.) || !std::isfinite(gn)) return false;
+        n = g / gn;
+        return true;
+    };
+    Vector3d n_c = Vector3d::Zero();
+    if (!normal_at(pg, n_c)) return -1.;
+
+    constexpr double u = 0.1; // the reference's sample inset, as offset_surface_samples() uses
+    double max_dev = 0.;
+    for (const Vector3d& pv : corners) {
+        Vector3d n_i = Vector3d::Zero();
+        // A sample without a direction makes the face unmeasurable rather than merely skipped:
+        // the maximum over a subset is not the measure, and reporting a smaller number than the
+        // face deserves would let the loop stop on it.
+        if (!normal_at(Vector3d((1. - u) * pv + u * pg), n_i)) return -1.;
+        // A genuine angle between two field normals, both pointing away from the complex, so
+        // there is no orientation ambiguity to fold away with an abs() here.
+        const double cth = std::clamp(n_c.dot(n_i), -1., 1.);
+        max_dev = std::max(max_dev, (180. / M_PI) * std::acos(cth));
+    }
+    return max_dev;
 }
 
 void TopoOffsetTetMesh::assign_band_regions(const bool log)
@@ -3177,10 +3269,10 @@ size_t TopoOffsetTetMesh::refine_front_from_sag(
         std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
     std::vector<size_t> changed;
     for (const EnergyCriterion::Refinable& r : faces) {
-        if (!(r.sag > 0.) || !(r.len > 0.)) continue;
+        if (!(r.measure > 0.) || !(r.len > 0.)) continue;
         // The target from the face's longest edge as the chord, with the centroid's sag; written
         // at all three corners.
-        const double target = front_chord_target(r.a, r.b, r.len, r.sag, tube);
+        const double target = front_chord_target(r.a, r.b, r.len, r.measure, tube);
         const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
         for (const size_t v : {r.a, r.b, r.c}) {
             double& sc = m_vertex_attribute[v].m_sizing_scalar;
@@ -4514,6 +4606,43 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     // that has something refinable -- a run that never refines should still refuse a strategy
     // this build cannot carry out. jse already restricts the value to the spec's options, so
     // this fires only for a build/spec mismatch.
+    // Same idea for the measure those strategies are handed faces by: validate it ONCE here
+    // rather than discovering a bad value per face, and say in the log which measure the run is
+    // converging on, since every ratio reported below is in its units.
+    {
+        const std::string& crit = m_offset_params.experimental_resolution_criteria;
+        if (crit != "sag" && crit != "normal_deviation") {
+            log_and_throw_error(
+                "EXPERIMENTAL_resolution_criteria '{}' is not a measure this build knows.",
+                crit);
+        }
+        // The ONE pairing that cannot work, refused here rather than at the first refinable face:
+        // "sizing_curvature" reaches front_chord_target(), which inverts the sagitta's power law
+        // to an edge length. An angle has no such inversion, so feeding it one would silently
+        // produce a target from a number in the wrong units. The other two strategies need only
+        // the face's identity and are fine.
+        if (!resolution_criteria_is_sag() &&
+            m_offset_params.experimental_refinement_strat == "sizing_curvature") {
+            log_and_throw_error(
+                "EXPERIMENTAL_refinement_strat 'sizing_curvature' needs "
+                "EXPERIMENTAL_resolution_criteria 'sag': its chord rule inverts the sagitta's "
+                "power law and has no meaning for '{}'. Use 'sizing_half' (what the paper does "
+                "for normal deviation) or 'split_longest'.",
+                crit);
+        }
+        logger().info(
+            "\t[resolution] EXPERIMENTAL_resolution_criteria '{}': every face ratio below is "
+            "this measure over the bar {}, and it decides the loop's face criterion, which faces "
+            "are refined, and what the ops guard refuses.",
+            crit,
+            resolution_criteria_is_sag()
+                ? fmt::format(
+                      "front_conv_rel x target_distance = {:.4g}",
+                      m_offset_params.front_conv_rel * m_offset_params.target_distance)
+                : fmt::format(
+                      "EXPERIMENTAL_max_normal_deviation = {:.4g} degrees",
+                      normal_deviation_bar_deg()));
+    }
     {
         const std::string& strat = m_offset_params.experimental_refinement_strat;
         if (strat != "sizing_half" && strat != "sizing_curvature" && strat != "split_longest") {
@@ -4645,8 +4774,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                                 : Vector3d::Zero();
         logger().info(
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4}, {:.4})), faces max {:.4}x at the "
-            "centroid (reported) | {} vertices, {} faces | faces over the tube: {}, of which {} "
+            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4}, {:.4})), faces max {:.4}x "
+            "(reported) | {} vertices, {} faces | faces over the bar: {}, of which {} "
             "with all corners placed (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) | "
             "refinable faces {} (at the sizing floor {}) ========",
             it + 1,
@@ -4745,9 +4874,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             }
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front face(s) with all corners placed sag "
-                "over the tube at the centroid (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> "
-                "{}",
+                "\t[resolution] turn {}: {} front face(s) with all corners placed over the bar "
+                "(worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> {}",
                 it + 1,
                 ec.refinable.size(),
                 ec.max_face_placed,

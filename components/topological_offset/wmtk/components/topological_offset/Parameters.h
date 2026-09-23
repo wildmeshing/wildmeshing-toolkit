@@ -165,6 +165,18 @@ struct Parameters : public wmtk::OptimizerParameters
     /// simplex's longest edge instead. Replaces the old bool sag_halve_refinement, whose true /
     /// false are now "sizing_half" / "sizing_curvature".
     std::string experimental_refinement_strat;
+    /// EXPERIMENTAL, 3D only. See the spec: WHAT MEASURE decides an offset-surface face is
+    /// resolved, as a multiple of the bar front_conv_rel x target_distance. "sag" (the only
+    /// option today, and the default) is the loop exactly as it has always been: the field's
+    /// sagitta at the face centroid against the mean of its three corners. The key exists so the
+    /// measure can be swapped without hunting down its call sites -- everything that asks the
+    /// question goes through TopoOffsetTetMesh::face_resolution_ratio().
+    std::string experimental_resolution_criteria;
+    /// EXPERIMENTAL, 3D only. See the spec: the bar for EXPERIMENTAL_resolution_criteria
+    /// "normal_deviation", in DEGREES -- the paper's sigma_max. A face is resolved when the angle
+    /// between the offset field's normal at its centroid and that normal at each of its three
+    /// near-corner samples stays under this. Read by nothing when the criteria is "sag".
+    double experimental_max_normal_deviation;
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
@@ -260,6 +272,8 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         experimental_refinement_strat = json_params["EXPERIMENTAL_refinement_strat"];
+        experimental_resolution_criteria = json_params["EXPERIMENTAL_resolution_criteria"];
+        experimental_max_normal_deviation = json_params["EXPERIMENTAL_max_normal_deviation"];
         pre_smooth = json_params["pre_smooth"];
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
         experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];

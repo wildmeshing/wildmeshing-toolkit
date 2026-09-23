@@ -1093,9 +1093,12 @@ public:
      * where the refresh runs.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio measures it, with an
-    /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
-    double offset_face_sag(size_t a, size_t b, size_t c) const;
+    /// EXPERIMENTAL_ops_divergence_guard: one face's resolution measure as
+    /// face_resolution_ratio() gives it, with an unmeasurable face reported as infinity so that
+    /// losing measurability counts as worsening. Named for the measure and not for sag because
+    /// it follows EXPERIMENTAL_resolution_criteria: the guard's job is to stop an operation
+    /// wrecking whatever the loop is actually converging on.
+    double face_resolution_or_inf(size_t a, size_t b, size_t c) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
     /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
     /// exactly on the offset surface, which it checks first and cheaply: everything else returns
@@ -1429,7 +1432,73 @@ public:
     /// CENTROID, |Phi(g) - mean of the three corners| / |grad Phi(g)|, over the tube. The 3D
     /// resolution test (the 2D twin tests chord midpoints; a surface's worst interpolation
     /// error is inside the face, not on its edges). < 0 when not measurable.
+    ///
+    /// This is the IMPLEMENTATION of EXPERIMENTAL_resolution_criteria "sag", not the entry
+    /// point. Nothing calls it directly any more except face_resolution_ratio() below, which is
+    /// what every consumer asks; call that one, or a new criterion will not reach you.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
+    /**
+     * @brief THE resolution measure of one offset-surface face, as a multiple of the bar
+     * front_conv_rel x target_distance (1 = the bar). Negative means unmeasurable.
+     *
+     * The single seam EXPERIMENTAL_resolution_criteria selects on, and the ONLY thing that reads
+     * that key. Every consumer of "is this face resolved" goes through here -- the loop's face
+     * criterion in energy_criterion(), the refinable classification that feeds
+     * EXPERIMENTAL_refinement_strat, the ops guard (through face_resolution_or_inf()), and the
+     * debug frames' per-face cell data -- so a second measure is added in one place instead of
+     * by hunting down call sites.
+     *
+     * "sag", the only option today and the default, forwards to face_conv_ratio() unchanged, so
+     * the default run is the loop exactly as it always was.
+     *
+     * WHAT A NEW OPTION STILL HAS TO SUPPLY, because these two are specific to sag and are NOT
+     * behind this seam: front_chord_target(), which inverts the sag-to-edge-length relation
+     * through the measured kink exponent to decide how short a chord must become; and
+     * EnergyCriterion::Refinable::sag, which carries the measure to the refinement strategies as
+     * a LENGTH (ratio x tube) rather than as a ratio. Both are commented where they are.
+     */
+    double face_resolution_ratio(size_t a, size_t b, size_t c) const;
+    /**
+     * @brief EXPERIMENTAL_resolution_criteria "normal_deviation", in DEGREES, before the bar is
+     * applied. Paper Definition 5 (Topological Offsets, Appendix A):
+     *
+     *     sigma(t) = max over the samples p_i of angle( n(p_c), n(p_i) )
+     *
+     * with p_c the centroid, p_i = (1 - u) p_v + u p_c at u = 0.1 for each corner v, and n() the
+     * offset field's normal grad Phi / |grad Phi|, taken from the face's own band-cell field
+     * exactly as face_conv_ratio() takes it. Negative when any of the four points has no field
+     * direction, which is the same "unmeasurable" the sag measure reports.
+     *
+     * BOTH TERMS ARE FIELD NORMALS -- the face's own geometric normal does not appear, and that
+     * is the whole point. The field normal is continuous away from the input complex's features,
+     * so shrinking a face brings its samples together and drives sigma to zero, which is
+     * something refinement can actually satisfy. An earlier version of this code in this repo
+     * compared the face's own normal against the samples, i.e. misorientation; refinement does
+     * not fix misorientation -- a smaller triangle in the same plane is just as misoriented --
+     * so the sizing field could never drive it down and the loop refined around such a face
+     * forever. It was corrected to Definition 5 before being deleted with the rest of the
+     * Euclidean-only machinery in 10e3d2aee9, and this is a port of that corrected version.
+     *
+     * Vid-based rather than Tuple-based, unlike the deleted face_normal_deviation(Tuple): the ops
+     * guard measures VIRTUAL faces that the mesh does not carry yet. That is also why it builds
+     * its samples from the three positions instead of calling offset_surface_samples(), which
+     * needs a real face and the input-complex BVH.
+     */
+    double face_normal_deviation_deg(size_t a, size_t b, size_t c) const;
+    /// The bar EXPERIMENTAL_resolution_criteria "normal_deviation" divides by, in degrees: what
+    /// front_conv_rel x target_distance is to "sag". Floored off zero so the ratio is finite even
+    /// if a spec without the min ever let 0 through.
+    double normal_deviation_bar_deg() const
+    {
+        return std::max(m_offset_params.experimental_max_normal_deviation, 1e-12);
+    }
+    /// Whether the active resolution criteria measures a SAGITTA, i.e. a length that shrinks with
+    /// edge length the way front_chord_target() assumes. The two places that inversion is reached
+    /// from ask this rather than comparing the key's string themselves.
+    bool resolution_criteria_is_sag() const
+    {
+        return m_offset_params.experimental_resolution_criteria == "sag";
+    }
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
@@ -1663,13 +1732,22 @@ public:
         double tube = 0.;
         size_t n_at_floor = 0;
         size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
-        /// A face whose centroid sags over the tube with all three corners placed:
-        /// a, b are the ends of its LONGEST edge (the chord the target is derived from), c the
-        /// third corner; sag the centroid sag as a length; len the longest edge's length.
+        /// A face over the bar with all three corners placed: a, b are the ends of its LONGEST
+        /// edge (the chord the target is derived from), c the third corner; len the longest
+        /// edge's length.
+        ///
+        /// `measure` carries the resolution measure to the refinement strategies IN THE ACTIVE
+        /// CRITERIA'S OWN UNITS, and is one of the two things face_resolution_ratio()'s seam does
+        /// not cover: under "sag" it is the centroid sag as a LENGTH (ratio x tube), under
+        /// "normal_deviation" the angle in DEGREES (ratio x the degrees bar). Only
+        /// refine_front_from_sag() reads it, to invert the sag-to-length relation through
+        /// front_chord_target() -- which is why that strategy is refused with any criteria but
+        /// "sag". The other two ignore it: "sizing_half" halves the corners' scalars and
+        /// "split_longest" splits edge (a, b), both of which need the face identity alone.
         struct Refinable
         {
             size_t a, b, c;
-            double sag, len;
+            double measure, len;
         };
         std::vector<Refinable> refinable;
         /// Every front vertex placed. Counted through front_vertex_placed() rather than
@@ -1685,6 +1763,13 @@ public:
     /// The edge length that would bring a front chord's sag under the tube: 3/4 L
     /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
     /// turns across the chord. Same formula as 2D.
+    ///
+    /// SPECIFIC TO EXPERIMENTAL_resolution_criteria "sag", and the second of the two things
+    /// face_resolution_ratio() does not cover: the power law it inverts is the sagitta's, so it
+    /// is only meaningful for a measure that shrinks with edge length the way a sagitta does. It
+    /// is reached from one place, refine_front_from_sag() (strategy "sizing_curvature"), plus
+    /// the refinable/at-floor test in energy_criterion() that decides whether that strategy
+    /// could still lower a target.
     double front_chord_target(size_t va, size_t vb, double len, double sag, double tube) const;
 
     /// EXPERIMENTAL_refinement_strat "sizing_curvature": sets the target length at each
