@@ -1326,7 +1326,7 @@ public:
      * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
      *
      * It was not always one notion: the sag classification used to qualify its corners with the
-     * DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while
+     * DISTANCE to the level set (residual_length() within vertex_conv) while
      * everything else used the criterion's stationarity measure. The two disagree exactly where
      * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
      * hair outside the tube disqualified its whole face from ever being refined, with the face
@@ -1352,7 +1352,7 @@ public:
         return std::isfinite(ratio) && ratio <= 1.;
     }
     /// The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord
-    /// (a, b) against front_conv_rel x target_distance; -1 unmeasurable.
+    /// (a, b) against the sag bar sag_conv; -1 unmeasurable.
     double edge_conv_ratio(size_t a, size_t b) const;
     /// The face's interpolation residual as a ratio to the bar: the sagitta of Phi at the face
     /// CENTROID, |Phi(g) - mean of the three corners| / |grad Phi(g)|, over the tube. The 3D
@@ -1468,12 +1468,13 @@ public:
         return std::max(0.5 * offset_gradient_tolerance() / (s * s), 1e-16);
     }
 
-    /// The gradient_norm_rel bar: front_conv_rel x a measured reference (m_gradient_reference,
-    /// never measured on the single-phase path, so this sits at the floor there; the
-    /// single-phase bar uses m_front_gradient_reference instead). Same as 2D.
+    /// The gradient_norm_rel bar: vertex_conv_frac() x a measured reference
+    /// (m_gradient_reference, never measured on the single-phase path, so this sits at the floor
+    /// there; the single-phase bar uses m_front_gradient_reference instead). The fraction rather
+    /// than the length, because the reference is a gradient, not a distance. Same as 2D.
     double offset_gradient_tolerance() const
     {
-        return std::max(m_offset_params.front_conv_rel * m_gradient_reference, 1e-16);
+        return std::max(m_offset_params.vertex_conv_frac() * m_gradient_reference, 1e-16);
     }
 
     /// The scale offset_gradient_tolerance() is a fraction of; 0 on the single-phase path.

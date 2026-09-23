@@ -52,25 +52,44 @@ struct Parameters : public wmtk::OptimizerParameters
     /// the 2D construction reads it; the 3D twin ignores it until the port.
     double debug_manual_dhat;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
-    // The accuracy: this fraction of target_distance is both the vertex bar (the remaining Newton
-    // step of a front vertex along its move direction, under the default criterion) and the chord
-    // resolution threshold (a front edge is refinable while its sag over the level set exceeds
-    // it). The run criterion and every placement stop are the same test, so the run converges
-    // exactly when every visit stops immediately and no chord is left to resolve.
-    double front_conv_rel;
+    // ---- the two convergence epsilons (was the single front_conv_rel) ----
+    // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
+    // which is a fraction of the BOUNDING BOX DIAGONAL -- the same absolute/relative pair as
+    // envelope_size / envelope_size_rel, and deliberately NOT a fraction of target_distance any
+    // more, so changing the offset distance no longer silently changes the accuracy. init()
+    // refuses either one above target_distance: an epsilon coarser than the offset it measures
+    // cannot decide anything.
+    //
+    // THE VERTEX bar: a front vertex is placed when its convergence measure
+    // (front_vertex_conv_ratio(), per front_conv_criterion) is within it.
+    double vertex_conv;
+    double vertex_conv_rel;
+    // THE SAG bar: a front face (3D) or chord (2D) is refinable while its sag over the level set
+    // exceeds it. Separate from the vertex bar since 2026-09-23 -- placement accuracy and surface
+    // resolution are different questions and the loop has to be able to ask them separately.
+    double sag_conv;
+    double sag_conv_rel;
+
+    /// The two convergence epsilons expressed the way front_conv_rel used to be: as a fraction of
+    /// target_distance. Only the criteria whose bar is NOT a length take these -- 'decrement'
+    /// (rel x the objective value) and 'gradient_norm_rel' (rel x a reference gradient) multiply
+    /// a fraction, not a length -- so those two keep exactly the meaning they had.
+    double vertex_conv_frac() const { return vertex_conv / std::max(target_distance, 1e-16); }
+    double sag_conv_frac() const { return sag_conv / std::max(target_distance, 1e-16); }
     // Which convergence test gates the run, used identically by the loop's vertex test and the
     // placement stop. F is the vertex's front objective, g its gradient, H its Gauss-Newton
-    // Hessian, n its move direction; all four compare against front_conv_rel. See
+    // Hessian, n its move direction; all four compare against the VERTEX bar. See
     // front_vertex_conv_ratio().
     //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
-    //     rel x target_distance.
-    //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against rel x F.
-    //   "gradient_norm_rel": |n.g| against rel x the reference gradient, measured once on the
-    //     band as constructed.
+    //     vertex_conv.
+    //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against
+    //     vertex_conv_frac() x F.
+    //   "gradient_norm_rel": |n.g| against vertex_conv_frac() x the reference gradient, measured
+    //     once on the band as constructed.
     //   "residual_error": not a stationarity measure at all -- the field's own residual at the
     //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
-    //     the euclidean field and the ENERGY residual for the smooth one), against
-    //     rel x target_distance. No objective is built and n does not enter.
+    //     the euclidean field and the ENERGY residual for the smooth one), against vertex_conv.
+    //     No objective is built and n does not enter.
     /// gradient_norm_rel | step_size_rel | decrement | residual_error
     std::string front_conv_criterion;
     // The front is placed by a one-dimensional solve along its field normal
@@ -219,7 +238,10 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_dhat_factor = json_params["offset_dhat_factor"];
         debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
-        front_conv_rel = json_params["front_conv_rel"];
+        vertex_conv = json_params["vertex_conv"];
+        vertex_conv_rel = json_params["vertex_conv_rel"];
+        sag_conv = json_params["sag_conv"];
+        sag_conv_rel = json_params["sag_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
         offset_residual_samples = json_params["offset_residual_samples"];
 
@@ -324,6 +346,42 @@ struct Parameters : public wmtk::OptimizerParameters
             envelope_size_rel = envelope_size / diag_l;
         } else {
             envelope_size = envelope_size_rel * diag_l;
+        }
+
+        // The two convergence epsilons, the same absolute-or-relative pair as the envelope and
+        // against the same reference. They are lengths in space, so the bounding box diagonal is
+        // the reference, not target_distance: tying the accuracy to the offset distance made
+        // every change of target_distance a silent change of accuracy as well.
+        if (vertex_conv > 0) {
+            vertex_conv_rel = vertex_conv / diag_l;
+        } else {
+            vertex_conv = vertex_conv_rel * diag_l;
+        }
+        if (sag_conv > 0) {
+            sag_conv_rel = sag_conv / diag_l;
+        } else {
+            sag_conv = sag_conv_rel * diag_l;
+        }
+
+        // An epsilon coarser than the offset it measures decides nothing: every front vertex is
+        // "placed" and every face "resolved" from the first turn, whatever the offset looks like.
+        // Checked on the resolved ABSOLUTE values, so it catches the mistake whichever of the two
+        // forms the config used to state it.
+        if (vertex_conv > target_distance) {
+            log_and_throw_error(
+                "vertex_conv {} must be <= target_distance {}: the vertex convergence epsilon "
+                "cannot be coarser than the offset distance it measures, or every front vertex "
+                "reads as placed from the first turn",
+                vertex_conv,
+                target_distance);
+        }
+        if (sag_conv > target_distance) {
+            log_and_throw_error(
+                "sag_conv {} must be <= target_distance {}: the sag convergence epsilon cannot "
+                "be coarser than the offset distance it measures, or every front face reads as "
+                "resolved from the first turn",
+                sag_conv,
+                target_distance);
         }
 
         // l_min is relative to the offset distance rather than the bounding box: it is the offset

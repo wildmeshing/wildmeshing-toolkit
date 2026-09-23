@@ -1375,7 +1375,7 @@ public:
      * cannot be placed for one of them and not for another.
      *
      * It was not always one notion: the sag classification used to qualify its endpoints with
-     * the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance)
+     * the DISTANCE to the level set (residual_length() within the convergence epsilon)
      * while everything else used the criterion's stationarity measure. The two disagree exactly
      * where it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one
      * a hair outside the tube disqualified its whole chord from ever being refined, with the
@@ -1503,7 +1503,7 @@ public:
      * so mesh_improvement() stops exactly when both are met:
      *
      *   - max face AMIPS over stop_energy -- TriWild's, via quality_rel()
-     *   - max Phi residual over (front_conv_rel / 2) * target_distance, over the reachable band
+     *   - max Phi residual over half the vertex epsilon, vertex_conv / 2, over the reachable band
      *
      * The average returned alongside it is the same expression over the two averages, so both
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
@@ -1569,7 +1569,7 @@ public:
         //
         // Never measured on the single-phase path, so this sits at the 1e-16 floor there; the
         // single-phase convergence bar uses m_front_gradient_reference instead.
-        return std::max(m_offset_params.front_conv_rel * m_gradient_reference, 1e-16);
+        return std::max(m_offset_params.vertex_conv_frac() * m_gradient_reference, 1e-16);
     }
 
     /// max |2 (Phi - c) grad Phi . n| over the initial offset-surface vertices; the scale
@@ -1734,7 +1734,7 @@ public:
      * @brief The "energy_gradient" criterion: the front is at a critical point of Phase B's
      * energy, and every edge resolves the pull that drives it there.
      *
-     * One bar for everything, B = front_conv_rel x m_front_gradient_reference:
+     * One bar for everything, B = vertex_conv_frac() x m_front_gradient_reference:
      *  - vertices: max over the placed front vertices of ||grad F||, F the vertex's full Phase B
      *    objective (AMIPS + the two offset terms, as the shared smoother assembles it) -- the same
      *    quantity and bar as the Phase B pass stop.

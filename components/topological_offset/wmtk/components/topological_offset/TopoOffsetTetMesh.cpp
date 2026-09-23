@@ -1972,8 +1972,8 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         // samples every live offset face at its centroid, and that number has nowhere to live on
         // the tet frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
         //
-        //   front_sag_ratio  face_conv_ratio(): the sag over the tube (front_conv_rel x
-        //                    target_distance). > 1 with every corner on the level set is what
+        //   front_sag_ratio  face_conv_ratio(): the sag over the tube (sag_conv, an absolute
+        //                    length). > 1 with every corner on the level set is what
         //                    makes a face refinable. -1 unmeasurable, including a face with a
         //                    corner that is not a front vertex. Measured under the same
         //                    re-derived region map as the vertex fields above.
