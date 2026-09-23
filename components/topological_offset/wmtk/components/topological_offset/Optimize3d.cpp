@@ -1011,6 +1011,51 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // surface -- but it is the one behavioural change here, not just a saving.
     if (!edge_is_offset_surface_live(v1, v2)) return false;
 
+    // DEBUG_collapse_ring: the test as it stood before 2026-09-22, kept only so the churn the
+    // pairwise test below was written to fix can be reproduced on demand. The maximum measure
+    // over the union of both endpoints' offset faces before, against the maximum over the faces
+    // the survivor is left with after; strictly greater is refused, so a collapse that leaves
+    // the worst face exactly as bad is allowed. Strictly weaker than the pairwise test in every
+    // case -- see the comment on that test for what the shared faces hide.
+    if (m_offset_params.debug_collapse_ring) {
+        std::vector<std::array<size_t, 3>> ring_before;
+        std::set<size_t> seen;
+        for (const size_t v : {v1, v2}) {
+            for (const Tuple& f : offset_surface_faces_live_at(v)) {
+                if (!seen.insert(f.fid(*this)).second) continue;
+                ring_before.push_back(face_vids(f));
+            }
+        }
+        // Unreachable through the gate above -- an edge on the offset surface has an incident
+        // offset face at both of its ends -- and kept so neither maximum is taken over an empty
+        // set, where 0 would read as "perfectly resolved".
+        if (ring_before.empty()) return false;
+
+        const auto worst = [this](const std::vector<std::array<size_t, 3>>& faces) {
+            double w = 0.;
+            for (const std::array<size_t, 3>& f : faces) {
+                w = std::max(w, face_resolution_or_inf(f[0], f[1], f[2]));
+            }
+            return w;
+        };
+
+        std::vector<std::array<size_t, 3>> ring_after;
+        ring_after.reserve(ring_before.size());
+        for (std::array<size_t, 3> f : ring_before) {
+            bool has1 = false, has2 = false;
+            for (const size_t v : f) {
+                has1 = has1 || v == v1;
+                has2 = has2 || v == v2;
+            }
+            if (has1 && has2) continue; // the faces on the collapsed edge vanish
+            for (size_t& v : f) {
+                if (v == v1) v = v2;
+            }
+            ring_after.push_back(f);
+        }
+        return worst(ring_after) > worst(ring_before);
+    }
+
     // PAIRWISE, not max against max. Only the REMOVED vertex's faces change geometry: v2 keeps
     // its own position and the base moves no vertex, so every offset face at v2 that does not
     // carry the collapsed edge ends the collapse with all three corners exactly where they
@@ -4642,6 +4687,13 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                 : fmt::format(
                       "EXPERIMENTAL_max_normal_deviation = {:.4g} degrees",
                       normal_deviation_bar_deg()));
+    }
+    if (m_offset_params.debug_collapse_ring && m_offset_params.experimental_ops_divergence_guard) {
+        // Named in the log because it is not visible anywhere else in the output, and a run made
+        // with it cannot be told apart from an ordinary one after the fact.
+        logger().info(
+            "\t[ops guard] DEBUG_collapse_ring: the collapse test is the pre-2026-09-22 maximum "
+            "over the rings before and after, not the pairwise per-face test. Diagnostic only.");
     }
     {
         const std::string& strat = m_offset_params.experimental_refinement_strat;

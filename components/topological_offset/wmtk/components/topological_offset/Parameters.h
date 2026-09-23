@@ -186,6 +186,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// old ones. Splits are never rejected. false = the operation passes exactly as they are.
     /// Default true.
     bool experimental_ops_divergence_guard;
+    /// DEBUG, 3D only. See the spec: make EXPERIMENTAL_ops_divergence_guard's COLLAPSE test the
+    /// pre-2026-09-22 one -- the maximum resolution measure over the two endpoints' offset faces
+    /// before against the maximum over the survivor's after, refused on any strict rise -- in
+    /// place of today's per-face pairwise test. Diagnostic only, for reproducing the churn the
+    /// pairwise test was written to fix. Read by nothing when the guard is off. Default false.
+    bool debug_collapse_ring;
     /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
     /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
     /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
@@ -276,6 +282,7 @@ struct Parameters : public wmtk::OptimizerParameters
         experimental_max_normal_deviation = json_params["EXPERIMENTAL_max_normal_deviation"];
         pre_smooth = json_params["pre_smooth"];
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
+        debug_collapse_ring = json_params["DEBUG_collapse_ring"];
         experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
         experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
         experimental_surface_smoothing_method =
