@@ -1354,10 +1354,13 @@ public:
     /// The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord
     /// (a, b) against the sag bar sag_conv; -1 unmeasurable.
     double edge_conv_ratio(size_t a, size_t b) const;
-    /// The face's interpolation residual as a ratio to the bar: the sagitta of Phi at the face
-    /// CENTROID, |Phi(g) - mean of the three corners| / |grad Phi(g)|, over the tube. The 3D
-    /// resolution test (the 2D twin tests chord midpoints; a surface's worst interpolation
-    /// error is inside the face, not on its edges). < 0 when not measurable.
+    /// The face's interpolation residual as a ratio to the bar sag_conv (1 = the bar): the MEAN
+    /// over the `sag_num_samples` interior lattice points of |Phi(q) - the linear interpolant of
+    /// the three corner values at q| / |grad Phi(q)|, i.e. the average sag as a length. At
+    /// sag_num_samples 1 the lattice is the centroid alone and this is exactly the single
+    /// centroid test it replaced. The 3D resolution test; the 2D twin still tests the chord
+    /// MIDPOINT only and is unchanged. < 0 when not measurable, which includes any sample with a
+    /// vanishing or non-finite gradient and the sag_num_samples <= 0 case.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
@@ -1458,7 +1461,7 @@ public:
     }
 
     /// Samples per offset face; see offset_face_samples().
-    int offset_residual_samples() const { return m_offset_params.offset_residual_samples; }
+    int sag_num_samples() const { return m_offset_params.sag_num_samples; }
 
     /// The residual scale, derived from the criterion: half the gradient tolerance over the
     /// level-set slope squared, in length units. Same expression as 2D.
@@ -1521,33 +1524,57 @@ public:
     };
 
     /**
-     * @brief The interior lattice a face is sampled on, handed to `visit` one point at a time:
-     * every (i, j, l) with i + j + l = k + 2 and each >= 1, so k = 1 is the centroid and the
-     * counts are 1, 3, 6, 10 for k = 1..4. The 2D twin is for_each_offset_edge_sample().
+     * @brief The interior lattice a triangle is sampled on, handed to `visit` one point at a
+     * time as (point, wa, wb, wc) with the barycentric weights that built it: every (i, j, l)
+     * with i + j + l = k + 2 and each >= 1, so k = 1 is the centroid alone and the counts are
+     * 1, 3, 6, 10 for k = 1..4. Strictly interior -- no sample ever lands on an edge or a
+     * corner, where the interpolant is exact by construction and the sag is identically zero.
+     *
+     * The weights are handed out because the sag at a sample is measured against the LINEAR
+     * INTERPOLANT there, wa*Va + wb*Vb + wc*Vc, which is only the plain mean of the corners at
+     * the centroid. See face_conv_ratio().
+     *
+     * Takes positions rather than a Tuple so the ops guard can measure a face the mesh does not
+     * carry yet (a collapse's predicted face, one corner relabelled). The 2D twin is
+     * for_each_offset_edge_sample().
      */
     template <typename Visit>
-    void for_each_offset_face_sample(const Tuple& f, Visit&& visit) const
+    void for_each_face_sample(
+        const Vector3d& p0,
+        const Vector3d& p1,
+        const Vector3d& p2,
+        Visit&& visit) const
     {
-        const int k = m_offset_params.offset_residual_samples;
+        const int k = m_offset_params.sag_num_samples;
         if (k <= 0) return;
 
-        const auto vs = get_face_vids(f);
-        const Vector3d p0 = m_vertex_attribute[vs[0]].m_posf;
-        const Vector3d p1 = m_vertex_attribute[vs[1]].m_posf;
-        const Vector3d p2 = m_vertex_attribute[vs[2]].m_posf;
-
         const int n = k + 2;
+        const double dn = double(n);
         for (int i = 1; i < n; ++i) {
             for (int j = 1; j < n - i; ++j) {
                 const int l = n - i - j;
                 if (l < 1) continue;
-                visit(Vector3d((double(i) * p0 + double(j) * p1 + double(l) * p2) / double(n)));
+                const double wa = double(i) / dn, wb = double(j) / dn, wc = double(l) / dn;
+                visit(Vector3d(wa * p0 + wb * p1 + wc * p2), wa, wb, wc);
             }
         }
     }
 
-    /// The Phi residual at `offset_residual_samples` interior points of offset face `f`. Returns
-    /// nothing for a face with an unreachable corner. The 2D twin is offset_edge_samples().
+    /// The same lattice over a face the mesh carries. Visitor signature as above.
+    template <typename Visit>
+    void for_each_offset_face_sample(const Tuple& f, Visit&& visit) const
+    {
+        const auto vs = get_face_vids(f);
+        for_each_face_sample(
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf,
+            std::forward<Visit>(visit));
+    }
+
+    /// The Phi residual at the `sag_num_samples` lattice's interior points of offset face `f`.
+    /// Returns nothing for a face with an unreachable corner. The 2D twin is
+    /// offset_edge_samples().
     FaceSamples offset_face_samples(const Tuple& f) const;
 
     /**
@@ -1597,9 +1624,9 @@ public:
         /// edge (the chord the target is derived from), c the third corner; len the longest
         /// edge's length.
         ///
-        /// `measure` is the centroid sag as a LENGTH (the ratio times the tube). Nothing reads
-        /// it today -- refinement is the halving, which needs the face's corners alone -- and it
-        /// is kept because the sag condition is going to be reworked.
+        /// `measure` is the face's MEAN sag as a LENGTH (the ratio times the tube). Nothing
+        /// reads it today -- refinement is the halving, which needs the face's corners alone --
+        /// and it is kept because the sag condition is still being reworked.
         struct Refinable
         {
             size_t a, b, c;

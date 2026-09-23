@@ -2668,13 +2668,12 @@ double TopoOffsetTetMesh::band_vertex_residual(const size_t vid) const
 TopoOffsetTetMesh::FaceSamples TopoOffsetTetMesh::offset_face_samples(const Tuple& f) const
 {
     FaceSamples s;
-    const int k = m_offset_params.offset_residual_samples;
-    if (k <= 0) return s;
+    if (m_offset_params.sag_num_samples <= 0) return s;
     for (const size_t v : get_face_vids(f)) {
         if (!band_vertex_is_reachable(v)) return s;
     }
     const OffsetPotential3D& pot = potential_for_face(f);
-    for_each_offset_face_sample(f, [&](const Vector3d& q) {
+    for_each_offset_face_sample(f, [&](const Vector3d& q, double, double, double) {
         const double r = pot.residual_length(q);
         s.max = std::max(s.max, r);
         s.sum += r;
@@ -2804,7 +2803,7 @@ TopoOffsetTetMesh::GradientSplit TopoOffsetTetMesh::gradient_split(
             size_t band = f.tid(*this);
             if (!cell_is_offset_band(band) && opp) band = opp->tid(*this);
             const int region = band < m_cell_region.size() ? m_cell_region[band] : -1;
-            for_each_offset_face_sample(f, [&](const Vector3d& q) {
+            for_each_offset_face_sample(f, [&](const Vector3d& q, double, double, double) {
                 Eigen::VectorXd g(3);
                 energy_for(region).gradient(Eigen::VectorXd(q), g);
                 const double q_full = g.norm();
@@ -2875,8 +2874,8 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
             s.worst_vid = vid;
         }
     }
-    // The resolution test is per FACE, sampled at the centroid: on a surface the interpolation
-    // error peaks inside the face, and a chord test on the edges alone misses it.
+    // The resolution test is per FACE, sampled over its interior lattice: on a surface the
+    // interpolation error peaks inside the face, and a chord test on the edges alone misses it.
     for (const auto& f : offset_surface_faces()) {
         const size_t va = f[0], vb = f[1], vc = f[2];
         if (!front(va) || !front(vb) || !front(vc)) continue;
@@ -3036,22 +3035,52 @@ double TopoOffsetTetMesh::edge_conv_ratio(const size_t a, const size_t b) const
 
 double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const size_t c) const
 {
-    // As a LENGTH: the sagitta of Phi at the centroid, |Phi(g) - mean of the corners|, divided
-    // by |grad Phi| at the centroid, against the SAG bar sag_conv.
+    // The AVERAGE sag over the face, as a LENGTH, against the SAG bar sag_conv.
+    //
+    // At every interior lattice point q of for_each_face_sample() the sag is the gap between the
+    // field and the piecewise-linear surface the mesh actually carries there:
+    //
+    //     |Phi(q) - (wa Va + wb Vb + wc Vc)| / |grad Phi(q)|
+    //
+    // -- the linear INTERPOLANT at q, not the plain mean of the corners, which is only the same
+    // thing at the centroid. Dividing by the local gradient turns the field difference into a
+    // distance, as the vertex bar and the chord test are distances.
+    //
+    // The mean rather than the max: a face is under-resolved when the surface it carries is
+    // wrong over its area, and one grazing sample at a crease should not condemn a face whose
+    // interpolant is good everywhere else. At sag_num_samples 1 the lattice is the centroid
+    // alone and this reduces exactly to the single centroid test it replaced.
+    //
     // The face's field is its band cell's, the same selection as its edges'.
     const OffsetPotential3D& pot = potential_for_edge(a, b);
     if (!(pot.target_level() > 0.)) return -1.;
     const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                    pc = m_vertex_attribute[c].m_posf;
-    const Vector3d g = (pa + pb + pc) / 3.;
-    const double gn = pot.gradient(g).norm();
-    if (!(gn > 0.) || !std::isfinite(gn)) return -1.;
-    const double va = pot.value(pa), vb = pot.value(pb), vc = pot.value(pc), vg = pot.value(g);
-    if (!std::isfinite(va) || !std::isfinite(vb) || !std::isfinite(vc) || !std::isfinite(vg)) {
-        return -1.;
-    }
-    const double sag = std::abs(vg - (va + vb + vc) / 3.) / gn;
-    return sag / m_offset_params.sag_conv;
+    const double va = pot.value(pa), vb = pot.value(pb), vc = pot.value(pc);
+    if (!std::isfinite(va) || !std::isfinite(vb) || !std::isfinite(vc)) return -1.;
+
+    double sum = 0.;
+    size_t n = 0;
+    bool unmeasurable = false;
+    for_each_face_sample(
+        pa,
+        pb,
+        pc,
+        [&](const Vector3d& q, const double wa, const double wb, const double wc) {
+            if (unmeasurable) return;
+            const double gn = pot.gradient(q).norm();
+            const double vq = pot.value(q);
+            if (!(gn > 0.) || !std::isfinite(gn) || !std::isfinite(vq)) {
+                unmeasurable = true;
+                return;
+            }
+            sum += std::abs(vq - (wa * va + wb * vb + wc * vc)) / gn;
+            ++n;
+        });
+    // n == 0 only when sag_num_samples <= 0, which the spec's min refuses; an unmeasurable
+    // sample reads the whole face unmeasurable, as the single centroid did before.
+    if (unmeasurable || n == 0) return -1.;
+    return (sum / double(n)) / m_offset_params.sag_conv;
 }
 
 void TopoOffsetTetMesh::assign_band_regions(const bool log)
@@ -4488,11 +4517,12 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             const size_t n = refine_front_by_halving(ec.refinable);
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front face(s) with all corners placed sag over the "
-                "tube at the centroid (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> sizing "
-                "scalar halved at {} vertices",
+                "\t[resolution] turn {}: {} front face(s) with all corners placed whose MEAN "
+                "sag over {} interior sample(s) is over the tube (worst {:.4}x, centroid "
+                "({:.4}, {:.4}, {:.4})) -> sizing scalar halved at {} vertices",
                 it + 1,
                 ec.refinable.size(),
+                sag_num_samples(),
                 ec.max_face_placed,
                 ec.worst_placed_centroid.x(),
                 ec.worst_placed_centroid.y(),
@@ -4621,7 +4651,7 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         "a face). Measured over every band vertex and {} sample(s) "
         "per band face; the reference is reported next, before the loop starts.",
         m_offset_params.vertex_conv_frac(),
-        offset_residual_samples());
+        sag_num_samples());
 
     // No sizing seed here: the loop starts from the field as it is -- 1.0 everywhere, or what
     // the pre-optimize pass left when pre_optimize_input is true. The front's resolution comes

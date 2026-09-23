@@ -109,13 +109,18 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
-    // Points sampled in the interior of each band simplex when measuring the offset's residual;
-    // k = 1 is the midpoint, and 0 measures only at band vertices, which is blind to a band whose
-    // vertices sit on the level set while its simplices cut across it. 2D samples each band edge
-    // at i/(k+1); 3D samples each offset-surface face, k being the density (1, 3, 6, 10 points for
-    // k = 1..4). See TopoOffsetTriMesh::offset_edge_samples,
-    // TopoOffsetTetMesh::offset_face_samples.
-    int offset_residual_samples;
+    // Sampling density of the SAG measure, and of the residual diagnostics that share its
+    // lattice. Strictly interior points of each band simplex: 2D samples each band edge at
+    // i/(k+1) (k points), 3D samples each offset-surface face on the barycentric lattice at
+    // denominator k+2 (1, 3, 6, 10 points for k = 1..4), so k = 1 is the midpoint / centroid
+    // alone. Replaces offset_residual_samples, which was the same lattice but a diagnostic only.
+    //
+    // In 3D THIS DRIVES THE CRITERION: face_conv_ratio() is the MEAN sag over these points, so
+    // raising it both refines the measure and costs a Phi value and gradient per sample, in the
+    // ops guard's hot path as well as in energy_criterion(). 2D still tests the chord MIDPOINT
+    // and reads this key only for its diagnostics. See TopoOffsetTetMesh::face_conv_ratio,
+    // TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
+    int sag_num_samples;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
@@ -243,7 +248,7 @@ struct Parameters : public wmtk::OptimizerParameters
         sag_conv = json_params["sag_conv"];
         sag_conv_rel = json_params["sag_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
-        offset_residual_samples = json_params["offset_residual_samples"];
+        sag_num_samples = json_params["sag_num_samples"];
 
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];

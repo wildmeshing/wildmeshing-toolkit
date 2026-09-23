@@ -2397,7 +2397,7 @@ double TopoOffsetTriMesh::band_vertex_residual(const size_t vid) const
 TopoOffsetTriMesh::EdgeSamples TopoOffsetTriMesh::offset_edge_samples(const Tuple& e) const
 {
     EdgeSamples s;
-    const int k = m_offset_params.offset_residual_samples;
+    const int k = m_offset_params.sag_num_samples;
     if (k <= 0) return s;
 
     const size_t va = e.vid(*this), vb = e.switch_vertex(*this).vid(*this);
@@ -2459,7 +2459,7 @@ TopoOffsetTriMesh::DistanceSplit TopoOffsetTriMesh::residual_split() const
     for (const Tuple& e : get_edges()) {
         if (!edge_is_offset_surface_live(e)) continue;
         const EdgeSamples es = offset_edge_samples(e);
-        if (es.n == 0) continue; // no samples asked for (offset_residual_samples <= 0)
+        if (es.n == 0) continue; // no samples asked for (sag_num_samples <= 0)
         s.max_reachable = std::max(s.max_reachable, es.max);
         s.max_in_edge = std::max(s.max_in_edge, es.max);
         sum_reachable += es.sum;
@@ -4267,7 +4267,7 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         "an edge). Measured over every band vertex and {} sample(s) "
         "per band edge; the reference is reported next, before the loop starts.",
         m_offset_params.vertex_conv_frac(),
-        offset_residual_samples());
+        sag_num_samples());
 
     // No sizing seed here: the loop starts from the field as it is -- 1.0 everywhere, or what
     // the pre-optimize pass left when pre_optimize_input is true. The front's resolution comes

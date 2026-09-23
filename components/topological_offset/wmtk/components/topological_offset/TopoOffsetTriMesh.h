@@ -1529,7 +1529,7 @@ public:
 
     /// Samples per band edge; see offset_edge_samples(). 0 falls back to a vertex-only
     /// criterion, which is measurably blind to a band too coarse to be the offset.
-    int offset_residual_samples() const { return m_offset_params.offset_residual_samples; }
+    int sag_num_samples() const { return m_offset_params.sag_num_samples; }
 
     /// The residual scale, derived from the criterion rather than configured beside it.
     ///
@@ -1647,7 +1647,7 @@ public:
     };
 
     /**
-     * @brief The Phi residual at `offset_residual_samples` interior points of band edge `e`.
+     * @brief The Phi residual at `sag_num_samples` interior points of band edge `e`.
      *
      * The criterion cannot be a vertex criterion: a boundary can have every vertex exactly on the
      * level set while zig-zagging or cutting corners between them, which reads as converged and is
@@ -1675,7 +1675,7 @@ public:
     template <typename Visit>
     void for_each_offset_edge_sample(const Tuple& e, Visit&& visit) const
     {
-        const int k = m_offset_params.offset_residual_samples;
+        const int k = m_offset_params.sag_num_samples;
         if (k <= 0) return;
         const Vector2d p0 = m_vertex_attribute[e.vid(*this)].m_posf;
         const Vector2d p1 = m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf;
