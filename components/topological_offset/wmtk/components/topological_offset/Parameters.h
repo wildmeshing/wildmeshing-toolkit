@@ -158,25 +158,6 @@ struct Parameters : public wmtk::OptimizerParameters
     int adaptive_smoothing_max_passes; ///< cap on the passes per group
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
-    /// EXPERIMENTAL. See the spec: how a turn resolves the front faces/chords whose sag is over
-    /// the tube. "sizing_half" (the default) halves the sizing scalar at their corners,
-    /// "sizing_curvature" lowers it to the chord rule's curvature-derived target, and
-    /// "split_longest" (3D only) leaves the sizing field alone at 1.0 and force-splits each
-    /// simplex's longest edge instead. Replaces the old bool sag_halve_refinement, whose true /
-    /// false are now "sizing_half" / "sizing_curvature".
-    std::string experimental_refinement_strat;
-    /// EXPERIMENTAL, 3D only. See the spec: WHAT MEASURE decides an offset-surface face is
-    /// resolved, as a multiple of the bar front_conv_rel x target_distance. "sag" (the only
-    /// option today, and the default) is the loop exactly as it has always been: the field's
-    /// sagitta at the face centroid against the mean of its three corners. The key exists so the
-    /// measure can be swapped without hunting down its call sites -- everything that asks the
-    /// question goes through TopoOffsetTetMesh::face_resolution_ratio().
-    std::string experimental_resolution_criteria;
-    /// EXPERIMENTAL, 3D only. See the spec: the bar for EXPERIMENTAL_resolution_criteria
-    /// "normal_deviation", in DEGREES -- the paper's sigma_max. A face is resolved when the angle
-    /// between the offset field's normal at its centroid and that normal at each of its three
-    /// near-corner samples stays under this. Read by nothing when the criteria is "sag".
-    double experimental_max_normal_deviation;
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
@@ -192,12 +173,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// place of today's per-face pairwise test. Diagnostic only, for reproducing the churn the
     /// pairwise test was written to fix. Read by nothing when the guard is off. Default false.
     bool debug_collapse_ring;
-    /// EXPERIMENTAL, 3D only. See the spec: with EXPERIMENTAL_refinement_strat
-    /// "split_longest", propagate each wanted split along Rivara's Longest-Edge Propagation Path
-    /// instead of splitting the face's own longest edge outright, so every bisection is of an
-    /// edge that is locally longest. No effect under any other refinement strategy. Default
-    /// false.
-    bool experimental_longest_edge_rivara;
     /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
     /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
     /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
@@ -209,17 +184,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// false additionally requires that the previous turn lowered no sizing scalar, which is one
     /// turn of hysteresis against the tail's churn. Default true.
     bool experimental_exit_when_criteria_met;
-    /// EXPERIMENTAL, 3D only. See the spec: which extra pass, if any, moves the offset-surface
-    /// vertices before each smoothing block. "none" (the default) is the loop as it has always
-    /// been. "quadrics" runs the error-quadric relocation of Zint et al. 2023 Sec. 5.5, which
-    /// redistributes vertices TANGENTIALLY so the 1-D normal solve that follows can put them back
-    /// on the level set. "tangential" does the same job with a different energy: the 2-D AMIPS of
-    /// the vertex's offset one-ring, projected into the level set's own tangent plane.
-    std::string experimental_surface_smoothing_method;
-    /// EXPERIMENTAL, 3D only. See the spec: how many passes of
-    /// experimental_surface_smoothing_method to run per smoothing block. Ignored when the method
-    /// is "none".
-    int experimental_surface_smoothing_passes;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -283,19 +247,11 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
-        experimental_refinement_strat = json_params["EXPERIMENTAL_refinement_strat"];
-        experimental_resolution_criteria = json_params["EXPERIMENTAL_resolution_criteria"];
-        experimental_max_normal_deviation = json_params["EXPERIMENTAL_max_normal_deviation"];
         pre_smooth = json_params["pre_smooth"];
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
         debug_collapse_ring = json_params["DEBUG_collapse_ring"];
-        experimental_longest_edge_rivara = json_params["EXPERIMENTAL_longest_edge_rivara"];
         experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
         experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
-        experimental_surface_smoothing_method =
-            json_params["EXPERIMENTAL_surface_smoothing_method"];
-        experimental_surface_smoothing_passes =
-            json_params["EXPERIMENTAL_surface_smoothing_passes"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];

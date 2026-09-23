@@ -88,22 +88,6 @@ public:
 };
 
 
-/// One sample of an offset-surface face, used to build the error quadric under
-/// EXPERIMENTAL_surface_smoothing_method "quadrics". `point` is the sample on the CURRENT face;
-/// `nearest` is its closest point on the input complex and `normal` the unit direction from that
-/// foot to the sample -- i.e. the gradient of the euclidean distance field, which is the normal of
-/// the ideal offset surface there. `weight` is the sample's share of its face (1 at the centroid,
-/// 0.1 near each corner). A sample sitting ON the input complex has no direction; `normal` is then
-/// exactly zero and the caller must drop it.
-struct OffsetSurfaceSample
-{
-    Vector3d point = Vector3d::Zero();
-    Vector3d nearest = Vector3d::Zero();
-    Vector3d normal = Vector3d::Zero();
-    double weight = 0.;
-};
-
-
 /// Per-face construction label; the surface tags themselves are the base's
 /// wmtk::SurfaceTagAttributes. Registered with m_face_attr_group.
 class FaceExtra
@@ -598,24 +582,6 @@ public:
     /// offset_surface_faces_live_at() answers, without building the list: this one runs in the
     /// operation hooks, where the list would be allocated and thrown away.
     bool vertex_has_live_offset_face(size_t vid) const;
-    /// The 4 quadric samples of one offset-surface face: the centroid at weight 1, and one at
-    /// (1 - u) * corner + u * centroid with u = 0.1 at weight 0.1 for each corner. Each is
-    /// projected onto the input complex to give its foot and its offset normal. Follows the
-    /// reference implementation's get_triangle_samples_and_area().
-    std::array<OffsetSurfaceSample, 4> offset_surface_samples(const Tuple& f) const;
-    /// EXPERIMENTAL_surface_smoothing_method "quadrics": move ONE offset-surface vertex by the
-    /// error-quadric relocation of Zint et al. 2023 Sec. 5.5. Returns whether the vertex moved.
-    /// Reads the one-ring, so it must be called under a VertexRing claim.
-    bool quadric_move_front_vertex(size_t vid);
-    /// EXPERIMENTAL_surface_smoothing_method "tangential": move ONE offset-surface vertex to the
-    /// minimum of the 2-D AMIPS of its projected offset one-ring, inside the level set's own
-    /// tangent plane at that vertex (the plane normal to grad Phi). Returns whether the vertex
-    /// moved. Reads the one-ring, so it must be called under a VertexRing claim.
-    bool tangential_move_front_vertex(size_t vid);
-    /// One full pass of experimental_surface_smoothing_method over every live offset-surface
-    /// vertex, run before a smoothing block. A no-op under "none"; "quadrics" additionally warns
-    /// once and returns under offset_field "smooth" or without an input-complex BVH.
-    void surface_smoothing_pass();
     /**
      * @brief Re-derive m_is_on_offset for one vertex from the cell labels, exactly.
      *
@@ -745,43 +711,6 @@ public:
     /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
-    /// EXPERIMENTAL_surface_smoothing_method: outcomes of the surface-smoothing pass, run totals.
-    /// ONE census, shared by both methods, because both have the same four-way outcome -- moved,
-    /// refused before the move, refused after it, or moved less than it asked for. Which
-    /// rejection reasons can fire depends on the method, and a reason the running method cannot
-    /// produce simply stays zero: `no_neighbours` is "quadrics" only (it is the Laplacian
-    /// centroid that needs them) and `held` is "tangential" only (see
-    /// tangential_move_front_vertex()), while `envelope` is in practice "quadrics" only, since
-    /// the tangential pass skips every vertex an envelope holds before it tries anything.
-    /// `backed_off` counts moves the inversion search had to shorten -- it accepts as little as
-    /// 1/1024 of the asked-for move, so a large count means the pass is reporting successes that
-    /// delivered almost none of the redistribution, which the acceptance count alone would hide.
-    /// EXPERIMENTAL_refinement_strat "split_longest": set for the duration of the forced-split
-    /// pass so the split hooks attribute their refusals to it. The ordinary split passes leave
-    /// it false and are unaffected.
-    std::atomic<bool> m_forced_split_pass{false};
-    /// Forced-split census, per pass: reached split_edge_before, refused there (the shared
-    /// high-valence gate), refused in split_edge_after (quality / envelope / inversion), taken.
-    std::atomic<int> iter_cnt_forced_split_attempted{0};
-    std::atomic<int> iter_cnt_forced_split_refused_before{0};
-    std::atomic<int> iter_cnt_forced_split_refused_after{0};
-    std::atomic<int> iter_cnt_forced_split_taken{0};
-    std::atomic<int> iter_cnt_surf_smooth_moved{0};
-    std::atomic<int> iter_cnt_surf_smooth_backed_off{0};
-    std::atomic<int> iter_cnt_surf_smooth_no_neighbours{0};
-    std::atomic<int> iter_cnt_surf_smooth_degenerate{0};
-    std::atomic<int> iter_cnt_surf_smooth_pre_inverted{0};
-    std::atomic<int> iter_cnt_surf_smooth_inverted{0};
-    std::atomic<int> iter_cnt_surf_smooth_envelope{0};
-    std::atomic<int> iter_cnt_surf_smooth_held{0};
-    /// Latched so the "needs offset_field euclidean" warning is printed once per run, not once per
-    /// turn per group.
-    std::atomic<bool> m_quadric_field_warned{false};
-    /// Set the first time surface_smoothing_pass() gets past its skip checks and actually runs.
-    /// The per-turn and run-total lines are gated on it, so a run that asked for a method it
-    /// cannot use (offset_field "smooth") reports the one warning and then stays quiet, instead of
-    /// printing a row of all-zero counters every turn.
-    std::atomic<bool> m_surface_smoothing_ran{false};
 
     /// [flip trace]: is the swap pass walking the offset surface's sag down monotonically, and in
     /// steps of what size? The per-turn lines cannot answer that, because a pass that does not
@@ -1093,11 +1022,8 @@ public:
      * where the refresh runs.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// EXPERIMENTAL_ops_divergence_guard: one face's resolution measure as
-    /// face_resolution_ratio() gives it, with an unmeasurable face reported as infinity so that
-    /// losing measurability counts as worsening. Named for the measure and not for sag because
-    /// it follows EXPERIMENTAL_resolution_criteria: the guard's job is to stop an operation
-    /// wrecking whatever the loop is actually converging on.
+    /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio() gives it, with an
+    /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
     double face_resolution_or_inf(size_t a, size_t b, size_t c) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
     /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
@@ -1432,73 +1358,7 @@ public:
     /// CENTROID, |Phi(g) - mean of the three corners| / |grad Phi(g)|, over the tube. The 3D
     /// resolution test (the 2D twin tests chord midpoints; a surface's worst interpolation
     /// error is inside the face, not on its edges). < 0 when not measurable.
-    ///
-    /// This is the IMPLEMENTATION of EXPERIMENTAL_resolution_criteria "sag", not the entry
-    /// point. Nothing calls it directly any more except face_resolution_ratio() below, which is
-    /// what every consumer asks; call that one, or a new criterion will not reach you.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
-    /**
-     * @brief THE resolution measure of one offset-surface face, as a multiple of the bar
-     * front_conv_rel x target_distance (1 = the bar). Negative means unmeasurable.
-     *
-     * The single seam EXPERIMENTAL_resolution_criteria selects on, and the ONLY thing that reads
-     * that key. Every consumer of "is this face resolved" goes through here -- the loop's face
-     * criterion in energy_criterion(), the refinable classification that feeds
-     * EXPERIMENTAL_refinement_strat, the ops guard (through face_resolution_or_inf()), and the
-     * debug frames' per-face cell data -- so a second measure is added in one place instead of
-     * by hunting down call sites.
-     *
-     * "sag", the only option today and the default, forwards to face_conv_ratio() unchanged, so
-     * the default run is the loop exactly as it always was.
-     *
-     * WHAT A NEW OPTION STILL HAS TO SUPPLY, because these two are specific to sag and are NOT
-     * behind this seam: front_chord_target(), which inverts the sag-to-edge-length relation
-     * through the measured kink exponent to decide how short a chord must become; and
-     * EnergyCriterion::Refinable::sag, which carries the measure to the refinement strategies as
-     * a LENGTH (ratio x tube) rather than as a ratio. Both are commented where they are.
-     */
-    double face_resolution_ratio(size_t a, size_t b, size_t c) const;
-    /**
-     * @brief EXPERIMENTAL_resolution_criteria "normal_deviation", in DEGREES, before the bar is
-     * applied. Paper Definition 5 (Topological Offsets, Appendix A):
-     *
-     *     sigma(t) = max over the samples p_i of angle( n(p_c), n(p_i) )
-     *
-     * with p_c the centroid, p_i = (1 - u) p_v + u p_c at u = 0.1 for each corner v, and n() the
-     * offset field's normal grad Phi / |grad Phi|, taken from the face's own band-cell field
-     * exactly as face_conv_ratio() takes it. Negative when any of the four points has no field
-     * direction, which is the same "unmeasurable" the sag measure reports.
-     *
-     * BOTH TERMS ARE FIELD NORMALS -- the face's own geometric normal does not appear, and that
-     * is the whole point. The field normal is continuous away from the input complex's features,
-     * so shrinking a face brings its samples together and drives sigma to zero, which is
-     * something refinement can actually satisfy. An earlier version of this code in this repo
-     * compared the face's own normal against the samples, i.e. misorientation; refinement does
-     * not fix misorientation -- a smaller triangle in the same plane is just as misoriented --
-     * so the sizing field could never drive it down and the loop refined around such a face
-     * forever. It was corrected to Definition 5 before being deleted with the rest of the
-     * Euclidean-only machinery in 10e3d2aee9, and this is a port of that corrected version.
-     *
-     * Vid-based rather than Tuple-based, unlike the deleted face_normal_deviation(Tuple): the ops
-     * guard measures VIRTUAL faces that the mesh does not carry yet. That is also why it builds
-     * its samples from the three positions instead of calling offset_surface_samples(), which
-     * needs a real face and the input-complex BVH.
-     */
-    double face_normal_deviation_deg(size_t a, size_t b, size_t c) const;
-    /// The bar EXPERIMENTAL_resolution_criteria "normal_deviation" divides by, in degrees: what
-    /// front_conv_rel x target_distance is to "sag". Floored off zero so the ratio is finite even
-    /// if a spec without the min ever let 0 through.
-    double normal_deviation_bar_deg() const
-    {
-        return std::max(m_offset_params.experimental_max_normal_deviation, 1e-12);
-    }
-    /// Whether the active resolution criteria measures a SAGITTA, i.e. a length that shrinks with
-    /// edge length the way front_chord_target() assumes. The two places that inversion is reached
-    /// from ask this rather than comparing the key's string themselves.
-    bool resolution_criteria_is_sag() const
-    {
-        return m_offset_params.experimental_resolution_criteria == "sag";
-    }
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
     /// The field's unit direction at front vertex vid (zero where grad Phi vanishes).
@@ -1736,14 +1596,9 @@ public:
         /// edge (the chord the target is derived from), c the third corner; len the longest
         /// edge's length.
         ///
-        /// `measure` carries the resolution measure to the refinement strategies IN THE ACTIVE
-        /// CRITERIA'S OWN UNITS, and is one of the two things face_resolution_ratio()'s seam does
-        /// not cover: under "sag" it is the centroid sag as a LENGTH (ratio x tube), under
-        /// "normal_deviation" the angle in DEGREES (ratio x the degrees bar). Only
-        /// refine_front_from_sag() reads it, to invert the sag-to-length relation through
-        /// front_chord_target() -- which is why that strategy is refused with any criteria but
-        /// "sag". The other two ignore it: "sizing_half" halves the corners' scalars and
-        /// "split_longest" splits edge (a, b), both of which need the face identity alone.
+        /// `measure` is the centroid sag as a LENGTH (the ratio times the tube). Nothing reads
+        /// it today -- refinement is the halving, which needs the face's corners alone -- and it
+        /// is kept because the sag condition is going to be reworked.
         struct Refinable
         {
             size_t a, b, c;
@@ -1764,41 +1619,14 @@ public:
     /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
     /// turns across the chord. Same formula as 2D.
     ///
-    /// SPECIFIC TO EXPERIMENTAL_resolution_criteria "sag", and the second of the two things
-    /// face_resolution_ratio() does not cover: the power law it inverts is the sagitta's, so it
-    /// is only meaningful for a measure that shrinks with edge length the way a sagitta does. It
-    /// is reached from one place, refine_front_from_sag() (strategy "sizing_curvature"), plus
-    /// the refinable/at-floor test in energy_criterion() that decides whether that strategy
-    /// could still lower a target.
+    /// Reached from ONE place now: the refinable / at-floor test in energy_criterion(), which
+    /// asks whether there is any target left below what the face's corners already carry.
     double front_chord_target(size_t va, size_t vb, double len, double sag, double tube) const;
 
-    /// EXPERIMENTAL_refinement_strat "sizing_curvature": sets the target length at each
-    /// refinable face's three corners from front_chord_target() over its longest edge with the
-    /// centroid sag, graded outward. Returns the vertices changed.
-    size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& faces);
-    /// EXPERIMENTAL_refinement_strat "sizing_half" (the default): halve the sizing scalar at the
-    /// corners of every refinable face, once per vertex per call, floored like
-    /// refine_front_from_sag(), then graded outward. Returns the number of vertices lowered.
+    /// THE refinement: halve the sizing scalar at the corners of every refinable face, once per
+    /// vertex per call, floored at max(min_sizing_scalar, min_edge_length / l), then graded
+    /// outward. Returns the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
-    /// EXPERIMENTAL_refinement_strat "split_longest" (3D only): leaves the sizing field alone
-    /// and splits each refinable face's longest edge, in its own forced-edge pass inside the
-    /// turn, before the turn's end frame. Returns the distinct edges offered.
-    size_t refine_front_by_splitting(const std::vector<EnergyCriterion::Refinable>& faces);
-    /// Offer every edge of `want` to a forced-edge split pass, now, and erase from `want` the
-    /// ones that settles -- split away, or refused by a hook, which a retry would only repeat.
-    /// What is left on return is what the executor dropped on a stale Tuple. `hv_total` and
-    /// `rounds` accumulate across calls for the caller's one log line. Returns the splits taken.
-    size_t
-    force_split_edge_set(std::set<std::array<size_t, 2>>& want, size_t& hv_total, int& rounds);
-    /// The face's longest edge as a sorted vertex pair, ties broken by that pair so the answer
-    /// is a STRICT total order on the three -- which is what makes the LEPP walk terminate.
-    std::array<size_t, 2> face_longest_edge(const std::array<size_t, 3>& f) const;
-    /// EXPERIMENTAL_longest_edge_rivara: Rivara's Backward-Longest-Edge-Bisection over the
-    /// offset surface. Instead of splitting each target face's own longest edge, walk its
-    /// Longest-Edge Propagation Path and split the terminal edge at the end of it, repeating
-    /// until the face has been bisected. Returns the targets still unbisected when it gives up.
-    size_t
-    rivara_refine(const std::vector<std::array<size_t, 3>>& targets, size_t& hv_total, int& rounds);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),

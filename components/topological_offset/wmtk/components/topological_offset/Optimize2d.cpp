@@ -4128,31 +4128,25 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
         const size_t lowered_prev = lowered_last_turn;
         lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
-            // EXPERIMENTAL_refinement_strat, the shared key that replaced the bool
-            // sag_halve_refinement. 2D reads only the two SIZING strategies and its behaviour at
-            // the default is unchanged: "sizing_half" is the old true, "sizing_curvature" the
-            // old false. "split_longest" is 3D only and throws here rather than silently doing
-            // something else -- see .claude/CLAUDE.md on the unported 3D changes.
-            const std::string& strat = m_offset_params.experimental_refinement_strat;
-            if (strat == "split_longest") {
-                log_and_throw_error(
-                    "EXPERIMENTAL_refinement_strat 'split_longest' is implemented in 3D only; 2D "
-                    "takes 'sizing_half' or 'sizing_curvature'.");
-            }
-            const bool halve = strat == "sizing_half";
-            const size_t n =
-                halve ? refine_front_by_halving(ec.refinable) : refine_front_from_sag(ec.refinable);
+            // FORCED 2D EDIT, 2026-09-23: EXPERIMENTAL_refinement_strat was removed outright
+            // (3D kept only the halving) and the key lives in the SHARED Parameters.h and spec,
+            // so the read here had to go with it -- the same way removing a shared key forced
+            // 2D before. Refinement is now the halving unconditionally, which is what the key's
+            // default "sizing_half" already selected, so a default 2D run is unchanged; a 2D
+            // config that asked for "sizing_curvature" is now refused by jse at parse time
+            // rather than served. refine_front_from_sag() is left in place, unused, because the
+            // sag condition itself is going to be reworked.
+            const size_t n = refine_front_by_halving(ec.refinable);
             lowered_last_turn = n;
             logger().info(
                 "\t[resolution] turn {}: {} front edge(s) with both ends placed sag "
                 "over the tube at the midpoint (worst {:.4}x, midpoint ({:.4}, {:.4})) -> "
-                "{} at {} vertices",
+                "sizing scalar halved at {} vertices",
                 it + 1,
                 ec.refinable.size(),
                 ec.max_edge_placed,
                 ec.worst_placed_mid.x(),
                 ec.worst_placed_mid.y(),
-                halve ? "sizing scalar halved (sizing_half)" : "target lowered (sizing_curvature)",
                 n);
         }
         // Termination: every front vertex's Newton step within the bar, none unmeasurable, and

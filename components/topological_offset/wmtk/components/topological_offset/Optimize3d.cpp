@@ -948,41 +948,14 @@ std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
     return {{vs[0].vid(*this), vs[1].vid(*this), vs[2].vid(*this)}};
 }
 
-double TopoOffsetTetMesh::face_resolution_ratio(const size_t a, const size_t b, const size_t c)
-    const
-{
-    // THE seam EXPERIMENTAL_resolution_criteria selects on, and the only reader of that key. See
-    // the declaration for what goes through here and for the two sag-specific pieces of the
-    // refinement path that do not.
-    const std::string& crit = m_offset_params.experimental_resolution_criteria;
-    if (crit == "sag") {
-        // The default, and the loop exactly as it has always been.
-        return face_conv_ratio(a, b, c);
-    }
-    if (crit == "normal_deviation") {
-        const double sigma = face_normal_deviation_deg(a, b, c);
-        if (!(sigma >= 0.) || !std::isfinite(sigma)) return -1.;
-        // Against its own bar, so that 1.0 is the threshold here exactly as it is for sag and
-        // every consumer can go on comparing to 1 without knowing which measure it got.
-        return sigma / normal_deviation_bar_deg();
-    }
-    // Unreachable through a validated config -- jse checks the value against the spec's `options`
-    // before the mesh is read -- but a build whose spec and code disagree must not silently fall
-    // back to sag and report numbers for a measure nobody asked for.
-    log_and_throw_error(
-        "EXPERIMENTAL_resolution_criteria '{}' is not a measure this build knows.",
-        crit);
-}
-
 double TopoOffsetTetMesh::face_resolution_or_inf(const size_t a, const size_t b, const size_t c)
     const
 {
-    // EXPERIMENTAL_ops_divergence_guard: one face's resolution measure, whatever
-    // EXPERIMENTAL_resolution_criteria has it be. An unmeasurable face is infinite, so making a
-    // measurable neighbourhood unmeasurable counts as getting worse, while a neighbourhood that
-    // was already unmeasurable is never made "worse" by anything -- infinity is not strictly
-    // greater than infinity, which is the comparison the guard makes.
-    const double r = face_resolution_ratio(a, b, c);
+    // EXPERIMENTAL_ops_divergence_guard: one face's sag against the tube. An unmeasurable face
+    // is infinite, so making a measurable neighbourhood unmeasurable counts as getting worse,
+    // while a neighbourhood that was already unmeasurable is never made "worse" by anything --
+    // infinity is not strictly greater than infinity, which is the comparison the guard makes.
+    const double r = face_conv_ratio(a, b, c);
     if (!(r >= 0.) || !std::isfinite(r)) return std::numeric_limits<double>::infinity();
     return r;
 }
@@ -1068,7 +1041,8 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // union of both endpoints' faces. Those two sets share every face away from the edge, so on
     // a front where any face in the ring is already bad the maximum is saturated and a face
     // going from well under the bar to many times it is invisible. Measured on the cube at
-    // target_distance_rel 1e-2 with EXPERIMENTAL_refinement_strat split_longest: with ~630 of
+    // target_distance_rel 1e-2 while the front was refined by forced longest-edge splits:
+    // with ~630 of
     // ~1340 offset faces over the tube and the max pinned at 6.27x, ~500 forced splits per turn
     // were collapsed straight back out and the sag did not move for 27 turns.
     for (const Tuple& f : offset_surface_faces_live_at(v1)) {
@@ -2905,9 +2879,9 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     for (const auto& f : offset_surface_faces()) {
         const size_t va = f[0], vb = f[1], vc = f[2];
         if (!front(va) || !front(vb) || !front(vc)) continue;
-        // Through the seam, not straight to face_conv_ratio: this one number is the loop's face
-        // criterion (max_face / faces_ok()) AND what decides which faces refinement is handed.
-        const double gn = face_resolution_ratio(va, vb, vc); // the measure / the bar
+        // ONE call feeds both jobs: this number is the loop's face criterion (max_face /
+        // faces_ok()) AND what decides which faces the refinement is handed.
+        const double gn = face_conv_ratio(va, vb, vc); // the sag / the tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
             continue;
@@ -2951,27 +2925,16 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                      m_vertex_attribute[vc].m_sizing_scalar});
                 // How short this face's chord would have to become, as a sizing scalar. THIS IS
                 // THE ONE PLACE THE MEASURE'S UNITS MATTER, which is why it dispatches: under
-                // "sag" the chord rule inverts the sagitta's power law to a length; an angle has
-                // no such inversion, so the paper's own rule for normal deviation is used
-                // instead -- Sec. 5.3.3 Step 1, "if ... a normal deviation above the
-                // user-defined maximum sigma_max, we divide the target length by two". The test
-                // below is then exactly "are the corners already at the floor".
-                double sn;
-                if (resolution_criteria_is_sag()) {
-                    const double target = front_chord_target(la, lb, len, gn * s.tube, s.tube);
-                    sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
-                } else {
-                    sn = std::clamp(0.5 * have, s_floor, m_offset_params.max_sizing_scalar);
-                }
+                // How short this face's chord would have to become, as a sizing scalar: the
+                // chord rule inverts the sagitta's power law to a length. Refinement itself is
+                // the halving in refine_front_by_halving(), but the question asked here is the
+                // same one either way -- is there any target left below what the corners
+                // already carry, or are they at the floor.
+                const double target = front_chord_target(la, lb, len, gn * s.tube, s.tube);
+                const double sn =
+                    std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
                 if (sn < have) {
-                    // `measure` is in the criteria's own units -- see the field's doc. Under
-                    // "sag" that is the centroid sag as a LENGTH, which is what
-                    // refine_front_from_sag() inverts; under "normal_deviation" it is the angle
-                    // in degrees, and no strategy legal with that criteria reads it.
-                    const double measure = resolution_criteria_is_sag()
-                                               ? gn * s.tube
-                                               : gn * normal_deviation_bar_deg();
-                    s.refinable.push_back({la, lb, lc, measure, len});
+                    s.refinable.push_back({la, lb, lc, gn * s.tube, len});
                 } else {
                     ++s.n_at_floor;
                 }
@@ -3088,49 +3051,6 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     }
     const double sag = std::abs(vg - (va + vb + vc) / 3.) / gn;
     return sag / (m_offset_params.front_conv_rel * m_offset_params.target_distance);
-}
-
-double TopoOffsetTetMesh::face_normal_deviation_deg(const size_t a, const size_t b, const size_t c)
-    const
-{
-    // Paper Definition 5; see the declaration for why both terms are FIELD normals and what
-    // happened the one time they were not. The field is the face's own band cell's, the same
-    // selection face_conv_ratio() makes, so a face over a multi-region band is measured against
-    // the region it belongs to rather than against a global query.
-    const OffsetPotential3D& pot = potential_for_edge(a, b);
-    if (!(pot.target_level() > 0.)) return -1.;
-    const std::array<Vector3d, 3> corners = {
-        {m_vertex_attribute[a].m_posf, m_vertex_attribute[b].m_posf, m_vertex_attribute[c].m_posf}};
-    const Vector3d pg = (corners[0] + corners[1] + corners[2]) / 3.;
-    // The offset normal at a point: grad Phi / |grad Phi|. For the euclidean field that is
-    // exactly the unit direction from the nearest point of the input complex out to the point --
-    // the paper's "projection point on the offset" -- and it is also defined for the smooth
-    // potential, which is why this criterion, unlike the quadric pass, needs no closest-point
-    // query and runs under either offset_field.
-    const auto normal_at = [&](const Vector3d& p, Vector3d& n) -> bool {
-        const Vector3d g = pot.gradient(p);
-        const double gn = g.norm();
-        if (!(gn > 0.) || !std::isfinite(gn)) return false;
-        n = g / gn;
-        return true;
-    };
-    Vector3d n_c = Vector3d::Zero();
-    if (!normal_at(pg, n_c)) return -1.;
-
-    constexpr double u = 0.1; // the reference's sample inset, as offset_surface_samples() uses
-    double max_dev = 0.;
-    for (const Vector3d& pv : corners) {
-        Vector3d n_i = Vector3d::Zero();
-        // A sample without a direction makes the face unmeasurable rather than merely skipped:
-        // the maximum over a subset is not the measure, and reporting a smaller number than the
-        // face deserves would let the loop stop on it.
-        if (!normal_at(Vector3d((1. - u) * pv + u * pg), n_i)) return -1.;
-        // A genuine angle between two field normals, both pointing away from the complex, so
-        // there is no orientation ambiguity to fold away with an abs() here.
-        const double cth = std::clamp(n_c.dot(n_i), -1., 1.);
-        max_dev = std::max(max_dev, (180. / M_PI) * std::acos(cth));
-    }
-    return max_dev;
 }
 
 void TopoOffsetTetMesh::assign_band_regions(const bool log)
@@ -3305,32 +3225,6 @@ double TopoOffsetTetMesh::front_chord_target(
     return std::min(0.75 * len * std::pow(tube / sag, 1. / p), 0.5 * len);
 }
 
-size_t TopoOffsetTetMesh::refine_front_from_sag(
-    const std::vector<EnergyCriterion::Refinable>& faces)
-{
-    const double l = std::max(m_params.l, 1e-300);
-    const double tube = m_offset_params.front_conv_rel * m_offset_params.target_distance;
-    const double s_floor =
-        std::max(m_offset_params.min_sizing_scalar, m_offset_params.min_edge_length / l);
-    std::vector<size_t> changed;
-    for (const EnergyCriterion::Refinable& r : faces) {
-        if (!(r.measure > 0.) || !(r.len > 0.)) continue;
-        // The target from the face's longest edge as the chord, with the centroid's sag; written
-        // at all three corners.
-        const double target = front_chord_target(r.a, r.b, r.len, r.measure, tube);
-        const double sn = std::clamp(target / l, s_floor, m_offset_params.max_sizing_scalar);
-        for (const size_t v : {r.a, r.b, r.c}) {
-            double& sc = m_vertex_attribute[v].m_sizing_scalar;
-            if (sn < sc) {
-                sc = sn;
-                changed.push_back(v);
-            }
-        }
-    }
-    grade_sizing(m_offset_params.sizing_gradation, changed);
-    return changed.size();
-}
-
 size_t TopoOffsetTetMesh::refine_front_by_halving(
     const std::vector<EnergyCriterion::Refinable>& faces)
 {
@@ -3355,284 +3249,6 @@ size_t TopoOffsetTetMesh::refine_front_by_halving(
     }
     grade_sizing(m_offset_params.sizing_gradation, changed);
     return changed.size();
-}
-
-size_t TopoOffsetTetMesh::force_split_edge_set(
-    std::set<std::array<size_t, 2>>& want,
-    size_t& hv_total,
-    int& rounds)
-{
-    // Split every edge in `want` NOW, and erase from it the ones this settles: an edge that was
-    // split no longer exists, and one a hook refused will be refused again. What is left when
-    // this returns is what the executor skipped on a stale Tuple plus what it refused.
-    //
-    // ROUNDS, because the executor DROPS A STALE TUPLE SILENTLY:
-    // `if (!tup.is_valid(m)) continue;` (ExecutionScheduler.hpp:470) -- no hook is called and
-    // nothing is counted. Every Tuple here is resolved before the pass mutates anything, and
-    // splitting one edge destroys the tets its neighbours' Tuples point into, so the queue goes
-    // stale underneath itself: about one offered edge in five was lost that way (turn 1 of the
-    // cube at 1e-2: 478 offered, 370 taken, 0 refused by any gate, 108 never reached a hook).
-    // Those edges still EXIST -- only their Tuples died -- so each round re-derives them from
-    // the surviving vertex pairs with tuple_from_edge() and offers what is left. The loop stops
-    // when a round splits nothing, which it must: every round either takes an edge out of `want`
-    // or leaves the set untouched. The cap is belt and braces.
-    constexpr int MAX_ROUNDS = 8;
-    const int taken_at_entry = iter_cnt_forced_split_taken.load();
-    int local_rounds = 0;
-    while (!want.empty() && local_rounds < MAX_ROUNDS) {
-        ++local_rounds;
-        ++rounds;
-        std::vector<std::pair<std::string, Tuple>> ops;
-        std::vector<std::array<size_t, 2>> live;
-        ops.reserve(want.size());
-        live.reserve(want.size());
-        m_force_split_edges.clear();
-        for (const std::array<size_t, 2>& e : want) {
-            const Tuple t = tuple_from_edge({{e[0], e[1]}});
-            if (!t.is_valid(*this)) continue; // the edge is genuinely gone
-            ops.emplace_back("edge_split", t);
-            live.push_back(e);
-            // Marks these as forced for anything downstream that asks (the base's force-split
-            // tally). The LENGTH GATE is not the reason: it lives in split_all_edges'
-            // is_weight_up_to_date, and this pass never goes through split_all_edges.
-            m_force_split_edges.insert(simplex::Edge(e[0], e[1]));
-        }
-        if (ops.empty()) break;
-
-        // THE HIGH-VALENCE CLAIM ARRAY IS PER PASS AND MUST BE RESET EACH ROUND.
-        // split_all_edges allocates a fresh zeroed one at the top of every split pass
-        // (TetOptimizerMeshSplit.cpp:23-36) because the gate lets a high-valence vertex absorb
-        // ONE valence-raising split per pass and marks it spent. This pass does not go through
-        // split_all_edges, so without this it would inherit the claims left by the turn's own
-        // split group -- every high-valence vertex already spent -- and refuse every forced edge
-        // whose link touches one, for a reason that belongs to a different pass. Measured before
-        // the fix: 106 of 488 offered edges refused on turn 1.
-        if (m_params.split_high_valence_threshold > 0) {
-            m_high_valence_claim_size = std::max(vert_capacity(), m_vertex_attribute.size());
-            m_high_valence_claim = std::make_unique<std::atomic<int>[]>(m_high_valence_claim_size);
-        }
-        const size_t hv_before = m_high_valence_rejects.load();
-        const int taken_before = iter_cnt_forced_split_taken.load();
-
-        // EdgeRing is the claim a split takes. The executor's DEFAULTS are what make this a
-        // forced-edge pass and nothing more: is_weight_up_to_date returns true (so no length
-        // gate) and renew_neighbor_tuples returns {} (so a split enqueues nothing and cannot
-        // cascade). Each live edge is therefore offered exactly once per round.
-        m_forced_split_pass.store(true, std::memory_order_relaxed);
-        run_pass(
-            *this,
-            PassLock::EdgeRing,
-            "front force-split operation",
-            [&](ExecutePass<TetOptimizerMesh>& executor, TetOptimizerMesh& mesh) {
-                executor(mesh, ops);
-            });
-        m_forced_split_pass.store(false, std::memory_order_relaxed);
-        m_force_split_edges.clear();
-        hv_total += m_high_valence_rejects.load() - hv_before;
-
-        const bool progressed = iter_cnt_forced_split_taken.load() > taken_before;
-        for (const std::array<size_t, 2>& e : live) {
-            if (!tuple_from_edge({{e[0], e[1]}}).is_valid(*this)) want.erase(e); // split away
-        }
-        if (!progressed) break; // nothing moved: the rest are refusals, not stale Tuples
-    }
-    m_force_split_edges.clear();
-    return size_t(iter_cnt_forced_split_taken.load() - taken_at_entry);
-}
-
-std::array<size_t, 2> TopoOffsetTetMesh::face_longest_edge(const std::array<size_t, 3>& f) const
-{
-    // A STRICT TOTAL ORDER on the face's three edges, not just the longest length: the LEPP walk
-    // below steps to a strictly greater edge each time and that is the only reason it terminates,
-    // so two edges of exactly equal length must still be separable. The vertex pair breaks the
-    // tie, which is stable under everything except a split (and a split ends the walk anyway).
-    const std::array<std::array<size_t, 2>, 3> es = {
-        {{{f[0], f[1]}}, {{f[1], f[2]}}, {{f[2], f[0]}}}};
-    std::array<size_t, 2> best{{0, 0}};
-    double best_len = -1.;
-    for (const std::array<size_t, 2>& e : es) {
-        const std::array<size_t, 2> key = {{std::min(e[0], e[1]), std::max(e[0], e[1])}};
-        const double len =
-            (m_vertex_attribute[key[0]].m_posf - m_vertex_attribute[key[1]].m_posf).norm();
-        if (len > best_len || (len == best_len && key > best)) {
-            best_len = len;
-            best = key;
-        }
-    }
-    return best;
-}
-
-size_t TopoOffsetTetMesh::rivara_refine(
-    const std::vector<std::array<size_t, 3>>& targets,
-    size_t& hv_total,
-    int& rounds)
-{
-    // EXPERIMENTAL_longest_edge_rivara. Rivara's Backward-Longest-Edge-Bisection (IJNME 40
-    // (1997) 3313-3324, Sec. 3), with the offset surface as the triangulation:
-    //
-    //     While t remains without being bisected do
-    //         Find the LEPP(t)
-    //         If t*, the last triangle of the LEPP(t), is a terminal boundary triangle, bisect t*
-    //         Else bisect (the last) pair of terminal triangles of the LEPP(t)
-    //
-    // LEPP(t0) (Definition 1) is the chain t0, t1, ... where ti is the neighbour of t(i-1) ACROSS
-    // t(i-1)'s LONGEST EDGE. Its longest edges strictly increase, so it is finite, and it ends
-    // either at a face whose longest edge has no second offset-surface face, or at a pair of
-    // faces sharing their common longest edge (Definition 2). Either way the edge to split is the
-    // one at the END of the chain, never t0's own.
-    //
-    // "Bisect" here is a tet-mesh EDGE SPLIT: splitting the shared longest edge of a terminal
-    // pair bisects both of its faces at once, and splitting a terminal boundary face's longest
-    // edge bisects it -- so the paper's two cases are one operation and the surface stays
-    // conforming because the background mesh does.
-    //
-    // A target is done when it is no longer a face of the surface, which is exactly Rivara's "t
-    // has been bisected": the only thing that removes a face is one of its three edges being
-    // split. That includes being bisected as somebody else's terminal pair, which is the point of
-    // the algorithm and not a miss.
-    if (targets.empty()) return 0;
-
-    std::vector<std::array<size_t, 3>> live = targets;
-    // Each outer pass walks every live target's LEPP on the CURRENT surface and splits the batch
-    // of terminal edges it finds. Rivara's Remark 2 says to update the path rather than recompute
-    // it; this recomputes, which costs a face sweep per pass and buys not having to maintain an
-    // adjacency structure across splits that renumber everything.
-    //
-    // NO PASS CAP, on Spencer's instruction (2026-09-23): the loop runs until every target has
-    // been bisected. What makes that terminate is Rivara's own argument -- each pass splits the
-    // edge at the END of every live chain, which bisects the two faces there and so shortens
-    // each chain by at least one, and the chains are finite because their longest edges strictly
-    // increase (face_longest_edge() is a strict total order, which is why that matters). The two
-    // guards below are the real backstop and neither is a budget: a pass that finds no terminal
-    // edge, and a pass whose whole batch is refused, both stop immediately, because walking again
-    // would only find the same edges. A 16-pass cap was here first and was hit on EVERY turn of
-    // the cube at 1e-3, leaving 115-142 of ~500 targets unbisected.
-    constexpr int MAX_WALK = 256; // the chain is finite by construction; this is belt and braces
-    int passes = 0;
-    size_t propagated = 0, walk_max = 0;
-    while (!live.empty()) {
-        ++passes;
-        // The surface's face adjacency, keyed by vertex pair. Rebuilt per pass because a split
-        // rewrites the faces around it.
-        const std::vector<std::array<size_t, 3>> surf = offset_surface_faces();
-        std::map<std::array<size_t, 3>, size_t> index;
-        std::map<std::array<size_t, 2>, std::vector<size_t>> across;
-        for (size_t k = 0; k < surf.size(); ++k) {
-            std::array<size_t, 3> key = surf[k];
-            std::sort(key.begin(), key.end());
-            index.emplace(key, k);
-            const std::array<std::array<size_t, 2>, 3> es = {
-                {{{key[0], key[1]}}, {{key[1], key[2]}}, {{key[0], key[2]}}}};
-            for (const std::array<size_t, 2>& e : es) across[e].push_back(k);
-        }
-
-        std::set<std::array<size_t, 2>> batch;
-        std::vector<std::array<size_t, 3>> still;
-        for (const std::array<size_t, 3>& t0 : live) {
-            std::array<size_t, 3> key = t0;
-            std::sort(key.begin(), key.end());
-            const auto it = index.find(key);
-            if (it == index.end()) continue; // bisected already: drop it
-            still.push_back(t0);
-
-            // THE WALK. Step to the neighbour across the current longest edge; stop when that
-            // neighbour's own longest edge is the one we crossed (terminal pair) or when there
-            // is no single neighbour to cross to (terminal boundary, or a non-manifold edge,
-            // where "the neighbour" is not defined and the chain has to end somewhere).
-            size_t cur = it->second;
-            std::array<size_t, 2> e = face_longest_edge(surf[cur]);
-            int steps = 0;
-            for (; steps < MAX_WALK; ++steps) {
-                const auto fa = across.find(e);
-                if (fa == across.end() || fa->second.size() != 2) break; // terminal boundary
-                const size_t nb = fa->second[0] == cur ? fa->second[1] : fa->second[0];
-                if (nb == cur) break;
-                const std::array<size_t, 2> e_nb = face_longest_edge(surf[nb]);
-                if (e_nb == e) break; // terminal pair: they share their common longest edge
-                cur = nb;
-                e = e_nb;
-            }
-            propagated += size_t(steps);
-            walk_max = std::max(walk_max, size_t(steps));
-            batch.insert(e);
-        }
-        live.swap(still);
-        if (batch.empty()) break;
-        // If the whole batch is refused, no face can ever be bisected and walking again would
-        // find the same terminal edges: stop rather than spin out the pass budget.
-        if (force_split_edge_set(batch, hv_total, rounds) == 0) break;
-    }
-    logger().info(
-        "\t[rivara] {} target face(s) -> {} still unbisected after {} propagation pass(es) | "
-        "chain steps: {} total, {} longest",
-        targets.size(),
-        live.size(),
-        passes,
-        propagated,
-        walk_max);
-    return live.size();
-}
-
-size_t TopoOffsetTetMesh::refine_front_by_splitting(
-    const std::vector<EnergyCriterion::Refinable>& faces)
-{
-    // EXPERIMENTAL_refinement_strat "split_longest". The sizing field is not touched -- it is
-    // pinned at 1.0 for the whole single-phase loop (see optimize_offset_single_phase) -- and
-    // the splitting happens HERE, inside the turn, before the turn's end frame. `a` and `b` ARE
-    // the face's longest edge and `c` its third corner: energy_criterion() picks the longest of
-    // the three and stores its two ends there. Several faces routinely name the same edge, hence
-    // the set, which is keyed by VERTEX PAIR rather than by Tuple because a Tuple goes stale the
-    // moment anything nearby is split.
-    std::set<std::array<size_t, 2>> want;
-    std::vector<std::array<size_t, 3>> targets;
-    for (const EnergyCriterion::Refinable& r : faces) {
-        if (r.a == r.b) continue;
-        want.insert({{std::min(r.a, r.b), std::max(r.a, r.b)}});
-        targets.push_back({{r.a, r.b, r.c}});
-    }
-    const size_t offered = want.size();
-    if (offered == 0) return 0;
-
-    const size_t before_v = vert_capacity();
-    iter_cnt_forced_split_attempted = 0;
-    iter_cnt_forced_split_refused_before = 0;
-    iter_cnt_forced_split_refused_after = 0;
-    iter_cnt_forced_split_taken = 0;
-    size_t hv_total = 0;
-    size_t dropped_last = 0;
-    int rounds = 0;
-
-    if (!m_offset_params.experimental_longest_edge_rivara) {
-        force_split_edge_set(want, hv_total, rounds);
-        dropped_last = want.size();
-    } else {
-        dropped_last = rivara_refine(targets, hv_total, rounds);
-    }
-    m_force_split_edges.clear();
-    // Counted BEFORE the consolidation below, which compacts the array and would hide it.
-    const size_t added = vert_capacity() > before_v ? vert_capacity() - before_v : size_t(0);
-    const int ref_before = iter_cnt_forced_split_refused_before.load();
-    const int ref_after = iter_cnt_forced_split_refused_after.load();
-    const int taken = iter_cnt_forced_split_taken.load();
-
-    // The turn measured its criterion and printed its line before this pass ran, so the mesh the
-    // end frame is about to show is this one -- compacted, as every previous end frame was,
-    // since consolidate_mesh() ran earlier in the turn and these splits came after it.
-    consolidate_mesh();
-    // Every offered edge is accounted for: taken + refused before + refused after + unsplit.
-    logger().info(
-        "\t[split_longest] turn refinement: {} distinct longest edge(s) offered -> {} taken in "
-        "{} round(s), {} refused before ({} by the high-valence gate), {} refused after "
-        "(quality / envelope / inversion), {} left unsplit | {} vertices added",
-        offered,
-        taken,
-        rounds,
-        ref_before,
-        hv_total,
-        ref_after,
-        dropped_last,
-        added);
-    return offered;
 }
 
 TopoOffsetTetMesh::SmoothingProgress TopoOffsetTetMesh::smoothing_progress(
@@ -4635,88 +4251,6 @@ void TopoOffsetTetMesh::append_frame_label(const size_t idx, const std::string& 
     if (f) f << fmt::format("{:05d}\t{}\n", idx, label);
 }
 
-void TopoOffsetTetMesh::surface_smoothing_pass()
-{
-    const std::string& method = m_offset_params.experimental_surface_smoothing_method;
-    if (method == "none") return;
-    const bool quadrics = method == "quadrics";
-    const bool tangential = method == "tangential";
-    if (!quadrics && !tangential) {
-        log_and_throw_error(
-            "EXPERIMENTAL_surface_smoothing_method '{}' is not a method this build knows.",
-            method);
-    }
-    // Both of the next two are QUADRICS-ONLY skips. The quadric's sample planes come from a
-    // closest-point query on the input complex and a step of the target distance along that
-    // direction -- the euclidean field, by construction -- and the smooth potential offers no
-    // such projection, so the pass has nothing to build planes from. The tangential pass needs
-    // neither: its plane is the normal of grad Phi, which every field provides, and its energy
-    // reads only mesh positions.
-    if (quadrics && m_offset_params.offset_field != "euclidean") {
-        if (!m_quadric_field_warned.exchange(true)) {
-            logger().warn(
-                "\t[quadric] EXPERIMENTAL_surface_smoothing_method 'quadrics' needs offset_field "
-                "'euclidean' (its sample planes come from a closest-point query on the input "
-                "complex); offset_field is '{}', so the pass is skipped for this run.",
-                m_offset_params.offset_field);
-        }
-        return;
-    }
-    if (quadrics && !m_input_complex_bvh) {
-        if (!m_quadric_field_warned.exchange(true)) {
-            logger().warn("\t[quadric] no input-complex BVH: the pass is skipped for this run.");
-        }
-        return;
-    }
-
-    m_surface_smoothing_ran.store(true);
-
-    const std::string op_name = quadrics ? "offset_quadric" : "offset_tangential";
-    std::vector<std::pair<std::string, Tuple>> ops;
-    for (const Tuple& loc : get_vertices()) {
-        const size_t vid = loc.vid(*this);
-        // The canonical live-front test, as smoothing_progress() uses it.
-        if (!m_vertex_extra[vid].m_is_on_offset) continue;
-        if (!m_vertex_attribute[vid].m_is_rounded) continue;
-        ops.emplace_back(op_name, loc);
-    }
-    if (ops.empty()) return;
-
-    // VertexRing is the claim either mover needs and the one smoothing already takes: both read
-    // the one-ring's positions and write only the centre vertex. The operation is registered on
-    // the executor here rather than in the shared op map, and captures `this` because the
-    // executor is templated on the optimizer base and cannot see a TopoOffsetTetMesh member
-    // (RunPass.hpp).
-    run_pass(
-        *this,
-        PassLock::VertexRing,
-        quadrics ? "quadric relocation operation" : "tangential relocation operation",
-        [&](ExecutePass<TetOptimizerMesh>& executor, TetOptimizerMesh& mesh) {
-            executor.edit_operation_maps[op_name] =
-                [this,
-                 quadrics](TetOptimizerMesh&, const Tuple& t) -> std::optional<std::vector<Tuple>> {
-                const size_t vid = t.vid(*this);
-                const bool moved =
-                    quadrics ? quadric_move_front_vertex(vid) : tangential_move_front_vertex(vid);
-                if (moved) return std::vector<Tuple>{};
-                return {};
-            };
-            executor(mesh, ops);
-        });
-
-    // One frame per pass, on the run's single timeline, so a quadric move is visible on its own
-    // rather than smeared into the first smoothing frame after it. The base writes its frames
-    // the same way (TetOptimizerMesh.cpp:209, :399); m_debug_pass_name is what the label's
-    // "_<op>" suffix comes from, and it is restored so the smoothing frames that follow keep
-    // their own name.
-    if (m_params.debug_output) {
-        const std::string saved_pass_name = m_debug_pass_name;
-        m_debug_pass_name = quadrics ? "quadric" : "tangential";
-        write_optimization_debug_output(fmt::format("debug_{}", m_debug_print_counter++));
-        m_debug_pass_name = saved_pass_name;
-    }
-}
-
 void TopoOffsetTetMesh::write_debug_frame(const std::string& label)
 {
     const size_t idx = m_debug_seq++;
@@ -4801,76 +4335,12 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         m_front_gradient_reference,
         m_offset_params.front_conv_criterion,
         m_offset_params.front_conv_rel);
-    // EXPERIMENTAL_refinement_strat: validate once, here, rather than only at the first turn
-    // that has something refinable -- a run that never refines should still refuse a strategy
-    // this build cannot carry out. jse already restricts the value to the spec's options, so
-    // this fires only for a build/spec mismatch.
-    // Same idea for the measure those strategies are handed faces by: validate it ONCE here
-    // rather than discovering a bad value per face, and say in the log which measure the run is
-    // converging on, since every ratio reported below is in its units.
-    {
-        const std::string& crit = m_offset_params.experimental_resolution_criteria;
-        if (crit != "sag" && crit != "normal_deviation") {
-            log_and_throw_error(
-                "EXPERIMENTAL_resolution_criteria '{}' is not a measure this build knows.",
-                crit);
-        }
-        // The ONE pairing that cannot work, refused here rather than at the first refinable face:
-        // "sizing_curvature" reaches front_chord_target(), which inverts the sagitta's power law
-        // to an edge length. An angle has no such inversion, so feeding it one would silently
-        // produce a target from a number in the wrong units. The other two strategies need only
-        // the face's identity and are fine.
-        if (!resolution_criteria_is_sag() &&
-            m_offset_params.experimental_refinement_strat == "sizing_curvature") {
-            log_and_throw_error(
-                "EXPERIMENTAL_refinement_strat 'sizing_curvature' needs "
-                "EXPERIMENTAL_resolution_criteria 'sag': its chord rule inverts the sagitta's "
-                "power law and has no meaning for '{}'. Use 'sizing_half' (what the paper does "
-                "for normal deviation) or 'split_longest'.",
-                crit);
-        }
-        logger().info(
-            "\t[resolution] EXPERIMENTAL_resolution_criteria '{}': every face ratio below is "
-            "this measure over the bar {}, and it decides the loop's face criterion, which faces "
-            "are refined, and what the ops guard refuses.",
-            crit,
-            resolution_criteria_is_sag()
-                ? fmt::format(
-                      "front_conv_rel x target_distance = {:.4g}",
-                      m_offset_params.front_conv_rel * m_offset_params.target_distance)
-                : fmt::format(
-                      "EXPERIMENTAL_max_normal_deviation = {:.4g} degrees",
-                      normal_deviation_bar_deg()));
-    }
     if (m_offset_params.debug_collapse_ring && m_offset_params.experimental_ops_divergence_guard) {
         // Named in the log because it is not visible anywhere else in the output, and a run made
         // with it cannot be told apart from an ordinary one after the fact.
         logger().info(
             "\t[ops guard] DEBUG_collapse_ring: the collapse test is the pre-2026-09-22 maximum "
             "over the rings before and after, not the pairwise per-face test. Diagnostic only.");
-    }
-    {
-        const std::string& strat = m_offset_params.experimental_refinement_strat;
-        if (strat != "sizing_half" && strat != "sizing_curvature" && strat != "split_longest") {
-            log_and_throw_error(
-                "EXPERIMENTAL_refinement_strat '{}' is not a strategy this build knows.",
-                strat);
-        }
-        if (strat == "split_longest") {
-            // The strategy replaces the sizing field outright: it is set to 1.0 here and nothing
-            // in the loop lowers it again (the two sizing strategies are the only lowering sites
-            // in the turn body, and refine_sizing_around_worst belongs to mesh_improvement, i.e.
-            // Phase A, which this loop does not run). A split child takes the mean of its
-            // parents and a collapse survivor their min, so 1.0 everywhere is a fixed point:
-            // every vertex the loop creates is born at 1.0 too.
-            for (const Tuple& v : get_vertices()) {
-                m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
-            }
-            logger().info(
-                "\t[sizing] EXPERIMENTAL_refinement_strat 'split_longest': the sizing field is "
-                "pinned at 1.0 for the whole loop; the front is resolved by force-splitting each "
-                "refinable face's longest edge instead.");
-        }
     }
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
@@ -4885,8 +4355,8 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         {{{1, 0, 0, k}}, {{0, 1, 0, k}}, {{0, 0, 1, k}}}}; // split | collapse | swap, each + smooth
     static constexpr std::array<const char*, 3> group_names = {{"split", "collapse", "swap"}};
     compute_vertex_partition_morton();
-    // One turn of grace after the field is lowered: the sag rule (refine_front_from_sag or
-    // refine_front_by_halving) lowers sizing scalars at the end of a turn, and the split pass
+    // One turn of grace after the field is lowered: refine_front_by_halving() lowers sizing
+    // scalars at the end of a turn, and the split pass
     // that realizes them does not run until the NEXT turn.
     size_t lowered_last_turn = 0;
     if (m_offset_params.pre_smooth) {
@@ -4926,36 +4396,10 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         rebuild_offset_envelope();
         const int guard_c0 = iter_cnt_collapse_guard_reject.load();
         const int guard_s0 = iter_cnt_swap_guard_reject.load();
-        const int ss_mv0 = iter_cnt_surf_smooth_moved.load();
-        const int ss_bk0 = iter_cnt_surf_smooth_backed_off.load();
-        const int ss_nn0 = iter_cnt_surf_smooth_no_neighbours.load();
-        const int ss_dg0 = iter_cnt_surf_smooth_degenerate.load();
-        const int ss_pi0 = iter_cnt_surf_smooth_pre_inverted.load();
-        const int ss_iv0 = iter_cnt_surf_smooth_inverted.load();
-        const int ss_en0 = iter_cnt_surf_smooth_envelope.load();
-        const int ss_hd0 = iter_cnt_surf_smooth_held.load();
         for (size_t gi = 0; gi < groups.size(); ++gi) {
             stamp_plastic_rests(); // plastic: each group resists only its own increment
             if (gi == 1) needle_scan("collapse pass");
-            if (m_offset_params.experimental_surface_smoothing_method != "none") {
-                // EXPERIMENTAL_surface_smoothing_method: the group's operations, then N passes
-                // that move the offset-surface vertices TANGENTIALLY, then the group's ordinary
-                // smoothing -- whose 1-D normal solve is what puts them back on the level set.
-                // The ops and the smoothing are split out of one local_operations() call to get
-                // in between them; with the key at its "none" default the branch below runs
-                // exactly as it always has, single call and all.
-                local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
-                const int sm_passes =
-                    std::max(1, m_offset_params.experimental_surface_smoothing_passes);
-                for (int n = 0; n < sm_passes; ++n) {
-                    surface_smoothing_pass();
-                }
-                if (m_offset_params.adaptive_smoothing) {
-                    smooth_group_to_convergence(group_names[gi]);
-                } else {
-                    local_operations({{0, 0, 0, k}});
-                }
-            } else if (m_offset_params.adaptive_smoothing) {
+            if (m_offset_params.adaptive_smoothing) {
                 // The group's operations alone, then its smoothing pass by pass until the front
                 // and the background have settled -- see smooth_group_to_convergence().
                 local_operations({{groups[gi][0], groups[gi][1], groups[gi][2], 0}});
@@ -5018,31 +4462,6 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         check_offset_membership(fmt::format("turn {}", it + 1).c_str());
         // Not gated on the key: silent unless a face lookup actually missed this run.
         report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
-        if (m_surface_smoothing_ran.load()) {
-            const int moved = iter_cnt_surf_smooth_moved.load() - ss_mv0;
-            const int nn = iter_cnt_surf_smooth_no_neighbours.load() - ss_nn0;
-            const int dg = iter_cnt_surf_smooth_degenerate.load() - ss_dg0;
-            const int pi = iter_cnt_surf_smooth_pre_inverted.load() - ss_pi0;
-            const int iv = iter_cnt_surf_smooth_inverted.load() - ss_iv0;
-            const int en = iter_cnt_surf_smooth_envelope.load() - ss_en0;
-            const int hd = iter_cnt_surf_smooth_held.load() - ss_hd0;
-            logger().info(
-                "\t[{}] turn {}: {} vertices moved ({} refused: {} no-neighbours, {} "
-                "degenerate, {} pre-inverted, {} inverted, {} envelope, {} envelope-held), {} "
-                "backed off by the inversion search",
-                m_offset_params.experimental_surface_smoothing_method == "tangential" ? "tangential"
-                                                                                      : "quadric",
-                it + 1,
-                moved,
-                nn + dg + pi + iv + en + hd,
-                nn,
-                dg,
-                pi,
-                iv,
-                en,
-                hd,
-                iter_cnt_surf_smooth_backed_off.load() - ss_bk0);
-        }
         if (m_offset_params.experimental_ops_divergence_guard) {
             logger().info(
                 "\t[ops guard] turn {}: {} collapse(s) refused for leaving the offset surface "
@@ -5057,43 +4476,25 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         const size_t lowered_prev = lowered_last_turn;
         lowered_last_turn = 0;
         if (!ec.refinable.empty()) {
-            // EXPERIMENTAL_refinement_strat picks how the refinable faces are resolved. The two
-            // sizing strategies lower the field and report vertices; split_longest queues edges
-            // and reports edges. Either way the count feeds lowered_last_turn, so the loop's one
-            // turn of hysteresis behaves the same under all three.
-            const std::string& strat = m_offset_params.experimental_refinement_strat;
-            size_t n = 0;
-            const char* what = nullptr;
-            if (strat == "sizing_half") {
-                n = refine_front_by_halving(ec.refinable);
-                what = "sizing scalar halved (sizing_half) at {} vertices";
-            } else if (strat == "sizing_curvature") {
-                n = refine_front_from_sag(ec.refinable);
-                what = "sizing target lowered (sizing_curvature) at {} vertices";
-            } else if (strat == "split_longest") {
-                n = refine_front_by_splitting(ec.refinable);
-                what = "longest edge queued for a force-split (split_longest): {} edges";
-            } else {
-                log_and_throw_error(
-                    "EXPERIMENTAL_refinement_strat '{}' is not a strategy this build knows.",
-                    strat);
-            }
+            // Refinement is the halving, and only the halving: every refinable face has the
+            // sizing scalar at its corners halved. The count feeds lowered_last_turn, which is
+            // the loop's one turn of hysteresis.
+            const size_t n = refine_front_by_halving(ec.refinable);
             lowered_last_turn = n;
             logger().info(
-                "\t[resolution] turn {}: {} front face(s) with all corners placed over the bar "
-                "(worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> {}",
+                "\t[resolution] turn {}: {} front face(s) with all corners placed sag over the "
+                "tube at the centroid (worst {:.4}x, centroid ({:.4}, {:.4}, {:.4})) -> sizing "
+                "scalar halved at {} vertices",
                 it + 1,
                 ec.refinable.size(),
                 ec.max_face_placed,
                 ec.worst_placed_centroid.x(),
                 ec.worst_placed_centroid.y(),
                 ec.worst_placed_centroid.z(),
-                fmt::format(fmt::runtime(what), n));
+                n);
         }
         // The turn's "end" frame is written HERE, after the refinement, not before it: it is the
-        // turn's final state, so what it carries is the sizing field the two sizing strategies
-        // just lowered, and under split_longest it is the exact geometry the next turn's split
-        // group starts from -- which is what makes it comparable with that group's own frame.
+        // turn's final state, so what it carries is the sizing field the halving just lowered.
         // 3D ONLY; 2D still writes its end frame before the refinement. See .claude/CLAUDE.md.
         if (m_offset_params.debug_output) {
             write_optimization_debug_output(fmt::format("phase_{}S", it + 1));
@@ -5248,16 +4649,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     iter_cnt_swap = 0;
     iter_cnt_collapse_guard_reject = 0;
     iter_cnt_swap_guard_reject = 0;
-    iter_cnt_surf_smooth_moved = 0;
-    iter_cnt_surf_smooth_backed_off = 0;
-    iter_cnt_surf_smooth_no_neighbours = 0;
-    iter_cnt_surf_smooth_degenerate = 0;
-    iter_cnt_surf_smooth_pre_inverted = 0;
-    iter_cnt_surf_smooth_inverted = 0;
-    iter_cnt_surf_smooth_envelope = 0;
-    iter_cnt_surf_smooth_held = 0;
-    m_quadric_field_warned = false;
-    m_surface_smoothing_ran = false;
     m_smooth_trace.reset();
     optimization_metrics.clear();
     op_counts.clear();
@@ -5284,23 +4675,6 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    if (m_surface_smoothing_ran.load()) {
-        logger().info(
-            "surface smoothing (EXPERIMENTAL_surface_smoothing_method '{}', {} pass(es) per "
-            "group): {} vertex moves accepted, of which {} had to be backed off by the inversion "
-            "search | refused: {} no-neighbours, {} degenerate, {} pre-inverted, {} inverted, {} "
-            "envelope, {} envelope-held",
-            m_offset_params.experimental_surface_smoothing_method,
-            std::max(1, m_offset_params.experimental_surface_smoothing_passes),
-            iter_cnt_surf_smooth_moved.load(),
-            iter_cnt_surf_smooth_backed_off.load(),
-            iter_cnt_surf_smooth_no_neighbours.load(),
-            iter_cnt_surf_smooth_degenerate.load(),
-            iter_cnt_surf_smooth_pre_inverted.load(),
-            iter_cnt_surf_smooth_inverted.load(),
-            iter_cnt_surf_smooth_envelope.load(),
-            iter_cnt_surf_smooth_held.load());
-    }
     if (m_offset_params.experimental_ops_divergence_guard) {
         logger().info(
             "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses refused for leaving "

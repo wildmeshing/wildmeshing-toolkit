@@ -1972,7 +1972,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         // samples every live offset face at its centroid, and that number has nowhere to live on
         // the tet frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
         //
-        //   front_sag_ratio  face_resolution_ratio(): the measure over the tube (front_conv_rel x
+        //   front_sag_ratio  face_conv_ratio(): the sag over the tube (front_conv_rel x
         //                    target_distance). > 1 with every corner on the level set is what
         //                    makes a face refinable. -1 unmeasurable, including a face with a
         //                    corner that is not a front vertex. Measured under the same
@@ -1985,9 +1985,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         };
         for (size_t i = 0; i < faces_off.size(); ++i) {
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
-            // Through the seam, so a debug frame always shows the measure the run is actually
-            // converging on rather than sag regardless of EXPERIMENTAL_resolution_criteria.
-            f_sag[i] = front(a) && front(b) && front(c) ? face_resolution_ratio(a, b, c) : -1.;
+            f_sag[i] = front(a) && front(b) && front(c) ? face_conv_ratio(a, b, c) : -1.;
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
             f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
