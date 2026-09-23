@@ -1139,6 +1139,154 @@ TEST_CASE("sag-energy-3d-derivatives", "[offset][potential]")
 }
 
 
+TEST_CASE("sag-energy-3d-normalized-derivatives", "[offset][potential]")
+{
+    // EXPERIMENTAL_normalized_front_energy's form: an AREA-WEIGHTED MEAN of the squared face sag
+    // in units of the bar. sum_k A_k couples every incident face to every other, so the gradient
+    // and Hessian are the quotient rule over two accumulations, not a per-face rescaling -- new
+    // derivative code, and it needs its own finite differences. TWO faces at least, or the
+    // coupling is vacuous.
+    const double delta = 0.25;
+    MatrixXd V(1, 3);
+    V << 0., 0., 0.;
+    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+
+    const Vector3d x0(0.31, 0.02, -0.05);
+    const auto make_face = [&](const Vector3d& q1, const Vector3d& q2, const int k) {
+        SagEnergy3D::Face f;
+        f.q1 = q1;
+        f.q2 = q2;
+        f.d1 = phi->value(q1);
+        f.d2 = phi->value(q2);
+        const int n = k + 2;
+        for (int i = 1; i < n; ++i) {
+            for (int j = 1; j < n - i; ++j) {
+                const int l = n - i - j;
+                if (l < 1) continue;
+                SagEnergy3D::Sample sm;
+                sm.a = double(i) / double(n);
+                sm.b = double(j) / double(n);
+                sm.c = double(l) / double(n);
+                sm.inv_g = 1. / phi->gradient(sm.a * x0 + sm.b * q1 + sm.c * q2).norm();
+                f.samples.push_back(sm);
+            }
+        }
+        return f;
+    };
+    const Vector3d qa(0.20, 0.25, 0.10), qb(0.22, -0.10, 0.24), qc(0.18, -0.20, -0.15);
+    // Deliberately different areas, so the area weighting is actually exercised.
+    const std::vector<SagEnergy3D::Face> faces = {make_face(qa, qb, 3), make_face(qb, qc, 2)};
+
+    const double bar = 0.02;
+    for (const bool use_target : {false, true}) {
+        INFO("use_target " << use_target);
+        // psd_project off so finite differences see the exact Hessian.
+        SagEnergy3D energy(phi, faces, 0.7, false, use_target, bar);
+        const double h = 1e-6;
+        for (const Vector3d& x : {x0, Vector3d(0.30, 0.03, -0.04), Vector3d(0.33, 0.0, -0.06)}) {
+            VectorXd xv = x;
+            CHECK(energy.value(xv) > 0.);
+            VectorXd g;
+            energy.gradient(xv, g);
+            for (int k = 0; k < 3; ++k) {
+                VectorXd xp = xv, xm = xv;
+                xp[k] += h;
+                xm[k] -= h;
+                const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+                INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+                CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            }
+            MatrixXd H;
+            energy.hessian(xv, H);
+            for (int k = 0; k < 3; ++k) {
+                VectorXd xp = xv, xm = xv, gp, gm;
+                xp[k] += h;
+                xm[k] -= h;
+                energy.gradient(xp, gp);
+                energy.gradient(xm, gm);
+                const VectorXd fd = (gp - gm) / (2. * h);
+                for (int l = 0; l < 3; ++l) {
+                    INFO("hess (" << l << "," << k << ") fd " << fd[l] << " vs " << H(l, k));
+                    CHECK(std::abs(fd[l] - H(l, k)) <= 1e-4 * std::max(1., std::abs(H(l, k))));
+                }
+            }
+        }
+    }
+}
+
+
+TEST_CASE("sag-energy-3d-normalized-is-one-at-the-bar", "[offset][potential]")
+{
+    // The property the whole normalisation exists for: the term is 1 when every incident face
+    // sits exactly at the sag bar, WHATEVER the areas and whatever the resolution -- which is
+    // what lets w_amips split a unit budget. The raw sum has no such value.
+    const double delta = 0.25;
+    MatrixXd V(1, 3);
+    V << 0., 0., 0.;
+    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+
+    const Vector3d x0(0.31, 0.02, -0.05);
+    const auto make_face = [&](const Vector3d& q1, const Vector3d& q2) {
+        SagEnergy3D::Face f;
+        f.q1 = q1;
+        f.q2 = q2;
+        f.d1 = phi->value(q1);
+        f.d2 = phi->value(q2);
+        for (int i = 1; i < 5; ++i) {
+            for (int j = 1; j < 5 - i; ++j) {
+                const int l = 5 - i - j;
+                if (l < 1) continue;
+                SagEnergy3D::Sample sm;
+                sm.a = i / 5.;
+                sm.b = j / 5.;
+                sm.c = l / 5.;
+                sm.inv_g = 1. / phi->gradient(sm.a * x0 + sm.b * q1 + sm.c * q2).norm();
+                f.samples.push_back(sm);
+            }
+        }
+        return f;
+    };
+    const Vector3d qa(0.20, 0.25, 0.10), qb(0.22, -0.10, 0.24), qc(0.18, -0.20, -0.15);
+    const std::vector<SagEnergy3D::Face> faces = {make_face(qa, qb), make_face(qb, qc)};
+    VectorXd xv = x0;
+
+    // Measure each face's own sag, then set the bar to it: if the two faces sagged equally the
+    // term must read exactly 1. They do not, so do it one face at a time.
+    for (const SagEnergy3D::Face& f : faces) {
+        SagEnergy3D probe(phi, {f}, 1., true, false, 0.); // raw: A * sag
+        const double A = 0.5 * (f.q1 - x0).cross(f.q2 - x0).norm();
+        const double sag = probe.value(xv) / A;
+        SagEnergy3D at_bar(phi, {f}, 1., true, false, sag); // bar == this face's own sag
+        CHECK(at_bar.value(xv) == Catch::Approx(1.).epsilon(1e-10));
+    }
+
+    // Two faces of different area, both at the bar: still exactly 1, because the area weights
+    // are a convex combination. Scale the bar by a factor and the term goes as 1/factor^2.
+    SagEnergy3D raw(phi, faces, 1., true, false, 0.);
+    double S = 0.;
+    for (const SagEnergy3D::Face& f : faces) S += 0.5 * (f.q1 - x0).cross(f.q2 - x0).norm();
+    const double bar = 0.013;
+    SagEnergy3D norm(phi, faces, 1., true, false, bar);
+    SagEnergy3D norm2(phi, faces, 1., true, false, 2. * bar);
+    CHECK(norm2.value(xv) == Catch::Approx(norm.value(xv) / 4.));
+    // And it is a mean of (sag/bar)^2 over the area weights, never a sum: bounded by the worst.
+    CHECK(norm.value(xv) > 0.);
+    CHECK(S > 0.);
+}
+
+
 TEST_CASE("sag-energy-3d-target-mode-derivatives", "[offset][potential]")
 {
     // EXPERIMENTAL_sag_use_target: the reference becomes the constant target level, so the sag

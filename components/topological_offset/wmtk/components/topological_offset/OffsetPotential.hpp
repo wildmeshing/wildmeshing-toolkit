@@ -611,6 +611,28 @@ public:
         std::vector<Sample> samples;
     };
 
+    /// `sag_bar` > 0 turns on EXPERIMENTAL_normalized_front_energy's form for this term:
+    ///
+    ///     E(x) = w * sum_j ( A_j(x) / sum_k A_k(x) ) * ( sag_j(x) / sag_bar )^2
+    ///
+    /// an AREA-WEIGHTED MEAN of the squared face sag in units of the bar, rather than the raw
+    /// sum of area times sag. The area weights sum to 1 by construction, so the term is 1 when
+    /// every incident face sits exactly at the sag bar, at any mesh resolution -- the raw sum is
+    /// an area times a length and falls like h^4 as the mesh refines, which is what made its
+    /// useful weight model-dependent. Squaring also damps the absolute value's kink, since the
+    /// gradient picks up a factor of sag_j that vanishes with it.
+    ///
+    /// It is NOT a per-face rescaling: sum_k A_k couples every incident face to every other, so
+    /// value/gradient/hessian run two passes and close with the quotient rule. With P = sum_j A_j
+    /// (sag_j/bar)^2 and S = sum_k A_k, E = w P/S and
+    ///
+    ///     grad E = w (S grad P - P grad S) / S^2
+    ///     hess E = w [ hess P / S - (grad P grad S^T + grad S grad P^T) / S^2
+    ///                  - P hess S / S^2 + 2 P grad S grad S^T / S^3 ]
+    ///
+    /// `sag_bar` <= 0 (the default) keeps the raw sum. The two modes are otherwise identical, and
+    /// `use_target` applies to both.
+    ///
     /// `use_target` is EXPERIMENTAL_sag_use_target: measure each sample against the potential's
     /// TARGET LEVEL instead of against the face's own corner mean. The reference is then a
     /// constant, so grad s_i = -a_i grad Phi(q_i) and hess s_i = -a_i^2 hess Phi(q_i) -- the
@@ -622,7 +644,8 @@ public:
         std::vector<Face> faces,
         double weight,
         bool psd_project = true,
-        bool use_target = false);
+        bool use_target = false,
+        double sag_bar = 0.);
 
     double value(const TVector& x) override;
     void gradient(const TVector& x, TVector& gradv) override;
@@ -660,6 +683,7 @@ private:
     bool m_psd_project;
     bool m_use_target;
     double m_target = 0.; ///< the potential's target level, cached; only read under m_use_target
+    double m_sag_bar = 0.; ///< > 0: the normalised form above
 };
 
 /**

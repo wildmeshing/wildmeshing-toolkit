@@ -32,6 +32,7 @@
       "sag_num_samples",
       "sag_energy_weight",
       "EXPERIMENTAL_sag_use_target",
+      "EXPERIMENTAL_normalized_front_energy",
       "sorted_marching",
       "sphere_trace_initialization",
       "sphere_trace_target_rel_tol",
@@ -276,6 +277,12 @@
     "type": "bool",
     "default": false,
     "doc": "EXPERIMENTAL, 3D ONLY. What a sample's sag is measured AGAINST. false (the default): the face's own corner values -- the criterion face_conv_ratio() uses the linear interpolant of the three corners at the sample, and the SagEnergy3D term uses their plain mean -- so the quantity is an INTERPOLATION error, how far the flat simplex departs from the field over its own span, and it is blind to a face that interpolates its corners perfectly while sitting off the level set. true: the TARGET LEVEL d*, i.e. |d* - Phi(q)| / |grad Phi(q)| at every sample, which is the sample's own first-order distance to the level set. The quantity becomes a PLACEMENT error sampled in the interior rather than an interpolation error, so a face is charged for being in the wrong place even when it is perfectly flat against the field. WHEN THE TWO AGREE: exactly when the three corners sit ON the level set, since the corner values are then all d* and their mean and their interpolant are both d*. They diverge only on faces with corners off the level set -- so the refinement decision, which already requires all three corners placed, changes little, while the ops guard and the reported max_face figures, which do not, can change a lot. Applies everywhere a sag is computed in 3D: face_conv_ratio() and so the loop's face criterion, the refinement it drives, EXPERIMENTAL_ops_divergence_guard's per-face test and the f_sag debug field; edge_conv_ratio(); and the SagEnergy3D smoothing term, whose derivatives simplify under it -- the reference stops depending on the moving vertex, so the only dependence left is the sample points sliding with x and the face's own area. 2D is not affected either way: its chord test is untouched by this key."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_normalized_front_energy",
+    "type": "bool",
+    "default": false,
+    "doc": "EXPERIMENTAL, 3D ONLY. Put the front vertex objective's three terms on ONE scale, so that w_amips is a real fraction instead of a number whose right value depends on the model. false (the default): the objective as it stands -- w_amips x a raw SUM of ring AMIPS, plus (1 - w_amips) x ((d - delta)/delta)^2, plus the sag term at its own weight. The three are unrelated in magnitude: AMIPS is order 3 x valence at best, the placement residual is in units of target_distance, and the sag term is an area times a length. true: each term is 1 at its own target and the coefficients sum to 1. E = w_amips x (1/(3N)) sum over the N ring cells of AMIPS   + (1-w_amips)/2 x ((d(x) - delta) / vertex_conv)^2   + (1-w_amips)/2 x sum over incident offset faces j of (A_j / sum_k A_k) (sag_j / sag_conv)^2. 3 is one tet's AMIPS optimum, so a perfect ring contributes exactly 1; the placement residual is measured in units of vertex_conv rather than target_distance, so it is 1 at the vertex bar; and the sag term is the AREA-WEIGHTED MEAN of the squared face sag in units of sag_conv, whose weights sum to 1 by construction, so it too is 1 when every face sits at the sag bar. WHY THE TOLERANCES BELONG IN THE RESIDUALS: with each residual divided by its own bar, a loose sag_conv shrinks the sag term by itself and placement takes over, while equal tolerances give a genuine 50/50 -- the prioritising is done by the tolerances the run already states instead of by a weight that has to be retuned per model. It also removes the scale dependence of the raw sag term, which was an area times a length and so fell like h^4 as the mesh refined. The sag term is SQUARED here, unlike the false branch's mean absolute value, so that it is commensurate with the squared placement residual at every magnitude and not only at the bar; the squaring also damps the absolute value's kink, since the gradient carries a factor of sag_j that vanishes with it. Implementation note: the placement half needs no new residual -- multiplying OffsetEnergy3D's weight by (target_distance / vertex_conv)^2 is identical to renormalising it -- while the sag half genuinely couples the incident faces through sum_k A_k and so is computed in two passes. EXPERIMENTAL_sag_use_target is orthogonal and applies in either branch. 2D is not affected."
   },
   {
     "pointer": "/sorted_marching",
@@ -645,7 +652,7 @@
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,
-    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of envelope-held vertices, and of the AMIPS term against the offset terms in the front objective. The envelope weight is derived as 1 - w_amips."
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of envelope-held vertices, and of the AMIPS term against the offset terms in the front objective. The envelope weight is derived as 1 - w_amips. THE DEFAULT 1e-4 BELONGS TO THE UN-NORMALISED OBJECTIVE, where the AMIPS term is a raw SUM over the ring, of order 3 x valence at best, so a small coefficient is what keeps it comparable to the offset term. Under EXPERIMENTAL_normalized_front_energy that is no longer true: there the three terms are each 1 at their own target and w_amips is literally quality's share of a unit budget, so 1e-4 makes the quality term decorative and a value around 0.1 is what the scheme expects. The default is left at 1e-4 so that turning the flag off changes nothing; set it explicitly when turning the flag on. Note the key is read in both dimensions and also by the shared smoother's envelope-held vertices, so raising it is not confined to the front objective."
   },
   {
     "pointer": "/perform_sanity_checks",

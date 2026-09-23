@@ -461,7 +461,15 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
         }
         cells.push_back(T);
     }
-    const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
+    double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
+    if (m_offset_params.experimental_normalized_front_energy && m_params.w_amips > 0) {
+        // Divide by the ring's own optimum so the term is 1 at a perfect ring and w_amips is
+        // quality's share of a unit budget. 3 is one tet's AMIPS minimum, and RestAMIPSEnergy3D
+        // shares that minimum at F = I, so plastic cells count the same and both energies take
+        // the same weight. N varies with valence, which is the point: a mean, not a sum.
+        const size_t n_ring = cells.size() + plastic_cells.size();
+        if (n_ring > 0) amips_w /= 3. * double(n_ring);
+    }
     auto sum = std::make_shared<optimization::EnergySum>();
     if (m_params.w_amips > 0 && !cells.empty())
         sum->add_energy(std::make_shared<optimization::AMIPSEnergy3D>(cells, amips_w));
@@ -475,10 +483,27 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
     const size_t vid,
     const std::shared_ptr<const OffsetPotential3D>& pot) const
 {
+    const bool normalized = m_offset_params.experimental_normalized_front_energy;
     const double w_off = 1. - m_params.w_amips;
+    // Under EXPERIMENTAL_normalized_front_energy placement and sag split the non-quality budget
+    // evenly, each 1 at its own bar, so the three coefficients sum to 1. NOTE the alignment term
+    // below is outside that partition: it keeps w_off, so enabling front_alignment_energy and
+    // this flag together no longer sums to 1.
+    const double w_half = 0.5 * w_off;
     auto sum = std::make_shared<optimization::EnergySum>();
     // Gauss-Newton Hessian (the default); the exact Hessian adds r grad^2 Phi and buys nothing.
-    sum->add_energy(std::make_shared<OffsetEnergy3D>(pot, w_off, true, true));
+    //
+    // The placement residual is (Phi - c)/c for the euclidean field and the length residual over
+    // delta for the smooth one; either way it is the distance to the level set in units of
+    // target_distance. Measuring it in units of vertex_conv instead is exactly a weight factor of
+    // (target_distance / vertex_conv)^2, so no new residual is needed and 2D is untouched.
+    double w_place = w_off;
+    if (normalized) {
+        const double vc = std::max(m_offset_params.vertex_conv, 1e-300);
+        const double ratio = m_offset_params.target_distance / vc;
+        w_place = w_half * ratio * ratio;
+    }
+    sum->add_energy(std::make_shared<OffsetEnergy3D>(pot, w_place, true, true));
     // One alignment residual per incident live front face.
     const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
     std::vector<AlignEnergy3D::Face> faces;
@@ -505,13 +530,16 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
             sag_faces.push_back(std::move(sf));
         }
         if (!sag_faces.empty()) {
+            // sag_energy_weight still multiplies under the flag, so 0 removes the term in either
+            // branch; 1 is the value that makes the three coefficients sum to 1.
             sum->add_energy(
                 std::make_shared<SagEnergy3D>(
                     pot,
                     std::move(sag_faces),
-                    m_offset_params.sag_energy_weight * w_off,
+                    m_offset_params.sag_energy_weight * (normalized ? w_half : w_off),
                     true,
-                    m_offset_params.experimental_sag_use_target));
+                    m_offset_params.experimental_sag_use_target,
+                    normalized ? m_offset_params.sag_conv : 0.));
         }
     }
     return sum;

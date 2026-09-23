@@ -136,6 +136,14 @@ struct Parameters : public wmtk::OptimizerParameters
     /// (so the criterion, the refinement it drives, the ops guard and the f_sag debug field),
     /// edge_conv_ratio(), and SagEnergy3D. false (the default) is the behaviour as it stands.
     bool experimental_sag_use_target;
+    /// EXPERIMENTAL, 3D only. See the spec: put the front objective's three terms on ONE scale --
+    /// each 1 at its own target -- and let w_amips split a unit budget between them, quality
+    /// taking w_amips and placement and sag (1 - w_amips)/2 each, so the coefficients sum to 1.
+    /// AMIPS is divided by 3N (N ring cells, 3 being one tet's optimum), the placement residual
+    /// is measured in units of vertex_conv rather than target_distance, and the sag term becomes
+    /// the AREA-WEIGHTED MEAN of (sag_j / sag_conv)^2. false (the default) is the objective as it
+    /// stands. See SagEnergy3D and phase_b_front_energy().
+    bool experimental_normalized_front_energy;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
@@ -266,6 +274,7 @@ struct Parameters : public wmtk::OptimizerParameters
         sag_num_samples = json_params["sag_num_samples"];
         sag_energy_weight = json_params["sag_energy_weight"];
         experimental_sag_use_target = json_params["EXPERIMENTAL_sag_use_target"];
+        experimental_normalized_front_energy = json_params["EXPERIMENTAL_normalized_front_energy"];
 
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
