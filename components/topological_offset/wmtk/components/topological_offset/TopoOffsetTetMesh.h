@@ -1784,6 +1784,21 @@ public:
     /// and splits each refinable face's longest edge, in its own forced-edge pass inside the
     /// turn, before the turn's end frame. Returns the distinct edges offered.
     size_t refine_front_by_splitting(const std::vector<EnergyCriterion::Refinable>& faces);
+    /// Offer every edge of `want` to a forced-edge split pass, now, and erase from `want` the
+    /// ones that settles -- split away, or refused by a hook, which a retry would only repeat.
+    /// What is left on return is what the executor dropped on a stale Tuple. `hv_total` and
+    /// `rounds` accumulate across calls for the caller's one log line. Returns the splits taken.
+    size_t
+    force_split_edge_set(std::set<std::array<size_t, 2>>& want, size_t& hv_total, int& rounds);
+    /// The face's longest edge as a sorted vertex pair, ties broken by that pair so the answer
+    /// is a STRICT total order on the three -- which is what makes the LEPP walk terminate.
+    std::array<size_t, 2> face_longest_edge(const std::array<size_t, 3>& f) const;
+    /// EXPERIMENTAL_longest_edge_rivara: Rivara's Backward-Longest-Edge-Bisection over the
+    /// offset surface. Instead of splitting each target face's own longest edge, walk its
+    /// Longest-Edge Propagation Path and split the terminal edge at the end of it, repeating
+    /// until the face has been bisected. Returns the targets still unbisected when it gives up.
+    size_t
+    rivara_refine(const std::vector<std::array<size_t, 3>>& targets, size_t& hv_total, int& rounds);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
     /// sizing_gradation_mode says: "ring" is the base gradation_smooth_sizing(grade, seeds),

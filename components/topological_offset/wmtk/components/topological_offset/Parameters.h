@@ -192,6 +192,12 @@ struct Parameters : public wmtk::OptimizerParameters
     /// place of today's per-face pairwise test. Diagnostic only, for reproducing the churn the
     /// pairwise test was written to fix. Read by nothing when the guard is off. Default false.
     bool debug_collapse_ring;
+    /// EXPERIMENTAL, 3D only. See the spec: with EXPERIMENTAL_refinement_strat
+    /// "split_longest", propagate each wanted split along Rivara's Longest-Edge Propagation Path
+    /// instead of splitting the face's own longest edge outright, so every bisection is of an
+    /// edge that is locally longest. No effect under any other refinement strategy. Default
+    /// false.
+    bool experimental_longest_edge_rivara;
     /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
     /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
     /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
@@ -283,6 +289,7 @@ struct Parameters : public wmtk::OptimizerParameters
         pre_smooth = json_params["pre_smooth"];
         experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
         debug_collapse_ring = json_params["DEBUG_collapse_ring"];
+        experimental_longest_edge_rivara = json_params["EXPERIMENTAL_longest_edge_rivara"];
         experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
         experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
         experimental_surface_smoothing_method =

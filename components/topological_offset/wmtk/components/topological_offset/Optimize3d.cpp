@@ -3357,32 +3357,15 @@ size_t TopoOffsetTetMesh::refine_front_by_halving(
     return changed.size();
 }
 
-size_t TopoOffsetTetMesh::refine_front_by_splitting(
-    const std::vector<EnergyCriterion::Refinable>& faces)
+size_t TopoOffsetTetMesh::force_split_edge_set(
+    std::set<std::array<size_t, 2>>& want,
+    size_t& hv_total,
+    int& rounds)
 {
-    // EXPERIMENTAL_refinement_strat "split_longest". The sizing field is not touched -- it is
-    // pinned at 1.0 for the whole single-phase loop (see optimize_offset_single_phase) -- and
-    // each refinable face's longest edge is split HERE, inside the turn, before the turn's end
-    // frame. `a` and `b` ARE that longest edge: energy_criterion() picks the longest of the
-    // three and stores its two ends there. Several faces routinely name the same edge, hence
-    // the set, which is keyed by VERTEX PAIR rather than by Tuple for the reason below.
-    std::set<std::array<size_t, 2>> want;
-    for (const EnergyCriterion::Refinable& r : faces) {
-        if (r.a == r.b) continue;
-        want.insert({{std::min(r.a, r.b), std::max(r.a, r.b)}});
-    }
-    const size_t offered = want.size();
-    if (offered == 0) return 0;
-
-    const size_t before_v = vert_capacity();
-    iter_cnt_forced_split_attempted = 0;
-    iter_cnt_forced_split_refused_before = 0;
-    iter_cnt_forced_split_refused_after = 0;
-    iter_cnt_forced_split_taken = 0;
-    size_t hv_total = 0;
-    size_t dropped_last = 0;
-    int rounds = 0;
-
+    // Split every edge in `want` NOW, and erase from it the ones this settles: an edge that was
+    // split no longer exists, and one a hook refused will be refused again. What is left when
+    // this returns is what the executor skipped on a stale Tuple plus what it refused.
+    //
     // ROUNDS, because the executor DROPS A STALE TUPLE SILENTLY:
     // `if (!tup.is_valid(m)) continue;` (ExecutionScheduler.hpp:470) -- no hook is called and
     // nothing is counted. Every Tuple here is resolved before the pass mutates anything, and
@@ -3394,7 +3377,10 @@ size_t TopoOffsetTetMesh::refine_front_by_splitting(
     // when a round splits nothing, which it must: every round either takes an edge out of `want`
     // or leaves the set untouched. The cap is belt and braces.
     constexpr int MAX_ROUNDS = 8;
-    while (!want.empty() && rounds < MAX_ROUNDS) {
+    const int taken_at_entry = iter_cnt_forced_split_taken.load();
+    int local_rounds = 0;
+    while (!want.empty() && local_rounds < MAX_ROUNDS) {
+        ++local_rounds;
         ++rounds;
         std::vector<std::pair<std::string, Tuple>> ops;
         std::vector<std::array<size_t, 2>> live;
@@ -3444,15 +3430,183 @@ size_t TopoOffsetTetMesh::refine_front_by_splitting(
         m_force_split_edges.clear();
         hv_total += m_high_valence_rejects.load() - hv_before;
 
-        // Drop every edge this round settled: one that was split no longer exists, and one a
-        // hook refused will be refused again, so retrying either would not terminate. What
-        // stays in `want` is exactly what the executor skipped on a stale Tuple.
         const bool progressed = iter_cnt_forced_split_taken.load() > taken_before;
         for (const std::array<size_t, 2>& e : live) {
             if (!tuple_from_edge({{e[0], e[1]}}).is_valid(*this)) want.erase(e); // split away
         }
-        dropped_last = want.size();
         if (!progressed) break; // nothing moved: the rest are refusals, not stale Tuples
+    }
+    m_force_split_edges.clear();
+    return size_t(iter_cnt_forced_split_taken.load() - taken_at_entry);
+}
+
+std::array<size_t, 2> TopoOffsetTetMesh::face_longest_edge(const std::array<size_t, 3>& f) const
+{
+    // A STRICT TOTAL ORDER on the face's three edges, not just the longest length: the LEPP walk
+    // below steps to a strictly greater edge each time and that is the only reason it terminates,
+    // so two edges of exactly equal length must still be separable. The vertex pair breaks the
+    // tie, which is stable under everything except a split (and a split ends the walk anyway).
+    const std::array<std::array<size_t, 2>, 3> es = {
+        {{{f[0], f[1]}}, {{f[1], f[2]}}, {{f[2], f[0]}}}};
+    std::array<size_t, 2> best{{0, 0}};
+    double best_len = -1.;
+    for (const std::array<size_t, 2>& e : es) {
+        const std::array<size_t, 2> key = {{std::min(e[0], e[1]), std::max(e[0], e[1])}};
+        const double len =
+            (m_vertex_attribute[key[0]].m_posf - m_vertex_attribute[key[1]].m_posf).norm();
+        if (len > best_len || (len == best_len && key > best)) {
+            best_len = len;
+            best = key;
+        }
+    }
+    return best;
+}
+
+size_t TopoOffsetTetMesh::rivara_refine(
+    const std::vector<std::array<size_t, 3>>& targets,
+    size_t& hv_total,
+    int& rounds)
+{
+    // EXPERIMENTAL_longest_edge_rivara. Rivara's Backward-Longest-Edge-Bisection (IJNME 40
+    // (1997) 3313-3324, Sec. 3), with the offset surface as the triangulation:
+    //
+    //     While t remains without being bisected do
+    //         Find the LEPP(t)
+    //         If t*, the last triangle of the LEPP(t), is a terminal boundary triangle, bisect t*
+    //         Else bisect (the last) pair of terminal triangles of the LEPP(t)
+    //
+    // LEPP(t0) (Definition 1) is the chain t0, t1, ... where ti is the neighbour of t(i-1) ACROSS
+    // t(i-1)'s LONGEST EDGE. Its longest edges strictly increase, so it is finite, and it ends
+    // either at a face whose longest edge has no second offset-surface face, or at a pair of
+    // faces sharing their common longest edge (Definition 2). Either way the edge to split is the
+    // one at the END of the chain, never t0's own.
+    //
+    // "Bisect" here is a tet-mesh EDGE SPLIT: splitting the shared longest edge of a terminal
+    // pair bisects both of its faces at once, and splitting a terminal boundary face's longest
+    // edge bisects it -- so the paper's two cases are one operation and the surface stays
+    // conforming because the background mesh does.
+    //
+    // A target is done when it is no longer a face of the surface, which is exactly Rivara's "t
+    // has been bisected": the only thing that removes a face is one of its three edges being
+    // split. That includes being bisected as somebody else's terminal pair, which is the point of
+    // the algorithm and not a miss.
+    if (targets.empty()) return 0;
+
+    std::vector<std::array<size_t, 3>> live = targets;
+    // Each outer pass walks every live target's LEPP on the CURRENT surface and splits the batch
+    // of terminal edges it finds. Rivara's Remark 2 says to update the path rather than recompute
+    // it; this recomputes, which costs a face sweep per pass and buys not having to maintain an
+    // adjacency structure across splits that renumber everything.
+    //
+    // NO PASS CAP, on Spencer's instruction (2026-09-23): the loop runs until every target has
+    // been bisected. What makes that terminate is Rivara's own argument -- each pass splits the
+    // edge at the END of every live chain, which bisects the two faces there and so shortens
+    // each chain by at least one, and the chains are finite because their longest edges strictly
+    // increase (face_longest_edge() is a strict total order, which is why that matters). The two
+    // guards below are the real backstop and neither is a budget: a pass that finds no terminal
+    // edge, and a pass whose whole batch is refused, both stop immediately, because walking again
+    // would only find the same edges. A 16-pass cap was here first and was hit on EVERY turn of
+    // the cube at 1e-3, leaving 115-142 of ~500 targets unbisected.
+    constexpr int MAX_WALK = 256; // the chain is finite by construction; this is belt and braces
+    int passes = 0;
+    size_t propagated = 0, walk_max = 0;
+    while (!live.empty()) {
+        ++passes;
+        // The surface's face adjacency, keyed by vertex pair. Rebuilt per pass because a split
+        // rewrites the faces around it.
+        const std::vector<std::array<size_t, 3>> surf = offset_surface_faces();
+        std::map<std::array<size_t, 3>, size_t> index;
+        std::map<std::array<size_t, 2>, std::vector<size_t>> across;
+        for (size_t k = 0; k < surf.size(); ++k) {
+            std::array<size_t, 3> key = surf[k];
+            std::sort(key.begin(), key.end());
+            index.emplace(key, k);
+            const std::array<std::array<size_t, 2>, 3> es = {
+                {{{key[0], key[1]}}, {{key[1], key[2]}}, {{key[0], key[2]}}}};
+            for (const std::array<size_t, 2>& e : es) across[e].push_back(k);
+        }
+
+        std::set<std::array<size_t, 2>> batch;
+        std::vector<std::array<size_t, 3>> still;
+        for (const std::array<size_t, 3>& t0 : live) {
+            std::array<size_t, 3> key = t0;
+            std::sort(key.begin(), key.end());
+            const auto it = index.find(key);
+            if (it == index.end()) continue; // bisected already: drop it
+            still.push_back(t0);
+
+            // THE WALK. Step to the neighbour across the current longest edge; stop when that
+            // neighbour's own longest edge is the one we crossed (terminal pair) or when there
+            // is no single neighbour to cross to (terminal boundary, or a non-manifold edge,
+            // where "the neighbour" is not defined and the chain has to end somewhere).
+            size_t cur = it->second;
+            std::array<size_t, 2> e = face_longest_edge(surf[cur]);
+            int steps = 0;
+            for (; steps < MAX_WALK; ++steps) {
+                const auto fa = across.find(e);
+                if (fa == across.end() || fa->second.size() != 2) break; // terminal boundary
+                const size_t nb = fa->second[0] == cur ? fa->second[1] : fa->second[0];
+                if (nb == cur) break;
+                const std::array<size_t, 2> e_nb = face_longest_edge(surf[nb]);
+                if (e_nb == e) break; // terminal pair: they share their common longest edge
+                cur = nb;
+                e = e_nb;
+            }
+            propagated += size_t(steps);
+            walk_max = std::max(walk_max, size_t(steps));
+            batch.insert(e);
+        }
+        live.swap(still);
+        if (batch.empty()) break;
+        // If the whole batch is refused, no face can ever be bisected and walking again would
+        // find the same terminal edges: stop rather than spin out the pass budget.
+        if (force_split_edge_set(batch, hv_total, rounds) == 0) break;
+    }
+    logger().info(
+        "\t[rivara] {} target face(s) -> {} still unbisected after {} propagation pass(es) | "
+        "chain steps: {} total, {} longest",
+        targets.size(),
+        live.size(),
+        passes,
+        propagated,
+        walk_max);
+    return live.size();
+}
+
+size_t TopoOffsetTetMesh::refine_front_by_splitting(
+    const std::vector<EnergyCriterion::Refinable>& faces)
+{
+    // EXPERIMENTAL_refinement_strat "split_longest". The sizing field is not touched -- it is
+    // pinned at 1.0 for the whole single-phase loop (see optimize_offset_single_phase) -- and
+    // the splitting happens HERE, inside the turn, before the turn's end frame. `a` and `b` ARE
+    // the face's longest edge and `c` its third corner: energy_criterion() picks the longest of
+    // the three and stores its two ends there. Several faces routinely name the same edge, hence
+    // the set, which is keyed by VERTEX PAIR rather than by Tuple because a Tuple goes stale the
+    // moment anything nearby is split.
+    std::set<std::array<size_t, 2>> want;
+    std::vector<std::array<size_t, 3>> targets;
+    for (const EnergyCriterion::Refinable& r : faces) {
+        if (r.a == r.b) continue;
+        want.insert({{std::min(r.a, r.b), std::max(r.a, r.b)}});
+        targets.push_back({{r.a, r.b, r.c}});
+    }
+    const size_t offered = want.size();
+    if (offered == 0) return 0;
+
+    const size_t before_v = vert_capacity();
+    iter_cnt_forced_split_attempted = 0;
+    iter_cnt_forced_split_refused_before = 0;
+    iter_cnt_forced_split_refused_after = 0;
+    iter_cnt_forced_split_taken = 0;
+    size_t hv_total = 0;
+    size_t dropped_last = 0;
+    int rounds = 0;
+
+    if (!m_offset_params.experimental_longest_edge_rivara) {
+        force_split_edge_set(want, hv_total, rounds);
+        dropped_last = want.size();
+    } else {
+        dropped_last = rivara_refine(targets, hv_total, rounds);
     }
     m_force_split_edges.clear();
     // Counted BEFORE the consolidation below, which compacts the array and would hide it.
