@@ -1,5 +1,7 @@
 #include <wmtk/components/topological_offset/OffsetPotential.hpp>
 
+#include <wmtk/utils/AMIPS2D.h>
+
 #include <wmtk/optimization/EnergySum.hpp>
 #include <wmtk/optimization/solver.hpp>
 
@@ -1133,4 +1135,117 @@ TEST_CASE("offset-energy-3d-lands-on-the-level-set", "[offset][potential]")
         INFO("start " << d0 / delta << "x delta -> " << d / delta << "x delta");
         CHECK(d == Catch::Approx(delta).epsilon(0.02));
     }
+}
+
+
+/**
+ * TangentAMIPSEnergy: the two claims the class is built on.
+ *   1. It IS AMIPS. For a triangle that lies flat in the search plane the value must equal
+ *      wmtk::AMIPS2D_energy of the same triangle's plane coordinates, and equal 2 at the
+ *      equilateral -- so the intrinsic form in the header is the same measure, not a lookalike.
+ *   2. The hand-derived derivatives are the derivatives. Central finite differences on a
+ *      deliberately NON-flat fan, which is the case the projected form could not score.
+ */
+TEST_CASE("tangent-amips-equals-amips2d", "[offset][amips]")
+{
+    const Vector3d p0(0.2, -0.1, 0.4);
+    const Vector3d t1 = Vector3d(1., 2., -0.5).normalized();
+    const Vector3d t2 = Vector3d(1., 2., -0.5).cross(Vector3d(0., 0., 1.)).normalized();
+    const Vector3d n_out = t1.cross(t2);
+    REQUIRE(std::abs(t1.dot(t2)) < 1e-12);
+
+    // Plane coordinates of a fan around the origin, kept counter-clockwise so every triangle
+    // faces n_out. Irregular on purpose: a regular fan sits at the minimum and hides sign errors.
+    const std::vector<Vector2d> ring = {
+        Vector2d(1.0, 0.0),
+        Vector2d(0.4, 0.9),
+        Vector2d(-0.7, 0.6),
+        Vector2d(-0.9, -0.5),
+        Vector2d(0.1, -1.3)};
+
+    std::vector<TangentAMIPSEnergy::Cell> cells;
+    std::vector<std::array<double, 6>> flat;
+    for (size_t i = 0; i < ring.size(); ++i) {
+        const Vector2d& u = ring[i];
+        const Vector2d& v = ring[(i + 1) % ring.size()];
+        cells.push_back({p0 + u.x() * t1 + u.y() * t2, p0 + v.x() * t1 + v.y() * t2});
+        flat.push_back({{0., 0., u.x(), u.y(), v.x(), v.y()}});
+    }
+    TangentAMIPSEnergy e(cells, p0, t1, t2, n_out, 1.);
+
+    for (const Vector2d& x : {Vector2d(0., 0.), Vector2d(0.13, -0.21), Vector2d(-0.3, 0.05)}) {
+        double ref = 0.;
+        for (std::array<double, 6> c : flat) {
+            c[0] = x.x();
+            c[1] = x.y();
+            ref += wmtk::AMIPS2D_energy(c);
+        }
+        CHECK(std::abs(e.value(x) - ref) <= 1e-9 * std::max(1., std::abs(ref)));
+    }
+
+    // One triangle with two corners a unit apart: AMIPS is 2 at the plane coordinates that
+    // complete the equilateral, and above 2 anywhere else.
+    const double h = std::sqrt(3.) / 2.;
+    TangentAMIPSEnergy eq({{p0 + t1, p0 + 0.5 * t1 + h * t2}}, p0, t1, t2, n_out, 1.);
+    CHECK(std::abs(eq.value(Vector2d(0., 0.)) - 2.) <= 1e-12);
+    CHECK(eq.value(Vector2d(0.1, 0.05)) > 2.);
+}
+
+
+TEST_CASE("tangent-amips-derivatives-fd", "[offset][amips]")
+{
+    const Vector3d p0(-0.3, 0.7, 0.15);
+    const Vector3d t1 = Vector3d(0.3, -1., 0.4).normalized();
+    const Vector3d t2 = t1.cross(Vector3d(1., 0.2, -0.6)).normalized();
+    const Vector3d n_out = t1.cross(t2);
+
+    // OUT of the plane on purpose -- each corner is lifted along n_out by a different amount, so
+    // no two triangles of the fan are coplanar and the energy is not any projected fan's energy.
+    const std::vector<Vector2d> ring = {
+        Vector2d(1.1, 0.1),
+        Vector2d(0.3, 1.0),
+        Vector2d(-0.8, 0.7),
+        Vector2d(-1.0, -0.4),
+        Vector2d(0.2, -1.1)};
+    const std::vector<double> lift = {0.25, -0.18, 0.31, -0.07, 0.4};
+
+    std::vector<TangentAMIPSEnergy::Cell> cells;
+    for (size_t i = 0; i < ring.size(); ++i) {
+        const size_t j = (i + 1) % ring.size();
+        cells.push_back(
+            {p0 + ring[i].x() * t1 + ring[i].y() * t2 + lift[i] * n_out,
+             p0 + ring[j].x() * t1 + ring[j].y() * t2 + lift[j] * n_out});
+    }
+    TangentAMIPSEnergy e(cells, p0, t1, t2, n_out, 1.);
+
+    const double h = 1e-6;
+    for (const Vector2d& x : {Vector2d(0., 0.), Vector2d(0.2, 0.15), Vector2d(-0.25, 0.3)}) {
+        REQUIRE(std::isfinite(e.value(x)));
+        VectorXd g;
+        e.gradient(x, g);
+        REQUIRE(g.size() == 2);
+        MatrixXd H;
+        e.hessian(x, H);
+        REQUIRE(H.rows() == 2);
+        for (int k = 0; k < 2; ++k) {
+            Vector2d dx = Vector2d::Zero();
+            dx[k] = h;
+            const double fd = (e.value(x + dx) - e.value(x - dx)) / (2. * h);
+            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+            VectorXd gp, gm;
+            e.gradient(VectorXd(x + dx), gp);
+            e.gradient(VectorXd(x - dx), gm);
+            const Vector2d fdh = (gp - gm) / (2. * h);
+            for (int j = 0; j < 2; ++j) {
+                CHECK(std::abs(fdh[j] - H(j, k)) <= 1e-4 * std::max(1., std::abs(H(j, k))));
+            }
+        }
+        CHECK(std::abs(H(0, 1) - H(1, 0)) <= 1e-10 * std::max(1., std::abs(H(0, 1))));
+    }
+
+    // The one-sided barrier: a point that folds a triangle past n_out is outside the domain, so
+    // the value is not a number and the line search may not step there.
+    const Vector2d far(0., -40.);
+    CHECK(std::isnan(e.value(far)));
+    CHECK_FALSE(e.is_step_valid(Vector2d::Zero(), far));
 }

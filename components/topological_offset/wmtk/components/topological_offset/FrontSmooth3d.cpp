@@ -456,12 +456,14 @@ bool TopoOffsetTetMesh::quadric_move_front_vertex(const size_t vid)
 bool TopoOffsetTetMesh::tangential_move_front_vertex(const size_t vid)
 {
     // EXPERIMENTAL_surface_smoothing_method "tangential": move the vertex to the minimum of the
-    // 2-D AMIPS of its offset one-ring, projected into the LEVEL SET'S tangent plane at the
-    // vertex. It is a pure quality pass -- the offset field enters only as the plane it is
-    // confined to -- so it cannot slide the front off its level set the way a free 3-D solve
-    // does (see front_normal_projection in Parameters.h); the 1-D normal solve in the smoothing
-    // block immediately after is what puts the vertex back on the level set, and is the reason
-    // this pass may leave it off by the second-order drop the flat plane costs.
+    // AMIPS of its offset one-ring, with the vertex confined to the LEVEL SET'S tangent plane at
+    // its current position. The plane is the SEARCH SPACE and nothing else: each triangle is
+    // scored on its real 3-D shape, by TangentAMIPSEnergy, not on a copy of it flattened into
+    // that plane. It is a pure quality pass -- the offset field enters only as the plane -- so it
+    // cannot slide the front off its level set the way a free 3-D solve does (see
+    // front_normal_projection in Parameters.h); the 1-D normal solve in the smoothing block
+    // immediately after is what puts the vertex back on the level set, and is the reason this
+    // pass may leave it off by the second-order drop a flat search space costs.
     //
     // Not a port: neither TetWild nor the topological-offsets reference implementation has a
     // tangential pass. TetWild smooths a surface vertex with a FREE 3-D AMIPS Newton step and
@@ -511,9 +513,9 @@ bool TopoOffsetTetMesh::tangential_move_front_vertex(const size_t vid)
     const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
     const Vector3d n_out = s * n_field;
 
-    // An orthonormal basis of the tangent plane with t1 x t2 == n_out, so a face whose normal
-    // points outward projects to a COUNTER-CLOCKWISE 2-D triangle -- which is what
-    // AMIPSEnergy2D::is_step_valid() demands of every cell it is handed, for every cell.
+    // An orthonormal basis of the tangent plane. The handedness (t1 x t2 == n_out) is not load
+    // bearing any more -- the energy takes the outward side as n_out directly -- but it is kept
+    // so the two plane coordinates read the same way round as the surface does.
     const Vector3d seed =
         (std::abs(n_out.x()) < 0.9) ? Vector3d(Vector3d::UnitX()) : Vector3d(Vector3d::UnitY());
     Vector3d t1 = seed - seed.dot(n_out) * n_out;
@@ -525,8 +527,8 @@ bool TopoOffsetTetMesh::tangential_move_front_vertex(const size_t vid)
     t1 /= t1n;
     const Vector3d t2 = n_out.cross(t1);
 
-    // The projected one-ring in the layout AMIPS2D wants: the moving vertex first, at the origin,
-    // and the same first entry in every cell. offset_surface_faces_live_at() returns the fan
+    // The one-ring as TangentAMIPSEnergy wants it: per face the two corners that are NOT the
+    // moving vertex, at their true positions. offset_surface_faces_live_at() returns the fan
     // UNORDERED, but AMIPS is a sum over independent triangles, so only each triangle's own
     // winding matters and no fan ordering is needed.
     //
@@ -538,16 +540,15 @@ bool TopoOffsetTetMesh::tangential_move_front_vertex(const size_t vid)
     // as the winding instead would be circular: it would silently flip every face into agreement
     // and the test below would never fail.)
     //
-    // With the face oriented, the sign of its projected area is then a real statement. The signed
-    // area is exactly (sigma * N) . n_out -- the components along n_out drop out of the cross
-    // product's projection onto n_out -- so one number says whether the face is modellable at
-    // all. Negative means the face's outward normal is past perpendicular to the field, i.e. it
-    // is folded over; near zero means it projects to a sliver whose 2-D AMIPS says nothing about
-    // the real triangle. Either way the flat tangent plane is not a model of this neighbourhood,
-    // so THE WHOLE VERTEX IS REFUSED rather than the face dropped: dropping it would leave a gap
-    // in the fan that AMIPS would happily pull the vertex out through.
+    // With the face oriented, (sigma * N) . n_out says whether the face is usable at all, and it
+    // is the SAME quantity the energy's validity test watches, so this is the check that the
+    // starting point x = 0 is inside the domain rather than a separate rule. Negative means the
+    // face's outward normal is already past perpendicular to the field, i.e. it is folded over;
+    // near zero means it starts on the barrier. Either way THE WHOLE VERTEX IS REFUSED rather
+    // than the face dropped: dropping it would leave a gap in the fan that AMIPS would happily
+    // pull the vertex out through.
     constexpr double AREA_REL_TOL = 1e-6; // of |q1 - x| |q2 - x|, i.e. a sine
-    std::vector<std::array<double, 6>> cells;
+    std::vector<TangentAMIPSEnergy::Cell> cells;
     cells.reserve(offset_faces.size());
     for (const Tuple& f : offset_faces) {
         const auto fvs = get_face_vids(f);
@@ -578,19 +579,21 @@ bool TopoOffsetTetMesh::tangential_move_front_vertex(const size_t vid)
             ++iter_cnt_surf_smooth_degenerate;
             return false;
         }
-        const Vector3d& a = (sigma > 0.) ? d1 : d2; // sigma < 0: swap, so the cell is CCW
+        // sigma < 0: swap, so that ((a - p) x (b - p)) . n_out > 0 at x = 0, which is the
+        // energy's validity condition.
+        const Vector3d& a = (sigma > 0.) ? d1 : d2;
         const Vector3d& b = (sigma > 0.) ? d2 : d1;
-        cells.push_back({{0., 0., a.dot(t1), a.dot(t2), b.dot(t1), b.dot(t2)}});
+        cells.push_back({p0 + a, p0 + b});
     }
 
-    // 2-D AMIPS against the equilateral reference (wmtk::AMIPS2D_energy), two unknowns, the same
+    // AMIPS against the equilateral reference, on the real triangles, two unknowns, the same
     // per-thread DenseNewton every other smooth in this file uses. Unweighted: this pass has no
     // other term to balance against.
     auto& solver = m_solver.local();
     if (!solver) {
         solver = optimization::create_basic_solver();
     }
-    auto energy = std::make_shared<optimization::AMIPSEnergy2D>(cells, 1.);
+    auto energy = std::make_shared<TangentAMIPSEnergy>(cells, p0, t1, t2, n_out, 1.);
     Eigen::VectorXd x = Eigen::VectorXd::Zero(2);
     try {
         solver->minimize(*energy, x);
@@ -603,8 +606,8 @@ bool TopoOffsetTetMesh::tangential_move_front_vertex(const size_t vid)
         return false;
     }
     // No step cap and no blend back toward p0, unlike the quadric pass's w = 0.5: AMIPS diverges
-    // as any projected triangle degenerates, so its minimiser is strictly inside the projected
-    // fan and the move is bounded by the one-ring itself.
+    // as any triangle of the fan degenerates, so its minimiser is strictly inside the fan and the
+    // move is bounded by the one-ring itself.
     const Vector3d p_target = p0 + x(0) * t1 + x(1) * t2;
 
     // The same geometric backoff the quadric pass uses (u = 1, 1/2, ... 1/1024), and the same
