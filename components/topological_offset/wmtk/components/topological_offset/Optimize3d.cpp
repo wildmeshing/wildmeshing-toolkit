@@ -3022,14 +3022,21 @@ double TopoOffsetTetMesh::edge_conv_ratio(const size_t a, const size_t b) const
         const double bar = m_offset_params.sag_conv_frac() * m_front_gradient_reference;
         return bar > 0. ? r / bar : std::numeric_limits<double>::infinity();
     }
-    // As a LENGTH: the sagitta of Phi over the chord, |Phi(m) - mean Phi|, divided by |grad Phi|
-    // at the midpoint, against the SAG bar sag_conv. As in 2D.
+    // As a LENGTH: the sagitta of Phi over the chord, |Phi(m) - reference|, divided by
+    // |grad Phi| at the midpoint, against the SAG bar sag_conv. As in 2D.
     const OffsetPotential3D& pot = potential_for_edge(a, b);
     const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf;
     const Vector3d m = 0.5 * (pa + pb);
     const double gn = pot.gradient(m).norm();
     if (!(gn > 0.) || !std::isfinite(gn)) return -1.;
-    const double sag = std::abs(pot.value(m) - 0.5 * (pot.value(pa) + pot.value(pb))) / gn;
+    // EXPERIMENTAL_sag_use_target: the target level in place of the chord's own endpoint mean,
+    // so the measure is the midpoint's distance to the level set rather than the chord's
+    // interpolation error. The two coincide when both ends sit on the level set.
+    const double ref = m_offset_params.experimental_sag_use_target
+                           ? pot.target_level()
+                           : 0.5 * (pot.value(pa) + pot.value(pb));
+    if (!std::isfinite(ref)) return -1.;
+    const double sag = std::abs(pot.value(m) - ref) / gn;
     return sag / m_offset_params.sag_conv;
 }
 
@@ -3056,8 +3063,19 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
     if (!(pot.target_level() > 0.)) return -1.;
     const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                    pc = m_vertex_attribute[c].m_posf;
-    const double va = pot.value(pa), vb = pot.value(pb), vc = pot.value(pc);
-    if (!std::isfinite(va) || !std::isfinite(vb) || !std::isfinite(vc)) return -1.;
+    // EXPERIMENTAL_sag_use_target: measure every sample against the TARGET LEVEL instead of
+    // against the face's own corners, which turns the measure from an interpolation error into
+    // the sample's own distance to the level set. The corner values are then not needed at all,
+    // and the reference is the same constant at every sample. The two agree exactly when the
+    // three corners sit on the level set, since their interpolant is then d* everywhere.
+    const bool use_target = m_offset_params.experimental_sag_use_target;
+    double va = 0., vb = 0., vc = 0.;
+    if (!use_target) {
+        va = pot.value(pa);
+        vb = pot.value(pb);
+        vc = pot.value(pc);
+        if (!std::isfinite(va) || !std::isfinite(vb) || !std::isfinite(vc)) return -1.;
+    }
 
     double sum = 0.;
     size_t n = 0;
@@ -3074,7 +3092,8 @@ double TopoOffsetTetMesh::face_conv_ratio(const size_t a, const size_t b, const 
                 unmeasurable = true;
                 return;
             }
-            sum += std::abs(vq - (wa * va + wb * vb + wc * vc)) / gn;
+            const double ref = use_target ? pot.target_level() : (wa * va + wb * vb + wc * vc);
+            sum += std::abs(vq - ref) / gn;
             ++n;
         });
     // n == 0 only when sag_num_samples <= 0, which the spec's min refuses; an unmeasurable

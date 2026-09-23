@@ -522,6 +522,147 @@ private:
 };
 
 /**
+ * @brief The sag term of a front vertex's smoothing objective: its one-ring's area-weighted sag.
+ *
+ *     E(x) = w * sum over the vertex's incident offset faces j of  A_j(x) * sag_j(x)
+ *
+ *     sag_j(x) = (1/M) * sum over the face's M interior samples i of
+ *                       |(D(x) + D_1 + D_2)/3 - Phi(q_i(x))| / |grad Phi(q_i)|
+ *
+ * with D = Phi(x), D_1 = Phi(q1), D_2 = Phi(q2) the three corner values, and
+ * q_i(x) = a_i x + b_i q1 + c_i q2 the sample points on the face's interior barycentric lattice
+ * (TopoOffsetTetMesh::for_each_face_sample, sized by sag_num_samples). The face's two other
+ * corners q1, q2 are fixed for the visit, so D_1 and D_2 are constants.
+ *
+ * It is the criterion as an energy: the same mean-over-samples sag the loop refines on, summed
+ * over the one ring with each face's area as its weight, so a big badly-interpolated face counts
+ * for more than a sliver. The 1/|grad Phi| factor is what turns a field gap into a LENGTH; it is
+ * FROZEN at the sample points as they stand when the objective is built, both because
+ * differentiating it would need the field's third derivative and because for the Euclidean field
+ * it is the constant delta everywhere (value() is d/delta there, so |grad| is exactly 1/delta and
+ * the whole factor drops out of the derivatives). Under `euclidean` this is therefore exactly
+ * |mean of the corner distances - d(q_i)|, in model units, and the freezing is not an
+ * approximation at all.
+ *
+ * DIFFERENCE FROM face_conv_ratio(), deliberate and worth knowing: the criterion measures the gap
+ * to the LINEAR INTERPOLANT at q_i, wa*Va + wb*Vb + wc*Vc, while this term measures the gap to the
+ * plain MEAN of the three corners, (V1 + V2 + V3)/3, at every sample. The two agree at the
+ * centroid and nowhere else. This is the formula as specified for the energy; if the two should
+ * be the same quantity, this is the line to change.
+ *
+ * Under EXPERIMENTAL_sag_use_target (`use_target`) the reference is neither: it is the constant
+ * TARGET LEVEL d*, so the term charges each sample for its own distance to the level set rather
+ * than for the face's interpolation error, and the criterion and this term then measure the same
+ * thing again, both being |d* - Phi(q)| / |grad Phi(q)|.
+ *
+ * Derivatives. Everything below is exact; nothing is truncated except as noted for the Hessian.
+ * Write m(x) = (Phi(x) + D_1 + D_2)/3, s_i(x) = m(x) - Phi(q_i(x)), sigma_i = sign(s_i):
+ *
+ *     grad s_i  = grad Phi(x)/3 - a_i grad Phi(q_i)
+ *     hess s_i  = hess Phi(x)/3 - a_i^2 hess Phi(q_i)
+ *     grad sag  = (1/M) sum_i inv_g_i sigma_i grad s_i
+ *     hess sag  = (1/M) sum_i inv_g_i sigma_i hess s_i
+ *
+ * The area is a cross product of two functions affine in x, so it is exact too. With
+ * N(x) = (q1 - x) x (q2 - x), which expands to the AFFINE p1 x p2 + x x (q1 - q2), and
+ * J = dN/dx = skew(q2 - q1) a constant matrix, nhat = N/|N|:
+ *
+ *     A         = |N|/2
+ *     grad A    = J^T nhat / 2
+ *     hess A    = J^T (I - nhat nhat^T) J / (2 |N|)          (PSD)
+ *
+ * and the product rule closes it:
+ *
+ *     grad E_j  = sag grad A + A grad sag
+ *     hess E_j  = sag hess A + grad A grad sag^T + grad sag grad A^T + A hess sag
+ *
+ * THE HESSIAN IS INDEFINITE IN GENERAL -- sigma_i is a sign, so hess sag is a difference of PSD
+ * field Hessians, and the two outer products are symmetric but not definite. Rather than drop
+ * terms as OffsetEnergy's gauss_newton does (there is no Gauss-Newton form for an L1 residual:
+ * its true curvature is zero almost everywhere, so dropping would leave nothing), `psd_project`
+ * takes the exact 3x3 and clamps its eigenvalues at zero. On by default. It keeps the area and
+ * field curvature wherever they help and guarantees a descent direction; LineProblem3D's n^T H n
+ * inherits the property, so the 1-D normal path is covered by the same projection.
+ *
+ * THE KINK IS REAL, not an artifact: |s_i| is not differentiable where the sample's sag is
+ * exactly zero, which is where that sample WANTS to be. An L1 penalty reaches its target exactly
+ * at finite weight instead of asymptotically, and pays for it with a non-smooth minimum the
+ * solver approaches by chattering rather than by quadratic convergence. sigma_i is taken as 0 at
+ * s_i == 0, which is the subgradient of least norm.
+ */
+class SagEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    /// One interior sample of a face: its barycentric weights, the moving vertex's first, and the
+    /// frozen 1/|grad Phi| at the sample. See the class doc for why that factor is frozen.
+    struct Sample
+    {
+        double a = 0., b = 0., c = 0.;
+        double inv_g = 0.;
+    };
+    struct Face
+    {
+        Eigen::Vector3d q1, q2; ///< the two other corners, fixed for the visit
+        double d1 = 0., d2 = 0.; ///< Phi there; constant in x, so evaluated once at build
+        std::vector<Sample> samples;
+    };
+
+    /// `use_target` is EXPERIMENTAL_sag_use_target: measure each sample against the potential's
+    /// TARGET LEVEL instead of against the face's own corner mean. The reference is then a
+    /// constant, so grad s_i = -a_i grad Phi(q_i) and hess s_i = -a_i^2 hess Phi(q_i) -- the
+    /// x-dependence through Phi(x) disappears and only the sliding samples and the area are
+    /// left. One scalar switches it, `ref_scale` below, which is 1/3 in the corner-mean form
+    /// and 0 here.
+    SagEnergy3D(
+        const std::shared_ptr<const OffsetPotential3D>& potential,
+        std::vector<Face> faces,
+        double weight,
+        bool psd_project = true,
+        bool use_target = false);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    /// A, and optionally grad A / hess A, of face `f` with the moving vertex at x. false for a
+    /// degenerate face, which contributes nothing.
+    bool face_area(
+        const Eigen::Vector3d& x,
+        const Face& f,
+        double& A,
+        Eigen::Vector3d* gA,
+        Eigen::Matrix3d* HA) const;
+    /// sag_j, and optionally its gradient / Hessian. `dx`, `gx`, `hx` are Phi and its derivatives
+    /// at x, shared by every face. false when no sample of the face is measurable.
+    bool face_sag(
+        const Eigen::Vector3d& x,
+        const Face& f,
+        double dx,
+        const Eigen::Vector3d* gx,
+        const Eigen::Matrix3d* hx,
+        double& sag,
+        Eigen::Vector3d* gsag,
+        Eigen::Matrix3d* hsag) const;
+
+    std::shared_ptr<const OffsetPotential3D> m_potential;
+    std::vector<Face> m_faces;
+    double m_weight;
+    bool m_psd_project;
+    bool m_use_target;
+    double m_target = 0.; ///< the potential's target level, cached; only read under m_use_target
+};
+
+/**
  * @brief AMIPS against a rest shape, for deform_others: the smoothing term of a deformable
  * region's faces.
  *

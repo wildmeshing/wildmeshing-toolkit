@@ -121,6 +121,21 @@ struct Parameters : public wmtk::OptimizerParameters
     // and reads this key only for its diagnostics. See TopoOffsetTetMesh::face_conv_ratio,
     // TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
     int sag_num_samples;
+    /// Weight of the SAG TERM in a front vertex's smoothing objective, on top of the offset
+    /// terms' shared (1 - w_amips). 0 removes the term entirely and is the only value that
+    /// restores the pre-2026-09-23 objective exactly. 3D only; see SagEnergy3D.
+    ///
+    /// SCALE WARNING: the term is sum_j A_j * sag_j, an AREA times a LENGTH, so it carries
+    /// length^3 while the offset term next to it is a dimensionless squared ratio. It therefore
+    /// shrinks like h^4 under refinement and the useful weight is model- and resolution-
+    /// dependent, not O(1). See the spec doc for the worked estimate.
+    double sag_energy_weight;
+    /// EXPERIMENTAL, 3D only. See the spec: measure a sample's sag against the TARGET LEVEL d*
+    /// -- |d* - Phi(q)|, the sample's own distance to the level set -- in place of the gap to
+    /// the face's own corner values. Applies wherever a sag is computed in 3D: face_conv_ratio()
+    /// (so the criterion, the refinement it drives, the ops guard and the f_sag debug field),
+    /// edge_conv_ratio(), and SagEnergy3D. false (the default) is the behaviour as it stands.
+    bool experimental_sag_use_target;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
@@ -249,6 +264,8 @@ struct Parameters : public wmtk::OptimizerParameters
         sag_conv_rel = json_params["sag_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
         sag_num_samples = json_params["sag_num_samples"];
+        sag_energy_weight = json_params["sag_energy_weight"];
+        experimental_sag_use_target = json_params["EXPERIMENTAL_sag_use_target"];
 
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];

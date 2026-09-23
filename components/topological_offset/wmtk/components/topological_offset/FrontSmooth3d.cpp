@@ -93,6 +93,54 @@ struct RingCell
 namespace {
 /// One live offset face at x, as the alignment term wants it: the two other corners, the
 /// orientation sign that points the normal away from the band, and the gradient agreement.
+/// One live offset face at x, as the sag term wants it: the two other corners with their field
+/// values (constants in x), and the face's interior sample lattice with the frozen 1/|grad Phi|
+/// that turns a field gap into a length. Under `euclidean` that factor is exactly delta at every
+/// sample, so freezing it is not an approximation there -- see SagEnergy3D's doc.
+template <typename Mesh>
+bool sag_face_at(
+    const Mesh& m,
+    const typename Mesh::Tuple& f,
+    const size_t vid,
+    const OffsetPotential3D& pot,
+    SagEnergy3D::Face& out)
+{
+    const auto vs = m.get_face_vids(f);
+    std::array<size_t, 2> q{{0, 0}};
+    int k = 0;
+    for (const size_t v : vs) {
+        if (v == vid) continue;
+        if (k < 2) q[size_t(k)] = v;
+        ++k;
+    }
+    if (k != 2) return false;
+    const Vector3d x = m.m_vertex_attribute[vid].m_posf;
+    out.q1 = m.m_vertex_attribute[q[0]].m_posf;
+    out.q2 = m.m_vertex_attribute[q[1]].m_posf;
+    out.d1 = pot.value(out.q1);
+    out.d2 = pot.value(out.q2);
+    if (!std::isfinite(out.d1) || !std::isfinite(out.d2)) return false;
+
+    out.samples.clear();
+    m.for_each_face_sample(
+        x,
+        out.q1,
+        out.q2,
+        [&](const Vector3d& qs, const double wa, const double wb, const double wc) {
+            const double gn = pot.gradient(qs).norm();
+            // No usable length scale here, so the sample is dropped rather than guessed at --
+            // the same rule face_conv_ratio() applies to an unmeasurable sample.
+            if (!(gn > 0.) || !std::isfinite(gn)) return;
+            SagEnergy3D::Sample sm;
+            sm.a = wa;
+            sm.b = wb;
+            sm.c = wc;
+            sm.inv_g = 1. / gn;
+            out.samples.push_back(sm);
+        });
+    return !out.samples.empty();
+}
+
 template <typename Mesh>
 bool align_face_at(
     const Mesh& m,
@@ -444,6 +492,27 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
     // on the face normals.
     if (!faces.empty() && m_offset_params.front_alignment_energy) {
         sum->add_energy(std::make_shared<AlignEnergy3D>(pot, std::move(faces), sign, w_off));
+    }
+    // The sag term, on the same one ring. This function is the ONE place both solve paths get
+    // their offset terms -- the free 3-D solve sums it into phase_b_front_objective() and the
+    // 1-D normal solve wraps that same objective in LineProblem3D -- so adding it here covers
+    // both, which is what was asked for.
+    if (m_offset_params.sag_energy_weight > 0.) {
+        std::vector<SagEnergy3D::Face> sag_faces;
+        for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+            SagEnergy3D::Face sf;
+            if (!sag_face_at(*this, f, vid, *pot, sf)) continue;
+            sag_faces.push_back(std::move(sf));
+        }
+        if (!sag_faces.empty()) {
+            sum->add_energy(
+                std::make_shared<SagEnergy3D>(
+                    pot,
+                    std::move(sag_faces),
+                    m_offset_params.sag_energy_weight * w_off,
+                    true,
+                    m_offset_params.experimental_sag_use_target));
+        }
     }
     return sum;
 }
