@@ -1548,85 +1548,6 @@ void TopoOffsetTriMesh::log_smooth_trace() const
 }
 
 
-void TopoOffsetTriMesh::pre_optimize_input_mesh()
-{
-    // See the declaration and the 3D twin. Everything here is Phase A on a mesh that has no
-    // offset in it yet.
-    const OptPhase saved_phase = m_phase;
-    const EdgeSplitMode saved_mode = m_edge_split_mode;
-
-    // Phase A's units. optimization_quality_stats() and optimization_stop_metric() both branch on
-    // m_phase and must agree: Phase A is absolute AMIPS against stop_energy, which is what
-    // refine_sizing_around_worst() derives its filter from. Phase B's normalized pair would also
-    // dereference m_offset_potential, which does not exist yet.
-    m_phase = OptPhase::A;
-    // The split hook branches on this. Midpoint is the construction path (simplicial embedding
-    // and marching, which carry their own labels); the shared engine's splits must take the
-    // Optimization path or they would be treated as marching splits.
-    m_edge_split_mode = EdgeSplitMode::Optimization;
-
-    // The sizing field this pass runs against is 1.0 at every vertex: a plain TriWild run
-    // against the base target length l. target_distance does not enter the field here.
-    size_t n_set = 0;
-    for (const Tuple& v : get_vertices()) {
-        m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
-        ++n_set;
-    }
-    logger().info(
-        "[pre-optimize] sizing field: 1.0 at every one of {} vertices (target edge length "
-        "l = {:.6g}); target_distance {} does not enter",
-        n_set,
-        std::max(m_params.l, 1e-16),
-        m_offset_params.target_distance);
-
-    const double before = std::get<0>(optimization_quality_stats());
-    logger().info(
-        "[pre-optimize] TriWild over the input mesh: {} vertices, {} faces, max element quality "
-        "{:.4} (stop {:.4}), held by the per-tag region envelopes only",
-        get_vertices().size(),
-        get_faces().size(),
-        before,
-        optimization_stop_metric());
-
-    mesh_improvement(std::max(1, m_offset_params.max_iterations));
-
-    const double after = std::get<0>(optimization_quality_stats());
-    logger().info(
-        "[pre-optimize] done: {} vertices, {} faces, max element quality {:.4} -> {:.4}",
-        get_vertices().size(),
-        get_faces().size(),
-        before,
-        after);
-
-    m_edge_split_mode = saved_mode;
-    m_phase = saved_phase;
-    consolidate_mesh();
-
-    // Re-derive the construction labels, because the optimization does not maintain them. No
-    // operation propagates VertexExtra2d::label, and marching_tris() decides which edges to split
-    // from exactly that label -- this pass is the first optimization that runs BEFORE the
-    // marching, so leaving it stale gives a wrong crossing set and a band with holes.
-    //
-    // Re-derived rather than propagated: the label is a function of the FACE TAGS, which the base
-    // does propagate through split and collapse, and label_input_complex() is the authority on
-    // that function. Cleared first because it only ever writes 1 and has no path back to 0.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
-    for (const Tuple& e : get_edges()) m_edge_extra[e.eid(*this)].label = 0;
-    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
-    label_input_complex();
-
-    // The input complex is NOT re-extracted: the driver builds m_input_complex_bvh -- and with it
-    // m_phi_V/E/P, the arrays init_offset_potential() hands to Phi -- once before
-    // execute_offset(), and that one extraction serves the whole run. Do not re-extract here;
-    // init_input_complex_bvh() collects the closure of the label-1 faces, so the interior vertices
-    // this pass created would enter m_phi_V and move Phi. Measured worse -- see git history.
-    //
-    // The cost is that Phi measures the polygon the mesh had on load while the mesh carries the
-    // refined one: a systematic chord sagitta, growing with the input's coarseness and curvature.
-    // The fix, if it is ever needed, is to re-extract the boundary curve only, not the closure.
-    needle_scan("after the pre-pass");
-}
-
 void TopoOffsetTriMesh::log_refine_block_census(const std::string& when, const double filter_energy)
     const
 {
@@ -4263,9 +4184,9 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         m_offset_params.front_conv_frac(),
         stencil_order());
 
-    // No sizing seed here: the loop starts from the field as it is -- 1.0 everywhere, or what
-    // the pre-optimize pass left when pre_optimize_input is true. The front's resolution comes
-    // from the sag rule once it is placed.
+    // No sizing seed here: the loop starts from the field as construction left it, which with
+    // no pre-optimization pass is 1.0 everywhere unless the input itself carried a scalar. The
+    // front's resolution comes from the refinement rule once it is placed.
     {
         double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
         for (const Tuple& v : get_vertices()) {
@@ -4274,9 +4195,8 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
             s_max = std::max(s_max, s);
         }
         logger().info(
-            "[sizing] the loop starts from the sizing field as is ({}): scalar {:.6g} .. {:.6g}",
-            m_offset_params.pre_optimize_input ? "what the pre-optimize pass left"
-                                               : "1.0 everywhere, no pre-optimize pass",
+            "[sizing] the loop starts from the sizing field as is (whatever construction left): "
+            "scalar {:.6g} .. {:.6g}",
             s_min,
             s_max);
     }

@@ -160,13 +160,9 @@ struct Parameters : public wmtk::OptimizerParameters
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /// Cap of the shared TriWild/TetWild loop wherever it runs: the pre-optimisation pass and the
+    /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
     /// frozen-front finishing pass.
     int max_iterations;
-    /// Run TriWild/TetWild over the INPUT mesh before the simplicial embedding and the marching,
-    /// held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex.
-    /// See pre_optimize_input_mesh() in either mesh.
-    bool pre_optimize_input = true;
     // The operation passes' offset envelope half-width: the leash the front is kept inside while
     // the operation passes run, the same tube every turn, rebuilt after every smoothing pass; see
     // rebuild_offset_envelope(). Absolute-or-relative exactly as envelope_size / envelope_size_rel
@@ -325,7 +321,6 @@ struct Parameters : public wmtk::OptimizerParameters
         sizing_collapse_min = json_params["sizing_collapse_min"];
         deform_others = json_params["deform_others"];
         max_rounds = json_params["max_rounds"];
-        pre_optimize_input = json_params["pre_optimize_input"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];

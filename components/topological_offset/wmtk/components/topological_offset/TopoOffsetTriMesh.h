@@ -384,8 +384,8 @@ public:
     /**
      * @brief Which mode the hooks are running in. The 2D twin of TopoOffsetTetMesh::OptPhase.
      *
-     * A: TriWild's loop and nothing else -- the pre-optimize pass and the frozen-front final
-     * pass -- with m_offset_envelope holding the front. B: the front objective's offset terms
+     * A: TriWild's loop and nothing else -- today only the frozen-front final pass -- with
+     * m_offset_envelope holding the front. B: the front objective's offset terms
      * are live; set only around measurements (the criterion, the gradient reference) so they
      * see the objective the placement uses. Single: the run's loop, TriWild's operation groups
      * with the front placed by B's objective inside the smoothing passes -- B wherever the
@@ -439,8 +439,8 @@ public:
     /// carries label 1, or the edge itself does while neither face does (a curve or edge piece).
     bool edge_is_complex_boundary(const Tuple& e) const;
     /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
-    /// under `setup`. PerTag at load (the complex is not labelled yet, and the pre-optimize pass
-    /// holds every tag boundary as it always did), WallComplex when deform_others switches it at
+    /// under `setup`. PerTag at load (the complex is not labelled yet), WallComplex when
+    /// deform_others switches it at
     /// construction, envelope_setup() fresh at the final pass. The tracked-edge flags are left
     /// alone: they are the topology the operations maintain. `when` labels the log line.
     void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
@@ -1239,7 +1239,7 @@ public:
         }
         // Both families compose: whatever holds this segment holds it at once. Phase A holds the
         // offset where Phase B left it; Phase B is what moves it, so it contributes nothing there
-        // -- and null before the offset exists at all, which is the pre-pass.
+        // -- and null before the offset exists at all.
         const std::shared_ptr<SampleEnvelope> base = containment_for(mask, all_offset);
         if (base || m_deform_tags.empty()) return base;
         // deform_others' ops-only tube: a released boundary is held by no mask -- its vertices
@@ -2023,7 +2023,7 @@ public:
     mutable std::atomic<size_t> m_needle_reports{0};
 
     /// Population scan at a named moment, for the points no operation hook covers -- after the
-    /// pre-pass, after construction, at each collapse pass. Reports the count and the worst few.
+    /// after construction, at each collapse pass. Reports the count and the worst few.
     void needle_scan(const char* when) const;
     /// Diagnostic only: the base offers no per-iteration hook except this one, so the needle
     /// population scan rides on it. Calls nothing else -- the base default is empty.
@@ -2170,18 +2170,7 @@ public:
     bool invariants(const std::vector<Tuple>& tris) override;
     //// overriden splits/invariants
 
-    /**
-     * @brief TriWild over the input mesh, before any of the offset exists, held only by the
-     * per-tag region envelopes, against a sizing field of 1.0 at every vertex.
-     *
-     * Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point where
-     * the only tracked surfaces are the tag-region boundaries (input complex and domain wall among
-     * them) and the only containment is their per-tag envelopes. There is no offset yet, so no
-     * offset envelope and no Phi term: this is TriWild, exactly. Same as 3D.
-     */
-    void pre_optimize_input_mesh();
-
-    /// Construction, start to finish: the optional pre-optimize pass, the simplicial embedding,
+    /// Construction, start to finish, on the input mesh as given: the simplicial embedding,
     /// marching_tris(), the re-embedding and the offset tagging. The optimization is
     /// optimize_offset(), which the driver calls afterwards.
     void execute_offset(const std::filesystem::path& output_file);

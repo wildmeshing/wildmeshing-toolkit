@@ -82,7 +82,6 @@
       "front_alignment_energy",
       "sizing_collapse_min",
       "max_rounds",
-      "pre_optimize_input",
       "w_amips",
       "smoothing_mode",
       "project_line_search_steps",
@@ -181,7 +180,7 @@
     "pointer": "/optimize_offset",
     "type": "bool",
     "default": true,
-    "doc": "Run the optimization (optimize_offset: pre-loop setup, the single-phase turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the pre-optimize pass, the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
+    "doc": "Run the optimization (optimize_offset: pre-loop setup, the single-phase turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
   },
   {
     "pointer": "/envelope_size_rel",
@@ -355,7 +354,7 @@
     "pointer": "/max_iterations",
     "type": "int",
     "default": 80,
-    "doc": "Cap on the shared TriWild/TetWild loop wherever that loop runs: the pre-optimisation pass over the input, and the finishing pass that runs with the front frozen. The loop exits as soon as max AMIPS is under stop_energy, so this is an upper bound."
+    "doc": "Cap on the shared TriWild/TetWild loop, which now runs in exactly one place: the finishing pass that runs with the front frozen. The loop exits as soon as max AMIPS is under stop_energy, so this is an upper bound."
   },
   {
     "pointer": "/offset_envelope",
@@ -379,7 +378,7 @@
     "pointer": "/interleaved_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the pre-optimisation pass, the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the single-phase loop this fixed count is only used when adaptive_smoothing is false."
+    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the single-phase loop this fixed count is only used when adaptive_smoothing is false."
   },
   {
     "pointer": "/adaptive_smoothing",
@@ -531,12 +530,6 @@
     "default": 40,
     "type": "int",
     "doc": "The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect."
-  },
-  {
-    "pointer": "/pre_optimize_input",
-    "default": true,
-    "type": "bool",
-    "doc": "Run TriWild/TetWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same parameters and held only by the per-tag region envelopes, which exist by then. The pass runs against a sizing field of 1.0 at every vertex, i.e. the base target length l, and the main loop then starts from whatever field the pass leaves (1.0 everywhere when the pass is off). Worth a pass because the marching places the offset on the background mesh's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
   },
   {
     "pointer": "/min_edge_length",

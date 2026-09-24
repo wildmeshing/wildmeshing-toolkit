@@ -248,8 +248,8 @@ def read_groups_vtu(path):
     from the tags -- so it is the reliable band marker even where a tag was written elsewhere.
 
     Only 0/1 INDICATOR fields are groups. The 2D writer also emits the per-cell scalar `amips`,
-    which is not a membership, and reading it as a group drew phantom regions: on the
-    pre-optimize frames only the faces a pass had touched carry a quality yet, so `amips`
+    which is not a membership, and reading it as a group drew phantom regions: on any frame
+    where only the faces a pass had touched carry a quality yet, `amips`
     selected a scattered subset of cells, which then showed up as a "tag boundary: amips" curve
     and as region-boundary loops around every touched patch, and shifted every real tag's color
     by one. Skipped by name (NON_GROUP_CELL_FIELDS), and any other cell field that is not

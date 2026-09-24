@@ -1866,79 +1866,6 @@ void TopoOffsetTetMesh::log_smooth_trace() const
         double(s.res_max_after_nano.load()) * 1e-9);
 }
 
-void TopoOffsetTetMesh::pre_optimize_input_mesh()
-{
-    // See the declaration and the 2D twin. Everything here is Phase A on a mesh that has no
-    // offset in it yet.
-    const OptPhase saved_phase = m_phase;
-    const EdgeSplitMode saved_mode = m_edge_split_mode;
-    m_phase = OptPhase::A;
-    m_edge_split_mode = EdgeSplitMode::Optimization;
-
-    // The shared operations read the vertex order (the substructure link condition, the
-    // open-boundary rule) and the cell qualities; both have to exist before the first pass.
-    init_vertex_order();
-    for (const Tuple& t : get_tets()) {
-        m_tet_attribute[t.tid(*this)].m_quality = get_quality(t);
-    }
-
-    // The sizing field this pass runs against is 1.0 at every vertex: a plain TetWild run
-    // against the base target length l. target_distance does not enter the field here.
-    size_t n_set = 0;
-    for (const Tuple& v : get_vertices()) {
-        m_vertex_attribute[v.vid(*this)].m_sizing_scalar = 1.0;
-        ++n_set;
-    }
-    logger().info(
-        "[pre-optimize] sizing field: 1.0 at every one of {} vertices (target edge length "
-        "l = {:.6g}); target_distance {} does not enter",
-        n_set,
-        std::max(m_params.l, 1e-16),
-        m_offset_params.target_distance);
-
-    const double before = std::get<0>(optimization_quality_stats());
-    logger().info(
-        "[pre-optimize] TetWild over the input mesh: {} vertices, {} tets, max element quality "
-        "{:.4} (stop {:.4}), held by the per-tag region envelopes only",
-        get_vertices().size(),
-        get_tets().size(),
-        before,
-        optimization_stop_metric());
-
-    // Bracket the pass: a violation present after but not before is the pre-optimization's,
-    // and nothing in the offset loop can be blamed for it. Gated on the same key as the shared
-    // driver's own sanity check, which is what reports "Face [...] is outside!".
-    if (m_params.perform_sanity_checks) audit_surface_containment("before pre-optimize");
-    mesh_improvement(std::max(1, m_offset_params.max_iterations));
-    if (m_params.perform_sanity_checks) audit_surface_containment("after pre-optimize");
-
-    const double after = std::get<0>(optimization_quality_stats());
-    logger().info(
-        "[pre-optimize] done: {} vertices, {} tets, max element quality {:.4} -> {:.4}",
-        get_vertices().size(),
-        get_tets().size(),
-        before,
-        after);
-
-    m_edge_split_mode = saved_mode;
-    m_phase = saved_phase;
-    consolidate_mesh();
-
-    // Re-derive the construction labels, because the optimization does not maintain them: no
-    // operation propagates the label, and marching_tets() decides which edges to split from
-    // exactly that label. Cleared first because label_input_complex() only ever writes 1.
-    for (const Tuple& v : get_vertices()) m_vertex_extra[v.vid(*this)].label = 0;
-    for (const Tuple& e : get_edges()) m_edge_attribute[e.eid(*this)].label = 0;
-    for (const Tuple& f : get_faces()) m_face_extra[f.fid(*this)].label = 0;
-    for (const Tuple& t : get_tets()) m_tet_attribute[t.tid(*this)].label = 0;
-    label_input_complex();
-
-    // The input complex is NOT re-extracted: the driver builds m_input_complex_bvh -- and with
-    // it m_phi_V/E/F/P, the arrays init_offset_potential() hands to Phi -- once before
-    // execute_offset(), and that one extraction serves the whole run. As in 2D.
-    needle_scan("after the pre-pass");
-}
-
 void TopoOffsetTetMesh::log_refine_block_census(const std::string& when, const double filter_energy)
     const
 {
@@ -3611,7 +3538,7 @@ size_t TopoOffsetTetMesh::refine_sizing_around_worst(const double max_metric)
     // TetWildMesh::refine_sizing_around_worst verbatim -- ranked by element quality, clamped the
     // same way, seeding the same force-split edges. Phase A only, by construction:
     // mesh_improvement() is this function's one caller, and the driver only ever runs that as
-    // Phase A (the pre-optimisation pass and the frozen-front finishing pass).
+    // Phase A (today only the frozen-front finishing pass).
     const int n_rings = std::max(0, m_params.stuck_refine_rings);
     const double filter_energy = std::min(std::max(max_metric / 100., m_params.stop_energy), 100.);
 
@@ -4636,9 +4563,9 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         m_offset_params.front_conv_frac(),
         stencil_points_per_face());
 
-    // No sizing seed here: the loop starts from the field as it is -- 1.0 everywhere, or what
-    // the pre-optimize pass left when pre_optimize_input is true. The front's resolution comes
-    // from the sag rule once it is placed.
+    // No sizing seed here: the loop starts from the field as construction left it, which with
+    // no pre-optimization pass is 1.0 everywhere unless the input itself carried a scalar. The
+    // front's resolution comes from the refinement rule once it is placed.
     {
         double s_min = std::numeric_limits<double>::infinity(), s_max = 0.;
         for (const Tuple& v : get_vertices()) {
@@ -4647,9 +4574,8 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
             s_max = std::max(s_max, s);
         }
         logger().info(
-            "[sizing] the loop starts from the sizing field as is ({}): scalar {:.6g} .. {:.6g}",
-            m_offset_params.pre_optimize_input ? "what the pre-optimize pass left"
-                                               : "1.0 everywhere, no pre-optimize pass",
+            "[sizing] the loop starts from the sizing field as is (whatever construction left): "
+            "scalar {:.6g} .. {:.6g}",
             s_min,
             s_max);
     }
