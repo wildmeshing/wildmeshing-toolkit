@@ -49,7 +49,8 @@
             "region"
         ],
         "optional": [
-            "filter"
+            "filter",
+            "weight"
         ],
         "doc": "One selection: the boundary of `region`, kept where the outside cell satisfies `filter` (a bare string is a region), e.g. \"tag_2\" for tag_2's whole boundary or {\"region\": \"tag_0\", \"filter\": \"tag_1\"} for one interface."
     },
@@ -62,6 +63,11 @@
         "pointer": "/interfaces/*/filter",
         "type": "string",
         "doc": "Boolean expression the outside cell must satisfy (optional)."
+    },
+    {
+        "pointer": "/interfaces/*/weight",
+        "type": "float",
+        "doc": "Laplacian weight for this interface's nodes; default weight_laplacian. The Laplacian penalty rows of these nodes are scaled by sqrt(weight / weight_laplacian) after normalization, so the smoothness energy is the sum over interfaces of weight * ||L_k u - b_k||^2 / 2. A node on several selected interfaces takes the largest weight."
     },
     {
         "pointer": "/scale",

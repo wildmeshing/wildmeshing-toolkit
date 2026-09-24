@@ -205,6 +205,68 @@ void auto_interfaces(
     }
 }
 
+/**
+ * @brief The per-node Laplacian row factor of a per-interface weight: one entry per node of
+ * `node_ids`, or EMPTY when `factor_by_id` is (no weight, nothing to scale).
+ *
+ * `factor_by_id` is selection id -> sqrt(weight / weight_laplacian). A node takes the LARGEST
+ * factor of the tags of the faces (3D) or edges (2D) it lies on, a tag with no weight of its own
+ * counting as 1 -- the heaviest interface a node belongs to decides, because one node has one row
+ * and that row can only carry one weight.
+ *
+ * `LoadedMesh.face_tags` is aligned with `interface_faces` in 3D and with the oriented
+ * `interface_edges` in 2D: `load_mesh` keeps the 3D tag rows as the interface picker produced
+ * them alongside the faces, and rebuilds the 2D rows entry by entry against the oriented edges
+ * the loop pass returns. In 3D `interface_edges` is a derived, sorted edge set with no tags of
+ * its own, so it is never the thing to index `face_tags` by.
+ */
+std::vector<double> laplacian_row_factors(
+    const LoadedMesh& m,
+    const std::vector<int64_t>& node_ids,
+    const std::map<int64_t, double>& factor_by_id)
+{
+    if (factor_by_id.empty()) {
+        return {};
+    }
+
+    std::map<int64_t, size_t> row_of;
+    for (size_t i = 0; i < node_ids.size(); ++i) {
+        row_of.emplace(node_ids[i], i);
+    }
+
+    const bool is_3d = m.mesh_dim == 3;
+    const size_t n_prims = is_3d ? m.interface_faces.size() : m.interface_edges.size();
+    if (m.face_tags.size() != n_prims) {
+        log_and_throw_error(
+            "face_tags has {} rows for {} interface {}",
+            m.face_tags.size(),
+            n_prims,
+            is_3d ? "faces" : "edges");
+    }
+
+    std::vector<double> factor(node_ids.size(), 1.0);
+    std::vector<char> weighted(node_ids.size(), 0);
+    for (size_t p = 0; p < n_prims; ++p) {
+        // Both interface pickers give every selected face/edge a non-empty id list, so the max
+        // below is over a non-empty set and an unweighted primitive comes out at exactly 1.
+        double prim_factor = 0.0;
+        for (const int64_t tag : m.face_tags[p]) {
+            const auto it = factor_by_id.find(tag);
+            prim_factor = std::max(prim_factor, it == factor_by_id.end() ? 1.0 : it->second);
+        }
+        const int64_t* verts =
+            is_3d ? m.interface_faces[p].data() : m.interface_edges[p].data();
+        for (size_t k = 0; k < (is_3d ? 3u : 2u); ++k) {
+            // at(): in 3D the interface edges are built from the three edges of every face, so
+            // every face vertex is an interface node; a miss would mean that stopped holding.
+            const size_t row = row_of.at(verts[k]);
+            factor[row] = weighted[row] != 0 ? std::max(factor[row], prim_factor) : prim_factor;
+            weighted[row] = 1;
+        }
+    }
+    return factor;
+}
+
 /// The collision proxy's own vertex list and its edge list over those local indices. Mirrors the
 /// `collision_node_ids` / `collision_edges_local` pair `constraints.load_mesh` builds the same way
 /// in both of its branches: the proxy vertices are the sorted vertex set of the primitives the OBJ
@@ -551,7 +613,8 @@ InterfaceConstraint make_interface_constraint(
     bool use_graph,
     bool normalize,
     double scale,
-    bool smooth_positions)
+    bool smooth_positions,
+    const std::map<int64_t, double>& laplacian_row_factor_by_id)
 {
     logger().info("Reading {} ...", mesh_path);
     const LoadedMesh m = load_mesh(mesh_path, selections);
@@ -587,7 +650,8 @@ InterfaceConstraint make_interface_constraint(
         scale,
         normalize,
         m.interface_faces,
-        smooth_positions);
+        smooth_positions,
+        laplacian_row_factors(m, node_ids, laplacian_row_factor_by_id));
     out.collision_mesh = collision_mesh_obj(
         m.coords,
         node_ids,

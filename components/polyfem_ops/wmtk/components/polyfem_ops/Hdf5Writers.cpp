@@ -112,7 +112,8 @@ ConstraintHdf5 laplacian_constraint(
     double scale,
     bool normalize,
     const std::vector<std::array<int64_t, 3>>& interface_faces,
-    bool smooth_positions)
+    bool smooth_positions,
+    const std::vector<double>& row_factor)
 {
     const int64_t n = static_cast<int64_t>(node_ids.size());
     const int64_t dim = coords.cols();
@@ -183,6 +184,32 @@ ConstraintHdf5 laplacian_constraint(
                     double& acc = b[static_cast<size_t>(i * dim + k)];
                     acc = std::fma(negated, x[static_cast<size_t>(col * dim + k)], acc);
                 }
+            }
+        }
+    }
+
+    // The per-interface weight, applied last: polyfem's QuadraticPenaltyForm knows ONE weight W
+    // (`weight_laplacian`) and computes W/2 ||A u - b||^2, so a node that asked for weight w gets
+    // its row of A and of b multiplied by sqrt(w / W), which makes that row's term w/2 ||L_i u -
+    // b_i||^2. After the normalization and after b, because b was formed from the normalized L
+    // and has to be scaled together with the row it belongs to.
+    //
+    // An empty `row_factor` skips the pass entirely rather than multiplying by one: a run with no
+    // per-interface weight must produce the same bits it produced before the weight existed.
+    if (!row_factor.empty()) {
+        if (static_cast<int64_t>(row_factor.size()) != n) {
+            log_and_throw_error(
+                "row_factor has {} entries for {} interface nodes",
+                row_factor.size(),
+                n);
+        }
+        for (size_t k = 0; k < a.values.size(); ++k) {
+            a.values[k] = a.values[k] * row_factor[static_cast<size_t>(a.rows[k])];
+        }
+        for (int64_t i = 0; i < n; ++i) {
+            for (int64_t k = 0; k < dim; ++k) {
+                b[static_cast<size_t>(i * dim + k)] =
+                    b[static_cast<size_t>(i * dim + k)] * row_factor[static_cast<size_t>(i)];
             }
         }
     }

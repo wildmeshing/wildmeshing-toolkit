@@ -554,7 +554,9 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
     - interfaces: Selections to smooth — the boundary of `region`, kept
       where the outside satisfies `filter` (e.g. "tag_2" for tag_2's whole
       boundary, {"region": "tag_0", "filter": "tag_1"} for one interface).
-      Empty = every material interface.
+      Empty = every material interface. An optional `weight` on a selection
+      replaces `weight_laplacian` for that interface's nodes (a node on
+      several selected interfaces takes the largest weight).
     - output: Output path stem; writes <output>.msh (artifacts next to it).
     - others: Additional parameters — see polyfem_ops/laplacian_smoothing/spec.json
       (weight_laplacian, smooth_positions, ...).

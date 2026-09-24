@@ -101,6 +101,11 @@ struct InterfaceConstraint
  * Which of the files get written, and whether they are written at all, is the caller's: see
  * `prepare_operation` in polyfem_ops.cpp. The Python's `dim` argument is not mirrored: no caller
  * passes it, so it is always the mesh dimension.
+ *
+ * `laplacian_row_factor_by_id` carries the per-interface Laplacian weight, as selection id ->
+ * sqrt(weight / weight_laplacian), and holds an entry only for the selections that set their own
+ * `weight`. EMPTY (the default, and what an operation without the key passes) means no node is
+ * weighted and the Laplacian constraint is left exactly as it was.
  */
 InterfaceConstraint make_interface_constraint(
     const std::string& mesh_path,
@@ -108,6 +113,7 @@ InterfaceConstraint make_interface_constraint(
     bool use_graph,
     bool normalize,
     double scale,
-    bool smooth_positions);
+    bool smooth_positions,
+    const std::map<int64_t, double>& laplacian_row_factor_by_id = {});
 
 } // namespace wmtk::components::polyfem_ops

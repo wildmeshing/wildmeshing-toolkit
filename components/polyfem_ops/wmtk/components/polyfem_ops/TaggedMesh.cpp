@@ -224,7 +224,8 @@ Selection normalize_selection(const nlohmann::json& spec)
     if (spec.is_object() && spec.contains("region")) {
         std::set<std::string> extra;
         for (const auto& item : spec.items()) {
-            if (item.key() != "region" && item.key() != "filter" && item.key() != "id") {
+            if (item.key() != "region" && item.key() != "filter" && item.key() != "id" &&
+                item.key() != "weight") {
                 extra.insert(item.key());
             }
         }
@@ -246,6 +247,15 @@ Selection normalize_selection(const nlohmann::json& spec)
         }
         if (spec.contains("id") && !spec["id"].is_null()) {
             sel.id = spec["id"].get<int64_t>();
+        }
+        if (spec.contains("weight") && !spec["weight"].is_null()) {
+            // Refused here rather than left to produce sqrt of a negative: the weight reaches the
+            // matrix as sqrt(weight / weight_laplacian), and a zero or negative one would turn
+            // into a NaN row of the penalty instead of an error.
+            if (!spec["weight"].is_number() || spec["weight"].get<double>() <= 0.0) {
+                log_and_throw_error("selection {}: weight must be > 0", spec.dump());
+            }
+            sel.weight = spec["weight"].get<double>();
         }
         return sel;
     }
@@ -278,6 +288,9 @@ void assign_selection_ids(
     using Key = std::pair<std::string, std::optional<std::string>>;
     std::vector<Key> order;
     std::map<Key, std::optional<int64_t>> by_key;
+    // The same per-key collapse for the Laplacian weight, kept in its own map so an id and a
+    // weight given on different copies of one selection both survive.
+    std::map<Key, std::optional<double>> weight_by_key;
 
     const auto key_of = [](const Selection& s) {
         return Key{strip(s.region), s.filter ? std::optional<std::string>(strip(*s.filter)) : std::nullopt};
@@ -288,8 +301,11 @@ void assign_selection_ids(
         const auto it = by_key.find(key);
         if (it == by_key.end()) {
             by_key.emplace(key, s.id);
+            weight_by_key.emplace(key, s.weight);
             order.push_back(key);
-        } else if (s.id.has_value()) {
+            continue;
+        }
+        if (s.id.has_value()) {
             if (it->second.has_value() && *it->second != *s.id) {
                 log_and_throw_error(
                     "selection region='{}' filter={} given conflicting ids {} and {}",
@@ -299,6 +315,18 @@ void assign_selection_ids(
                     *s.id);
             }
             it->second = s.id;
+        }
+        if (s.weight.has_value()) {
+            auto& weight = weight_by_key[key];
+            if (weight.has_value() && *weight != *s.weight) {
+                log_and_throw_error(
+                    "selection region='{}' filter={} given conflicting weights {} and {}",
+                    key.first,
+                    key.second ? "'" + *key.second + "'" : "None",
+                    *weight,
+                    *s.weight);
+            }
+            weight = s.weight;
         }
     }
 
@@ -318,7 +346,7 @@ void assign_selection_ids(
 
     unique.clear();
     for (const auto& key : order) {
-        unique.push_back(Selection{key.first, key.second, by_key[key]});
+        unique.push_back(Selection{key.first, key.second, by_key[key], weight_by_key[key]});
     }
     ids_per_input.clear();
     for (const auto& s : specs) {

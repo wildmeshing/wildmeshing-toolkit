@@ -2,11 +2,15 @@
 interface (2D) and verify roughness drops while the mesh stays valid. Needs
 the wmtk component polyfem_ops (-DWMTK_WITH_POLYFEM=ON). This is also the 2D
 path of the polyfem pipeline."""
+import re
+
+import h5py
 import numpy as np
+import pytest
 
 from simwild import simwild as wm
 
-from conftest import needs_polyfem_ops
+from conftest import needs_polyfem_ops, run_cpp
 from geo import (interface_polyline_2d, polyline_length, roughness_2d,
                  signed_volumes)
 
@@ -49,3 +53,30 @@ def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path):
     assert edges1.shape == edges0.shape
     moved = np.linalg.norm(coords1 - coords0, axis=1)
     assert moved.max() < 2.0, f"max node displacement {moved.max():.2f}"
+
+
+@needs_polyfem_ops
+def test_per_interface_weight_scales_the_laplacian_rows(jagged2d, tmp_path):
+    """`weight` on a selection replaces weight_laplacian for that interface's
+    nodes. This fixture has ONE selection, so every interface node is its node
+    and the whole penalty matrix is scaled by sqrt(4 W / W) = 2."""
+    def laplacian_values(name, **params):
+        run_cpp(jagged2d, "laplacian_smoothing", tmp_path / name,
+                weight_laplacian=1e3, **params)
+        path = (tmp_path / name / "smooth_input"
+                / "interface_constraint_laplacian.hdf5")
+        with h5py.File(path) as f:
+            return f["A_triplets/values"][()], f["b"][()]
+
+    a0, b0 = laplacian_values("plain", interfaces=[SEL])
+    a1, b1 = laplacian_values("weighted", interfaces=[{**SEL, "weight": 4e3}])
+
+    # Doubling is exact in binary floating point, so this is an equality.
+    assert np.array_equal(a1, 2.0 * a0)
+    assert np.array_equal(b1, 2.0 * b0)
+
+    # minimum_separation's sides do not take a weight: the key belongs to the
+    # smoothing spec, and jse names the rule that refused the selection.
+    with pytest.raises(RuntimeError, match=re.escape('"/collision_pairs/*/*"')):
+        run_cpp(jagged2d, "minimum_separation", tmp_path / "rejected", sep=1e-3,
+                collision_pairs=[[{**SEL, "weight": 4e3}, "ambient"]])

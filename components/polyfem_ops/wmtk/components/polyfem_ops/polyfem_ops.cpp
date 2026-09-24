@@ -17,7 +17,9 @@
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <optional>
 #include <set>
@@ -446,6 +448,33 @@ PreparedOperation prepare_operation(nlohmann::json json_params)
         std::vector<int64_t> ids_per_input;
         assign_selection_ids(params["interfaces"], interfaces, ids_per_input);
 
+        // The per-interface Laplacian weight, as the factor the constraint rows are scaled by.
+        // polyfem gets ONE weight, `weight_laplacian` (W), for the whole Laplacian penalty, so a
+        // selection that asks for its own weight w is served by scaling its nodes' rows by
+        // sqrt(w / W): the row's term of W/2 ||A u - b||^2 becomes w/2 ||L_i u - b_i||^2. Only
+        // the selections that carry a weight get an entry, and with none the map stays empty and
+        // the constraint is not touched at all.
+        const double weight_laplacian = params["weight_laplacian"].get<double>();
+        std::map<int64_t, double> laplacian_row_factor_by_id;
+        for (const auto& selection : interfaces) {
+            if (!selection.weight.has_value()) {
+                continue;
+            }
+            if (weight_laplacian <= 0.0) {
+                // The factor is relative to W, so W = 0 (the Laplacian penalty switched off) has
+                // no factor that expresses w: the two keys contradict each other.
+                log_and_throw_error(
+                    "interface region='{}' asks for weight {} while weight_laplacian is {}: a "
+                    "per-interface weight is relative to weight_laplacian, which must be "
+                    "positive",
+                    selection.region,
+                    *selection.weight,
+                    weight_laplacian);
+            }
+            laplacian_row_factor_by_id[*selection.id] =
+                std::sqrt(*selection.weight / weight_laplacian);
+        }
+
         const std::filesystem::path sim_in_dir = sim_dir(output, "smooth_input");
         out.sim_out_dir = sim_dir(output, "smooth_output");
         logger().info("Input  : {}", input);
@@ -460,7 +489,8 @@ PreparedOperation prepare_operation(nlohmann::json json_params)
                 params["use_graph_laplacian"],
                 params["normalize_penalties"],
                 params["scale"],
-                params["smooth_positions"]),
+                params["smooth_positions"],
+                laplacian_row_factor_by_id),
             sim_in_dir,
             /*with_collision_proxy=*/false,
             inputs_only,

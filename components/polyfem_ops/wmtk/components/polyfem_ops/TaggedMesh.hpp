@@ -99,16 +99,22 @@ private:
 };
 
 /// One normalized selection: the boundary of `region`, kept where the outside cell satisfies
-/// `filter`. Mirrors the (region, filter, id) triple `mesh_core.normalize_selection` returns.
+/// `filter`. Mirrors the (region, filter, id, weight) record `mesh_core.normalize_selection`
+/// returns.
 struct Selection
 {
     std::string region;
     std::optional<std::string> filter;
     std::optional<int64_t> id;
+    /// The Laplacian penalty weight of this selection's nodes; EMPTY means the global
+    /// `weight_laplacian`. The parser accepts the key on every selection, but only
+    /// laplacian_smoothing's `interfaces` offers it: which keys an operation takes is the
+    /// spec's to say, so the parser never has to know which operation it is parsing for.
+    std::optional<double> weight;
 };
 
-/// Mirrors `mesh_core.normalize_selection`: a bare string is a region; an object takes
-/// region/filter/id and nothing else.
+/// Mirrors `mesh_core.normalize_selection`: a bare string is a region (and carries no weight); an
+/// object takes region/filter/id/weight and nothing else.
 Selection normalize_selection(const nlohmann::json& spec);
 
 /**
@@ -117,6 +123,10 @@ Selection normalize_selection(const nlohmann::json& spec);
  * Identical (region, filter) specs collapse to ONE selection with one id (conflicting explicit
  * ids on the same selection throw; distinct selections may share an explicit id to form one
  * body). Auto ids are assigned sequentially and never collide with explicit ones.
+ *
+ * A `weight` collapses the same way, and for the same reason: the collapsed copies are one
+ * selection, so they cannot ask for two different weights. A weight on one copy and none on the
+ * other is that weight; two different explicit weights throw.
  *
  * @param[out] unique selections in first-appearance order, each with its id resolved
  * @param[out] ids_per_input the id of each input spec, in input order

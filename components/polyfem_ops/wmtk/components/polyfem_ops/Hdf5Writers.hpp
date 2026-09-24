@@ -56,6 +56,11 @@ ConstraintHdf5 fitting_constraint(
  * unit). `normalize` divides A by ||L||_F. The zero-row-sum check is made on the stiffness matrix
  * S, where the property is constructed exactly, and not on L, whose row sums float noise gets
  * amplified by a wide mass range -- the Python asserts in the same place for the same reason.
+ *
+ * `row_factor` is the per-node factor of the per-interface Laplacian weight (one entry per node
+ * of `node_ids`): row i of A and row i of b are multiplied by it, last of all. EMPTY means no
+ * per-interface weight, and then nothing is scaled at all -- not even by a factor of one -- so
+ * the constraint of a run that uses no weight stays bit for bit what it was.
  */
 ConstraintHdf5 laplacian_constraint(
     const std::vector<int64_t>& node_ids,
@@ -65,7 +70,8 @@ ConstraintHdf5 laplacian_constraint(
     double scale,
     bool normalize,
     const std::vector<std::array<int64_t, 3>>& interface_faces,
-    bool smooth_positions);
+    bool smooth_positions,
+    const std::vector<double>& row_factor);
 
 /**
  * @brief A pin constraint (A u = 0 on node_ids). Mirrors `constraints.write_pin_constraint_hdf5`
