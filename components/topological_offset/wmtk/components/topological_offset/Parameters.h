@@ -134,6 +134,24 @@ struct Parameters : public wmtk::OptimizerParameters
     /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
     /// See the spec doc, and marching_tris() / marching_tets().
     bool experimental_consistent_construction_split = true;
+    /// EXPERIMENTAL, 3D only. Drops the placement gate on refinement. Normally a face over the
+    /// bar is handed to the halving only when all THREE of its corners are already placed, so a
+    /// front that is still travelling cannot refine -- the safeguard that stops refinement from
+    /// chasing a moving front. With this on, EVERY face over the bar is refined, placed or not,
+    /// so the sizing scalar is halved at every vertex of every unresolved face. The floor and
+    /// the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is
+    /// refinable only while the halving can still lower a target, and `n_faces_over_placed` /
+    /// `max_face_placed` still report the PLACED subset alone.
+    ///
+    /// Why it exists: under one unified measure the two halves can deadlock. A face chording a
+    /// feature of radius delta puts its centroid far inside the level set, and that sample's
+    /// pull cancels the corners' own placement pull almost exactly, so the corners never place;
+    /// refinement, which is the only thing that would shorten the chord and remove the sag, is
+    /// gated on exactly those corners being placed. Measured on the deliverable cube at
+    /// target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the
+    /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
+    /// for 40 turns.
+    bool experimental_aggresive_refine = false;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -248,6 +266,7 @@ struct Parameters : public wmtk::OptimizerParameters
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         experimental_consistent_construction_split =
             json_params["EXPERIMENTAL_consistent_construction_split"];
+        experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];

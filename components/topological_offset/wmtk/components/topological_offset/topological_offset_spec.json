@@ -32,6 +32,7 @@
       "sphere_trace_initialization",
       "sphere_trace_target_rel_tol",
       "EXPERIMENTAL_consistent_construction_split",
+      "EXPERIMENTAL_aggresive_refine",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -270,6 +271,12 @@
     "type": "bool",
     "default": true,
     "doc": "EXPERIMENTAL, and a no-op unless sphere_trace_initialization is true. Makes the marching construction all or nothing. Normally each marched edge is placed independently: the trace runs from the complex end and, on an edge the trace leaves (the level set is not on that edge), that ONE edge falls back to its midpoint -- so a single construction can mix vertices sitting on the level set with vertices sitting at edge midpoints, which is the inconsistency this flag exists to remove. With it on, the whole march is probed before any edge is split: if every marched edge can be traced, every edge is traced as usual; if even one cannot, EVERY edge is split at its midpoint instead and the construction is uniformly a midpoint march. The probe repeats the trace the split would do -- it reads only the endpoint positions and the input-complex BVH, neither of which a split changes -- so a construction that does trace everywhere pays for two full trace passes. The construction log says which way it went and how many edges could not be traced."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_aggresive_refine",
+    "default": false,
+    "type": "bool",
+    "doc": "EXPERIMENTAL, 3D only. Drops the placement gate on refinement. Normally the end-of-turn resolution check hands a face to the halving only when all THREE of its corners are already placed -- the safeguard that keeps refinement from chasing a front that is still travelling. With this true, EVERY offset face whose RMS relative error is over front_conv is refined whether or not its corners are placed, so the sizing scalar is halved at every vertex of every unresolved face. Unchanged either way: the sizing floor (max of min_sizing_scalar and min_edge_length / l), the once-per-vertex-per-turn rule in refine_front_by_halving(), the gradation that follows it, and the convergence test -- when every vertex is placed the gate is vacuous, so this cannot change what counts as converged. The turn's [resolution] line and the reported n_faces_over_placed / max_face_placed still describe the PLACED subset, so the refined count and the reported worst face come apart under this flag; the line says which rule it used. Why it exists: with one unified measure the criterion can deadlock -- a face chording a feature of radius target_distance sits with its centroid far inside the level set, that sample's pull very nearly cancels the corners' own placement pull, so the corners never place, and refinement (the only thing that would shorten the chord) is gated on exactly those corners. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, a 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for all 40 turns."
   },
   {
     "pointer": "/check_manifoldness",

@@ -1806,8 +1806,13 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     //                         objective along the move direction, over its bar. This is the ONLY
     //                         per-vertex quantity converged_single() tests, so <= 1 reads as
     //                         "placed" and the loop may exit on it.
-    //   front_residual_length residual_length(): the vertex's actual distance to the level set,
-    //                         in length units, comparable with target_distance. Never tested.
+    //   front_residual_rel    residual_length() over front_conv: the vertex's actual distance to
+    //                         the level set, as a MULTIPLE OF THE BAR, so < 1 is converged. Never
+    //                         tested by the loop -- front_conv_ratio is what converged_single()
+    //                         reads -- but under offset_field "euclidean" the two are the same
+    //                         number, since there the residual is exactly |d - target_distance|.
+    //                         They part company under "smooth", where residual_length() is a
+    //                         barrier-value residual and front_conv_ratio is (Phi - c)/c.
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
     //                         so where it collapses the Newton step collapses with it.
     //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
@@ -1914,7 +1919,11 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
             const Vector3d p = m_vertex_attribute[vid].m_posf;
             const auto& pot = potential_for(vid);
             v_conv[vid] = finite_or(front_vertex_conv_ratio(vid));
-            v_resid[vid] = finite_or(pot.residual_length(p));
+            // RELATIVE to the one bar, so < 1 reads as placed at a glance. front_conv is
+            // a length and residual_length() is a length, so the quotient is the same
+            // test the criterion makes, in the criterion's own units.
+            v_resid[vid] =
+                finite_or(pot.residual_length(p) / std::max(m_offset_params.front_conv, 1e-300));
             v_grad[vid] = finite_or(pot.gradient(p).norm());
             v_align[vid] = finite_or(front_move_alignment(vid));
             v_cdist[vid] =
@@ -1947,7 +1956,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("sizing_scalar", v_sizing);
     writer.add_field("target_edge_length", v_target);
     writer.add_field("front_conv_ratio", v_conv);
-    writer.add_field("front_residual_length", v_resid);
+    writer.add_field("front_residual_rel", v_resid);
     writer.add_field("front_grad_norm", v_grad);
     writer.add_field("front_move_align", v_align);
     writer.add_field("front_complex_distance", v_cdist);
@@ -2002,7 +2011,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
         off_writer.add_field("vid", v_id);
         off_writer.add_field("sizing_scalar", v_sizing);
         off_writer.add_field("front_conv_ratio", v_conv);
-        off_writer.add_field("front_residual_length", v_resid);
+        off_writer.add_field("front_residual_rel", v_resid);
         off_writer.add_field("front_grad_norm", v_grad);
         off_writer.add_field("front_move_align", v_align);
         off_writer.add_field("front_complex_distance", v_cdist);

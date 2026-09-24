@@ -187,7 +187,7 @@ def point_scalar(m, name):
 # stale", was retired when the writer started re-deriving the map per frame; frames from runs
 # before that carry it on every vertex of an intra-turn frame and are masked out the same way.)
 # Absent from frames written before the fields existed, in which case the layers are not offered.
-FRONT_DIAGS = ("front_conv_ratio", "front_residual_length", "front_grad_norm",
+FRONT_DIAGS = ("front_conv_ratio", "front_residual_rel", "front_grad_norm",
                "front_move_align", "front_complex_distance")
 
 
@@ -937,10 +937,13 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
         if cr is not None:
             m.add_scalar_quantity("front: Newton step / bar (<=1 = placed)", cr[rows],
                                   cmap="reds", vminmax=(0.0, 2.0), enabled=False)
-        rl = diags.get("front_residual_length")
-        if rl is not None and delta:
-            m.add_scalar_quantity("front: residual / delta (0 = on the level set)",
-                                  rl[rows] / float(delta), cmap="reds", vminmax=(0.0, 1.0),
+        rl = diags.get("front_residual_rel")
+        if rl is not None:
+            # Already relative to front_conv as of 2026-09-24: <= 1 is converged, so the scale
+            # is the bar itself and delta no longer enters. 3D frames only; 2D still writes the
+            # absolute front_residual_length, which this key simply does not find.
+            m.add_scalar_quantity("front: residual / bar (<=1 = converged)",
+                                  rl[rows], cmap="reds", vminmax=(0.0, 2.0),
                                   enabled=False)
         gn = diags.get("front_grad_norm")
         if gn is not None:

@@ -2909,8 +2909,16 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
         }
         if (gn > s.bar) {
             ++s.n_faces_over;
-            if (placed[va] && placed[vb] && placed[vc]) {
-                ++s.n_faces_over_placed;
+            const bool corners_placed = placed[va] && placed[vb] && placed[vc];
+            if (corners_placed) ++s.n_faces_over_placed;
+            // The placement gate on refinement, and EXPERIMENTAL_aggresive_refine's removal of
+            // it. Refining a face whose corners are still moving chases the front rather than
+            // resolving it, which is why the gate is the default; but under one unified measure
+            // the corners can be held off the level set BY the sag of the very faces the gate
+            // then refuses to refine, and the loop has no lever left. The flag refines every
+            // face over the bar instead. `n_faces_over_placed` and `max_face_placed` keep their
+            // meaning either way -- they are the PLACED subset, and reporting is all they do.
+            if (corners_placed || m_offset_params.experimental_aggresive_refine) {
                 // Refinable only if the rule can still lower a target; judged against the MAX of
                 // the three scalars (the 2D twin uses the max of its chord's two).
                 const double l = std::max(m_params.l, 1e-300);
@@ -2935,7 +2943,7 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                 } else {
                     ++s.n_at_floor;
                 }
-                if (gn > s.max_face_placed) {
+                if (corners_placed && gn > s.max_face_placed) {
                     s.max_face_placed = gn;
                     s.worst_placed_centroid = centroid;
                 }
@@ -4497,11 +4505,14 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             // sizing scalar at its corners halved.
             const size_t n = refine_front_by_halving(ec.refinable);
             logger().info(
-                "\t[resolution] turn {}: {} front face(s) with all corners placed whose RMS "
-                "relative error over {} stencil point(s) is over the bar (worst {:.4}x, centroid "
-                "({:.4}, {:.4}, {:.4})) -> sizing scalar halved at {} vertices",
+                "\t[resolution] turn {}: {} front face(s) {} whose RMS "
+                "relative error over {} stencil point(s) is over the bar (worst placed {:.4}x, "
+                "centroid ({:.4}, {:.4}, {:.4})) -> sizing scalar halved at {} vertices",
                 it + 1,
                 ec.refinable.size(),
+                m_offset_params.experimental_aggresive_refine
+                    ? "(EXPERIMENTAL_aggresive_refine: placed or not)"
+                    : "with all corners placed",
                 stencil_points_per_face(),
                 ec.max_face_placed,
                 ec.worst_placed_centroid.x(),
