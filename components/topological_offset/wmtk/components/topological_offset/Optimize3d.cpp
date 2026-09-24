@@ -982,97 +982,57 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // surface -- but it is the one behavioural change here, not just a saving.
     if (!edge_is_offset_surface_live(v1, v2)) return false;
 
-    // DEBUG_collapse_ring, TRUE BY DEFAULT since 2026-09-23: the test as it stood before
-    // 2026-09-22. The maximum measure over the union of both endpoints' offset faces before,
-    // against the maximum over the faces the survivor is left with after; strictly greater is
-    // refused, so a collapse that leaves the worst face exactly as bad is allowed. STRICTLY
-    // WEAKER than the pairwise test below in every case -- see the comment on that test for what
-    // the shared faces hide. Set the key false for the pairwise test.
-    if (m_offset_params.debug_collapse_ring) {
-        std::vector<std::array<size_t, 3>> ring_before;
-        std::set<size_t> seen;
-        for (const size_t v : {v1, v2}) {
-            for (const Tuple& f : offset_surface_faces_live_at(v)) {
-                if (!seen.insert(f.fid(*this)).second) continue;
-                ring_before.push_back(face_vids(f));
-            }
-        }
-        // Unreachable through the gate above -- an edge on the offset surface has an incident
-        // offset face at both of its ends -- and kept so neither maximum is taken over an empty
-        // set, where 0 would read as "perfectly resolved".
-        if (ring_before.empty()) return false;
-
-        const auto worst = [this](const std::vector<std::array<size_t, 3>>& faces) {
-            double w = 0.;
-            for (const std::array<size_t, 3>& f : faces) {
-                w = std::max(w, face_resolution_or_inf(f[0], f[1], f[2]));
-            }
-            return w;
-        };
-
-        std::vector<std::array<size_t, 3>> ring_after;
-        ring_after.reserve(ring_before.size());
-        for (std::array<size_t, 3> f : ring_before) {
-            bool has1 = false, has2 = false;
-            for (const size_t v : f) {
-                has1 = has1 || v == v1;
-                has2 = has2 || v == v2;
-            }
-            if (has1 && has2) continue; // the faces on the collapsed edge vanish
-            for (size_t& v : f) {
-                if (v == v1) v = v2;
-            }
-            ring_after.push_back(f);
-        }
-        return worst(ring_after) > worst(ring_before);
-    }
-
-    // PAIRWISE, not max against max. Only the REMOVED vertex's faces change geometry: v2 keeps
-    // its own position and the base moves no vertex, so every offset face at v2 that does not
-    // carry the collapsed edge ends the collapse with all three corners exactly where they
-    // started -- comparing it would be comparing a face with itself. The faces at v1 each lose
-    // v1 and gain v2, and the faces carrying the edge itself vanish. So of the N offset faces at
-    // v1, the two on the edge go and the other N-2 are the entire geometric change this collapse
-    // makes to the offset surface, each with an exact before and an exact after available here.
+    // THE TEST: the maximum resolution measure over the union of both endpoints' offset faces
+    // BEFORE, against the maximum over the faces the survivor is left with AFTER. Strictly
+    // greater is refused, so a collapse that leaves the worst face exactly as bad is allowed.
     //
-    // WHY THIS REPLACED A MAXIMUM. The old test compared max(before) against max(after) over the
-    // union of both endpoints' faces. Those two sets share every face away from the edge, so on
-    // a front where any face in the ring is already bad the maximum is saturated and a face
-    // going from well under the bar to many times it is invisible. Measured on the cube at
-    // target_distance_rel 1e-2 while the front was refined by forced longest-edge splits:
-    // with ~630 of
-    // ~1340 offset faces over the tube and the max pinned at 6.27x, ~500 forced splits per turn
-    // were collapsed straight back out and the sag did not move for 27 turns.
-    for (const Tuple& f : offset_surface_faces_live_at(v1)) {
-        const std::array<size_t, 3> before = face_vids(f);
-        bool has2 = false;
-        for (const size_t v : before) has2 = has2 || v == v2;
-        if (has2) continue; // carries the collapsed edge: this face vanishes
+    // Exact here, before anything is modified: v2 keeps its position and the base moves no
+    // vertex, so the survivor's faces are this ring minus the ones on the collapsed edge, with
+    // v1 relabelled to v2 and every corner where it was.
+    //
+    // (A per-face PAIRWISE variant lived behind DEBUG_collapse_ring until 2026-09-24. It was
+    // strictly stronger -- the two endpoints' rings share every face away from the edge, so once
+    // any face in the ring is bad the maximum is saturated and a face going from well under the
+    // bar to many times it is invisible to this test. The key defaulted to the maximum and is
+    // now gone, taking the pairwise branch with it; git has it.)
+    std::vector<std::array<size_t, 3>> ring_before;
+    std::set<size_t> seen;
+    for (const size_t v : {v1, v2}) {
+        for (const Tuple& f : offset_surface_faces_live_at(v)) {
+            if (!seen.insert(f.fid(*this)).second) continue;
+            ring_before.push_back(face_vids(f));
+        }
+    }
+    // Unreachable through the gate above -- an edge on the offset surface has an incident
+    // offset face at both of its ends -- and kept so neither maximum is taken over an empty
+    // set, where 0 would read as "perfectly resolved".
+    if (ring_before.empty()) return false;
 
-        std::array<size_t, 3> after = before;
-        for (size_t& v : after) {
+    const auto worst = [this](const std::vector<std::array<size_t, 3>>& faces) {
+        double w = 0.;
+        for (const std::array<size_t, 3>& f : faces) {
+            w = std::max(w, face_resolution_or_inf(f[0], f[1], f[2]));
+        }
+        return w;
+    };
+
+    std::vector<std::array<size_t, 3>> ring_after;
+    ring_after.reserve(ring_before.size());
+    for (std::array<size_t, 3> f : ring_before) {
+        bool has1 = false, has2 = false;
+        for (const size_t v : f) {
+            has1 = has1 || v == v1;
+            has2 = has2 || v == v2;
+        }
+        if (has1 && has2) continue; // the faces on the collapsed edge vanish
+        for (size_t& v : f) {
             if (v == v1) v = v2;
         }
-
-        const double s_before = face_resolution_or_inf(before[0], before[1], before[2]);
-        const double s_after = face_resolution_or_inf(after[0], after[1], after[2]);
-        // THE RULE, per face. 3D ONLY -- 2D still compares maxima and refuses on any rise; see
-        // the note in .claude/CLAUDE.md.
-        //   unresolved (s_before >= 1): allow when THIS face does not get worse. Equal is
-        //     allowed, so the passes can still coarsen where they are not hurting.
-        //   resolved (s_before < 1): allow any change that leaves THIS face resolved, even a
-        //     rise. Below the bar a rise costs nothing the convergence criterion can see.
-        // Both values are >= 0 and never NaN: offset_face_sag maps every non-finite or negative
-        // ratio to +infinity. A face that was already unmeasurable takes the first branch and
-        // may stay unmeasurable (infinity <= infinity); a resolved face that BECOMES
-        // unmeasurable takes the second and is refused, since infinity is not below the bar.
-        const bool allowed = (s_before >= 1.) ? (s_after <= s_before) : (s_after < 1.);
-        if (!allowed) return true;
+        ring_after.push_back(f);
     }
-    // Every face that changes is acceptable -- including the vacuous case of no such face, which
-    // the gate above makes unreachable anyway.
-    return false;
+    return worst(ring_after) > worst(ring_before);
 }
+
 
 bool TopoOffsetTetMesh::collapse_before_vertex(
     const size_t v1_id,
@@ -4291,14 +4251,6 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         stencil_points_per_face(),
         m_offset_params.front_conv,
         m_offset_params.front_conv_rel);
-    // Named in the log EITHER WAY because the choice is not visible anywhere else in the output,
-    // so two runs differing only in it cannot be told apart after the fact.
-    logger().info(
-        "\t[ops guard] DEBUG_collapse_ring {}: the collapse test is {}",
-        m_offset_params.debug_collapse_ring,
-        m_offset_params.debug_collapse_ring
-            ? "the pre-2026-09-22 MAXIMUM over the rings before and after"
-            : "the PAIRWISE per-face test");
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement() so

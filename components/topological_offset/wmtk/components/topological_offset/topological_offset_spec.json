@@ -49,7 +49,6 @@
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
       "pre_smooth",
-      "DEBUG_collapse_ring",
       "flip_sag_margin",
       "max_iterations",
       "offset_envelope",
@@ -273,9 +272,9 @@
   },
   {
     "pointer": "/EXPERIMENTAL_aggresive_refine",
-    "default": false,
+    "default": true,
     "type": "bool",
-    "doc": "EXPERIMENTAL, 3D only. Drops the placement gate on refinement. Normally the end-of-turn resolution check hands a face to the halving only when all THREE of its corners are already placed -- the safeguard that keeps refinement from chasing a front that is still travelling. With this true, EVERY offset face whose RMS relative error is over front_conv is refined whether or not its corners are placed, so the sizing scalar is halved at every vertex of every unresolved face. Unchanged either way: the sizing floor (max of min_sizing_scalar and min_edge_length / l), the once-per-vertex-per-turn rule in refine_front_by_halving(), the gradation that follows it, and the convergence test -- when every vertex is placed the gate is vacuous, so this cannot change what counts as converged. The turn's [resolution] line and the reported n_faces_over_placed / max_face_placed still describe the PLACED subset, so the refined count and the reported worst face come apart under this flag; the line says which rule it used. Why it exists: with one unified measure the criterion can deadlock -- a face chording a feature of radius target_distance sits with its centroid far inside the level set, that sample's pull very nearly cancels the corners' own placement pull, so the corners never place, and refinement (the only thing that would shorten the chord) is gated on exactly those corners. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, a 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for all 40 turns."
+    "doc": "EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on refinement. With it FALSE the end-of-turn resolution check hands a face to the halving only when all THREE of its corners are already placed -- the safeguard that keeps refinement from chasing a front that is still travelling. True (the default) refines EVERY offset face whose RMS relative error is over front_conv, whether or not its corners are placed, so the sizing scalar is halved at every vertex of every unresolved face. Unchanged either way: the sizing floor (max of min_sizing_scalar and min_edge_length / l), the once-per-vertex-per-turn rule in refine_front_by_halving(), the gradation that follows it, and the convergence test -- when every vertex is placed the gate is vacuous, so this cannot change what counts as converged. The turn's [resolution] line and the reported n_faces_over_placed / max_face_placed still describe the PLACED subset, so the refined count and the reported worst face come apart under this flag; the line says which rule it used. Why it exists: with one unified measure the criterion can deadlock -- a face chording a feature of radius target_distance sits with its centroid far inside the level set, that sample's pull very nearly cancels the corners' own placement pull, so the corners never place, and refinement (the only thing that would shorten the chord) is gated on exactly those corners. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, a 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for all 40 turns."
   },
   {
     "pointer": "/check_manifoldness",
@@ -409,12 +408,6 @@
     "type": "bool",
     "default": false,
     "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: interleaved_smoothing_passes sweeps, or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
-  },
-  {
-    "pointer": "/DEBUG_collapse_ring",
-    "type": "bool",
-    "default": true,
-    "doc": "DEBUG, 3D only; 2D does not read it. Diagnostic switch on the COLLAPSE half of the ops divergence guard. false is the pairwise test introduced 2026-09-22: only the removed vertex's offset faces change geometry, so each of them is compared against ITSELF after the relabel, and the collapse is refused as soon as one of them fails -- a face at or over the bar may not get worse, a face under the bar may change however it likes as long as it lands under the bar. true (THE DEFAULT since 2026-09-23) is the test as it stood before 2026-09-22: the MAXIMUM resolution measure over the union of the two endpoints' incident offset faces before, against the maximum over the faces the survivor is left with after, refused when the second is strictly greater. THAT TEST IS STRICTLY WEAKER THAN THE PAIRWISE ONE, and what it misses is this: the two sets share every face away from the collapsed edge, so once any face in the ring is bad the maximum is saturated and a face going from well under the bar to many times it is invisible to the guard. Measured on the cube at target_distance_rel 1e-2 while the front was being refined by forced longest-edge splits, that let ~500 splits per turn be collapsed straight back out with the sag unmoved for 27 turns. Set false to get the pairwise test back. Both tests measure a face by its sag against the tube, and both treat an unmeasurable face as infinitely bad. The SWAP half of the guard is unaffected by this key."
   },
   {
     "pointer": "/flip_sag_margin",

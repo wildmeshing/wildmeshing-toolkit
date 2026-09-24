@@ -134,10 +134,10 @@ struct Parameters : public wmtk::OptimizerParameters
     /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
     /// See the spec doc, and marching_tris() / marching_tets().
     bool experimental_consistent_construction_split = true;
-    /// EXPERIMENTAL, 3D only. Drops the placement gate on refinement. Normally a face over the
-    /// bar is handed to the halving only when all THREE of its corners are already placed, so a
-    /// front that is still travelling cannot refine -- the safeguard that stops refinement from
-    /// chasing a moving front. With this on, EVERY face over the bar is refined, placed or not,
+    /// EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on
+    /// refinement. With it FALSE a face over the bar is handed to the halving only when all
+    /// THREE of its corners are already placed -- the safeguard that stops refinement from
+    /// chasing a moving front. True (the default) refines EVERY face over the bar, placed or not,
     /// so the sizing scalar is halved at every vertex of every unresolved face. The floor and
     /// the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is
     /// refinable only while the halving can still lower a target, and `n_faces_over_placed` /
@@ -151,7 +151,7 @@ struct Parameters : public wmtk::OptimizerParameters
     /// target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the
     /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
     /// for 40 turns.
-    bool experimental_aggresive_refine = false;
+    bool experimental_aggresive_refine = true;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -204,13 +204,6 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
-    /// DEBUG, 3D only. See the spec: which COLLAPSE test the ops guard uses. true (THE DEFAULT
-    /// since 2026-09-23) is the pre-2026-09-22 one -- the maximum resolution measure over the two
-    /// endpoints' offset faces before against the maximum over the survivor's after, refused on
-    /// any strict rise. false is the per-face pairwise test, which is strictly stronger: it sees
-    /// a face going from well under the bar to many times it, where the maximum is saturated by
-    /// the worst face anywhere in the ring and cannot.
-    bool debug_collapse_ring;
     /// 3D only (2D has no swap half to the guard). See the spec: how much of the
     /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
     /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
@@ -284,7 +277,6 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         pre_smooth = json_params["pre_smooth"];
-        debug_collapse_ring = json_params["DEBUG_collapse_ring"];
         flip_sag_margin = json_params["flip_sag_margin"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
