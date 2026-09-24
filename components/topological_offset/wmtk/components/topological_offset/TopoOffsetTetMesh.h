@@ -707,7 +707,7 @@ public:
     /// Operations refused because they would have left an offset-surface face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// EXPERIMENTAL_ops_divergence_guard: operations refused for raising the local sag of the
+    /// The ops divergence guard: operations refused for raising the local sag of the
     /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
@@ -716,7 +716,7 @@ public:
     /// steps of what size? The per-turn lines cannot answer that, because a pass that does not
     /// finish never reaches the end of its turn -- so this prints from INSIDE the pass, every
     /// kFlipTraceEvery accepted flips. Live only where the guard measured a pair, i.e. only under
-    /// EXPERIMENTAL_ops_divergence_guard and only for flips of the offset surface.
+    /// the ops divergence guard, and only for flips of the offset surface.
     ///
     /// Counted at swap_after_cells(), which is past the sag refusal and past the quality gate but
     /// still before the envelope check, so it overcounts by the after_envelope refusals -- tens
@@ -737,7 +737,7 @@ public:
      *
      * [swap reject] counts every refusal of every surface flip, most of which SHOULD be refused.
      * This follows only the flips that passed the guard -- pair over the bar, fall at least
-     * EXPERIMENTAL_flip_sag_margin -- so a drop here is work the run wanted and did not get.
+     * flip_sag_margin -- so a drop here is work the run wanted and did not get.
      *
      * Reading it. `offered` is set in swap_before_surface(), which is the app's first sight of a
      * candidate; anything the base turned down earlier (valence, bbox, connectivity) never
@@ -1022,7 +1022,7 @@ public:
      * where the refresh runs.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio() gives it, with an
+    /// The ops divergence guard: one face's sag as face_conv_ratio() gives it, with an
     /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
     double face_resolution_or_inf(size_t a, size_t b, size_t c) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
@@ -1169,11 +1169,10 @@ public:
     /// surfaces need it: the offset surface is re-triangulated constantly.
     bool allow_surface_swap() const override { return true; }
 
-    /// EXPERIMENTAL_ops_divergence_guard, the swap half. UNDER THAT FLAG a flip OF THE OFFSET
-    /// SURFACE is accepted on an absolute quality bar rather than on strict improvement: the
-    /// cells it creates need only be under stop_energy, which is the bar the run is trying to
-    /// reach anyway. With the flag off, and for every interior swap either way, the base's
-    /// strict rule stands, so a default run is unchanged.
+    /// The ops divergence guard, the swap half. A flip OF THE OFFSET SURFACE is accepted on an
+    /// absolute quality bar rather than on strict improvement: the cells it creates need only be
+    /// under stop_energy, which is the bar the run is trying to reach anyway. For every interior
+    /// swap the base's strict rule still stands.
     ///
     /// Strict improvement made the surface flip unreachable in practice -- it is the only
     /// operation that can re-triangulate the offset surface without moving a vertex, and across
@@ -1215,15 +1214,16 @@ public:
      * whose flip would cut sag, 93.5% raise max AMIPS and NOT ONE of those 3740 was ever taken,
      * against 58.1% of the 260 that happened to lower it.
      *
-     * So the bar is expressed in the currency that comparison speaks. For a surface flip under
-     * EXPERIMENTAL_ops_divergence_guard the baseline case (op_case 0, the existing cells) reports
-     * stop_energy instead of its own AMIPS, which turns the base's `energy < min_energy` into
-     * exactly "the cells this flip makes are under stop_energy". Nothing in the shared engine
-     * changes; TetWild and SimWild never see it, and neither does a default offsets run, because
-     * both conditions are required.
+     * So the bar is expressed in the currency that comparison speaks. For a flip that has been
+     * found to be one of the offset surface, the baseline case (op_case 0, the existing cells)
+     * reports stop_energy instead of its own AMIPS, which turns the base's `energy < min_energy`
+     * into exactly "the cells this flip makes are under stop_energy". Nothing in the shared
+     * engine changes: the override is handed out only where swap_before_surface() has just
+     * established both conditions, so TetWild and SimWild never see it and neither does any flip
+     * of the input complex or of a region boundary.
      *
      * The sag half lives in swap_before_surface(). It refuses any flip that does not strictly
-     * lower the pair's max sag by EXPERIMENTAL_flip_sag_margin, and every flip that does gets
+     * lower the pair's max sag by flip_sag_margin, and every flip that does gets
      * THIS override -- so the accepted rule is max sag after <= max sag before - margin AND max
      * AMIPS after < stop_energy, with nothing asked about whether the pair was over the bar. A
      * flip that misses the margin is refused by the guard outright rather than judged on AMIPS.
@@ -1241,10 +1241,10 @@ public:
         override;
     /// THE single test for "this flip gets the absolute bar", read by swap_quality_allowed() and
     /// by both energy overrides. It is not recomputed here: swap_before_surface() has already
-    /// decided, and set the flag only after establishing all three conditions -- the guard is on,
-    /// both re-triangulated faces are live offset surface, and the flip strictly lowers their max
-    /// sag. Asking again from here could not check the second or the third, which is how the
-    /// first version of this handed the bar to input-complex and region flips as well.
+    /// decided, and set the flag only after establishing both conditions -- the two
+    /// re-triangulated faces are live offset surface, and the flip lowers their max sag by the
+    /// margin. Asking again from here could check neither, which is how the first version of
+    /// this handed the bar to input-complex and region flips as well.
     bool swap_surface_flip_absolute_bar() const { return m_swap_sides.local().absolute_bar; }
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
@@ -1996,7 +1996,7 @@ private:
         std::array<size_t, 4> abcd{};
         /// Set by swap_before_surface() for THIS flip alone, and read by
         /// swap_surface_flip_absolute_bar(): true only once the flip has been found to be a flip
-        /// of the offset surface under EXPERIMENTAL_ops_divergence_guard whose sag strictly
+        /// of the offset surface under the ops divergence guard whose sag strictly
         /// falls. It is what pairs the two halves of the rule -- the quality bar is given out
         /// only where the sag rule has just been paid. Cleared at the top of
         /// swap_before_surface() and of swap_before_interior(), so it never outlives its flip.

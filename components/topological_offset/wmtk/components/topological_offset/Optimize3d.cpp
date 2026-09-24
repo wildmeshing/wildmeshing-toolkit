@@ -324,7 +324,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
     if (face_mask({{a, b, c}}) != face_mask({{a, b, d}})) {
         return swap_reject(SwapReject::app_mask_mismatch);
     }
-    // EXPERIMENTAL_ops_divergence_guard, the sag half of the acceptance rule for a flip OF THE
+    // The ops divergence guard, the sag half of the acceptance rule for a flip OF THE
     // OFFSET SURFACE. Together with the absolute quality bar -- swap_quality_allowed() and the
     // swap_edge_44_energy() / swap_edge_56_energy() overrides, all three armed by the assignment
     // at the end of this block -- it is the whole rule: such a flip is accepted when the cells
@@ -352,7 +352,7 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // (8.4%) are over the tube at all. A run sat in that pass for 25 minutes, still committing.
     //
     // So a flip has to WIN something measurable, and the margin is the whole of it: accepted when
-    // max sag after <= max sag before - EXPERIMENTAL_flip_sag_margin and the cells it makes are
+    // max sag after <= max sag before - flip_sag_margin and the cells it makes are
     // under stop_energy, refused otherwise. Nothing here asks whether the pair was over the bar,
     // and nothing falls back on strict improvement in AMIPS.
     //
@@ -380,18 +380,17 @@ bool TopoOffsetTetMesh::swap_before_surface(
     // one labelling pass and the next, which is the reason face_is_offset_surface_live() exists.
     // It also scopes the quality bar, since only a flip reaching the assignment below is given
     // it: a flip of the input complex or of a region boundary keeps the base's strict rule.
-    if (m_offset_params.experimental_ops_divergence_guard &&
-        face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
+    if (face_is_offset_surface_live(ftup_abc) && face_is_offset_surface_live(ftup_abd)) {
         const double before =
             std::max(face_resolution_or_inf(a, b, c), face_resolution_or_inf(a, b, d));
         const double after =
             std::max(face_resolution_or_inf(a, c, d), face_resolution_or_inf(b, c, d));
-        // THE WHOLE SAG RULE: the flip must win at least EXPERIMENTAL_flip_sag_margin of the
+        // THE WHOLE SAG RULE: the flip must win at least flip_sag_margin of the
         // bar, whether the pair started over the bar or under it. Written as a negated <= so a
         // NaN on either side refuses. A flip that misses it is refused outright -- there is no
         // falling back on AMIPS, because a flip of the offset surface is there to move the
         // surface, and one that moves it by less than the margin is noise rather than work.
-        if (!(after <= before - m_offset_params.experimental_flip_sag_margin)) {
+        if (!(after <= before - m_offset_params.flip_sag_margin)) {
             ++iter_cnt_swap_guard_reject;
             // Told apart for the funnel: a real fall that missed the margin, against a tie or a
             // rise. The first is what the margin is for; the second the guard always refused.
@@ -901,7 +900,7 @@ bool TopoOffsetTetMesh::collapse_edge_after(const Tuple& t)
         return false;
     }
     const size_t v2_id = collapse_cache.local().v2_id;
-    // EXPERIMENTAL_ops_divergence_guard has no after-half: the survivor does not move and the
+    // The ops divergence guard has no after-half: the survivor does not move and the
     // removed vertex's faces are re-attached to it unchanged, so the whole comparison is exact
     // in collapse_edge_before() and no collapse is ever rolled back for it.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
@@ -933,9 +932,8 @@ bool TopoOffsetTetMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // EXPERIMENTAL_ops_divergence_guard; see ops_guard_refuses_collapse().
-    if (m_offset_params.experimental_ops_divergence_guard &&
-        ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+    // The ops divergence guard; see ops_guard_refuses_collapse().
+    if (ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
     }
@@ -951,7 +949,7 @@ std::array<size_t, 3> TopoOffsetTetMesh::face_vids(const Tuple& f) const
 double TopoOffsetTetMesh::face_resolution_or_inf(const size_t a, const size_t b, const size_t c)
     const
 {
-    // EXPERIMENTAL_ops_divergence_guard: one face's sag against the tube. An unmeasurable face
+    // The ops divergence guard: one face's sag against the tube. An unmeasurable face
     // is infinite, so making a measurable neighbourhood unmeasurable counts as getting worse,
     // while a neighbourhood that was already unmeasurable is never made "worse" by anything --
     // infinity is not strictly greater than infinity, which is the comparison the guard makes.
@@ -962,7 +960,7 @@ double TopoOffsetTetMesh::face_resolution_or_inf(const size_t a, const size_t b,
 
 bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t v2) const
 {
-    // EXPERIMENTAL_ops_divergence_guard, the collapse half. v1 is removed and v2 survives at its
+    // The ops divergence guard, the collapse half. v1 is removed and v2 survives at its
     // own position -- the base moves no vertex in a collapse -- so every face the survivor ends
     // up with is one of the faces around the pair now, with v1 relabelled to v2 and all three
     // corner positions unchanged. That makes the "after" sag exact here, before anything is
@@ -984,12 +982,12 @@ bool TopoOffsetTetMesh::ops_guard_refuses_collapse(const size_t v1, const size_t
     // surface -- but it is the one behavioural change here, not just a saving.
     if (!edge_is_offset_surface_live(v1, v2)) return false;
 
-    // DEBUG_collapse_ring: the test as it stood before 2026-09-22, kept only so the churn the
-    // pairwise test below was written to fix can be reproduced on demand. The maximum measure
-    // over the union of both endpoints' offset faces before, against the maximum over the faces
-    // the survivor is left with after; strictly greater is refused, so a collapse that leaves
-    // the worst face exactly as bad is allowed. Strictly weaker than the pairwise test in every
-    // case -- see the comment on that test for what the shared faces hide.
+    // DEBUG_collapse_ring, TRUE BY DEFAULT since 2026-09-23: the test as it stood before
+    // 2026-09-22. The maximum measure over the union of both endpoints' offset faces before,
+    // against the maximum over the faces the survivor is left with after; strictly greater is
+    // refused, so a collapse that leaves the worst face exactly as bad is allowed. STRICTLY
+    // WEAKER than the pairwise test below in every case -- see the comment on that test for what
+    // the shared faces hide. Set the key false for the pairwise test.
     if (m_offset_params.debug_collapse_ring) {
         std::vector<std::array<size_t, 3>> ring_before;
         std::set<size_t> seen;
@@ -4389,13 +4387,14 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         m_offset_params.vertex_conv_rel,
         m_offset_params.sag_conv,
         m_offset_params.sag_conv_rel);
-    if (m_offset_params.debug_collapse_ring && m_offset_params.experimental_ops_divergence_guard) {
-        // Named in the log because it is not visible anywhere else in the output, and a run made
-        // with it cannot be told apart from an ordinary one after the fact.
-        logger().info(
-            "\t[ops guard] DEBUG_collapse_ring: the collapse test is the pre-2026-09-22 maximum "
-            "over the rings before and after, not the pairwise per-face test. Diagnostic only.");
-    }
+    // Named in the log EITHER WAY because the choice is not visible anywhere else in the output,
+    // so two runs differing only in it cannot be told apart after the fact.
+    logger().info(
+        "\t[ops guard] DEBUG_collapse_ring {}: the collapse test is {}",
+        m_offset_params.debug_collapse_ring,
+        m_offset_params.debug_collapse_ring
+            ? "the pre-2026-09-22 MAXIMUM over the rings before and after"
+            : "the PAIRWISE per-face test");
     (void)rounds;
     const int budget = std::max(1, m_offset_params.max_rounds);
     // One turn is TetWild's operation groups, run here rather than through mesh_improvement() so
@@ -4412,7 +4411,6 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
     // One turn of grace after the field is lowered: refine_front_by_halving() lowers sizing
     // scalars at the end of a turn, and the split pass
     // that realizes them does not run until the NEXT turn.
-    size_t lowered_last_turn = 0;
     if (m_offset_params.pre_smooth) {
         // One smoothing block on the constructed mesh before turn 1's split pass: the same
         // block every operation group is followed by, with the same bookkeeping around it
@@ -4507,34 +4505,26 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // is never accepted, and the counters are reset each turn so the line is per-turn.
         logger().info("\t[swap reject] turn {}: {}", it + 1, swap_reject_report());
         swap_counters_reset();
-        if (m_offset_params.experimental_ops_divergence_guard) {
-            logger().info("\t[flip funnel] turn {}: {}", it + 1, flip_funnel_report());
-            flip_funnel_reset();
-        }
+        logger().info("\t[flip funnel] turn {}: {}", it + 1, flip_funnel_report());
+        flip_funnel_reset();
         // perform_sanity_checks only: m_is_on_offset against the labels, whole mesh. Free when
         // the key is off, which is the default.
         check_offset_membership(fmt::format("turn {}", it + 1).c_str());
         // Not gated on the key: silent unless a face lookup actually missed this run.
         report_offset_face_lookup_misses(fmt::format("turn {}", it + 1).c_str());
-        if (m_offset_params.experimental_ops_divergence_guard) {
-            logger().info(
-                "\t[ops guard] turn {}: {} collapse(s) refused for leaving the offset surface "
-                "unresolved or worse and {} swap(s) for not lowering the local sag by the margin "
-                "({} / {} in the run so far)",
-                it + 1,
-                iter_cnt_collapse_guard_reject.load() - guard_c0,
-                iter_cnt_swap_guard_reject.load() - guard_s0,
-                iter_cnt_collapse_guard_reject.load(),
-                iter_cnt_swap_guard_reject.load());
-        }
-        const size_t lowered_prev = lowered_last_turn;
-        lowered_last_turn = 0;
+        logger().info(
+            "\t[ops guard] turn {}: {} collapse(s) refused for leaving the offset surface "
+            "unresolved or worse and {} swap(s) for not lowering the local sag by the margin "
+            "({} / {} in the run so far)",
+            it + 1,
+            iter_cnt_collapse_guard_reject.load() - guard_c0,
+            iter_cnt_swap_guard_reject.load() - guard_s0,
+            iter_cnt_collapse_guard_reject.load(),
+            iter_cnt_swap_guard_reject.load());
         if (!ec.refinable.empty()) {
             // Refinement is the halving, and only the halving: every refinable face has the
-            // sizing scalar at its corners halved. The count feeds lowered_last_turn, which is
-            // the loop's one turn of hysteresis.
+            // sizing scalar at its corners halved.
             const size_t n = refine_front_by_halving(ec.refinable);
-            lowered_last_turn = n;
             logger().info(
                 "\t[resolution] turn {}: {} front face(s) with all corners placed whose MEAN "
                 "sag over {} interior sample(s) is over the tube (worst {:.4}x, centroid "
@@ -4557,23 +4547,15 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
         // no face left to resolve -- then quality with the front frozen (below).
         //
-        // `lowered_prev == 0` is one turn of hysteresis, and EXPERIMENTAL_exit_when_criteria_met
-        // drops it. It can only ever be the PREVIOUS turn's lowering: converged_single() requires
-        // an empty refinable set, so a turn that meets the criterion ran no refinement of its own
-        // and left lowered_last_turn at 0. What the default therefore demands is two consecutive
-        // turns without a lowering, the second of them converged.
-        //
-        // That is worth something because the tail churns rather than settles: measured on the
-        // cube at target_distance_rel 1e-3, the split pass mints a fresh crop of over-tube faces
-        // on the quarter-cylinders every turn and the collapse pass clears them, with NOT ONE
-        // face surviving from one pass to the next, so the turn-end count wanders (5, 2, 0, 2)
-        // and a single clean turn is partly luck. It also costs: the loop can sit for many turns
-        // waiting for two of them to line up. TetWild's loop takes the other choice -- it breaks
-        // the moment its max energy is under stop_energy, because that number is a property of
-        // the mesh it is holding, where refinable is a request for work on the next turn.
-        const bool exit_grace =
-            m_offset_params.experimental_exit_when_criteria_met || lowered_prev == 0;
-        if (ec.converged_single() && exit_grace) {
+        // The loop exits on the FIRST turn that meets the criterion. It used to additionally
+        // demand that the previous turn lowered no sizing scalar -- one turn of hysteresis,
+        // which given that converged_single() requires an empty refinable set amounted to two
+        // consecutive turns without a lowering, the second of them converged. That was dropped
+        // because it cost many turns waiting for two to line up, and TetWild's loop takes the
+        // same choice: it breaks the moment its max energy is under stop_energy, that number
+        // being a property of the mesh it is holding, where refinable is a request for work on
+        // the next turn.
+        if (ec.converged_single()) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the
@@ -4730,13 +4712,11 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    if (m_offset_params.experimental_ops_divergence_guard) {
-        logger().info(
-            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses refused for leaving "
-            "the offset surface unresolved or worse, {} swaps for raising the local sag",
-            iter_cnt_collapse_guard_reject.load(),
-            iter_cnt_swap_guard_reject.load());
-    }
+    logger().info(
+        "ops guard: {} collapses refused for leaving the offset surface unresolved or worse, "
+        "{} swaps for raising the local sag",
+        iter_cnt_collapse_guard_reject.load(),
+        iter_cnt_swap_guard_reject.load());
 
     // Final metrics and the convergence verdict, one entry for the whole run.
     assign_band_regions();

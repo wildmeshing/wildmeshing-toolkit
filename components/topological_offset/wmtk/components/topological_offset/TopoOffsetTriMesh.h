@@ -718,7 +718,7 @@ public:
     /// Operations refused because they would have left an offset-boundary face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// EXPERIMENTAL_ops_divergence_guard: collapses refused for raising the local sag of the
+    /// The ops divergence guard: collapses refused for raising the local sag of the
     /// offset surface. No swap counter here: the 3D twin also guards the surface flip, which has
     /// no 2D counterpart -- see swap_edge_before().
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
@@ -1000,7 +1000,7 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// EXPERIMENTAL_ops_divergence_guard: one chord's sag as edge_conv_ratio measures it, with
+    /// The ops divergence guard: one chord's sag as edge_conv_ratio measures it, with
     /// an unmeasurable chord reported as infinity so that losing measurability counts as
     /// worsening. The 3D twin is offset_face_sag(), measured at the face centroid.
     double offset_edge_sag(size_t a, size_t b) const;
@@ -1972,7 +1972,7 @@ public:
     bool collapse_quality_allowed(size_t v1, size_t v2, double q, double ring_max) const override;
 
     /// The 2D twin of TopoOffsetTetMesh::swap_quality_allowed(), kept so the two dimensions
-    /// carry the same rule, and like it gated on EXPERIMENTAL_ops_divergence_guard. It is
+    /// carry the same rule. It is
     /// UNREACHABLE for an offset edge today, and not by oversight: a
     /// 2D front is a curve with no diagonal to flip, and TriOptimizerMesh::swap_edge_before()
     /// refuses any edge on a tracked surface outright via is_edge_on_surface(), so an offset
@@ -1982,7 +1982,7 @@ public:
     bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
         const override
     {
-        if (!is_surface_flip || !m_offset_params.experimental_ops_divergence_guard) {
+        if (!is_surface_flip) {
             return after < before;
         }
         return after < m_params.stop_energy;

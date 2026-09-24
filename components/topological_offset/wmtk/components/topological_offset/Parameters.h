@@ -208,29 +208,19 @@ struct Parameters : public wmtk::OptimizerParameters
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
-    /// EXPERIMENTAL. See the spec: reject any operation on the offset surface that raises the
-    /// local sag -- a collapse whose survivor is left with a worse maximum than the two
-    /// endpoints had between them, or a surface flip whose two new faces are worse than the two
-    /// old ones. Splits are never rejected. false = the operation passes exactly as they are.
-    /// Default true.
-    bool experimental_ops_divergence_guard;
-    /// DEBUG, 3D only. See the spec: make EXPERIMENTAL_ops_divergence_guard's COLLAPSE test the
-    /// pre-2026-09-22 one -- the maximum resolution measure over the two endpoints' offset faces
-    /// before against the maximum over the survivor's after, refused on any strict rise -- in
-    /// place of today's per-face pairwise test. Diagnostic only, for reproducing the churn the
-    /// pairwise test was written to fix. Read by nothing when the guard is off. Default false.
+    /// DEBUG, 3D only. See the spec: which COLLAPSE test the ops guard uses. true (THE DEFAULT
+    /// since 2026-09-23) is the pre-2026-09-22 one -- the maximum resolution measure over the two
+    /// endpoints' offset faces before against the maximum over the survivor's after, refused on
+    /// any strict rise. false is the per-face pairwise test, which is strictly stronger: it sees
+    /// a face going from well under the bar to many times it, where the maximum is saturated by
+    /// the worst face anywhere in the ring and cannot.
     bool debug_collapse_ring;
-    /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
+    /// 3D only (2D has no swap half to the guard). See the spec: how much of the
     /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
     /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
     /// the whole rule; one that misses the margin is refused rather than falling back on AMIPS.
     /// Without it the swap pass does not finish, on noise-sized flips that are all monotone.
-    double experimental_flip_sag_margin;
-    /// EXPERIMENTAL, 3D only. See the spec: true lets the single-phase loop exit on the FIRST
-    /// turn that meets the front criterion, the way TetWild's loop stops on its own metric.
-    /// false additionally requires that the previous turn lowered no sizing scalar, which is one
-    /// turn of hysteresis against the tail's churn. Default true.
-    bool experimental_exit_when_criteria_met;
+    double flip_sag_margin;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -301,10 +291,8 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
         pre_smooth = json_params["pre_smooth"];
-        experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
         debug_collapse_ring = json_params["DEBUG_collapse_ring"];
-        experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
-        experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
+        flip_sag_margin = json_params["flip_sag_margin"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];

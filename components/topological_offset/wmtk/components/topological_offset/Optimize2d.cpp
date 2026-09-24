@@ -163,7 +163,7 @@ bool TopoOffsetTriMesh::swap_edge_before(const Tuple& t)
         return false;
     }
 
-    // EXPERIMENTAL_ops_divergence_guard has no swap half here, unlike the 3D twin
+    // The ops divergence guard has no swap half here, unlike the 3D twin
     // (swap_before_surface()). There a flip re-triangulates the offset SURFACE and keeps it, so
     // it can mint a sagging face; a 2D front is a curve with no such freedom. An offset edge
     // does not reach this hook at all: it carries m_is_surface_fs with both ends
@@ -680,7 +680,7 @@ bool TopoOffsetTriMesh::collapse_edge_after(const Tuple& t)
     if (!TriOptimizerMesh::collapse_edge_after(t)) {
         return false;
     }
-    // EXPERIMENTAL_ops_divergence_guard has no after-half: the survivor does not move and the
+    // The ops divergence guard has no after-half: the survivor does not move and the
     // removed vertex's chords are re-attached to it unchanged, so the whole comparison is exact
     // in collapse_edge_before() and no collapse is ever rolled back for it. As in 3D.
     if (!m_offset_params.sizing_collapse_min) { // see collapse_edge_before()
@@ -727,9 +727,8 @@ bool TopoOffsetTriMesh::collapse_edge_before(const Tuple& t)
     if (!substructure_link_condition(t)) {
         return false;
     }
-    // EXPERIMENTAL_ops_divergence_guard; see ops_guard_refuses_collapse().
-    if (m_offset_params.experimental_ops_divergence_guard &&
-        ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
+    // The ops divergence guard; see ops_guard_refuses_collapse().
+    if (ops_guard_refuses_collapse(collapse_cache.local().v1_id, collapse_cache.local().v2_id)) {
         ++iter_cnt_collapse_guard_reject;
         return false;
     }
@@ -750,7 +749,7 @@ std::vector<TopoOffsetTriMesh::Tuple> TopoOffsetTriMesh::offset_surface_edges_li
 
 double TopoOffsetTriMesh::offset_edge_sag(const size_t a, const size_t b) const
 {
-    // EXPERIMENTAL_ops_divergence_guard: one chord's sag, as edge_conv_ratio measures it (the
+    // The ops divergence guard: one chord's sag, as edge_conv_ratio measures it (the
     // sagitta at the midpoint over sag_conv). An unmeasurable chord is
     // infinite, so losing measurability counts as getting worse, while a neighbourhood that was
     // already unmeasurable is never made worse -- infinity is not strictly greater than
@@ -771,7 +770,7 @@ double TopoOffsetTriMesh::max_offset_edge_sag(const std::vector<std::array<size_
 
 bool TopoOffsetTriMesh::ops_guard_refuses_collapse(const size_t v1, const size_t v2) const
 {
-    // EXPERIMENTAL_ops_divergence_guard, the collapse half; the 3D twin predicts faces, here the
+    // The ops divergence guard, the collapse half; the 3D twin predicts faces, here the
     // front is a curve so the prediction is over chords. v1 is removed and v2 survives at its
     // own position -- the base moves no vertex in a collapse -- so every chord the survivor ends
     // up with is one of the chords around the pair now, with v1 relabelled to v2 and both
@@ -4123,14 +4122,12 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.worst_placed_mid.y(),
             ec.refinable.size(),
             ec.n_at_floor);
-        if (m_offset_params.experimental_ops_divergence_guard) {
-            logger().info(
-                "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
-                "offset surface ({} in the run so far)",
-                it + 1,
-                iter_cnt_collapse_guard_reject.load() - guard_c0,
-                iter_cnt_collapse_guard_reject.load());
-        }
+        logger().info(
+            "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
+            "offset surface ({} in the run so far)",
+            it + 1,
+            iter_cnt_collapse_guard_reject.load() - guard_c0,
+            iter_cnt_collapse_guard_reject.load());
         if (m_offset_params.debug_output) {
             write_smoothing_debug_output(fmt::format("phase_{}S", it + 1));
         }
@@ -4338,12 +4335,9 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
         iter_cnt_collapse_offset_reject.load(),
         iter_cnt_swap.load(),
         iter_cnt_swap_offset_reject.load());
-    if (m_offset_params.experimental_ops_divergence_guard) {
-        logger().info(
-            "ops guard (EXPERIMENTAL_ops_divergence_guard): {} collapses refused for raising the "
-            "local sag",
-            iter_cnt_collapse_guard_reject.load());
-    }
+    logger().info(
+        "ops guard: {} collapses refused for raising the local sag",
+        iter_cnt_collapse_guard_reject.load());
     // No push_back here: op_counts is a per-round series recorded inside the driver loop, so
     // appending the run totals would make the last entry mean something different from every
     // other one. The run total is the sum of the series.
