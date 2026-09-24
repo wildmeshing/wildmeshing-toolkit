@@ -1968,30 +1968,35 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // offset faces
     const std::string off_out_path = path + "_off.vtu";
     {
-        // The front's per-FACE sag, the resolution half of the convergence test: energy_criterion()
-        // samples every live offset face at its centroid, and that number has nowhere to live on
-        // the tet frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
+        // The front's per-FACE convergence measure, which since 2026-09-24 is THE convergence
+        // test rather than the resolution half of it, and which has nowhere to live on the tet
+        // frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
         //
-        //   front_sag_ratio  face_conv_ratio(): the sag over the tube (sag_conv, an absolute
-        //                    length). > 1 with every corner on the level set is what
-        //                    makes a face refinable. -1 unmeasurable, including a face with a
-        //                    corner that is not a front vertex. Measured under the same
-        //                    re-derived region map as the vertex fields above.
-        //   chord_length     the face's longest edge, so the sag can be read against the geometry
-        //                    that produced it.
-        VectorXd f_sag(faces_off.size()), f_len(faces_off.size());
+        //   front_err_ratio  face_conv_ratio(): the RMS over the face's stencil_order stencil of
+        //                    the field's relative error (Phi - c)/c, over the one bar front_conv.
+        //                    > 1 is what makes a face refinable, and the same number at 1 point
+        //                    is what makes a vertex placed. -1 unmeasurable, including a face
+        //                    with a corner that is not a front vertex. Measured under the same
+        //                    re-derived region map as the vertex fields above. REPLACES
+        //                    front_sag_ratio, which reported an interpolation error against a
+        //                    separate sag bar; a series mixing the two is comparing two
+        //                    different quantities under one name, so the field was renamed
+        //                    rather than redefined in place.
+        //   chord_length     the face's longest edge, so the error can be read against the
+        //                    geometry that produced it.
+        VectorXd f_err(faces_off.size()), f_len(faces_off.size());
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
         };
         for (size_t i = 0; i < faces_off.size(); ++i) {
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
-            f_sag[i] = front(a) && front(b) && front(c) ? face_conv_ratio(a, b, c) : -1.;
+            f_err[i] = front(a) && front(b) && front(c) ? face_conv_ratio(a, b, c) : -1.;
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
             f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
         }
         paraviewo::VTUWriter off_writer;
-        off_writer.add_cell_field("front_sag_ratio", f_sag);
+        off_writer.add_cell_field("front_err_ratio", f_err);
         off_writer.add_cell_field("chord_length", f_len);
         off_writer.add_field("order", v_order);
         off_writer.add_field("vid", v_id);

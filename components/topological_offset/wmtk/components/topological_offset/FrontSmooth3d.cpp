@@ -93,17 +93,16 @@ struct RingCell
 namespace {
 /// One live offset face at x, as the alignment term wants it: the two other corners, the
 /// orientation sign that points the normal away from the band, and the gradient agreement.
-/// One live offset face at x, as the sag term wants it: the two other corners with their field
-/// values (constants in x), and the face's interior sample lattice with the frozen 1/|grad Phi|
-/// that turns a field gap into a length. Under `euclidean` that factor is exactly delta at every
-/// sample, so freezing it is not an approximation there -- see SagEnergy3D's doc.
+/// One live offset face at x, as the offset term wants it: the two other corners, and the
+/// barycentric weights of the face's stencil_order stencil. Only the weights are frozen -- the
+/// sample points themselves slide with x and the field is read live -- see StencilEnergy3D.
 template <typename Mesh>
-bool sag_face_at(
+bool stencil_face_at(
     const Mesh& m,
     const typename Mesh::Tuple& f,
     const size_t vid,
     const OffsetPotential3D& pot,
-    SagEnergy3D::Face& out)
+    StencilEnergy3D::Face& out)
 {
     const auto vs = m.get_face_vids(f);
     std::array<size_t, 2> q{{0, 0}};
@@ -117,25 +116,21 @@ bool sag_face_at(
     const Vector3d x = m.m_vertex_attribute[vid].m_posf;
     out.q1 = m.m_vertex_attribute[q[0]].m_posf;
     out.q2 = m.m_vertex_attribute[q[1]].m_posf;
-    out.d1 = pot.value(out.q1);
-    out.d2 = pot.value(out.q2);
-    if (!std::isfinite(out.d1) || !std::isfinite(out.d2)) return false;
 
+    // Only the barycentric weights are frozen here; the residual is evaluated live at every
+    // solve iterate, since the sample points slide with x. Nothing about the field is cached --
+    // the sag term this replaced had to freeze 1/|grad Phi| per sample to keep its measure a
+    // length, and the relative error needs no such factor.
     out.samples.clear();
     m.for_each_face_sample(
         x,
         out.q1,
         out.q2,
-        [&](const Vector3d& qs, const double wa, const double wb, const double wc) {
-            const double gn = pot.gradient(qs).norm();
-            // No usable length scale here, so the sample is dropped rather than guessed at --
-            // the same rule face_conv_ratio() applies to an unmeasurable sample.
-            if (!(gn > 0.) || !std::isfinite(gn)) return;
-            SagEnergy3D::Sample sm;
+        [&](const Vector3d&, const double wa, const double wb, const double wc) {
+            StencilEnergy3D::Sample sm;
             sm.a = wa;
             sm.b = wb;
             sm.c = wc;
-            sm.inv_g = 1. / gn;
             out.samples.push_back(sm);
         });
     return !out.samples.empty();
@@ -389,8 +384,7 @@ bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     if (!pot) return false;
     const Vector3d x = m_vertex_attribute[vid].m_posf;
     const double rho = pot->residual_length(x);
-    const double tube =
-        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+    const double tube = std::max(m_offset_params.offset_envelope, 1e-12);
     if (!std::isfinite(rho) || rho <= tube) return false;
     const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
     bool past_perpendicular = false;
@@ -461,15 +455,7 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
         }
         cells.push_back(T);
     }
-    double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
-    if (m_offset_params.experimental_normalized_front_energy && m_params.w_amips > 0) {
-        // Divide by the ring's own optimum so the term is 1 at a perfect ring and w_amips is
-        // quality's share of a unit budget. 3 is one tet's AMIPS minimum, and RestAMIPSEnergy3D
-        // shares that minimum at F = I, so plastic cells count the same and both energies take
-        // the same weight. N varies with valence, which is the point: a mean, not a sum.
-        const size_t n_ring = cells.size() + plastic_cells.size();
-        if (n_ring > 0) amips_w /= 3. * double(n_ring);
-    }
+    const double amips_w = m_params.w_amips > 0 ? m_s_amips * m_params.w_amips : 1.0;
     auto sum = std::make_shared<optimization::EnergySum>();
     if (m_params.w_amips > 0 && !cells.empty())
         sum->add_energy(std::make_shared<optimization::AMIPSEnergy3D>(cells, amips_w));
@@ -483,27 +469,25 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
     const size_t vid,
     const std::shared_ptr<const OffsetPotential3D>& pot) const
 {
-    const bool normalized = m_offset_params.experimental_normalized_front_energy;
     const double w_off = 1. - m_params.w_amips;
-    // Under EXPERIMENTAL_normalized_front_energy placement and sag split the non-quality budget
-    // evenly, each 1 at its own bar, so the three coefficients sum to 1. NOTE the alignment term
-    // below is outside that partition: it keeps w_off, so enabling front_alignment_energy and
-    // this flag together no longer sums to 1.
-    const double w_half = 0.5 * w_off;
     auto sum = std::make_shared<optimization::EnergySum>();
-    // Gauss-Newton Hessian (the default); the exact Hessian adds r grad^2 Phi and buys nothing.
-    //
-    // The placement residual is (Phi - c)/c for the euclidean field and the length residual over
-    // delta for the smooth one; either way it is the distance to the level set in units of
-    // target_distance. Measuring it in units of vertex_conv instead is exactly a weight factor of
-    // (target_distance / vertex_conv)^2, so no new residual is needed and 2D is untouched.
-    double w_place = w_off;
-    if (normalized) {
-        const double vc = std::max(m_offset_params.vertex_conv, 1e-300);
-        const double ratio = m_offset_params.target_distance / vc;
-        w_place = w_half * ratio * ratio;
+    // THE offset term, and the only one: the mean squared relative error over each incident
+    // face's stencil, summed over the ring. It subsumes the placement term that used to sit here
+    // -- the stencil contains the face's corners, so the moving vertex's own residual is in it
+    // V/N_s times for a vertex of valence V -- and the sag term that used to sit below, whose
+    // interior samples are the stencil's non-corner points. See StencilEnergy3D.
+    {
+        std::vector<StencilEnergy3D::Face> stencil_faces;
+        for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+            StencilEnergy3D::Face sf;
+            if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
+            stencil_faces.push_back(std::move(sf));
+        }
+        if (!stencil_faces.empty()) {
+            sum->add_energy(
+                std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w_off));
+        }
     }
-    sum->add_energy(std::make_shared<OffsetEnergy3D>(pot, w_place, true, true));
     // One alignment residual per incident live front face.
     const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
     std::vector<AlignEnergy3D::Face> faces;
@@ -517,30 +501,6 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
     // on the face normals.
     if (!faces.empty() && m_offset_params.front_alignment_energy) {
         sum->add_energy(std::make_shared<AlignEnergy3D>(pot, std::move(faces), sign, w_off));
-    }
-    // The sag term, on the same one ring. This function is the ONE place both solve paths get
-    // their offset terms -- the free 3-D solve sums it into phase_b_front_objective() and the
-    // 1-D normal solve wraps that same objective in LineProblem3D -- so adding it here covers
-    // both, which is what was asked for.
-    if (m_offset_params.sag_energy_weight > 0.) {
-        std::vector<SagEnergy3D::Face> sag_faces;
-        for (const Tuple& f : offset_surface_faces_live_at(vid)) {
-            SagEnergy3D::Face sf;
-            if (!sag_face_at(*this, f, vid, *pot, sf)) continue;
-            sag_faces.push_back(std::move(sf));
-        }
-        if (!sag_faces.empty()) {
-            // sag_energy_weight still multiplies under the flag, so 0 removes the term in either
-            // branch; 1 is the value that makes the three coefficients sum to 1.
-            sum->add_energy(
-                std::make_shared<SagEnergy3D>(
-                    pot,
-                    std::move(sag_faces),
-                    m_offset_params.sag_energy_weight * (normalized ? w_half : w_off),
-                    true,
-                    m_offset_params.experimental_sag_use_target,
-                    normalized ? m_offset_params.sag_conv : 0.));
-        }
     }
     return sum;
 }

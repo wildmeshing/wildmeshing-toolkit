@@ -1024,21 +1024,17 @@ TEST_CASE("align-energy-3d-derivatives", "[offset][potential]")
 }
 
 
-TEST_CASE("sag-energy-3d-derivatives", "[offset][potential]")
+TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
 {
-    // The sag term against finite differences. Both dependences on x are differentiated: the
-    // face AREA (a cross product of two affine functions of x) and the SAG itself, which depends
-    // on x twice over -- through the corner value Phi(x) inside the mean, and through every
-    // sample point q_i = a_i x + b_i q1 + c_i q2 moving with x.
-    //
-    // The smooth potential rather than the Euclidean one on purpose: it is C^2 with a non-zero
-    // Hessian everywhere, so hess sag is actually exercised, and its |grad Phi| varies from
-    // sample to sample, so the frozen inv_g weights are all different. The Euclidean field is the
-    // easy specialisation of this (constant inv_g, zero Hessian on a face interior).
+    // The one offset term against finite differences. x enters only through the sample points
+    // sliding with it, q_i = a_i x + b_i q1 + c_i q2, so the whole chain rule is the moving
+    // vertex's own barycentric weight a_i -- getting that factor wrong is the obvious way to
+    // break this, and a corner sample belonging to another vertex (a_i = 0) must contribute to
+    // the value while contributing nothing to the gradient.
     const double delta = 0.25;
     MatrixXd V(1, 3);
     V << 0., 0., 0.;
-    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
+    const auto pot = std::make_shared<const SmoothOffsetPotential3D>(
         V,
         MatrixXi(0, 2),
         MatrixXi(0, 3),
@@ -1046,110 +1042,61 @@ TEST_CASE("sag-energy-3d-derivatives", "[offset][potential]")
         delta,
         DHAT_FACTOR);
 
-    // The interior barycentric lattice for sag_num_samples k, exactly as
-    // TopoOffsetTetMesh::for_each_face_sample builds it: i + j + l = k + 2, each >= 1.
-    const auto make_face =
-        [&](const Vector3d& x, const Vector3d& q1, const Vector3d& q2, const int k) {
-            SagEnergy3D::Face f;
-            f.q1 = q1;
-            f.q2 = q2;
-            f.d1 = phi->value(q1);
-            f.d2 = phi->value(q2);
-            const int n = k + 2;
-            for (int i = 1; i < n; ++i) {
-                for (int j = 1; j < n - i; ++j) {
-                    const int l = n - i - j;
-                    if (l < 1) continue;
-                    SagEnergy3D::Sample sm;
-                    sm.a = double(i) / double(n);
-                    sm.b = double(j) / double(n);
-                    sm.c = double(l) / double(n);
-                    const Vector3d q = sm.a * x + sm.b * q1 + sm.c * q2;
-                    sm.inv_g = 1. / phi->gradient(q).norm();
-                    f.samples.push_back(sm);
-                }
-            }
-            return f;
-        };
+    // Two faces of different shape sharing the moving vertex, and stencils carrying a_i = 1,
+    // a_i = 0 and 0 < a_i < 1, so every regime of the chain rule is exercised.
+    std::vector<StencilEnergy3D::Face> faces;
+    {
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.31, -0.05, 0.02);
+        f.q2 = Vector3d(0.12, 0.29, -0.04);
+        f.samples = {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / 3., 1. / 3., 1. / 3.}};
+        faces.push_back(f);
+    }
+    {
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.09, 0.33, 0.11);
+        f.q2 = Vector3d(-0.21, 0.17, 0.26);
+        f.samples = {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {0.5, 0.25, 0.25}};
+        faces.push_back(f);
+    }
 
-    // Deliberately lopsided corners, so no sample sits at sag == 0: |s_i| has a kink exactly
-    // there and a central difference across it would be meaningless, not wrong.
-    const Vector3d x0(0.31, 0.02, -0.05);
-    const Vector3d qa(0.20, 0.25, 0.10);
-    const Vector3d qb(0.22, -0.10, 0.24);
-    const Vector3d qc(0.18, -0.20, -0.15);
-
-    std::vector<SagEnergy3D::Face> faces;
-    faces.push_back(make_face(x0, qa, qb, 3)); // 6 samples
-    faces.push_back(make_face(x0, qb, qc, 2)); // 3 samples
-    // psd_project off: the EXACT Hessian is what finite differences can see.
-    SagEnergy3D energy(phi, faces, 0.7, false);
+    const double w = 0.9;
+    StencilEnergy3D energy(pot, faces, w);
+    VectorXd xv(3);
+    xv << 0.21, 0.13, 0.07;
 
     const double h = 1e-6;
-    for (const Vector3d& x : {x0, Vector3d(0.30, 0.03, -0.04), Vector3d(0.33, 0.00, -0.06)}) {
-        VectorXd xv = x;
-        CHECK(energy.value(xv) > 0.);
-
-        VectorXd g;
-        energy.gradient(xv, g);
-        REQUIRE(g.size() == 3);
-        for (int k = 0; k < 3; ++k) {
-            VectorXd xp = xv, xm = xv;
-            xp[k] += h;
-            xm[k] -= h;
-            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
-            INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
-            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
-        }
-
-        MatrixXd H;
-        energy.hessian(xv, H);
-        REQUIRE(H.rows() == 3);
-        for (int k = 0; k < 3; ++k) {
-            VectorXd xp = xv, xm = xv;
-            xp[k] += h;
-            xm[k] -= h;
-            VectorXd gp, gm;
-            energy.gradient(xp, gp);
-            energy.gradient(xm, gm);
-            const VectorXd fd = (gp - gm) / (2. * h);
-            for (int l = 0; l < 3; ++l) {
-                INFO("hess (" << l << "," << k << ") fd " << fd[l] << " analytic " << H(l, k));
-                CHECK(std::abs(fd[l] - H(l, k)) <= 1e-4 * std::max(1., std::abs(H(l, k))));
-            }
-        }
-        CHECK((H - H.transpose()).norm() <= 1e-12 * std::max(1., H.norm()));
+    VectorXd g(3);
+    energy.gradient(xv, g);
+    for (int k = 0; k < 3; ++k) {
+        VectorXd xp = xv, xm = xv;
+        xp[k] += h;
+        xm[k] -= h;
+        const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+        INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+        CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
     }
 
-    // The projection does what it says: sign(s_i) makes the exact block indefinite in general,
-    // and psd_project clamps it. Same energy and same gradient either way.
-    SagEnergy3D projected(phi, faces, 0.7, true);
-    for (const Vector3d& x : {x0, Vector3d(0.30, 0.03, -0.04)}) {
-        VectorXd xv = x;
-        MatrixXd Hp;
-        projected.hessian(xv, Hp);
-        const Eigen::SelfAdjointEigenSolver<MatrixXd> es(Hp);
-        CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., Hp.norm()));
-        CHECK(projected.value(xv) == Catch::Approx(energy.value(xv)));
-        VectorXd g1, g2;
-        projected.gradient(xv, g1);
-        energy.gradient(xv, g2);
-        CHECK((g1 - g2).norm() <= 1e-15 * std::max(1., g2.norm()));
-    }
+    // The Gauss-Newton Hessian is deliberately not the exact one, so it is not checked against
+    // central differences of the gradient. What IS guaranteed, and what the solver needs, is
+    // that it is symmetric and PSD by construction, being a sum of outer products.
+    MatrixXd H;
+    energy.hessian(xv, H);
+    CHECK((H - H.transpose()).norm() <= 1e-12 * std::max(1., H.norm()));
+    const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
+    CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
 }
 
-
-TEST_CASE("sag-energy-3d-normalized-derivatives", "[offset][potential]")
+TEST_CASE("stencil-energy-3d-is-the-mean-squared-relative-error", "[offset][potential]")
 {
-    // EXPERIMENTAL_normalized_front_energy's form: an AREA-WEIGHTED MEAN of the squared face sag
-    // in units of the bar. sum_k A_k couples every incident face to every other, so the gradient
-    // and Hessian are the quotient rule over two accumulations, not a per-face rescaling -- new
-    // derivative code, and it needs its own finite differences. TWO faces at least, or the
-    // coupling is vacuous.
+    // The value read back from the formula independently: w * sum over faces of the MEAN over
+    // that face's samples of ((Phi(q) - c)/c)^2. Mean WITHIN a face, sum ACROSS faces, and no
+    // area weighting -- the three structural choices the instruction specified, each pinned
+    // below by a property that fails if it is a sum within a face or a mean across them.
     const double delta = 0.25;
     MatrixXd V(1, 3);
     V << 0., 0., 0.;
-    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
+    const auto pot = std::make_shared<const SmoothOffsetPotential3D>(
         V,
         MatrixXi(0, 2),
         MatrixXi(0, 3),
@@ -1157,296 +1104,97 @@ TEST_CASE("sag-energy-3d-normalized-derivatives", "[offset][potential]")
         delta,
         DHAT_FACTOR);
 
-    const Vector3d x0(0.31, 0.02, -0.05);
-    const auto make_face = [&](const Vector3d& q1, const Vector3d& q2, const int k) {
-        SagEnergy3D::Face f;
-        f.q1 = q1;
-        f.q2 = q2;
-        f.d1 = phi->value(q1);
-        f.d2 = phi->value(q2);
-        const int n = k + 2;
-        for (int i = 1; i < n; ++i) {
-            for (int j = 1; j < n - i; ++j) {
-                const int l = n - i - j;
-                if (l < 1) continue;
-                SagEnergy3D::Sample sm;
-                sm.a = double(i) / double(n);
-                sm.b = double(j) / double(n);
-                sm.c = double(l) / double(n);
-                sm.inv_g = 1. / phi->gradient(sm.a * x0 + sm.b * q1 + sm.c * q2).norm();
-                f.samples.push_back(sm);
-            }
-        }
-        return f;
-    };
-    const Vector3d qa(0.20, 0.25, 0.10), qb(0.22, -0.10, 0.24), qc(0.18, -0.20, -0.15);
-    // Deliberately different areas, so the area weighting is actually exercised.
-    const std::vector<SagEnergy3D::Face> faces = {make_face(qa, qb, 3), make_face(qb, qc, 2)};
-
-    const double bar = 0.02;
-    for (const bool use_target : {false, true}) {
-        INFO("use_target " << use_target);
-        // psd_project off so finite differences see the exact Hessian.
-        SagEnergy3D energy(phi, faces, 0.7, false, use_target, bar);
-        const double h = 1e-6;
-        for (const Vector3d& x : {x0, Vector3d(0.30, 0.03, -0.04), Vector3d(0.33, 0.0, -0.06)}) {
-            VectorXd xv = x;
-            CHECK(energy.value(xv) > 0.);
-            VectorXd g;
-            energy.gradient(xv, g);
-            for (int k = 0; k < 3; ++k) {
-                VectorXd xp = xv, xm = xv;
-                xp[k] += h;
-                xm[k] -= h;
-                const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
-                INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
-                CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
-            }
-            MatrixXd H;
-            energy.hessian(xv, H);
-            for (int k = 0; k < 3; ++k) {
-                VectorXd xp = xv, xm = xv, gp, gm;
-                xp[k] += h;
-                xm[k] -= h;
-                energy.gradient(xp, gp);
-                energy.gradient(xm, gm);
-                const VectorXd fd = (gp - gm) / (2. * h);
-                for (int l = 0; l < 3; ++l) {
-                    INFO("hess (" << l << "," << k << ") fd " << fd[l] << " vs " << H(l, k));
-                    CHECK(std::abs(fd[l] - H(l, k)) <= 1e-4 * std::max(1., std::abs(H(l, k))));
-                }
-            }
-        }
-    }
-}
-
-
-TEST_CASE("sag-energy-3d-normalized-is-one-at-the-bar", "[offset][potential]")
-{
-    // The property the whole normalisation exists for: the term is 1 when every incident face
-    // sits exactly at the sag bar, WHATEVER the areas and whatever the resolution -- which is
-    // what lets w_amips split a unit budget. The raw sum has no such value.
-    const double delta = 0.25;
-    MatrixXd V(1, 3);
-    V << 0., 0., 0.;
-    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
-        V,
-        MatrixXi(0, 2),
-        MatrixXi(0, 3),
-        std::vector<int>{0},
-        delta,
-        DHAT_FACTOR);
-
-    const Vector3d x0(0.31, 0.02, -0.05);
-    const auto make_face = [&](const Vector3d& q1, const Vector3d& q2) {
-        SagEnergy3D::Face f;
-        f.q1 = q1;
-        f.q2 = q2;
-        f.d1 = phi->value(q1);
-        f.d2 = phi->value(q2);
-        for (int i = 1; i < 5; ++i) {
-            for (int j = 1; j < 5 - i; ++j) {
-                const int l = 5 - i - j;
-                if (l < 1) continue;
-                SagEnergy3D::Sample sm;
-                sm.a = i / 5.;
-                sm.b = j / 5.;
-                sm.c = l / 5.;
-                sm.inv_g = 1. / phi->gradient(sm.a * x0 + sm.b * q1 + sm.c * q2).norm();
-                f.samples.push_back(sm);
-            }
-        }
-        return f;
-    };
-    const Vector3d qa(0.20, 0.25, 0.10), qb(0.22, -0.10, 0.24), qc(0.18, -0.20, -0.15);
-    const std::vector<SagEnergy3D::Face> faces = {make_face(qa, qb), make_face(qb, qc)};
-    VectorXd xv = x0;
-
-    // Measure each face's own sag, then set the bar to it: if the two faces sagged equally the
-    // term must read exactly 1. They do not, so do it one face at a time.
-    for (const SagEnergy3D::Face& f : faces) {
-        SagEnergy3D probe(phi, {f}, 1., true, false, 0.); // raw: A * sag
-        const double A = 0.5 * (f.q1 - x0).cross(f.q2 - x0).norm();
-        const double sag = probe.value(xv) / A;
-        SagEnergy3D at_bar(phi, {f}, 1., true, false, sag); // bar == this face's own sag
-        CHECK(at_bar.value(xv) == Catch::Approx(1.).epsilon(1e-10));
-    }
-
-    // Two faces of different area, both at the bar: still exactly 1, because the area weights
-    // are a convex combination. Scale the bar by a factor and the term goes as 1/factor^2.
-    SagEnergy3D raw(phi, faces, 1., true, false, 0.);
-    double S = 0.;
-    for (const SagEnergy3D::Face& f : faces) S += 0.5 * (f.q1 - x0).cross(f.q2 - x0).norm();
-    const double bar = 0.013;
-    SagEnergy3D norm(phi, faces, 1., true, false, bar);
-    SagEnergy3D norm2(phi, faces, 1., true, false, 2. * bar);
-    CHECK(norm2.value(xv) == Catch::Approx(norm.value(xv) / 4.));
-    // And it is a mean of (sag/bar)^2 over the area weights, never a sum: bounded by the worst.
-    CHECK(norm.value(xv) > 0.);
-    CHECK(S > 0.);
-}
-
-
-TEST_CASE("sag-energy-3d-target-mode-derivatives", "[offset][potential]")
-{
-    // EXPERIMENTAL_sag_use_target: the reference becomes the constant target level, so the sag
-    // stops depending on the moving vertex through Phi(x) and depends on it only through the
-    // sample points sliding with x. That is a DIFFERENT gradient and Hessian, not a rescaling of
-    // the same one, so it gets its own finite differences.
-    const double delta = 0.25;
-    MatrixXd V(1, 3);
-    V << 0., 0., 0.;
-    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
-        V,
-        MatrixXi(0, 2),
-        MatrixXi(0, 3),
-        std::vector<int>{0},
-        delta,
-        DHAT_FACTOR);
-
-    const Vector3d x0(0.31, 0.02, -0.05);
-    const Vector3d qa(0.20, 0.25, 0.10), qb(0.22, -0.10, 0.24);
-
-    SagEnergy3D::Face f;
-    f.q1 = qa;
-    f.q2 = qb;
-    f.d1 = phi->value(qa);
-    f.d2 = phi->value(qb);
-    const int n = 5; // sag_num_samples 3 -> 6 interior samples
-    for (int i = 1; i < n; ++i) {
-        for (int j = 1; j < n - i; ++j) {
-            const int l = n - i - j;
-            if (l < 1) continue;
-            SagEnergy3D::Sample sm;
-            sm.a = double(i) / double(n);
-            sm.b = double(j) / double(n);
-            sm.c = double(l) / double(n);
-            sm.inv_g = 1. / phi->gradient(sm.a * x0 + sm.b * qa + sm.c * qb).norm();
-            f.samples.push_back(sm);
-        }
-    }
-
-    // psd_project off so finite differences see the exact Hessian; use_target on.
-    SagEnergy3D energy(phi, {f}, 0.7, false, true);
-
-    const double h = 1e-6;
-    for (const Vector3d& x : {x0, Vector3d(0.30, 0.03, -0.04), Vector3d(0.33, 0.00, -0.06)}) {
-        VectorXd xv = x;
-        VectorXd g;
-        energy.gradient(xv, g);
-        for (int k = 0; k < 3; ++k) {
-            VectorXd xp = xv, xm = xv;
-            xp[k] += h;
-            xm[k] -= h;
-            const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
-            INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
-            CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
-        }
-        MatrixXd H;
-        energy.hessian(xv, H);
-        for (int k = 0; k < 3; ++k) {
-            VectorXd xp = xv, xm = xv, gp, gm;
-            xp[k] += h;
-            xm[k] -= h;
-            energy.gradient(xp, gp);
-            energy.gradient(xm, gm);
-            const VectorXd fd = (gp - gm) / (2. * h);
-            for (int l = 0; l < 3; ++l) {
-                INFO("hess (" << l << "," << k << ") fd " << fd[l] << " analytic " << H(l, k));
-                CHECK(std::abs(fd[l] - H(l, k)) <= 1e-4 * std::max(1., std::abs(H(l, k))));
-            }
-        }
-    }
-
-    // The value is |d* - Phi(q)| averaged over the samples, times the area -- the corner values
-    // play no part at all now.
+    std::vector<StencilEnergy3D::Face> faces;
     {
-        VectorXd xv = x0;
-        double sag = 0.;
-        for (const SagEnergy3D::Sample& sm : f.samples) {
-            const Vector3d q = sm.a * x0 + sm.b * qa + sm.c * qb;
-            sag += sm.inv_g * std::abs(phi->target_level() - phi->value(q));
-        }
-        sag /= double(f.samples.size());
-        const double area = 0.5 * (qa - x0).cross(qb - x0).norm();
-        CHECK(energy.value(xv) == Catch::Approx(0.7 * area * sag));
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.31, -0.05, 0.02);
+        f.q2 = Vector3d(0.12, 0.29, -0.04);
+        f.samples = {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / 3., 1. / 3., 1. / 3.}};
+        faces.push_back(f);
     }
-
-    // Corner values are irrelevant in target mode: corrupting them changes nothing.
     {
-        SagEnergy3D::Face g = f;
-        g.d1 = 12345.;
-        g.d2 = -999.;
-        SagEnergy3D corrupted(phi, {g}, 0.7, false, true);
-        VectorXd xv = x0, ga, gb;
-        CHECK(corrupted.value(xv) == Catch::Approx(energy.value(xv)));
-        corrupted.gradient(xv, ga);
-        energy.gradient(xv, gb);
-        CHECK((ga - gb).norm() <= 1e-15 * std::max(1., gb.norm()));
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.09, 0.33, 0.11);
+        f.q2 = Vector3d(-0.21, 0.17, 0.26);
+        f.samples = {{0.5, 0.25, 0.25}, {0.25, 0.5, 0.25}};
+        faces.push_back(f);
     }
-}
 
-
-TEST_CASE("sag-energy-3d-is-area-times-mean-sag", "[offset][potential]")
-{
-    // The value is the formula, read back independently: sum over faces of A_j times the MEAN
-    // over that face's samples of |mean of the three corner values - Phi(q)| / |grad Phi(q)|.
-    // In particular the reference is the plain MEAN of the corners, not the linear interpolant
-    // -- the two agree only at the centroid, and face_conv_ratio() uses the interpolant.
-    const double delta = 0.25;
-    MatrixXd V(1, 3);
-    V << 0., 0., 0.;
-    const auto phi = std::make_shared<const SmoothOffsetPotential3D>(
-        V,
-        MatrixXi(0, 2),
-        MatrixXi(0, 3),
-        std::vector<int>{0},
-        delta,
-        DHAT_FACTOR);
-
-    const Vector3d x(0.31, 0.02, -0.05);
-    const Vector3d q1(0.20, 0.25, 0.10), q2(0.22, -0.10, 0.24);
-
-    SagEnergy3D::Face f;
-    f.q1 = q1;
-    f.q2 = q2;
-    f.d1 = phi->value(q1);
-    f.d2 = phi->value(q2);
-    const int n = 5; // sag_num_samples 3
-    for (int i = 1; i < n; ++i) {
-        for (int j = 1; j < n - i; ++j) {
-            const int l = n - i - j;
-            if (l < 1) continue;
-            SagEnergy3D::Sample sm;
-            sm.a = double(i) / double(n);
-            sm.b = double(j) / double(n);
-            sm.c = double(l) / double(n);
-            sm.inv_g = 1. / phi->gradient(sm.a * x + sm.b * q1 + sm.c * q2).norm();
-            f.samples.push_back(sm);
-        }
-    }
-    REQUIRE(f.samples.size() == 6);
-
-    const double w = 1.3;
-    SagEnergy3D energy(phi, {f}, w, true);
-
-    const double mean_corners = (phi->value(x) + f.d1 + f.d2) / 3.;
-    double sag = 0.;
-    for (const SagEnergy3D::Sample& sm : f.samples) {
-        const Vector3d q = sm.a * x + sm.b * q1 + sm.c * q2;
-        sag += sm.inv_g * std::abs(mean_corners - phi->value(q));
-    }
-    sag /= double(f.samples.size());
-    const double area = 0.5 * (q1 - x).cross(q2 - x).norm();
-
+    const double w = 0.7;
+    const Vector3d x(0.21, 0.13, 0.07);
     VectorXd xv = x;
-    CHECK(energy.value(xv) == Catch::Approx(w * area * sag));
+    const double c = pot->target_level();
 
-    // A face whose three corners sit on one level set of a radial field still sags: the field is
-    // curved and the triangle is flat, which is the whole point of the term.
-    CHECK(sag > 0.);
+    double expect = 0.;
+    for (const StencilEnergy3D::Face& f : faces) {
+        double s = 0.;
+        for (const StencilEnergy3D::Sample& sm : f.samples) {
+            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
+            const double r = (pot->value(q) - c) / c;
+            s += r * r;
+        }
+        expect += s / double(f.samples.size());
+    }
+    expect *= w;
+
+    StencilEnergy3D energy(pot, faces, w);
+    const double got = energy.value(xv);
+    CHECK(got == Catch::Approx(expect).epsilon(1e-12));
+
+    // MEAN WITHIN A FACE: repeating a face's samples leaves its contribution unchanged. A sum
+    // within the face would double it.
+    {
+        std::vector<StencilEnergy3D::Face> dup = faces;
+        for (StencilEnergy3D::Face& f : dup) {
+            const auto once = f.samples;
+            f.samples.insert(f.samples.end(), once.begin(), once.end());
+        }
+        StencilEnergy3D e2(pot, dup, w);
+        CHECK(e2.value(xv) == Catch::Approx(got).epsilon(1e-12));
+    }
+
+    // SUM ACROSS FACES: listing the same faces twice doubles the energy. A mean across faces
+    // would leave it unchanged.
+    {
+        std::vector<StencilEnergy3D::Face> twice = faces;
+        twice.insert(twice.end(), faces.begin(), faces.end());
+        StencilEnergy3D e3(pot, twice, w);
+        CHECK(e3.value(xv) == Catch::Approx(2. * got).epsilon(1e-12));
+    }
+
+    // NO AREA WEIGHTING: scaling a face's two fixed corners away from the moving vertex changes
+    // its area but, with the same barycentric weights, moves the sample points too -- so the
+    // check that bites is the simpler one, that the weight is the only prefactor.
+    {
+        StencilEnergy3D e4(pot, faces, 2. * w);
+        CHECK(e4.value(xv) == Catch::Approx(2. * got).epsilon(1e-12));
+    }
+
+    // A sample that sits exactly on the level set contributes nothing, whatever the field: its
+    // relative error is zero by construction. residual_length() locates the level set here.
+    {
+        std::vector<StencilEnergy3D::Face> on_level;
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(1., 0., 0.);
+        f.q2 = Vector3d(0., 1., 0.);
+        f.samples = {{1., 0., 0.}}; // the moving vertex alone
+        on_level.push_back(f);
+        StencilEnergy3D e5(pot, on_level, w);
+        // Bisect along +z for the radius where Phi == c.
+        double lo = 0.5 * delta, hi = 3. * delta;
+        for (int i = 0; i < 200; ++i) {
+            const double mid = 0.5 * (lo + hi);
+            (pot->value(Vector3d(0., 0., mid)) > c ? lo : hi) = mid;
+        }
+        VectorXd on(3);
+        on << 0., 0., 0.5 * (lo + hi);
+        CHECK(std::abs(pot->value(Vector3d(on)) - c) <= 1e-12 * c);
+        CHECK(e5.value(on) == Catch::Approx(0.).margin(1e-20));
+        VectorXd gz(3);
+        e5.gradient(on, gz);
+        CHECK(gz.norm() == Catch::Approx(0.).margin(1e-12));
+    }
 }
-
 
 TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
 {

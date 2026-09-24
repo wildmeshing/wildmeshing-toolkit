@@ -1472,236 +1472,94 @@ bool RestAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
 
 
 // ---------------------------------------------------------------------------------------------
-// SagEnergy3D
+// StencilEnergy3D
 // ---------------------------------------------------------------------------------------------
 
-namespace {
-/// skew(v) w == v.cross(w); this is dN/dx for the affine N(x) below when v = q2 - q1.
-Eigen::Matrix3d skew3(const Eigen::Vector3d& v)
-{
-    Eigen::Matrix3d S;
-    S << 0., -v.z(), v.y(), v.z(), 0., -v.x(), -v.y(), v.x(), 0.;
-    return S;
-}
-} // namespace
-
-SagEnergy3D::SagEnergy3D(
+StencilEnergy3D::StencilEnergy3D(
     const std::shared_ptr<const OffsetPotential3D>& potential,
     std::vector<Face> faces,
-    const double weight,
-    const bool psd_project,
-    const bool use_target,
-    const double sag_bar)
+    const double weight)
     : m_potential(potential)
     , m_faces(std::move(faces))
     , m_weight(weight)
-    , m_psd_project(psd_project)
-    , m_use_target(use_target)
-    , m_target(potential ? potential->target_level() : 0.)
-    , m_sag_bar(sag_bar)
+    , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
 {}
 
-bool SagEnergy3D::face_area(
-    const Eigen::Vector3d& x,
-    const Face& f,
-    double& A,
-    Eigen::Vector3d* gA,
-    Eigen::Matrix3d* HA) const
+bool StencilEnergy3D::residual_at(const Eigen::Vector3d& p, double& r, Eigen::Vector3d* dr) const
 {
-    const Eigen::Vector3d N = (f.q1 - x).cross(f.q2 - x);
-    const double nn = N.norm();
-    if (!(nn > 0.) || !std::isfinite(nn)) return false;
-    A = 0.5 * nn;
-    if (!gA && !HA) return true;
-    // N(x) = q1 x q2 + x x (q1 - q2) is AFFINE in x, so J is a constant matrix and the only
-    // curvature left is that of the norm.
-    const Eigen::Matrix3d J = skew3(f.q2 - f.q1);
-    const Eigen::Vector3d nhat = N / nn;
-    if (gA) *gA = 0.5 * (J.transpose() * nhat);
-    if (HA) {
-        *HA = (0.5 / nn) *
-              (J.transpose() * (Eigen::Matrix3d::Identity() - nhat * nhat.transpose()) * J);
+    const double v = m_potential->value(p);
+    if (!std::isfinite(v)) return false;
+    r = (v - m_c) / m_c;
+    if (dr) {
+        const Eigen::Vector3d g = m_potential->gradient(p);
+        if (!g.allFinite()) return false;
+        *dr = g / m_c;
     }
     return true;
 }
 
-bool SagEnergy3D::face_sag(
-    const Eigen::Vector3d& x,
-    const Face& f,
-    const double dx,
-    const Eigen::Vector3d* gx,
-    const Eigen::Matrix3d* hx,
-    double& sag,
-    Eigen::Vector3d* gsag,
-    Eigen::Matrix3d* hsag) const
-{
-    // The reference every sample is measured against. EXPERIMENTAL_sag_use_target replaces the
-    // corner mean by the constant target level, which is why ref_scale -- the factor on the
-    // moving vertex's own derivatives -- drops from 1/3 to 0: under the target form the sag
-    // depends on x only through the sample points sliding with it.
-    const double ref_scale = m_use_target ? 0. : (1. / 3.);
-    const double m = m_use_target ? m_target : (dx + f.d1 + f.d2) / 3.;
-
-    sag = 0.;
-    if (gsag) gsag->setZero();
-    if (hsag) hsag->setZero();
-    size_t n = 0;
-
-    for (const Sample& sm : f.samples) {
-        const Eigen::Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
-        const double dq = m_potential->value(q);
-        if (!std::isfinite(dq))
-            continue; // as the criterion does: an unmeasurable sample is
-                      // dropped rather than guessed at
-        const double s = m - dq;
-        // The subgradient of least norm at the kink, which is exactly where this sample wants
-        // to be. See the class doc.
-        const double sigma = (s > 0.) ? 1. : ((s < 0.) ? -1. : 0.);
-        sag += sm.inv_g * std::abs(s);
-        if (gsag || hsag) {
-            const Eigen::Vector3d gq = m_potential->gradient(q);
-            if (!gq.allFinite()) continue;
-            if (gsag) *gsag += (sm.inv_g * sigma) * (ref_scale * *gx - sm.a * gq);
-            if (hsag) {
-                const Eigen::Matrix3d hq = m_potential->hessian(q);
-                if (!hq.allFinite()) continue;
-                *hsag += (sm.inv_g * sigma) * (ref_scale * *hx - (sm.a * sm.a) * hq);
-            }
-        }
-        ++n;
-    }
-    if (n == 0) return false;
-    const double inv = 1. / double(n);
-    sag *= inv;
-    if (gsag) *gsag *= inv;
-    if (hsag) *hsag *= inv;
-    return true;
-}
-
-double SagEnergy3D::value(const TVector& xv)
+double StencilEnergy3D::value(const TVector& xv)
 {
     const Eigen::Vector3d x = xv.head(3);
-    const double dx = m_potential->value(x);
-    if (!std::isfinite(dx)) return 0.;
-    const bool norm = m_sag_bar > 0.;
-    double P = 0., S = 0.;
+    double E = 0.;
     for (const Face& f : m_faces) {
-        double A = 0., sag = 0.;
-        if (!face_area(x, f, A, nullptr, nullptr)) continue;
-        if (!face_sag(x, f, dx, nullptr, nullptr, sag, nullptr, nullptr)) continue;
-        if (norm) {
-            const double r = sag / m_sag_bar;
-            P += A * r * r;
-            S += A;
-        } else {
-            P += A * sag;
+        double s = 0.;
+        size_t n = 0;
+        for (const Sample& sm : f.samples) {
+            double r;
+            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, nullptr)) continue;
+            s += r * r;
+            ++n;
         }
+        if (n > 0) E += s / double(n);
     }
-    if (!norm) return m_weight * P;
-    // The area weights sum to 1, so this is a mean and not a sum: 1 when every face is at the bar.
-    return S > 0. ? m_weight * P / S : 0.;
+    return m_weight * E;
 }
 
-void SagEnergy3D::gradient(const TVector& xv, TVector& gradv)
+void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
 {
     const Eigen::Vector3d x = xv.head(3);
     gradv = Eigen::VectorXd::Zero(3);
-    const double dx = m_potential->value(x);
-    const Eigen::Vector3d gx = m_potential->gradient(x);
-    if (!std::isfinite(dx) || !gx.allFinite()) return;
-
-    const bool norm = m_sag_bar > 0.;
-    // P and S as in the class doc; in the raw form S is unused and P is the energy itself.
-    double P = 0., S = 0.;
-    Eigen::Vector3d gP = Eigen::Vector3d::Zero(), gS = Eigen::Vector3d::Zero();
+    Eigen::Vector3d g = Eigen::Vector3d::Zero();
     for (const Face& f : m_faces) {
-        double A = 0., sag = 0.;
-        Eigen::Vector3d gA = Eigen::Vector3d::Zero(), gsag = Eigen::Vector3d::Zero();
-        if (!face_area(x, f, A, &gA, nullptr)) continue;
-        if (!face_sag(x, f, dx, &gx, nullptr, sag, &gsag, nullptr)) continue;
-        if (norm) {
-            // u = (sag/bar)^2, so grad u = 2 sag grad sag / bar^2.
-            const double inv_b2 = 1. / (m_sag_bar * m_sag_bar);
-            const double u = sag * sag * inv_b2;
-            const Eigen::Vector3d gu = (2. * sag * inv_b2) * gsag;
-            P += A * u;
-            gP += u * gA + A * gu;
-            S += A;
-            gS += gA;
-        } else {
-            P += A * sag;
-            gP += sag * gA + A * gsag; // the product rule on A(x) * sag(x)
+        // d/dx of r(q_i)^2 is 2 r dr . dq_i/dx and dq_i/dx = a_i I, so the moving vertex's own
+        // barycentric weight is the whole chain rule. A corner sample of another vertex has
+        // a_i = 0 and so contributes to the value but not to the gradient.
+        Eigen::Vector3d gf = Eigen::Vector3d::Zero();
+        size_t n = 0;
+        for (const Sample& sm : f.samples) {
+            double r;
+            Eigen::Vector3d dr;
+            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
+            gf += (2. * sm.a * r) * dr;
+            ++n;
         }
+        if (n > 0) g += gf / double(n);
     }
-    if (!norm) {
-        gradv = m_weight * gP;
-        return;
-    }
-    if (!(S > 0.)) return;
-    gradv = m_weight * ((gP - (P / S) * gS) / S); // quotient rule on P/S
+    gradv = m_weight * g;
 }
 
-void SagEnergy3D::hessian(const TVector& xv, MatrixXd& hessian)
+void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
 {
     const Eigen::Vector3d x = xv.head(3);
     Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
-    const double dx = m_potential->value(x);
-    const Eigen::Vector3d gx = m_potential->gradient(x);
-    const Eigen::Matrix3d hx = m_potential->hessian(x);
-    if (std::isfinite(dx) && gx.allFinite() && hx.allFinite()) {
-        const bool norm = m_sag_bar > 0.;
-        double P = 0., S = 0.;
-        Eigen::Vector3d gP = Eigen::Vector3d::Zero(), gS = Eigen::Vector3d::Zero();
-        Eigen::Matrix3d HP = Eigen::Matrix3d::Zero(), HS = Eigen::Matrix3d::Zero();
-        for (const Face& f : m_faces) {
-            double A = 0., sag = 0.;
-            Eigen::Vector3d gA = Eigen::Vector3d::Zero(), gsag = Eigen::Vector3d::Zero();
-            Eigen::Matrix3d HA = Eigen::Matrix3d::Zero(), hsag = Eigen::Matrix3d::Zero();
-            if (!face_area(x, f, A, &gA, &HA)) continue;
-            if (!face_sag(x, f, dx, &gx, &hx, sag, &gsag, &hsag)) continue;
-            if (norm) {
-                // u = (sag/bar)^2: grad u = 2 sag grad sag / bar^2,
-                // hess u = 2 (grad sag grad sag^T + sag hess sag) / bar^2.
-                const double inv_b2 = 1. / (m_sag_bar * m_sag_bar);
-                const double u = sag * sag * inv_b2;
-                const Eigen::Vector3d gu = (2. * sag * inv_b2) * gsag;
-                const Eigen::Matrix3d Hu = (2. * inv_b2) * (gsag * gsag.transpose() + sag * hsag);
-                P += A * u;
-                gP += u * gA + A * gu;
-                HP += u * HA + gA * gu.transpose() + gu * gA.transpose() + A * Hu;
-                S += A;
-                gS += gA;
-                HS += HA;
-            } else {
-                P += A * sag;
-                gP += sag * gA + A * gsag;
-                HP += sag * HA + gA * gsag.transpose() + gsag * gA.transpose() + A * hsag;
-            }
+    for (const Face& f : m_faces) {
+        // Gauss-Newton: 2 a_i^2 dr dr^T, dropping the 2 r a_i^2 hess Phi / c term. That term is
+        // what makes the exact Hessian indefinite near the level set where r changes sign, and
+        // the dropped part vanishes at the solution; what is kept is a sum of outer products and
+        // so is PSD by construction, with no eigenvalue projection needed.
+        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
+        size_t n = 0;
+        for (const Sample& sm : f.samples) {
+            double r;
+            Eigen::Vector3d dr;
+            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
+            Hf += (2. * sm.a * sm.a) * (dr * dr.transpose());
+            ++n;
         }
-        if (!norm) {
-            H = m_weight * HP;
-        } else if (S > 0.) {
-            // hess(P/S), written out in the class doc.
-            const double invS = 1. / S;
-            H = m_weight *
-                (HP * invS - (gP * gS.transpose() + gS * gP.transpose()) * (invS * invS) -
-                 HS * (P * invS * invS) + gS * gS.transpose() * (2. * P * invS * invS * invS));
-        }
+        if (n > 0) H += Hf / double(n);
     }
-    if (m_psd_project) {
-        // sign(s_i) makes hess sag a DIFFERENCE of PSD field Hessians and the two outer products
-        // are indefinite, so the exact block can be indefinite far from the minimum. Clamping the
-        // eigenvalues at zero is the projected-Newton answer; there is no Gauss-Newton surrogate
-        // for an L1 residual to drop terms toward. LineProblem3D takes n^T H n of this, so the
-        // 1-D normal path inherits the guarantee.
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(H);
-        if (es.info() == Eigen::Success) {
-            const Eigen::Vector3d ev = es.eigenvalues().cwiseMax(0.);
-            H = es.eigenvectors() * ev.asDiagonal() * es.eigenvectors().transpose();
-        }
-    }
-    hessian = H;
+    hess = m_weight * H;
 }
-
 
 } // namespace wmtk::components::topological_offset

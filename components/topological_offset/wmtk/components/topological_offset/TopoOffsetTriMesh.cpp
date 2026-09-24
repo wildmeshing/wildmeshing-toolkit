@@ -1613,7 +1613,7 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // indexing as the frame above, so a viewer can key the field onto the offset curve it derives
     // from the triangles, by vertex pair.
     //
-    //   front_sag_ratio   edge_conv_ratio(): the chord's sag over the tube (sag_conv, an
+    //   front_sag_ratio   edge_conv_ratio(): the chord's sag over the tube (front_conv, an
     //                     absolute length). > 1 with both ends on the level set is what makes an
     //                     edge refinable. -1 unmeasurable, including where an end is not a front
     //                     vertex, so the curve is complete either way. Measured under the same

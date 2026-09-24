@@ -19,23 +19,20 @@ using namespace wmtk::components::simwild;
 
 namespace wmtk::components::topological_offset {
 namespace {
-/// The operation corridor (offset_envelope_rel x target_distance) may not be wider than either
-/// convergence epsilon. Same test in both dimensions; see the 2D call site for why.
+/// The operation corridor (offset_envelope) may not be wider than the convergence epsilon.
+/// Same test in both dimensions; see the 2D call site for why. Both are absolute lengths
+/// resolved in init(), so the comparison needs no conversion.
 void check_envelope_leash(const Parameters& params)
 {
-    const double leash = params.offset_envelope_rel * params.target_distance;
-    const double accuracy = std::min(params.vertex_conv, params.sag_conv);
-    if (leash > accuracy) {
+    if (params.offset_envelope > params.front_conv) {
         log_and_throw_error(
-            "offset_envelope_rel {} x target_distance {} = {} must be <= both convergence "
-            "epsilons (vertex_conv {}, sag_conv {}): the operation corridor (the leash) cannot "
-            "be wider than the convergence accuracy, or the operations keep denting the front "
-            "past the resolution threshold and the loop chases the damage forever",
+            "offset_envelope {} ({} x the bbox diagonal) must be <= the convergence epsilon "
+            "front_conv {}: the operation corridor (the leash) cannot be wider than the "
+            "convergence accuracy, or the operations keep denting the front past the resolution "
+            "threshold and the loop chases the damage forever",
+            params.offset_envelope,
             params.offset_envelope_rel,
-            params.target_distance,
-            leash,
-            params.vertex_conv,
-            params.sag_conv);
+            params.front_conv);
     }
 }
 } // namespace
@@ -100,26 +97,26 @@ void topological_offset(nlohmann::json json_params)
         logger().info("target_distance: {}", params.target_distance);
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
         logger().info(
-            "vertex_conv: {} ({} x the bbox diagonal)",
-            params.vertex_conv,
-            params.vertex_conv_rel);
+            "front_conv: {} ({} x the bbox diagonal)",
+            params.front_conv,
+            params.front_conv_rel);
+        logger().info("stencil_order: {}", params.stencil_order);
         logger().info(
-            "sag_conv: {} ({} x the bbox diagonal)",
-            params.sag_conv,
-            params.sag_conv_rel);
+            "offset_envelope: {} ({} x the bbox diagonal)",
+            params.offset_envelope,
+            params.offset_envelope_rel);
         logger().info("===============================");
     }
 
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
 
-        // vertex_conv and sag_conv are the accuracy -- the vertex bar and the chord-resolution
-        // threshold -- and offset_envelope_rel is only the leash on the operation passes.
+        // front_conv is the accuracy -- one bar for placement and resolution alike -- and
+        // offset_envelope_rel is only the leash on the operation passes.
         // Accuracy finer than the leash is unreachable: operations licensed to dent the front by
-        // more than the threshold mint new refinable edges every turn. Hence a hard requirement,
-        // against BOTH epsilons, since the one accuracy this used to compare against now serves
-        // the two roles separately. The leash is a fraction of target_distance and the epsilons
-        // are absolute lengths, so the comparison is made in model units.
+        // more than the threshold mint new refinable edges every turn. Hence a hard requirement.
+        // The leash is a fraction of target_distance and the epsilon is an absolute length, so
+        // the comparison is made in model units.
         check_envelope_leash(params);
 
         // initialize mesh

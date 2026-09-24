@@ -451,7 +451,7 @@ public:
 
     /**
      * @brief The tube the offset boundary may not leave during Phase A, of half-width
-     * offset_envelope_rel x target_distance. Rebuilt at the end of every Phase B from the
+     * offset_envelope. Rebuilt at the end of every Phase B from the
      * boundary as that phase left it, which is what lets the boundary travel across rounds.
      * Non-null once the offset exists; whether it constrains is containment_for()'s phase test,
      * not the pointer. Unlike m_tag_envelopes, which must never be rebuilt.
@@ -1503,7 +1503,7 @@ public:
      * so mesh_improvement() stops exactly when both are met:
      *
      *   - max face AMIPS over stop_energy -- TriWild's, via quality_rel()
-     *   - max Phi residual over half the vertex epsilon, vertex_conv / 2, over the reachable band
+     *   - max Phi residual over half the vertex epsilon, front_conv / 2, over the reachable band
      *
      * The average returned alongside it is the same expression over the two averages, so both
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
@@ -1529,7 +1529,7 @@ public:
 
     /// Samples per band edge; see offset_edge_samples(). 0 falls back to a vertex-only
     /// criterion, which is measurably blind to a band too coarse to be the offset.
-    int sag_num_samples() const { return m_offset_params.sag_num_samples; }
+    int stencil_order() const { return m_offset_params.stencil_order; }
 
     /// The residual scale, derived from the criterion rather than configured beside it.
     ///
@@ -1569,7 +1569,7 @@ public:
         //
         // Never measured on the single-phase path, so this sits at the 1e-16 floor there; the
         // single-phase convergence bar uses m_front_gradient_reference instead.
-        return std::max(m_offset_params.vertex_conv_frac() * m_gradient_reference, 1e-16);
+        return std::max(m_offset_params.front_conv_frac() * m_gradient_reference, 1e-16);
     }
 
     /// max |2 (Phi - c) grad Phi . n| over the initial offset-surface vertices; the scale
@@ -1647,7 +1647,7 @@ public:
     };
 
     /**
-     * @brief The Phi residual at `sag_num_samples` interior points of band edge `e`.
+     * @brief The Phi residual at `stencil_order` interior points of band edge `e`.
      *
      * The criterion cannot be a vertex criterion: a boundary can have every vertex exactly on the
      * level set while zig-zagging or cutting corners between them, which reads as converged and is
@@ -1675,7 +1675,7 @@ public:
     template <typename Visit>
     void for_each_offset_edge_sample(const Tuple& e, Visit&& visit) const
     {
-        const int k = m_offset_params.sag_num_samples;
+        const int k = m_offset_params.stencil_order;
         if (k <= 0) return;
         const Vector2d p0 = m_vertex_attribute[e.vid(*this)].m_posf;
         const Vector2d p1 = m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf;
@@ -1734,7 +1734,7 @@ public:
      * @brief The "energy_gradient" criterion: the front is at a critical point of Phase B's
      * energy, and every edge resolves the pull that drives it there.
      *
-     * One bar for everything, B = vertex_conv_frac() x m_front_gradient_reference:
+     * One bar for everything, B = front_conv_frac() x m_front_gradient_reference:
      *  - vertices: max over the placed front vertices of ||grad F||, F the vertex's full Phase B
      *    objective (AMIPS + the two offset terms, as the shared smoother assembles it) -- the same
      *    quantity and bar as the Phase B pass stop.

@@ -373,7 +373,7 @@ public:
 
     /**
      * @brief The tube the offset surface may not leave during the operation passes, of
-     * half-width offset_envelope_rel x target_distance. Rebuilt after every smoothing pass from
+     * half-width offset_envelope. Rebuilt after every smoothing pass from
      * the surface as that pass left it, which is what lets the surface travel across turns.
      * Non-null once the offset exists; whether it constrains is containment_for()'s phase test.
      * Unlike m_tag_envelopes, which must never be rebuilt.
@@ -1326,7 +1326,7 @@ public:
      * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
      *
      * It was not always one notion: the sag classification used to qualify its corners with the
-     * DISTANCE to the level set (residual_length() within vertex_conv) while
+     * DISTANCE to the level set (residual_length() within front_conv) while
      * everything else used the criterion's stationarity measure. The two disagree exactly where
      * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
      * hair outside the tube disqualified its whole face from ever being refined, with the face
@@ -1351,16 +1351,15 @@ public:
     {
         return std::isfinite(ratio) && ratio <= 1.;
     }
-    /// The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord
-    /// (a, b) against the sag bar sag_conv; -1 unmeasurable.
+    /// The chord twin of face_conv_ratio(): the RMS relative error over the chord's two
+    /// endpoints and its midpoint, over the same bar; -1 unmeasurable. NO CALLERS in 3D.
     double edge_conv_ratio(size_t a, size_t b) const;
-    /// The face's interpolation residual as a ratio to the bar sag_conv (1 = the bar): the MEAN
-    /// over the `sag_num_samples` interior lattice points of |Phi(q) - the linear interpolant of
-    /// the three corner values at q| / |grad Phi(q)|, i.e. the average sag as a length. At
-    /// sag_num_samples 1 the lattice is the centroid alone and this is exactly the single
-    /// centroid test it replaced. The 3D resolution test; the 2D twin still tests the chord
-    /// MIDPOINT only and is unchanged. < 0 when not measurable, which includes any sample with a
-    /// vanishing or non-finite gradient and the sag_num_samples <= 0 case.
+    /// THE measure, as a ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over
+    /// the face's `stencil_order` stencil of the field's relative error (Phi(q) - c)/c. Since
+    /// the stencil contains the CORNERS, this one number answers both questions the loop used to
+    /// ask separately -- a face is resolved when it is <= 1, and a vertex is placed when the
+    /// same measure over its own point (front_vertex_conv_ratio(), the order-0 stencil at one
+    /// corner) is <= 1. < 0 when not measurable, i.e. any sample where Phi is not finite.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
@@ -1461,7 +1460,18 @@ public:
     }
 
     /// Samples per offset face; see offset_face_samples().
-    int sag_num_samples() const { return m_offset_params.sag_num_samples; }
+    int stencil_order() const { return m_offset_params.stencil_order; }
+    /// How many points for_each_face_sample() visits at the configured order: 3 at order 0, and
+    /// (n+1)(n+2)/2 + n^2 with n = 2^(k-1) above it, i.e. 4, 10, 31, 109, ... Kept in step with
+    /// for_each_face_sample() by the unit test `stencil-order-point-counts`.
+    int stencil_points_per_face() const
+    {
+        const int k = m_offset_params.stencil_order;
+        if (k < 0) return 0;
+        if (k == 0) return 3;
+        const int n = 1 << (k - 1);
+        return (n + 1) * (n + 2) / 2 + n * n;
+    }
 
     /// The residual scale, derived from the criterion: half the gradient tolerance over the
     /// level-set slope squared, in length units. Same expression as 2D.
@@ -1471,13 +1481,13 @@ public:
         return std::max(0.5 * offset_gradient_tolerance() / (s * s), 1e-16);
     }
 
-    /// The gradient_norm_rel bar: vertex_conv_frac() x a measured reference
+    /// The gradient_norm_rel bar: front_conv_frac() x a measured reference
     /// (m_gradient_reference, never measured on the single-phase path, so this sits at the floor
     /// there; the single-phase bar uses m_front_gradient_reference instead). The fraction rather
     /// than the length, because the reference is a gradient, not a distance. Same as 2D.
     double offset_gradient_tolerance() const
     {
-        return std::max(m_offset_params.vertex_conv_frac() * m_gradient_reference, 1e-16);
+        return std::max(m_offset_params.front_conv_frac() * m_gradient_reference, 1e-16);
     }
 
     /// The scale offset_gradient_tolerance() is a fraction of; 0 on the single-phase path.
@@ -1545,17 +1555,46 @@ public:
         const Vector3d& p2,
         Visit&& visit) const
     {
-        const int k = m_offset_params.sag_num_samples;
-        if (k <= 0) return;
+        const int k = m_offset_params.stencil_order;
+        if (k < 0) return;
 
-        const int n = k + 2;
+        const auto emit = [&](const double wa, const double wb, const double wc) {
+            visit(Vector3d(wa * p0 + wb * p1 + wc * p2), wa, wb, wc);
+        };
+        // Order 0 is the three CORNERS alone. That is the whole point of including them: the
+        // measure sampled here is a distance to the level set, which at a corner is exactly that
+        // vertex's own placement error, so one stencil covers what used to be two criteria.
+        if (k == 0) {
+            emit(1., 0., 0.);
+            emit(0., 1., 0.);
+            emit(0., 0., 1.);
+            return;
+        }
+        // Order k >= 1: the vertices of the triangle subdivided k-1 times by 4-way midpoint
+        // refinement, plus the centroid of each of its 4^(k-1) sub-triangles. With n = 2^(k-1)
+        // segments per side that is (n+1)(n+2)/2 + n^2 points: 4, 10, 31, 109, ...
+        const int n = 1 << (k - 1);
         const double dn = double(n);
-        for (int i = 1; i < n; ++i) {
-            for (int j = 1; j < n - i; ++j) {
-                const int l = n - i - j;
-                if (l < 1) continue;
-                const double wa = double(i) / dn, wb = double(j) / dn, wc = double(l) / dn;
-                visit(Vector3d(wa * p0 + wb * p1 + wc * p2), wa, wb, wc);
+        for (int i = n; i >= 0; --i) {
+            for (int j = n - i; j >= 0; --j) {
+                emit(double(i) / dn, double(j) / dn, double(n - i - j) / dn);
+            }
+        }
+        // The sub-triangles, in integer barycentric coordinates over 3n. "Up" triangles have
+        // corners (i+1,j,l), (i,j+1,l), (i,j,l+1) for i+j+l = n-1, so centroid (3i+1, 3j+1,
+        // 3l+1); "down" triangles (i+1,j+1,l), (i,j+1,l+1), (i+1,j,l+1) for i+j+l = n-2, so
+        // centroid (3i+2, 3j+2, 3l+2). n(n+1)/2 + n(n-1)/2 = n^2 of them.
+        const double d3n = 3. * dn;
+        for (int i = n - 1; i >= 0; --i) {
+            for (int j = n - 1 - i; j >= 0; --j) {
+                const int l = n - 1 - i - j;
+                emit((3. * i + 1.) / d3n, (3. * j + 1.) / d3n, (3. * l + 1.) / d3n);
+            }
+        }
+        for (int i = n - 2; i >= 0; --i) {
+            for (int j = n - 2 - i; j >= 0; --j) {
+                const int l = n - 2 - i - j;
+                emit((3. * i + 2.) / d3n, (3. * j + 2.) / d3n, (3. * l + 2.) / d3n);
             }
         }
     }
@@ -1572,7 +1611,7 @@ public:
             std::forward<Visit>(visit));
     }
 
-    /// The Phi residual at the `sag_num_samples` lattice's interior points of offset face `f`.
+    /// The Phi residual at the `stencil_order` stencil's points of offset face `f`.
     /// Returns nothing for a face with an unreachable corner. The 2D twin is
     /// offset_edge_samples().
     FaceSamples offset_face_samples(const Tuple& f) const;
@@ -1604,6 +1643,10 @@ public:
     struct EnergyCriterion
     {
         double max_vertex = 0., max_face = 0.; ///< ratios to the bar (1 = bar)
+        /// Running sums of the SAME ratios, over the same measurable simplices the maxima are
+        /// taken over, so avg_vertex() / avg_face() below are the plain means of what max_vertex
+        /// / max_face report the largest of. Reported only; nothing tests them.
+        double sum_vertex = 0., sum_face = 0.;
         double bar = 1.;
         size_t n_vertices = 0, n_faces = 0, n_unmeasurable = 0;
         size_t worst_vid = static_cast<size_t>(-1);
@@ -1641,6 +1684,9 @@ public:
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
         bool converged_single() const { return converged() && refinable.empty(); }
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
+        /// Means over the measurable front vertices / offset faces; 0 when there are none.
+        double avg_vertex() const { return n_vertices ? sum_vertex / double(n_vertices) : 0.; }
+        double avg_face() const { return n_faces ? sum_face / double(n_faces) : 0.; }
     };
     EnergyCriterion energy_criterion();
     /// The edge length that would bring a front chord's sag under the tube: 3/4 L

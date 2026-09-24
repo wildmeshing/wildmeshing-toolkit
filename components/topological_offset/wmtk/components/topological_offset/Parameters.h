@@ -60,37 +60,38 @@ struct Parameters : public wmtk::OptimizerParameters
     // refuses either one above target_distance: an epsilon coarser than the offset it measures
     // cannot decide anything.
     //
-    // THE VERTEX bar: a front vertex is placed when its convergence measure
-    // (front_vertex_conv_ratio(), per front_conv_criterion) is within it.
-    double vertex_conv;
-    double vertex_conv_rel;
-    // THE SAG bar: a front face (3D) or chord (2D) is refinable while its sag over the level set
-    // exceeds it. Separate from the vertex bar since 2026-09-23 -- placement accuracy and surface
-    // resolution are different questions and the loop has to be able to ask them separately.
-    double sag_conv;
-    double sag_conv_rel;
+    // THE ONE BAR. 3D measures a single quantity everywhere -- over a face's stencil, the RMS of
+    // the field's relative error (Phi - c)/c, expressed as a length -- and compares it against
+    // this. A vertex is placed when that same measure at the vertex alone is within it, which is
+    // the order-0 stencil, so the vertex test and the face test are one test at two sample
+    // counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23.
+    double front_conv;
+    double front_conv_rel;
 
-    /// The two convergence epsilons expressed the way front_conv_rel used to be: as a fraction of
-    /// target_distance. Only the criteria whose bar is NOT a length take these -- 'decrement'
-    /// (rel x the objective value) and 'gradient_norm_rel' (rel x a reference gradient) multiply
-    /// a fraction, not a length -- so those two keep exactly the meaning they had.
-    double vertex_conv_frac() const { return vertex_conv / std::max(target_distance, 1e-16); }
-    double sag_conv_frac() const { return sag_conv / std::max(target_distance, 1e-16); }
-    // Which convergence test gates the run, used identically by the loop's vertex test and the
-    // placement stop. F is the vertex's front objective, g its gradient, H its Gauss-Newton
-    // Hessian, n its move direction; all four compare against the VERTEX bar. See
-    // front_vertex_conv_ratio().
+    /// The convergence epsilon as a FRACTION of target_distance, which is the form the
+    /// dimensionless relative error (Phi - c)/c is compared against. A mean of squared relative
+    /// errors is below front_conv_frac()^2 exactly when the same mean taken in lengths is below
+    /// front_conv^2 -- the two differ by target_distance^2 on both sides -- so which form the
+    /// code uses is a matter of where the division sits, not of what is being asked. 2D's
+    /// fraction-valued criteria ('decrement', 'gradient_norm_rel') take it for the same reason.
+    double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
+    // 2D ONLY since the 3D criteria were unified. Which convergence test gates a 2D run's vertex
+    // placement. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian,
+    // n its move direction; all four compare against front_conv. See front_vertex_conv_ratio().
     //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
-    //     vertex_conv.
+    //     front_conv.
     //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against
-    //     vertex_conv_frac() x F.
-    //   "gradient_norm_rel": |n.g| against vertex_conv_frac() x the reference gradient, measured
+    //     front_conv_frac() x F.
+    //   "gradient_norm_rel": |n.g| against front_conv_frac() x the reference gradient, measured
     //     once on the band as constructed.
     //   "residual_error": not a stationarity measure at all -- the field's own residual at the
     //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
-    //     the euclidean field and the ENERGY residual for the smooth one), against vertex_conv.
+    //     the euclidean field and the ENERGY residual for the smooth one), against front_conv.
     //     No objective is built and n does not enter.
-    /// gradient_norm_rel | step_size_rel | decrement | residual_error
+    //
+    // 3D DOES NOT READ THIS. Its one measure is the stencil RMS of the relative error, which is
+    // not a stationarity test and has no variants -- see TopoOffsetTetMesh::face_conv_ratio().
+    /// gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY]
     std::string front_conv_criterion;
     // The front is placed by a one-dimensional solve along its field normal
     // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
@@ -109,41 +110,18 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
-    // Sampling density of the SAG measure, and of the residual diagnostics that share its
-    // lattice. Strictly interior points of each band simplex: 2D samples each band edge at
-    // i/(k+1) (k points), 3D samples each offset-surface face on the barycentric lattice at
-    // denominator k+2 (1, 3, 6, 10 points for k = 1..4), so k = 1 is the midpoint / centroid
-    // alone. Replaces offset_residual_samples, which was the same lattice but a diagnostic only.
-    //
-    // In 3D THIS DRIVES THE CRITERION: face_conv_ratio() is the MEAN sag over these points, so
-    // raising it both refines the measure and costs a Phi value and gradient per sample, in the
-    // ops guard's hot path as well as in energy_criterion(). 2D still tests the chord MIDPOINT
-    // and reads this key only for its diagnostics. See TopoOffsetTetMesh::face_conv_ratio,
-    // TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
-    int sag_num_samples;
-    /// Weight of the SAG TERM in a front vertex's smoothing objective, on top of the offset
-    /// terms' shared (1 - w_amips). 0 removes the term entirely and is the only value that
-    /// restores the pre-2026-09-23 objective exactly. 3D only; see SagEnergy3D.
-    ///
-    /// SCALE WARNING: the term is sum_j A_j * sag_j, an AREA times a LENGTH, so it carries
-    /// length^3 while the offset term next to it is a dimensionless squared ratio. It therefore
-    /// shrinks like h^4 under refinement and the useful weight is model- and resolution-
-    /// dependent, not O(1). See the spec doc for the worked estimate.
-    double sag_energy_weight;
-    /// EXPERIMENTAL, 3D only. See the spec: measure a sample's sag against the TARGET LEVEL d*
-    /// -- |d* - Phi(q)|, the sample's own distance to the level set -- in place of the gap to
-    /// the face's own corner values. Applies wherever a sag is computed in 3D: face_conv_ratio()
-    /// (so the criterion, the refinement it drives, the ops guard and the f_sag debug field),
-    /// edge_conv_ratio(), and SagEnergy3D. false (the default) is the behaviour as it stands.
-    bool experimental_sag_use_target;
-    /// EXPERIMENTAL, 3D only. See the spec: put the front objective's three terms on ONE scale --
-    /// each 1 at its own target -- and let w_amips split a unit budget between them, quality
-    /// taking w_amips and placement and sag (1 - w_amips)/2 each, so the coefficients sum to 1.
-    /// AMIPS is divided by 3N (N ring cells, 3 being one tet's optimum), the placement residual
-    /// is measured in units of vertex_conv rather than target_distance, and the sag term becomes
-    /// the AREA-WEIGHTED MEAN of (sag_j / sag_conv)^2. false (the default) is the objective as it
-    /// stands. See SagEnergy3D and phase_b_front_energy().
-    bool experimental_normalized_front_energy;
+    // Sampling density of THE measure -- in 3D both the criterion's and the energy's -- and of
+    // the residual diagnostics that share the lattice. Order k puts these points on a face:
+    //   0 -> 3, the CORNERS alone, so the measure is exactly the three vertices' placement error;
+    //   k >= 1 -> the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement
+    //   plus the centroid of each of its 4^(k-1) sub-triangles, i.e. 4, 10, 31, 109, ...
+    // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
+    // the quantity measured is a distance to the level set rather than an interpolation error and
+    // so is not identically zero there. Raising it costs a Phi value and gradient per sample, in
+    // the ops guard's hot path as well as in energy_criterion() and every smoothing solve.
+    // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
+    // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
+    int stencil_order;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
@@ -171,9 +149,13 @@ struct Parameters : public wmtk::OptimizerParameters
     /// held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex.
     /// See pre_optimize_input_mesh() in either mesh.
     bool pre_optimize_input = true;
-    /// The operation passes' offset envelope width, as a fraction of target_distance -- the same
-    /// tube every turn, rebuilt after every smoothing pass; see rebuild_offset_envelope(). Also
-    /// feeds the derived sizing floor (min_edge_length_rel < 0).
+    // The operation passes' offset envelope half-width: the leash the front is kept inside while
+    // the operation passes run, the same tube every turn, rebuilt after every smoothing pass; see
+    // rebuild_offset_envelope(). Absolute-or-relative exactly as envelope_size / envelope_size_rel
+    // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
+    // tying it to target_distance made every change of the offset distance a silent change of the
+    // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).
+    double offset_envelope; ///< absolute; < 0 means use offset_envelope_rel
     double offset_envelope_rel;
 
     // l_min from the paper: the shortest edge the sizing field may ask for, given as a multiple of
@@ -256,15 +238,10 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_dhat_factor = json_params["offset_dhat_factor"];
         debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
-        vertex_conv = json_params["vertex_conv"];
-        vertex_conv_rel = json_params["vertex_conv_rel"];
-        sag_conv = json_params["sag_conv"];
-        sag_conv_rel = json_params["sag_conv_rel"];
+        front_conv = json_params["front_conv"];
+        front_conv_rel = json_params["front_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
-        sag_num_samples = json_params["sag_num_samples"];
-        sag_energy_weight = json_params["sag_energy_weight"];
-        experimental_sag_use_target = json_params["EXPERIMENTAL_sag_use_target"];
-        experimental_normalized_front_energy = json_params["EXPERIMENTAL_normalized_front_energy"];
+        stencil_order = json_params["stencil_order"];
 
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
@@ -277,6 +254,7 @@ struct Parameters : public wmtk::OptimizerParameters
 
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
+        offset_envelope = json_params["offset_envelope"];
         offset_envelope_rel = json_params["offset_envelope_rel"];
 
         min_edge_length = json_params["min_edge_length"];
@@ -367,48 +345,46 @@ struct Parameters : public wmtk::OptimizerParameters
             envelope_size = envelope_size_rel * diag_l;
         }
 
-        // The two convergence epsilons, the same absolute-or-relative pair as the envelope and
-        // against the same reference. They are lengths in space, so the bounding box diagonal is
+        // The convergence epsilon, the same absolute-or-relative pair as the envelope and
+        // against the same reference. It is a length in space, so the bounding box diagonal is
         // the reference, not target_distance: tying the accuracy to the offset distance made
         // every change of target_distance a silent change of accuracy as well.
-        if (vertex_conv > 0) {
-            vertex_conv_rel = vertex_conv / diag_l;
+        if (front_conv > 0) {
+            front_conv_rel = front_conv / diag_l;
         } else {
-            vertex_conv = vertex_conv_rel * diag_l;
-        }
-        if (sag_conv > 0) {
-            sag_conv_rel = sag_conv / diag_l;
-        } else {
-            sag_conv = sag_conv_rel * diag_l;
+            front_conv = front_conv_rel * diag_l;
         }
 
         // An epsilon coarser than the offset it measures decides nothing: every front vertex is
         // "placed" and every face "resolved" from the first turn, whatever the offset looks like.
         // Checked on the resolved ABSOLUTE values, so it catches the mistake whichever of the two
         // forms the config used to state it.
-        if (vertex_conv > target_distance) {
+        if (front_conv > target_distance) {
             log_and_throw_error(
-                "vertex_conv {} must be <= target_distance {}: the vertex convergence epsilon "
-                "cannot be coarser than the offset distance it measures, or every front vertex "
-                "reads as placed from the first turn",
-                vertex_conv,
+                "front_conv {} must be <= target_distance {}: the convergence epsilon cannot be "
+                "coarser than the offset distance it measures, or every front face reads as "
+                "resolved from the first turn",
+                front_conv,
                 target_distance);
         }
-        if (sag_conv > target_distance) {
-            log_and_throw_error(
-                "sag_conv {} must be <= target_distance {}: the sag convergence epsilon cannot "
-                "be coarser than the offset distance it measures, or every front face reads as "
-                "resolved from the first turn",
-                sag_conv,
-                target_distance);
+
+        // The operation leash, the same absolute-or-relative pair as the envelope and the
+        // convergence epsilon, against the same reference.
+        if (offset_envelope > 0) {
+            offset_envelope_rel = offset_envelope / diag_l;
+        } else {
+            offset_envelope = offset_envelope_rel * diag_l;
         }
 
         // l_min is relative to the offset distance rather than the bounding box: it is the offset
         // that has to be resolved. See the declaration.
         if (min_edge_length_rel < 0) {
-            // The envelope eps as a multiple of target_distance, which is what offset_envelope_rel
-            // already is, so there is no conversion left to do.
-            min_edge_length_rel = std::max(offset_envelope_rel, 1e-12);
+            // The envelope eps expressed as a multiple of target_distance, which is what this
+            // wants. offset_envelope_rel is a fraction of the BBOX DIAGONAL since 2026-09-24, so
+            // the conversion goes through the resolved absolute rather than being the identity it
+            // used to be -- the derived floor is unchanged in model units either way.
+            min_edge_length_rel =
+                std::max(offset_envelope / std::max(target_distance, 1e-16), 1e-12);
         }
         if (min_edge_length < 0) {
             min_edge_length = min_edge_length_rel * target_distance;
