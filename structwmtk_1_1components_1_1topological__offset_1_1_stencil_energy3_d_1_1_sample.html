@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::components::topological_offset::TopoOffsetTriMesh::EdgeSamples Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::components::topological_offset::StencilEnergy3D::Sample Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,38 +69,38 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html">TopoOffsetTriMesh</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_samples.html">EdgeSamples</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>components</b></li><li class="navelem"><b>topological_offset</b></li><li class="navelem"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_stencil_energy3_d.html">StencilEnergy3D</a></li><li class="navelem"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy3_d_1_1_sample.html">Sample</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_samples-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">wmtk::components::topological_offset::TopoOffsetTriMesh::EdgeSamples Struct Reference</div></div>
+<a href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy3_d_1_1_sample-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">wmtk::components::topological_offset::StencilEnergy3D::Sample Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>The residual sampled at points along a band edge &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at stencil_order interior points of band edge e.">offset_edge_samples()</a>.  
- <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_samples.html#details">More...</a></p>
+<p>One stencil point's barycentric weights. <code>a</code> is the moving vertex's, so dq_i/dx = a_i I.  
+ <a href="structwmtk_1_1components_1_1topological__offset_1_1_stencil_energy3_d_1_1_sample.html#details">More...</a></p>
 
-<p><code>#include &lt;<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a2857091f05f01272c1807fc1059e994b" id="r_a2857091f05f01272c1807fc1059e994b"><td class="memItemLeft" align="right" valign="top"><a id="a2857091f05f01272c1807fc1059e994b" name="a2857091f05f01272c1807fc1059e994b"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>max</b> = 0.</td></tr>
-<tr class="separator:a2857091f05f01272c1807fc1059e994b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7678832fc6f29fb9e9e6424be4e7df9d" id="r_a7678832fc6f29fb9e9e6424be4e7df9d"><td class="memItemLeft" align="right" valign="top"><a id="a7678832fc6f29fb9e9e6424be4e7df9d" name="a7678832fc6f29fb9e9e6424be4e7df9d"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>sum</b> = 0.</td></tr>
-<tr class="separator:a7678832fc6f29fb9e9e6424be4e7df9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade50ee0f89cdca05b9fa30a878024289" id="r_ade50ee0f89cdca05b9fa30a878024289"><td class="memItemLeft" align="right" valign="top"><a id="ade50ee0f89cdca05b9fa30a878024289" name="ade50ee0f89cdca05b9fa30a878024289"></a>
-size_t&#160;</td><td class="memItemRight" valign="bottom"><b>n</b> = 0</td></tr>
-<tr class="separator:ade50ee0f89cdca05b9fa30a878024289"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aebb2000e39650352a768c1bcf93a1f81" id="r_aebb2000e39650352a768c1bcf93a1f81"><td class="memItemLeft" align="right" valign="top"><a id="aebb2000e39650352a768c1bcf93a1f81" name="aebb2000e39650352a768c1bcf93a1f81"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>a</b></td></tr>
+<tr class="separator:aebb2000e39650352a768c1bcf93a1f81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74b281ec89d5ac34853e19f071b6fbc5" id="r_a74b281ec89d5ac34853e19f071b6fbc5"><td class="memItemLeft" align="right" valign="top"><a id="a74b281ec89d5ac34853e19f071b6fbc5" name="a74b281ec89d5ac34853e19f071b6fbc5"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>b</b></td></tr>
+<tr class="separator:a74b281ec89d5ac34853e19f071b6fbc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a6e488359b2ee7c91aa06c80031cad4" id="r_a3a6e488359b2ee7c91aa06c80031cad4"><td class="memItemLeft" align="right" valign="top"><a id="a3a6e488359b2ee7c91aa06c80031cad4" name="a3a6e488359b2ee7c91aa06c80031cad4"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>c</b></td></tr>
+<tr class="separator:a3a6e488359b2ee7c91aa06c80031cad4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The residual sampled at points along a band edge &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at stencil_order interior points of band edge e.">offset_edge_samples()</a>. </p>
+<div class="textblock"><p>One stencil point's barycentric weights. <code>a</code> is the moving vertex's, so dq_i/dx = a_i I. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
-<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tri_mesh_8h_source.html">TopoOffsetTriMesh.h</a></li>
+<li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_offset_potential_8hpp_source.html">OffsetPotential.hpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

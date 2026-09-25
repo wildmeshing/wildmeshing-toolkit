@@ -93,15 +93,16 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><b>b</b></td></tr>
 <tr class="memitem:a2855b4276c344b61cdf20253bfd41de1" id="r_a2855b4276c344b61cdf20253bfd41de1"><td class="memItemLeft" align="right" valign="top"><a id="a2855b4276c344b61cdf20253bfd41de1" name="a2855b4276c344b61cdf20253bfd41de1"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>c</b></td></tr>
 <tr class="separator:a2855b4276c344b61cdf20253bfd41de1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f0dd0c0f967caad5066bba7187eac5c" id="r_a2f0dd0c0f967caad5066bba7187eac5c"><td class="memItemLeft" align="right" valign="top"><a id="a2f0dd0c0f967caad5066bba7187eac5c" name="a2f0dd0c0f967caad5066bba7187eac5c"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>sag</b></td></tr>
-<tr class="separator:a2f0dd0c0f967caad5066bba7187eac5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e9b4e50f01ada0c45b15c7e95d24029" id="r_a6e9b4e50f01ada0c45b15c7e95d24029"><td class="memItemLeft" align="right" valign="top"><a id="a6e9b4e50f01ada0c45b15c7e95d24029" name="a6e9b4e50f01ada0c45b15c7e95d24029"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>measure</b></td></tr>
+<tr class="separator:a6e9b4e50f01ada0c45b15c7e95d24029"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42715404aba72e7e3354eb21fab25c1d" id="r_a42715404aba72e7e3354eb21fab25c1d"><td class="memItemLeft" align="right" valign="top"><a id="a42715404aba72e7e3354eb21fab25c1d" name="a42715404aba72e7e3354eb21fab25c1d"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>len</b></td></tr>
 <tr class="separator:a42715404aba72e7e3354eb21fab25c1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A face whose centroid sags over the tube with all three corners placed: a, b are the ends of its LONGEST edge (the chord the target is derived from), c the third corner; sag the centroid sag as a length; len the longest edge's length. </p>
+<div class="textblock"><p>A face over the bar with all three corners placed: a, b are the ends of its LONGEST edge (the chord the target is derived from), c the third corner; len the longest edge's length.</p>
+<p><code>measure</code> is the face's MEAN sag as a LENGTH (the ratio times the tube). Nothing reads it today &ndash; refinement is the halving, which needs the face's corners alone &ndash; and it is kept because the sag condition is still being reworked. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/home/runner/work/wildmeshing-toolkit/wildmeshing-toolkit/components/topological_offset/wmtk/components/topological_offset/<a class="el" href="_topo_offset_tet_mesh_8h_source.html">TopoOffsetTetMesh.h</a></li>
 </ul>

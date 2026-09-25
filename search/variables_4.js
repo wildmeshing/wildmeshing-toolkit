@@ -12,8 +12,6 @@ var searchData=
   ['esp_9',['esp',['../structwmtk_1_1components_1_1topological__offset_1_1_smooth_offset_potential_1_1_impl.html#a9bdacea01eebe034e80c5f54214e9016',1,'wmtk::components::topological_offset::SmoothOffsetPotential::Impl']]],
   ['exact_5fenvelope_10',['exact_envelope',['../classwmtk_1_1_sample_envelope.html#a236b0a02e557cd600ee1e26b1f376ca1',1,'wmtk::SampleEnvelope']]],
   ['exact_5fenvelope_5f2d_11',['exact_envelope_2d',['../classwmtk_1_1_sample_envelope.html#a7286c0f3b39e115452de7a5920db1adb',1,'wmtk::SampleEnvelope']]],
-  ['experimental_5fconsistent_5fconstruction_5fsplit_12',['experimental_consistent_construction_split',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c',1,'wmtk::components::topological_offset::Parameters']]],
-  ['experimental_5fexit_5fwhen_5fcriteria_5fmet_13',['experimental_exit_when_criteria_met',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac133840e88837c8489a4b2d378d92da4',1,'wmtk::components::topological_offset::Parameters']]],
-  ['experimental_5fflip_5fsag_5fmargin_14',['experimental_flip_sag_margin',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a663f00ca3340fd9ce89ab18b243784c4',1,'wmtk::components::topological_offset::Parameters']]],
-  ['experimental_5fops_5fdivergence_5fguard_15',['experimental_ops_divergence_guard',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a8862701e794259afd2c1de304739e899',1,'wmtk::components::topological_offset::Parameters']]]
+  ['experimental_5faggresive_5frefine_12',['experimental_aggresive_refine',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a46065c1c7d95257ca220b85fa52d1328',1,'wmtk::components::topological_offset::Parameters']]],
+  ['experimental_5fconsistent_5fconstruction_5fsplit_13',['experimental_consistent_construction_split',['../structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c',1,'wmtk::components::topological_offset::Parameters']]]
 ];

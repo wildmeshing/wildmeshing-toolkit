@@ -10,8 +10,7 @@ var searchData=
   ['match_7',['match',['../classwmtk_1_1components_1_1simwild_1_1expression__parser_1_1_parser.html#af75746acc3509aa1e0cfc605be51417a',1,'wmtk::components::simwild::expression_parser::Parser']]],
   ['max_5fband_5fvertex_5fdistance_8',['max_band_vertex_distance',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a58045fa90a12ea2537870930dfb7ef9d',1,'wmtk::components::topological_offset::TopoOffsetTetMesh::max_band_vertex_distance()'],['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5b5e4738e219c2c5de5cb517adedbff9',1,'wmtk::components::topological_offset::TopoOffsetTriMesh::max_band_vertex_distance() const']]],
   ['max_5foffset_5fedge_5fsag_9',['max_offset_edge_sag',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac89b010c5f1441d1a80e08b31ebee7c7',1,'wmtk::components::topological_offset::TopoOffsetTriMesh']]],
-  ['max_5foffset_5fface_5fsag_10',['max_offset_face_sag',['../classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa564bc34d0b31453fff9c196fdf2e66c',1,'wmtk::components::topological_offset::TopoOffsetTetMesh']]],
-  ['max_5frelative_11',['max_relative',['../structwmtk_1_1components_1_1simwild_1_1_quality_group.html#a8d9e0df9b214e43a36f41dbfa75c8ce2',1,'wmtk::components::simwild::QualityGroup']]],
-  ['mesh_5fimprovement_5flegacy_12',['mesh_improvement_legacy',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aec391ff83dc66d14ec5abeec0776dc08',1,'wmtk::components::tetwild::TetWildMesh']]],
-  ['min_5fseparation_5f3d_13',['min_separation_3d',['../namespacegeo.html#a419330efaaf1d52afba8c6353a4cb922',1,'geo']]]
+  ['max_5frelative_10',['max_relative',['../structwmtk_1_1components_1_1simwild_1_1_quality_group.html#a8d9e0df9b214e43a36f41dbfa75c8ce2',1,'wmtk::components::simwild::QualityGroup']]],
+  ['mesh_5fimprovement_5flegacy_11',['mesh_improvement_legacy',['../classwmtk_1_1components_1_1tetwild_1_1_tet_wild_mesh.html#aec391ff83dc66d14ec5abeec0776dc08',1,'wmtk::components::tetwild::TetWildMesh']]],
+  ['min_5fseparation_5f3d_12',['min_separation_3d',['../namespacegeo.html#a419330efaaf1d52afba8c6353a4cb922',1,'geo']]]
 ];

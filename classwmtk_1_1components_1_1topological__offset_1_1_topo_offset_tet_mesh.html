@@ -424,10 +424,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>needle_forensics</b> 
 void&#160;</td><td class="memItemRight" valign="bottom"><b>record_flatness</b> (const char *op, double parent_flat, size_t child_tid) const</td></tr>
 <tr class="memdesc:a21aab5df829831c5c291f6253aaa4030"><td class="mdescLeft">&#160;</td><td class="mdescRight">Genesis: flatness transitions recorded at the operation hooks. {op, parent, child}. <br /></td></tr>
 <tr class="separator:a21aab5df829831c5c291f6253aaa4030"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9892b1ba78c0cd43ffadbf5bdf51b928" id="r_a9892b1ba78c0cd43ffadbf5bdf51b928"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9892b1ba78c0cd43ffadbf5bdf51b928">offset_face_sag</a> (size_t a, size_t b, size_t c) const</td></tr>
-<tr class="separator:a9892b1ba78c0cd43ffadbf5bdf51b928"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa564bc34d0b31453fff9c196fdf2e66c" id="r_aa564bc34d0b31453fff9c196fdf2e66c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aa564bc34d0b31453fff9c196fdf2e66c">max_offset_face_sag</a> (const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;faces) const</td></tr>
-<tr class="separator:aa564bc34d0b31453fff9c196fdf2e66c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7e98b9de249f5d67e75ed3602804fab" id="r_ab7e98b9de249f5d67e75ed3602804fab"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab7e98b9de249f5d67e75ed3602804fab">face_resolution_or_inf</a> (size_t a, size_t b, size_t c) const</td></tr>
+<tr class="separator:ab7e98b9de249f5d67e75ed3602804fab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad89a5d11e5d449a7820bf85b346ce343" id="r_ad89a5d11e5d449a7820bf85b346ce343"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad89a5d11e5d449a7820bf85b346ce343">ops_guard_refuses_collapse</a> (size_t v1, size_t v2) const</td></tr>
 <tr class="separator:ad89a5d11e5d449a7820bf85b346ce343"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad37238db961f34e41e1df557c6cd3308" id="r_ad37238db961f34e41e1df557c6cd3308"><td class="memItemLeft" align="right" valign="top"><a id="ad37238db961f34e41e1df557c6cd3308" name="ad37238db961f34e41e1df557c6cd3308"></a>
@@ -543,10 +541,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>smooth_plastic_vertex
 <tr class="memitem:a1a8fb1e0ed3566c96a1dd80023c4b998" id="r_a1a8fb1e0ed3566c96a1dd80023c4b998"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a1a8fb1e0ed3566c96a1dd80023c4b998">optimization_stop_metric</a> () const override</td></tr>
 <tr class="memdesc:a1a8fb1e0ed3566c96a1dd80023c4b998"><td class="mdescLeft">&#160;</td><td class="mdescRight">stop_energy outside Phase B, 1.0 in it &ndash; in the same units as the line above.  <br /></td></tr>
 <tr class="separator:a1a8fb1e0ed3566c96a1dd80023c4b998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65a8b9c5aba92b17345a303ff6a0d854" id="r_a65a8b9c5aba92b17345a303ff6a0d854"><td class="memItemLeft" align="right" valign="top"><a id="a65a8b9c5aba92b17345a303ff6a0d854" name="a65a8b9c5aba92b17345a303ff6a0d854"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>offset_residual_samples</b> () const</td></tr>
-<tr class="memdesc:a65a8b9c5aba92b17345a303ff6a0d854"><td class="mdescLeft">&#160;</td><td class="mdescRight">Samples per offset face; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2795cb9f3bc181ccac2d4021b735dc63">offset_face_samples()</a>. <br /></td></tr>
-<tr class="separator:a65a8b9c5aba92b17345a303ff6a0d854"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac695ab957d431eecb45af6b6e8e9b516" id="r_ac695ab957d431eecb45af6b6e8e9b516"><td class="memItemLeft" align="right" valign="top"><a id="ac695ab957d431eecb45af6b6e8e9b516" name="ac695ab957d431eecb45af6b6e8e9b516"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>stencil_order</b> () const</td></tr>
+<tr class="memdesc:ac695ab957d431eecb45af6b6e8e9b516"><td class="mdescLeft">&#160;</td><td class="mdescRight">Samples per offset face; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2795cb9f3bc181ccac2d4021b735dc63">offset_face_samples()</a>. <br /></td></tr>
+<tr class="separator:ac695ab957d431eecb45af6b6e8e9b516"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08b2c8a249c333c25eb5382f9ac07666" id="r_a08b2c8a249c333c25eb5382f9ac07666"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a08b2c8a249c333c25eb5382f9ac07666">stencil_points_per_face</a> () const</td></tr>
+<tr class="separator:a08b2c8a249c333c25eb5382f9ac07666"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5905900f250defab0eb4fc3e024da16e" id="r_a5905900f250defab0eb4fc3e024da16e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a5905900f250defab0eb4fc3e024da16e">offset_residual_tolerance</a> () const</td></tr>
 <tr class="separator:a5905900f250defab0eb4fc3e024da16e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47783771f00f42a9e9f29e37d619445c" id="r_a47783771f00f42a9e9f29e37d619445c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47783771f00f42a9e9f29e37d619445c">offset_gradient_tolerance</a> () const</td></tr>
@@ -578,10 +578,14 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>band_vertex_distanc
 double&#160;</td><td class="memItemRight" valign="bottom"><b>band_vertex_residual</b> (const size_t vid) const</td></tr>
 <tr class="memdesc:a9d0513ff95008b16ee8bca4c410276b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">How far vid is from the level set Phi = c, as a length. <br /></td></tr>
 <tr class="separator:a9d0513ff95008b16ee8bca4c410276b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab29d66172c84dcca60e7ab8bc001338a" id="r_ab29d66172c84dcca60e7ab8bc001338a"><td class="memTemplParams" colspan="2">template&lt;typename Visit &gt; </td></tr>
+<tr class="memitem:ab29d66172c84dcca60e7ab8bc001338a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab29d66172c84dcca60e7ab8bc001338a">for_each_face_sample</a> (const Vector3d &amp;p0, const Vector3d &amp;p1, const Vector3d &amp;p2, Visit &amp;&amp;visit) const</td></tr>
+<tr class="memdesc:ab29d66172c84dcca60e7ab8bc001338a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The interior lattice a triangle is sampled on, handed to <code>visit</code> one point at a time as (point, wa, wb, wc) with the barycentric weights that built it: every (i, j, l) with i + j + l = k + 2 and each &gt;= 1, so k = 1 is the centroid alone and the counts are 1, 3, 6, 10 for k = 1..4. Strictly interior &ndash; no sample ever lands on an edge or a corner, where the interpolant is exact by construction and the sag is identically zero.  <br /></td></tr>
+<tr class="separator:ab29d66172c84dcca60e7ab8bc001338a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34b661259d0e3cd50c164e9521297a01" id="r_a34b661259d0e3cd50c164e9521297a01"><td class="memTemplParams" colspan="2"><a id="a34b661259d0e3cd50c164e9521297a01" name="a34b661259d0e3cd50c164e9521297a01"></a>
 template&lt;typename Visit &gt; </td></tr>
 <tr class="memitem:a34b661259d0e3cd50c164e9521297a01"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>for_each_offset_face_sample</b> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f, Visit &amp;&amp;visit) const</td></tr>
-<tr class="memdesc:a34b661259d0e3cd50c164e9521297a01"><td class="mdescLeft">&#160;</td><td class="mdescRight">The interior lattice a face is sampled on, handed to <code>visit</code> one point at a time: every (i, j, l) with i + j + l = k + 2 and each &gt;= 1, so k = 1 is the centroid and the counts are 1, 3, 6, 10 for k = 1..4. The 2D twin is for_each_offset_edge_sample(). <br /></td></tr>
+<tr class="memdesc:a34b661259d0e3cd50c164e9521297a01"><td class="mdescLeft">&#160;</td><td class="mdescRight">The same lattice over a face the mesh carries. Visitor signature as above. <br /></td></tr>
 <tr class="separator:a34b661259d0e3cd50c164e9521297a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2795cb9f3bc181ccac2d4021b735dc63" id="r_a2795cb9f3bc181ccac2d4021b735dc63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_face_samples.html">FaceSamples</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a2795cb9f3bc181ccac2d4021b735dc63">offset_face_samples</a> (const <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &amp;f) const</td></tr>
 <tr class="separator:a2795cb9f3bc181ccac2d4021b735dc63"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -592,8 +596,6 @@ template&lt;typename Visit &gt; </td></tr>
 <tr class="separator:ab688b0cbd3201440c2fef2a953d03758"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a077702ec6841a46a23ce696b6f8a6a37" id="r_a077702ec6841a46a23ce696b6f8a6a37"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a077702ec6841a46a23ce696b6f8a6a37">front_chord_target</a> (size_t va, size_t vb, double len, double sag, double tube) const</td></tr>
 <tr class="separator:a077702ec6841a46a23ce696b6f8a6a37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee3096fa7b1306db09c09c23e9f47e1b" id="r_aee3096fa7b1306db09c09c23e9f47e1b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aee3096fa7b1306db09c09c23e9f47e1b">refine_front_from_sag</a> (const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion_1_1_refinable.html">EnergyCriterion::Refinable</a> &gt; &amp;faces)</td></tr>
-<tr class="separator:aee3096fa7b1306db09c09c23e9f47e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab785b38f44157c359fb1b26d7e3eb950" id="r_ab785b38f44157c359fb1b26d7e3eb950"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab785b38f44157c359fb1b26d7e3eb950">refine_front_by_halving</a> (const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion_1_1_refinable.html">EnergyCriterion::Refinable</a> &gt; &amp;faces)</td></tr>
 <tr class="separator:ab785b38f44157c359fb1b26d7e3eb950"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39c4d1bf89bb7d3cb4a480c0354649e3" id="r_a39c4d1bf89bb7d3cb4a480c0354649e3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a39c4d1bf89bb7d3cb4a480c0354649e3">grade_sizing</a> (double grade, const std::vector&lt; size_t &gt; &amp;seeds)</td></tr>
@@ -709,10 +711,6 @@ std::vector&lt; std::array&lt; size_t, 3 &gt; &gt;&#160;</td><td class="memItemR
 <tr class="separator:a4be55e8088b395f5f6285a30e721e969"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abeaef293c4a15ce1927d949960438847" id="r_abeaef293c4a15ce1927d949960438847"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#abeaef293c4a15ce1927d949960438847">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tets) override</td></tr>
 <tr class="separator:abeaef293c4a15ce1927d949960438847"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1cac8ea801cc141c6dcd709acb96b735" id="r_a1cac8ea801cc141c6dcd709acb96b735"><td class="memItemLeft" align="right" valign="top"><a id="a1cac8ea801cc141c6dcd709acb96b735" name="a1cac8ea801cc141c6dcd709acb96b735"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>pre_optimize_input_mesh</b> ()</td></tr>
-<tr class="memdesc:a1cac8ea801cc141c6dcd709acb96b735"><td class="mdescLeft">&#160;</td><td class="mdescRight">TetWild over the input mesh, before any of the offset exists, held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex. The 3D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#acf44b2eb5a5d5258e2ef96d1a4281357" title="TriWild over the input mesh, before any of the offset exists, held only by the per-tag region envelop...">TopoOffsetTriMesh::pre_optimize_input_mesh()</a>. <br /></td></tr>
-<tr class="separator:a1cac8ea801cc141c6dcd709acb96b735"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d7171eba2ae3bf030e8f456c9965c86" id="r_a7d7171eba2ae3bf030e8f456c9965c86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a7d7171eba2ae3bf030e8f456c9965c86">execute_offset</a> (const std::filesystem::path &amp;output_file)</td></tr>
 <tr class="separator:a7d7171eba2ae3bf030e8f456c9965c86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4898de71f1b7b8f2159cea5d8b6a2458" id="r_a4898de71f1b7b8f2159cea5d8b6a2458"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets</a> ()</td></tr>
@@ -1353,7 +1351,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_freeze_front</b> = 
 <tr class="separator:a9d00245ae5eb2f8835b06a23099d4be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85c86f8703d43d00214b5ad8d2fcecb6" id="r_a85c86f8703d43d00214b5ad8d2fcecb6"><td class="memItemLeft" align="right" valign="top"><a id="a85c86f8703d43d00214b5ad8d2fcecb6" name="a85c86f8703d43d00214b5ad8d2fcecb6"></a>
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_envelope</b></td></tr>
-<tr class="memdesc:a85c86f8703d43d00214b5ad8d2fcecb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset surface may not leave during the operation passes, of half-width offset_envelope_rel x target_distance. Rebuilt after every smoothing pass from the surface as that pass left it, which is what lets the surface travel across turns. Non-null once the offset exists; whether it constrains is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6c07e9670c1b863a143b0cebcdfdc565" title="The containment a simplex with this region mask, on/off the offset surface, must satisfy – the inters...">containment_for()</a>'s phase test. Unlike m_tag_envelopes, which must never be rebuilt. <br /></td></tr>
+<tr class="memdesc:a85c86f8703d43d00214b5ad8d2fcecb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset surface may not leave during the operation passes, of half-width offset_envelope. Rebuilt after every smoothing pass from the surface as that pass left it, which is what lets the surface travel across turns. Non-null once the offset exists; whether it constrains is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6c07e9670c1b863a143b0cebcdfdc565" title="The containment a simplex with this region mask, on/off the offset surface, must satisfy – the inters...">containment_for()</a>'s phase test. Unlike m_tag_envelopes, which must never be rebuilt. <br /></td></tr>
 <tr class="separator:a85c86f8703d43d00214b5ad8d2fcecb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf6e12bad48c4c8b1c943cf96e6d2a66" id="r_adf6e12bad48c4c8b1c943cf96e6d2a66"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#adf6e12bad48c4c8b1c943cf96e6d2a66">m_front_gradient_reference</a> = 0.</td></tr>
 <tr class="separator:adf6e12bad48c4c8b1c943cf96e6d2a66"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2016,7 +2014,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Which mode the hooks are running in. The 3D copy of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ae7d378d2e069d63e6dda752dec7228b4" title="Which mode the hooks are running in. The 2D twin of TopoOffsetTetMesh::OptPhase.">TopoOffsetTriMesh::OptPhase</a>. </p>
-<p>A: TetWild's loop and nothing else &ndash; the pre-optimize pass and the frozen-front final pass &ndash; with m_offset_envelope holding the front. B: the front objective's offset terms are live; set only around measurements (the criterion, the gradient reference) so they see the objective the placement uses. Single: the run's loop, TetWild's operation groups with the front placed by B's objective inside the smoothing passes &ndash; B wherever the smoother is concerned (objective, no offset tube while the front moves), A wherever the loop is (quality stats, stop metric). </p>
+<p>A: TetWild's loop and nothing else &ndash; today only the frozen-front final pass &ndash; with m_offset_envelope holding the front. B: the front objective's offset terms are live; set only around measurements (the criterion, the gradient reference) so they see the objective the placement uses. Single: the run's loop, TetWild's operation groups with the front placed by B's objective inside the smoothing passes &ndash; B wherever the smoother is concerned (objective, no offset tube while the front moves), A wherever the loop is (quality stats, stop metric). </p>
 
 </div>
 </div>
@@ -2125,6 +2123,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 <p>Which tracked faces are outside their envelope, and by how much, per real member tube. Diagnostic only; the 3D twin of the 2D function of the same name. </p>
 <p>&lt; furthest sample distance to a real member tube</p>
 <p>&lt; furthest CORNER distance &ndash; 0 means every corner is inside</p>
+<p>&lt; worst sample distance over eps; 1.0 is the skin</p>
+<p>&lt; over EVERY measured face; <code>snug</code> only keeps those at 0.9+</p>
 
 </div>
 </div>
@@ -2180,7 +2180,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Rebuild every region-class tube and every vertex's boundary mask from the current mesh under <code>setup</code>. PerTag at load (the complex is not labelled yet, and the pre-optimize pass holds every tag boundary as it always did), WallComplex when deform_others switches it at construction, envelope_setup() fresh at the final pass. The tracked-face flags are left alone: they are the topology the operations maintain. <code>when</code> labels the log line. </p>
+<p>Rebuild every region-class tube and every vertex's boundary mask from the current mesh under <code>setup</code>. PerTag at load (the complex is not labelled yet), WallComplex when deform_others switches it at construction, envelope_setup() fresh at the final pass. The tracked-face flags are left alone: they are the topology the operations maintain. <code>when</code> labels the log line. </p>
 
 </div>
 </div>
@@ -2703,7 +2703,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord (a, b) against front_conv_rel x target_distance; -1 unmeasurable. </p>
+<p>The chord twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a57bc58f80083f9d3496e1705fc7380af">face_conv_ratio()</a>: the RMS relative error over the chord's two endpoints and its midpoint, over the same bar; -1 unmeasurable. NO CALLERS in 3D. </p>
 
 </div>
 </div>
@@ -2741,7 +2741,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Construction, start to finish: the optional pre-optimize pass, the simplicial embedding, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a>, the re-embedding and the offset tagging. The optimization is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a>, which the driver calls afterwards. </p>
+<p>Construction, start to finish, on the input mesh as given: the simplicial embedding, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a4898de71f1b7b8f2159cea5d8b6a2458">marching_tets()</a>, the re-embedding and the offset tagging. The optimization is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ad38dcc49b6fae22d2cef0f82f66f890c" title="The 3D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a>, which the driver calls afterwards. </p>
 
 </div>
 </div>
@@ -2822,7 +2822,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The face's interpolation residual as a ratio to the bar: the sagitta of Phi at the face CENTROID, |Phi(g) - mean of the three corners| / |grad Phi(g)|, over the tube. The 3D resolution test (the 2D twin tests chord midpoints; a surface's worst interpolation error is inside the face, not on its edges). &lt; 0 when not measurable. </p>
+<p>THE measure, as a ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over the face's <code>stencil_order</code> stencil of the field's relative error (Phi(q) - c)/c. Since the stencil contains the CORNERS, this one number answers both questions the loop used to ask separately &ndash; a face is resolved when it is &lt;= 1, and a vertex is placed when the same measure over its own point (<a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6e39d32a9f5791310750cf8da3af4bb2">front_vertex_conv_ratio()</a>, the order-0 stencil at one corner) is &lt;= 1. &lt; 0 when not measurable, i.e. any sample where Phi is not finite. </p>
 
 </div>
 </div>
@@ -2975,6 +2975,95 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="ab7e98b9de249f5d67e75ed3602804fab" name="ab7e98b9de249f5d67e75ed3602804fab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7e98b9de249f5d67e75ed3602804fab">&#9670;&#160;</a></span>face_resolution_or_inf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::face_resolution_or_inf </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>c</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The ops divergence guard: one face's sag as <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a57bc58f80083f9d3496e1705fc7380af">face_conv_ratio()</a> gives it, with an unmeasurable face reported as infinity so that losing measurability counts as worsening. </p>
+
+</div>
+</div>
+<a id="ab29d66172c84dcca60e7ab8bc001338a" name="ab29d66172c84dcca60e7ab8bc001338a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab29d66172c84dcca60e7ab8bc001338a">&#9670;&#160;</a></span>for_each_face_sample()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Visit &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTetMesh::for_each_face_sample </td>
+          <td>(</td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Vector3d &amp;&#160;</td>
+          <td class="paramname"><em>p2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Visit &amp;&amp;&#160;</td>
+          <td class="paramname"><em>visit</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The interior lattice a triangle is sampled on, handed to <code>visit</code> one point at a time as (point, wa, wb, wc) with the barycentric weights that built it: every (i, j, l) with i + j + l = k + 2 and each &gt;= 1, so k = 1 is the centroid alone and the counts are 1, 3, 6, 10 for k = 1..4. Strictly interior &ndash; no sample ever lands on an edge or a corner, where the interpolant is exact by construction and the sag is identically zero. </p>
+<p>The weights are handed out because the sag at a sample is measured against the LINEAR INTERPOLANT there, wa*Va + wb*Vb + wc*Vc, which is only the plain mean of the corners at the centroid. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a57bc58f80083f9d3496e1705fc7380af">face_conv_ratio()</a>.</p>
+<p>Takes positions rather than a Tuple so the ops guard can measure a face the mesh does not carry yet (a collapse's predicted face, one corner relabelled). The 2D twin is for_each_offset_edge_sample(). </p>
+
+</div>
+</div>
 <a id="a077702ec6841a46a23ce696b6f8a6a37" name="a077702ec6841a46a23ce696b6f8a6a37"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a077702ec6841a46a23ce696b6f8a6a37">&#9670;&#160;</a></span>front_chord_target()</h2>
 
@@ -3018,7 +3107,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The edge length that would bring a front chord's sag under the tube: 3/4 L (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set turns across the chord. Same formula as 2D. </p>
+<p>The edge length that would bring a front chord's sag under the tube: 3/4 L (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set turns across the chord. Same formula as 2D.</p>
+<p>Reached from ONE place now: the refinable / at-floor test in energy_criterion(), which asks whether there is any target left below what the face's corners already carry. </p>
 
 </div>
 </div>
@@ -3162,7 +3252,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 <p>THE definition of "placed" for a vertex on the offset surface. </p>
 <p>Every decision in the component that asks "is the placement of this front vertex done" goes through here or through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aac7f18de7fc0a83ae4b74e883dd17f0d">front_placed_by_ratio()</a>: the loop's vertex test (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion.html#adb68ed81f4070e1ed6fd9d1a0b61e0ce">EnergyCriterion::vertices_ok()</a>), the corner qualification of the face-sag classification, the collapse and swap guards' snapshot and the collapse guard's after-half, the adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex cannot be placed for one of them and not for another.</p>
-<p>It was not always one notion: the sag classification used to qualify its corners with the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole face from ever being refined, with the face then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single(). Measured in 2D on top_annots_uday: at turn 1, 50 of the 114 sagging chords were dropped that way, the worst of them sagging 74 tubes, because one end sat 1.02 tubes off the level set with a Newton step of 1e-9. * front_conv_criterion "residual_error" makes that same residual_length() the measure for every one of the callers above. That is not the defect coming back: the defect was the SPLIT &ndash; one test using the residual while the rest used stationarity &ndash; not the use of the residual. Under residual_error both halves of the criterion, the vertex test and the chord/face sag, are lengths against rel x target_distance.</p>
+<p>It was not always one notion: the sag classification used to qualify its corners with the DISTANCE to the level set (residual_length() within front_conv) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole face from ever being refined, with the face then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single(). Measured in 2D on top_annots_uday: at turn 1, 50 of the 114 sagging chords were dropped that way, the worst of them sagging 74 tubes, because one end sat 1.02 tubes off the level set with a Newton step of 1e-9. * front_conv_criterion "residual_error" makes that same residual_length() the measure for every one of the callers above. That is not the defect coming back: the defect was the SPLIT &ndash; one test using the residual while the rest used stationarity &ndash; not the use of the residual. Under residual_error both halves of the criterion, the vertex test and the chord/face sag, are lengths against rel x target_distance.</p>
 <p>The caller has established that vid is a live front vertex (m_is_on_offset &amp;&amp; m_is_rounded); this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed. </p>
 
 </div>
@@ -3613,60 +3703,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
-<a id="aa564bc34d0b31453fff9c196fdf2e66c" name="aa564bc34d0b31453fff9c196fdf2e66c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa564bc34d0b31453fff9c196fdf2e66c">&#9670;&#160;</a></span>max_offset_face_sag()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::max_offset_face_sag </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; std::array&lt; size_t, 3 &gt; &gt; &amp;&#160;</td>
-          <td class="paramname"><em>faces</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>The largest <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a9892b1ba78c0cd43ffadbf5bdf51b928">offset_face_sag()</a> over a set of faces given by their vertex triples; 0 for an empty set. </p>
-
-</div>
-</div>
-<a id="a9892b1ba78c0cd43ffadbf5bdf51b928" name="a9892b1ba78c0cd43ffadbf5bdf51b928"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9892b1ba78c0cd43ffadbf5bdf51b928">&#9670;&#160;</a></span>offset_face_sag()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double wmtk::components::topological_offset::TopoOffsetTetMesh::offset_face_sag </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>b</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>c</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio measures it, with an unmeasurable face reported as infinity so that losing measurability counts as worsening. </p>
-
-</div>
-</div>
 <a id="a2795cb9f3bc181ccac2d4021b735dc63" name="a2795cb9f3bc181ccac2d4021b735dc63"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2795cb9f3bc181ccac2d4021b735dc63">&#9670;&#160;</a></span>offset_face_samples()</h2>
 
@@ -3682,7 +3718,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>The Phi residual at <code>offset_residual_samples</code> interior points of offset face <code>f</code>. Returns nothing for a face with an unreachable corner. The 2D twin is offset_edge_samples(). </p>
+<p>The Phi residual at the <code>stencil_order</code> stencil's points of offset face <code>f</code>. Returns nothing for a face with an unreachable corner. The 2D twin is offset_edge_samples(). </p>
 
 </div>
 </div>
@@ -3708,7 +3744,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The gradient_norm_rel bar: front_conv_rel x a measured reference (m_gradient_reference, never measured on the single-phase path, so this sits at the floor there; the single-phase bar uses m_front_gradient_reference instead). Same as 2D. </p>
+<p>The gradient_norm_rel bar: front_conv_frac() x a measured reference (m_gradient_reference, never measured on the single-phase path, so this sits at the floor there; the single-phase bar uses m_front_gradient_reference instead). The fraction rather than the length, because the reference is a gradient, not a distance. Same as 2D. </p>
 
 </div>
 </div>
@@ -4092,26 +4128,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>sag_halve_refinement: halve the sizing scalar at the corners of every refinable face, once per vertex per call, floored like <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aee3096fa7b1306db09c09c23e9f47e1b">refine_front_from_sag()</a>, then graded outward. Returns the number of vertices lowered. </p>
-
-</div>
-</div>
-<a id="aee3096fa7b1306db09c09c23e9f47e1b" name="aee3096fa7b1306db09c09c23e9f47e1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee3096fa7b1306db09c09c23e9f47e1b">&#9670;&#160;</a></span>refine_front_from_sag()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t wmtk::components::topological_offset::TopoOffsetTetMesh::refine_front_from_sag </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh_1_1_energy_criterion_1_1_refinable.html">EnergyCriterion::Refinable</a> &gt; &amp;&#160;</td>
-          <td class="paramname"><em>faces</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>The resolution rule: sets the target length at each refinable face's three corners from <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a077702ec6841a46a23ce696b6f8a6a37">front_chord_target()</a> over its longest edge with the centroid sag, graded outward. Returns the vertices changed. </p>
+<p>THE refinement: halve the sizing scalar at the corners of every refinable face, once per vertex per call, floored at max(min_sizing_scalar, min_edge_length / l), then graded outward. Returns the number of vertices lowered. </p>
 
 </div>
 </div>
@@ -4939,6 +4956,32 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 
 </div>
 </div>
+<a id="a08b2c8a249c333c25eb5382f9ac07666" name="a08b2c8a249c333c25eb5382f9ac07666"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08b2c8a249c333c25eb5382f9ac07666">&#9670;&#160;</a></span>stencil_points_per_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::TopoOffsetTetMesh::stencil_points_per_face </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>How many points <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab29d66172c84dcca60e7ab8bc001338a" title="The interior lattice a triangle is sampled on, handed to visit one point at a time as (point,...">for_each_face_sample()</a> visits at the configured order: 3 at order 0, and (n+1)(n+2)/2 + n^2 with n = 2^(k-1) above it, i.e. 4, 10, 31, 109, ... Kept in step with <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ab29d66172c84dcca60e7ab8bc001338a" title="The interior lattice a triangle is sampled on, handed to visit one point at a time as (point,...">for_each_face_sample()</a> by the unit test <code>stencil-order-point-counts</code>. </p>
+
+</div>
+</div>
 <a id="aa868fa301486f2278da5603fa746b1a7" name="aa868fa301486f2278da5603fa746b1a7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa868fa301486f2278da5603fa746b1a7">&#9670;&#160;</a></span>surface_envelope_for_face()</h2>
 
@@ -5161,8 +5204,8 @@ requirement", which the base handles by skipping the check. </p>
 
 <p>The absolute-bar rule again, one stage EARLIER, where the 4-4 and 5-6 swaps decide. </p>
 <p><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">swap_quality_allowed()</a> above is the app's after-hook and is the whole story only for the 3-2 swap. <a class="el" href="classwmtk_1_1_tet_mesh.html#aedcf392b8b5af4db93019f2729440c37">TetMesh::swap_edge_44()</a> and <a class="el" href="classwmtk_1_1_tet_mesh.html#a5a36ea2a5838553a224b8dc09d76e2d2">swap_edge_56()</a> pick their retetrahedralization by seeding <code>min_energy</code> with the energy of DOING NOTHING and taking a case only when it is strictly lower (TetMeshSwapMeshConnectivity.cpp:534 and :756). That test runs BEFORE <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a3b6468c37b6117321c2cdcf78e66954b" title="User specified modifications and desideratas for after a 4-4 edge swap.">swap_edge_44_after()</a>, so a surface flip that raises AMIPS never reaches the hook and the absolute bar could not fire: measured on the cube at 1e-3, of the valence-4 surface edges whose flip would cut sag, 93.5% raise max AMIPS and NOT ONE of those 3740 was ever taken, against 58.1% of the 260 that happened to lower it.</p>
-<p>So the bar is expressed in the currency that comparison speaks. For a surface flip under EXPERIMENTAL_ops_divergence_guard the baseline case (op_case 0, the existing cells) reports stop_energy instead of its own AMIPS, which turns the base's <code>energy &lt; min_energy</code> into exactly "the cells this flip makes are under stop_energy". Nothing in the shared engine changes; TetWild and SimWild never see it, and neither does a default offsets run, because both conditions are required.</p>
-<p>The sag half lives in swap_before_surface(). It refuses any flip that does not strictly lower the pair's max sag by EXPERIMENTAL_flip_sag_margin, and every flip that does gets THIS override &ndash; so the accepted rule is max sag after &lt;= max sag before - margin AND max AMIPS after &lt; stop_energy, with nothing asked about whether the pair was over the bar. A flip that misses the margin is refused by the guard outright rather than judged on AMIPS. The margin is what makes the pass converge, since each accepted flip spends at least that much of a quantity bounded below; the runs that proved a looser sag test does not converge are written out there.</p>
+<p>So the bar is expressed in the currency that comparison speaks. For a flip that has been found to be one of the offset surface, the baseline case (op_case 0, the existing cells) reports stop_energy instead of its own AMIPS, which turns the base's <code>energy &lt; min_energy</code> into exactly "the cells this flip makes are under stop_energy". Nothing in the shared engine changes: the override is handed out only where swap_before_surface() has just established both conditions, so TetWild and SimWild never see it and neither does any flip of the input complex or of a region boundary.</p>
+<p>The sag half lives in swap_before_surface(). It refuses any flip that does not strictly lower the pair's max sag by flip_sag_margin, and every flip that does gets THIS override &ndash; so the accepted rule is max sag after &lt;= max sag before - margin AND max AMIPS after &lt; stop_energy, with nothing asked about whether the pair was over the bar. A flip that misses the margin is refused by the guard outright rather than judged on AMIPS. The margin is what makes the pass converge, since each accepted flip spends at least that much of a quantity bounded below; the runs that proved a looser sag test does not converge are written out there.</p>
 <p>An inverted candidate is still refused: the base returns double::max() for one, which is not below stop_energy. A 5-6 surface flip gains a quality bar it never had, its after-hook having computed a max energy and discarded it since before this branch existed. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html#a144e553b641104f76a766145bfee2f55">wmtk::TetOptimizerMesh</a>.</p>
@@ -5257,7 +5300,7 @@ requirement", which the base handles by skipping the check. </p>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL_ops_divergence_guard, the swap half. UNDER THAT FLAG a flip OF THE OFFSET SURFACE is accepted on an absolute quality bar rather than on strict improvement: the cells it creates need only be under stop_energy, which is the bar the run is trying to reach anyway. With the flag off, and for every interior swap either way, the base's strict rule stands, so a default run is unchanged.</p>
+<p>The ops divergence guard, the swap half. A flip OF THE OFFSET SURFACE is accepted on an absolute quality bar rather than on strict improvement: the cells it creates need only be under stop_energy, which is the bar the run is trying to reach anyway. For every interior swap the base's strict rule still stands.</p>
 <p>Strict improvement made the surface flip unreachable in practice &ndash; it is the only operation that can re-triangulate the offset surface without moving a vertex, and across whole runs on the deliverable cube not one was ever accepted (cnt_surface_flip 0 for 3-2, 4-4 and 5-6 alike, with one pass logging 0 successes against 7636 failures). A rule that can only ever accept an improvement cannot get a surface out of a local minimum.</p>
 <p>The other half of the acceptance rule is NOT here: the sag test lives in swap_before_surface(), where it is exact because a flip moves no vertex, so both faces' corners are unchanged and the "after" sag can be measured before anything is modified. There is deliberately no PLACEMENT test: <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a6e39d32a9f5791310750cf8da3af4bb2">front_vertex_conv_ratio()</a> under the default residual_error criterion is band_vertex_residual(vid) over the bar, a function of the vertex's position alone, and a swap moves no vertex &ndash; so it cannot change. That is not true of step_size_rel or the F-based criterion, which build <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a500d11b276f1ed37b884a34ac10f1554">phase_b_front_objective()</a> and so read the one-ring a flip re-triangulates; under those a flip can move the ratio and this rule does not notice. </p>
 
@@ -5287,7 +5330,7 @@ requirement", which the base handles by skipping the check. </p>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>THE single test for "this flip gets the absolute bar", read by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">swap_quality_allowed()</a> and by both energy overrides. It is not recomputed here: swap_before_surface() has already decided, and set the flag only after establishing all three conditions &ndash; the guard is on, both re-triangulated faces are live offset surface, and the flip strictly lowers their max sag. Asking again from here could not check the second or the third, which is how the first version of this handed the bar to input-complex and region flips as well. </p>
+<p>THE single test for "this flip gets the absolute bar", read by <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">swap_quality_allowed()</a> and by both energy overrides. It is not recomputed here: swap_before_surface() has already decided, and set the flag only after establishing both conditions &ndash; the two re-triangulated faces are live offset surface, and the flip lowers their max sag by the margin. Asking again from here could check neither, which is how the first version of this handed the bar to input-complex and region flips as well. </p>
 
 </div>
 </div>
@@ -5678,7 +5721,7 @@ requirement", which the base handles by skipping the check. </p>
 </div><div class="memdoc">
 
 <p>[flip funnel]: of the surface flips the guard judged worth doing, how many survive each later stage. Reset per turn and reported next to [swap reject]. </p>
-<p>[swap reject] counts every refusal of every surface flip, most of which SHOULD be refused. This follows only the flips that passed the guard &ndash; pair over the bar, fall at least EXPERIMENTAL_flip_sag_margin &ndash; so a drop here is work the run wanted and did not get.</p>
+<p>[swap reject] counts every refusal of every surface flip, most of which SHOULD be refused. This follows only the flips that passed the guard &ndash; pair over the bar, fall at least flip_sag_margin &ndash; so a drop here is work the run wanted and did not get.</p>
 <p>Reading it. <code>offered</code> is set in swap_before_surface(), which is the app's first sight of a candidate; anything the base turned down earlier (valence, bbox, connectivity) never reaches it and is in [swap reject] instead. offered - quality is lost in the base's case search, i.e. no retetrahedralization that makes the (c,d) diagonal was found or every one was inverted. quality - quality_ok is refused on AMIPS against stop_energy. quality_ok - committed is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a> refusing on the side/label capture. What the envelope check then refuses is past this hook and shows as after_envelope in [swap reject].</p>
 <p>The case that matters most is offered == committed with worthwhile flips still sitting in the mesh at the end of the pass: then nothing refused them and they were never presented, which puts the loss in the scheduler rather than in any rule here.</p>
 <p><code>under_margin</code> says what the margin costs: flips REFUSED because the fall, though real, came in under it. Ties and rises are refused too but are not counted there &ndash; the guard always refused those. </p>
@@ -5721,7 +5764,7 @@ requirement", which the base handles by skipping the check. </p>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL_ops_divergence_guard: operations refused for raising the local sag of the offset surface. </p>
+<p>The ops divergence guard: operations refused for raising the local sag of the offset surface. </p>
 
 </div>
 </div>
@@ -5759,7 +5802,7 @@ requirement", which the base handles by skipping the check. </p>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>[flip trace]: is the swap pass walking the offset surface's sag down monotonically, and in steps of what size? The per-turn lines cannot answer that, because a pass that does not finish never reaches the end of its turn &ndash; so this prints from INSIDE the pass, every kFlipTraceEvery accepted flips. Live only where the guard measured a pair, i.e. only under EXPERIMENTAL_ops_divergence_guard and only for flips of the offset surface.</p>
+<p>[flip trace]: is the swap pass walking the offset surface's sag down monotonically, and in steps of what size? The per-turn lines cannot answer that, because a pass that does not finish never reaches the end of its turn &ndash; so this prints from INSIDE the pass, every kFlipTraceEvery accepted flips. Live only where the guard measured a pair, i.e. only under the ops divergence guard, and only for flips of the offset surface.</p>
 <p>Counted at <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#ae6356112261645497a046a09f3f5d151" title="Propagate application data to the cells made by a successful topological swap.">swap_after_cells()</a>, which is past the sag refusal and past the quality gate but still before the envelope check, so it overcounts by the after_envelope refusals &ndash; tens per turn against thousands of flips. </p>
 
 </div>

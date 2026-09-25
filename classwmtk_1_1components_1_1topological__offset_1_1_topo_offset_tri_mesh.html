@@ -109,7 +109,7 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The band's distance error, split by whether the optimizer can do anything about it.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_distance_split.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_samples.html">EdgeSamples</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The residual sampled at points along a band edge &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at offset_residual_samples interior points of band edge e.">offset_edge_samples()</a>.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_samples.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The residual sampled at points along a band edge &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at stencil_order interior points of band edge e.">offset_edge_samples()</a>.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_samples.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_snapshot2d.html">EdgeSnapshot2d</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An edge's / face's shared attributes together with the offset's own label.  <a href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_snapshot2d.html#details">More...</a><br /></td></tr>
@@ -483,8 +483,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stamp_plastic_rests</
 <tr class="memitem:a1b00f7b2af0a0d7e6069f51568ffc654" id="r_a1b00f7b2af0a0d7e6069f51568ffc654"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a1b00f7b2af0a0d7e6069f51568ffc654">optimization_stop_metric</a> () const override</td></tr>
 <tr class="memdesc:a1b00f7b2af0a0d7e6069f51568ffc654"><td class="mdescLeft">&#160;</td><td class="mdescRight">1.0 in Phase B, where the metric is normalized; the base's stop_energy in Phase A.  <br /></td></tr>
 <tr class="separator:a1b00f7b2af0a0d7e6069f51568ffc654"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a227b7ba5f8a8cf5f1b1a77c253f89be7" id="r_a227b7ba5f8a8cf5f1b1a77c253f89be7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a227b7ba5f8a8cf5f1b1a77c253f89be7">offset_residual_samples</a> () const</td></tr>
-<tr class="separator:a227b7ba5f8a8cf5f1b1a77c253f89be7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15d5527786e3a40dc3660d1d6c4b2f3a" id="r_a15d5527786e3a40dc3660d1d6c4b2f3a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a15d5527786e3a40dc3660d1d6c4b2f3a">stencil_order</a> () const</td></tr>
+<tr class="separator:a15d5527786e3a40dc3660d1d6c4b2f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31329acdadd951356ee7244e05694025" id="r_a31329acdadd951356ee7244e05694025"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a31329acdadd951356ee7244e05694025">offset_residual_tolerance</a> () const</td></tr>
 <tr class="separator:a31329acdadd951356ee7244e05694025"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6795530b6579f8547bc0f7c8b3ae673c" id="r_a6795530b6579f8547bc0f7c8b3ae673c"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6795530b6579f8547bc0f7c8b3ae673c">offset_gradient_tolerance</a> () const</td></tr>
@@ -509,11 +509,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stamp_plastic_rests</
 <tr class="memitem:ac204d016d7a87612e36ab75a7b7cf7db" id="r_ac204d016d7a87612e36ab75a7b7cf7db"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac204d016d7a87612e36ab75a7b7cf7db">band_vertex_residual</a> (const size_t vid) const</td></tr>
 <tr class="separator:ac204d016d7a87612e36ab75a7b7cf7db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f54f79f964bd0754e97f88279ed1588" id="r_a3f54f79f964bd0754e97f88279ed1588"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_edge_samples.html">EdgeSamples</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588">offset_edge_samples</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e) const</td></tr>
-<tr class="memdesc:a3f54f79f964bd0754e97f88279ed1588"><td class="mdescLeft">&#160;</td><td class="mdescRight">The Phi residual at <code>offset_residual_samples</code> interior points of band edge <code>e</code>.  <br /></td></tr>
+<tr class="memdesc:a3f54f79f964bd0754e97f88279ed1588"><td class="mdescLeft">&#160;</td><td class="mdescRight">The Phi residual at <code>stencil_order</code> interior points of band edge <code>e</code>.  <br /></td></tr>
 <tr class="separator:a3f54f79f964bd0754e97f88279ed1588"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e0463e4d3f67173210d9b3230078b74" id="r_a5e0463e4d3f67173210d9b3230078b74"><td class="memTemplParams" colspan="2">template&lt;typename Visit &gt; </td></tr>
 <tr class="memitem:a5e0463e4d3f67173210d9b3230078b74"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a5e0463e4d3f67173210d9b3230078b74">for_each_offset_edge_sample</a> (const <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &amp;e, Visit &amp;&amp;visit) const</td></tr>
-<tr class="memdesc:a5e0463e4d3f67173210d9b3230078b74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit the same interior sample points <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at offset_residual_samples interior points of band edge e.">offset_edge_samples()</a> measures on.  <br /></td></tr>
+<tr class="memdesc:a5e0463e4d3f67173210d9b3230078b74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit the same interior sample points <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at stencil_order interior points of band edge e.">offset_edge_samples()</a> measures on.  <br /></td></tr>
 <tr class="separator:a5e0463e4d3f67173210d9b3230078b74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a313994b6836d70e5745eb3a8f2e96b65" id="r_a313994b6836d70e5745eb3a8f2e96b65"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_gradient_split.html">GradientSplit</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a313994b6836d70e5745eb3a8f2e96b65">gradient_split</a> (bool include_edge_samples=true) const</td></tr>
 <tr class="separator:a313994b6836d70e5745eb3a8f2e96b65"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -626,9 +626,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty_input_complex</
 <tr class="memitem:a6e2860310660ea8a8eeb8faf0512c998" id="r_a6e2860310660ea8a8eeb8faf0512c998"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6e2860310660ea8a8eeb8faf0512c998">invariants</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tuple.html">Tuple</a> &gt; &amp;tris) override</td></tr>
 <tr class="memdesc:a6e2860310660ea8a8eeb8faf0512c998"><td class="mdescLeft">&#160;</td><td class="mdescRight">User specified invariants that can't be violated.  <br /></td></tr>
 <tr class="separator:a6e2860310660ea8a8eeb8faf0512c998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf44b2eb5a5d5258e2ef96d1a4281357" id="r_acf44b2eb5a5d5258e2ef96d1a4281357"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#acf44b2eb5a5d5258e2ef96d1a4281357">pre_optimize_input_mesh</a> ()</td></tr>
-<tr class="memdesc:acf44b2eb5a5d5258e2ef96d1a4281357"><td class="mdescLeft">&#160;</td><td class="mdescRight">TriWild over the input mesh, before any of the offset exists, held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex.  <br /></td></tr>
-<tr class="separator:acf44b2eb5a5d5258e2ef96d1a4281357"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ff3f39908a066bcc044e73fdce80b97" id="r_a6ff3f39908a066bcc044e73fdce80b97"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6ff3f39908a066bcc044e73fdce80b97">execute_offset</a> (const std::filesystem::path &amp;output_file)</td></tr>
 <tr class="separator:a6ff3f39908a066bcc044e73fdce80b97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d441bedc0773f511659914d15038e82" id="r_a4d441bedc0773f511659914d15038e82"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82">marching_tris</a> ()</td></tr>
@@ -1194,7 +1191,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_freeze_front</b> = 
 <tr class="separator:a5772d8d4b6e90bcb343181b460066d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef7134ae7a54476fbd97024ae83afe97" id="r_aef7134ae7a54476fbd97024ae83afe97"><td class="memItemLeft" align="right" valign="top"><a id="aef7134ae7a54476fbd97024ae83afe97" name="aef7134ae7a54476fbd97024ae83afe97"></a>
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_sample_envelope.html">SampleEnvelope</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_offset_envelope</b></td></tr>
-<tr class="memdesc:aef7134ae7a54476fbd97024ae83afe97"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset boundary may not leave during Phase A, of half-width offset_envelope_rel x target_distance. Rebuilt at the end of every Phase B from the boundary as that phase left it, which is what lets the boundary travel across rounds. Non-null once the offset exists; whether it constrains is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa116ede4d90b8a30f27030069651db44" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>'s phase test, not the pointer. Unlike m_tag_envelopes, which must never be rebuilt. <br /></td></tr>
+<tr class="memdesc:aef7134ae7a54476fbd97024ae83afe97"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tube the offset boundary may not leave during Phase A, of half-width offset_envelope. Rebuilt at the end of every Phase B from the boundary as that phase left it, which is what lets the boundary travel across rounds. Non-null once the offset exists; whether it constrains is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa116ede4d90b8a30f27030069651db44" title="The containment a simplex with this region mask, on/off the offset front, must satisfy – the intersec...">containment_for()</a>'s phase test, not the pointer. Unlike m_tag_envelopes, which must never be rebuilt. <br /></td></tr>
 <tr class="separator:aef7134ae7a54476fbd97024ae83afe97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa039163f977329aa5b90b20ce338d4ea" id="r_aa039163f977329aa5b90b20ce338d4ea"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#aa039163f977329aa5b90b20ce338d4ea">m_front_gradient_reference</a> = 0.</td></tr>
 <tr class="separator:aa039163f977329aa5b90b20ce338d4ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1682,7 +1679,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
 </div><div class="memdoc">
 
 <p>Which mode the hooks are running in. The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aefd648969e4fc35a7802ed0ab4fa4bfc" title="Which mode the hooks are running in. The 3D copy of TopoOffsetTriMesh::OptPhase.">TopoOffsetTetMesh::OptPhase</a>. </p>
-<p>A: TriWild's loop and nothing else &ndash; the pre-optimize pass and the frozen-front final pass &ndash; with m_offset_envelope holding the front. B: the front objective's offset terms are live; set only around measurements (the criterion, the gradient reference) so they see the objective the placement uses. Single: the run's loop, TriWild's operation groups with the front placed by B's objective inside the smoothing passes &ndash; B wherever the smoother is concerned (objective, no offset tube while the front moves), A wherever the loop is (quality stats, stop metric). </p>
+<p>A: TriWild's loop and nothing else &ndash; today only the frozen-front final pass &ndash; with m_offset_envelope holding the front. B: the front objective's offset terms are live; set only around measurements (the criterion, the gradient reference) so they see the objective the placement uses. Single: the run's loop, TriWild's operation groups with the front placed by B's objective inside the smoothing passes &ndash; B wherever the smoother is concerned (objective, no offset tube while the front moves), A wherever the loop is (quality stats, stop metric). </p>
 
 </div>
 </div>
@@ -1841,7 +1838,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Rebuild every region-class tube and every vertex's boundary mask from the current mesh under <code>setup</code>. PerTag at load (the complex is not labelled yet, and the pre-optimize pass holds every tag boundary as it always did), WallComplex when deform_others switches it at construction, envelope_setup() fresh at the final pass. The tracked-edge flags are left alone: they are the topology the operations maintain. <code>when</code> labels the log line. </p>
+<p>Rebuild every region-class tube and every vertex's boundary mask from the current mesh under <code>setup</code>. PerTag at load (the complex is not labelled yet), WallComplex when deform_others switches it at construction, envelope_setup() fresh at the final pass. The tracked-edge flags are left alone: they are the topology the operations maintain. <code>when</code> labels the log line. </p>
 
 </div>
 </div>
@@ -2492,7 +2489,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_coarsen_mode</b> = 
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Construction, start to finish: the optional pre-optimize pass, the simplicial embedding, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82">marching_tris()</a>, the re-embedding and the offset tagging. The optimization is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2d2433ad916e327fa9847c3d11965f0d" title="The 2D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a>, which the driver calls afterwards. </p>
+<p>Construction, start to finish, on the input mesh as given: the simplicial embedding, <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a4d441bedc0773f511659914d15038e82">marching_tris()</a>, the re-embedding and the offset tagging. The optimization is <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2d2433ad916e327fa9847c3d11965f0d" title="The 2D optimization phase: split / collapse / swap / smooth on the shared driver.">optimize_offset()</a>, which the driver calls afterwards. </p>
 
 </div>
 </div>
@@ -2650,7 +2647,7 @@ template&lt;typename Visit &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Visit the same interior sample points <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at offset_residual_samples interior points of band edge e.">offset_edge_samples()</a> measures on. </p>
+<p>Visit the same interior sample points <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at stencil_order interior points of band edge e.">offset_edge_samples()</a> measures on. </p>
 <p>Factored out so the residual and the convergence gradient are measured on one lattice &ndash; a criterion sampled on a different set of points from the quantity the sizing field refines by is two measurements pretending to be one. The 3D twin is for_each_offset_face_sample(). </p>
 
 </div>
@@ -2842,7 +2839,7 @@ template&lt;typename Visit &gt; </div>
 
 <p>THE definition of "placed" for a vertex on the offset surface. </p>
 <p>Every decision in the component that asks "is the placement of this front vertex done" goes through here or through <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a353e585580bc68556aeace8436f7de5d">front_placed_by_ratio()</a>: the loop's vertex test (<a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh_1_1_energy_criterion.html#a7663982a4b656320e40189a0c68fdaaa">EnergyCriterion::vertices_ok()</a>), the endpoint qualification of the chord-sag classification, the collapse guard's snapshot and its after-half, the adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex cannot be placed for one of them and not for another.</p>
-<p>It was not always one notion: the sag classification used to qualify its endpoints with the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole chord from ever being refined, with the chord then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single(). * front_conv_criterion "residual_error" makes that same residual_length() the measure for every one of the callers above. That is not the defect coming back: the defect was the SPLIT &ndash; one test using distance while the rest used stationarity &ndash; not the use of distance. Under residual_error both halves of the criterion, the vertex test and the chord/face sag, are lengths against rel x target_distance.</p>
+<p>It was not always one notion: the sag classification used to qualify its endpoints with the DISTANCE to the level set (residual_length() within the convergence epsilon) while everything else used the criterion's stationarity measure. The two disagree exactly where it matters &ndash; a vertex whose Newton step has collapsed sits wherever it sits, and one a hair outside the tube disqualified its whole chord from ever being refined, with the chord then counted in neither <code>refinable</code> nor <code>n_at_floor</code> and so invisible to converged_single(). * front_conv_criterion "residual_error" makes that same residual_length() the measure for every one of the callers above. That is not the defect coming back: the defect was the SPLIT &ndash; one test using distance while the rest used stationarity &ndash; not the use of distance. Under residual_error both halves of the criterion, the vertex test and the chord/face sag, are lengths against rel x target_distance.</p>
 <p>The caller has established that vid is a live front vertex (m_is_on_offset &amp;&amp; m_is_rounded); this does not re-check that. Unmeasurable (a non-finite ratio) is NOT placed. </p>
 
 </div>
@@ -3343,7 +3340,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Population scan at a named moment, for the points no operation hook covers &ndash; after the pre-pass, after construction, at each collapse pass. Reports the count and the worst few. </p>
+<p>Population scan at a named moment, for the points no operation hook covers &ndash; after the after construction, at each collapse pass. Reports the count and the worst few. </p>
 
 </div>
 </div>
@@ -3372,7 +3369,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL_ops_divergence_guard: one chord's sag as edge_conv_ratio measures it, with an unmeasurable chord reported as infinity so that losing measurability counts as worsening. The 3D twin is offset_face_sag(), measured at the face centroid. </p>
+<p>The ops divergence guard: one chord's sag as edge_conv_ratio measures it, with an unmeasurable chord reported as infinity so that losing measurability counts as worsening. The 3D twin is offset_face_sag(), measured at the face centroid. </p>
 
 </div>
 </div>
@@ -3392,7 +3389,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
       </table>
 </div><div class="memdoc">
 
-<p>The Phi residual at <code>offset_residual_samples</code> interior points of band edge <code>e</code>. </p>
+<p>The Phi residual at <code>stencil_order</code> interior points of band edge <code>e</code>. </p>
 <p>The criterion cannot be a vertex criterion: a boundary can have every vertex exactly on the level set while zig-zagging or cutting corners between them, which reads as converged and is not the offset. That is the gap the paper's normal-deviation criterion (Sec. 5.3.3) covered.</p>
 <p>Sampling the edges is what the potential makes possible and a distance field did not: Phi is defined everywhere, so the offset can be measured anywhere along the band rather than only where the mesh happens to have put a vertex. The same samples feed <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a6e748d434c4328a9a5a158fd82ae9615">face_criterion_rel()</a>, so the sizing field refines a band too coarse to represent the offset instead of letting it decimate.</p>
 <p>Samples are uniform interior points, i/(k+1) for i = 1..k, so k = 1 is the midpoint. Returns nothing for an edge with an unreachable endpoint: a segment running onto the input complex is legitimately closer than target_distance along its length. </p>
@@ -3425,32 +3422,6 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 <p>The convergence tolerance: the bound on |grad (Phi - c)^2| at a band vertex. </p>
 <p>A fraction of target_distance, which is the right unit: grad E = 2 (Phi - c) grad Phi, and grad Phi is dimensionless for a field whose value is a length, so grad E is a length.</p>
 <p>The gradient needs no conversion of Phi's value into a length &ndash; it is the stationarity condition of the objective Phase B minimises, so it is the same test for the exact Euclidean field and for the smooth potential alike, which is what lets a reentrant input be judged by the same number as a convex one. See <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#a47783771f00f42a9e9f29e37d619445c">TopoOffsetTetMesh::offset_gradient_tolerance()</a> for the full derivation of the slope normalization. </p>
-
-</div>
-</div>
-<a id="a227b7ba5f8a8cf5f1b1a77c253f89be7" name="a227b7ba5f8a8cf5f1b1a77c253f89be7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a227b7ba5f8a8cf5f1b1a77c253f89be7">&#9670;&#160;</a></span>offset_residual_samples()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int wmtk::components::topological_offset::TopoOffsetTriMesh::offset_residual_samples </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Samples per band edge; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at offset_residual_samples interior points of band edge e.">offset_edge_samples()</a>. 0 falls back to a vertex-only criterion, which is measurably blind to a band too coarse to be the offset. </p>
 
 </div>
 </div>
@@ -3628,7 +3599,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 <p>The max of the two criteria this optimization has to meet, each divided by its own target, so mesh_improvement() stops exactly when both are met:</p>
 <ul>
 <li>max face AMIPS over stop_energy &ndash; TriWild's, via <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a6858bedf70f8ca77b7fe5723b98359f9" title="A face&#39;s quality relative to the quality it is required to reach; &lt;= 1 means it meets it.">quality_rel()</a></li>
-<li>max Phi residual over (front_conv_rel / 2) * target_distance, over the reachable band</li>
+<li>max Phi residual over half the vertex epsilon, front_conv / 2, over the reachable band</li>
 </ul>
 <p>The average returned alongside it is the same expression over the two averages, so both numbers live on the same 1.0 scale. Nothing reads the average; it is logged. </p>
 
@@ -3795,26 +3766,6 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
-<a id="acf44b2eb5a5d5258e2ef96d1a4281357" name="acf44b2eb5a5d5258e2ef96d1a4281357"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf44b2eb5a5d5258e2ef96d1a4281357">&#9670;&#160;</a></span>pre_optimize_input_mesh()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void wmtk::components::topological_offset::TopoOffsetTriMesh::pre_optimize_input_mesh </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>TriWild over the input mesh, before any of the offset exists, held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex. </p>
-<p>Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point where the only tracked surfaces are the tag-region boundaries (input complex and domain wall among them) and the only containment is their per-tag envelopes. There is no offset yet, so no offset envelope and no Phi term: this is TriWild, exactly. Same as 3D. </p>
-
-</div>
-</div>
 <a id="a81a014fc7e0ff86ae49a4208873f7ccb" name="a81a014fc7e0ff86ae49a4208873f7ccb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a81a014fc7e0ff86ae49a4208873f7ccb">&#9670;&#160;</a></span>project_into_containment()</h2>
 
@@ -3881,7 +3832,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>sag_halve_refinement: halve the sizing scalar at the ends of every refinable edge, once per vertex per call, floored like <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2aafc5fa40cbf1db6fd044fcf5c3324d">refine_front_from_sag()</a>, then graded outward. Returns the number of vertices lowered. </p>
+<p>THE refinement: halve the sizing scalar at the ends of every refinable edge, once per vertex per call, floored like <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a2aafc5fa40cbf1db6fd044fcf5c3324d">refine_front_from_sag()</a>, then graded outward. Returns the number of vertices lowered. </p>
 
 </div>
 </div>
@@ -4620,6 +4571,32 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
 
 </div>
 </div>
+<a id="a15d5527786e3a40dc3660d1d6c4b2f3a" name="a15d5527786e3a40dc3660d1d6c4b2f3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15d5527786e3a40dc3660d1d6c4b2f3a">&#9670;&#160;</a></span>stencil_order()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int wmtk::components::topological_offset::TopoOffsetTriMesh::stencil_order </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Samples per band edge; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#a3f54f79f964bd0754e97f88279ed1588" title="The Phi residual at stencil_order interior points of band edge e.">offset_edge_samples()</a>. 0 falls back to a vertex-only criterion, which is measurably blind to a band too coarse to be the offset. </p>
+
+</div>
+</div>
 <a id="a8649b76f6e0afee7a3803ea9671e6545" name="a8649b76f6e0afee7a3803ea9671e6545"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8649b76f6e0afee7a3803ea9671e6545">&#9670;&#160;</a></span>surface_envelope_for_edge()</h2>
 
@@ -4752,7 +4729,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
   </tr>
 </table>
 </div><div class="memdoc">
-<p>The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">TopoOffsetTetMesh::swap_quality_allowed()</a>, kept so the two dimensions carry the same rule, and like it gated on EXPERIMENTAL_ops_divergence_guard. It is UNREACHABLE for an offset edge today, and not by oversight: a 2D front is a curve with no diagonal to flip, and <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a63d72ccedf89c33eca11de9f886fe281" title="User specified preparations and desideratas for an edge swap including 1.can&#39;t swap on boundary edge....">TriOptimizerMesh::swap_edge_before()</a> refuses any edge on a tracked surface outright via is_edge_on_surface(), so an offset edge never reaches a swap at all. <code>is_surface_flip</code> is therefore always false here and this always defers to the base's strict rule &ndash; which is the 2D behaviour unchanged. Should 2D ever gain a surface flip, this is where its acceptance rule belongs. </p>
+<p>The 2D twin of <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tet_mesh.html#aba2b1b6cfa37ceef3f6723416bcbe472">TopoOffsetTetMesh::swap_quality_allowed()</a>, kept so the two dimensions carry the same rule. It is UNREACHABLE for an offset edge today, and not by oversight: a 2D front is a curve with no diagonal to flip, and <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a63d72ccedf89c33eca11de9f886fe281" title="User specified preparations and desideratas for an edge swap including 1.can&#39;t swap on boundary edge....">TriOptimizerMesh::swap_edge_before()</a> refuses any edge on a tracked surface outright via is_edge_on_surface(), so an offset edge never reaches a swap at all. <code>is_surface_flip</code> is therefore always false here and this always defers to the base's strict rule &ndash; which is the 2D behaviour unchanged. Should 2D ever gain a surface flip, this is where its acceptance rule belongs. </p>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html#a7207100bb68a33e571df720ae0545bbd">wmtk::TriOptimizerMesh</a>.</p>
 
@@ -5141,7 +5118,7 @@ stopping the mesh from fixing them", the question that matters when Phase A refi
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL_ops_divergence_guard: collapses refused for raising the local sag of the offset surface. No swap counter here: the 3D twin also guards the surface flip, which has no 2D counterpart &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac7fa458ec03da89aa38538dd78b7905f" title="Reject a flip whose new edge already exists.">swap_edge_before()</a>. </p>
+<p>The ops divergence guard: collapses refused for raising the local sag of the offset surface. No swap counter here: the 3D twin also guards the surface flip, which has no 2D counterpart &ndash; see <a class="el" href="classwmtk_1_1components_1_1topological__offset_1_1_topo_offset_tri_mesh.html#ac7fa458ec03da89aa38538dd78b7905f" title="Reject a flip whose new edge already exists.">swap_edge_before()</a>. </p>
 
 </div>
 </div>

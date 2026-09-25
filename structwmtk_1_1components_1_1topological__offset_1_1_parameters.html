@@ -97,6 +97,8 @@ Inheritance diagram for wmtk::components::topological_offset::Parameters:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a5c2b4dd3736e27412fe2922c8873be27" id="r_a5c2b4dd3736e27412fe2922c8873be27"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5c2b4dd3736e27412fe2922c8873be27">front_conv_frac</a> () const</td></tr>
+<tr class="separator:a5c2b4dd3736e27412fe2922c8873be27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4757df230aa1f1472eb8447844798332" id="r_a4757df230aa1f1472eb8447844798332"><td class="memItemLeft" align="right" valign="top"><a id="a4757df230aa1f1472eb8447844798332" name="a4757df230aa1f1472eb8447844798332"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Parameters</b> (const nlohmann::json &amp;json_params)</td></tr>
 <tr class="separator:a4757df230aa1f1472eb8447844798332"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -151,12 +153,15 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>offset_dhat_factor<
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>offset_field</b></td></tr>
 <tr class="memdesc:a56a89926b6a243f85fe52d0d734afe17"><td class="mdescLeft">&#160;</td><td class="mdescRight">"smooth" (Phi level set) or "euclidean" (exact distance) <br /></td></tr>
 <tr class="separator:a56a89926b6a243f85fe52d0d734afe17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2bb152cd1ce2cce462b24b16e446faa" id="r_ae2bb152cd1ce2cce462b24b16e446faa"><td class="memItemLeft" align="right" valign="top"><a id="ae2bb152cd1ce2cce462b24b16e446faa" name="ae2bb152cd1ce2cce462b24b16e446faa"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv</b></td></tr>
+<tr class="separator:ae2bb152cd1ce2cce462b24b16e446faa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06eedb4d505aae8a551e0677e1fc7d9e" id="r_a06eedb4d505aae8a551e0677e1fc7d9e"><td class="memItemLeft" align="right" valign="top"><a id="a06eedb4d505aae8a551e0677e1fc7d9e" name="a06eedb4d505aae8a551e0677e1fc7d9e"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv_rel</b></td></tr>
 <tr class="separator:a06eedb4d505aae8a551e0677e1fc7d9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3188f326201273023d24761ed87c640c" id="r_a3188f326201273023d24761ed87c640c"><td class="memItemLeft" align="right" valign="top"><a id="a3188f326201273023d24761ed87c640c" name="a3188f326201273023d24761ed87c640c"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>front_conv_criterion</b></td></tr>
-<tr class="memdesc:a3188f326201273023d24761ed87c640c"><td class="mdescLeft">&#160;</td><td class="mdescRight">gradient_norm_rel | step_size_rel | decrement | residual_error <br /></td></tr>
+<tr class="memdesc:a3188f326201273023d24761ed87c640c"><td class="mdescLeft">&#160;</td><td class="mdescRight">gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY] <br /></td></tr>
 <tr class="separator:a3188f326201273023d24761ed87c640c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab81a01358a1558310de1c2906c5beb93" id="r_ab81a01358a1558310de1c2906c5beb93"><td class="memItemLeft" align="right" valign="top"><a id="ab81a01358a1558310de1c2906c5beb93" name="ab81a01358a1558310de1c2906c5beb93"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_normal_projection</b> = true</td></tr>
@@ -169,9 +174,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>front_normal_projecti
 <tr class="separator:a9fe8648b4000c5ec8e9d449bdf38534c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a802504a1c01c4ab258777aad386981c0" id="r_a802504a1c01c4ab258777aad386981c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a802504a1c01c4ab258777aad386981c0">max_rounds</a> = 40</td></tr>
 <tr class="separator:a802504a1c01c4ab258777aad386981c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a751bca931da733dc10117256edd8d75d" id="r_a751bca931da733dc10117256edd8d75d"><td class="memItemLeft" align="right" valign="top"><a id="a751bca931da733dc10117256edd8d75d" name="a751bca931da733dc10117256edd8d75d"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>offset_residual_samples</b></td></tr>
-<tr class="separator:a751bca931da733dc10117256edd8d75d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8bb5b2090dfe6eb4604c33e0f01b4bef" id="r_a8bb5b2090dfe6eb4604c33e0f01b4bef"><td class="memItemLeft" align="right" valign="top"><a id="a8bb5b2090dfe6eb4604c33e0f01b4bef" name="a8bb5b2090dfe6eb4604c33e0f01b4bef"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>stencil_order</b></td></tr>
+<tr class="separator:a8bb5b2090dfe6eb4604c33e0f01b4bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2f589c738c1ca954fdd3addc9fc58f8" id="r_af2f589c738c1ca954fdd3addc9fc58f8"><td class="memItemLeft" align="right" valign="top"><a id="af2f589c738c1ca954fdd3addc9fc58f8" name="af2f589c738c1ca954fdd3addc9fc58f8"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>sorted_marching</b></td></tr>
 <tr class="separator:af2f589c738c1ca954fdd3addc9fc58f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -181,6 +186,8 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>sorted_marching</b></
 <tr class="separator:aec4223bf61e4f0dc7a7218f92811ab6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af20b7251572220cfa98f403a3919740c" id="r_af20b7251572220cfa98f403a3919740c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#af20b7251572220cfa98f403a3919740c">experimental_consistent_construction_split</a> = true</td></tr>
 <tr class="separator:af20b7251572220cfa98f403a3919740c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46065c1c7d95257ca220b85fa52d1328" id="r_a46065c1c7d95257ca220b85fa52d1328"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a46065c1c7d95257ca220b85fa52d1328">experimental_aggresive_refine</a> = true</td></tr>
+<tr class="separator:a46065c1c7d95257ca220b85fa52d1328"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a4f261f3043247d7743058781a2b84d" id="r_a5a4f261f3043247d7743058781a2b84d"><td class="memItemLeft" align="right" valign="top"><a id="a5a4f261f3043247d7743058781a2b84d" name="a5a4f261f3043247d7743058781a2b84d"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>output_path</b></td></tr>
 <tr class="separator:a5a4f261f3043247d7743058781a2b84d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -195,9 +202,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>num_threads</b></td></
 <tr class="separator:afc390ba49cdbfd4ea31f09cf1fb2f1dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7095a52eea67c045a67c45b5dcd7bea2" id="r_a7095a52eea67c045a67c45b5dcd7bea2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a7095a52eea67c045a67c45b5dcd7bea2">max_iterations</a></td></tr>
 <tr class="separator:a7095a52eea67c045a67c45b5dcd7bea2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72347e2f2a27f1547d09d57c12cd2331" id="r_a72347e2f2a27f1547d09d57c12cd2331"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a72347e2f2a27f1547d09d57c12cd2331">pre_optimize_input</a> = true</td></tr>
-<tr class="separator:a72347e2f2a27f1547d09d57c12cd2331"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a241eba7551c08fd75c356f1081909955" id="r_a241eba7551c08fd75c356f1081909955"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a241eba7551c08fd75c356f1081909955">offset_envelope_rel</a></td></tr>
+<tr class="memitem:ab382d1aaf390eecfc94dfdc93665cc0e" id="r_ab382d1aaf390eecfc94dfdc93665cc0e"><td class="memItemLeft" align="right" valign="top"><a id="ab382d1aaf390eecfc94dfdc93665cc0e" name="ab382d1aaf390eecfc94dfdc93665cc0e"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>offset_envelope</b></td></tr>
+<tr class="memdesc:ab382d1aaf390eecfc94dfdc93665cc0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">absolute; &lt; 0 means use offset_envelope_rel <br /></td></tr>
+<tr class="separator:ab382d1aaf390eecfc94dfdc93665cc0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a241eba7551c08fd75c356f1081909955" id="r_a241eba7551c08fd75c356f1081909955"><td class="memItemLeft" align="right" valign="top"><a id="a241eba7551c08fd75c356f1081909955" name="a241eba7551c08fd75c356f1081909955"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>offset_envelope_rel</b></td></tr>
 <tr class="separator:a241eba7551c08fd75c356f1081909955"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03458a63b38a658340c744bbdaeeb0b6" id="r_a03458a63b38a658340c744bbdaeeb0b6"><td class="memItemLeft" align="right" valign="top"><a id="a03458a63b38a658340c744bbdaeeb0b6" name="a03458a63b38a658340c744bbdaeeb0b6"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>min_edge_length</b></td></tr>
@@ -228,16 +238,10 @@ double&#160;</td><td class="memItemRight" valign="bottom"><b>adaptive_smoothing_
 <tr class="separator:a7edc046a11dc1d1beba3c512507bc5d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb7f8c157a0f5347e57fe02053b798bc" id="r_aeb7f8c157a0f5347e57fe02053b798bc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aeb7f8c157a0f5347e57fe02053b798bc">adaptive_smoothing_step_rel</a></td></tr>
 <tr class="separator:aeb7f8c157a0f5347e57fe02053b798bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb0e014e54d31b9b0e1ee0fcfac44135" id="r_aeb0e014e54d31b9b0e1ee0fcfac44135"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#aeb0e014e54d31b9b0e1ee0fcfac44135">sag_halve_refinement</a></td></tr>
-<tr class="separator:aeb0e014e54d31b9b0e1ee0fcfac44135"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44d24b926a44e47277c794f99c58deb4" id="r_a44d24b926a44e47277c794f99c58deb4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a44d24b926a44e47277c794f99c58deb4">pre_smooth</a></td></tr>
 <tr class="separator:a44d24b926a44e47277c794f99c58deb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8862701e794259afd2c1de304739e899" id="r_a8862701e794259afd2c1de304739e899"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a8862701e794259afd2c1de304739e899">experimental_ops_divergence_guard</a></td></tr>
-<tr class="separator:a8862701e794259afd2c1de304739e899"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a663f00ca3340fd9ce89ab18b243784c4" id="r_a663f00ca3340fd9ce89ab18b243784c4"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a663f00ca3340fd9ce89ab18b243784c4">experimental_flip_sag_margin</a></td></tr>
-<tr class="separator:a663f00ca3340fd9ce89ab18b243784c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac133840e88837c8489a4b2d378d92da4" id="r_ac133840e88837c8489a4b2d378d92da4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#ac133840e88837c8489a4b2d378d92da4">experimental_exit_when_criteria_met</a></td></tr>
-<tr class="separator:ac133840e88837c8489a4b2d378d92da4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a53cadf3e9aed88c51a982657d1e5a2ea" id="r_a53cadf3e9aed88c51a982657d1e5a2ea"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a53cadf3e9aed88c51a982657d1e5a2ea">flip_sag_margin</a></td></tr>
+<tr class="separator:a53cadf3e9aed88c51a982657d1e5a2ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade5ad21c9f80caffe4801db0fb77f70e" id="r_ade5ad21c9f80caffe4801db0fb77f70e"><td class="memItemLeft" align="right" valign="top"><a id="ade5ad21c9f80caffe4801db0fb77f70e" name="ade5ad21c9f80caffe4801db0fb77f70e"></a>
 VectorXd&#160;</td><td class="memItemRight" valign="bottom"><b>box_min</b></td></tr>
 <tr class="separator:ade5ad21c9f80caffe4801db0fb77f70e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -362,7 +366,34 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 <div class="textblock"><p>What the offset needs on top of the parameters every wmtk optimizer shares. </p>
 <p>The optimization phase reuses <a class="el" href="classwmtk_1_1_tri_optimizer_mesh.html" title="What triwild and simwild&#39;s 2D mesh share.">wmtk::TriOptimizerMesh</a> / <a class="el" href="classwmtk_1_1_tet_optimizer_mesh.html" title="What tetwild and simwild&#39;s 3D mesh share.">wmtk::TetOptimizerMesh</a>, so everything that phase reads &ndash; target edge length, the split/collapse thresholds derived from it, smoothing weights and pass count, the sizing knobs, the debug switch &ndash; comes from <a class="el" href="structwmtk_1_1_optimizer_parameters.html" title="The parameters tetwild, triwild and simwild all share.">wmtk::OptimizerParameters</a> and is not restated here. The bounding box stays here because its type and meaning differ per application.</p>
 <p>Every key below means the same thing in 2D and 3D; the two pipelines are the same algorithm one dimension apart, and a key that only one of them read would be a difference in the algorithm. </p>
-</div><h2 class="groupheader">Member Data Documentation</h2>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a5c2b4dd3736e27412fe2922c8873be27" name="a5c2b4dd3736e27412fe2922c8873be27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c2b4dd3736e27412fe2922c8873be27">&#9670;&#160;</a></span>front_conv_frac()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::components::topological_offset::Parameters::front_conv_frac </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>The convergence epsilon as a FRACTION of target_distance, which is the form the dimensionless relative error (Phi - c)/c is compared against. A mean of squared relative errors is below <a class="el" href="structwmtk_1_1components_1_1topological__offset_1_1_parameters.html#a5c2b4dd3736e27412fe2922c8873be27">front_conv_frac()</a>^2 exactly when the same mean taken in lengths is below front_conv^2 &ndash; the two differ by target_distance^2 on both sides &ndash; so which form the code uses is a matter of where the division sits, not of what is being asked. 2D's fraction-valued criteria ('decrement', 'gradient_norm_rel') take it for the same reason. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
 <a id="ab7f19435c119caffefda463e7f0242e6" name="ab7f19435c119caffefda463e7f0242e6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab7f19435c119caffefda463e7f0242e6">&#9670;&#160;</a></span>adaptive_smoothing</h2>
 
@@ -423,6 +454,22 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
+<a id="a46065c1c7d95257ca220b85fa52d1328" name="a46065c1c7d95257ca220b85fa52d1328"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a46065c1c7d95257ca220b85fa52d1328">&#9670;&#160;</a></span>experimental_aggresive_refine</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::components::topological_offset::Parameters::experimental_aggresive_refine = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on refinement. With it FALSE a face over the bar is handed to the halving only when all THREE of its corners are already placed &ndash; the safeguard that stops refinement from chasing a moving front. True (the default) refines EVERY face over the bar, placed or not, so the sizing scalar is halved at every vertex of every unresolved face. The floor and the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is refinable only while the halving can still lower a target, and <code>n_faces_over_placed</code> / <code>max_face_placed</code> still report the PLACED subset alone.</p>
+<p>Why it exists: under one unified measure the two halves can deadlock. A face chording a feature of radius delta puts its centroid far inside the level set, and that sample's pull cancels the corners' own placement pull almost exactly, so the corners never place; refinement, which is the only thing that would shorten the chord and remove the sag, is gated on exactly those corners being placed. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for 40 turns. </p>
+
+</div>
+</div>
 <a id="af20b7251572220cfa98f403a3919740c" name="af20b7251572220cfa98f403a3919740c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af20b7251572220cfa98f403a3919740c">&#9670;&#160;</a></span>experimental_consistent_construction_split</h2>
 
@@ -438,48 +485,18 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="ac133840e88837c8489a4b2d378d92da4" name="ac133840e88837c8489a4b2d378d92da4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac133840e88837c8489a4b2d378d92da4">&#9670;&#160;</a></span>experimental_exit_when_criteria_met</h2>
+<a id="a53cadf3e9aed88c51a982657d1e5a2ea" name="a53cadf3e9aed88c51a982657d1e5a2ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53cadf3e9aed88c51a982657d1e5a2ea">&#9670;&#160;</a></span>flip_sag_margin</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::experimental_exit_when_criteria_met</td>
+          <td class="memname">double wmtk::components::topological_offset::Parameters::flip_sag_margin</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>EXPERIMENTAL, 3D only. See the spec: true lets the single-phase loop exit on the FIRST turn that meets the front criterion, the way TetWild's loop stops on its own metric. false additionally requires that the previous turn lowered no sizing scalar, which is one turn of hysteresis against the tail's churn. Default true. </p>
-
-</div>
-</div>
-<a id="a663f00ca3340fd9ce89ab18b243784c4" name="a663f00ca3340fd9ce89ab18b243784c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a663f00ca3340fd9ce89ab18b243784c4">&#9670;&#160;</a></span>experimental_flip_sag_margin</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double wmtk::components::topological_offset::Parameters::experimental_flip_sag_margin</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates the FLIP &ndash; max sag after &lt;= max sag before - this, and the cells under stop_energy, is the whole rule; one that misses the margin is refused rather than falling back on AMIPS. Without it the swap pass does not finish, on noise-sized flips that are all monotone. </p>
-
-</div>
-</div>
-<a id="a8862701e794259afd2c1de304739e899" name="a8862701e794259afd2c1de304739e899"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8862701e794259afd2c1de304739e899">&#9670;&#160;</a></span>experimental_ops_divergence_guard</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::experimental_ops_divergence_guard</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>EXPERIMENTAL. See the spec: reject any operation on the offset surface that raises the local sag &ndash; a collapse whose survivor is left with a worse maximum than the two endpoints had between them, or a surface flip whose two new faces are worse than the two old ones. Splits are never rejected. false = the operation passes exactly as they are. Default true. </p>
+<p>3D only (2D has no swap half to the guard). See the spec: how much of the resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates the FLIP &ndash; max sag after &lt;= max sag before - this, and the cells under stop_energy, is the whole rule; one that misses the margin is refused rather than falling back on AMIPS. Without it the swap pass does not finish, on noise-sized flips that are all monotone. </p>
 
 </div>
 </div>
@@ -509,7 +526,7 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Cap of the shared TriWild/TetWild loop wherever it runs: the pre-optimisation pass and the frozen-front finishing pass. </p>
+<p>Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the frozen-front finishing pass. </p>
 
 </div>
 </div>
@@ -528,21 +545,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="a241eba7551c08fd75c356f1081909955" name="a241eba7551c08fd75c356f1081909955"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a241eba7551c08fd75c356f1081909955">&#9670;&#160;</a></span>offset_envelope_rel</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double wmtk::components::topological_offset::Parameters::offset_envelope_rel</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>The operation passes' offset envelope width, as a fraction of target_distance &ndash; the same tube every turn, rebuilt after every smoothing pass; see rebuild_offset_envelope(). Also feeds the derived sizing floor (min_edge_length_rel &lt; 0). </p>
-
-</div>
-</div>
 <a id="a952bf15651085cd44b09b9fb2db09bf8" name="a952bf15651085cd44b09b9fb2db09bf8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a952bf15651085cd44b09b9fb2db09bf8">&#9670;&#160;</a></span>optimize_offset</h2>
 
@@ -558,21 +560,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
 
 </div>
 </div>
-<a id="a72347e2f2a27f1547d09d57c12cd2331" name="a72347e2f2a27f1547d09d57c12cd2331"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a72347e2f2a27f1547d09d57c12cd2331">&#9670;&#160;</a></span>pre_optimize_input</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::pre_optimize_input = true</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Run TriWild/TetWild over the INPUT mesh before the simplicial embedding and the marching, held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex. See pre_optimize_input_mesh() in either mesh. </p>
-
-</div>
-</div>
 <a id="a44d24b926a44e47277c794f99c58deb4" name="a44d24b926a44e47277c794f99c58deb4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a44d24b926a44e47277c794f99c58deb4">&#9670;&#160;</a></span>pre_smooth</h2>
 
@@ -585,21 +572,6 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>perform_sanity_checks
       </table>
 </div><div class="memdoc">
 <p>See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive smoothing) before the first turn of the single-phase loop. </p>
-
-</div>
-</div>
-<a id="aeb0e014e54d31b9b0e1ee0fcfac44135" name="aeb0e014e54d31b9b0e1ee0fcfac44135"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb0e014e54d31b9b0e1ee0fcfac44135">&#9670;&#160;</a></span>sag_halve_refinement</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool wmtk::components::topological_offset::Parameters::sag_halve_refinement</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>See the spec: true replaces the sag rule's chord target with a plain halving of the sizing scalar at the ends / corners of every refinable edge / face, floored like the sag rule. </p>
 
 </div>
 </div>
