@@ -27,8 +27,8 @@ CPMAddPackage(
     NAME eigen
     GITLAB_REPOSITORY libeigen/eigen
     # Master commit 969c31eef (2023-06-15, reports itself as 3.4.90): the commit polysolve requires
-    # for Apple Accelerate (Eigen/AccelerateSupport does not exist in 3.4.0), which the polyfem_ops
-    # component needs to match the solver its reference runs used. Only the version moves; the ABI
+    # for Apple Accelerate (Eigen/AccelerateSupport does not exist in 3.4.0), which simwild's polyfem
+    # operations need to match the solver their reference runs used. Only the version moves; the ABI
     # pin below (the alignment macros) is what the long comment underneath is about and stays as is.
     # Measured 2026-09-16: the move exposed one missing <cassert> (src/wmtk/utils/EnergyHarmonicTet.cpp)
     # and two in the 2022 libigl (mat_max, mat_min), gone with libigl 2.6.0; all unit tests pass.

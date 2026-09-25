@@ -2,7 +2,8 @@
 output streamed and logged, reading a mesh's material groups, and the pieces
 of a polyfem JSON (paraview output, geometry entry, deep merge). The rest of
 this module was the Python engine of minimum_separation and
-laplacian_smoothing, which now run only in the C++ component polyfem_ops."""
+laplacian_smoothing, which now run only as operations of the C++ component
+simwild."""
 import os
 import re
 import subprocess

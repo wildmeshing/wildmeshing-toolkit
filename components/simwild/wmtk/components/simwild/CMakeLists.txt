@@ -53,9 +53,8 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 )
 
 # The polyfem-backed operations minimum_separation and laplacian_smoothing, and the helpers they are
-# built from. simwild.cpp dispatches to them; so, until it is removed, does the polyfem_ops component
-# (components/polyfem_ops). Built only with WMTK_WITH_POLYFEM (top-level CMakeLists), which is the
-# same switch that gates the polyfem_ops component in components/CMakeLists.txt.
+# built from; simwild.cpp dispatches to them. Built only with WMTK_WITH_POLYFEM (top-level
+# CMakeLists).
 if(WMTK_WITH_POLYFEM)
 	set(POLYFEM_HELPERS_SRC_FILES
 		polyfem_helpers/PythonFormat.hpp
@@ -94,14 +93,14 @@ if(WMTK_WITH_POLYFEM)
 	target_compile_definitions(wmtk_${COMPONENT_NAME} PUBLIC WMTK_SIMWILD_WITH_POLYFEM)
 
 	# Linked HERE and not into wmtk::toolkit, like ipc-toolkit in topological_offset: these helpers
-	# and the polyfem_ops component on top of them are the only consumers, and polyfem brings
-	# geogram, TBB, HDF5, nanospline, tinyexpr and more with it, none of which tetwild / triwild /
-	# the rest of simwild have any use for. It also carries the two headers the constraint matrices
-	# need: igl (massmatrix, cotmatrix -- the same library the Python calls through its bindings)
-	# and h5pp (via paraviewo, built with HDF5 on), so neither needs a link target of its own here.
+	# are the only consumers, and polyfem brings geogram, TBB, HDF5, nanospline, tinyexpr and more
+	# with it, none of which tetwild / triwild / the rest of simwild have any use for. It also
+	# carries the two headers the constraint matrices need: igl (massmatrix, cotmatrix -- the same
+	# library the Python calls through its bindings) and h5pp (via paraviewo, built with HDF5 on),
+	# so neither needs a link target of its own here.
 	#
 	# PUBLIC because the helper headers are part of this component's interface: PolyfemRunner.hpp
-	# includes polysolve headers, and polyfem_ops includes it.
+	# includes polysolve headers, and the component's tests include it.
 	include(polyfem)
 
 	target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC

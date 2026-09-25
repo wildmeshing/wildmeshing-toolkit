@@ -10,7 +10,7 @@ import re
 import h5py
 import pytest
 
-from conftest import needs_polyfem_ops, run_cpp
+from conftest import needs_polyfem, run_cpp
 from simwild.polyfem_ops.mesh_core import (assign_selection_ids, normalize_selection,
                                parse_expression)
 
@@ -83,7 +83,7 @@ def _polyfem_pairs(mesh, out_dir, pairs):
     return doc["contact"]["collision_pairs"]
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_collision_pairs_dedup_and_pairs(boxes3d, tmp_path):
     # Same side reused across pairs without ids: no user bookkeeping needed.
     assert _polyfem_pairs(boxes3d, tmp_path / "reuse",
@@ -96,7 +96,7 @@ def test_collision_pairs_dedup_and_pairs(boxes3d, tmp_path):
                           [[A, B], [{"region": "tag_0"}, B]]) == [[1, 2], [3, 2]]
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_collision_pairs_shape_guard(boxes3d, tmp_path):
     for bad in ["ab", {"region": "tag_0"}, [["only-one"]]]:
         with pytest.raises(RuntimeError, match="collision_pairs"):
@@ -104,7 +104,7 @@ def test_collision_pairs_shape_guard(boxes3d, tmp_path):
                     collision_pairs=[bad], sep=1.5)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_minimum_separation_spec(boxes3d, tmp_path):
     run_cpp(boxes3d, "minimum_separation", tmp_path / "ok", sep=1e-3,
             collision_pairs=[["tag_0", {"region": "tag_1",
@@ -127,7 +127,7 @@ def test_minimum_separation_spec(boxes3d, tmp_path):
             run_cpp(boxes3d, "minimum_separation", tmp_path / f"bad{i}", **bad)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_laplacian_smoothing_spec(boxes3d, tmp_path):
     run_cpp(boxes3d, "laplacian_smoothing", tmp_path / "ok",
             interfaces=["tag_1", {"region": "tag_0", "filter": "ambient"}])

@@ -19,7 +19,7 @@ CPMAddPackage(
     OPTIONS
         # LIBIGL_PREDICATES: the toolkit itself moved its exact predicates to Indirect_Predicates
         # (see src/wmtk/utils/predicates.cpp), but ipc-toolkit (topological_offset) and polyfem
-        # (polyfem_ops) both link igl::predicates. The earlier unquoted `LIBIGL_PREDICATES OFF` was
+        # (simwild's polyfem operations) both link igl::predicates. The earlier unquoted `LIBIGL_PREDICATES OFF` was
         # never in effect: every default build has produced igl::predicates (lib/libpredicates.a),
         # and a quoted OFF breaks ipc-toolkit's link at configure time. Measured 2026-09-16.
         "LIBIGL_PREDICATES ON"

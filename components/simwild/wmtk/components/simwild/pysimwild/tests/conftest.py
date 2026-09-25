@@ -28,7 +28,7 @@ except ImportError:
 # The C++ engine
 # --------------------------------------------------------------------------
 
-def _polyfem_ops_available():
+def _polyfem_available():
     """The polyfem operations are optional (WMTK_WITH_POLYFEM); without them
     simwild refuses them with an error that says so. The probe job lacks
     `sep`, so a build that has them stops on that before touching any file."""
@@ -45,8 +45,8 @@ def _polyfem_ops_available():
     return True
 
 
-needs_polyfem_ops = pytest.mark.skipif(
-    not _polyfem_ops_available(),
+needs_polyfem = pytest.mark.skipif(
+    not _polyfem_available(),
     reason="the wildmeshing module was built without polyfem "
            "(configure with -DWMTK_WITH_POLYFEM=ON)")
 

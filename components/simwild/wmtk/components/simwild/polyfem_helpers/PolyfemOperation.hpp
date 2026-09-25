@@ -29,16 +29,6 @@ struct PreparedOperation
     SolveInputs inputs;
 };
 
-/**
- * @brief Validate `json_params` against `simwild::simwild_spec_for(json_params)` in strict mode and
- * inject
- * the defaults, in place.
- *
- * What `wmtk::utils::verify_and_setup_logger` does for the simwild entry, without the logger, for
- * the polyfem_ops entry that forwards to the same operations.
- */
-void validate_polyfem_operation(nlohmann::json& json_params);
-
 /// The single input mesh of a polyfem operation: `json_params["input"]` resolved against
 /// `json_params["input_dir"]`, as every other simwild operation resolves it. These operations solve
 /// on one already-tagged .msh, so a list of several is a configuration error.

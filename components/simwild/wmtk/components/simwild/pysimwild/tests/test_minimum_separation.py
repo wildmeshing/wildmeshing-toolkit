@@ -6,7 +6,7 @@ import pytest
 
 from simwild import simwild as wm
 
-from conftest import needs_polyfem_ops
+from conftest import needs_polyfem
 from geo import min_separation_3d, region_node_coords, signed_volumes
 
 SEL_A = {"region": "tag_0", "filter": "ambient"}
@@ -17,7 +17,7 @@ SEP = 1.5e-3            # solver units: target gap of 1.5 mesh units
 RTOL = 1e-1             # relative tolerance on the achieved separation
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @pytest.mark.parametrize("strategy", ["dhat", "stiffness"])
 def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy):
     out_msh = tmp_path / "separated.msh"
@@ -64,7 +64,7 @@ def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy):
     assert names == {"ambient", "tag_0", "tag_1"}
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_minimum_separation_protected_region(boxes3d, tmp_path):
     """protected_regions: tag_1 is hard-pinned — tag_0 does all the moving
     and every node of tag_1's cells stays exactly at rest."""

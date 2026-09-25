@@ -1,7 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/polyfem_ops.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/LaplacianSmoothing.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/MinimumSeparation.hpp>
 #include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
+#include <wmtk/components/simwild/simwild.hpp>
 
 #include <polyfem/State.hpp>
 #include <polyfem/mesh/Mesh.hpp>
@@ -9,6 +11,7 @@
 #include <polyfem/solver/forms/Form.hpp>
 #include <polyfem/solver/forms/lagrangian/AugmentedLagrangianForm.hpp>
 
+#include <jse/jse.h>
 #include <mshio/mshio.h>
 #include <nlohmann/json.hpp>
 
@@ -28,12 +31,14 @@
 #include <typeinfo>
 #include <vector>
 
-using wmtk::components::polyfem_ops::polyfem_ops;
-using wmtk::components::polyfem_ops::prepare_operation;
-using wmtk::components::polyfem_ops::PreparedOperation;
+using wmtk::components::simwild::simwild;
+using wmtk::components::simwild::simwild_spec_for;
 using wmtk::components::simwild::polyfem_helpers::in_process_backend;
 using wmtk::components::simwild::polyfem_helpers::OrderedJson;
+using wmtk::components::simwild::polyfem_helpers::prepare_laplacian_smoothing;
+using wmtk::components::simwild::polyfem_helpers::prepare_minimum_separation;
 using wmtk::components::simwild::polyfem_helpers::prepare_state;
+using wmtk::components::simwild::polyfem_helpers::PreparedOperation;
 using wmtk::components::simwild::polyfem_helpers::SolveInputs;
 using wmtk::components::simwild::polyfem_helpers::split_lines;
 
@@ -246,7 +251,7 @@ std::map<std::string, std::string> directory_contents(const fs::path& dir)
 /// A fresh directory for one case, and the case's input mesh saved in it.
 fs::path case_input(const std::string& name, const mshio::MshSpec& mesh)
 {
-    const fs::path root = fs::temp_directory_path() / "wmtk_polyfem_ops_in_memory" / name;
+    const fs::path root = fs::temp_directory_path() / "wmtk_polyfem_helpers_in_memory" / name;
     fs::remove_all(root);
     fs::create_directories(root);
     mshio::save_msh((root / "input.msh").string(), mesh);
@@ -431,6 +436,24 @@ std::pair<long, long> check_states_equal(Route& a, Route& b)
     return {allowed, pairs};
 }
 
+/// The operation's preparation up to its first solve, on `params` as `simwild()` hands them to the
+/// operation: verified against the simwild spec in strict mode, with its defaults injected (what
+/// `wmtk::utils::verify_and_setup_logger` does in `simwild()`, without the logger).
+PreparedOperation prepare_operation(nlohmann::json params)
+{
+    const nlohmann::json spec = simwild_spec_for(params);
+    jse::JSE spec_engine;
+    spec_engine.strict = true;
+    const bool valid = spec_engine.verify_json(params, spec);
+    INFO(spec_engine.log2str());
+    REQUIRE(valid);
+    params = spec_engine.inject_defaults(params, spec);
+    if (params["operation"] == "minimum_separation") {
+        return prepare_minimum_separation(std::move(params));
+    }
+    return prepare_laplacian_smoothing(std::move(params));
+}
+
 /// Run one operation on `mesh` twice -- inputs_only, which writes every input, and a normal run's
 /// preparation, which writes none but the JSON and the OBJ -- build a State from each (polyfem's
 /// file route, and `prepare_state` on the in-memory content), and require them to be the same.
@@ -445,8 +468,8 @@ std::optional<std::pair<long, long>> check_routes_agree(
     const std::function<void(nlohmann::json&)>& edit = [](nlohmann::json&) {})
 {
     const fs::path root = case_input(name, mesh);
-    params["application"] = "polyfem_ops";
-    params["input"] = (root / "input.msh").string();
+    params["application"] = "simwild";
+    params["input"] = nlohmann::json::array({(root / "input.msh").string()});
 
     params["output"] = (root / "files" / "out").string();
     params["inputs_only"] = true;
@@ -599,9 +622,11 @@ std::optional<double> logged_active_distance(const std::vector<std::string>& lin
 // The in-process backend reports the active distance off the contact form instead of off the log
 // text. The two must be the same number, not a number that rounds to the same print: polyfem logs
 // it with enough digits to round trip, so the check is for equality.
-TEST_CASE("polyfem_ops in-process active distance is the logged one", "[components][polyfem_ops]")
+TEST_CASE(
+    "polyfem_helpers in-process active distance is the logged one",
+    "[components][polyfem_helpers]")
 {
-    const fs::path root = fs::temp_directory_path() / "wmtk_polyfem_ops_in_process";
+    const fs::path root = fs::temp_directory_path() / "wmtk_polyfem_helpers_in_process";
     fs::remove_all(root);
     const fs::path out_dir = root / "out";
     fs::create_directories(out_dir);
@@ -646,7 +671,9 @@ TEST_CASE("polyfem_ops in-process active distance is the logged one", "[componen
 // The body ids are what this used to fail on: polyfem's in-memory `load_mesh(V, F)` never sets
 // them, so every material would silently have covered every element. `prepare_state` sets them
 // itself and then applies the geometry entry's transformation exactly as the file route does.
-TEST_CASE("polyfem_ops in-memory inputs build the file route's State", "[components][polyfem_ops]")
+TEST_CASE(
+    "polyfem_helpers in-memory inputs build the file route's State",
+    "[components][polyfem_helpers]")
 {
     SECTION("3D separation: pins without and with axes, a collision proxy with body ids")
     {
@@ -744,7 +771,9 @@ TEST_CASE("polyfem_ops in-memory inputs build the file route's State", "[compone
 // selection picked), and writes the same simulation JSON as inputs_only -- the reduced mesh's
 // volumes, which divide every AMIPS weight, now come from memory instead of from the .msh read
 // back, in the same order. The meshes are bent so that order could show.
-TEST_CASE("polyfem_ops normal run writes only the JSON and the OBJ", "[components][polyfem_ops]")
+TEST_CASE(
+    "polyfem_helpers normal run writes only the JSON and the OBJ",
+    "[components][polyfem_helpers]")
 {
     // Both runs go to the same output stem, so the paths inside the two JSONs are the same too.
     const auto run_both = [](const std::string& name,
@@ -752,16 +781,16 @@ TEST_CASE("polyfem_ops normal run writes only the JSON and the OBJ", "[component
                              nlohmann::json params,
                              const std::string& sim_in) {
         const fs::path root = case_input(name, mesh);
-        params["application"] = "polyfem_ops";
-        params["input"] = (root / "input.msh").string();
+        params["application"] = "simwild";
+        params["input"] = nlohmann::json::array({(root / "input.msh").string()});
         params["output"] = (root / "out").string();
         params["inputs_only"] = true;
-        polyfem_ops(params);
+        simwild(params);
         const auto inputs_only = directory_contents(root / sim_in);
         fs::remove_all(root / sim_in);
 
         params["inputs_only"] = false;
-        polyfem_ops(params);
+        simwild(params);
         REQUIRE(fs::is_regular_file(root / "out.msh")); // the solve ran and wrote its result
         return std::make_pair(inputs_only, directory_contents(root / sim_in));
     };

@@ -10,14 +10,14 @@ import pytest
 
 from simwild import simwild as wm
 
-from conftest import needs_polyfem_ops, run_cpp
+from conftest import needs_polyfem, run_cpp
 from geo import (interface_polyline_2d, polyline_length, roughness_2d,
                  signed_volumes)
 
 SEL = {"region": "tag_0", "filter": "ambient"}
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path):
     coords0, edges0 = interface_polyline_2d(jagged2d, SEL)
     rough0 = roughness_2d(coords0, edges0)
@@ -55,7 +55,7 @@ def test_smoothing_reduces_interface_roughness(jagged2d, tmp_path):
     assert moved.max() < 2.0, f"max node displacement {moved.max():.2f}"
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_per_interface_weight_scales_the_laplacian_rows(jagged2d, tmp_path):
     """`weight` on a selection replaces weight_laplacian for that interface's
     nodes. This fixture has ONE selection, so every interface node is its node

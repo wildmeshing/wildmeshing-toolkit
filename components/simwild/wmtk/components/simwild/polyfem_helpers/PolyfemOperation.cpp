@@ -3,25 +3,12 @@
 #include "DeformedMesh.hpp"
 #include "MeshReduction.hpp"
 
-#include <jse/jse.h>
-#include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/DriverPrologue.hpp>
 
 #include <algorithm>
 
 namespace wmtk::components::simwild::polyfem_helpers {
-
-void validate_polyfem_operation(nlohmann::json& json_params)
-{
-    const nlohmann::json spec = wmtk::components::simwild::simwild_spec_for(json_params);
-    jse::JSE spec_engine;
-    spec_engine.strict = true;
-    if (!spec_engine.verify_json(json_params, spec)) {
-        log_and_throw_error(spec_engine.log2str());
-    }
-    json_params = spec_engine.inject_defaults(json_params, spec);
-}
 
 std::string operation_input_path(const nlohmann::json& json_params)
 {

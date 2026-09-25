@@ -11,9 +11,9 @@ namespace wmtk::components::simwild::polyfem_helpers {
  * solve (AMIPS + fitting + Laplacian, no contact).
  *
  * `json_params` is a simwild job already verified against the simwild spec and with its defaults
- * injected, which is what `simwild()` hands over and what the polyfem_ops entry produces with
- * `validate_polyfem_operation`. It is `prepare_laplacian_smoothing` followed, unless `inputs_only`
- * is set, by the single solve on the in-process backend and the write-back of the deformed mesh.
+ * injected, which is what `simwild()` hands over.
+ * It is `prepare_laplacian_smoothing` followed, unless `inputs_only` is set, by the single solve on
+ * the in-process backend and the write-back of the deformed mesh.
  */
 void laplacian_smoothing(nlohmann::json json_params);
 

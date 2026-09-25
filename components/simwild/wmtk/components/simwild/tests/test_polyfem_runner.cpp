@@ -9,7 +9,7 @@ using polysolve::nonlinear::Status;
 using wmtk::components::simwild::polyfem_helpers::check_polyfem_success;
 using wmtk::components::simwild::polyfem_helpers::numpy_isclose;
 
-TEST_CASE("polyfem_ops check_polyfem_success statuses", "[components][polyfem_ops]")
+TEST_CASE("polyfem_helpers check_polyfem_success statuses", "[components][polyfem_helpers]")
 {
     // The statuses polyfem recorded, one per subsolve. Any one accepted status is enough, as for
     // the Python any one accepted "Finished:" phrase anywhere in the executable's output is.
@@ -26,7 +26,7 @@ TEST_CASE("polyfem_ops check_polyfem_success statuses", "[components][polyfem_op
     CHECK_THROWS(check_polyfem_success(0, {}, {}, true));
 }
 
-TEST_CASE("polyfem_ops numpy_isclose mirror", "[components][polyfem_ops]")
+TEST_CASE("polyfem_helpers numpy_isclose mirror", "[components][polyfem_helpers]")
 {
     // |a - b| <= atol + rtol * |b|, with numpy's default atol of 1e-8.
     const double sep = 1.5e-3;

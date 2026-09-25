@@ -19,7 +19,7 @@ const std::vector<int64_t> vertices = {1, 2, 3, 4};
 
 } // namespace
 
-TEST_CASE("polyfem_ops reduction classifies cells", "[components][polyfem_ops]")
+TEST_CASE("polyfem_helpers reduction classifies cells", "[components][polyfem_helpers]")
 {
     // The whole point of the reduction: polyfem gets exactly two materials, so each cell must
     // land in exactly one of them. These are the rules of _write_polyfem_reduced_msh.
@@ -52,7 +52,7 @@ TEST_CASE("polyfem_ops reduction classifies cells", "[components][polyfem_ops]")
     }
 }
 
-TEST_CASE("polyfem_ops reduction honours ambient_like_tags", "[components][polyfem_ops]")
+TEST_CASE("polyfem_helpers reduction honours ambient_like_tags", "[components][polyfem_helpers]")
 {
     // `ambient_like_tags` is for user primitives (box_0 and friends) that are ambient as far as
     // the solve is concerned: they get the ambient AMIPS weight and volume normalization.

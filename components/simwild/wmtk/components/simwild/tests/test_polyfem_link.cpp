@@ -18,7 +18,7 @@
 // pysimwild operations do; the centre vertex stays free. Volume 1, weight 2: the energy is 6.
 // This exercises init, the in-memory mesh loader, basis construction, boundary conditions, the
 // assembler and the form layer, nothing else.
-TEST_CASE("polyfem link: AMIPS energy at rest on a star-split cube", "[polyfem_ops]")
+TEST_CASE("polyfem link: AMIPS energy at rest on a star-split cube", "[polyfem_helpers]")
 {
     Eigen::MatrixXd V(9, 3);
     V << 0, 0, 0, //

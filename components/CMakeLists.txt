@@ -21,18 +21,12 @@ add_subdirectory("c1_simplification/wmtk/components/c1_simplification")
 add_subdirectory("manifold_extraction/wmtk/components/manifold_extraction")
 add_subdirectory("topological_offset/wmtk/components/topological_offset")
 
-# Optional: links polyfem. Gated by WMTK_WITH_POLYFEM (top-level CMakeLists) so the default build
-# never downloads or compiles it.
-if(WMTK_WITH_POLYFEM)
-    add_subdirectory("polyfem_ops/wmtk/components/polyfem_ops")
-endif()
-
 # The component registry that wmtk_app, the Python module and the integration tests compile in:
 # one #include and one map entry per component add_component registered above. It is generated in
-# this build's own tree because the set of components is a per-build choice (WMTK_WITH_POLYFEM,
-# WMTK_ENABLE_COMPONENT_*). Generated into the source tree, it was shared by every build folder of
-# a clone and the last configure decided it for all of them: a folder configured without
-# polyfem_ops made the next build of a folder with it compile a registry lacking polyfem_ops.
+# this build's own tree because the set of components is a per-build choice
+# (WMTK_ENABLE_COMPONENT_*). Generated into the source tree, it was shared by every build folder of
+# a clone and the last configure decided it for all of them: a folder configured without a
+# component made the next build of a folder with it compile a registry lacking that component.
 # file(CONFIGURE) rewrites a file only when its content changes, so an unchanged reconfigure
 # recompiles nothing.
 set(WMTK_AUTOGEN_COMMENT "// This file was auto-generated with CMake\n")

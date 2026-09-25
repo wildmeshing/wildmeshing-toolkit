@@ -18,7 +18,7 @@ using wmtk::components::simwild::polyfem_helpers::python_repr;
 // ones that exercise the two places Python differs from every C++ default: the fixed/exponential
 // switch (decpt <= -4 or decpt > 16, so 0.0001 but 1e-05, and 1000000000000000.0 but 1e+16) and
 // the ".0" that keeps an integral value looking like a float.
-TEST_CASE("python_repr matches CPython repr on a value table", "[polyfem_ops][repr]")
+TEST_CASE("python_repr matches CPython repr on a value table", "[polyfem_helpers][repr]")
 {
     const std::vector<std::pair<double, std::string>> table = {
         {0.0, "0.0"},
@@ -80,7 +80,7 @@ TEST_CASE("python_repr matches CPython repr on a value table", "[polyfem_ops][re
 // the byte after the output happened to be a digit, which was about one run in ten. A repr that
 // does not parse back to the same double is wrong whatever the value, and checking that over a
 // deterministic sweep of bit patterns turns that class of defect from a flake into a certainty.
-TEST_CASE("python_repr round-trips every double it is given", "[polyfem_ops][repr]")
+TEST_CASE("python_repr round-trips every double it is given", "[polyfem_helpers][repr]")
 {
     // A fixed-seed 64-bit LCG over raw bit patterns: normals, denormals and both signs, the same
     // sequence on every machine and every run.
@@ -104,7 +104,7 @@ TEST_CASE("python_repr round-trips every double it is given", "[polyfem_ops][rep
     CHECK(checked > 190000);
 }
 
-TEST_CASE("python_repr matches CPython repr on non-finite values", "[polyfem_ops][repr]")
+TEST_CASE("python_repr matches CPython repr on non-finite values", "[polyfem_helpers][repr]")
 {
     CHECK(python_repr(std::numeric_limits<double>::infinity()) == "inf");
     CHECK(python_repr(-std::numeric_limits<double>::infinity()) == "-inf");

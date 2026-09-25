@@ -1,7 +1,7 @@
 """Selections in Python: the wmtk expression grammar (through the wildmeshing
 bindings) and the normalization and id assignment of region/filter
 selections, which polyfem_sim uses. Loading a tagged mesh and picking the
-selected faces happen in the C++ component polyfem_ops.
+selected faces happen in the C++ component simwild.
 
 A selection is the boundary of a region, optionally filtered:
 {"region": expr, "filter": expr?, "id": int?} (bare string = region). A

@@ -19,8 +19,7 @@ target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${SRC_FILES})
 target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::triwild wmtk::tetwild)
 
 # The tests of the polyfem_helpers sources, under the same gate those sources are built with.
-# test_polyfem_in_process.cpp also drives the polyfem_ops entry point, hence the link to that
-# component; polyfem itself comes through wmtk::simwild, which links it PUBLIC.
+# polyfem itself comes through wmtk::simwild, which links it PUBLIC.
 if(WMTK_WITH_POLYFEM)
     set(POLYFEM_HELPERS_SRC_FILES
         test_polyfem_link.cpp
@@ -34,5 +33,4 @@ if(WMTK_WITH_POLYFEM)
         )
 
     target_sources(wmtk_test_${COMPONENT_NAME} PRIVATE ${POLYFEM_HELPERS_SRC_FILES})
-    target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::polyfem_ops)
 endif()

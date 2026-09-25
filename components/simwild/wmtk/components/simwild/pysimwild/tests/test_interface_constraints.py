@@ -5,7 +5,7 @@ import numpy as np
 import h5py
 import pytest
 
-from conftest import needs_polyfem_ops, run_cpp
+from conftest import needs_polyfem, run_cpp
 from geo import min_separation_3d
 
 SELS = [{"region": "tag_0", "filter": "ambient", "id": 1},
@@ -37,7 +37,7 @@ def artifacts(boxes3d, tmp_path):
     return tmp_path / "sep_input"
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_skin_face_counts(artifacts):
     # Each body is a 1x2x2 box fully interior to the ambient grid; its skin
     # is 16 unit quads = 32 triangles under the Freudenthal split.
@@ -52,7 +52,7 @@ def test_gap_metric_on_input(boxes3d):
                              {"region": "tag_1"}) == pytest.approx(1.0)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_fitting_constraint_is_positive_diagonal(artifacts):
     # Diagonal (rows == cols) with strictly positive per-node mass weights,
     # zero RHS -> penalizes any displacement of the interface nodes.
@@ -67,7 +67,7 @@ def test_fitting_constraint_is_positive_diagonal(artifacts):
         assert not f["b"][()].any()
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_laplacian_rows_sum_to_zero(artifacts):
     import scipy.sparse as sp
     with h5py.File(artifacts / "interface_constraint_laplacian.hdf5") as f:
@@ -79,7 +79,7 @@ def test_laplacian_rows_sum_to_zero(artifacts):
     assert np.allclose(np.asarray(L.sum(axis=1)).ravel(), 0.0, atol=1e-10)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_collision_proxy_outward_and_body_ids(artifacts):
     V, F = _obj(artifacts / "interface_collision.obj")
     ids = _body_ids(artifacts / "collision_body_ids.txt")
@@ -102,7 +102,7 @@ def _smoothing_faces(mesh, out_dir, interfaces):
     return {frozenset(map(tuple, V[f])) for f in F}
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_union_region_selects_both_skins(boxes3d, tmp_path):
     # A union region: boundary of (tag_0 | tag_1) facing ambient = both skins.
     # Paired with itself it dedupes to one side, hence one body.
@@ -114,7 +114,7 @@ def test_union_region_selects_both_skins(boxes3d, tmp_path):
     assert all(t == [1] for t in ids)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_whole_boundary_and_filter_agree_on_interior_bodies(boxes3d, tmp_path):
     # Fully interior body: whole boundary == ambient-filtered boundary.
     whole = _smoothing_faces(boxes3d, tmp_path / "whole", ["tag_0"])
@@ -124,7 +124,7 @@ def test_whole_boundary_and_filter_agree_on_interior_bodies(boxes3d, tmp_path):
     assert whole == filtered
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_underscore_rejected(boxes3d, tmp_path):
     with pytest.raises(RuntimeError, match="ambient"):
         run_cpp(boxes3d, "laplacian_smoothing", tmp_path,

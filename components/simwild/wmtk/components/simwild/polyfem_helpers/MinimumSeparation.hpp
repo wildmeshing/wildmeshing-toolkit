@@ -12,9 +12,9 @@ namespace wmtk::components::simwild::polyfem_helpers {
  * `strategy`.
  *
  * `json_params` is a simwild job already verified against the simwild spec and with its defaults
- * injected, which is what `simwild()` hands over and what the polyfem_ops entry produces with
- * `validate_polyfem_operation`. It is `prepare_minimum_separation` followed, unless `inputs_only`
- * is set, by the outer loop on the in-process backend and the write-back of the deformed mesh.
+ * injected, which is what `simwild()` hands over.
+ * It is `prepare_minimum_separation` followed, unless `inputs_only` is set, by the outer loop on
+ * the in-process backend and the write-back of the deformed mesh.
  */
 void minimum_separation(nlohmann::json json_params);
 

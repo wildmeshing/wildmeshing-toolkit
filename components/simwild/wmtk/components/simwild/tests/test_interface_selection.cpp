@@ -108,7 +108,7 @@ fs::path two_interfaces_2d()
         }
     }
 
-    const fs::path root = fs::temp_directory_path() / "wmtk_polyfem_ops_interface_weights";
+    const fs::path root = fs::temp_directory_path() / "wmtk_polyfem_helpers_interface_weights";
     fs::create_directories(root);
     const fs::path path = root / "two_interfaces.msh";
     mshio::save_msh(path.string(), groups_msh_2d(coords, groups));
@@ -140,7 +140,7 @@ InterfaceConstraint build(const fs::path& mesh, const std::map<int64_t, double>&
 // The 2D collision proxy's 'l' lines come out of orient_edge_loops_2d, so a loop that comes back
 // wound the wrong way is a proxy whose normals point into the material. Every expectation below
 // was read off the Python it mirrors (constraints._orient_edge_loops_2d) on the same input.
-TEST_CASE("orient_edge_loops_2d keeps the direction the input edges agree on", "[polyfem_ops]")
+TEST_CASE("orient_edge_loops_2d keeps the direction the input edges agree on", "[polyfem_helpers]")
 {
     // A square, its four edges all wound the same way: the loop is returned unchanged, starting
     // at the minimum vertex (the deterministic seed).
@@ -154,7 +154,7 @@ TEST_CASE("orient_edge_loops_2d keeps the direction the input edges agree on", "
     CHECK(orient_edge_loops_2d(cw) == cw_expected);
 }
 
-TEST_CASE("orient_edge_loops_2d passes non-loop components through", "[polyfem_ops]")
+TEST_CASE("orient_edge_loops_2d passes non-loop components through", "[polyfem_helpers]")
 {
     // An open chain is not a loop (its ends have degree 1), so it keeps its original order and
     // orientation. This is the common 2D case: an interface that ends on the domain boundary.
@@ -168,7 +168,7 @@ TEST_CASE("orient_edge_loops_2d passes non-loop components through", "[polyfem_o
     CHECK(orient_edge_loops_2d(mixed) == mixed_expected);
 }
 
-TEST_CASE("orient_edge_loops_2d rejects a contradictory loop", "[polyfem_ops]")
+TEST_CASE("orient_edge_loops_2d rejects a contradictory loop", "[polyfem_helpers]")
 {
     // Three edges one way and one the other: the same interface selected from both sides, so no
     // single orientation is correct for both bodies. Guessing here would silently flip a normal.
@@ -179,7 +179,7 @@ TEST_CASE("orient_edge_loops_2d rejects a contradictory loop", "[polyfem_ops]")
 // A run that asks for no per-interface weight must produce the constraint it produced before the
 // weight existed: the writer skips the scaling pass rather than multiplying every row by one, so
 // the check is equality of the bits, not a tolerance.
-TEST_CASE("an empty weight map leaves the Laplacian constraint untouched", "[polyfem_ops]")
+TEST_CASE("an empty weight map leaves the Laplacian constraint untouched", "[polyfem_helpers]")
 {
     const fs::path mesh = two_interfaces_2d();
     // The call the operations made before the weight existed: no map argument at all.
@@ -203,7 +203,7 @@ TEST_CASE("an empty weight map leaves the Laplacian constraint untouched", "[pol
 // The weight reaches polyfem as a row factor, because polyfem applies one global
 // `weight_laplacian` W: a selection asking for 4 W scales its nodes' rows of A and of b by
 // sqrt(4) = 2. Doubling is exact in binary floating point, so these too are equalities.
-TEST_CASE("a per-interface weight scales exactly its own rows", "[polyfem_ops]")
+TEST_CASE("a per-interface weight scales exactly its own rows", "[polyfem_helpers]")
 {
     const fs::path mesh = two_interfaces_2d();
     const InterfaceConstraint base = build(mesh, {});

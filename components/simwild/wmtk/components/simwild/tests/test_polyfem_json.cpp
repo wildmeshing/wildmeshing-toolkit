@@ -6,7 +6,7 @@ using wmtk::components::simwild::polyfem_helpers::deep_merge;
 using wmtk::components::simwild::polyfem_helpers::OrderedJson;
 using wmtk::components::simwild::polyfem_helpers::resolve_amips_weights;
 
-TEST_CASE("polyfem_ops deep_merge", "[components][polyfem_ops]")
+TEST_CASE("polyfem_helpers deep_merge", "[components][polyfem_helpers]")
 {
     // deep_merge is what lets a caller override one paraview option without restating the rest,
     // and what `geometry_block` applies to the transformation.
@@ -44,7 +44,7 @@ TEST_CASE("polyfem_ops deep_merge", "[components][polyfem_ops]")
     }
 }
 
-TEST_CASE("polyfem_ops resolves AMIPS weights", "[components][polyfem_ops]")
+TEST_CASE("polyfem_helpers resolves AMIPS weights", "[components][polyfem_helpers]")
 {
     // The reduced mesh has two materials, so whatever the caller spelled has to come out as
     // exactly {"ambient": w, "body": w}.

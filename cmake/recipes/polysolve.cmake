@@ -7,8 +7,8 @@ endif()
 
 message(STATUS "Third-party: creating target 'polysolve::polysolve'")
 
-# Apple Accelerate: the sparse solver the polyfem_ops reference runs used, so the in-process solve
-# matches them. Needs the Eigen commit pinned in recipes/eigen.cmake. Apple only: polysolve resolves
+# Apple Accelerate: the sparse solver the reference runs of simwild's polyfem operations used, so the
+# in-process solve matches them. Needs the Eigen commit pinned in recipes/eigen.cmake. Apple only: polysolve resolves
 # it through BLA_VENDOR=Apple, which does not exist elsewhere.
 if(APPLE)
     set(WMTK_POLYSOLVE_WITH_ACCELERATE ON)

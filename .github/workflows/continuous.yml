@@ -34,12 +34,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # polyfem_flag: the polyfem_ops component (WMTK_WITH_POLYFEM) is opt-in because it roughly
-        # doubles the build, so one Linux and one macOS Release entry turn it on to run its tests,
-        # and every other entry keeps building the default configuration. Not on Windows: the
-        # polyfem it pins (branch uday/imagesim) has never been built with MSVC. Those two entries
-        # also build the Python module (WMTK_PYBIND), against the Python that "Set up Python"
-        # installs ($pythonLocation), for the pysimwild tests at the end.
+        # polyfem_flag: the polyfem-backed simwild operations (WMTK_WITH_POLYFEM) are opt-in because
+        # they roughly double the build, so one Linux and one macOS Release entry turn them on to
+        # run their tests, and every other entry keeps building the default configuration. Not on
+        # Windows: the polyfem it pins (branch uday/imagesim) has never been built with MSVC. Those
+        # two entries also build the Python module (WMTK_PYBIND), against the Python that "Set up
+        # Python" installs ($pythonLocation), for the pysimwild tests at the end.
         include:
           - os: ubuntu-latest
             config: Debug
@@ -135,11 +135,11 @@ jobs:
             echo "::endgroup::"
           done
 
-      # The pysimwild suite, on the entry that built the polyfem_ops component and the Python
-      # module: it runs the C++ engine through the Python wrappers. Its parity tests skip here
-      # (their goldens live outside the repository). After the backtrace step, so that a Python
-      # failure does not re-run every C++ test binary under gdb. The apt packages are the X11/GL
-      # libraries libgmsh.so from gmsh's pip package links against (its NEEDED entries).
+      # The pysimwild suite, on the entry that built the polyfem-backed simwild operations and the
+      # Python module: it runs the C++ engine through the Python wrappers. Its parity tests skip
+      # here (their goldens live outside the repository). After the backtrace step, so that a
+      # Python failure does not re-run every C++ test binary under gdb. The apt packages are the
+      # X11/GL libraries libgmsh.so from gmsh's pip package links against (its NEEDED entries).
       - name: Python tests (pysimwild)
         if: matrix.polyfem_flag != ''
         run: |

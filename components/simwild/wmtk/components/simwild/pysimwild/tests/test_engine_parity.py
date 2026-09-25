@@ -40,7 +40,7 @@ import pytest
 
 # The irrational-coordinate meshes below are the conftest fixtures with bent coordinates, built
 # from the same two helpers; pytest puts this directory on sys.path, so conftest imports directly.
-from conftest import _tet_grid, _write_groups_msh, needs_polyfem_ops, run_cpp
+from conftest import _tet_grid, _write_groups_msh, needs_polyfem, run_cpp
 
 from simwild.polyfem_ops.polyfem_utils import get_mesh_info
 
@@ -221,7 +221,7 @@ def _assert_hdf5_identical(py_dir, cpp_dir, name):
 # minimum separation
 # --------------------------------------------------------------------------
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("pairs, options, label", [
     (BOTH_SKINS, {}, "two_skins"),
@@ -245,7 +245,7 @@ def test_minimum_separation_inputs_match(boxes3d, tmp_path, pairs, options, labe
         _assert_hdf5_identical(golden, cpp_dir, name)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("protected, expected, label", [
     (["tag_1"], ["protected_pin.hdf5"], "bare_expression"),
@@ -271,7 +271,7 @@ def test_minimum_separation_protected_pins_match(boxes3d, tmp_path, protected, e
 # laplacian smoothing
 # --------------------------------------------------------------------------
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("mesh_fixture, interfaces, options, label", [
     ("jagged2d", [{"region": "tag_0", "filter": "ambient"}], {}, "2d_selected"),
@@ -305,7 +305,7 @@ def test_laplacian_smoothing_inputs_match(request, tmp_path, mesh_fixture, inter
 # irrational coordinates
 # --------------------------------------------------------------------------
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 def test_minimum_separation_irrational_coordinates_match(boxes3d_irrational, tmp_path):
     # The grid fixtures have integer coordinates, where every edge length, area and cotangent is
@@ -323,7 +323,7 @@ def test_minimum_separation_irrational_coordinates_match(boxes3d_irrational, tmp
         _assert_hdf5_identical(golden, cpp_dir, name)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 def test_laplacian_smoothing_irrational_coordinates_match(jagged2d_irrational, tmp_path):
     # 2D has no igl in it: the mass is half an edge length per endpoint and the stiffness weight
@@ -474,7 +474,7 @@ def _assert_polyfem_inputs_match(mesh, operation, options, tmp_path, label):
 # minimum separation: the reduced mesh and separation.json
 # --------------------------------------------------------------------------
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("options, label", [
     ({}, "default"),
@@ -505,7 +505,7 @@ def test_minimum_separation_polyfem_inputs_match(boxes3d, tmp_path, options, lab
         tmp_path, label)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("options, label", [
     ({"use_nh_body": True}, "nh_defaults"),
@@ -554,7 +554,7 @@ def test_minimum_separation_neohookean_materials(boxes3d, tmp_path, options, lab
             "rho": 1.0}, f"the {group} material"
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("protected, label", [
     (["tag_1"], "bare_expression"),
@@ -575,7 +575,7 @@ def test_minimum_separation_hard_constraints_match(boxes3d, tmp_path, protected,
 # laplacian smoothing: the reduced mesh and smoothing.json
 # --------------------------------------------------------------------------
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("options, label", [
     ({}, "default"),
@@ -596,7 +596,7 @@ def test_laplacian_smoothing_polyfem_inputs_match(jagged2d, tmp_path, options, l
 # irrational coordinates: where the volume sums are actually compared
 # --------------------------------------------------------------------------
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 def test_minimum_separation_polyfem_inputs_irrational(boxes3d_irrational, tmp_path):
     # On the integer grids every tet volume is exact and the running sum cannot round. Here each
@@ -609,7 +609,7 @@ def test_minimum_separation_polyfem_inputs_irrational(boxes3d_irrational, tmp_pa
         {"collision_pairs": BOTH_SKINS, "sep": 1.5}, tmp_path, "irrational_3d")
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 def test_laplacian_smoothing_polyfem_inputs_irrational(jagged2d_irrational, tmp_path):
     # 2D areas are half an absolute cross product of two edge vectors: two rounded products and a
@@ -820,7 +820,7 @@ def _assert_steered_on_the_logged_distance(root, trail):
 # The write-back on its own: one solution applied exactly
 # --------------------------------------------------------------------------
 
-@needs_polyfem_ops
+@needs_polyfem
 @pytest.mark.parametrize("mesh_fixture, dim", [("boxes3d", 3), ("jagged2d", 2)])
 def test_deformed_msh_write_back_matches(request, tmp_path, mesh_fixture, dim):
     """The deformed mesh is the input mesh with the solution added, exactly: from the solution on,
@@ -872,7 +872,7 @@ def _final_kappa(root):
     return doc["solver"]["contact"]["barrier_stiffness"]
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 @pytest.mark.parametrize("options, label", [
     # The dhat ramp: a zero-stiffness probe, one overshoot that is rolled back and halved, a
@@ -931,7 +931,7 @@ def _group_volume(msh, group):
     raise AssertionError(f"{msh} has no physical group {group}")
 
 
-@needs_polyfem_ops
+@needs_polyfem
 def test_minimum_separation_neohookean_holds_body_volume(boxes3d, tmp_path):
     """The measurement the `use_nh_body` spec entry claims, reproduced on this fixture.
 
@@ -958,7 +958,7 @@ def test_minimum_separation_neohookean_holds_body_volume(boxes3d, tmp_path):
             f"kept {ratios['amips'][body]:.4f}; the volumetric term is not doing its job")
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 def test_laplacian_smoothing_end_to_end_matches(jagged2d, tmp_path):
     """Smoothing is the single-solve path: no loop, no contact, one polyfem.log, then the
@@ -974,7 +974,7 @@ def test_laplacian_smoothing_end_to_end_matches(jagged2d, tmp_path):
     _assert_deformed_meshes_close(golden / "out.msh", cpp_msh, RTOL_PYTHON_VS_CPP)
 
 
-@needs_polyfem_ops
+@needs_polyfem
 @needs_goldens
 def test_minimum_separation_probe_already_separated_matches(boxes3d, tmp_path, capfd):
     """The probe path: the bodies start 1 mesh unit apart, which at scale 1e-3 is a gap of 1e-3

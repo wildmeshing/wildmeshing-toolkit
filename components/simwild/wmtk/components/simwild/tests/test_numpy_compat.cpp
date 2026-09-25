@@ -37,7 +37,7 @@ std::vector<double> lcg_values(int64_t n)
 // numpy 2.4.6 on the array lcg_values(n) builds; the lengths straddle numpy's two thresholds
 // (the 8-element unrolled block and the 128-element split). For n = 100, 129 and 1000 a plain
 // left-to-right accumulation gives a DIFFERENT double, which is what makes this a real test.
-TEST_CASE("pairwise_sum matches numpy's np.sum", "[polyfem_ops][numpy]")
+TEST_CASE("pairwise_sum matches numpy's np.sum", "[polyfem_helpers][numpy]")
 {
     const std::vector<std::pair<int64_t, double>> expected = {
         {1, -0x1.021e05240379ap-11},
@@ -55,7 +55,7 @@ TEST_CASE("pairwise_sum matches numpy's np.sum", "[polyfem_ops][numpy]")
     }
 }
 
-TEST_CASE("pairwise_sum of the empty array is zero", "[polyfem_ops][numpy]")
+TEST_CASE("pairwise_sum of the empty array is zero", "[polyfem_helpers][numpy]")
 {
     // np.sum([]) is 0.0, and a mass matrix over an empty node set would take this path.
     REQUIRE(pairwise_sum(std::vector<double>{}) == 0.0);
@@ -64,7 +64,7 @@ TEST_CASE("pairwise_sum of the empty array is zero", "[polyfem_ops][numpy]")
 // parse_axes turns the `axes` of a protected_regions entry into the component indices that are
 // held. The letters are lower-cased, de-duplicated and sorted, and each must exist in the mesh's
 // dimension -- 'z' is a valid axis of a 3D mesh and an error on a 2D one.
-TEST_CASE("parse_axes mirrors constraints.parse_axes", "[polyfem_ops][axes]")
+TEST_CASE("parse_axes mirrors constraints.parse_axes", "[polyfem_helpers][axes]")
 {
     using nlohmann::json;
 

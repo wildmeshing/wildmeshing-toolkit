@@ -99,8 +99,8 @@ struct InterfaceConstraint
  * @brief Mirrors `constraints.make_interface_constraint` up to the writes.
  *
  * Which of the files get written, and whether they are written at all, is the caller's: see
- * `prepare_operation` in polyfem_ops.cpp. The Python's `dim` argument is not mirrored: no caller
- * passes it, so it is always the mesh dimension.
+ * `emit_interface_constraint` in PolyfemOperation.hpp. The Python's `dim` argument is not
+ * mirrored: no caller passes it, so it is always the mesh dimension.
  *
  * `laplacian_row_factor_by_id` carries the per-interface Laplacian weight, as selection id ->
  * sqrt(weight / weight_laplacian), and holds an entry only for the selections that set their own
