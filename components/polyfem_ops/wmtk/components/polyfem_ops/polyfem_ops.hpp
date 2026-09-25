@@ -1,7 +1,7 @@
 #pragma once
 
-#include "PolyfemJson.hpp"
-#include "PolyfemRunner.hpp"
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemJson.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -9,6 +9,10 @@
 #include <string>
 
 namespace wmtk::components::polyfem_ops {
+
+/// The polyfem-facing helpers this component is built from; they live in the simwild component
+/// (components/simwild/wmtk/components/simwild/polyfem_helpers).
+namespace polyfem_helpers = wmtk::components::simwild::polyfem_helpers;
 
 /**
  * @brief Entry point of the polyfem-backed simwild operations (minimum separation, interface
@@ -31,13 +35,13 @@ struct PreparedOperation
     bool inputs_only = false;
     std::string input; ///< the caller's multi-tag .msh
     std::string output; ///< the output stem; the deformed mesh goes to <output>.msh
-    OrderedJson cfg; ///< the engine configuration the outer loops steer by
-    OrderedJson sim_json; ///< the simulation JSON, as written to `sim_json_path`
+    polyfem_helpers::OrderedJson cfg; ///< the engine configuration the outer loops steer by
+    polyfem_helpers::OrderedJson sim_json; ///< the simulation JSON, as written to `sim_json_path`
     std::filesystem::path sim_json_path;
     std::filesystem::path sim_out_dir;
     /// The content of every input file `sim_json` names. Empty in inputs_only mode, which writes
     /// those files instead.
-    SolveInputs inputs;
+    polyfem_helpers::SolveInputs inputs;
 };
 
 /**

@@ -14,7 +14,7 @@
 #include <cmath>
 #include <utility>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -311,4 +311,4 @@ void write_linear_map_hdf5(const std::string& path, const LinearMapHdf5& map)
     logger().info("  linear map : {}  (shape [{}, {}])", path, map.shape[0], map.shape[1]);
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

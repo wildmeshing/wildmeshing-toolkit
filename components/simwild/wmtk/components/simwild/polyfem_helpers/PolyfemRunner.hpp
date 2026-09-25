@@ -20,7 +20,7 @@ namespace polyfem {
 class State;
 }
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /// What one solve reports back. `returncode` and `lines` stand for what
 /// `polyfem_utils.run_streaming` returns -- the exit code and the output lines, each still carrying
@@ -148,4 +148,4 @@ std::string strip_ansi(const std::string& text);
 /// back on every piece and a trailing empty piece dropped.
 std::vector<std::string> split_lines(const std::string& text);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

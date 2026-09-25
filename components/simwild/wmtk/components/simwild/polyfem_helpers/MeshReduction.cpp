@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -236,4 +236,4 @@ MeshInfo get_mesh_info(const mshio::MshSpec& spec)
     return mesh_info(read_grouped(spec));
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

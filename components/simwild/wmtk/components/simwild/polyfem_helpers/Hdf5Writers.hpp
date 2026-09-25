@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /**
  * @brief The datasets of one constraint HDF5, the layout every constraint file shares (polyfem
@@ -109,4 +109,4 @@ LinearMapHdf5 linear_map(const std::vector<int64_t>& node_ids, int64_t total_n_n
 /// Write the linear map file, dataset and attribute for what the Python writes.
 void write_linear_map_hdf5(const std::string& path, const LinearMapHdf5& map);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

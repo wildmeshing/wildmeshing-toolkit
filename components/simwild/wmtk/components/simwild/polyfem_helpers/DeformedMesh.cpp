@@ -15,7 +15,7 @@
 #include <locale>
 #include <sstream>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -193,4 +193,4 @@ void write_deformed_msh(
     logger().info("  Out : {}", output_msh.string());
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

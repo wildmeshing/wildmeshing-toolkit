@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /**
  * @brief Sum a float64 buffer exactly as `np.sum` does.
@@ -80,4 +80,4 @@ bool numpy_isclose(double a, double b, double rtol, double atol = 1e-8);
  */
 double numpy_det3(const double rows[3][3]);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

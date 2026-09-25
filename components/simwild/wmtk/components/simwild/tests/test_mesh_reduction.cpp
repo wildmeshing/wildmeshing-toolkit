@@ -1,14 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/MeshReduction.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/MeshReduction.hpp>
 
 #include <set>
 #include <string>
 #include <vector>
 
-using wmtk::components::polyfem_ops::classify_reduced_cell;
-using wmtk::components::polyfem_ops::ReducedBody;
-using wmtk::components::polyfem_ops::TagNames;
+using wmtk::components::simwild::polyfem_helpers::classify_reduced_cell;
+using wmtk::components::simwild::polyfem_helpers::ReducedBody;
+using wmtk::components::simwild::polyfem_helpers::TagNames;
 
 namespace {
 

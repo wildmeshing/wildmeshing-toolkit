@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <string>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /// Every JSON built here is an `ordered_json`: nlohmann's default object sorts its keys, while
 /// `json.dumps` writes a Python dict in INSERTION order, and the simulation JSON is compared key
@@ -97,4 +97,4 @@ OrderedJson laplacian_smoothing_cfg(const nlohmann::json& params);
 /// spaces of indent and NO trailing newline.
 void write_polyfem_json(const std::filesystem::path& path, const OrderedJson& doc);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

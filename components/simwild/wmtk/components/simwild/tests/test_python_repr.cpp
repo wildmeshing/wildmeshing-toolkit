@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/PythonFormat.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PythonFormat.hpp>
 
 #include <cmath>
 #include <cstdint>
@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-using wmtk::components::polyfem_ops::python_repr;
+using wmtk::components::simwild::polyfem_helpers::python_repr;
 
 // The collision proxy OBJ is compared byte for byte against the one pysimwild writes, and its
 // vertex lines are Python f-strings over floats, i.e. repr(). Every expected string below was

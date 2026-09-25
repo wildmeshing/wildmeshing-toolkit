@@ -5,7 +5,7 @@
 
 #include <filesystem>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /**
  * @brief One polyfem solve, no contact and no outer loop. Mirrors
@@ -64,4 +64,4 @@ void run_polyfem_stiffness(
     const std::filesystem::path& sim_out_dir,
     const OrderedJson& cfg);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

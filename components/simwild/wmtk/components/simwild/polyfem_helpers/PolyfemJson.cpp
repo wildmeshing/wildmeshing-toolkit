@@ -7,7 +7,7 @@
 #include <cmath>
 #include <fstream>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -59,7 +59,7 @@ const OrderedJson& opt_defaults()
         // `_minsep_spec_defaults`: every root-level rule of the minimum_separation spec that
         // declares a default, keyed by its pointer without the leading slash.
         const nlohmann::json spec =
-            jse::embed::wmtk_polyfem_ops_minimum_separation_spec::minimum_separation_spec::spec();
+            jse::embed::wmtk_simwild_minimum_separation_spec::minimum_separation_spec::spec();
         std::map<std::string, nlohmann::json> s;
         for (const auto& rule : spec) {
             const std::string pointer = rule["pointer"].get<std::string>();
@@ -458,4 +458,4 @@ void write_polyfem_json(const std::filesystem::path& path, const OrderedJson& do
     out << doc.dump(4);
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

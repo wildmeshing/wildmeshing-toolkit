@@ -11,7 +11,7 @@
 #include <set>
 #include <unordered_map>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -667,4 +667,4 @@ InterfaceConstraint make_interface_constraint(
     return out;
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

@@ -1,13 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/ConstraintMatrices.hpp>
-#include <wmtk/components/polyfem_ops/NumpyCompat.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/ConstraintMatrices.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/NumpyCompat.hpp>
 
 #include <cstdint>
 #include <vector>
 
-using wmtk::components::polyfem_ops::pairwise_sum;
-using wmtk::components::polyfem_ops::parse_axes;
+using wmtk::components::simwild::polyfem_helpers::pairwise_sum;
+using wmtk::components::simwild::polyfem_helpers::parse_axes;
 
 namespace {
 

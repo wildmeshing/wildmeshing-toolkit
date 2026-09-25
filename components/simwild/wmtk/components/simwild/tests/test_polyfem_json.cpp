@@ -1,10 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/PolyfemJson.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemJson.hpp>
 
-using wmtk::components::polyfem_ops::deep_merge;
-using wmtk::components::polyfem_ops::OrderedJson;
-using wmtk::components::polyfem_ops::resolve_amips_weights;
+using wmtk::components::simwild::polyfem_helpers::deep_merge;
+using wmtk::components::simwild::polyfem_helpers::OrderedJson;
+using wmtk::components::simwild::polyfem_helpers::resolve_amips_weights;
 
 TEST_CASE("polyfem_ops deep_merge", "[components][polyfem_ops]")
 {

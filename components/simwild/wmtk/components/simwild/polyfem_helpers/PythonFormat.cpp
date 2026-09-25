@@ -7,7 +7,7 @@
 #include <cmath>
 #include <string>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -152,4 +152,4 @@ std::string python_repr(double value)
     return out;
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

@@ -9,7 +9,7 @@
 #include <optional>
 #include <vector>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /// A COO matrix over the interface patch, indexed LOCALLY (local index = position in node_ids).
 /// The order of the entries is part of the HDF5 contract -- polyfem re-assembles them in the
@@ -71,4 +71,4 @@ Triplets get_laplacian_matrix(
 /// Python accepts it from a direct engine call.
 std::optional<std::vector<int>> parse_axes(const nlohmann::json& spec, int dim);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

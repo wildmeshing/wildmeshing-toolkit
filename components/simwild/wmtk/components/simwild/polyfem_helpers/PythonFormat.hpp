@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /**
  * @brief `str(sorted(x))` for a set of names or a list of node tags: Python's list repr.
@@ -38,4 +38,4 @@ std::string python_list(const std::vector<int64_t>& values);
  */
 std::string python_repr(double value);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

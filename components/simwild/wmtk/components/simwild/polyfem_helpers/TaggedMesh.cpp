@@ -12,7 +12,7 @@
 #include <filesystem>
 #include <unordered_map>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -574,4 +574,4 @@ std::vector<BoundaryFaceRecord> select_boundary_faces(
     return out;
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

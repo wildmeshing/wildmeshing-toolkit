@@ -3,7 +3,7 @@
 #include <cfloat>
 #include <cmath>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -131,4 +131,4 @@ bool numpy_isclose(const double a, const double b, const double rtol, const doub
     return std::abs(a - b) <= atol + rtol * std::abs(b);
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

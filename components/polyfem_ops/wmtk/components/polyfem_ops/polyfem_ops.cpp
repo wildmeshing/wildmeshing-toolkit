@@ -1,19 +1,18 @@
 #include "polyfem_ops.hpp"
 
-#include "ConstraintMatrices.hpp"
-#include "DeformedMesh.hpp"
-#include "Hdf5Writers.hpp"
-#include "InterfaceSelection.hpp"
-#include "MeshReduction.hpp"
-#include "OuterLoops.hpp"
-#include "PolyfemJson.hpp"
-#include "PolyfemRunner.hpp"
-#include "TaggedMesh.hpp"
-
 #include <jse/jse.h>
 #include <laplacian_smoothing_spec.hpp>
 #include <minimum_separation_spec.hpp>
 #include <polyfem_ops_spec.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/ConstraintMatrices.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/DeformedMesh.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/Hdf5Writers.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/InterfaceSelection.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/MeshReduction.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/OuterLoops.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemJson.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/TaggedMesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
@@ -25,6 +24,10 @@
 #include <set>
 
 namespace wmtk::components::polyfem_ops {
+
+// The helpers are reached unqualified throughout this file; `polyfem_helpers` is the alias
+// declared in polyfem_ops.hpp.
+using namespace polyfem_helpers;
 
 namespace {
 
@@ -368,8 +371,8 @@ PreparedOperation prepare_operation(nlohmann::json json_params)
     nlohmann::json params = operation_params(json_params);
     const nlohmann::json op_spec = to_jse_spec(
         operation == "minimum_separation"
-            ? jse::embed::wmtk_polyfem_ops_minimum_separation_spec::minimum_separation_spec::spec()
-            : jse::embed::wmtk_polyfem_ops_laplacian_smoothing_spec::laplacian_smoothing_spec::
+            ? jse::embed::wmtk_simwild_minimum_separation_spec::minimum_separation_spec::spec()
+            : jse::embed::wmtk_simwild_laplacian_smoothing_spec::laplacian_smoothing_spec::
                   spec(),
         params);
     {

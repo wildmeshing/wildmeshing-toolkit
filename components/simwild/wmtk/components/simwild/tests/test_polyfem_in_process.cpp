@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/PolyfemRunner.hpp>
 #include <wmtk/components/polyfem_ops/polyfem_ops.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
 
 #include <polyfem/State.hpp>
 #include <polyfem/mesh/Mesh.hpp>
@@ -28,14 +28,14 @@
 #include <typeinfo>
 #include <vector>
 
-using wmtk::components::polyfem_ops::in_process_backend;
-using wmtk::components::polyfem_ops::OrderedJson;
 using wmtk::components::polyfem_ops::polyfem_ops;
 using wmtk::components::polyfem_ops::prepare_operation;
-using wmtk::components::polyfem_ops::prepare_state;
 using wmtk::components::polyfem_ops::PreparedOperation;
-using wmtk::components::polyfem_ops::SolveInputs;
-using wmtk::components::polyfem_ops::split_lines;
+using wmtk::components::simwild::polyfem_helpers::in_process_backend;
+using wmtk::components::simwild::polyfem_helpers::OrderedJson;
+using wmtk::components::simwild::polyfem_helpers::prepare_state;
+using wmtk::components::simwild::polyfem_helpers::SolveInputs;
+using wmtk::components::simwild::polyfem_helpers::split_lines;
 
 namespace fs = std::filesystem;
 

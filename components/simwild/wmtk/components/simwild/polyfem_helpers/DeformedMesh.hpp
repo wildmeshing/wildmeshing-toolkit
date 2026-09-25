@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /// What `polyfem_utils.read_msh_nodes` returns. Its 3-tuple also carries the node tags in file
 /// order, which no caller reads; that one is not mirrored.
@@ -63,4 +63,4 @@ void write_deformed_msh(
     const std::filesystem::path& output_msh,
     double scale);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

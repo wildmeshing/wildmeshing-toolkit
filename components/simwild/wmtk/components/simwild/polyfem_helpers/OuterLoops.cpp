@@ -9,7 +9,7 @@
 #include <limits>
 #include <optional>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -413,4 +413,4 @@ void run_polyfem_stiffness(
     backend.reset_warm_start();
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

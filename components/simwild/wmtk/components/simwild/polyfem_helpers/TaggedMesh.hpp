@@ -16,7 +16,7 @@ namespace mshio {
 struct MshSpec;
 }
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /// The set of physical-group NAMES carried by one cell. The Python side uses a frozenset of
 /// strings for the same thing (mesh_core.TaggedMesh.prim_tags).
@@ -218,4 +218,4 @@ std::vector<BoundaryFaceRecord> select_boundary_faces(
     const TaggedMesh& mesh,
     const std::vector<Selection>& selections);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

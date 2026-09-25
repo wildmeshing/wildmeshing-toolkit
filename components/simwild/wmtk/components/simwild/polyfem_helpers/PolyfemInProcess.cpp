@@ -23,7 +23,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -734,4 +734,4 @@ std::unique_ptr<PolyfemBackend> in_process_backend(SolveInputs inputs)
     return std::make_unique<InProcessBackend>(std::move(inputs));
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

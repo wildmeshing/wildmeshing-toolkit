@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /// Everything `constraints.load_mesh` returns, in the same order as its 9-tuple.
 struct LoadedMesh
@@ -116,4 +116,4 @@ InterfaceConstraint make_interface_constraint(
     bool smooth_positions,
     const std::map<int64_t, double>& laplacian_row_factor_by_id = {});
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

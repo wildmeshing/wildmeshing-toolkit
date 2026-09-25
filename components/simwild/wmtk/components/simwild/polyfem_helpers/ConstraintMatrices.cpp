@@ -15,7 +15,7 @@
 #include <set>
 #include <string>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -236,4 +236,4 @@ std::optional<std::vector<int>> parse_axes(const nlohmann::json& spec, int dim)
     return std::vector<int>(picked.begin(), picked.end());
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

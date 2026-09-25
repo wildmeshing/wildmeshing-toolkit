@@ -6,7 +6,7 @@
 #include <regex>
 #include <system_error>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 namespace {
 
@@ -117,4 +117,4 @@ void check_polyfem_success(
         python_repr_str(finished_line));
 }
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

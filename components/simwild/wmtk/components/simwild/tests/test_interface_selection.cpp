@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/InterfaceSelection.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/InterfaceSelection.hpp>
 
 #include <mshio/mshio.h>
 
@@ -14,7 +14,7 @@
 #include <utility>
 #include <vector>
 
-using namespace wmtk::components::polyfem_ops;
+using namespace wmtk::components::simwild::polyfem_helpers;
 
 using Edges = std::vector<std::array<int64_t, 2>>;
 

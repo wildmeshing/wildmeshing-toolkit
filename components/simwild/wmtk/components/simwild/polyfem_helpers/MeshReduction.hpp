@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace wmtk::components::polyfem_ops {
+namespace wmtk::components::simwild::polyfem_helpers {
 
 /// Which body of the reduced 2-body mesh a cell lands in. The three outcomes of the
 /// classification loop in `polyfem_utils._write_polyfem_reduced_msh`.
@@ -84,4 +84,4 @@ MeshInfo get_mesh_info(const std::string& msh_path);
 /// a spec in memory with the same code, so the volumes are summed in the same order either way.
 MeshInfo get_mesh_info(const mshio::MshSpec& spec);
 
-} // namespace wmtk::components::polyfem_ops
+} // namespace wmtk::components::simwild::polyfem_helpers

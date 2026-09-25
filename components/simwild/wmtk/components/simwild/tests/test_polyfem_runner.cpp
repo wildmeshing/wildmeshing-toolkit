@@ -1,13 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <wmtk/components/polyfem_ops/NumpyCompat.hpp>
-#include <wmtk/components/polyfem_ops/PolyfemRunner.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/NumpyCompat.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
 
 #include <limits>
 
 using polysolve::nonlinear::Status;
-using wmtk::components::polyfem_ops::check_polyfem_success;
-using wmtk::components::polyfem_ops::numpy_isclose;
+using wmtk::components::simwild::polyfem_helpers::check_polyfem_success;
+using wmtk::components::simwild::polyfem_helpers::numpy_isclose;
 
 TEST_CASE("polyfem_ops check_polyfem_success statuses", "[components][polyfem_ops]")
 {
