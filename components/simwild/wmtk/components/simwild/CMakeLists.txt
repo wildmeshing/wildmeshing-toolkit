@@ -52,9 +52,10 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	jse::jse
 )
 
-# The polyfem-facing helpers of the polyfem_ops component (components/polyfem_ops), which is the
-# JSON entry point and calls them. Built only with WMTK_WITH_POLYFEM (top-level CMakeLists), which
-# is the same switch that gates the polyfem_ops component in components/CMakeLists.txt.
+# The polyfem-backed operations minimum_separation and laplacian_smoothing, and the helpers they are
+# built from. simwild.cpp dispatches to them; so, until it is removed, does the polyfem_ops component
+# (components/polyfem_ops). Built only with WMTK_WITH_POLYFEM (top-level CMakeLists), which is the
+# same switch that gates the polyfem_ops component in components/CMakeLists.txt.
 if(WMTK_WITH_POLYFEM)
 	set(POLYFEM_HELPERS_SRC_FILES
 		polyfem_helpers/PythonFormat.hpp
@@ -76,26 +77,21 @@ if(WMTK_WITH_POLYFEM)
 		polyfem_helpers/PolyfemRunner.hpp
 		polyfem_helpers/PolyfemRunner.cpp
 		polyfem_helpers/PolyfemInProcess.cpp
-		polyfem_helpers/OuterLoops.hpp
-		polyfem_helpers/OuterLoops.cpp
+		polyfem_helpers/PolyfemOperation.hpp
+		polyfem_helpers/PolyfemOperation.cpp
+		polyfem_helpers/MinimumSeparation.hpp
+		polyfem_helpers/MinimumSeparation.cpp
+		polyfem_helpers/LaplacianSmoothing.hpp
+		polyfem_helpers/LaplacianSmoothing.cpp
 		polyfem_helpers/DeformedMesh.hpp
 		polyfem_helpers/DeformedMesh.cpp
 	)
 
 	target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${POLYFEM_HELPERS_SRC_FILES})
 
-	# The two operations are validated against the pysimwild spec.json files themselves, embedded at
-	# build time: those files are the single source of the parameter rules, and a copy here would be
-	# a second source that silently drifts. jse_add_spec exposes each as
-	# jse::embed::<target>::<header stem>::spec().
-	jse_add_spec(wmtk_${COMPONENT_NAME}_minimum_separation_spec
-		INPUT "pysimwild/simwild/polyfem_ops/minimum_separation/spec.json"
-		OUTPUT "${WMTK_GENERATED_INCLUDE_DIR}/${COMPONENT_NAME}/minimum_separation_spec.hpp"
-	)
-	jse_add_spec(wmtk_${COMPONENT_NAME}_laplacian_smoothing_spec
-		INPUT "pysimwild/simwild/polyfem_ops/laplacian_smoothing/spec.json"
-		OUTPUT "${WMTK_GENERATED_INCLUDE_DIR}/${COMPONENT_NAME}/laplacian_smoothing_spec.hpp"
-	)
+	# simwild.cpp tests this to reach the two operations; a build without it refuses them with an
+	# error that names the option, and the rest of simwild is compiled exactly as before.
+	target_compile_definitions(wmtk_${COMPONENT_NAME} PUBLIC WMTK_SIMWILD_WITH_POLYFEM)
 
 	# Linked HERE and not into wmtk::toolkit, like ipc-toolkit in topological_offset: these helpers
 	# and the polyfem_ops component on top of them are the only consumers, and polyfem brings
@@ -110,8 +106,6 @@ if(WMTK_WITH_POLYFEM)
 
 	target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 		polyfem::polyfem
-		wmtk_${COMPONENT_NAME}_minimum_separation_spec
-		wmtk_${COMPONENT_NAME}_laplacian_smoothing_spec
 	)
 endif()
 

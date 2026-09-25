@@ -11,7 +11,7 @@
       "output",
       "inputs_only"
     ],
-    "doc": "Dispatcher for the polyfem-backed simwild operations. Only these keys are validated here; an operation's own parameters are validated by the operation against the pysimwild spec.json that defines them. `inputs_only` is validated here and not there because it is a C++-engine switch that pysimwild has no key for, and the pysimwild specs are strict: offering it to them would be rejected."
+    "doc": "Old entry of the polyfem-backed simwild operations, kept as a forwarder while it is compared with {\"application\": \"simwild\"}. This file is only the component's registration: a job is rewritten into the simwild job it now is and validated against simwild_spec.json (polyfem_ops.cpp, as_simwild_job)."
   },
   {
     "pointer": "/application",

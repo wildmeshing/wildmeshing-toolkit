@@ -2,6 +2,7 @@
 #include <wmtk/utils/DriverPrologue.hpp>
 
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -20,6 +21,11 @@
 #include "read_image_msh.hpp"
 
 #include "simwild_spec.hpp"
+
+#ifdef WMTK_SIMWILD_WITH_POLYFEM
+#include "polyfem_helpers/LaplacianSmoothing.hpp"
+#include "polyfem_helpers/MinimumSeparation.hpp"
+#endif
 
 namespace wmtk::components::simwild {
 
@@ -391,14 +397,74 @@ void run_2D(const nlohmann::json& json_params, const InputData& input_data)
     write_unique_vtu();
 }
 
+nlohmann::json simwild_spec_for(const nlohmann::json& json_params)
+{
+    nlohmann::json spec = jse::embed::wmtk_simwild_spec::simwild_spec::spec();
+
+    const auto weights = json_params.find("amips_weights");
+    if (weights == json_params.end() || !weights->is_object() || weights->empty()) {
+        return spec;
+    }
+
+    const auto wildcard = std::find_if(spec.begin(), spec.end(), [](const auto& rule) {
+        return rule["pointer"] == "/amips_weights/*";
+    });
+    if (wildcard == spec.end()) {
+        return spec;
+    }
+    nlohmann::json named = nlohmann::json::array();
+    for (const auto& item : weights->items()) {
+        nlohmann::json copy = *wildcard;
+        copy["pointer"] = "/amips_weights/" + item.key();
+        // jse insists every optional key declares exactly one default, and spells "leave it
+        // absent" as the default "skip". Anything else would be wrong here: a weight nobody set
+        // is the engine default, resolved later, not a value in the parameters.
+        copy["default"] = "skip";
+        named.push_back(copy);
+    }
+    for (auto& rule : spec) {
+        if (rule["pointer"] == "/amips_weights") {
+            rule["optional"] = nlohmann::json::array();
+            for (const auto& item : weights->items()) {
+                rule["optional"].push_back(item.key());
+            }
+        }
+    }
+    for (auto& rule : named) {
+        spec.push_back(rule);
+    }
+    return spec;
+}
+
 void simwild(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
 
     const std::filesystem::path root = utils::verify_and_setup_logger(
         json_params,
-        jse::embed::wmtk_simwild_spec::simwild_spec::spec(),
+        simwild_spec_for(json_params),
         true);
+
+    // The polyfem-backed operations read the input .msh themselves (through TaggedMesh) and write
+    // their own output, so they branch off before the input is read into InputData, the output
+    // name is rewritten, or a SimWildMesh is built.
+    const std::string operation = json_params["operation"];
+    if (operation == "minimum_separation" || operation == "laplacian_smoothing") {
+#ifdef WMTK_SIMWILD_WITH_POLYFEM
+        if (operation == "minimum_separation") {
+            polyfem_helpers::minimum_separation(json_params);
+        } else {
+            polyfem_helpers::laplacian_smoothing(json_params);
+        }
+        return;
+#else
+        log_and_throw_error(
+            "operation {} needs polyfem, but simwild was built without polyfem "
+            "(WMTK_WITH_POLYFEM); configure the toolkit with -DWMTK_WITH_POLYFEM=ON and rebuild",
+            operation);
+#endif
+    }
+
     const std::vector<std::string> input_paths = utils::resolve_input_paths(json_params, root);
 
     // std::filesystem::path output_filename = resolve_path(root, json_params["output"]);

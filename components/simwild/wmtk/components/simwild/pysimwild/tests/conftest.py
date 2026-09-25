@@ -1,5 +1,5 @@
-"""Fixtures: synthetic multi-tag meshes, and the C++ engine (the wmtk
-component polyfem_ops) the polyfem tests run.
+"""Fixtures: synthetic multi-tag meshes, and the C++ engine (the polyfem
+operations of the wmtk component simwild) the polyfem tests run.
 
 Meshes are built directly with gmsh (Freudenthal/Kuhn tet grids, conforming
 across cells) so tests are deterministic and need no external data.
@@ -29,23 +29,26 @@ except ImportError:
 # --------------------------------------------------------------------------
 
 def _polyfem_ops_available():
-    """The polyfem ops are an optional component (WMTK_WITH_POLYFEM); without
-    it wmtk does not know the application name."""
+    """The polyfem operations are optional (WMTK_WITH_POLYFEM); without them
+    simwild refuses them with an error that says so. The probe job lacks
+    `sep`, so a build that has them stops on that before touching any file."""
     try:
         import wildmeshing
     except ImportError:
         return False
     try:
-        wildmeshing.wildmeshing({"application": "polyfem_ops"})
+        wildmeshing.wildmeshing({"application": "simwild",
+                                 "operation": "minimum_separation",
+                                 "input": ["probe.msh"]})
     except RuntimeError as exc:
-        return "Application polyfem_ops unknown" not in str(exc)
+        return "built without polyfem" not in str(exc)
     return True
 
 
 needs_polyfem_ops = pytest.mark.skipif(
     not _polyfem_ops_available(),
-    reason="the wildmeshing module was built without the polyfem_ops "
-           "component (configure with -DWMTK_WITH_POLYFEM=ON)")
+    reason="the wildmeshing module was built without polyfem "
+           "(configure with -DWMTK_WITH_POLYFEM=ON)")
 
 
 def run_cpp(mesh, operation, out_dir, **params):
@@ -56,9 +59,9 @@ def run_cpp(mesh, operation, out_dir, **params):
     import wildmeshing
     out_dir.mkdir(parents=True, exist_ok=True)
     wildmeshing.wildmeshing({
-        "application": "polyfem_ops",
+        "application": "simwild",
         "operation": operation,
-        "input": str(mesh),
+        "input": [str(mesh)],
         "output": str(out_dir / "out"),
         "inputs_only": True,
         **params,

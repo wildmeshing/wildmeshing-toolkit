@@ -176,13 +176,13 @@ simwild.topological_offset(
 
 The wrapper also provides PolyFEM-backed operations: `minimum_separation`,
 `laplacian_smoothing`, and `polyfem_sim` (full simulation). They share the
-same .msh-in/.msh-out interface; parameters are validated against the
-`spec.json` packaged with each op.
+same .msh-in/.msh-out interface.
 
-`minimum_separation` and `laplacian_smoothing` run in the WMTK component
-`polyfem_ops` (C++), which needs the toolkit built with
+`minimum_separation` and `laplacian_smoothing` are operations of the WMTK
+component `simwild` (C++), and their parameters are validated against
+`simwild_spec.json`. They need the toolkit built with
 `-DWMTK_WITH_POLYFEM=ON`; without that the call raises and names the option.
-They run the polyfem the component is linked against, so they need no
+They run the polyfem simwild is linked against, so they need no
 PolyFEM binary. `polyfem_sim` is Python and locates the PolyFEM binary
 **only** through the `POLYFEM_BIN` environment variable, raising if it is
 unset:

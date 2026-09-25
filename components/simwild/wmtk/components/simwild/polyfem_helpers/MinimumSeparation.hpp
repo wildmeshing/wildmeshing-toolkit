@@ -1,25 +1,32 @@
 #pragma once
 
-#include "PolyfemJson.hpp"
-#include "PolyfemRunner.hpp"
+#include "PolyfemOperation.hpp"
 
-#include <filesystem>
+#include <nlohmann/json.hpp>
 
 namespace wmtk::components::simwild::polyfem_helpers {
 
 /**
- * @brief One polyfem solve, no contact and no outer loop. Mirrors
- * `polyfem_utils.step_run_polyfem_single`, which is the whole of the smoothing engine's solve.
+ * @brief The simwild operation "minimum_separation": push collision bodies apart to a target
+ * separation with polyfem (AMIPS + fitting + Laplacian + GCP contact), with an outer loop per
+ * `strategy`.
  *
- * Writes `sim_json` to `sim_json_path` and logs to `sim_out_dir/polyfem.log`. The Python's first
- * argument is the path of the binary; this takes the backend instead, which is the one place the
- * two engines are allowed to differ -- see PolyfemRunner.hpp on why the boundary exists.
+ * `json_params` is a simwild job already verified against the simwild spec and with its defaults
+ * injected, which is what `simwild()` hands over and what the polyfem_ops entry produces with
+ * `validate_polyfem_operation`. It is `prepare_minimum_separation` followed, unless `inputs_only`
+ * is set, by the outer loop on the in-process backend and the write-back of the deformed mesh.
  */
-void run_polyfem_single(
-    PolyfemBackend& backend,
-    const OrderedJson& sim_json,
-    const std::filesystem::path& sim_json_path,
-    const std::filesystem::path& sim_out_dir);
+void minimum_separation(nlohmann::json json_params);
+
+/**
+ * @brief Generate the simulation JSON and every input it names, up to the first solve.
+ *
+ * The JSON is written in every mode, and so is interface_collision.obj. In inputs_only mode every
+ * other input is written too, as the Python engine wrote it; otherwise none is, and their content
+ * is returned in `inputs` for the backend. Separate from `minimum_separation` so that a test can
+ * build a polyfem State from exactly what a solve receives.
+ */
+PreparedOperation prepare_minimum_separation(nlohmann::json params);
 
 /**
  * @brief strategy="dhat": ramp dhat from the measured geometric gap until the bodies reach `sep`.
@@ -30,15 +37,15 @@ void run_polyfem_single(
  * measured through the same collision proxy the real solves use. The ramp then starts at
  * growth*gap0 with the overshoot line search anchored at gap0, where the barrier exerts no force.
  * Each solve that UNDERSHOOTS commits its state (the warm start, which the backend keeps: the
- * Python renames curr_state.hdf5 over prev_state.hdf5) and sets the next dhat to growth*active;
- * each solve that OVERSHOOTS rolls back by not committing and halves the line-search step. The smallest overshooting dhat is kept as a
- * bracket upper bound and later undershoots bisect toward it instead of jumping past a dhat
- * already known to overshoot.
+ * Python renamed curr_state.hdf5 over prev_state.hdf5) and sets the next dhat to growth*active;
+ * each solve that OVERSHOOTS rolls back by not committing and halves the line-search step. The
+ * smallest overshooting dhat is kept as a bracket upper bound and later undershoots bisect toward
+ * it instead of jumping past a dhat already known to overshoot.
  *
- * `sep_json` is mutated exactly as the Python mutates its dict -- the dhat and the two state paths
+ * `sep_json` is mutated exactly as the Python mutated its dict -- the dhat and the two state paths
  * -- and rewritten to `sep_json_path` before every solve, so what polyfem reads is the same file
  * on both engines. On return it holds the LAST attempted iteration, which is also the state the
- * Python leaves on disk.
+ * Python left on disk.
  */
 void run_polyfem_dhat(
     PolyfemBackend& backend,

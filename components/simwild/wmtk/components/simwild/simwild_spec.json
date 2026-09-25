@@ -75,7 +75,36 @@
       "replace_tags_in",
       "replace_tags_out",
       "tag_priority",
-      "tags_selection"
+      "tags_selection",
+      "inputs_only",
+      "collision_pairs",
+      "sep",
+      "interfaces",
+      "scale",
+      "use_fitting",
+      "use_laplacian",
+      "use_graph_laplacian",
+      "normalize_penalties",
+      "weight_fitting",
+      "weight_laplacian",
+      "amips_weights",
+      "init_dhat",
+      "max_outer_iterations",
+      "rtol",
+      "nl_max_iterations",
+      "barrier_stiffness",
+      "alpha_n",
+      "alpha_t",
+      "smooth_positions",
+      "save_vtu",
+      "strategy",
+      "dhat_growth",
+      "max_stiffness_multiplier",
+      "protected_regions",
+      "ambient_like_tags",
+      "use_nh_body",
+      "nh_youngs",
+      "nh_poisson"
     ]
   },
   {
@@ -124,9 +153,11 @@
       "keep_lcc",
       "resolve_overlaps",
       "replace_tags",
-      "tag_priority"
+      "tag_priority",
+      "minimum_separation",
+      "laplacian_smoothing"
     ],
-    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required."
+    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required. The last two are the polyfem-backed operations and need the toolkit built with WMTK_WITH_POLYFEM: `minimum_separation` pushes collision bodies apart to a target separation with polyfem (AMIPS + fitting + Laplacian + GCP contact), with an outer loop per `strategy`; `laplacian_smoothing` fairs material interfaces with one polyfem solve (AMIPS + fitting + Laplacian, no contact). Both read the input .msh themselves and write the deformed mesh to <output>.msh, with the generated polyfem inputs in sep_input/sep_output or smooth_input/smooth_output beside it."
   },
   {
     "pointer": "/output",
@@ -649,5 +680,285 @@
     "type": "bool",
     "default": true,
     "doc": "Coarsen as far as the quality guarantee allows, instead of stopping at the target edge length. The pass answers 'how few elements can hold this max energy', and that is a more aggressive question than it sounds -- the answer ignores how big the elements become. Measured on the registered tetwild models it takes them from 348k to 60k cells (-82.7%) at max energy raised on none of them, against -43.2% with this off, because a converged mesh is sized by length_rel and the adaptive sizing field rather than by what the quality target strictly requires. On by default: the element count is the thing worth having. Turned off, the pass leaves alone any edge already at or past the collapse threshold (0.8 * the target length, the same one the ordinary collapse uses), since collapsing it only makes its neighbours longer still. The sizing FIELD is deliberately not applied either way: that is the optimizer's own refinement scratch work, and honouring it here would leave the pass unable to undo refinement that turned out to be unnecessary."
+  },
+  {
+    "pointer": "/inputs_only",
+    "type": "bool",
+    "default": false,
+    "doc": "minimum_separation / laplacian_smoothing: write the generated polyfem inputs to <directory of output>/sep_input or /smooth_input and return without solving. It exists so the generated inputs can be diffed byte for byte against the ones the Python engine wrote, which is how this port is checked. A normal run writes only the simulation JSON and interface_collision.obj there, and hands polyfem the other inputs in memory."
+  },
+  {
+    "pointer": "/collision_pairs",
+    "type": "list",
+    "min": 1,
+    "default": "skip",
+    "doc": "minimum_separation: pairs of interfaces to push apart. Required by that operation, which reports it missing itself -- it cannot be required here, where every other operation would then have to carry it."
+  },
+  {
+    "pointer": "/collision_pairs/*",
+    "type": "list",
+    "min": 2,
+    "max": 2,
+    "doc": "One collision pair: [side_A, side_B]."
+  },
+  {
+    "pointer": "/collision_pairs/*/*",
+    "type": "string",
+    "required": ["region"],
+    "optional": ["filter", "id"],
+    "doc": "One side: the boundary of `region`, kept where the outside cell satisfies `filter` (both wmtk Boolean expressions; a bare string is a region). Normals point out of the region. Identical selections dedupe to one collision body; reuse an explicit id to merge distinct selections into one body."
+  },
+  {
+    "pointer": "/collision_pairs/*/*",
+    "type": "object",
+    "required": ["region"],
+    "optional": ["filter", "id"],
+    "doc": "One side: the boundary of `region`, kept where the outside cell satisfies `filter` (both wmtk Boolean expressions; a bare string is a region). Normals point out of the region. Identical selections dedupe to one collision body; reuse an explicit id to merge distinct selections into one body."
+  },
+  {
+    "pointer": "/collision_pairs/*/*/region",
+    "type": "string",
+    "doc": "Boolean expression for the region whose boundary is selected."
+  },
+  {
+    "pointer": "/collision_pairs/*/*/filter",
+    "type": "string",
+    "default": "skip",
+    "doc": "Boolean expression the outside cell must satisfy (optional; omit to keep the whole boundary)."
+  },
+  {
+    "pointer": "/collision_pairs/*/*/id",
+    "type": "int",
+    "default": "skip",
+    "doc": "Collision body id; auto-assigned when omitted."
+  },
+  {
+    "pointer": "/sep",
+    "type": "float",
+    "default": "skip",
+    "doc": "minimum_separation: target minimum separation distance in solver units (mesh units * scale). Required by that operation, which reports it missing itself."
+  },
+  {
+    "pointer": "/interfaces",
+    "type": "list",
+    "default": [],
+    "doc": "laplacian_smoothing: interfaces to smooth; empty = every material interface."
+  },
+  {
+    "pointer": "/interfaces/*",
+    "type": "string",
+    "required": ["region"],
+    "optional": ["filter", "weight"],
+    "doc": "One selection: the boundary of `region`, kept where the outside cell satisfies `filter` (a bare string is a region), e.g. \"tag_2\" for tag_2's whole boundary or {\"region\": \"tag_0\", \"filter\": \"tag_1\"} for one interface."
+  },
+  {
+    "pointer": "/interfaces/*",
+    "type": "object",
+    "required": ["region"],
+    "optional": ["filter", "weight"],
+    "doc": "One selection: the boundary of `region`, kept where the outside cell satisfies `filter` (a bare string is a region), e.g. \"tag_2\" for tag_2's whole boundary or {\"region\": \"tag_0\", \"filter\": \"tag_1\"} for one interface."
+  },
+  {
+    "pointer": "/interfaces/*/region",
+    "type": "string",
+    "doc": "Boolean expression for the region whose boundary is smoothed."
+  },
+  {
+    "pointer": "/interfaces/*/filter",
+    "type": "string",
+    "default": "skip",
+    "doc": "Boolean expression the outside cell must satisfy (optional)."
+  },
+  {
+    "pointer": "/interfaces/*/weight",
+    "type": "float",
+    "default": "skip",
+    "doc": "Laplacian weight for this interface's nodes; default weight_laplacian. The Laplacian penalty rows of these nodes are scaled by sqrt(weight / weight_laplacian) after normalization, so the smoothness energy is the sum over interfaces of weight * ||L_k u - b_k||^2 / 2. A node on several selected interfaces takes the largest weight."
+  },
+  {
+    "pointer": "/scale",
+    "type": "float",
+    "default": 0.001,
+    "doc": "minimum_separation / laplacian_smoothing: mesh-to-solver unit scale."
+  },
+  {
+    "pointer": "/use_fitting",
+    "type": "bool",
+    "default": true,
+    "doc": "minimum_separation / laplacian_smoothing: add the fitting penalty anchoring interface nodes near rest pose."
+  },
+  {
+    "pointer": "/use_laplacian",
+    "type": "bool",
+    "default": true,
+    "doc": "minimum_separation / laplacian_smoothing: add the Laplacian smoothness penalty."
+  },
+  {
+    "pointer": "/use_graph_laplacian",
+    "type": "bool",
+    "default": false,
+    "doc": "minimum_separation / laplacian_smoothing: combinatorial instead of geometric Laplacian."
+  },
+  {
+    "pointer": "/normalize_penalties",
+    "type": "bool",
+    "default": true,
+    "doc": "minimum_separation / laplacian_smoothing: normalize the penalty matrices."
+  },
+  {
+    "pointer": "/weight_fitting",
+    "type": "float",
+    "default": 1.0,
+    "doc": "minimum_separation / laplacian_smoothing: soft-constraint weight on fitting."
+  },
+  {
+    "pointer": "/weight_laplacian",
+    "type": "float",
+    "default": 1.0,
+    "doc": "minimum_separation / laplacian_smoothing: soft-constraint weight on the Laplacian."
+  },
+  {
+    "pointer": "/amips_weights",
+    "type": "object",
+    "default": {},
+    "doc": "minimum_separation: per-tag AMIPS weight overrides, e.g. {\"ambient\": 1e-6}. The keys are the caller's own, so they are named in the spec at run time (simwild.cpp) rather than listed here."
+  },
+  {
+    "pointer": "/amips_weights/*",
+    "type": "float",
+    "doc": "AMIPS weight for one tag."
+  },
+  {
+    "pointer": "/init_dhat",
+    "type": "float",
+    "default": -1.0,
+    "doc": "minimum_separation: initial contact dhat; <= 0 (default) means measure the initial gap with a zero-stiffness probe solve and start the ramp at dhat_growth * gap."
+  },
+  {
+    "pointer": "/max_outer_iterations",
+    "type": "int",
+    "default": 10,
+    "doc": "minimum_separation: cap on the outer loop (dhat ramp / stiffness loop). Distinct from nl_max_iterations, which caps polyfem's Newton solver inside one outer iteration, and from max_iterations, which is the remeshing operation's own."
+  },
+  {
+    "pointer": "/rtol",
+    "type": "float",
+    "default": 0.01,
+    "doc": "minimum_separation: relative tolerance on the achieved separation."
+  },
+  {
+    "pointer": "/nl_max_iterations",
+    "type": "int",
+    "default": 1000,
+    "doc": "minimum_separation / laplacian_smoothing: polyfem nonlinear solver iteration cap."
+  },
+  {
+    "pointer": "/barrier_stiffness",
+    "type": "float",
+    "default": -1.0,
+    "doc": "minimum_separation: contact barrier stiffness; <= 0 (default) = auto per strategy. dhat ramp: 1e6 (fixed for the whole ramp — too soft stalls below the target, over-stiff only makes the gap hug dhat; transfers across resolutions with normalize_penalties). stiffness strategy: 1 (soft start does the bulk displacement cheaply; the loop raises kappa itself)."
+  },
+  {
+    "pointer": "/alpha_n",
+    "type": "float",
+    "default": 0.1,
+    "doc": "minimum_separation: GCP normal smoothing parameter."
+  },
+  {
+    "pointer": "/alpha_t",
+    "type": "float",
+    "default": 0.1,
+    "doc": "minimum_separation: GCP tangential smoothing parameter."
+  },
+  {
+    "pointer": "/smooth_positions",
+    "type": "bool",
+    "default": true,
+    "doc": "laplacian_smoothing: smooth absolute positions (L*x=0) instead of displacements; positions mode is what actually moves the surface."
+  },
+  {
+    "pointer": "/save_vtu",
+    "type": "bool",
+    "default": false,
+    "doc": "minimum_separation / laplacian_smoothing: emit paraview output (slow)."
+  },
+  {
+    "pointer": "/strategy",
+    "type": "string",
+    "default": "dhat",
+    "options": ["dhat", "stiffness"],
+    "doc": "minimum_separation outer loop: \"dhat\" ramps dhat multiplicatively from the measured geometric gap (next dhat = dhat_growth * active) at fixed barrier stiffness, binary-searching on overshoot; \"stiffness\" (experimental) pins dhat at sep*(1+rtol) and raises the barrier stiffness until the separation clears sep (overshoot bounded by rtol by construction)."
+  },
+  {
+    "pointer": "/dhat_growth",
+    "type": "float",
+    "default": 1.9,
+    "doc": "minimum_separation, strategy=dhat: multiplicative dhat schedule — next dhat = dhat_growth * measured active distance. Values <= 2 keep the measured gap on the exact (4/3)(1-x)^3 outer branch of the GCP barrier (x = active/dhat >= 0.5)."
+  },
+  {
+    "pointer": "/max_stiffness_multiplier",
+    "type": "float",
+    "default": 100.0,
+    "doc": "minimum_separation, strategy=stiffness: cap on the per-iteration barrier-stiffness growth factor (protects Newton conditioning)."
+  },
+  {
+    "pointer": "/protected_regions",
+    "type": "list",
+    "default": [],
+    "doc": "minimum_separation: regions held at rest during the solve (hard pin via the augmented Lagrangian). An entry is either a wmtk Boolean cell expression (all components pinned) or {\"region\": expr, \"axes\": \"z\"} to pin only some components, leaving the region free to slide along the others."
+  },
+  {
+    "pointer": "/protected_regions/*",
+    "type": "string",
+    "required": ["region"],
+    "optional": ["axes"],
+    "doc": "A wmtk Boolean cell expression, e.g. \"floor\" or \"rod | anchor\"; or {\"region\": expr, \"axes\": \"xy\"} where axes is any subset of xyz."
+  },
+  {
+    "pointer": "/protected_regions/*",
+    "type": "object",
+    "required": ["region"],
+    "optional": ["axes"],
+    "doc": "A wmtk Boolean cell expression, e.g. \"floor\" or \"rod | anchor\"; or {\"region\": expr, \"axes\": \"xy\"} where axes is any subset of xyz."
+  },
+  {
+    "pointer": "/protected_regions/*/region",
+    "type": "string",
+    "doc": "Boolean cell expression for the cells whose nodes are held."
+  },
+  {
+    "pointer": "/protected_regions/*/axes",
+    "type": "string",
+    "default": "skip",
+    "doc": "Components to hold, any subset of xyz (e.g. \"z\" or \"xy\"); the others stay free, so the region can slide along them. Omit to hold every component."
+  },
+  {
+    "pointer": "/ambient_like_tags",
+    "type": "list",
+    "default": [],
+    "doc": "minimum_separation / laplacian_smoothing: tag names treated as ambient in the polyfem reduction (e.g. user primitives like box_0): cells whose tags are all ambient-like get the ambient AMIPS weight and volume normalization; cells also carrying a body tag stay body. Mirror of the wmtk remeshing key."
+  },
+  {
+    "pointer": "/ambient_like_tags/*",
+    "type": "string",
+    "doc": "A tag name."
+  },
+  {
+    "pointer": "/use_nh_body",
+    "type": "bool",
+    "default": false,
+    "doc": "minimum_separation: model the bodies with NeoHookean instead of AMIPS (default off). AMIPS scores element SHAPE only and is invariant under uniform scaling, so a body pushed on all sides can inflate or shrink for free; NeoHookean's volumetric term makes that cost energy. Measured on the two-box fixture (dhat ramp, start gap 1, target 1.5): AMIPS lets a body reach 0.81x its volume while separating, NeoHookean holds 0.99x. EVERY group becomes NeoHookean, ambient included: polyfem refuses a material list that mixes AMIPS with an elastic material, so ambient cannot stay AMIPS while a body is NeoHookean."
+  },
+  {
+    "pointer": "/nh_youngs",
+    "type": "float",
+    "default": 0.0001,
+    "doc": "minimum_separation: Young's modulus of every group (ambient included, since use_nh_body makes them all NeoHookean) in the same normalized currency as the AMIPS weights (divided by the material's rest volume in solver units). Measured on the two-box fixture (start gap 1.0, target 1.5): AMIPS lets a body shrink to 0.81 of its volume; NH at the default 1e-4 holds it at 0.99, and 1e-3 to 1e-6 all held above 0.95 when that range was swept. Above ~1e-2 the bodies become too stiff for the barrier to move and the separation falls short, so 1e-4 keeps a decade of margin."
+  },
+  {
+    "pointer": "/nh_poisson",
+    "type": "float",
+    "default": 0.4,
+    "doc": "minimum_separation: Poisson ratio of every group (ambient included) when use_nh_body is on. Higher (towards 0.5) penalizes volume change harder; above ~0.48 conditioning suffers."
   }
 ]

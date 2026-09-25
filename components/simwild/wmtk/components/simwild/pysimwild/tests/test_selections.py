@@ -2,7 +2,7 @@
 
 The grammar and the id assignment are tested on the Python functions, which
 polyfem_sim keeps using. Collision pairs and the spec rules are tested on the C++
-engine: its parameters are validated against the same spec.json files, and the
+engine: its parameters are validated against simwild_spec.json, and the
 pairs it builds are the ones it writes into the simulation JSON."""
 import json
 import re

@@ -1,6 +1,6 @@
 #include "PolyfemJson.hpp"
 
-#include <minimum_separation_spec.hpp>
+#include <simwild_spec.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
@@ -56,10 +56,10 @@ OrderedJson paraview_defaults()
 const OrderedJson& opt_defaults()
 {
     static const OrderedJson defaults = [] {
-        // `_minsep_spec_defaults`: every root-level rule of the minimum_separation spec that
-        // declares a default, keyed by its pointer without the leading slash.
-        const nlohmann::json spec =
-            jse::embed::wmtk_simwild_minimum_separation_spec::minimum_separation_spec::spec();
+        // `_minsep_spec_defaults`: every root-level rule of the spec that declares a default,
+        // keyed by its pointer without the leading slash. The spec is simwild's, into which the
+        // minimum_separation spec was folded; the keys read below are the operation's own.
+        const nlohmann::json spec = jse::embed::wmtk_simwild_spec::simwild_spec::spec();
         std::map<std::string, nlohmann::json> s;
         for (const auto& rule : spec) {
             const std::string pointer = rule["pointer"].get<std::string>();
@@ -69,7 +69,7 @@ const OrderedJson& opt_defaults()
         }
 
         OrderedJson out;
-        // ---- derived from minimum_separation/spec.json (single source) ----
+        // ---- derived from simwild_spec.json (single source) ----
         out["scale"] = s.at("scale");
         out["useFitting"] = s.at("use_fitting");
         out["useLaplacian"] = s.at("use_laplacian");
@@ -77,7 +77,9 @@ const OrderedJson& opt_defaults()
         out["normalizePenalties"] = s.at("normalize_penalties");
         out["weight_fitting"] = s.at("weight_fitting");
         out["weight_laplacian"] = s.at("weight_laplacian");
-        out["max_iterations"] = s.at("max_iterations");
+        // The engine's own name; the spec calls it max_outer_iterations, because simwild's
+        // max_iterations is the remeshing operation's.
+        out["max_iterations"] = s.at("max_outer_iterations");
         out["rtol"] = s.at("rtol");
         out["alpha_n"] = s.at("alpha_n");
         out["alpha_t"] = s.at("alpha_t");
@@ -381,7 +383,7 @@ OrderedJson minimum_separation_cfg(const nlohmann::json& params, const OrderedJs
     cfg["weight_fitting"] = params["weight_fitting"];
     cfg["weight_laplacian"] = params["weight_laplacian"];
     cfg["amips_weights"] = params["amips_weights"];
-    cfg["max_iterations"] = params["max_iterations"];
+    cfg["max_iterations"] = params["max_outer_iterations"];
     cfg["rtol"] = params["rtol"];
     cfg["nl_max_iterations"] = params["nl_max_iterations"];
     cfg["barrier_stiffness"] = params["barrier_stiffness"];
@@ -423,7 +425,9 @@ OrderedJson laplacian_smoothing_cfg(const nlohmann::json& params)
     cfg["normalizePenalties"] = params["normalize_penalties"];
     cfg["weight_fitting"] = params["weight_fitting"];
     cfg["weight_laplacian"] = params["weight_laplacian"];
-    cfg["max_iterations"] = params["max_iterations"];
+    // The spec's nl_max_iterations: smoothing has no outer loop, so the Python's max_iterations
+    // was always the polyfem nonlinear cap here, and the alias below turns it back into one.
+    cfg["max_iterations"] = params["nl_max_iterations"];
     cfg["smoothDisplacementsOrPositions"] = params["smooth_positions"].get<bool>() ? 1 : 0;
     cfg["save_vtu"] = params["save_vtu"];
     cfg["ambient_like_tags"] = params["ambient_like_tags"];

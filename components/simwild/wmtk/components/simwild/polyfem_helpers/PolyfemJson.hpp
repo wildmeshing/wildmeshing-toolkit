@@ -19,9 +19,9 @@ using OrderedJson = nlohmann::ordered_json;
  * @brief `polyfem_utils.OPT_DEFAULTS`: the engine-level defaults `build_polyfem_json` falls back
  * to for a key the configuration does not carry.
  *
- * The spec-derived half is read out of the EMBEDDED minimum_separation spec.json at run time,
- * exactly as `_minsep_spec_defaults()` reads the file: root-level rules (one '/' in the pointer)
- * that declare a default. Both engines share this one table, the smoothing engine included --
+ * The spec-derived half is read out of the EMBEDDED simwild spec (simwild_spec.json, into which
+ * the minimum_separation spec was folded) at run time, exactly as `_minsep_spec_defaults()` read
+ * the operation's file: root-level rules (one '/' in the pointer) that declare a default. Both engines share this one table, the smoothing engine included --
  * `polyfem_utils` builds it once from the separation spec. Keeping a second copy here is the trap
  * the Python's own comment names (the max_iterations 5-vs-10 one), so there is none.
  */

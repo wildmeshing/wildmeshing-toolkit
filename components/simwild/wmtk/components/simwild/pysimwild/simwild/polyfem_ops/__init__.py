@@ -1,9 +1,8 @@
 """simwild.polyfem_ops — the polyfem-backed pipeline stages.
 
-minimum_separation and laplacian_smoothing run in the wmtk component
-polyfem_ops (C++), reached through simwild.minimum_separation and
-simwild.laplacian_smoothing. Their parameter rules are the spec.json files in
-the two directories of the same names here, which the C++ build embeds.
+minimum_separation and laplacian_smoothing are operations of the wmtk
+component simwild (C++), reached through simwild.minimum_separation and
+simwild.laplacian_smoothing. Their parameter rules are in simwild_spec.json.
 
 In Python:
     polyfem_sim     : full simulation of a finished mesh (+ its

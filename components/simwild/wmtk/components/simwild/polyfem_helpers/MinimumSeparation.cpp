@@ -1,6 +1,9 @@
-#include "OuterLoops.hpp"
+#include "MinimumSeparation.hpp"
 
+#include "ConstraintMatrices.hpp"
+#include "Hdf5Writers.hpp"
 #include "NumpyCompat.hpp"
+#include "TaggedMesh.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -32,17 +35,6 @@ int64_t max_iterations(const OrderedJson& cfg)
                            : it->get<int64_t>();
 }
 
-/// `curr_json.get("solver", {}).get("nonlinear", {}).get("allow_out_of_iterations", False)`.
-bool allow_out_of_iterations(const OrderedJson& doc)
-{
-    const auto solver = doc.find("solver");
-    if (solver == doc.end() || !solver->is_object()) return false;
-    const auto nonlinear = solver->find("nonlinear");
-    if (nonlinear == solver->end() || !nonlinear->is_object()) return false;
-    const auto flag = nonlinear->find("allow_out_of_iterations");
-    return flag != nonlinear->end() && flag->get<bool>();
-}
-
 /// `for stale in sim_out_dir.glob("polyfem_*.log"): stale.unlink()` -- a shorter rerun must not
 /// leave the iteration logs of a longer one behind, which would be read as this run's.
 void remove_stale_iteration_logs(const std::filesystem::path& sim_out_dir)
@@ -63,8 +55,8 @@ void require_one_iteration(const int64_t n)
 {
     if (n <= 0) {
         log_and_throw_error(
-            "max_iterations is {}, so no solve would run; the Python engine raises NameError on "
-            "its loop variable here",
+            "max_outer_iterations is {}, so no solve would run; the Python engine raised "
+            "NameError on its loop variable here",
             n);
     }
 }
@@ -153,24 +145,198 @@ void log_if_out_of_iterations(
     }
 }
 
+/**
+ * @brief The protected_pin*.hdf5 files. Mirrors the `protected_regions` block of
+ * `minimum_separation.run`.
+ *
+ * Every node of a matching cell is pinned exactly at rest (a polyfem HARD constraint, held by the
+ * augmented Lagrangian) so the contact pushes only the unprotected side. An entry is a bare
+ * expression (hold every component) or {"region", "axes"} (hold only those components, leaving
+ * the region free to slide along the rest); entries sharing an axes spec go into ONE file, named
+ * protected_pin.hdf5 or protected_pin_<axes>.hdf5, because polyfem takes a list of files.
+ *
+ * The Python's own check for unknown keys inside an entry is not mirrored: jse already rejects
+ * them against the same spec, in strict mode, before this runs.
+ *
+ * Each file is written in inputs_only mode; otherwise its content goes into `memory` under the
+ * same path instead.
+ *
+ * @return the file paths, in the order the Python appends them to `pin_paths`; they go into the
+ * simulation JSON as `constraints.hard`.
+ */
+std::vector<std::string> protected_pins(
+    const std::string& input,
+    const nlohmann::json& protected_regions,
+    const std::filesystem::path& sim_in_dir,
+    const bool inputs_only,
+    SolveInputs& memory)
+{
+    if (protected_regions.empty()) {
+        return {};
+    }
+    // The Python reads the mesh dimension off the reduced mesh and loads the original mesh again
+    // for the pin nodes; both give the mesh's own dimension, so one load answers both.
+    const TaggedMesh mesh_for_pins(input);
+
+    // Insertion-ordered grouping by the parsed axes, as the Python dict is.
+    std::vector<std::pair<std::optional<std::vector<int>>, std::vector<std::string>>> groups;
+    for (const auto& entry : protected_regions) {
+        std::string expr;
+        std::optional<std::vector<int>> axes;
+        if (entry.is_object()) {
+            expr = entry.at("region").get<std::string>();
+            axes = parse_axes(
+                entry.contains("axes") ? entry["axes"] : nlohmann::json(),
+                mesh_for_pins.mesh_dim);
+        } else {
+            expr = entry.get<std::string>();
+        }
+        auto it = std::find_if(groups.begin(), groups.end(), [&axes](const auto& g) {
+            return g.first == axes;
+        });
+        if (it == groups.end()) {
+            groups.emplace_back(axes, std::vector<std::string>{expr});
+        } else {
+            it->second.push_back(expr);
+        }
+    }
+
+    std::vector<std::string> pin_paths;
+    for (const auto& [axes, exprs] : groups) {
+        const std::vector<int64_t> pin_ids = select_region_nodes(mesh_for_pins, exprs);
+        std::string suffix;
+        if (axes.has_value()) {
+            suffix = "_";
+            for (const int a : *axes) suffix += "xyz"[a];
+        }
+        const std::filesystem::path pin_path =
+            sim_in_dir / ("protected_pin" + suffix + ".hdf5");
+        ConstraintHdf5 pin = pin_constraint(pin_ids, mesh_for_pins.mesh_dim, axes);
+        pin_paths.push_back(std::filesystem::weakly_canonical(pin_path).string());
+        if (inputs_only) {
+            write_constraint_hdf5(pin_path.string(), pin);
+            logger().info(
+                "  pinned     : {}  ({} nodes, {})",
+                pin_path.string(),
+                pin_ids.size(),
+                axes.has_value() ? suffix.substr(1) : "all axes");
+        } else {
+            memory.constraints.emplace(pin_paths.back(), std::move(pin));
+        }
+    }
+    return pin_paths;
+}
+
 } // namespace
 
-void run_polyfem_single(
-    PolyfemBackend& backend,
-    const OrderedJson& sim_json,
-    const std::filesystem::path& sim_json_path,
-    const std::filesystem::path& sim_out_dir)
+PreparedOperation prepare_minimum_separation(nlohmann::json params)
 {
-    std::filesystem::create_directories(sim_out_dir);
-    write_polyfem_json(sim_json_path, sim_json);
+    params["input"] = operation_input_path(params);
+    // Required by this operation and by no other, so the simwild spec cannot require them: it
+    // declares them optional with the default "skip" (absent stays absent), and the check is here.
+    for (const char* key : {"sep", "collision_pairs"}) {
+        if (!params.contains(key)) {
+            log_and_throw_error("minimum_separation needs the parameter `{}`", key);
+        }
+    }
 
-    const SolveResult result =
-        backend.solve(sim_json_path, sim_out_dir, sim_out_dir / "polyfem.log");
-    check_polyfem_success(
-        result.returncode,
-        result.statuses,
-        result.lines,
-        allow_out_of_iterations(sim_json));
+    PreparedOperation out;
+    out.operation = "minimum_separation";
+    out.inputs_only = params["inputs_only"].get<bool>();
+    const bool inputs_only = out.inputs_only;
+    out.input = params["input"].get<std::string>();
+    out.output = params["output"].get<std::string>();
+    const std::string& input = out.input;
+    const std::string& output = out.output;
+
+    // One pass gives both: the deduped sides the collision proxy is built from, and the
+    // id-pair list that goes into contact.collision_pairs of the simulation JSON. It is also
+    // where a malformed pair is caught.
+    std::vector<Selection> sides;
+    std::vector<std::array<int64_t, 2>> pairs;
+    normalize_collision_pairs(params["collision_pairs"], sides, pairs);
+    const OrderedJson polyfem_pairs = pairs;
+
+    const std::filesystem::path sim_in_dir = sim_dir(output, "sep_input");
+    out.sim_out_dir = sim_dir(output, "sep_output");
+    logger().info("Input  : {}", input);
+    logger().info("Output : {}.msh", output);
+    // smooth_positions is false here and has no spec key: minimum_separation.run reads it
+    // from cfg["smoothDisplacementsOrPositions"], whose OPT_DEFAULTS value is 0, and
+    // simwild.py's minimum_separation engine never puts that key in cfg. Separation smooths
+    // displacements (L u = 0), so the rest state stays an equilibrium of the penalty.
+    emit_interface_constraint(
+        make_interface_constraint(
+            input,
+            sides,
+            params["use_graph_laplacian"],
+            params["normalize_penalties"],
+            params["scale"],
+            /*smooth_positions=*/false),
+        sim_in_dir,
+        /*with_collision_proxy=*/true,
+        inputs_only,
+        out.inputs);
+
+    ReducedMesh reduced =
+        reduce_mesh(input, params["ambient_like_tags"], sim_in_dir, inputs_only);
+
+    out.cfg = minimum_separation_cfg(params, polyfem_pairs);
+    out.cfg["amips_weights"] = resolve_amips_weights(out.cfg);
+    out.sim_json = build_polyfem_json(
+        out.cfg,
+        reduced.path,
+        sim_in_dir,
+        reduced.info,
+        out.sim_out_dir / "solution.txt");
+    if (!inputs_only) {
+        out.inputs.meshes.emplace(
+            out.sim_json["geometry"][0]["mesh"].get<std::string>(),
+            std::move(reduced.content));
+    }
+
+    // The pins are made after the JSON and their paths are appended to it, as in run():
+    // `constraints.hard` belongs to the operation, not to the shared builder.
+    const std::vector<std::string> pin_paths =
+        protected_pins(input, params["protected_regions"], sim_in_dir, inputs_only, out.inputs);
+    if (!params["protected_regions"].empty()) {
+        out.sim_json["constraints"]["hard"] = pin_paths;
+    }
+    out.sim_json_path = sim_in_dir / "separation.json";
+    write_polyfem_json(out.sim_json_path, out.sim_json);
+    return out;
+}
+
+void minimum_separation(nlohmann::json json_params)
+{
+    PreparedOperation prepared = prepare_minimum_separation(std::move(json_params));
+    if (prepared.inputs_only) {
+        return;
+    }
+    const std::unique_ptr<PolyfemBackend> backend = operation_backend(prepared);
+
+    // The outer loop rewrites separation.json before every solve, so what stays on disk
+    // afterwards is the last iteration's document -- the same file the Python leaves.
+    const std::string strategy = prepared.cfg["strategy"];
+    if (strategy == "dhat") {
+        run_polyfem_dhat(
+            *backend,
+            prepared.sim_json,
+            prepared.sim_json_path,
+            prepared.sim_out_dir,
+            prepared.cfg);
+    } else {
+        // jse has already refused anything but "dhat" and "stiffness" against the same
+        // spec `run()` checks by hand, so there is no third branch to raise on.
+        run_polyfem_stiffness(
+            *backend,
+            prepared.sim_json,
+            prepared.sim_json_path,
+            prepared.sim_out_dir,
+            prepared.cfg);
+    }
+
+    write_operation_result(prepared);
 }
 
 void run_polyfem_dhat(

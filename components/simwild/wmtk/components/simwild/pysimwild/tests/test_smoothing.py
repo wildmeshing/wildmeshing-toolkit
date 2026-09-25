@@ -1,6 +1,6 @@
 """Tier 2 — end-to-end Laplacian smoothing: fair a staircase tag_0/ambient
 interface (2D) and verify roughness drops while the mesh stays valid. Needs
-the wmtk component polyfem_ops (-DWMTK_WITH_POLYFEM=ON). This is also the 2D
+simwild built with polyfem (-DWMTK_WITH_POLYFEM=ON). This is also the 2D
 path of the polyfem pipeline."""
 import re
 

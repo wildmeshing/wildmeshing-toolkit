@@ -1,6 +1,6 @@
 """Tier 2 — end-to-end minimum separation: run the wrapper on two interior
-boxes with a 1-unit gap and verify the achieved separation. Needs the wmtk
-component polyfem_ops (-DWMTK_WITH_POLYFEM=ON)."""
+boxes with a 1-unit gap and verify the achieved separation. Needs simwild
+built with polyfem (-DWMTK_WITH_POLYFEM=ON)."""
 import numpy as np
 import pytest
 
@@ -30,7 +30,7 @@ def test_minimum_separation_reaches_target(boxes3d, tmp_path, strategy):
         output=str(tmp_path / "separated"),
         others={"scale": SCALE, "use_fitting": True, "use_laplacian": True,
                 "normalize_penalties": True, "rtol": RTOL,
-                "max_iterations": 6, "strategy": strategy},
+                "max_outer_iterations": 6, "strategy": strategy},
     )
 
     assert out_msh.exists()
@@ -75,7 +75,7 @@ def test_minimum_separation_protected_region(boxes3d, tmp_path):
         collision_pairs=[[SEL_A, SEL_B]],
         sep=SEP,
         output=str(tmp_path / "separated"),
-        others={"scale": SCALE, "rtol": RTOL, "max_iterations": 8,
+        others={"scale": SCALE, "rtol": RTOL, "max_outer_iterations": 8,
                 "strategy": "stiffness", "protected_regions": ["tag_1"]},
     )
 

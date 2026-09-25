@@ -492,35 +492,24 @@ def topological_offset(mesh, offset_selection, target_distance, offset_output_ta
 
 
 # ---------------------------------------------------------------------------
-# Polyfem-based ops: the wmtk component polyfem_ops, which validates the
-# parameters against the op's spec.json (polyfem_ops/<op>/spec.json)
+# Polyfem-based ops: simwild operations, which validate the parameters
+# against simwild's spec (simwild_spec.json)
 # ---------------------------------------------------------------------------
 
 def _run_polyfem_op(op_name, params):
-    """Run the C++ operation `op_name` on `params`. It validates them against
-    the op's spec.json itself and runs the polyfem it is linked against, so it
-    needs no PolyFEM binary."""
+    """Run the simwild operation `op_name` on `params`. simwild validates them
+    against simwild_spec.json and runs the polyfem it is linked against, so it
+    needs no PolyFEM binary. A toolkit built without WMTK_WITH_POLYFEM refuses
+    the operation with an error that names the option."""
     _ensure_output_dir(params["output"])
-    try:
-        wildmeshing({"application": "polyfem_ops", "operation": op_name,
-                     **params})
-    except RuntimeError as exc:
-        # The component is optional, and without it wmtk does not know the
-        # application name at all; say which option builds it in.
-        if "Application polyfem_ops unknown" not in str(exc):
-            raise
-        raise RuntimeError(
-            f"{op_name} needs the wildmeshing module built with the "
-            "polyfem_ops component: configure the toolkit with "
-            "-DWMTK_WITH_POLYFEM=ON and rebuild.") from exc
+    wildmeshing({"application": "simwild", "operation": op_name, **params})
 
 
 def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
     """
     Push collision bodies apart to a target separation (polyfem: AMIPS +
-    fitting + Laplacian + GCP contact with a dhat line-search). Runs in the
-    wmtk component polyfem_ops: needs the toolkit built with
-    -DWMTK_WITH_POLYFEM=ON.
+    fitting + Laplacian + GCP contact with a dhat line-search). A simwild
+    operation that needs the toolkit built with -DWMTK_WITH_POLYFEM=ON.
 
     Parameters:
     - mesh: Input multi-tag mesh file path (.msh).
@@ -534,20 +523,20 @@ def minimum_separation(mesh, collision_pairs, sep, output="out", others={}):
              {"region": "tag_1", "filter": "ambient"}]].
     - sep: Target minimum separation in solver units (mesh units * scale).
     - output: Output path stem; writes <output>.msh (artifacts next to it).
-    - others: Additional parameters — see polyfem_ops/minimum_separation/spec.json
-      (scale, use_laplacian, weight_*, rtol, max_iterations, strategy
+    - others: Additional parameters — see simwild_spec.json
+      (scale, use_laplacian, weight_*, rtol, max_outer_iterations, strategy
       ["dhat" default | "stiffness" experimental], ...).
     """
     _run_polyfem_op("minimum_separation",
-                    {"input": mesh, "collision_pairs": collision_pairs,
+                    {"input": [mesh], "collision_pairs": collision_pairs,
                      "sep": sep, "output": output, **others})
 
 
 def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
     """
     Fair material interfaces with a single polyfem solve (AMIPS + fitting +
-    Laplacian; no contact). Runs in the wmtk component polyfem_ops: needs the
-    toolkit built with -DWMTK_WITH_POLYFEM=ON.
+    Laplacian; no contact). A simwild operation that needs the toolkit built
+    with -DWMTK_WITH_POLYFEM=ON.
 
     Parameters:
     - mesh: Input multi-tag mesh file path (.msh).
@@ -558,11 +547,11 @@ def laplacian_smoothing(mesh, interfaces=[], output="out", others={}):
       replaces `weight_laplacian` for that interface's nodes (a node on
       several selected interfaces takes the largest weight).
     - output: Output path stem; writes <output>.msh (artifacts next to it).
-    - others: Additional parameters — see polyfem_ops/laplacian_smoothing/spec.json
-      (weight_laplacian, smooth_positions, ...).
+    - others: Additional parameters — see simwild_spec.json
+      (weight_laplacian, smooth_positions, nl_max_iterations, ...).
     """
     _run_polyfem_op("laplacian_smoothing",
-                    {"input": mesh, "interfaces": interfaces, "output": output,
+                    {"input": [mesh], "interfaces": interfaces, "output": output,
                      **others})
 
 if __name__ == "__main__":

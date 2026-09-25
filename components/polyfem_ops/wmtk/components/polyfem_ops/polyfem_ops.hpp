@@ -1,56 +1,32 @@
 #pragma once
 
-#include <wmtk/components/simwild/polyfem_helpers/PolyfemJson.hpp>
-#include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
+#include <wmtk/components/simwild/polyfem_helpers/PolyfemOperation.hpp>
 
 #include <nlohmann/json.hpp>
 
-#include <filesystem>
-#include <string>
-
 namespace wmtk::components::polyfem_ops {
 
-/// The polyfem-facing helpers this component is built from; they live in the simwild component
+/// The polyfem-facing code this component forwards to; it lives in the simwild component
 /// (components/simwild/wmtk/components/simwild/polyfem_helpers).
 namespace polyfem_helpers = wmtk::components::simwild::polyfem_helpers;
 
 /**
- * @brief Entry point of the polyfem-backed simwild operations (minimum separation, interface
- * smoothing), reached through the JSON-driven app and the `wildmeshing()` Python binding.
+ * @brief The old JSON entry of the polyfem-backed operations (minimum separation, interface
+ * smoothing), kept as a forwarder while both entries are compared; the operations are now simwild's
+ * (`{"application": "simwild", "operation": ...}`).
  *
- * `json_params` carries the dispatcher keys (application, input, output, operation) plus the
- * operation's own parameters, which are validated against the pysimwild spec.json of that
- * operation: those files stay the single source of the rules.
- *
- * It is `prepare_operation` followed, unless `inputs_only` is set, by the solve on the in-process
- * backend and the write-back of the deformed mesh.
+ * `json_params` is rewritten into the simwild job it now is (see as_simwild_job in
+ * polyfem_ops.cpp), validated against the simwild spec, and handed to the same operation function
+ * simwild calls.
  */
 void polyfem_ops(nlohmann::json json_params);
 
-/// An operation up to its first solve: everything `prepare_operation` generates and the solve
-/// consumes.
-struct PreparedOperation
-{
-    std::string operation;
-    bool inputs_only = false;
-    std::string input; ///< the caller's multi-tag .msh
-    std::string output; ///< the output stem; the deformed mesh goes to <output>.msh
-    polyfem_helpers::OrderedJson cfg; ///< the engine configuration the outer loops steer by
-    polyfem_helpers::OrderedJson sim_json; ///< the simulation JSON, as written to `sim_json_path`
-    std::filesystem::path sim_json_path;
-    std::filesystem::path sim_out_dir;
-    /// The content of every input file `sim_json` names. Empty in inputs_only mode, which writes
-    /// those files instead.
-    polyfem_helpers::SolveInputs inputs;
-};
+using PreparedOperation = polyfem_helpers::PreparedOperation;
 
 /**
- * @brief Validate `json_params` and generate the simulation JSON and every input it names.
- *
- * The JSON is written in every mode, and so is interface_collision.obj. In inputs_only mode every
- * other input is written too, as the Python engine writes it; otherwise none is, and their content
- * is returned in `inputs` for the backend. Separate from `polyfem_ops` so that a test can build a
- * polyfem State from exactly what a solve receives.
+ * @brief The operation's preparation up to its first solve, through the same rewrite and
+ * validation as `polyfem_ops`: `prepare_minimum_separation` or `prepare_laplacian_smoothing`.
+ * Kept so that a test can build a polyfem State from exactly what a solve receives.
  */
 PreparedOperation prepare_operation(nlohmann::json json_params);
 

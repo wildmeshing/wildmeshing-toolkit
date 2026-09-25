@@ -2,8 +2,8 @@
 
 The polyfem operations' glue — reading the tagged .msh, picking interface faces from region/filter
 selections, orienting them, building the constraint matrices and writing the artifacts — was
-written in `simwild.polyfem_ops` (the oracle) and ported to the wmtk component `polyfem_ops`
-reached through `wildmeshing.wildmeshing(...)`. These tests hold the C++ engine to the Python
+written in `simwild.polyfem_ops` (the oracle) and ported to the polyfem operations of the wmtk
+component `simwild`, reached through `wildmeshing.wildmeshing(...)`. These tests hold the C++ engine to the Python
 engine's results on the same mesh with the same options: byte for byte for the two text
 artifacts, and dataset for dataset (same names, same dtypes, same shapes, exactly equal values)
 for the HDF5s. That is the only check that catches a face written in a different order, a normal
@@ -496,7 +496,7 @@ def _assert_polyfem_inputs_match(mesh, operation, options, tmp_path, label):
     # Every knob that reaches the JSON, all off their defaults at once: scale also rescales both
     # AMIPS weights (the volume normalization carries a scale^dim factor).
     ({"scale": 0.01, "alpha_n": 0.25, "alpha_t": 0.35, "barrier_stiffness": 5e5,
-      "dhat_growth": 1.5, "rtol": 0.05, "max_iterations": 3, "nl_max_iterations": 250},
+      "dhat_growth": 1.5, "rtol": 0.05, "max_outer_iterations": 3, "nl_max_iterations": 250},
      "non_default_knobs"),
 ])
 def test_minimum_separation_polyfem_inputs_match(boxes3d, tmp_path, options, label):
@@ -522,9 +522,9 @@ def test_minimum_separation_neohookean_materials(boxes3d, tmp_path, options, lab
     beside a NeoHookean body aborts the solve with "multimaterial supported only for
     LinearElasticity and NeoHookean".
     """
-    # The defaults the engine fills in: the root-level ones of the operation's spec.json.
-    spec = (Path(__file__).resolve().parents[1]
-            / "simwild" / "polyfem_ops" / "minimum_separation" / "spec.json")
+    # The defaults the engine fills in: the root-level ones of simwild's spec, into which the
+    # operation's own spec was folded.
+    spec = Path(__file__).resolve().parents[2] / "simwild_spec.json"
     defaults = {r["pointer"][1:]: r["default"] for r in json.loads(spec.read_text())
                 if r["pointer"].count("/") == 1 and "default" in r}
     scale = defaults["scale"]
@@ -583,9 +583,10 @@ def test_minimum_separation_hard_constraints_match(boxes3d, tmp_path, protected,
     ({"weight_laplacian": 2.5}, "weight_laplacian"),
     ({"use_graph_laplacian": True}, "graph_laplacian"),
     ({"save_vtu": True}, "save_vtu"),
-    # Smoothing forces contact off and aliases max_iterations onto the polyfem nonlinear cap,
-    # which is the one place the two operations read the same key differently.
-    ({"max_iterations": 42}, "max_iterations"),
+    # The polyfem nonlinear cap. The Python engine's smoothing called it max_iterations and
+    # aliased it onto the cap, which is the name the recorded case still carries; simwild's spec
+    # calls it nl_max_iterations, as minimum_separation always did.
+    ({"nl_max_iterations": 42}, "max_iterations"),
 ])
 def test_laplacian_smoothing_polyfem_inputs_match(jagged2d, tmp_path, options, label):
     _assert_polyfem_inputs_match(jagged2d, "laplacian_smoothing", options, tmp_path, label)
@@ -800,7 +801,7 @@ def _assert_loops_agree(py_run, cpp_run, rtol, dhat_pinned=False):
 def _assert_steered_on_the_logged_distance(root, trail):
     """The in-process backend takes the active distance from polyfem's contact form instead of from
     its log text. The two are asserted EQUAL, to every digit, in the C++ test that can see both at
-    full precision (components/polyfem_ops/.../tests/test_polyfem_in_process.cpp); here the same
+    full precision (components/simwild/.../tests/test_polyfem_in_process.cpp); here the same
     claim is checked on the real cases at the six significant digits the loop prints -- the value
     the loop steered on, against the value polyfem wrote into that iteration's log.
     """
@@ -862,7 +863,7 @@ def test_deformed_msh_write_back_matches(request, tmp_path, mesh_fixture, dim):
 # --------------------------------------------------------------------------
 
 SEP_BASE = {"collision_pairs": BOTH_SKINS, "sep": 1.5e-3, "scale": 1e-3, "rtol": 1e-1,
-            "max_iterations": 4}
+            "max_outer_iterations": 4}
 
 
 def _final_kappa(root):

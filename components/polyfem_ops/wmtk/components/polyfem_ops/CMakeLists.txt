@@ -1,8 +1,8 @@
-# polyfem_ops: the polyfem-backed simwild operations (minimum separation, interface smoothing),
-# ported from pysimwild's Python glue. This component is the JSON entry ("application":
-# "polyfem_ops"); the polyfem-facing code it calls lives in wmtk::simwild, under
-# components/simwild/wmtk/components/simwild/polyfem_helpers, which is also where polyfem is
-# linked and the two pysimwild operation specs are embedded. Built only with WMTK_WITH_POLYFEM
+# polyfem_ops: the old JSON entry ("application": "polyfem_ops") of the polyfem-backed simwild
+# operations (minimum separation, interface smoothing), kept as a forwarder while it is compared
+# with the simwild entry. The operations live in wmtk::simwild, under
+# components/simwild/wmtk/components/simwild/polyfem_helpers, which is also where polyfem is linked
+# and where their parameters are specified (simwild_spec.json). Built only with WMTK_WITH_POLYFEM
 # (components/CMakeLists.txt).
 
 set(COMPONENT_NAME polyfem_ops)

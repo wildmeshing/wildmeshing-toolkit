@@ -20,8 +20,7 @@ target_link_libraries(wmtk_test_${COMPONENT_NAME} PRIVATE wmtk::triwild wmtk::te
 
 # The tests of the polyfem_helpers sources, under the same gate those sources are built with.
 # test_polyfem_in_process.cpp also drives the polyfem_ops entry point, hence the link to that
-# component; polyfem itself and the two embedded specs come through wmtk::simwild, which links
-# them PUBLIC.
+# component; polyfem itself comes through wmtk::simwild, which links it PUBLIC.
 if(WMTK_WITH_POLYFEM)
     set(POLYFEM_HELPERS_SRC_FILES
         test_polyfem_link.cpp
