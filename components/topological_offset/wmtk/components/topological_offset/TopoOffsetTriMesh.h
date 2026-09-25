@@ -384,8 +384,8 @@ public:
     /**
      * @brief Which mode the hooks are running in. The 2D twin of TopoOffsetTetMesh::OptPhase.
      *
-     * A: TriWild's loop and nothing else -- the pre-optimize pass and the frozen-front final
-     * pass -- with m_offset_envelope holding the front. B: the front objective's offset terms
+     * A: TriWild's loop and nothing else -- today only the frozen-front final pass -- with
+     * m_offset_envelope holding the front. B: the front objective's offset terms
      * are live; set only around measurements (the criterion, the gradient reference) so they
      * see the objective the placement uses. Single: the run's loop, TriWild's operation groups
      * with the front placed by B's objective inside the smoothing passes -- B wherever the
@@ -439,8 +439,8 @@ public:
     /// carries label 1, or the edge itself does while neither face does (a curve or edge piece).
     bool edge_is_complex_boundary(const Tuple& e) const;
     /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
-    /// under `setup`. PerTag at load (the complex is not labelled yet, and the pre-optimize pass
-    /// holds every tag boundary as it always did), WallComplex when deform_others switches it at
+    /// under `setup`. PerTag at load (the complex is not labelled yet), WallComplex when
+    /// deform_others switches it at
     /// construction, envelope_setup() fresh at the final pass. The tracked-edge flags are left
     /// alone: they are the topology the operations maintain. `when` labels the log line.
     void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
@@ -451,7 +451,7 @@ public:
 
     /**
      * @brief The tube the offset boundary may not leave during Phase A, of half-width
-     * offset_envelope_rel x target_distance. Rebuilt at the end of every Phase B from the
+     * offset_envelope. Rebuilt at the end of every Phase B from the
      * boundary as that phase left it, which is what lets the boundary travel across rounds.
      * Non-null once the offset exists; whether it constrains is containment_for()'s phase test,
      * not the pointer. Unlike m_tag_envelopes, which must never be rebuilt.
@@ -718,7 +718,7 @@ public:
     /// Operations refused because they would have left an offset-boundary face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// EXPERIMENTAL_ops_divergence_guard: collapses refused for raising the local sag of the
+    /// The ops divergence guard: collapses refused for raising the local sag of the
     /// offset surface. No swap counter here: the 3D twin also guards the surface flip, which has
     /// no 2D counterpart -- see swap_edge_before().
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
@@ -1000,7 +1000,7 @@ public:
     /// The collapse survivor's own sizing scalar, recorded in collapse_edge_before() and put back
     /// in collapse_edge_after() when sizing_collapse_min is false; see that key.
     mutable wmtk::threading::enumerable_thread_specific<double> m_collapse_survivor_sizing;
-    /// EXPERIMENTAL_ops_divergence_guard: one chord's sag as edge_conv_ratio measures it, with
+    /// The ops divergence guard: one chord's sag as edge_conv_ratio measures it, with
     /// an unmeasurable chord reported as infinity so that losing measurability counts as
     /// worsening. The 3D twin is offset_face_sag(), measured at the face centroid.
     double offset_edge_sag(size_t a, size_t b) const;
@@ -1239,7 +1239,7 @@ public:
         }
         // Both families compose: whatever holds this segment holds it at once. Phase A holds the
         // offset where Phase B left it; Phase B is what moves it, so it contributes nothing there
-        // -- and null before the offset exists at all, which is the pre-pass.
+        // -- and null before the offset exists at all.
         const std::shared_ptr<SampleEnvelope> base = containment_for(mask, all_offset);
         if (base || m_deform_tags.empty()) return base;
         // deform_others' ops-only tube: a released boundary is held by no mask -- its vertices
@@ -1375,7 +1375,7 @@ public:
      * cannot be placed for one of them and not for another.
      *
      * It was not always one notion: the sag classification used to qualify its endpoints with
-     * the DISTANCE to the level set (residual_length() within front_conv_rel x target_distance)
+     * the DISTANCE to the level set (residual_length() within the convergence epsilon)
      * while everything else used the criterion's stationarity measure. The two disagree exactly
      * where it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one
      * a hair outside the tube disqualified its whole chord from ever being refined, with the
@@ -1503,7 +1503,7 @@ public:
      * so mesh_improvement() stops exactly when both are met:
      *
      *   - max face AMIPS over stop_energy -- TriWild's, via quality_rel()
-     *   - max Phi residual over (front_conv_rel / 2) * target_distance, over the reachable band
+     *   - max Phi residual over half the vertex epsilon, front_conv / 2, over the reachable band
      *
      * The average returned alongside it is the same expression over the two averages, so both
      * numbers live on the same 1.0 scale. Nothing reads the average; it is logged.
@@ -1529,7 +1529,7 @@ public:
 
     /// Samples per band edge; see offset_edge_samples(). 0 falls back to a vertex-only
     /// criterion, which is measurably blind to a band too coarse to be the offset.
-    int offset_residual_samples() const { return m_offset_params.offset_residual_samples; }
+    int stencil_order() const { return m_offset_params.stencil_order; }
 
     /// The residual scale, derived from the criterion rather than configured beside it.
     ///
@@ -1569,7 +1569,7 @@ public:
         //
         // Never measured on the single-phase path, so this sits at the 1e-16 floor there; the
         // single-phase convergence bar uses m_front_gradient_reference instead.
-        return std::max(m_offset_params.front_conv_rel * m_gradient_reference, 1e-16);
+        return std::max(m_offset_params.front_conv_frac() * m_gradient_reference, 1e-16);
     }
 
     /// max |2 (Phi - c) grad Phi . n| over the initial offset-surface vertices; the scale
@@ -1647,7 +1647,7 @@ public:
     };
 
     /**
-     * @brief The Phi residual at `offset_residual_samples` interior points of band edge `e`.
+     * @brief The Phi residual at `stencil_order` interior points of band edge `e`.
      *
      * The criterion cannot be a vertex criterion: a boundary can have every vertex exactly on the
      * level set while zig-zagging or cutting corners between them, which reads as converged and is
@@ -1675,7 +1675,7 @@ public:
     template <typename Visit>
     void for_each_offset_edge_sample(const Tuple& e, Visit&& visit) const
     {
-        const int k = m_offset_params.offset_residual_samples;
+        const int k = m_offset_params.stencil_order;
         if (k <= 0) return;
         const Vector2d p0 = m_vertex_attribute[e.vid(*this)].m_posf;
         const Vector2d p1 = m_vertex_attribute[e.switch_vertex(*this).vid(*this)].m_posf;
@@ -1734,7 +1734,7 @@ public:
      * @brief The "energy_gradient" criterion: the front is at a critical point of Phase B's
      * energy, and every edge resolves the pull that drives it there.
      *
-     * One bar for everything, B = front_conv_rel x m_front_gradient_reference:
+     * One bar for everything, B = front_conv_frac() x m_front_gradient_reference:
      *  - vertices: max over the placed front vertices of ||grad F||, F the vertex's full Phase B
      *    objective (AMIPS + the two offset terms, as the shared smoother assembles it) -- the same
      *    quantity and bar as the Phase B pass stop.
@@ -1795,7 +1795,8 @@ public:
     /// The resolution rule: sets the target length at each refinable edge's ends from
     /// front_chord_target(), graded outward. Returns the vertices changed.
     size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& edges);
-    /// sag_halve_refinement: halve the sizing scalar at the ends of every refinable edge, once
+    /// THE refinement: halve the sizing scalar at the ends of
+    /// every refinable edge, once
     /// per vertex per call, floored like refine_front_from_sag(), then graded outward. Returns
     /// the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& edges);
@@ -1971,7 +1972,7 @@ public:
     bool collapse_quality_allowed(size_t v1, size_t v2, double q, double ring_max) const override;
 
     /// The 2D twin of TopoOffsetTetMesh::swap_quality_allowed(), kept so the two dimensions
-    /// carry the same rule, and like it gated on EXPERIMENTAL_ops_divergence_guard. It is
+    /// carry the same rule. It is
     /// UNREACHABLE for an offset edge today, and not by oversight: a
     /// 2D front is a curve with no diagonal to flip, and TriOptimizerMesh::swap_edge_before()
     /// refuses any edge on a tracked surface outright via is_edge_on_surface(), so an offset
@@ -1981,7 +1982,7 @@ public:
     bool swap_quality_allowed(const double after, const double before, const bool is_surface_flip)
         const override
     {
-        if (!is_surface_flip || !m_offset_params.experimental_ops_divergence_guard) {
+        if (!is_surface_flip) {
             return after < before;
         }
         return after < m_params.stop_energy;
@@ -2022,7 +2023,7 @@ public:
     mutable std::atomic<size_t> m_needle_reports{0};
 
     /// Population scan at a named moment, for the points no operation hook covers -- after the
-    /// pre-pass, after construction, at each collapse pass. Reports the count and the worst few.
+    /// after construction, at each collapse pass. Reports the count and the worst few.
     void needle_scan(const char* when) const;
     /// Diagnostic only: the base offers no per-iteration hook except this one, so the needle
     /// population scan rides on it. Calls nothing else -- the base default is empty.
@@ -2169,18 +2170,7 @@ public:
     bool invariants(const std::vector<Tuple>& tris) override;
     //// overriden splits/invariants
 
-    /**
-     * @brief TriWild over the input mesh, before any of the offset exists, held only by the
-     * per-tag region envelopes, against a sizing field of 1.0 at every vertex.
-     *
-     * Runs the shared mesh_improvement() with Phase A's own parameters and units, at a point where
-     * the only tracked surfaces are the tag-region boundaries (input complex and domain wall among
-     * them) and the only containment is their per-tag envelopes. There is no offset yet, so no
-     * offset envelope and no Phi term: this is TriWild, exactly. Same as 3D.
-     */
-    void pre_optimize_input_mesh();
-
-    /// Construction, start to finish: the optional pre-optimize pass, the simplicial embedding,
+    /// Construction, start to finish, on the input mesh as given: the simplicial embedding,
     /// marching_tris(), the re-embedding and the offset tagging. The optimization is
     /// optimize_offset(), which the driver calls afterwards.
     void execute_offset(const std::filesystem::path& output_file);

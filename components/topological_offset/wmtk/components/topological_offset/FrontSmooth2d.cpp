@@ -248,8 +248,7 @@ bool TopoOffsetTriMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     //     so (1)+(2) alone would cut in at travelling staircase vertices as well. A trapped
     //     vertex is one the 1-D solve has finished with, at a position off the level set.
     const double rho = pot->residual_length(x);
-    const double tube =
-        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+    const double tube = std::max(m_offset_params.offset_envelope, 1e-12);
     if (!std::isfinite(rho) || rho <= tube) return false;
     const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
     bool past_perpendicular = false;

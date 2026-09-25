@@ -1024,6 +1024,178 @@ TEST_CASE("align-energy-3d-derivatives", "[offset][potential]")
 }
 
 
+TEST_CASE("stencil-energy-3d-derivatives", "[offset][potential]")
+{
+    // The one offset term against finite differences. x enters only through the sample points
+    // sliding with it, q_i = a_i x + b_i q1 + c_i q2, so the whole chain rule is the moving
+    // vertex's own barycentric weight a_i -- getting that factor wrong is the obvious way to
+    // break this, and a corner sample belonging to another vertex (a_i = 0) must contribute to
+    // the value while contributing nothing to the gradient.
+    const double delta = 0.25;
+    MatrixXd V(1, 3);
+    V << 0., 0., 0.;
+    const auto pot = std::make_shared<const SmoothOffsetPotential3D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+
+    // Two faces of different shape sharing the moving vertex, and stencils carrying a_i = 1,
+    // a_i = 0 and 0 < a_i < 1, so every regime of the chain rule is exercised.
+    std::vector<StencilEnergy3D::Face> faces;
+    {
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.31, -0.05, 0.02);
+        f.q2 = Vector3d(0.12, 0.29, -0.04);
+        f.samples = {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / 3., 1. / 3., 1. / 3.}};
+        faces.push_back(f);
+    }
+    {
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.09, 0.33, 0.11);
+        f.q2 = Vector3d(-0.21, 0.17, 0.26);
+        f.samples = {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {0.5, 0.25, 0.25}};
+        faces.push_back(f);
+    }
+
+    const double w = 0.9;
+    StencilEnergy3D energy(pot, faces, w);
+    VectorXd xv(3);
+    xv << 0.21, 0.13, 0.07;
+
+    const double h = 1e-6;
+    VectorXd g(3);
+    energy.gradient(xv, g);
+    for (int k = 0; k < 3; ++k) {
+        VectorXd xp = xv, xm = xv;
+        xp[k] += h;
+        xm[k] -= h;
+        const double fd = (energy.value(xp) - energy.value(xm)) / (2. * h);
+        INFO("grad k " << k << " fd " << fd << " analytic " << g[k]);
+        CHECK(std::abs(fd - g[k]) <= 1e-5 * std::max(1., std::abs(g[k])));
+    }
+
+    // The Gauss-Newton Hessian is deliberately not the exact one, so it is not checked against
+    // central differences of the gradient. What IS guaranteed, and what the solver needs, is
+    // that it is symmetric and PSD by construction, being a sum of outer products.
+    MatrixXd H;
+    energy.hessian(xv, H);
+    CHECK((H - H.transpose()).norm() <= 1e-12 * std::max(1., H.norm()));
+    const Eigen::SelfAdjointEigenSolver<MatrixXd> es(H);
+    CHECK(es.eigenvalues().minCoeff() >= -1e-12 * std::max(1., H.norm()));
+}
+
+TEST_CASE("stencil-energy-3d-is-the-mean-squared-relative-error", "[offset][potential]")
+{
+    // The value read back from the formula independently: w * sum over faces of the MEAN over
+    // that face's samples of ((Phi(q) - c)/c)^2. Mean WITHIN a face, sum ACROSS faces, and no
+    // area weighting -- the three structural choices the instruction specified, each pinned
+    // below by a property that fails if it is a sum within a face or a mean across them.
+    const double delta = 0.25;
+    MatrixXd V(1, 3);
+    V << 0., 0., 0.;
+    const auto pot = std::make_shared<const SmoothOffsetPotential3D>(
+        V,
+        MatrixXi(0, 2),
+        MatrixXi(0, 3),
+        std::vector<int>{0},
+        delta,
+        DHAT_FACTOR);
+
+    std::vector<StencilEnergy3D::Face> faces;
+    {
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.31, -0.05, 0.02);
+        f.q2 = Vector3d(0.12, 0.29, -0.04);
+        f.samples = {{1., 0., 0.}, {0., 1., 0.}, {0., 0., 1.}, {1. / 3., 1. / 3., 1. / 3.}};
+        faces.push_back(f);
+    }
+    {
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(0.09, 0.33, 0.11);
+        f.q2 = Vector3d(-0.21, 0.17, 0.26);
+        f.samples = {{0.5, 0.25, 0.25}, {0.25, 0.5, 0.25}};
+        faces.push_back(f);
+    }
+
+    const double w = 0.7;
+    const Vector3d x(0.21, 0.13, 0.07);
+    VectorXd xv = x;
+    const double c = pot->target_level();
+
+    double expect = 0.;
+    for (const StencilEnergy3D::Face& f : faces) {
+        double s = 0.;
+        for (const StencilEnergy3D::Sample& sm : f.samples) {
+            const Vector3d q = sm.a * x + sm.b * f.q1 + sm.c * f.q2;
+            const double r = (pot->value(q) - c) / c;
+            s += r * r;
+        }
+        expect += s / double(f.samples.size());
+    }
+    expect *= w;
+
+    StencilEnergy3D energy(pot, faces, w);
+    const double got = energy.value(xv);
+    CHECK(got == Catch::Approx(expect).epsilon(1e-12));
+
+    // MEAN WITHIN A FACE: repeating a face's samples leaves its contribution unchanged. A sum
+    // within the face would double it.
+    {
+        std::vector<StencilEnergy3D::Face> dup = faces;
+        for (StencilEnergy3D::Face& f : dup) {
+            const auto once = f.samples;
+            f.samples.insert(f.samples.end(), once.begin(), once.end());
+        }
+        StencilEnergy3D e2(pot, dup, w);
+        CHECK(e2.value(xv) == Catch::Approx(got).epsilon(1e-12));
+    }
+
+    // SUM ACROSS FACES: listing the same faces twice doubles the energy. A mean across faces
+    // would leave it unchanged.
+    {
+        std::vector<StencilEnergy3D::Face> twice = faces;
+        twice.insert(twice.end(), faces.begin(), faces.end());
+        StencilEnergy3D e3(pot, twice, w);
+        CHECK(e3.value(xv) == Catch::Approx(2. * got).epsilon(1e-12));
+    }
+
+    // NO AREA WEIGHTING: scaling a face's two fixed corners away from the moving vertex changes
+    // its area but, with the same barycentric weights, moves the sample points too -- so the
+    // check that bites is the simpler one, that the weight is the only prefactor.
+    {
+        StencilEnergy3D e4(pot, faces, 2. * w);
+        CHECK(e4.value(xv) == Catch::Approx(2. * got).epsilon(1e-12));
+    }
+
+    // A sample that sits exactly on the level set contributes nothing, whatever the field: its
+    // relative error is zero by construction. residual_length() locates the level set here.
+    {
+        std::vector<StencilEnergy3D::Face> on_level;
+        StencilEnergy3D::Face f;
+        f.q1 = Vector3d(1., 0., 0.);
+        f.q2 = Vector3d(0., 1., 0.);
+        f.samples = {{1., 0., 0.}}; // the moving vertex alone
+        on_level.push_back(f);
+        StencilEnergy3D e5(pot, on_level, w);
+        // Bisect along +z for the radius where Phi == c.
+        double lo = 0.5 * delta, hi = 3. * delta;
+        for (int i = 0; i < 200; ++i) {
+            const double mid = 0.5 * (lo + hi);
+            (pot->value(Vector3d(0., 0., mid)) > c ? lo : hi) = mid;
+        }
+        VectorXd on(3);
+        on << 0., 0., 0.5 * (lo + hi);
+        CHECK(std::abs(pot->value(Vector3d(on)) - c) <= 1e-12 * c);
+        CHECK(e5.value(on) == Catch::Approx(0.).margin(1e-20));
+        VectorXd gz(3);
+        e5.gradient(on, gz);
+        CHECK(gz.norm() == Catch::Approx(0.).margin(1e-12));
+    }
+}
+
 TEST_CASE("rest-amips-energy-3d-derivatives", "[offset][potential]")
 {
     // The rest-shape AMIPS of a tet: gradient and Hessian against finite differences, and the

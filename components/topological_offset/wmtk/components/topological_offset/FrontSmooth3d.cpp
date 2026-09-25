@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -92,6 +93,49 @@ struct RingCell
 namespace {
 /// One live offset face at x, as the alignment term wants it: the two other corners, the
 /// orientation sign that points the normal away from the band, and the gradient agreement.
+/// One live offset face at x, as the offset term wants it: the two other corners, and the
+/// barycentric weights of the face's stencil_order stencil. Only the weights are frozen -- the
+/// sample points themselves slide with x and the field is read live -- see StencilEnergy3D.
+template <typename Mesh>
+bool stencil_face_at(
+    const Mesh& m,
+    const typename Mesh::Tuple& f,
+    const size_t vid,
+    const OffsetPotential3D& pot,
+    StencilEnergy3D::Face& out)
+{
+    const auto vs = m.get_face_vids(f);
+    std::array<size_t, 2> q{{0, 0}};
+    int k = 0;
+    for (const size_t v : vs) {
+        if (v == vid) continue;
+        if (k < 2) q[size_t(k)] = v;
+        ++k;
+    }
+    if (k != 2) return false;
+    const Vector3d x = m.m_vertex_attribute[vid].m_posf;
+    out.q1 = m.m_vertex_attribute[q[0]].m_posf;
+    out.q2 = m.m_vertex_attribute[q[1]].m_posf;
+
+    // Only the barycentric weights are frozen here; the residual is evaluated live at every
+    // solve iterate, since the sample points slide with x. Nothing about the field is cached --
+    // the sag term this replaced had to freeze 1/|grad Phi| per sample to keep its measure a
+    // length, and the relative error needs no such factor.
+    out.samples.clear();
+    m.for_each_face_sample(
+        x,
+        out.q1,
+        out.q2,
+        [&](const Vector3d&, const double wa, const double wb, const double wc) {
+            StencilEnergy3D::Sample sm;
+            sm.a = wa;
+            sm.b = wb;
+            sm.c = wc;
+            out.samples.push_back(sm);
+        });
+    return !out.samples.empty();
+}
+
 template <typename Mesh>
 bool align_face_at(
     const Mesh& m,
@@ -340,8 +384,7 @@ bool TopoOffsetTetMesh::front_vertex_alignment_traps_1d_solve(const size_t vid) 
     if (!pot) return false;
     const Vector3d x = m_vertex_attribute[vid].m_posf;
     const double rho = pot->residual_length(x);
-    const double tube =
-        std::max(m_offset_params.offset_envelope_rel * m_offset_params.target_distance, 1e-12);
+    const double tube = std::max(m_offset_params.offset_envelope, 1e-12);
     if (!std::isfinite(rho) || rho <= tube) return false;
     const double s = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
     bool past_perpendicular = false;
@@ -428,8 +471,23 @@ std::shared_ptr<polysolve::nonlinear::Problem> TopoOffsetTetMesh::phase_b_front_
 {
     const double w_off = 1. - m_params.w_amips;
     auto sum = std::make_shared<optimization::EnergySum>();
-    // Gauss-Newton Hessian (the default); the exact Hessian adds r grad^2 Phi and buys nothing.
-    sum->add_energy(std::make_shared<OffsetEnergy3D>(pot, w_off, true, true));
+    // THE offset term, and the only one: the mean squared relative error over each incident
+    // face's stencil, summed over the ring. It subsumes the placement term that used to sit here
+    // -- the stencil contains the face's corners, so the moving vertex's own residual is in it
+    // V/N_s times for a vertex of valence V -- and the sag term that used to sit below, whose
+    // interior samples are the stencil's non-corner points. See StencilEnergy3D.
+    {
+        std::vector<StencilEnergy3D::Face> stencil_faces;
+        for (const Tuple& f : offset_surface_faces_live_at(vid)) {
+            StencilEnergy3D::Face sf;
+            if (!stencil_face_at(*this, f, vid, *pot, sf)) continue;
+            stencil_faces.push_back(std::move(sf));
+        }
+        if (!stencil_faces.empty()) {
+            sum->add_energy(
+                std::make_shared<StencilEnergy3D>(pot, std::move(stencil_faces), w_off));
+        }
+    }
     // One alignment residual per incident live front face.
     const double sign = m_offset_params.offset_field == "euclidean" ? 1. : -1.;
     std::vector<AlignEnergy3D::Face> faces;

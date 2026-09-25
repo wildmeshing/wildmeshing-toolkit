@@ -522,6 +522,84 @@ private:
 };
 
 /**
+ * @brief THE offset term of a front vertex's smoothing objective: the mean squared relative
+ * error of the field over the stencil of each incident offset face.
+ *
+ *     E(x) = w * sum over the vertex's incident offset faces f of
+ *                (1/N_s) * sum over f's N_s stencil points i of  r(q_i(x))^2
+ *
+ *     r(p) = (Phi(p) - c) / c,      q_i(x) = a_i x + b_i q1 + c_i q2
+ *
+ * with c the target level and (a_i, b_i, c_i) the barycentric weights of stencil point i, a_i
+ * being the MOVING vertex's own weight. The face's other two corners q1, q2 are fixed for the
+ * visit. The stencil is TopoOffsetTetMesh::for_each_face_sample, sized by stencil_order.
+ *
+ * THIS ONE TERM REPLACES BOTH the placement term (OffsetEnergy3D on the vertex alone) and the
+ * sag term (SagEnergy3D over the face interiors) that preceded it, because the stencil contains
+ * the corners: at order 0 the stencil IS the three corners, so E is exactly the placement
+ * residual of the vertex and its neighbours, and every higher order adds interior points that
+ * ask the same question between them. There is nothing left for a separate sag measure to say.
+ *
+ * r IS THE PLAIN RELATIVE ERROR (Phi - c)/c, which for the euclidean field is exactly
+ * (d - target_distance)/target_distance -- the same residual OffsetEnergy3D uses there. For the
+ * SMOOTH field OffsetEnergy3D instead divides by g_ref * delta to get a monotone length; this
+ * class does not, so under `offset_field: "smooth"` the two are scaled differently. Euclidean is
+ * the default and the only field these runs use.
+ *
+ * NOTE THE PER-FACE MEAN, SUMMED OVER FACES, with no area weighting: a vertex with V incident
+ * faces contributes its own r(x)^2 with coefficient V/N_s, since it is a stencil point of every
+ * one of them. The energy therefore grows with valence, which the AMIPS term beside it does too.
+ *
+ * The derivatives are exact and the Hessian is Gauss-Newton, which here is also PSD by
+ * construction (a sum of a_i^2 dr dr^T outer products), so no eigenvalue projection is needed --
+ * unlike the L1 sag term this replaces, whose Hessian was indefinite. LineProblem3D takes
+ * n^T H n, so the 1-D normal solve inherits that.
+ */
+class StencilEnergy3D : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    /// One stencil point's barycentric weights. `a` is the moving vertex's, so dq_i/dx = a_i I.
+    struct Sample
+    {
+        double a, b, c;
+    };
+    /// One incident offset face, the moving vertex implicit.
+    struct Face
+    {
+        Eigen::Vector3d q1, q2;
+        std::vector<Sample> samples;
+    };
+
+    StencilEnergy3D(
+        const std::shared_ptr<const OffsetPotential3D>& potential,
+        std::vector<Face> faces,
+        double weight);
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        log_and_throw_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, MatrixXd& hessian) override;
+    void solution_changed(const TVector& new_x) override {}
+
+private:
+    /// r and, optionally, dr at p. false when Phi or its gradient is not finite there, in which
+    /// case the sample is dropped exactly as the criterion drops it.
+    bool residual_at(const Eigen::Vector3d& p, double& r, Eigen::Vector3d* dr) const;
+
+    std::shared_ptr<const OffsetPotential3D> m_potential;
+    std::vector<Face> m_faces;
+    double m_weight;
+    double m_c = 1.; ///< the potential's target level, cached
+};
+
+/**
  * @brief AMIPS against a rest shape, for deform_others: the smoothing term of a deformable
  * region's faces.
  *

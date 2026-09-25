@@ -2,6 +2,8 @@
 
 #include <wmtk/utils/Logger.hpp>
 
+#include <Eigen/Eigenvalues>
+
 #include <SimpleBVH/BVH.hpp>
 
 #include <ipc/candidates/candidates.hpp>
@@ -1466,6 +1468,98 @@ bool RestAMIPSEnergy3D::is_step_valid(const TVector& /*x0*/, const TVector& x1)
         if (!cell_F(x1.head(3), c, F, d)) return false;
     }
     return true;
+}
+
+
+// ---------------------------------------------------------------------------------------------
+// StencilEnergy3D
+// ---------------------------------------------------------------------------------------------
+
+StencilEnergy3D::StencilEnergy3D(
+    const std::shared_ptr<const OffsetPotential3D>& potential,
+    std::vector<Face> faces,
+    const double weight)
+    : m_potential(potential)
+    , m_faces(std::move(faces))
+    , m_weight(weight)
+    , m_c(potential ? std::max(potential->target_level(), 1e-300) : 1.)
+{}
+
+bool StencilEnergy3D::residual_at(const Eigen::Vector3d& p, double& r, Eigen::Vector3d* dr) const
+{
+    const double v = m_potential->value(p);
+    if (!std::isfinite(v)) return false;
+    r = (v - m_c) / m_c;
+    if (dr) {
+        const Eigen::Vector3d g = m_potential->gradient(p);
+        if (!g.allFinite()) return false;
+        *dr = g / m_c;
+    }
+    return true;
+}
+
+double StencilEnergy3D::value(const TVector& xv)
+{
+    const Eigen::Vector3d x = xv.head(3);
+    double E = 0.;
+    for (const Face& f : m_faces) {
+        double s = 0.;
+        size_t n = 0;
+        for (const Sample& sm : f.samples) {
+            double r;
+            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, nullptr)) continue;
+            s += r * r;
+            ++n;
+        }
+        if (n > 0) E += s / double(n);
+    }
+    return m_weight * E;
+}
+
+void StencilEnergy3D::gradient(const TVector& xv, TVector& gradv)
+{
+    const Eigen::Vector3d x = xv.head(3);
+    gradv = Eigen::VectorXd::Zero(3);
+    Eigen::Vector3d g = Eigen::Vector3d::Zero();
+    for (const Face& f : m_faces) {
+        // d/dx of r(q_i)^2 is 2 r dr . dq_i/dx and dq_i/dx = a_i I, so the moving vertex's own
+        // barycentric weight is the whole chain rule. A corner sample of another vertex has
+        // a_i = 0 and so contributes to the value but not to the gradient.
+        Eigen::Vector3d gf = Eigen::Vector3d::Zero();
+        size_t n = 0;
+        for (const Sample& sm : f.samples) {
+            double r;
+            Eigen::Vector3d dr;
+            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
+            gf += (2. * sm.a * r) * dr;
+            ++n;
+        }
+        if (n > 0) g += gf / double(n);
+    }
+    gradv = m_weight * g;
+}
+
+void StencilEnergy3D::hessian(const TVector& xv, MatrixXd& hess)
+{
+    const Eigen::Vector3d x = xv.head(3);
+    Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
+    for (const Face& f : m_faces) {
+        // Gauss-Newton: 2 a_i^2 dr dr^T, dropping the 2 r a_i^2 hess Phi / c term. That term is
+        // what makes the exact Hessian indefinite near the level set where r changes sign, and
+        // the dropped part vanishes at the solution; what is kept is a sum of outer products and
+        // so is PSD by construction, with no eigenvalue projection needed.
+        Eigen::Matrix3d Hf = Eigen::Matrix3d::Zero();
+        size_t n = 0;
+        for (const Sample& sm : f.samples) {
+            double r;
+            Eigen::Vector3d dr;
+            if (!residual_at(sm.a * x + sm.b * f.q1 + sm.c * f.q2, r, &dr)) continue;
+            Hf += (2. * sm.a * sm.a) * (dr * dr.transpose());
+            ++n;
+        }
+        if (n > 0) H += Hf / double(n);
+    }
+    hess = m_weight * H;
 }
 
 } // namespace wmtk::components::topological_offset

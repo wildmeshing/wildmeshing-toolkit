@@ -1244,15 +1244,10 @@ double TopoOffsetTetMesh::max_band_vertex_distance() const
 
 void TopoOffsetTetMesh::execute_offset(const std::filesystem::path& output_file)
 {
-    // Before any of the construction, optionally improve the mesh it runs on: the marching puts
-    // the offset on this tetrahedralization's own cell boundaries, so its quality decides how far
-    // the constructed offset lands from the complex and therefore how large dhat has to be.
-    if (m_offset_params.pre_optimize_input) {
-        pre_optimize_input_mesh();
-        if (m_offset_params.debug_output) {
-            write_debug_frame("pre_optimized");
-        }
-    }
+    // The construction runs on the input mesh AS GIVEN. There is no pre-optimization pass any
+    // more (removed 2026-09-24 with its key): the marching puts the offset on this
+    // tetrahedralization's own cell boundaries, so the input's quality and resolution decide the
+    // constructed offset directly, and supplying a mesh good enough for that is the caller's job.
 
     // make embedding simplicial (split components per Alg 1)
     logger().info("Creating simplicial embedding...");
@@ -1806,8 +1801,13 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     //                         objective along the move direction, over its bar. This is the ONLY
     //                         per-vertex quantity converged_single() tests, so <= 1 reads as
     //                         "placed" and the loop may exit on it.
-    //   front_residual_length residual_length(): the vertex's actual distance to the level set,
-    //                         in length units, comparable with target_distance. Never tested.
+    //   front_residual_rel    residual_length() over front_conv: the vertex's actual distance to
+    //                         the level set, as a MULTIPLE OF THE BAR, so < 1 is converged. Never
+    //                         tested by the loop -- front_conv_ratio is what converged_single()
+    //                         reads -- but under offset_field "euclidean" the two are the same
+    //                         number, since there the residual is exactly |d - target_distance|.
+    //                         They part company under "smooth", where residual_length() is a
+    //                         barrier-value residual and front_conv_ratio is (Phi - c)/c.
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,
     //                         so where it collapses the Newton step collapses with it.
     //   front_complex_distance the plain Euclidean distance from the vertex to the WHOLE input
@@ -1914,7 +1914,11 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
             const Vector3d p = m_vertex_attribute[vid].m_posf;
             const auto& pot = potential_for(vid);
             v_conv[vid] = finite_or(front_vertex_conv_ratio(vid));
-            v_resid[vid] = finite_or(pot.residual_length(p));
+            // RELATIVE to the one bar, so < 1 reads as placed at a glance. front_conv is
+            // a length and residual_length() is a length, so the quotient is the same
+            // test the criterion makes, in the criterion's own units.
+            v_resid[vid] =
+                finite_or(pot.residual_length(p) / std::max(m_offset_params.front_conv, 1e-300));
             v_grad[vid] = finite_or(pot.gradient(p).norm());
             v_align[vid] = finite_or(front_move_alignment(vid));
             v_cdist[vid] =
@@ -1947,7 +1951,7 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     writer.add_field("sizing_scalar", v_sizing);
     writer.add_field("target_edge_length", v_target);
     writer.add_field("front_conv_ratio", v_conv);
-    writer.add_field("front_residual_length", v_resid);
+    writer.add_field("front_residual_rel", v_resid);
     writer.add_field("front_grad_norm", v_grad);
     writer.add_field("front_move_align", v_align);
     writer.add_field("front_complex_distance", v_cdist);
@@ -1968,36 +1972,41 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     // offset faces
     const std::string off_out_path = path + "_off.vtu";
     {
-        // The front's per-FACE sag, the resolution half of the convergence test: energy_criterion()
-        // samples every live offset face at its centroid, and that number has nowhere to live on
-        // the tet frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
+        // The front's per-FACE convergence measure, which since 2026-09-24 is THE convergence
+        // test rather than the resolution half of it, and which has nowhere to live on the tet
+        // frame above. The 2D twin writes the same pair on its `_front.vtu` line mesh.
         //
-        //   front_sag_ratio  face_conv_ratio(): the centroid sag over the tube (front_conv_rel x
-        //                    target_distance). > 1 with every corner on the level set is what
-        //                    makes a face refinable. -1 unmeasurable, including a face with a
-        //                    corner that is not a front vertex. Measured under the same
-        //                    re-derived region map as the vertex fields above.
-        //   chord_length     the face's longest edge, so the sag can be read against the geometry
-        //                    that produced it.
-        VectorXd f_sag(faces_off.size()), f_len(faces_off.size());
+        //   front_err_ratio  face_conv_ratio(): the RMS over the face's stencil_order stencil of
+        //                    the field's relative error (Phi - c)/c, over the one bar front_conv.
+        //                    > 1 is what makes a face refinable, and the same number at 1 point
+        //                    is what makes a vertex placed. -1 unmeasurable, including a face
+        //                    with a corner that is not a front vertex. Measured under the same
+        //                    re-derived region map as the vertex fields above. REPLACES
+        //                    front_sag_ratio, which reported an interpolation error against a
+        //                    separate sag bar; a series mixing the two is comparing two
+        //                    different quantities under one name, so the field was renamed
+        //                    rather than redefined in place.
+        //   chord_length     the face's longest edge, so the error can be read against the
+        //                    geometry that produced it.
+        VectorXd f_err(faces_off.size()), f_len(faces_off.size());
         const auto front = [&](const size_t vid) {
             return m_vertex_extra[vid].m_is_on_offset && m_vertex_attribute[vid].m_is_rounded;
         };
         for (size_t i = 0; i < faces_off.size(); ++i) {
             const size_t a = faces_off[i][0], b = faces_off[i][1], c = faces_off[i][2];
-            f_sag[i] = front(a) && front(b) && front(c) ? face_conv_ratio(a, b, c) : -1.;
+            f_err[i] = front(a) && front(b) && front(c) ? face_conv_ratio(a, b, c) : -1.;
             const Vector3d pa = m_vertex_attribute[a].m_posf, pb = m_vertex_attribute[b].m_posf,
                            pc = m_vertex_attribute[c].m_posf;
             f_len[i] = std::max({(pb - pa).norm(), (pc - pb).norm(), (pa - pc).norm()});
         }
         paraviewo::VTUWriter off_writer;
-        off_writer.add_cell_field("front_sag_ratio", f_sag);
+        off_writer.add_cell_field("front_err_ratio", f_err);
         off_writer.add_cell_field("chord_length", f_len);
         off_writer.add_field("order", v_order);
         off_writer.add_field("vid", v_id);
         off_writer.add_field("sizing_scalar", v_sizing);
         off_writer.add_field("front_conv_ratio", v_conv);
-        off_writer.add_field("front_residual_length", v_resid);
+        off_writer.add_field("front_residual_rel", v_resid);
         off_writer.add_field("front_grad_norm", v_grad);
         off_writer.add_field("front_move_align", v_align);
         off_writer.add_field("front_complex_distance", v_cdist);

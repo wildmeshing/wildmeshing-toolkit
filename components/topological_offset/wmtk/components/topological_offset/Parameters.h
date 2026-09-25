@@ -52,26 +52,46 @@ struct Parameters : public wmtk::OptimizerParameters
     /// the 2D construction reads it; the 3D twin ignores it until the port.
     double debug_manual_dhat;
     std::string offset_field; ///< "smooth" (Phi level set) or "euclidean" (exact distance)
-    // The accuracy: this fraction of target_distance is both the vertex bar (the remaining Newton
-    // step of a front vertex along its move direction, under the default criterion) and the chord
-    // resolution threshold (a front edge is refinable while its sag over the level set exceeds
-    // it). The run criterion and every placement stop are the same test, so the run converges
-    // exactly when every visit stops immediately and no chord is left to resolve.
+    // ---- the two convergence epsilons (was the single front_conv_rel) ----
+    // Both are ABSOLUTE LENGTHS, resolved in init(); if < 0 each is computed from its _rel twin,
+    // which is a fraction of the BOUNDING BOX DIAGONAL -- the same absolute/relative pair as
+    // envelope_size / envelope_size_rel, and deliberately NOT a fraction of target_distance any
+    // more, so changing the offset distance no longer silently changes the accuracy. init()
+    // refuses either one above target_distance: an epsilon coarser than the offset it measures
+    // cannot decide anything.
+    //
+    // THE ONE BAR. 3D measures a single quantity everywhere -- over a face's stencil, the RMS of
+    // the field's relative error (Phi - c)/c, expressed as a length -- and compares it against
+    // this. A vertex is placed when that same measure at the vertex alone is within it, which is
+    // the order-0 stencil, so the vertex test and the face test are one test at two sample
+    // counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23.
+    double front_conv;
     double front_conv_rel;
-    // Which convergence test gates the run, used identically by the loop's vertex test and the
-    // placement stop. F is the vertex's front objective, g its gradient, H its Gauss-Newton
-    // Hessian, n its move direction; all four compare against front_conv_rel. See
-    // front_vertex_conv_ratio().
+
+    /// The convergence epsilon as a FRACTION of target_distance, which is the form the
+    /// dimensionless relative error (Phi - c)/c is compared against. A mean of squared relative
+    /// errors is below front_conv_frac()^2 exactly when the same mean taken in lengths is below
+    /// front_conv^2 -- the two differ by target_distance^2 on both sides -- so which form the
+    /// code uses is a matter of where the division sits, not of what is being asked. 2D's
+    /// fraction-valued criteria ('decrement', 'gradient_norm_rel') take it for the same reason.
+    double front_conv_frac() const { return front_conv / std::max(target_distance, 1e-16); }
+    // 2D ONLY since the 3D criteria were unified. Which convergence test gates a 2D run's vertex
+    // placement. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian,
+    // n its move direction; all four compare against front_conv. See front_vertex_conv_ratio().
     //   "step_size_rel" (the default): the remaining 1-D Newton step, |n.g| / (n^T H n), against
-    //     rel x target_distance.
-    //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against rel x F.
-    //   "gradient_norm_rel": |n.g| against rel x the reference gradient, measured once on the
-    //     band as constructed.
+    //     front_conv.
+    //   "decrement": the Newton decrement, half of (n.g)^2 / (n^T H n), against
+    //     front_conv_frac() x F.
+    //   "gradient_norm_rel": |n.g| against front_conv_frac() x the reference gradient, measured
+    //     once on the band as constructed.
     //   "residual_error": not a stationarity measure at all -- the field's own residual at the
     //     vertex as a length (OffsetPotential::residual_length(), so |d - target_distance| for
-    //     the euclidean field and the ENERGY residual for the smooth one), against
-    //     rel x target_distance. No objective is built and n does not enter.
-    /// gradient_norm_rel | step_size_rel | decrement | residual_error
+    //     the euclidean field and the ENERGY residual for the smooth one), against front_conv.
+    //     No objective is built and n does not enter.
+    //
+    // 3D DOES NOT READ THIS. Its one measure is the stencil RMS of the relative error, which is
+    // not a stationarity test and has no variants -- see TopoOffsetTetMesh::face_conv_ratio().
+    /// gradient_norm_rel | step_size_rel | decrement | residual_error [2D ONLY]
     std::string front_conv_criterion;
     // The front is placed by a one-dimensional solve along its field normal
     // n = grad Phi / |grad Phi| -- same objective, solver and accept test, restricted to the line
@@ -90,13 +110,18 @@ struct Parameters : public wmtk::OptimizerParameters
     /// The outer loop's budget in turns. The loop leaves on the front test; this is only the
     /// guard.
     int max_rounds = 40;
-    // Points sampled in the interior of each band simplex when measuring the offset's residual;
-    // k = 1 is the midpoint, and 0 measures only at band vertices, which is blind to a band whose
-    // vertices sit on the level set while its simplices cut across it. 2D samples each band edge
-    // at i/(k+1); 3D samples each offset-surface face, k being the density (1, 3, 6, 10 points for
-    // k = 1..4). See TopoOffsetTriMesh::offset_edge_samples,
-    // TopoOffsetTetMesh::offset_face_samples.
-    int offset_residual_samples;
+    // Sampling density of THE measure -- in 3D both the criterion's and the energy's -- and of
+    // the residual diagnostics that share the lattice. Order k puts these points on a face:
+    //   0 -> 3, the CORNERS alone, so the measure is exactly the three vertices' placement error;
+    //   k >= 1 -> the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement
+    //   plus the centroid of each of its 4^(k-1) sub-triangles, i.e. 4, 10, 31, 109, ...
+    // The corners are IN the stencil, unlike the strictly interior lattice this replaces, because
+    // the quantity measured is a distance to the level set rather than an interpolation error and
+    // so is not identically zero there. Raising it costs a Phi value and gradient per sample, in
+    // the ops guard's hot path as well as in energy_criterion() and every smoothing solve.
+    // 2D reads this key for its diagnostics only; its chord test is still the MIDPOINT.
+    // See TopoOffsetTetMesh::for_each_face_sample, TopoOffsetTriMesh::offset_edge_samples.
+    int stencil_order;
     bool sorted_marching;
     /// See the spec: the marching places each new vertex where d(x) reaches target_distance
     /// along the edge by sphere tracing, midpoint when the trace leaves the edge.
@@ -109,6 +134,24 @@ struct Parameters : public wmtk::OptimizerParameters
     /// midpoint. Only sphere_trace_initialization can mix, so this is a no-op when that is off.
     /// See the spec doc, and marching_tris() / marching_tets().
     bool experimental_consistent_construction_split = true;
+    /// EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on
+    /// refinement. With it FALSE a face over the bar is handed to the halving only when all
+    /// THREE of its corners are already placed -- the safeguard that stops refinement from
+    /// chasing a moving front. True (the default) refines EVERY face over the bar, placed or not,
+    /// so the sizing scalar is halved at every vertex of every unresolved face. The floor and
+    /// the once-per-vertex-per-turn rule are unchanged, and so is the exit test: a face is
+    /// refinable only while the halving can still lower a target, and `n_faces_over_placed` /
+    /// `max_face_placed` still report the PLACED subset alone.
+    ///
+    /// Why it exists: under one unified measure the two halves can deadlock. A face chording a
+    /// feature of radius delta puts its centroid far inside the level set, and that sample's
+    /// pull cancels the corners' own placement pull almost exactly, so the corners never place;
+    /// refinement, which is the only thing that would shorten the chord and remove the sag, is
+    /// gated on exactly those corners being placed. Measured on the deliverable cube at
+    /// target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, the
+    /// 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable
+    /// for 40 turns.
+    bool experimental_aggresive_refine = true;
     std::string output_path; // no extension
     bool save_vtu;
 
@@ -117,16 +160,16 @@ struct Parameters : public wmtk::OptimizerParameters
     int phi_grid_resolution;
 
     int num_threads; // number of threads for parallel execution (smoothing, collapse). 0 = serial
-    /// Cap of the shared TriWild/TetWild loop wherever it runs: the pre-optimisation pass and the
+    /// Cap of the shared TriWild/TetWild loop, which now runs in exactly one place: the
     /// frozen-front finishing pass.
     int max_iterations;
-    /// Run TriWild/TetWild over the INPUT mesh before the simplicial embedding and the marching,
-    /// held only by the per-tag region envelopes, against a sizing field of 1.0 at every vertex.
-    /// See pre_optimize_input_mesh() in either mesh.
-    bool pre_optimize_input = true;
-    /// The operation passes' offset envelope width, as a fraction of target_distance -- the same
-    /// tube every turn, rebuilt after every smoothing pass; see rebuild_offset_envelope(). Also
-    /// feeds the derived sizing floor (min_edge_length_rel < 0).
+    // The operation passes' offset envelope half-width: the leash the front is kept inside while
+    // the operation passes run, the same tube every turn, rebuilt after every smoothing pass; see
+    // rebuild_offset_envelope(). Absolute-or-relative exactly as envelope_size / envelope_size_rel
+    // and against the same reference, the BOUNDING BOX DIAGONAL -- it is a distance in space, and
+    // tying it to target_distance made every change of the offset distance a silent change of the
+    // leash as well. Also feeds the derived sizing floor (min_edge_length_rel < 0).
+    double offset_envelope; ///< absolute; < 0 means use offset_envelope_rel
     double offset_envelope_rel;
 
     // l_min from the paper: the shortest edge the sizing field may ask for, given as a multiple of
@@ -158,30 +201,15 @@ struct Parameters : public wmtk::OptimizerParameters
     int adaptive_smoothing_max_passes; ///< cap on the passes per group
     double adaptive_smoothing_stall_rel; ///< front stalled: max ratio dropped by less than this
     double adaptive_smoothing_step_rel; ///< background settled: max step / (s_v l) at or below
-    /// See the spec: true replaces the sag rule's chord target with a plain halving of the
-    /// sizing scalar at the ends / corners of every refinable edge / face, floored like the sag
-    /// rule.
-    bool sag_halve_refinement;
     /// See the spec: true runs one smoothing block (the fixed interleaved count, or the adaptive
     /// smoothing) before the first turn of the single-phase loop.
     bool pre_smooth;
-    /// EXPERIMENTAL. See the spec: reject any operation on the offset surface that raises the
-    /// local sag -- a collapse whose survivor is left with a worse maximum than the two
-    /// endpoints had between them, or a surface flip whose two new faces are worse than the two
-    /// old ones. Splits are never rejected. false = the operation passes exactly as they are.
-    /// Default true.
-    bool experimental_ops_divergence_guard;
-    /// EXPERIMENTAL, 3D only (2D has no swap half to the guard). See the spec: how much of the
+    /// 3D only (2D has no swap half to the guard). See the spec: how much of the
     /// resolution bar a flip of the offset surface must WIN for the guard to accept it. It gates
     /// the FLIP -- max sag after <= max sag before - this, and the cells under stop_energy, is
     /// the whole rule; one that misses the margin is refused rather than falling back on AMIPS.
     /// Without it the swap pass does not finish, on noise-sized flips that are all monotone.
-    double experimental_flip_sag_margin;
-    /// EXPERIMENTAL, 3D only. See the spec: true lets the single-phase loop exit on the FIRST
-    /// turn that meets the front criterion, the way TetWild's loop stops on its own metric.
-    /// false additionally requires that the previous turn lowered no sizing scalar, which is one
-    /// turn of hysteresis against the tail's churn. Default true.
-    bool experimental_exit_when_criteria_met;
+    double flip_sag_margin;
 
     VectorXd box_min;
     VectorXd box_max;
@@ -217,21 +245,24 @@ struct Parameters : public wmtk::OptimizerParameters
         offset_dhat_factor = json_params["offset_dhat_factor"];
         debug_manual_dhat = json_params["DEBUG_manual_dhat"];
         offset_field = json_params["offset_field"];
+        front_conv = json_params["front_conv"];
         front_conv_rel = json_params["front_conv_rel"];
         front_conv_criterion = json_params["front_conv_criterion"];
-        offset_residual_samples = json_params["offset_residual_samples"];
+        stencil_order = json_params["stencil_order"];
 
         sorted_marching = json_params["sorted_marching"];
         sphere_trace_initialization = json_params["sphere_trace_initialization"];
         sphere_trace_target_rel_tol = json_params["sphere_trace_target_rel_tol"];
         experimental_consistent_construction_split =
             json_params["EXPERIMENTAL_consistent_construction_split"];
+        experimental_aggresive_refine = json_params["EXPERIMENTAL_aggresive_refine"];
         output_path = json_params["output"];
         save_vtu = json_params["save_vtu"];
         phi_grid_resolution = json_params["phi_grid_resolution"];
 
         num_threads = json_params["num_threads"];
         max_iterations = json_params["max_iterations"];
+        offset_envelope = json_params["offset_envelope"];
         offset_envelope_rel = json_params["offset_envelope_rel"];
 
         min_edge_length = json_params["min_edge_length"];
@@ -245,11 +276,8 @@ struct Parameters : public wmtk::OptimizerParameters
         adaptive_smoothing_max_passes = json_params["adaptive_smoothing_max_passes"];
         adaptive_smoothing_stall_rel = json_params["adaptive_smoothing_stall_rel"];
         adaptive_smoothing_step_rel = json_params["adaptive_smoothing_step_rel"];
-        sag_halve_refinement = json_params["sag_halve_refinement"];
         pre_smooth = json_params["pre_smooth"];
-        experimental_ops_divergence_guard = json_params["EXPERIMENTAL_ops_divergence_guard"];
-        experimental_flip_sag_margin = json_params["EXPERIMENTAL_flip_sag_margin"];
-        experimental_exit_when_criteria_met = json_params["EXPERIMENTAL_exit_when_criteria_met"];
+        flip_sag_margin = json_params["flip_sag_margin"];
 
         // ---- inherited from wmtk::OptimizerParameters ----
         debug_output = json_params["DEBUG_output"];
@@ -285,7 +313,6 @@ struct Parameters : public wmtk::OptimizerParameters
         sizing_collapse_min = json_params["sizing_collapse_min"];
         deform_others = json_params["deform_others"];
         max_rounds = json_params["max_rounds"];
-        pre_optimize_input = json_params["pre_optimize_input"];
         w_amips = json_params["w_amips"];
         smoothing_mode = json_params["smoothing_mode"];
         project_line_search_steps = json_params["project_line_search_steps"];
@@ -324,12 +351,46 @@ struct Parameters : public wmtk::OptimizerParameters
             envelope_size = envelope_size_rel * diag_l;
         }
 
+        // The convergence epsilon, the same absolute-or-relative pair as the envelope and
+        // against the same reference. It is a length in space, so the bounding box diagonal is
+        // the reference, not target_distance: tying the accuracy to the offset distance made
+        // every change of target_distance a silent change of accuracy as well.
+        if (front_conv > 0) {
+            front_conv_rel = front_conv / diag_l;
+        } else {
+            front_conv = front_conv_rel * diag_l;
+        }
+
+        // An epsilon coarser than the offset it measures decides nothing: every front vertex is
+        // "placed" and every face "resolved" from the first turn, whatever the offset looks like.
+        // Checked on the resolved ABSOLUTE values, so it catches the mistake whichever of the two
+        // forms the config used to state it.
+        if (front_conv > target_distance) {
+            log_and_throw_error(
+                "front_conv {} must be <= target_distance {}: the convergence epsilon cannot be "
+                "coarser than the offset distance it measures, or every front face reads as "
+                "resolved from the first turn",
+                front_conv,
+                target_distance);
+        }
+
+        // The operation leash, the same absolute-or-relative pair as the envelope and the
+        // convergence epsilon, against the same reference.
+        if (offset_envelope > 0) {
+            offset_envelope_rel = offset_envelope / diag_l;
+        } else {
+            offset_envelope = offset_envelope_rel * diag_l;
+        }
+
         // l_min is relative to the offset distance rather than the bounding box: it is the offset
         // that has to be resolved. See the declaration.
         if (min_edge_length_rel < 0) {
-            // The envelope eps as a multiple of target_distance, which is what offset_envelope_rel
-            // already is, so there is no conversion left to do.
-            min_edge_length_rel = std::max(offset_envelope_rel, 1e-12);
+            // The envelope eps expressed as a multiple of target_distance, which is what this
+            // wants. offset_envelope_rel is a fraction of the BBOX DIAGONAL since 2026-09-24, so
+            // the conversion goes through the resolved absolute rather than being the identity it
+            // used to be -- the derived floor is unchanged in model units either way.
+            min_edge_length_rel =
+                std::max(offset_envelope / std::max(target_distance, 1e-16), 1e-12);
         }
         if (min_edge_length < 0) {
             min_edge_length = min_edge_length_rel * target_distance;

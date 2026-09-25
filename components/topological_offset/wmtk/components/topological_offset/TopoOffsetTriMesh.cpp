@@ -975,15 +975,10 @@ double TopoOffsetTriMesh::max_band_vertex_distance() const
 
 void TopoOffsetTriMesh::execute_offset(const std::filesystem::path& output_file)
 {
-    // Before any of the construction, optionally improve the mesh it runs on: the marching puts
-    // the offset on this triangulation's own cell boundaries, so its quality decides how far the
-    // constructed offset lands from the complex and therefore how large dhat has to be.
-    if (m_offset_params.pre_optimize_input) {
-        pre_optimize_input_mesh();
-        if (m_offset_params.debug_output) {
-            write_debug_frame("pre_optimized");
-        }
-    }
+    // The construction runs on the input mesh AS GIVEN. There is no pre-optimization pass any
+    // more (removed 2026-09-24 with its key): the marching puts the offset on this
+    // triangulation's own cell boundaries, so the input's quality and resolution decide the
+    // constructed offset directly, and supplying a mesh good enough for that is the caller's job.
 
     // make embedding simplicial
     m_edge_split_mode = TopoOffsetTriMesh::EdgeSplitMode::Midpoint;
@@ -1613,8 +1608,8 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
     // indexing as the frame above, so a viewer can key the field onto the offset curve it derives
     // from the triangles, by vertex pair.
     //
-    //   front_sag_ratio   edge_conv_ratio(): the chord's sag over the tube (front_conv_rel x
-    //                     target_distance). > 1 with both ends on the level set is what makes an
+    //   front_sag_ratio   edge_conv_ratio(): the chord's sag over the tube (front_conv, an
+    //                     absolute length). > 1 with both ends on the level set is what makes an
     //                     edge refinable. -1 unmeasurable, including where an end is not a front
     //                     vertex, so the curve is complete either way. Measured under the same
     //                     re-derived region map as the vertex fields above, which it needs for

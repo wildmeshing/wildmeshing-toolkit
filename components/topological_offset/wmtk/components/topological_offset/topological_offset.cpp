@@ -2,6 +2,7 @@
 #include <igl/Timer.h>
 #include <jse/jse.h>
 #include <wmtk/TetMesh.h>
+#include <algorithm>
 #include <topological_offset_spec.hpp>
 #include <vector>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
@@ -17,6 +18,25 @@ using namespace wmtk::components::simwild;
 
 
 namespace wmtk::components::topological_offset {
+namespace {
+/// The operation corridor (offset_envelope) may not be wider than the convergence epsilon.
+/// Same test in both dimensions; see the 2D call site for why. Both are absolute lengths
+/// resolved in init(), so the comparison needs no conversion.
+void check_envelope_leash(const Parameters& params)
+{
+    if (params.offset_envelope > params.front_conv) {
+        log_and_throw_error(
+            "offset_envelope {} ({} x the bbox diagonal) must be <= the convergence epsilon "
+            "front_conv {}: the operation corridor (the leash) cannot be wider than the "
+            "convergence accuracy, or the operations keep denting the front past the resolution "
+            "threshold and the loop chases the damage forever",
+            params.offset_envelope,
+            params.offset_envelope_rel,
+            params.front_conv);
+    }
+}
+} // namespace
+
 void topological_offset(nlohmann::json json_params)
 {
     using wmtk::utils::resolve_path;
@@ -76,26 +96,28 @@ void topological_offset(nlohmann::json json_params)
         logger().info("====== input parameters =======");
         logger().info("target_distance: {}", params.target_distance);
         logger().info("offset_dhat_factor: {}", params.offset_dhat_factor);
-        logger().info("front_conv_rel: {}", params.front_conv_rel);
+        logger().info(
+            "front_conv: {} ({} x the bbox diagonal)",
+            params.front_conv,
+            params.front_conv_rel);
+        logger().info("stencil_order: {}", params.stencil_order);
+        logger().info(
+            "offset_envelope: {} ({} x the bbox diagonal)",
+            params.offset_envelope,
+            params.offset_envelope_rel);
         logger().info("===============================");
     }
 
     if (input_data.T_input.cols() == 3) { // input is a 2d tri mesh
         logger().info("Input mesh (2D trimesh): {}", input_path);
 
-        // front_conv_rel is the accuracy -- the vertex bar and the chord-resolution threshold
-        // alike -- and offset_envelope_rel is only the leash on the operation passes. Accuracy
-        // finer than the leash is unreachable: operations licensed to dent the front by more than
-        // the threshold mint new refinable edges every turn. Hence a hard requirement.
-        if (params.offset_envelope_rel > params.front_conv_rel) {
-            log_and_throw_error(
-                "offset_envelope_rel {} must be <= front_conv_rel {}: the operation corridor "
-                "(the leash) cannot be wider than the convergence accuracy, or the operations "
-                "keep denting the front past the resolution threshold and the loop chases the "
-                "damage forever",
-                params.offset_envelope_rel,
-                params.front_conv_rel);
-        }
+        // front_conv is the accuracy -- one bar for placement and resolution alike -- and
+        // offset_envelope_rel is only the leash on the operation passes.
+        // Accuracy finer than the leash is unreachable: operations licensed to dent the front by
+        // more than the threshold mint new refinable edges every turn. Hence a hard requirement.
+        // The leash is a fraction of target_distance and the epsilon is an absolute length, so
+        // the comparison is made in model units.
+        check_envelope_leash(params);
 
         // initialize mesh
         TopoOffsetTriMesh mesh(params, NUM_THREADS);
@@ -308,16 +330,8 @@ void topological_offset(nlohmann::json json_params)
     } else { // input is a 3d tet mesh
         logger().info("Input mesh (3D tetmesh): {}", input_path);
 
-        // As in 2D: the leash cannot be wider than the accuracy. See the 2D branch.
-        if (params.offset_envelope_rel > params.front_conv_rel) {
-            log_and_throw_error(
-                "offset_envelope_rel {} must be <= front_conv_rel {}: the operation corridor "
-                "(the leash) cannot be wider than the convergence accuracy, or the operations "
-                "keep denting the front past the resolution threshold and the loop chases the "
-                "damage forever",
-                params.offset_envelope_rel,
-                params.front_conv_rel);
-        }
+        // As in 2D: the leash cannot be wider than either accuracy. See the 2D branch.
+        check_envelope_leash(params);
 
         // initialize mesh
         TopoOffsetTetMesh mesh(params, NUM_THREADS);

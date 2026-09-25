@@ -5,6 +5,7 @@
 #include <wmtk/components/topological_offset/TopoOffsetTriMesh.h>
 #include <catch2/catch_test_macros.hpp>
 #include <queue>
+#include <set>
 #include <wmtk/Types.hpp>
 #include <wmtk/components/simwild/expression_parser/Parser.hpp>
 #include <wmtk/components/topological_offset/Circle.hpp>
@@ -1029,4 +1030,68 @@ TEST_CASE("sphere_refine", "[dist_growth][2d]")
     REQUIRE(fabs(c1(0) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
     REQUIRE(fabs(c1(1) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
     REQUIRE(fabs(c1(2) + (1.0 / (2.0 * sqrt(3.0)))) < pow(10, -6));
+}
+
+TEST_CASE("stencil-order-point-counts", "[offset]")
+{
+    // The stencil the whole 3D criterion and energy sample, checked against the counts the
+    // design states: 3 at order 0 (the corners alone), then the vertices of the triangle
+    // subdivided k-1 times plus one centroid per sub-triangle -- 4, 10, 31, 109, 409.
+    //
+    // This also pins stencil_points_per_face() to for_each_face_sample(), which are two separate
+    // pieces of arithmetic that have to agree: the accessor is used in the logs and in the
+    // criterion's own reporting, the loop is what actually visits the points.
+    Parameters param;
+    TopoOffsetTetMesh mesh(param, 0);
+
+    const Vector3d p0(0., 0., 0.), p1(1., 0., 0.), p2(0., 1., 0.);
+    const std::array<int, 6> expected = {{3, 4, 10, 31, 109, 409}};
+
+    for (int k = 0; k < int(expected.size()); ++k) {
+        mesh.m_offset_params.stencil_order = k;
+
+        std::vector<std::array<double, 3>> w;
+        mesh.for_each_face_sample(
+            p0,
+            p1,
+            p2,
+            [&](const Vector3d& q, const double wa, const double wb, const double wc) {
+                // The visited point must be the barycentric combination it reports.
+                const Vector3d want = wa * p0 + wb * p1 + wc * p2;
+                CHECK((q - want).norm() <= 1e-15);
+                w.push_back({{wa, wb, wc}});
+            });
+
+        INFO("stencil_order " << k);
+        CHECK(int(w.size()) == expected[size_t(k)]);
+        CHECK(mesh.stencil_points_per_face() == expected[size_t(k)]);
+
+        for (const auto& b : w) {
+            CHECK(std::abs(b[0] + b[1] + b[2] - 1.) <= 1e-14);
+            CHECK(b[0] >= -1e-15);
+            CHECK(b[1] >= -1e-15);
+            CHECK(b[2] >= -1e-15);
+        }
+
+        // No duplicated sample: a repeated point would silently weight part of the face twice.
+        // Quantised into a set rather than compared pairwise, so the check stays one assertion
+        // instead of ~83000 at order 5.
+        std::set<std::array<long long, 3>> seen;
+        for (const auto& b : w) {
+            seen.insert({{llround(b[0] * 1e9), llround(b[1] * 1e9), llround(b[2] * 1e9)}});
+        }
+        CHECK(seen.size() == w.size());
+    }
+
+    // Order 0 is exactly the three corners, which is what lets one stencil carry the vertex
+    // placement test as well as the face resolution test.
+    mesh.m_offset_params.stencil_order = 0;
+    std::vector<Vector3d> pts;
+    mesh.for_each_face_sample(p0, p1, p2, [&](const Vector3d& q, double, double, double) {
+        pts.push_back(q);
+    });
+    REQUIRE(pts.size() == 3);
+    CHECK((pts[0] - p0).norm() <= 1e-15);
+    CHECK((pts[1] - p1).norm() <= 1e-15);
+    CHECK((pts[2] - p2).norm() <= 1e-15);
 }

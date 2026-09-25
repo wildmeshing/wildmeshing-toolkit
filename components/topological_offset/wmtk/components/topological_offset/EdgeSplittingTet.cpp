@@ -184,9 +184,7 @@ bool TopoOffsetTetMesh::edge_split_sphere_trace(
 bool TopoOffsetTetMesh::split_edge_after(const Tuple& t)
 {
     if (m_edge_split_mode == EdgeSplitMode::Optimization) {
-        if (!TetOptimizerMesh::split_edge_after(t)) {
-            return false;
-        }
+        if (!TetOptimizerMesh::split_edge_after(t)) return false;
         ++iter_cnt_split;
         // Read from the result, not from a cached flag: the new vertex is on the offset iff
         // split_after_cells() derived it so from the endpoints.

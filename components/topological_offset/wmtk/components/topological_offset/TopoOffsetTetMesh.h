@@ -314,8 +314,8 @@ public:
     /**
      * @brief Which mode the hooks are running in. The 3D copy of TopoOffsetTriMesh::OptPhase.
      *
-     * A: TetWild's loop and nothing else -- the pre-optimize pass and the frozen-front final
-     * pass -- with m_offset_envelope holding the front. B: the front objective's offset terms
+     * A: TetWild's loop and nothing else -- today only the frozen-front final pass -- with
+     * m_offset_envelope holding the front. B: the front objective's offset terms
      * are live; set only around measurements (the criterion, the gradient reference) so they
      * see the objective the placement uses. Single: the run's loop, TetWild's operation groups
      * with the front placed by B's objective inside the smoothing passes -- B wherever the
@@ -365,15 +365,15 @@ public:
     /// carries label 1, or the face itself does while neither tet does (a sheet or face piece).
     bool face_is_complex_boundary(const Tuple& f) const;
     /// Rebuild every region-class tube and every vertex's boundary mask from the current mesh
-    /// under `setup`. PerTag at load (the complex is not labelled yet, and the pre-optimize pass
-    /// holds every tag boundary as it always did), WallComplex when deform_others switches it at
+    /// under `setup`. PerTag at load (the complex is not labelled yet), WallComplex when
+    /// deform_others switches it at
     /// construction, envelope_setup() fresh at the final pass. The tracked-face flags are left
     /// alone: they are the topology the operations maintain. `when` labels the log line.
     void build_boundary_envelopes(const char* when, EnvelopeSetup setup);
 
     /**
      * @brief The tube the offset surface may not leave during the operation passes, of
-     * half-width offset_envelope_rel x target_distance. Rebuilt after every smoothing pass from
+     * half-width offset_envelope. Rebuilt after every smoothing pass from
      * the surface as that pass left it, which is what lets the surface travel across turns.
      * Non-null once the offset exists; whether it constrains is containment_for()'s phase test.
      * Unlike m_tag_envelopes, which must never be rebuilt.
@@ -707,7 +707,7 @@ public:
     /// Operations refused because they would have left an offset-surface face over tolerance.
     std::atomic<int> iter_cnt_collapse_offset_reject{0};
     std::atomic<int> iter_cnt_swap_offset_reject{0};
-    /// EXPERIMENTAL_ops_divergence_guard: operations refused for raising the local sag of the
+    /// The ops divergence guard: operations refused for raising the local sag of the
     /// offset surface.
     std::atomic<int> iter_cnt_collapse_guard_reject{0};
     std::atomic<int> iter_cnt_swap_guard_reject{0};
@@ -716,7 +716,7 @@ public:
     /// steps of what size? The per-turn lines cannot answer that, because a pass that does not
     /// finish never reaches the end of its turn -- so this prints from INSIDE the pass, every
     /// kFlipTraceEvery accepted flips. Live only where the guard measured a pair, i.e. only under
-    /// EXPERIMENTAL_ops_divergence_guard and only for flips of the offset surface.
+    /// the ops divergence guard, and only for flips of the offset surface.
     ///
     /// Counted at swap_after_cells(), which is past the sag refusal and past the quality gate but
     /// still before the envelope check, so it overcounts by the after_envelope refusals -- tens
@@ -737,7 +737,7 @@ public:
      *
      * [swap reject] counts every refusal of every surface flip, most of which SHOULD be refused.
      * This follows only the flips that passed the guard -- pair over the bar, fall at least
-     * EXPERIMENTAL_flip_sag_margin -- so a drop here is work the run wanted and did not get.
+     * flip_sag_margin -- so a drop here is work the run wanted and did not get.
      *
      * Reading it. `offered` is set in swap_before_surface(), which is the app's first sight of a
      * candidate; anything the base turned down earlier (valence, bbox, connectivity) never
@@ -1022,12 +1022,9 @@ public:
      * where the refresh runs.
      */
     mutable wmtk::threading::enumerable_thread_specific<std::vector<size_t>> m_collapse_edge_link;
-    /// EXPERIMENTAL_ops_divergence_guard: one face's sag as face_conv_ratio measures it, with an
+    /// The ops divergence guard: one face's sag as face_conv_ratio() gives it, with an
     /// unmeasurable face reported as infinity so that losing measurability counts as worsening.
-    double offset_face_sag(size_t a, size_t b, size_t c) const;
-    /// The largest offset_face_sag() over a set of faces given by their vertex triples; 0 for an
-    /// empty set.
-    double max_offset_face_sag(const std::vector<std::array<size_t, 3>>& faces) const;
+    double face_resolution_or_inf(size_t a, size_t b, size_t c) const;
     /// The guard's collapse test, run from collapse_edge_before(); see the key's spec doc.
     /// Returns true when the collapse must be refused. Applies ONLY where edge (v1, v2) lies
     /// exactly on the offset surface, which it checks first and cheaply: everything else returns
@@ -1172,11 +1169,10 @@ public:
     /// surfaces need it: the offset surface is re-triangulated constantly.
     bool allow_surface_swap() const override { return true; }
 
-    /// EXPERIMENTAL_ops_divergence_guard, the swap half. UNDER THAT FLAG a flip OF THE OFFSET
-    /// SURFACE is accepted on an absolute quality bar rather than on strict improvement: the
-    /// cells it creates need only be under stop_energy, which is the bar the run is trying to
-    /// reach anyway. With the flag off, and for every interior swap either way, the base's
-    /// strict rule stands, so a default run is unchanged.
+    /// The ops divergence guard, the swap half. A flip OF THE OFFSET SURFACE is accepted on an
+    /// absolute quality bar rather than on strict improvement: the cells it creates need only be
+    /// under stop_energy, which is the bar the run is trying to reach anyway. For every interior
+    /// swap the base's strict rule still stands.
     ///
     /// Strict improvement made the surface flip unreachable in practice -- it is the only
     /// operation that can re-triangulate the offset surface without moving a vertex, and across
@@ -1218,15 +1214,16 @@ public:
      * whose flip would cut sag, 93.5% raise max AMIPS and NOT ONE of those 3740 was ever taken,
      * against 58.1% of the 260 that happened to lower it.
      *
-     * So the bar is expressed in the currency that comparison speaks. For a surface flip under
-     * EXPERIMENTAL_ops_divergence_guard the baseline case (op_case 0, the existing cells) reports
-     * stop_energy instead of its own AMIPS, which turns the base's `energy < min_energy` into
-     * exactly "the cells this flip makes are under stop_energy". Nothing in the shared engine
-     * changes; TetWild and SimWild never see it, and neither does a default offsets run, because
-     * both conditions are required.
+     * So the bar is expressed in the currency that comparison speaks. For a flip that has been
+     * found to be one of the offset surface, the baseline case (op_case 0, the existing cells)
+     * reports stop_energy instead of its own AMIPS, which turns the base's `energy < min_energy`
+     * into exactly "the cells this flip makes are under stop_energy". Nothing in the shared
+     * engine changes: the override is handed out only where swap_before_surface() has just
+     * established both conditions, so TetWild and SimWild never see it and neither does any flip
+     * of the input complex or of a region boundary.
      *
      * The sag half lives in swap_before_surface(). It refuses any flip that does not strictly
-     * lower the pair's max sag by EXPERIMENTAL_flip_sag_margin, and every flip that does gets
+     * lower the pair's max sag by flip_sag_margin, and every flip that does gets
      * THIS override -- so the accepted rule is max sag after <= max sag before - margin AND max
      * AMIPS after < stop_energy, with nothing asked about whether the pair was over the bar. A
      * flip that misses the margin is refused by the guard outright rather than judged on AMIPS.
@@ -1244,10 +1241,10 @@ public:
         override;
     /// THE single test for "this flip gets the absolute bar", read by swap_quality_allowed() and
     /// by both energy overrides. It is not recomputed here: swap_before_surface() has already
-    /// decided, and set the flag only after establishing all three conditions -- the guard is on,
-    /// both re-triangulated faces are live offset surface, and the flip strictly lowers their max
-    /// sag. Asking again from here could not check the second or the third, which is how the
-    /// first version of this handed the bar to input-complex and region flips as well.
+    /// decided, and set the flag only after establishing both conditions -- the two
+    /// re-triangulated faces are live offset surface, and the flip lowers their max sag by the
+    /// margin. Asking again from here could check neither, which is how the first version of
+    /// this handed the bar to input-complex and region flips as well.
     bool swap_surface_flip_absolute_bar() const { return m_swap_sides.local().absolute_bar; }
     bool check_surface_topology() const override { return m_offset_params.perform_sanity_checks; }
 
@@ -1329,7 +1326,7 @@ public:
      * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
      *
      * It was not always one notion: the sag classification used to qualify its corners with the
-     * DISTANCE to the level set (residual_length() within front_conv_rel x target_distance) while
+     * DISTANCE to the level set (residual_length() within front_conv) while
      * everything else used the criterion's stationarity measure. The two disagree exactly where
      * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
      * hair outside the tube disqualified its whole face from ever being refined, with the face
@@ -1354,13 +1351,15 @@ public:
     {
         return std::isfinite(ratio) && ratio <= 1.;
     }
-    /// The edge test divided by its bar (1 = bar): the sagitta of the level set over the chord
-    /// (a, b) against front_conv_rel x target_distance; -1 unmeasurable.
+    /// The chord twin of face_conv_ratio(): the RMS relative error over the chord's two
+    /// endpoints and its midpoint, over the same bar; -1 unmeasurable. NO CALLERS in 3D.
     double edge_conv_ratio(size_t a, size_t b) const;
-    /// The face's interpolation residual as a ratio to the bar: the sagitta of Phi at the face
-    /// CENTROID, |Phi(g) - mean of the three corners| / |grad Phi(g)|, over the tube. The 3D
-    /// resolution test (the 2D twin tests chord midpoints; a surface's worst interpolation
-    /// error is inside the face, not on its edges). < 0 when not measurable.
+    /// THE measure, as a ratio to THE bar front_conv (1 = the bar): the ROOT MEAN SQUARE over
+    /// the face's `stencil_order` stencil of the field's relative error (Phi(q) - c)/c. Since
+    /// the stencil contains the CORNERS, this one number answers both questions the loop used to
+    /// ask separately -- a face is resolved when it is <= 1, and a vertex is placed when the
+    /// same measure over its own point (front_vertex_conv_ratio(), the order-0 stencil at one
+    /// corner) is <= 1. < 0 when not measurable, i.e. any sample where Phi is not finite.
     double face_conv_ratio(size_t a, size_t b, size_t c) const;
     mutable size_t m_front_gradient_worst_vid =
         static_cast<size_t>(-1); ///< argmax of phase_b_front_gradient_linf()
@@ -1461,7 +1460,18 @@ public:
     }
 
     /// Samples per offset face; see offset_face_samples().
-    int offset_residual_samples() const { return m_offset_params.offset_residual_samples; }
+    int stencil_order() const { return m_offset_params.stencil_order; }
+    /// How many points for_each_face_sample() visits at the configured order: 3 at order 0, and
+    /// (n+1)(n+2)/2 + n^2 with n = 2^(k-1) above it, i.e. 4, 10, 31, 109, ... Kept in step with
+    /// for_each_face_sample() by the unit test `stencil-order-point-counts`.
+    int stencil_points_per_face() const
+    {
+        const int k = m_offset_params.stencil_order;
+        if (k < 0) return 0;
+        if (k == 0) return 3;
+        const int n = 1 << (k - 1);
+        return (n + 1) * (n + 2) / 2 + n * n;
+    }
 
     /// The residual scale, derived from the criterion: half the gradient tolerance over the
     /// level-set slope squared, in length units. Same expression as 2D.
@@ -1471,12 +1481,13 @@ public:
         return std::max(0.5 * offset_gradient_tolerance() / (s * s), 1e-16);
     }
 
-    /// The gradient_norm_rel bar: front_conv_rel x a measured reference (m_gradient_reference,
-    /// never measured on the single-phase path, so this sits at the floor there; the
-    /// single-phase bar uses m_front_gradient_reference instead). Same as 2D.
+    /// The gradient_norm_rel bar: front_conv_frac() x a measured reference
+    /// (m_gradient_reference, never measured on the single-phase path, so this sits at the floor
+    /// there; the single-phase bar uses m_front_gradient_reference instead). The fraction rather
+    /// than the length, because the reference is a gradient, not a distance. Same as 2D.
     double offset_gradient_tolerance() const
     {
-        return std::max(m_offset_params.front_conv_rel * m_gradient_reference, 1e-16);
+        return std::max(m_offset_params.front_conv_frac() * m_gradient_reference, 1e-16);
     }
 
     /// The scale offset_gradient_tolerance() is a fraction of; 0 on the single-phase path.
@@ -1523,33 +1534,86 @@ public:
     };
 
     /**
-     * @brief The interior lattice a face is sampled on, handed to `visit` one point at a time:
-     * every (i, j, l) with i + j + l = k + 2 and each >= 1, so k = 1 is the centroid and the
-     * counts are 1, 3, 6, 10 for k = 1..4. The 2D twin is for_each_offset_edge_sample().
+     * @brief The interior lattice a triangle is sampled on, handed to `visit` one point at a
+     * time as (point, wa, wb, wc) with the barycentric weights that built it: every (i, j, l)
+     * with i + j + l = k + 2 and each >= 1, so k = 1 is the centroid alone and the counts are
+     * 1, 3, 6, 10 for k = 1..4. Strictly interior -- no sample ever lands on an edge or a
+     * corner, where the interpolant is exact by construction and the sag is identically zero.
+     *
+     * The weights are handed out because the sag at a sample is measured against the LINEAR
+     * INTERPOLANT there, wa*Va + wb*Vb + wc*Vc, which is only the plain mean of the corners at
+     * the centroid. See face_conv_ratio().
+     *
+     * Takes positions rather than a Tuple so the ops guard can measure a face the mesh does not
+     * carry yet (a collapse's predicted face, one corner relabelled). The 2D twin is
+     * for_each_offset_edge_sample().
      */
     template <typename Visit>
-    void for_each_offset_face_sample(const Tuple& f, Visit&& visit) const
+    void for_each_face_sample(
+        const Vector3d& p0,
+        const Vector3d& p1,
+        const Vector3d& p2,
+        Visit&& visit) const
     {
-        const int k = m_offset_params.offset_residual_samples;
-        if (k <= 0) return;
+        const int k = m_offset_params.stencil_order;
+        if (k < 0) return;
 
-        const auto vs = get_face_vids(f);
-        const Vector3d p0 = m_vertex_attribute[vs[0]].m_posf;
-        const Vector3d p1 = m_vertex_attribute[vs[1]].m_posf;
-        const Vector3d p2 = m_vertex_attribute[vs[2]].m_posf;
-
-        const int n = k + 2;
-        for (int i = 1; i < n; ++i) {
-            for (int j = 1; j < n - i; ++j) {
-                const int l = n - i - j;
-                if (l < 1) continue;
-                visit(Vector3d((double(i) * p0 + double(j) * p1 + double(l) * p2) / double(n)));
+        const auto emit = [&](const double wa, const double wb, const double wc) {
+            visit(Vector3d(wa * p0 + wb * p1 + wc * p2), wa, wb, wc);
+        };
+        // Order 0 is the three CORNERS alone. That is the whole point of including them: the
+        // measure sampled here is a distance to the level set, which at a corner is exactly that
+        // vertex's own placement error, so one stencil covers what used to be two criteria.
+        if (k == 0) {
+            emit(1., 0., 0.);
+            emit(0., 1., 0.);
+            emit(0., 0., 1.);
+            return;
+        }
+        // Order k >= 1: the vertices of the triangle subdivided k-1 times by 4-way midpoint
+        // refinement, plus the centroid of each of its 4^(k-1) sub-triangles. With n = 2^(k-1)
+        // segments per side that is (n+1)(n+2)/2 + n^2 points: 4, 10, 31, 109, ...
+        const int n = 1 << (k - 1);
+        const double dn = double(n);
+        for (int i = n; i >= 0; --i) {
+            for (int j = n - i; j >= 0; --j) {
+                emit(double(i) / dn, double(j) / dn, double(n - i - j) / dn);
+            }
+        }
+        // The sub-triangles, in integer barycentric coordinates over 3n. "Up" triangles have
+        // corners (i+1,j,l), (i,j+1,l), (i,j,l+1) for i+j+l = n-1, so centroid (3i+1, 3j+1,
+        // 3l+1); "down" triangles (i+1,j+1,l), (i,j+1,l+1), (i+1,j,l+1) for i+j+l = n-2, so
+        // centroid (3i+2, 3j+2, 3l+2). n(n+1)/2 + n(n-1)/2 = n^2 of them.
+        const double d3n = 3. * dn;
+        for (int i = n - 1; i >= 0; --i) {
+            for (int j = n - 1 - i; j >= 0; --j) {
+                const int l = n - 1 - i - j;
+                emit((3. * i + 1.) / d3n, (3. * j + 1.) / d3n, (3. * l + 1.) / d3n);
+            }
+        }
+        for (int i = n - 2; i >= 0; --i) {
+            for (int j = n - 2 - i; j >= 0; --j) {
+                const int l = n - 2 - i - j;
+                emit((3. * i + 2.) / d3n, (3. * j + 2.) / d3n, (3. * l + 2.) / d3n);
             }
         }
     }
 
-    /// The Phi residual at `offset_residual_samples` interior points of offset face `f`. Returns
-    /// nothing for a face with an unreachable corner. The 2D twin is offset_edge_samples().
+    /// The same lattice over a face the mesh carries. Visitor signature as above.
+    template <typename Visit>
+    void for_each_offset_face_sample(const Tuple& f, Visit&& visit) const
+    {
+        const auto vs = get_face_vids(f);
+        for_each_face_sample(
+            m_vertex_attribute[vs[0]].m_posf,
+            m_vertex_attribute[vs[1]].m_posf,
+            m_vertex_attribute[vs[2]].m_posf,
+            std::forward<Visit>(visit));
+    }
+
+    /// The Phi residual at the `stencil_order` stencil's points of offset face `f`.
+    /// Returns nothing for a face with an unreachable corner. The 2D twin is
+    /// offset_edge_samples().
     FaceSamples offset_face_samples(const Tuple& f) const;
 
     /**
@@ -1579,6 +1643,10 @@ public:
     struct EnergyCriterion
     {
         double max_vertex = 0., max_face = 0.; ///< ratios to the bar (1 = bar)
+        /// Running sums of the SAME ratios, over the same measurable simplices the maxima are
+        /// taken over, so avg_vertex() / avg_face() below are the plain means of what max_vertex
+        /// / max_face report the largest of. Reported only; nothing tests them.
+        double sum_vertex = 0., sum_face = 0.;
         double bar = 1.;
         size_t n_vertices = 0, n_faces = 0, n_unmeasurable = 0;
         size_t worst_vid = static_cast<size_t>(-1);
@@ -1595,13 +1663,17 @@ public:
         double tube = 0.;
         size_t n_at_floor = 0;
         size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
-        /// A face whose centroid sags over the tube with all three corners placed:
-        /// a, b are the ends of its LONGEST edge (the chord the target is derived from), c the
-        /// third corner; sag the centroid sag as a length; len the longest edge's length.
+        /// A face over the bar with all three corners placed: a, b are the ends of its LONGEST
+        /// edge (the chord the target is derived from), c the third corner; len the longest
+        /// edge's length.
+        ///
+        /// `measure` is the face's MEAN sag as a LENGTH (the ratio times the tube). Nothing
+        /// reads it today -- refinement is the halving, which needs the face's corners alone --
+        /// and it is kept because the sag condition is still being reworked.
         struct Refinable
         {
             size_t a, b, c;
-            double sag, len;
+            double measure, len;
         };
         std::vector<Refinable> refinable;
         /// Every front vertex placed. Counted through front_vertex_placed() rather than
@@ -1612,20 +1684,22 @@ public:
         bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
         bool converged_single() const { return converged() && refinable.empty(); }
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
+        /// Means over the measurable front vertices / offset faces; 0 when there are none.
+        double avg_vertex() const { return n_vertices ? sum_vertex / double(n_vertices) : 0.; }
+        double avg_face() const { return n_faces ? sum_face / double(n_faces) : 0.; }
     };
     EnergyCriterion energy_criterion();
     /// The edge length that would bring a front chord's sag under the tube: 3/4 L
     /// (tube / sag)^(1/p) capped at L/2, with the exponent p measured from how the level set
     /// turns across the chord. Same formula as 2D.
+    ///
+    /// Reached from ONE place now: the refinable / at-floor test in energy_criterion(), which
+    /// asks whether there is any target left below what the face's corners already carry.
     double front_chord_target(size_t va, size_t vb, double len, double sag, double tube) const;
 
-    /// The resolution rule: sets the target length at each refinable face's three corners from
-    /// front_chord_target() over its longest edge with the centroid sag, graded outward.
-    /// Returns the vertices changed.
-    size_t refine_front_from_sag(const std::vector<EnergyCriterion::Refinable>& faces);
-    /// sag_halve_refinement: halve the sizing scalar at the corners of every refinable face,
-    /// once per vertex per call, floored like refine_front_from_sag(), then graded outward.
-    /// Returns the number of vertices lowered.
+    /// THE refinement: halve the sizing scalar at the corners of every refinable face, once per
+    /// vertex per call, floored at max(min_sizing_scalar, min_edge_length / l), then graded
+    /// outward. Returns the number of vertices lowered.
     size_t refine_front_by_halving(const std::vector<EnergyCriterion::Refinable>& faces);
 
     /// Spread the refinement just made at `seeds` to the vertices around them, the way
@@ -1834,14 +1908,7 @@ public:
     bool invariants(const std::vector<Tuple>& tets) override;
     //// overriden splits/invariants
 
-    /**
-     * @brief TetWild over the input mesh, before any of the offset exists, held only by the
-     * per-tag region envelopes, against a sizing field of 1.0 at every vertex. The 3D twin of
-     * TopoOffsetTriMesh::pre_optimize_input_mesh().
-     */
-    void pre_optimize_input_mesh();
-
-    /// Construction, start to finish: the optional pre-optimize pass, the simplicial embedding,
+    /// Construction, start to finish, on the input mesh as given: the simplicial embedding,
     /// marching_tets(), the re-embedding and the offset tagging. The optimization is
     /// optimize_offset(), which the driver calls afterwards.
     void execute_offset(const std::filesystem::path& output_file);
@@ -1968,7 +2035,7 @@ private:
         std::array<size_t, 4> abcd{};
         /// Set by swap_before_surface() for THIS flip alone, and read by
         /// swap_surface_flip_absolute_bar(): true only once the flip has been found to be a flip
-        /// of the offset surface under EXPERIMENTAL_ops_divergence_guard whose sag strictly
+        /// of the offset surface under the ops divergence guard whose sag strictly
         /// falls. It is what pairs the two halves of the rule -- the quality bar is given out
         /// only where the sag rule has just been paid. Cleared at the top of
         /// swap_before_surface() and of swap_before_interior(), so it never outlives its flip.

@@ -24,13 +24,15 @@
       "offset_field",
       "offset_dhat_factor",
       "DEBUG_manual_dhat",
+      "front_conv",
       "front_conv_rel",
       "front_conv_criterion",
-      "offset_residual_samples",
+      "stencil_order",
       "sorted_marching",
       "sphere_trace_initialization",
       "sphere_trace_target_rel_tol",
       "EXPERIMENTAL_consistent_construction_split",
+      "EXPERIMENTAL_aggresive_refine",
       "check_manifoldness",
       "save_vtu",
       "phi_grid_resolution",
@@ -46,12 +48,10 @@
       "adaptive_smoothing_max_passes",
       "adaptive_smoothing_stall_rel",
       "adaptive_smoothing_step_rel",
-      "sag_halve_refinement",
       "pre_smooth",
-      "EXPERIMENTAL_ops_divergence_guard",
-      "EXPERIMENTAL_flip_sag_margin",
-      "EXPERIMENTAL_exit_when_criteria_met",
+      "flip_sag_margin",
       "max_iterations",
+      "offset_envelope",
       "offset_envelope_rel",
       "length_rel",
       "length",
@@ -81,7 +81,6 @@
       "front_alignment_energy",
       "sizing_collapse_min",
       "max_rounds",
-      "pre_optimize_input",
       "w_amips",
       "smoothing_mode",
       "project_line_search_steps",
@@ -180,7 +179,7 @@
     "pointer": "/optimize_offset",
     "type": "bool",
     "default": true,
-    "doc": "Run the optimization (optimize_offset: pre-loop setup, the single-phase turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the pre-optimize pass, the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
+    "doc": "Run the optimization (optimize_offset: pre-loop setup, the single-phase turns, the final pass and the convergence verdict) after the offset is constructed. Default true. false: the run stops at the constructed offset -- the simplicial embedding, the marching and the tag assignment still run -- and writes it as the result. The constructed band lies on the background mesh's own cell boundaries, so its distance to the input complex is set by the input mesh's resolution, not by target_distance; the report then carries converged = false and no optimization metrics, and throw_on_nonconvergence is not consulted."
   },
   {
     "pointer": "/envelope_size_rel",
@@ -217,10 +216,16 @@
     "doc": "[2D ONLY] Debugging override for the smooth potential's support radius dhat, as an ABSOLUTE length. Negative (the default) leaves the automatic sizing alone: dhat = max(offset_dhat_factor x target_distance, 2 x the distance of the furthest constructed offset vertex). A value >= 0 replaces that outright, so the effective factor is DEBUG_manual_dhat / target_distance and must still exceed 1 for the level set to lie strictly inside the support. For asking what a run does under a support it would not have chosen: outside the support Phi is identically zero with a zero gradient, so a front vertex that leaves it gets no direction back and drifts on the quality term alone. Ignored by the euclidean field, which has no support. Read only by the 2D construction; 3D ignores it until the port."
   },
   {
-    "pointer": "/front_conv_rel",
-    "default": 0.025,
+    "pointer": "/front_conv",
     "type": "float",
-    "doc": "The accuracy, as a fraction of target_distance, in both dimensions: it sets the vertex bar (a front vertex is placed when the remaining Newton step of its objective along its move direction is <= rel x target_distance, under the default criterion) and the chord resolution threshold (a front edge is refinable while its sag over the level set exceeds rel x target_distance), so tighter means more turns and a finer front. Startup requires offset_envelope_rel <= front_conv_rel; see there."
+    "default": -1.0,
+    "doc": "THE convergence epsilon, as an ABSOLUTE length in model units; < 0 (the default) means use front_conv_rel instead. Absolute-or-relative exactly as envelope_size / envelope_size_rel, and against the same reference, the bounding box diagonal -- deliberately NOT a fraction of target_distance, so changing the offset distance no longer silently changes the accuracy. Startup refuses a value above target_distance: an epsilon coarser than the offset it measures decides nothing, since every front face then reads as resolved from the first turn. IN 3D THIS IS THE ONLY BAR. The measure it gates is one quantity everywhere: over a face's stencil_order stencil, the ROOT MEAN SQUARE of the field's relative error (Phi - c)/c, taken as a length. A face is resolved when that RMS is <= front_conv, i.e. when the MEAN SQUARED relative error is <= (front_conv/target_distance)^2; a vertex is placed when the same measure at the vertex alone -- the order-0 stencil -- is within it. So the vertex test and the face test are ONE test at two sample counts, which is why vertex_conv and sag_conv, which split them apart on 2026-09-23, no longer exist. The same number is also what the front smoothing objective drives to zero and what the offset surface debug field f_err reports. 2D still has its own two-part criterion and reads this key for both halves."
+  },
+  {
+    "pointer": "/front_conv_rel",
+    "type": "float",
+    "default": 0.00025,
+    "doc": "THE convergence epsilon as a fraction of the BOUNDING BOX DIAGONAL, used when front_conv is < 0. The default 2.5e-4 is the old front_conv_rel default 0.025 times the default target_distance_rel 0.01, so a fully default run keeps the accuracy it has always had; at any other target_distance the default accuracy now differs from the pre-2026-09-23 behaviour, which is the point of referencing the box rather than the offset. See front_conv for what the bar actually gates."
   },
   {
     "pointer": "/front_conv_criterion",
@@ -232,13 +237,14 @@
       "decrement",
       "residual_error"
     ],
-    "doc": "What 'converged' means for a front vertex, in the placement stop and in the loop's vertex test, measured against front_conv_rel. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian; under front_normal_projection both are taken along the vertex's move direction n. 'step_size_rel': the remaining 1-D Newton step, |n . g| / (n^T H n), against rel x target_distance. 'decrement': the Newton decrement, half of (n . g)^2 / (n^T H n), against rel x F(x). 'gradient_norm_rel': |n . g| against rel x a reference measured once on the band as constructed. Prefer the step or the decrement: the gradient is stiffness times remaining displacement, so the sliver between two meeting fronts reads far above the bar while sitting at its minimum. 'residual_error' (the default) is the odd one out and measures where the vertex IS rather than how far it still wants to move: the field's own residual as a length (for 'euclidean' exactly |d - target_distance|), against rel x target_distance -- the same bar the chord test uses, so both halves of the criterion then mean one thing. It builds no objective, so front_normal_projection does not enter, and a vertex wedged at a stationary point it cannot leave is reported by how wrong it is rather than by how still it is. Two costs: under 'smooth' the residual is a barrier residual, not a Euclidean distance, and it saturates outside the support, so a front that has left dhat reads a bounded error instead of a large one; and a vertex drifting across the level set at a stationary point of the objective can read placed on one turn and unplaced on the next."
+    "doc": "2D ONLY since the 3D criteria were unified on 2026-09-24; 3D ignores it. What 'converged' means for a front vertex, in the placement stop and in the loop's vertex test, measured against the vertex convergence epsilon vertex_conv. F is the vertex's front objective, g its gradient, H its Gauss-Newton Hessian; under front_normal_projection both are taken along the vertex's move direction n. 'step_size_rel': the remaining 1-D Newton step, |n . g| / (n^T H n), against vertex_conv. 'decrement': the Newton decrement, half of (n . g)^2 / (n^T H n), against (vertex_conv / target_distance) x F(x). 'gradient_norm_rel': |n . g| against (vertex_conv / target_distance) x a reference measured once on the band as constructed. That fraction is what front_conv_rel used to be, so the two criteria whose bar is not a length are unchanged by the split into vertex_conv / sag_conv. Prefer the step or the decrement: the gradient is stiffness times remaining displacement, so the sliver between two meeting fronts reads far above the bar while sitting at its minimum. 'residual_error' (the default) is the odd one out and measures where the vertex IS rather than how far it still wants to move: the field's own residual as a length (for 'euclidean' exactly |d - target_distance|), against vertex_conv. This is the one criterion that is a distance on both sides, and it is the default; set sag_conv equal to vertex_conv to get the single bar both halves of the criterion shared before the two were split. It builds no objective, so front_normal_projection does not enter, and a vertex wedged at a stationary point it cannot leave is reported by how wrong it is rather than by how still it is. Two costs: under 'smooth' the residual is a barrier residual, not a Euclidean distance, and it saturates outside the support, so a front that has left dhat reads a bounded error instead of a large one; and a vertex drifting across the level set at a stationary point of the objective can read placed on one turn and unplaced on the next. IN 3D there are no variants: the one measure is the stencil RMS of the relative error (Phi - c)/c against front_conv, which is not a stationarity test at all."
   },
   {
-    "pointer": "/offset_residual_samples",
-    "default": 3,
+    "pointer": "/stencil_order",
     "type": "int",
-    "doc": "Sampling density used to measure the offset's residual between its vertices, a reported diagnostic: the interior lattice points of each front simplex at denominator k+2 (k points per edge at i/(k+1); 1, 3, 6, 10 points per triangle for k = 1..4), so k = 1 is the midpoint / centroid. 0 measures only at vertices, which is blind to a surface whose vertices sit on the level set while the elements between them cut across it."
+    "default": 1,
+    "min": 0,
+    "doc": "Order of the sampling stencil on an offset-surface face. In 3D it sets BOTH the convergence measure and the front smoothing energy, which sample the same points. Order 0 is the 3 CORNERS alone, so the measure is exactly the three vertices' own placement error. Order k >= 1 is the vertices of the triangle subdivided k-1 times by 4-way midpoint refinement, plus the centroid of each of its 4^(k-1) sub-triangles: with n = 2^(k-1) segments per side that is (n+1)(n+2)/2 + n^2 points, i.e. 4 at order 1 (the corners and the centroid), 10 at order 2 (the corners, the 3 edge midpoints and the 4 sub-triangle centroids), 31 at order 3, 109 at order 4. THE CORNERS ARE IN THE STENCIL, unlike the strictly interior lattice sag_num_samples used, and they have to be: the quantity sampled is a distance to the level set, which at a corner is that vertex's own placement error rather than the identically-zero interpolation error the old measure saw there. That is what lets one stencil replace the separate vertex and sag criteria. COST: every sample is a Phi value and, in the energy and the guard, a gradient too, so the order is paid in the ops guard's hot path and in every smoothing solve as well as in the criterion -- 4 points at the default against 6 for the old default. 2D reads this key for its residual diagnostics only; its chord test is still the midpoint."
   },
   {
     "pointer": "/sorted_marching",
@@ -263,6 +269,12 @@
     "type": "bool",
     "default": true,
     "doc": "EXPERIMENTAL, and a no-op unless sphere_trace_initialization is true. Makes the marching construction all or nothing. Normally each marched edge is placed independently: the trace runs from the complex end and, on an edge the trace leaves (the level set is not on that edge), that ONE edge falls back to its midpoint -- so a single construction can mix vertices sitting on the level set with vertices sitting at edge midpoints, which is the inconsistency this flag exists to remove. With it on, the whole march is probed before any edge is split: if every marched edge can be traced, every edge is traced as usual; if even one cannot, EVERY edge is split at its midpoint instead and the construction is uniformly a midpoint march. The probe repeats the trace the split would do -- it reads only the endpoint positions and the input-complex BVH, neither of which a split changes -- so a construction that does trace everywhere pays for two full trace passes. The construction log says which way it went and how many edges could not be traced."
+  },
+  {
+    "pointer": "/EXPERIMENTAL_aggresive_refine",
+    "default": true,
+    "type": "bool",
+    "doc": "EXPERIMENTAL, 3D only. DEFAULT TRUE since 2026-09-24. Drops the placement gate on refinement. With it FALSE the end-of-turn resolution check hands a face to the halving only when all THREE of its corners are already placed -- the safeguard that keeps refinement from chasing a front that is still travelling. True (the default) refines EVERY offset face whose RMS relative error is over front_conv, whether or not its corners are placed, so the sizing scalar is halved at every vertex of every unresolved face. Unchanged either way: the sizing floor (max of min_sizing_scalar and min_edge_length / l), the once-per-vertex-per-turn rule in refine_front_by_halving(), the gradation that follows it, and the convergence test -- when every vertex is placed the gate is vacuous, so this cannot change what counts as converged. The turn's [resolution] line and the reported n_faces_over_placed / max_face_placed still describe the PLACED subset, so the refined count and the reported worst face come apart under this flag; the line says which rule it used. Why it exists: with one unified measure the criterion can deadlock -- a face chording a feature of radius target_distance sits with its centroid far inside the level set, that sample's pull very nearly cancels the corners' own placement pull, so the corners never place, and refinement (the only thing that would shorten the chord) is gated on exactly those corners. Measured on the deliverable cube at target_distance_rel 1e-2 / front_conv_rel 1e-4: 98% cancellation along the normal, a 1-D Newton step 1-2% of the move needed, and 600+ faces over the bar with ZERO refinable for all 40 turns."
   },
   {
     "pointer": "/check_manifoldness",
@@ -341,13 +353,19 @@
     "pointer": "/max_iterations",
     "type": "int",
     "default": 80,
-    "doc": "Cap on the shared TriWild/TetWild loop wherever that loop runs: the pre-optimisation pass over the input, and the finishing pass that runs with the front frozen. The loop exits as soon as max AMIPS is under stop_energy, so this is an upper bound."
+    "doc": "Cap on the shared TriWild/TetWild loop, which now runs in exactly one place: the finishing pass that runs with the front frozen. The loop exits as soon as max AMIPS is under stop_energy, so this is an upper bound."
+  },
+  {
+    "pointer": "/offset_envelope",
+    "type": "float",
+    "default": -1.0,
+    "doc": "Half-width of the corridor the operation passes must keep the front inside, as an ABSOLUTE length in model units; < 0 (the default) means use offset_envelope_rel instead. Absolute-or-relative exactly as envelope_size / envelope_size_rel. It is a leash, not an accuracy knob: front_conv sets the accuracy, and startup requires this to be <= front_conv, because a wider leash lets the operations dent the front past the resolution threshold and mint new refinable faces every turn. Tighter over-constrains the passes and starts refusing operations that were not straddling the boundary at all. It also feeds the derived sizing floor when min_edge_length_rel is negative, as this length expressed in units of target_distance."
   },
   {
     "pointer": "/offset_envelope_rel",
     "type": "float",
-    "default": 0.025,
-    "doc": "Half-width of the corridor the operation passes must keep the front inside, as a fraction of target_distance, rebuilt after every smoothing pass. It is a leash, not an accuracy knob: front_conv_rel alone sets accuracy, and startup requires offset_envelope_rel <= front_conv_rel, because a wider leash lets the operations dent the front past the resolution threshold and mint new refinable edges every turn. Tighter over-constrains the passes and starts refusing operations that were not straddling the boundary at all."
+    "default": 0.0001,
+    "doc": "Half-width of the corridor the operation passes must keep the front inside, as a fraction of the BOUNDING BOX DIAGONAL, used when offset_envelope is < 0. Rebuilt after every smoothing pass. THE REFERENCE CHANGED on 2026-09-24: it was a fraction of target_distance. A fully default run is NOT unchanged -- the old default 0.025 x the default target_distance_rel 0.01 came to 2.5e-4 of the diagonal, and this default is 1e-4, so the leash is 2.5x TIGHTER at defaults and the operation passes are correspondingly more constrained. At other target distances it moves the other way: at target_distance_rel 1e-3 the old key gave 2.5e-5 of the diagonal where this gives 1e-4, a leash four times wider. See offset_envelope for what the corridor is and what startup requires of it."
   },
   {
     "pointer": "/interleaved_smoothing",
@@ -359,7 +377,7 @@
     "pointer": "/interleaved_smoothing_passes",
     "type": "int",
     "default": 2,
-    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the pre-optimisation pass, the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the single-phase loop this fixed count is only used when adaptive_smoothing is false."
+    "doc": "Smoothing passes after each operation group (split, collapse, swap) when interleaved_smoothing is on -- in the shared TriWild/TetWild loop (the frozen-front finishing pass) and in the single-phase loop. Default 2, against the shared engine's own 1: each smoothing pass is one placement sweep of the front, so at one pass per group the front contracts about half as fast for the same final result. In the single-phase loop this fixed count is only used when adaptive_smoothing is false."
   },
   {
     "pointer": "/adaptive_smoothing",
@@ -386,35 +404,17 @@
     "doc": "Under adaptive_smoothing the background counts as settled when no non-front vertex moved more than this fraction of its own target edge length s_v * l in the pass."
   },
   {
-    "pointer": "/sag_halve_refinement",
-    "type": "bool",
-    "default": true,
-    "doc": "Single-phase loop only. How the sizing field is lowered at the end of a turn for the refinable front simplices (every vertex on the level set, the sag at the midpoint / centroid over it beyond front_conv_rel x target_distance). false: refine_front_from_sag, the chord rule 3/4 L (tube/sag)^(1/p) capped at L/2, with the exponent p read from the field's turn across the chord -- unbounded below except for the sizing floor, so a coarse front over a creased field can drop a scalar by 20x in one turn. true (the default): the vertices of every refinable simplex have their sizing scalar halved, once per turn no matter how many refinable simplices share the vertex, floored at max(min_sizing_scalar, min_edge_length / l); no other vertex is lowered directly. The lowered scalars are then graded outward by sizing_gradation_mode as with the chord rule, so with sizing_gradation 2 on an already graded field a neighbour also drops by at most a factor 2."
-  },
-  {
     "pointer": "/pre_smooth",
     "type": "bool",
     "default": false,
     "doc": "Single-phase loop only. true: before the first turn, run one smoothing block on the mesh as constructed -- the same block each operation group is followed by: interleaved_smoothing_passes sweeps, or the adaptive smoothing when adaptive_smoothing is on -- with the plastic rests stamped and the offset tube rebuilt after it, so the front is carried toward the level set once before the first split pass measures it. false (the default): the loop starts with turn 1's split pass on the constructed mesh."
   },
   {
-    "pointer": "/EXPERIMENTAL_ops_divergence_guard",
-    "type": "bool",
-    "default": true,
-    "doc": "EXPERIMENTAL. Single-phase loop only. true (the default): an operation that lies exactly ON the offset surface is rejected outright when it would RAISE the local sag, where a simplex's sag is its own convergence ratio -- the sagitta of the field over it divided by front_conv_rel x target_distance, the same quantity the turn line reports, so 1 is the resolution bar. Splits are never rejected. SCOPE, checked first for every candidate and before any measurement: the guard applies only where the operation itself lies on the offset surface -- in 3D the collapsed edge must be an edge of a face with the offset band on one side and the background on the other, and both faces a flip re-triangulates must be such faces; in 2D the collapsed edge must itself be between a band triangle and a background one. Anything else is passed through untouched without walking a one-ring or evaluating the potential. The side is read live from the tags rather than from the cached surface class, because these operations run between one labelling pass and the next. A COLLAPSE is rejected when the maximum sag over the faces the survivor is left with is STRICTLY greater than the maximum sag over the union of the two endpoints' incident offset faces beforehand. The survivor keeps its own position and the removed vertex's faces are re-attached to it with every corner unmoved, so the result's sag is exact before the collapse runs: the test is made entirely in the before-half and nothing is ever rolled back. A SURFACE FLIP is rejected when the maximum sag over its two new faces is strictly greater than the maximum over its two old ones; no vertex moves in a flip, so there is no vertex test. An unmeasurable simplex counts as infinite sag, so an operation that makes a measurable neighbourhood unmeasurable is rejected, while one starting from an already unmeasurable neighbourhood is not. Nothing is compared against the bar: this guard is about not getting worse, so it acts on an unresolved front exactly as it does on a resolved one. In 2D the collapse half is the same with chords in place of faces (edge_conv_ratio, the sagitta at the midpoint); there is no 2D flip half, because an offset edge is surface-tracked and TriOptimizerMesh::swap_edge_before refuses it through is_edge_on_surface before the offset hook is reached. Rejections are counted per turn and for the run. false: the passes exactly as they are. Replaces the older front_refuse_converged_collapse, which tested convergence against the bar rather than change against the state before the operation."
-  },
-  {
-    "pointer": "/EXPERIMENTAL_flip_sag_margin",
+    "pointer": "/flip_sag_margin",
     "type": "float",
     "default": 0.0001,
     "min": 0.0,
-    "doc": "EXPERIMENTAL. 3D single-phase loop only; 2D does not read it. How much of the resolution bar a flip of the offset surface must WIN for EXPERIMENTAL_ops_divergence_guard to accept it. In the units the turn line reports, so 1 is the bar itself and the default 1e-4 is a ten-thousandth of it. The whole rule for such a flip is then: max sag after <= max sag before - this margin, AND the cells it creates are under stop_energy. A flip that misses the margin is refused outright; it does not fall back on the base's strict improvement in AMIPS, and whether the pair was over the bar plays no part. Ignored entirely when EXPERIMENTAL_ops_divergence_guard is false. WHY IT EXISTS: to keep noise out, and with it the pass does not finish. Two diagonals of a small quad on a curved part of the offset surface sag almost identically, so a flip between them moves nothing a criterion can see while still being a strict improvement. Measured on the cube at target_distance_rel 1e-3, one swap pass accepted 3020000 surface flips of which 3019913 (99.997%) won less than 1e-12 of the bar; every one was monotone and the pass never ended. The default sits in an empty gap: of the 87 that won more than 1e-12, 47 won at least 1e-4 and none landed between 1e-9 and 1e-4. 0 restores the behaviour that does not finish."
-  },
-  {
-    "pointer": "/EXPERIMENTAL_exit_when_criteria_met",
-    "type": "bool",
-    "default": true,
-    "doc": "EXPERIMENTAL. Single-phase loop only. How the loop is allowed to STOP once the front meets its criterion. false: the turn that meets it must also follow a turn in which no sizing scalar was lowered, so the loop needs the criterion met and the previous turn already quiet -- one turn of hysteresis. true (the default): the loop exits on the first turn that meets the criterion, whatever the previous turn did, which is how TetWild's own loop stops (it breaks the moment max energy is under stop_energy and every vertex is rounded, and its stuck-refine is a response to being above the bar rather than a term in the stopping test). The criterion itself is unchanged either way: every front vertex within front_conv_rel x target_distance, none unmeasurable, and no face left to resolve. WHY IT EXISTS: the false branch's extra turn is there because the offsets criterion carries a request for work into the next turn -- refinement is decided at the end of a turn and only executed by the next turn's split pass -- whereas TetWild's max AMIPS is a property of the mesh in hand. Measured on the cube at target_distance_rel 1e-3, the split pass mints a fresh crop of over-tube faces every turn on the quarter-cylinders and the collapse pass clears them again, with NOT ONE face surviving from one pass to the next, so the count at turn end is near-random in the tail (5, 2, 0, 2) and the hysteresis can cost many turns waiting for two of them to line up. A turn that meets the criterion has an empty refinable set by construction, so it never has a pending refinement of its own; what that branch waits on is the turn BEFORE it."
+    "doc": "3D single-phase loop only; 2D does not read it. How much of the resolution bar a flip of the offset surface must WIN for the ops divergence guard to accept it. In the units the turn line reports, so 1 is the bar itself and the default 1e-4 is a ten-thousandth of it. The whole rule for such a flip is then: max sag after <= max sag before - this margin, AND the cells it creates are under stop_energy. A flip that misses the margin is refused outright; it does not fall back on the base's strict improvement in AMIPS, and whether the pair was over the bar plays no part. WHY IT EXISTS: to keep noise out, and with it the pass does not finish. Two diagonals of a small quad on a curved part of the offset surface sag almost identically, so a flip between them moves nothing a criterion can see while still being a strict improvement. Measured on the cube at target_distance_rel 1e-3, one swap pass accepted 3020000 surface flips of which 3019913 (99.997%) won less than 1e-12 of the bar; every one was monotone and the pass never ended. The default sits in an empty gap: of the 87 that won more than 1e-12, 47 won at least 1e-4 and none landed between 1e-9 and 1e-4. 0 restores the behaviour that does not finish."
   },
   {
     "pointer": "/coarsen_pass",
@@ -525,12 +525,6 @@
     "doc": "The outer loop's budget, in turns, one turn being split, collapse and swap with smoothing after each, followed by the front test. An upper bound rather than a schedule -- exhausting it is a warning and not an error, because a front that needs more turns is a legitimate outcome to inspect."
   },
   {
-    "pointer": "/pre_optimize_input",
-    "default": true,
-    "type": "bool",
-    "doc": "Run TriWild/TetWild over the input mesh before the offset is constructed -- before the simplicial embedding and the marching -- with the same parameters and held only by the per-tag region envelopes, which exist by then. The pass runs against a sizing field of 1.0 at every vertex, i.e. the base target length l, and the main loop then starts from whatever field the pass leaves (1.0 everywhere when the pass is off). Worth a pass because the marching places the offset on the background mesh's own cell boundaries: a coarse cell touching the complex inflates dhat, and a dhat several times target_distance merges the level sets of nearby features. On by default."
-  },
-  {
     "pointer": "/min_edge_length",
     "type": "float",
     "default": -1.0,
@@ -540,7 +534,7 @@
     "pointer": "/min_edge_length_rel",
     "type": "float",
     "default": -1.0,
-    "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it from the Phase A offset envelope epsilon, which is just offset_envelope_rel: TetWild's own floor (cap the sizing field below by the envelope eps, Sec 3.2) stated in the offset's units, since the front is only held to within eps and edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs."
+    "doc": "l_min as a multiple of target_distance, used when min_edge_length is negative. Negative (the default) derives it from the Phase A offset envelope epsilon, which is just offset_envelope (as a multiple of target_distance): TetWild's own floor (cap the sizing field below by the envelope eps, Sec 3.2) stated in the offset's units, since the front is only held to within eps and edges shorter than eps cannot buy fidelity. A pure anti-runaway rail, far below the chord length any tolerance actually needs."
   },
   {
     "pointer": "/min_sizing_scalar",
@@ -608,7 +602,7 @@
     "pointer": "/w_amips",
     "type": "float",
     "default": 0.0001,
-    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of envelope-held vertices, and of the AMIPS term against the offset terms in the front objective. The envelope weight is derived as 1 - w_amips."
+    "doc": "Relative weight of the AMIPS quality term against the envelope term during smoothing of envelope-held vertices, and of the AMIPS term against the offset term in the front objective. The envelope weight, and the front objective's offset weight, are both derived as 1 - w_amips. In the 3D front objective the AMIPS term is a RAW SUM over the one-ring, of order 3 x valence at best, which is why the default is small: it is what keeps that sum comparable to the offset term beside it. Read in both dimensions."
   },
   {
     "pointer": "/perform_sanity_checks",
