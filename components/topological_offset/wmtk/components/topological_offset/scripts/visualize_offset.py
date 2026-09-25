@@ -89,8 +89,10 @@ Two honesty notes on the error layer:
 
 import json
 import math
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 import meshio
@@ -122,6 +124,38 @@ MAX_ENERGY = 1e50
 NON_GROUP_CELL_FIELDS = {"amips"}
 
 
+# The frame label the debug writer splices into a .vtu as VTK FieldData: a type="String" array,
+# which meshio has no type for. See read_vtu().
+STRING_ARRAY_RE = re.compile(rb'\s*<Array type="String".*?</Array>', re.S)
+
+
+def read_vtu(path):
+    """meshio.read, tolerating the frame label the debug writer splices into a .vtu.
+
+    write_debug_frame() injects a FieldData array of type="String" holding the pass label, for
+    ParaView's Annotate Attribute Data filter (inject_frame_label() in Optimize3d.cpp). meshio
+    5.3.5 has no String in its VTU type map, and on a read failure it PRINTS and calls
+    sys.exit(1) instead of raising -- so a caller's try/except cannot survive it and one
+    labelled frame kills the viewer. The label is read from <output>_frames.txt here anyway
+    (read_frame_labels), so the String arrays are dropped from a temp copy and meshio reads
+    that. They are format="ascii", outside the appended-data section, so removing them leaves
+    the binary offsets paraviewo wrote valid.
+    """
+    with open(str(path), "rb") as f:
+        head = f.read(4096)
+    if b'<Array type="String"' not in head:
+        return meshio.read(str(path))
+    with open(str(path), "rb") as f:
+        raw = f.read()
+    tmp = tempfile.NamedTemporaryFile(suffix=".vtu", delete=False)
+    try:
+        tmp.write(STRING_ARRAY_RE.sub(b"", raw))
+        tmp.close()
+        return meshio.read(tmp.name)
+    finally:
+        os.unlink(tmp.name)
+
+
 def eval_selection(expr, names):
     """The offset_selection boolean expression, on one cell's group memberships.
 
@@ -147,7 +181,7 @@ def eval_selection(expr, names):
 
 def read_groups(path):
     """(points, dim, {group name: cell array}, envelope segments) from the .msh."""
-    m = meshio.read(str(path))
+    m = read_vtu(path)
     kind, ncol = ("tetra", 4) if any(c.type == "tetra" for c in m.cells) else ("triangle", 3)
     # One block per physical group, in the same order as field_data; pair them by the
     # physical id gmsh stamped on each block's cells.
@@ -166,6 +200,27 @@ def read_groups(path):
     env = [c.data for c in m.cells if c.type == "line"]
     env = np.vstack(env) if env else np.zeros((0, 2), np.int64)
     return m.points, ncol - 1, groups, env, point_scalar(m, "sizing"), front_diags(m)
+
+
+def add_front_scalar(struct, name, vals, **kw):
+    """Register a front diagnostic, keeping NaN out of polyscope's buffers.
+
+    The C++ writes -1 where a vertex has no value, and front_diags() turns that into NaN. Two
+    cases reach here. A frame written BEFORE the optimization computed the diagnostics -- every
+    construction frame -- has no value anywhere, and the layer is skipped: polyscope rejects an
+    all-NaN buffer ("Invalid +-inf or NaN values detected"), once per quantity per frame. A live
+    frame can still carry a few unmeasurable front vertices (a non-positive curvature of the
+    objective along the move direction); those are drawn at the top of the range, because an
+    unmeasurable vertex is one the criterion cannot call placed.
+    """
+    v = np.asarray(vals, dtype=float)
+    finite = np.isfinite(v)
+    if not finite.any():
+        return
+    if not finite.all():
+        lim = kw.get("vminmax")
+        v = np.where(finite, v, lim[1] if lim else v[finite].max())
+    struct.add_scalar_quantity(name, v, **kw)
 
 
 def point_scalar(m, name):
@@ -222,7 +277,7 @@ def front_sag_map(path):
         if not comp.exists():
             continue
         try:
-            m = meshio.read(str(comp))
+            m = read_vtu(comp)
         except Exception:
             continue
         vals = m.cell_data.get(FRONT_SAG)
@@ -255,7 +310,7 @@ def read_groups_vtu(path):
     by one. Skipped by name (NON_GROUP_CELL_FIELDS), and any other cell field that is not
     exactly 0/1 is skipped too.
     """
-    m = meshio.read(str(path))
+    m = read_vtu(path)
     kind, ncol = ("tetra", 4) if any(c.type == "tetra" for c in m.cells) else ("triangle", 3)
     cells = np.vstack([c.data for c in m.cells if c.type == kind])
     groups = {}
@@ -302,17 +357,29 @@ def interfaces(points, dim, groups):
     starts = np.flatnonzero(new)
     counts = np.diff(np.append(starts, len(key)))
 
+    # One pair label per run of equal keys, in array form: a run of one is the domain boundary
+    # (owner, ""), a run whose first two owners differ is their interface, anything else is
+    # interior to one group. Same facets, same order as a per-run loop, without the loop.
+    single = counts == 1
+    nxt = np.minimum(starts + 1, len(key) - 1)
+    between = (~single) & (facet_owner[starts] != facet_owner[nxt])
+    a_own = facet_owner[starts]
+    b_own = np.where(single, -1, facet_owner[nxt])
+    keep = single | between
+    starts, a_own, b_own = starts[keep], a_own[keep], b_own[keep]
     out = {}
-    for s, c in zip(starts, counts):
-        if c == 1:
-            pair = (names[facet_owner[s]], "")  # domain boundary
-        elif facet_owner[s] != facet_owner[s + 1]:
-            a, b = sorted((names[facet_owner[s]], names[facet_owner[s + 1]]))
-            pair = (a, b)
+    for ia, ib in np.unique(np.stack([a_own, b_own], axis=1), axis=0):
+        sel = starts[(a_own == ia) & (b_own == ib)]
+        if ib < 0:
+            pair = (names[ia], "")
         else:
-            continue  # interior to one group
-        out.setdefault(pair, []).append(facets[s])
-    return {k: np.asarray(v) for k, v in out.items()}
+            pair = tuple(sorted((names[ia], names[ib])))
+        out[pair] = np.concatenate([out[pair], facets[sel]]) if pair in out else facets[sel]
+    # the loop appended in key order; pairs built from two owner orders are merged back into it
+    for pair, f in out.items():
+        k = np.sort(f, axis=1)
+        out[pair] = f[np.lexsort(k.T[::-1])]
+    return out
 
 
 def amips2d_quality(points, tris):
@@ -393,66 +460,87 @@ def dist_to_segments(q, a, b):
     return np.linalg.norm(q[:, None, :] - closest, axis=2).min(axis=1)
 
 
+def point_triangle_dist(p, t0, t1, t2):
+    """(n,) exact distance from p[i] to triangle (t0[i], t1[i], t2[i]), all arrays (n, 3).
+    Ericson, Real-Time Collision Detection 5.1.5, vectorized over the pairs."""
+    ab, ac = t1 - t0, t2 - t0
+    ap, bp, cp = p - t0, p - t1, p - t2
+    d1, d2 = (ab * ap).sum(1), (ac * ap).sum(1)
+    d3, d4 = (ab * bp).sum(1), (ac * bp).sum(1)
+    d5, d6 = (ab * cp).sum(1), (ac * cp).sum(1)
+    va = d3 * d6 - d5 * d4
+    vb = d5 * d2 - d1 * d6
+    vc = d1 * d4 - d3 * d2
+    denom = np.maximum(va + vb + vc, 1e-300)
+    # Barycentric coordinates of the interior-region projection, then overwrite with each
+    # boundary region's clamped result where its condition holds.
+    v = vb / denom
+    w = vc / denom
+    cond = (vb <= 0) & (d2 >= 0) & (d6 <= 0)  # edge AC
+    wc = np.clip(np.where(-d6 - d2 != 0, d2 / np.maximum(d2 - d6, 1e-300), 0), 0, 1)
+    v = np.where(cond, 0.0, v)
+    w = np.where(cond, wc, w)
+    cond = (va <= 0) & (d4 - d3 >= 0) & (d5 - d6 >= 0)  # edge BC
+    wc = np.clip((d4 - d3) / np.maximum((d4 - d3) + (d5 - d6), 1e-300), 0, 1)
+    v = np.where(cond, 1.0 - wc, v)
+    w = np.where(cond, wc, w)
+    cond = (vc <= 0) & (d1 >= 0) & (d3 <= 0)  # edge AB
+    vc_ = np.clip(d1 / np.maximum(d1 - d3, 1e-300), 0, 1)
+    v = np.where(cond, vc_, v)
+    w = np.where(cond, 0.0, w)
+    cond = (d1 <= 0) & (d2 <= 0)  # vertex A
+    v = np.where(cond, 0.0, v)
+    w = np.where(cond, 0.0, w)
+    cond = (d3 >= 0) & (d4 <= d3)  # vertex B
+    v = np.where(cond, 1.0, v)
+    w = np.where(cond, 0.0, w)
+    cond = (d6 >= 0) & (d5 <= d6)  # vertex C
+    v = np.where(cond, 0.0, v)
+    w = np.where(cond, 1.0, w)
+    closest = t0 + v[:, None] * ab + w[:, None] * ac
+    return np.linalg.norm(p - closest, axis=1)
+
+
 def dist_to_triangles(q, t0, t1, t2):
     """(nq,) exact distance from each query point to the nearest of the triangles.
 
     Point sampling is NOT good enough here: the input complex is frozen at construction
     resolution, so its edges are comparable to delta, and a sampled reference inflates
     the distance by up to half an edge -- measured as avg err 0.30 where the C++ log said
-    0.08. So: exact point-triangle distance (Ericson, Real-Time Collision Detection
-    5.1.5), vectorized over query x triangle and chunked.
+    0.08. So: exact point-triangle distance (point_triangle_dist), on candidate pairs only.
+
+    The candidates are exact, not a heuristic: u(q), the distance to the nearest triangle
+    VERTEX, is an upper bound on the answer, and a triangle can hold the nearest point only if
+    its bounding sphere (centroid c, radius r) comes within u(q) of q, i.e. |q - c| <= u(q) + r.
+    Triangles are bucketed by radius (powers of two) so one large triangle does not widen the
+    search for every query. Testing every query against every triangle took ~10^10 pair
+    evaluations on a 1.3M-tet refined-march output (172k front vertices x 72k triangles).
     """
-    ab, ac = t1 - t0, t2 - t0  # (nt, 3)
-    out = np.empty(len(q))
-    for s in range(0, len(q), max(1, 4_000_000 // max(1, len(t0)))):
-        p = q[s : s + max(1, 4_000_000 // max(1, len(t0)))]
-        ap = p[:, None, :] - t0[None, :, :]  # (np, nt, 3)
-        d1 = (ab[None] * ap).sum(2)
-        d2 = (ac[None] * ap).sum(2)
-        bp = p[:, None, :] - t1[None, :, :]
-        d3 = (ab[None] * bp).sum(2)
-        d4 = (ac[None] * bp).sum(2)
-        cp = p[:, None, :] - t2[None, :, :]
-        d5 = (ab[None] * cp).sum(2)
-        d6 = (ac[None] * cp).sum(2)
+    from scipy.spatial import cKDTree
 
-        va = d3 * d6 - d5 * d4
-        vb = d5 * d2 - d1 * d6
-        vc = d1 * d4 - d3 * d2
-        denom = np.maximum(va + vb + vc, 1e-300)
-
-        # Barycentric coordinates of the interior-region projection, then overwrite with
-        # each boundary region's clamped result where its condition holds.
-        v = vb / denom
-        w = vc / denom
-        # edge AC (vb region)
-        cond = (vb <= 0) & (d2 >= 0) & (d6 <= 0)
-        wc = np.clip(np.where(-d6 - d2 != 0, d2 / np.maximum(d2 - d6, 1e-300), 0), 0, 1)
-        v = np.where(cond, 0.0, v)
-        w = np.where(cond, wc, w)
-        # edge BC (va region)
-        cond = (va <= 0) & (d4 - d3 >= 0) & (d5 - d6 >= 0)
-        wc = np.clip((d4 - d3) / np.maximum((d4 - d3) + (d5 - d6), 1e-300), 0, 1)
-        v = np.where(cond, 1.0 - wc, v)
-        w = np.where(cond, wc, w)
-        # edge AB (vc region)
-        cond = (vc <= 0) & (d1 >= 0) & (d3 <= 0)
-        vc_ = np.clip(d1 / np.maximum(d1 - d3, 1e-300), 0, 1)
-        v = np.where(cond, vc_, v)
-        w = np.where(cond, 0.0, w)
-        # vertex regions
-        cond = (d1 <= 0) & (d2 <= 0)  # A
-        v = np.where(cond, 0.0, v)
-        w = np.where(cond, 0.0, w)
-        cond = (d3 >= 0) & (d4 <= d3)  # B
-        v = np.where(cond, 1.0, v)
-        w = np.where(cond, 0.0, w)
-        cond = (d6 >= 0) & (d5 <= d6)  # C
-        v = np.where(cond, 0.0, v)
-        w = np.where(cond, 1.0, w)
-
-        closest = t0[None] + v[:, :, None] * ab[None] + w[:, :, None] * ac[None]
-        out[s : s + len(p)] = np.linalg.norm(p[:, None, :] - closest, axis=2).min(axis=1)
+    if len(q) == 0:
+        return np.zeros(0)
+    verts = np.unique(np.vstack([t0, t1, t2]), axis=0)
+    u = cKDTree(verts).query(q)[0]
+    cen = (t0 + t1 + t2) / 3.0
+    rad = np.sqrt(np.maximum.reduce([((t - cen) ** 2).sum(1) for t in (t0, t1, t2)]))
+    out = u.copy()
+    level = np.floor(np.log2(np.maximum(rad, 1e-300))).astype(np.int64)
+    for lv in np.unique(level):
+        tri = np.flatnonzero(level == lv)
+        r_top = float(rad[tri].max())
+        tree = cKDTree(cen[tri])
+        for s in range(0, len(q), 20000):
+            qs = q[s : s + 20000]
+            hits = tree.query_ball_point(qs, u[s : s + 20000] + r_top)
+            qi = np.repeat(np.arange(len(qs)), [len(h) for h in hits])
+            if len(qi) == 0:
+                continue
+            ti = tri[np.concatenate(hits).astype(np.int64)]
+            ok = np.linalg.norm(qs[qi] - cen[ti], axis=1) <= u[s + qi] + rad[ti]
+            qi, ti = qi[ok], ti[ok]
+            d = point_triangle_dist(qs[qi], t0[ti], t1[ti], t2[ti])
+            np.minimum.at(out, s + qi, d)
     return out
 
 
@@ -670,14 +758,31 @@ def load(msh, cfg):
     # three labels -- offset (2), input complex (1, the selection expression evaluated
     # on the cell's own tag memberships), background (0) -- and derive interfaces from
     # those disjoint classes.
-    seen = {}  # sorted vertex tuple -> (row, set of group names)
-    for name, cells in groups.items():
-        for row in cells:
-            k = tuple(sorted(row))
-            if k in seen:
-                seen[k][1].add(name)
-            else:
-                seen[k] = (row, {name})
+    # Every distinct cell once, in first-seen order, with the set of groups it is in as a
+    # bitmask: `rows[i]` and `masks[i]`. Array form of a dict keyed by the sorted vertex tuple --
+    # a Python loop over the cells stalled on a million tets.
+    gnames = list(groups)
+    if len(gnames) > 62:
+        raise ValueError("more than 62 groups")
+    stacked = np.vstack([groups[n] for n in gnames]) if gnames else np.zeros((0, dim + 1), np.int64)
+    gid = np.concatenate([np.full(len(groups[n]), i) for i, n in enumerate(gnames)]) if gnames \
+        else np.zeros(0, np.int64)
+    if len(stacked):
+        _, first, inv = np.unique(np.sort(stacked, axis=1), axis=0, return_index=True,
+                                  return_inverse=True)
+        inv = inv.reshape(-1)
+        masks_u = np.zeros(len(first), np.int64)
+        np.bitwise_or.at(masks_u, inv, np.left_shift(np.int64(1), gid.astype(np.int64)))
+        order = np.argsort(first, kind="stable")
+        rows = stacked[first[order]]
+        masks = masks_u[order]
+    else:
+        rows, masks = stacked, np.zeros(0, np.int64)
+
+    def names_of(mask):
+        return {n for i, n in enumerate(gnames) if (int(mask) >> i) & 1}
+
+    distinct = {int(m): names_of(m) for m in np.unique(masks)}
     expr = cfg.get("offset_selection", "!_")
     classed = {"offset": [], "input": [], "ambient": []}
     # The same cells again, deduplicated and in one stable order, so the background mesh can
@@ -685,25 +790,26 @@ def load(msh, cfg):
     # cell is in, and which tag groups it belongs to. The groups OVERLAP -- a cell is written
     # into every group whose tag set contains that tag -- so tag membership cannot be one
     # scalar and is one boolean layer per tag instead.
-    all_rows, all_class, all_names = [], [], []
-    for row, names in seen.values():
+    # The class of a cell depends only on its group set, so it is decided once per distinct set.
+    cls_of = {}
+    for m, names in distinct.items():
         if names & offset_tags:
-            cls, key = 2, "offset"
+            cls_of[m] = 2
         elif eval_selection(expr, names):
-            cls, key = 1, "input"
+            cls_of[m] = 1
         else:
-            cls, key = 0, "ambient"
-        classed[key].append(row)
-        all_rows.append(row)
-        all_class.append(cls)
-        all_names.append(names)
-    classed = {k: np.asarray(v) if v else np.zeros((0, dim + 1), np.int64)
-               for k, v in classed.items()}
+            cls_of[m] = 0
+    cell_class = np.zeros(len(masks), np.int64)
+    for m, c in cls_of.items():
+        cell_class[masks == m] = c
+    for c, key in ((2, "offset"), (1, "input"), (0, "ambient")):
+        sel = rows[cell_class == c]
+        classed[key] = sel if len(sel) else np.zeros((0, dim + 1), np.int64)
 
-    mesh_cells = np.asarray(all_rows) if all_rows else np.zeros((0, dim + 1), np.int64)
-    mesh_class = np.asarray(all_class, np.float64)
+    mesh_cells = rows if len(rows) else np.zeros((0, dim + 1), np.int64)
+    mesh_class = cell_class.astype(np.float64)
     mesh_tags = {
-        g: np.asarray([1.0 if g in names else 0.0 for names in all_names])
+        g: ((masks >> gnames.index(g)) & 1).astype(np.float64)
         for g in sorted(groups)
     }
 
@@ -713,14 +819,14 @@ def load(msh, cfg):
     # cell region of its own, which is every 2D integration test. Membership sets are
     # mapped to disjoint pseudo-groups so the pairing logic stays count-based and clean;
     # pairs touching the offset class are dropped, the offset layer already draws those.
-    memb_groups = {}
-    for row, names in seen.values():
-        if names & offset_tags:
-            key = "__offset"
-        else:
-            key = "|".join(sorted(names))
-        memb_groups.setdefault(key, []).append(row)
-    memb_groups = {k: np.asarray(v) for k, v in memb_groups.items()}
+    memb_key = {m: ("__offset" if names & offset_tags else "|".join(sorted(names)))
+                for m, names in distinct.items()}
+    key_names = sorted(set(memb_key.values()))
+    key_of_cell = np.zeros(len(masks), np.int64)
+    for m, key in memb_key.items():
+        key_of_cell[masks == m] = key_names.index(key)
+    # first-seen order within each key, as a per-cell loop would append them
+    memb_groups = {key: rows[key_of_cell == i] for i, key in enumerate(key_names)}
     region = [
         f for pair, f in interfaces(points, dim, memb_groups).items()
         if "__offset" not in pair and pair[1] != ""
@@ -756,10 +862,10 @@ def load(msh, cfg):
     for g in sorted(groups):
         if g in skip:
             continue
-        without = [row for row, names in seen.values() if g not in names]
+        without = rows[((masks >> gnames.index(g)) & 1) == 0]
         parts = {"in": groups[g]}
-        if without:
-            parts["out"] = np.asarray(without)
+        if len(without):
+            parts["out"] = without
         tb = interfaces(points, dim, parts)
         got = [tb[p] for p in (("in", "out"), ("in", "")) if p in tb]
         surf["tag:" + g] = np.vstack(got) if got else np.zeros((0, dim), np.int64)
@@ -935,19 +1041,19 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
         rows = np.unique(surf["offset"])
         cr = diags.get("front_conv_ratio")
         if cr is not None:
-            m.add_scalar_quantity("front: Newton step / bar (<=1 = placed)", cr[rows],
-                                  cmap="reds", vminmax=(0.0, 2.0), enabled=False)
+            add_front_scalar(m, "front: Newton step / bar (<=1 = placed)", cr[rows],
+                             cmap="reds", vminmax=(0.0, 2.0), enabled=False)
         rl = diags.get("front_residual_rel")
         if rl is not None:
             # Already relative to front_conv as of 2026-09-24: <= 1 is converged, so the scale
             # is the bar itself and delta no longer enters. 3D frames only; 2D still writes the
             # absolute front_residual_length, which this key simply does not find.
-            m.add_scalar_quantity("front: residual / bar (<=1 = converged)",
-                                  rl[rows], cmap="reds", vminmax=(0.0, 2.0),
-                                  enabled=False)
+            add_front_scalar(m, "front: residual / bar (<=1 = converged)",
+                             rl[rows], cmap="reds", vminmax=(0.0, 2.0),
+                             enabled=False)
         gn = diags.get("front_grad_norm")
         if gn is not None:
-            m.add_scalar_quantity("front: |grad Phi|", gn[rows], cmap="viridis", enabled=False)
+            add_front_scalar(m, "front: |grad Phi|", gn[rows], cmap="viridis", enabled=False)
         cd = diags.get("front_complex_distance")
         if cd is not None and delta:
             # The plain Euclidean distance to the input complex over the target distance, which
@@ -955,15 +1061,15 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
             # not come from the vertex's region field, so it is the same number under either
             # offset_field and it cannot be thrown off by the region map: the independent check
             # on where the front actually is.
-            m.add_scalar_quantity("front: distance to complex / delta (1 = on the offset)",
-                                  cd[rows] / float(delta), cmap="coolwarm", vminmax=(0.5, 1.5),
-                                  enabled=False)
+            add_front_scalar(m, "front: distance to complex / delta (1 = on the offset)",
+                             cd[rows] / float(delta), cmap="coolwarm", vminmax=(0.5, 1.5),
+                             enabled=False)
         ma = diags.get("front_move_align")
         if ma is not None:
             # 1: the test's step is the step toward the level set. 0: it measures a direction
             # that cannot reduce the distance, so the vertex reads as placed wherever it sits.
-            m.add_scalar_quantity("front: move dir . field normal (1 = useful)", ma[rows],
-                                  cmap="viridis", vminmax=(0.0, 1.0), enabled=False)
+            add_front_scalar(m, "front: move dir . field normal (1 = useful)", ma[rows],
+                             cmap="viridis", vminmax=(0.0, 1.0), enabled=False)
         # The sag, on the EDGES (2D) / FACES (3D) themselves, not on their corners: the other
         # half of the convergence test. A chord whose corners are both on the level set and whose
         # sag is over 1 is refinable; over 1 with the sizing already at the floor is the "at the
@@ -972,10 +1078,9 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
         if sag is not None:
             vals = np.array([sag.get(tuple(sorted(int(i) for i in c)), np.nan)
                              for c in surf["offset"]], dtype=float)
-            if np.isfinite(vals).any():
-                m.add_scalar_quantity("front: sag / tube (>1 = refinable)", vals,
-                                      defined_on="faces" if dim == 3 else "edges",
-                                      cmap="reds", vminmax=(0.0, 2.0), enabled=False)
+            add_front_scalar(m, "front: sag / tube (>1 = refinable)", vals,
+                             defined_on="faces" if dim == 3 else "edges",
+                             cmap="reds", vminmax=(0.0, 2.0), enabled=False)
     return {k: v for k, v in out.items() if v is not None}, extras
 
 
@@ -995,7 +1100,7 @@ def load_phi_grid(meshes):
                      m.parent / (m.stem.split("_debug")[0] + "_phi.vtu")):
             if cand.is_file():
                 try:
-                    grid = meshio.read(str(cand))
+                    grid = read_vtu(cand)
                 except Exception as e:  # a truncated file should not stop the viewer
                     print("could not read %s: %s" % (cand, e))
                     return None
@@ -1171,7 +1276,7 @@ def main():
     # dragon changed?" needs the input drawn beside it, and this is the input as the run loaded it.
     ref_structs = []
     if input_ref is not None and input_ref.is_file():
-        rp, rdim, rgroups, _, _ = read_groups(input_ref)
+        rp, rdim, rgroups = read_groups(input_ref)[:3]
         rows = {}
         for g, cells in rgroups.items():
             for r in cells:
