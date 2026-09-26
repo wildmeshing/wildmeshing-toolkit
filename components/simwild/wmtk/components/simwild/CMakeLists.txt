@@ -82,8 +82,6 @@ if(WMTK_WITH_POLYFEM)
 		polyfem_helpers/MinimumSeparation.cpp
 		polyfem_helpers/LaplacianSmoothing.hpp
 		polyfem_helpers/LaplacianSmoothing.cpp
-		polyfem_helpers/DeformedMesh.hpp
-		polyfem_helpers/DeformedMesh.cpp
 	)
 
 	target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${POLYFEM_HELPERS_SRC_FILES})

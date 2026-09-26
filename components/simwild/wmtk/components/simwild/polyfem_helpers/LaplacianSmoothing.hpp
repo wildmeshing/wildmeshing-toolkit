@@ -12,8 +12,9 @@ namespace wmtk::components::simwild::polyfem_helpers {
  *
  * `json_params` is a simwild job already verified against the simwild spec and with its defaults
  * injected, which is what `simwild()` hands over.
- * It is `prepare_laplacian_smoothing` followed, unless `inputs_only` is set, by the single solve on
- * the in-process backend and the write-back of the deformed mesh.
+ * It is `prepare_laplacian_smoothing` followed, unless `inputs_only` is set, by
+ * `check_result_layout`, the single solve on the in-process backend and the write-back of the
+ * deformed mesh.
  */
 void laplacian_smoothing(nlohmann::json json_params);
 
@@ -34,8 +35,10 @@ PreparedOperation prepare_laplacian_smoothing(nlohmann::json params);
  * Writes `sim_json` to `sim_json_path` and logs to `sim_out_dir/polyfem.log`. The Python's first
  * argument is the path of the binary; this takes the backend instead, which is the one place the
  * two engines are allowed to differ -- see PolyfemRunner.hpp on why the boundary exists.
+ *
+ * @return the solve's solution.
  */
-void run_polyfem_single(
+Eigen::MatrixXd run_polyfem_single(
     PolyfemBackend& backend,
     const OrderedJson& sim_json,
     const std::filesystem::path& sim_json_path,

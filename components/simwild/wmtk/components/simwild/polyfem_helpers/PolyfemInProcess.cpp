@@ -9,6 +9,7 @@
 #include <polyfem/time_integrator/ImplicitTimeIntegrator.hpp>
 #include <polyfem/utils/JSONUtils.hpp>
 #include <polyfem/utils/Logger.hpp>
+#include <polyfem/utils/MatrixUtils.hpp>
 
 #include <ipc/utils/logger.hpp>
 
@@ -58,6 +59,30 @@ struct SolverState
 std::optional<double> active_distance_from_contact_form(
     const polyfem::State& state,
     const Eigen::MatrixXd& sol);
+
+/**
+ * @brief `sol` as polyfem writes it to `output/data/solution` under
+ * `output/data/advanced/reorder_nodes` (`OutGeometryData::export_data`): unflattened to one row
+ * per FE node, and row `i` taken from FE node `in_node_to_node[i]`, so the rows follow the solved
+ * mesh's own node order.
+ *
+ * export_data builds the inverse permutation and scatters through it; on a linear mesh, where
+ * `in_node_to_node` is a permutation of the FE nodes, that is the same gather row for row. The
+ * file printed every value with 100 significant digits, which reads back as the same double, so
+ * this is its content exactly (measured: bit for bit the solution.txt of the same solve, 531 x 2
+ * on dragon2d_sep and on dragon2d_smooth_w1000).
+ */
+Eigen::MatrixXd input_node_solution(const polyfem::State& state, const Eigen::MatrixXd& sol)
+{
+    const int dim = state.problem->is_scalar() ? 1 : state.mesh->dimension();
+    const Eigen::MatrixXd per_fe_node = polyfem::utils::unflatten(sol, dim);
+    const Eigen::VectorXi& in_node_to_node = state.in_node_to_node;
+    Eigen::MatrixXd out(in_node_to_node.size(), dim);
+    for (Eigen::Index i = 0; i < in_node_to_node.size(); ++i) {
+        out.row(i) = per_fe_node.row(in_node_to_node[i]);
+    }
+    return out;
+}
 
 /**
  * @brief The sink that turns polyfem's own log records into `polyfem_iter_<i>.log` (and into the
@@ -478,7 +503,8 @@ std::optional<double> active_distance_from_contact_form(
  *
  * Nor does the warm start go through a file: the JSON's `input/data/state` and
  * `output/data/state` are blanked in the in-memory copy of the arguments, and the three matrices
- * polyfem would have written to `curr_state.hdf5` are carried in `m_last` instead.
+ * polyfem would have written to `curr_state.hdf5` are carried in `m_last` instead. The solution,
+ * too, comes back in the result rather than in the `solution.txt` the JSON names.
  */
 class InProcessBackend : public PolyfemBackend
 {
@@ -614,6 +640,7 @@ private:
         }
 
         SolveResult result;
+        result.solution = input_node_solution(state, sol);
         result.active_distance = active_distance_from_contact_form(state, sol);
         // One entry per AL, reduced and lagging subsolve; an entry lacks a status only when no
         // solver ran (polyfem's ALSolver::record_solver_info).
@@ -698,6 +725,20 @@ void prepare_state(
                 "contact.collision_mesh.linear_map"),
             body_ids);
         polyfem_args[collision_mesh_ptr] = {{"enabled", true}};
+    }
+
+    // Nor does the copy name a file for polyfem to write. `output/data/solution` goes: the backend
+    // takes the solution off the State (`input_node_solution`). And `save_time_sequence`, on by
+    // default, is what writes step_<t>.vtm / .vtu / _surf_contact.vtu at both steps of the one-step
+    // transient solve; it stays on only when the document asks for paraview output, which the
+    // operations put in exactly when `save_vtu` is set. Measured on lego_smooth_both: 99.8 s with
+    // those files, 65 to 73 s without.
+    nlohmann::json& output = polyfem_args["output"];
+    if (output.contains("data")) {
+        output["data"].erase("solution");
+    }
+    if (!output.contains("paraview")) {
+        output["advanced"]["save_time_sequence"] = false;
     }
 
     // State::init's validation does not need the named files to exist: jse checks a "file" rule

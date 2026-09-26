@@ -7,6 +7,7 @@
 #include <polysolve/nonlinear/Criteria.hpp>
 
 #include <spdlog/common.h>
+#include <Eigen/Core>
 #include <nlohmann/json.hpp>
 
 #include <filesystem>
@@ -29,12 +30,17 @@ namespace wmtk::components::simwild::polyfem_helpers {
 /// `PolyfemBackend::solve`).
 /// `statuses` is polysolve's termination status of every nonlinear subsolve that returned, in
 /// order; it is what `check_polyfem_success` decides on.
+/// `solution` is the displacement of every node of the solved mesh, in solver units: one row per
+/// node in the mesh's own node order, one column per dimension. It is the content polyfem writes to
+/// `output/data/solution` under `output/data/advanced/reorder_nodes`, and what the deformed mesh is
+/// made from. Empty when the solve threw.
 struct SolveResult
 {
     int returncode = 0;
     std::vector<std::string> lines;
     std::optional<double> active_distance;
     std::vector<polysolve::nonlinear::Status> statuses;
+    Eigen::MatrixXd solution;
 };
 
 /**
@@ -58,13 +64,14 @@ struct SolveInputs
 
 /**
  * @brief The one and only way the outer loops reach polyfem: a simulation JSON goes in, the
- * solver's output and its active distance come back, and a copy of that output is left in
- * `log_path`.
+ * solver's output, its active distance and its solution come back, and a copy of that output is
+ * left in `log_path`.
  *
  * The JSON is still the single description of what a solve reads, and the document on disk stays
  * the one the Python engine writes, file names included. What the backend does not do is read
  * those files: it holds their content (`SolveInputs`) and the warm start in memory, and hands both
- * to polyfem from there (see PolyfemInProcess.cpp).
+ * to polyfem from there (see PolyfemInProcess.cpp). Nor does it let polyfem write the solution file
+ * the JSON names: the solution comes back in `SolveResult::solution` instead.
  */
 class PolyfemBackend
 {
@@ -109,8 +116,9 @@ std::unique_ptr<PolyfemBackend> in_process_backend(SolveInputs inputs);
 
 /**
  * @brief Everything the in-process backend does to a State before it solves: `State::init` on
- * `args`, the inputs the JSON names taken from `inputs` (a name with no content there throws; the
- * files are never read), the mesh, the basis and the assembly.
+ * `args` with polyfem's solution and time-sequence files switched off, the inputs the JSON names
+ * taken from `inputs` (a name with no content there throws; the files are never read), the mesh,
+ * the basis and the assembly.
  *
  * `log_sink` is attached to polyfem's and ipc's loggers right after `State::init`, which replaces
  * both; null attaches nothing. Declared here, and not only used inside the backend, so that a test

@@ -1,9 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <wmtk/components/simwild/polyfem_helpers/LaplacianSmoothing.hpp>
 #include <wmtk/components/simwild/polyfem_helpers/MinimumSeparation.hpp>
 #include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
+#include <wmtk/utils/io.hpp>
 
 #include <polyfem/State.hpp>
 #include <polyfem/mesh/Mesh.hpp>
@@ -34,13 +36,16 @@
 using wmtk::components::simwild::simwild;
 using wmtk::components::simwild::simwild_spec_for;
 using wmtk::components::simwild::polyfem_helpers::in_process_backend;
+using wmtk::components::simwild::polyfem_helpers::operation_backend;
 using wmtk::components::simwild::polyfem_helpers::OrderedJson;
 using wmtk::components::simwild::polyfem_helpers::prepare_laplacian_smoothing;
 using wmtk::components::simwild::polyfem_helpers::prepare_minimum_separation;
 using wmtk::components::simwild::polyfem_helpers::prepare_state;
 using wmtk::components::simwild::polyfem_helpers::PreparedOperation;
+using wmtk::components::simwild::polyfem_helpers::run_polyfem_single;
 using wmtk::components::simwild::polyfem_helpers::SolveInputs;
 using wmtk::components::simwild::polyfem_helpers::split_lines;
+using wmtk::components::simwild::polyfem_helpers::write_operation_result;
 
 namespace fs = std::filesystem;
 
@@ -843,4 +848,243 @@ TEST_CASE(
         REQUIRE(generated.dump(4) == generated_text); // the parse round trip itself is exact
         CHECK(last.dump(4) == generated_text);
     }
+}
+
+// The deformed mesh is the input mesh with the solution added, exactly: from the solution on,
+// every step is deterministic, so the write-back is held to an exact value. The solution is a real
+// one -- the smoothing operation's, handed from its solve to the writer as the operation hands it
+// -- and the meshes are bent, so no coordinate or displacement is exactly representable.
+TEST_CASE(
+    "polyfem_helpers the deformed mesh is the input plus the solution",
+    "[components][polyfem_helpers]")
+{
+    const auto check = [](const std::string& name, const mshio::MshSpec& mesh) {
+        const fs::path root = case_input(name, mesh);
+        const double scale = 1e-3;
+        PreparedOperation prepared = prepare_operation(
+            {{"application", "simwild"},
+             {"operation", "laplacian_smoothing"},
+             {"input", nlohmann::json::array({(root / "input.msh").string()})},
+             {"output", (root / "out").string()},
+             {"interfaces", {{{"region", "tag_0"}, {"filter", "ambient"}}}},
+             {"scale", scale}});
+        const auto backend = operation_backend(prepared);
+        const Eigen::MatrixXd u = run_polyfem_single(
+            *backend,
+            prepared.sim_json,
+            prepared.sim_json_path,
+            prepared.sim_out_dir);
+        write_operation_result(prepared, u);
+
+        const mshio::MshSpec in = mshio::load_msh((root / "input.msh").string());
+        const mshio::MshSpec out = mshio::load_msh((root / "out.msh").string());
+        const auto& in_nodes = in.nodes.entity_blocks.front();
+        const auto& out_nodes = out.nodes.entity_blocks.front();
+        const int dim = in.physical_groups.front().dim;
+        REQUIRE(u.rows() == Eigen::Index(in_nodes.num_nodes_in_block));
+        REQUIRE(u.cols() == dim);
+        CHECK(u.cwiseAbs().maxCoeff() > 0.0); // the solve moved something
+
+        // Everything but the positions is the input's: the groups, the node tags, and every
+        // element block with its element tags and vertex tuples, in order.
+        REQUIRE(out.physical_groups.size() == in.physical_groups.size());
+        for (size_t k = 0; k < in.physical_groups.size(); ++k) {
+            CHECK(out.physical_groups[k].dim == in.physical_groups[k].dim);
+            CHECK(out.physical_groups[k].tag == in.physical_groups[k].tag);
+            CHECK(out.physical_groups[k].name == in.physical_groups[k].name);
+        }
+        CHECK(out.nodes.num_nodes == in.nodes.num_nodes);
+        CHECK(out_nodes.tags == in_nodes.tags);
+        REQUIRE(out.elements.entity_blocks.size() == in.elements.entity_blocks.size());
+        for (size_t b = 0; b < in.elements.entity_blocks.size(); ++b) {
+            const auto& a = out.elements.entity_blocks[b];
+            const auto& e = in.elements.entity_blocks[b];
+            CHECK(a.entity_tag == e.entity_tag);
+            CHECK(a.data == e.data);
+        }
+
+        // Each position is the input's plus u / scale, to the bit, on the components the solution
+        // carries; the third coordinate of a 2D mesh is the input's.
+        size_t mismatches = 0;
+        for (Eigen::Index i = 0; i < u.rows(); ++i) {
+            for (int d = 0; d < 3; ++d) {
+                const double original = in_nodes.data[size_t(3 * i + d)];
+                const double expected = d < dim ? original + u(i, d) / scale : original;
+                mismatches += out_nodes.data[size_t(3 * i + d)] != expected;
+            }
+        }
+        CHECK(mismatches == 0);
+    };
+    SECTION("3D") { check("write_back3d", boxes_3d()); }
+    SECTION("2D") { check("write_back2d", jagged_2d()); }
+}
+
+namespace {
+
+/// A mesh written as SimWildMesh::write_msh / SimWildMeshTri::write_msh write one, with the
+/// envelope: every node and the untagged cells on the first entity ("ambient"), then one entity
+/// per tag holding the cells that carry it, then the envelope as a group one dimension lower with
+/// nodes of its own. Here: a cube of six tetrahedra (3D) or a 2 x 2 square of eight triangles
+/// (2D), where tag_0 and tag_1 share a cell, so that cell is written twice; the envelope is the
+/// boundary of a simplex on `dim + 1` nodes of its own. `nodes` are the mesh nodes' positions and
+/// `envelope` the envelope's.
+void write_simwild_layout(
+    const fs::path& path,
+    const int dim,
+    const Eigen::MatrixXd& nodes,
+    const Eigen::MatrixXd& envelope)
+{
+    std::vector<std::vector<size_t>> cells;
+    if (dim == 3) {
+        cells = {
+            {0, 1, 3, 7},
+            {0, 1, 7, 5},
+            {0, 2, 7, 3},
+            {0, 2, 6, 7},
+            {0, 4, 5, 7},
+            {0, 4, 7, 6}};
+    } else {
+        for (size_t j = 0; j < 2; ++j) {
+            for (size_t i = 0; i < 2; ++i) {
+                const size_t a = i + 3 * j, b = a + 1, c = a + 3, d = a + 4;
+                cells.push_back({a, b, d});
+                cells.push_back({a, d, c});
+            }
+        }
+    }
+    // ambient, tag_0 and tag_1; cell 3 carries both tags.
+    std::vector<std::vector<size_t>> groups{{0, 1}, {2, 3}, {}};
+    for (size_t c = 3; c < cells.size(); ++c) groups[2].push_back(c);
+    std::vector<std::vector<size_t>> boundary;
+    for (size_t skip = 0; skip <= size_t(dim); ++skip) {
+        std::vector<size_t> face;
+        for (size_t v = 0; v <= size_t(dim); ++v) {
+            if (v != skip) face.push_back(v);
+        }
+        boundary.push_back(face);
+    }
+
+    wmtk::MshData msh;
+    const auto node = [&nodes](const size_t i) { return nodes.row(Eigen::Index(i)); };
+    const auto envelope_node = [&envelope](const size_t i) {
+        return envelope.row(Eigen::Index(i));
+    };
+    for (size_t g = 0; g < groups.size(); ++g) {
+        const auto cell = [&](const size_t k) { return cells[groups[g][k]]; };
+        if (dim == 3) {
+            if (g == 0) {
+                msh.add_tet_vertices(size_t(nodes.rows()), node);
+            } else {
+                msh.add_tet_vertices();
+            }
+            msh.add_tets(groups[g].size(), cell);
+        } else {
+            if (g == 0) {
+                msh.add_face_vertices(size_t(nodes.rows()), node);
+            } else {
+                msh.add_face_vertices();
+            }
+            msh.add_faces(groups[g].size(), cell);
+        }
+        msh.add_physical_group(g == 0 ? "ambient" : fmt::format("tag_{}", g - 1));
+    }
+    const auto face = [&boundary](const size_t k) { return boundary[k]; };
+    if (dim == 3) {
+        msh.add_face_vertices(size_t(envelope.rows()), envelope_node);
+        msh.add_faces(boundary.size(), face);
+    } else {
+        msh.add_edge_vertices(size_t(envelope.rows()), envelope_node);
+        msh.add_edges(boundary.size(), face);
+    }
+    msh.add_physical_group("EnvelopeSurface");
+    msh.save(path.string(), /*binary=*/true);
+}
+
+} // namespace
+
+// The result is the input with only the mesh nodes moved: every group -- overlapping tag groups
+// and the lower-dimensional envelope included -- with its cells, element tags and node tags as in
+// the file. Held to the bytes: at zero displacement the result IS the input file, and at any other
+// it is the file simwild would have written with the moved mesh nodes and the envelope in place.
+TEST_CASE(
+    "polyfem_helpers the result is the input with only the mesh nodes moved",
+    "[components][polyfem_helpers]")
+{
+    const auto check = [](const std::string& name, const int dim) {
+        const fs::path root = fs::temp_directory_path() / "wmtk_polyfem_helpers_write" / name;
+        fs::remove_all(root);
+        fs::create_directories(root);
+        const Eigen::Index n = dim == 3 ? 8 : 9;
+        Eigen::MatrixXd nodes = Eigen::MatrixXd::Zero(n, 3);
+        for (Eigen::Index i = 0; i < n; ++i) {
+            const Eigen::Index side = dim == 3 ? 2 : 3;
+            nodes(i, 0) = bend(double(i % side), size_t(3 * i));
+            nodes(i, 1) = bend(double((i / side) % side), size_t(3 * i + 1));
+            if (dim == 3) nodes(i, 2) = bend(double(i / 4), size_t(3 * i + 2));
+        }
+        const Eigen::MatrixXd envelope = nodes.topRows(dim + 1);
+        write_simwild_layout(root / "input.msh", dim, nodes, envelope);
+
+        PreparedOperation prepared;
+        prepared.input = (root / "input.msh").string();
+        prepared.cfg["scale"] = 1e-3;
+        // One row per node of the file: the mesh nodes, then the envelope's dim + 1.
+        const Eigen::Index rows = n + dim + 1;
+
+        prepared.output = (root / "zero").string();
+        write_operation_result(prepared, Eigen::MatrixXd::Zero(rows, dim));
+        CHECK(read_file(root / "zero.msh") == read_file(root / "input.msh"));
+
+        Eigen::MatrixXd u(rows, dim);
+        for (Eigen::Index i = 0; i < rows; ++i) {
+            for (Eigen::Index d = 0; d < dim; ++d) u(i, d) = 1e-4 * std::sin(double(7 * i + d));
+        }
+        prepared.output = (root / "moved").string();
+        write_operation_result(prepared, u);
+        Eigen::MatrixXd moved = nodes;
+        moved.leftCols(dim) += u.topRows(n) / 1e-3;
+        write_simwild_layout(root / "expected.msh", dim, moved, envelope);
+        CHECK(read_file(root / "moved.msh") != read_file(root / "input.msh"));
+        CHECK(read_file(root / "moved.msh") == read_file(root / "expected.msh"));
+    };
+    SECTION("3D, with a triangle envelope") { check("tets", 3); }
+    SECTION("2D, with an edge envelope") { check("triangles", 2); }
+}
+
+// The result can only be written into a file in MshData's own layout, so an input in any other is
+// refused before the solve, not after it. Here the physical tags start at 11: every reader of the
+// input takes that (groups are read by name), but MshData numbers its groups 1, 2, ..., so the
+// rebuilt file would not be the input.
+TEST_CASE(
+    "polyfem_helpers an input in another layout is refused before solving",
+    "[components][polyfem_helpers]")
+{
+    mshio::MshSpec mesh = jagged_2d();
+    for (auto& group : mesh.physical_groups) group.tag += 10;
+    for (auto& entity : mesh.entities.surfaces) {
+        entity.tag += 10;
+        entity.physical_group_tags = {entity.tag};
+    }
+    for (auto& block : mesh.nodes.entity_blocks) block.entity_tag += 10;
+    for (auto& block : mesh.elements.entity_blocks) block.entity_tag += 10;
+    const fs::path root = case_input("refused_layout", mesh);
+
+    nlohmann::json params = {
+        {"application", "simwild"},
+        {"operation", "laplacian_smoothing"},
+        {"input", nlohmann::json::array({(root / "input.msh").string()})},
+        {"output", (root / "out").string()},
+        {"interfaces", {{{"region", "tag_0"}, {"filter", "ambient"}}}},
+        {"inputs_only", true}};
+    // inputs_only writes no result, so it has nothing to refuse.
+    REQUIRE_NOTHROW(simwild(params));
+
+    params["inputs_only"] = false;
+    REQUIRE_THROWS_WITH(
+        simwild(params),
+        Catch::Matchers::ContainsSubstring("reproduces only the layout MshData writes") &&
+            Catch::Matchers::ContainsSubstring(
+                "rebuilding it with nothing moved does not give the same content"));
+    CHECK(directory_contents(root / "smooth_output").empty()); // no solve ran, not even its log
+    CHECK_FALSE(fs::exists(root / "out.msh"));
 }

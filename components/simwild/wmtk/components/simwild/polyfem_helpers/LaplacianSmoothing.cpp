@@ -106,21 +106,22 @@ void laplacian_smoothing(nlohmann::json json_params)
     if (prepared.inputs_only) {
         return;
     }
+    check_result_layout(prepared.input);
     const std::unique_ptr<PolyfemBackend> backend = operation_backend(prepared);
 
     // One solve, no contact and no outer loop: `step_run_polyfem_single` writes the same
     // JSON again itself, which is mirrored rather than skipped so the two engines touch the
     // file the same number of times.
-    run_polyfem_single(
+    const Eigen::MatrixXd solution = run_polyfem_single(
         *backend,
         prepared.sim_json,
         prepared.sim_json_path,
         prepared.sim_out_dir);
 
-    write_operation_result(prepared);
+    write_operation_result(prepared, solution);
 }
 
-void run_polyfem_single(
+Eigen::MatrixXd run_polyfem_single(
     PolyfemBackend& backend,
     const OrderedJson& sim_json,
     const std::filesystem::path& sim_json_path,
@@ -136,6 +137,7 @@ void run_polyfem_single(
         result.statuses,
         result.lines,
         allow_out_of_iterations(sim_json));
+    return result.solution;
 }
 
 } // namespace wmtk::components::simwild::polyfem_helpers

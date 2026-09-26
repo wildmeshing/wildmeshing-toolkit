@@ -13,8 +13,9 @@ namespace wmtk::components::simwild::polyfem_helpers {
  *
  * `json_params` is a simwild job already verified against the simwild spec and with its defaults
  * injected, which is what `simwild()` hands over.
- * It is `prepare_minimum_separation` followed, unless `inputs_only` is set, by the outer loop on
- * the in-process backend and the write-back of the deformed mesh.
+ * It is `prepare_minimum_separation` followed, unless `inputs_only` is set, by
+ * `check_result_layout`, the outer loop on the in-process backend and the write-back of the
+ * deformed mesh.
  */
 void minimum_separation(nlohmann::json json_params);
 
@@ -46,8 +47,12 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params);
  * -- and rewritten to `sep_json_path` before every solve, so what polyfem reads is the same file
  * on both engines. On return it holds the LAST attempted iteration, which is also the state the
  * Python left on disk.
+ *
+ * @return the solution of that same last solve, which is the one the Python applied to the mesh
+ * (it read the solution.txt every solve overwrites): the probe's when the bodies were already
+ * separated, and a rolled-back overshoot's when the allowance ran out on one.
  */
-void run_polyfem_dhat(
+Eigen::MatrixXd run_polyfem_dhat(
     PolyfemBackend& backend,
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,
@@ -63,8 +68,10 @@ void run_polyfem_dhat(
  * deficit ~ kappa^exponent for the kappa that lands at half the tolerance band, starting from the
  * theoretical exponent -1/2 and re-fitting it in log-log from the last two solves once they exist;
  * the multiplier is clamped to `max_stiffness_multiplier` per step to protect Newton conditioning.
+ *
+ * @return the solution of the last solve, as `run_polyfem_dhat` returns it.
  */
-void run_polyfem_stiffness(
+Eigen::MatrixXd run_polyfem_stiffness(
     PolyfemBackend& backend,
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,

@@ -95,6 +95,8 @@ WarmStartPaths open_warm_start(
  * with its own per-iteration log, and its output is checked. Both Python loops do these four steps
  * identically; what they do with the answer is where they part.
  *
+ * @param[out] solution this solve's solution. Both loops overwrite it on every solve, rolled back
+ * or not, and return whatever it holds when they end: that is what the deformed mesh is made of.
  * @return the active distance polyfem reported, or nothing when it reported none -- the loops stop
  * on that, and the message they both print for it is here so there is one copy of it.
  */
@@ -104,7 +106,8 @@ std::optional<double> solve_iteration(
     const std::filesystem::path& sep_json_path,
     const std::filesystem::path& sim_out_dir,
     const WarmStartPaths& state,
-    const int64_t iter)
+    const int64_t iter,
+    Eigen::MatrixXd& solution)
 {
     if (backend.has_warm_start()) {
         curr_json["input"]["data"]["state"] = state.prev.string();
@@ -120,6 +123,7 @@ std::optional<double> solve_iteration(
         result.statuses,
         result.lines,
         allow_out_of_iterations(curr_json));
+    solution = result.solution;
 
     if (!result.active_distance.has_value()) {
         logger().info("No active distance found in output — contact not triggered. Stopping.");
@@ -313,13 +317,15 @@ void minimum_separation(nlohmann::json json_params)
     if (prepared.inputs_only) {
         return;
     }
+    check_result_layout(prepared.input);
     const std::unique_ptr<PolyfemBackend> backend = operation_backend(prepared);
 
     // The outer loop rewrites separation.json before every solve, so what stays on disk
     // afterwards is the last iteration's document -- the same file the Python leaves.
     const std::string strategy = prepared.cfg["strategy"];
+    Eigen::MatrixXd solution;
     if (strategy == "dhat") {
-        run_polyfem_dhat(
+        solution = run_polyfem_dhat(
             *backend,
             prepared.sim_json,
             prepared.sim_json_path,
@@ -328,7 +334,7 @@ void minimum_separation(nlohmann::json json_params)
     } else {
         // jse has already refused anything but "dhat" and "stiffness" against the same
         // spec `run()` checks by hand, so there is no third branch to raise on.
-        run_polyfem_stiffness(
+        solution = run_polyfem_stiffness(
             *backend,
             prepared.sim_json,
             prepared.sim_json_path,
@@ -336,10 +342,10 @@ void minimum_separation(nlohmann::json json_params)
             prepared.cfg);
     }
 
-    write_operation_result(prepared);
+    write_operation_result(prepared, solution);
 }
 
-void run_polyfem_dhat(
+Eigen::MatrixXd run_polyfem_dhat(
     PolyfemBackend& backend,
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,
@@ -368,6 +374,7 @@ void run_polyfem_dhat(
     std::optional<double> prev_active;
     bool stall_warned = false;
     std::optional<double> dhat_high; // smallest dhat known to overshoot (bracket upper bound)
+    Eigen::MatrixXd solution;
 
     if (!has_init_dhat) {
         // Zero-stiffness probe: no contact force, so nothing moves and the reported "active
@@ -385,6 +392,7 @@ void run_polyfem_dhat(
             probe.statuses,
             probe.lines,
             /*allow_out_of_iterations=*/true);
+        solution = probe.solution;
         const std::optional<double> gap_line = probe.active_distance;
         const double gap0 = gap_line.value_or(INF);
         if (!(gap0 < sep)) {
@@ -393,7 +401,7 @@ void run_polyfem_dhat(
                 gap_line.has_value() ? fmt::format("{:.6e}", gap0) : "not within dhat",
                 sep);
             backend.reset_warm_start();
-            return;
+            return solution;
         }
         logger().info("Probe: initial gap {:.6e}", gap0);
         committed_dhat = gap0;
@@ -413,7 +421,7 @@ void run_polyfem_dhat(
     for (int64_t iter = 0; iter < n_iterations; ++iter) {
         last_iter = iter;
         const std::optional<double> parsed =
-            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter);
+            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter, solution);
         if (!parsed.has_value()) {
             break;
         }
@@ -488,9 +496,10 @@ void run_polyfem_dhat(
 
     log_if_out_of_iterations(last_iter, n_iterations, active_dist);
     backend.reset_warm_start();
+    return solution;
 }
 
-void run_polyfem_stiffness(
+Eigen::MatrixXd run_polyfem_stiffness(
     PolyfemBackend& backend,
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,
@@ -514,6 +523,7 @@ void run_polyfem_stiffness(
     const WarmStartPaths state = open_warm_start(backend, curr_json, sim_out_dir);
     std::optional<double> prev_kappa;
     std::optional<double> prev_deficit;
+    Eigen::MatrixXd solution;
 
     const int64_t n_iterations = max_iterations(cfg);
     require_one_iteration(n_iterations);
@@ -526,7 +536,7 @@ void run_polyfem_stiffness(
         // it, so the barrier stiffness has to be in it by then.
         curr_json["solver"]["contact"]["barrier_stiffness"] = kappa;
         const std::optional<double> parsed =
-            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter);
+            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter, solution);
         if (!parsed.has_value()) {
             break;
         }
@@ -577,6 +587,7 @@ void run_polyfem_stiffness(
 
     log_if_out_of_iterations(last_iter, n_iterations, active_dist);
     backend.reset_warm_start();
+    return solution;
 }
 
 } // namespace wmtk::components::simwild::polyfem_helpers

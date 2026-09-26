@@ -36,7 +36,7 @@ include(CPM)
 CPMAddPackage(
     NAME polyfem
     GITHUB_REPOSITORY polyfem/polyfem
-    # c7669ebb7 = b0d511c4b (branch tip 2026-05-01) + two commits of 2026-09-16: spdlog 1.17 / fmt 11
+    # e9964f6ed = b0d511c4b (branch tip 2026-05-01) + two commits of 2026-09-16: spdlog 1.17 / fmt 11
     # compatibility, and use_rest_shape_measure set only when the ipc-toolkit provides the field;
     # + three of 2026-09-18 the in-process backend needs: each contact form keeps its collision-set
     # cache in the form (it was a process-wide static), ALSolver records the termination status
@@ -44,8 +44,10 @@ CPMAddPackage(
     # the collision proxy can be handed to a State in memory instead of through files;
     # + one of 2026-09-22: SlimSmooth.cpp declares the SSE intrinsics libigl's SVD code uses, without
     # which every x86-64 build failed (ipc-toolkit's EIGEN_DONT_VECTORIZE keeps Eigen from
-    # including them).
-    GIT_TAG c7669ebb781797406ec3f35da8f2e437ad2d4cae
+    # including them);
+    # + one of 2026-09-25: a contact solve that starts free of intersections no longer writes
+    # no_intersection.obj, so the in-process solve leaves no file behind.
+    GIT_TAG e9964f6ed6b9a6111d0bb4a5e5cc40432cdd3bdb
     OPTIONS
     "POLYFEM_WITH_TESTS OFF"
     "POLYFEM_WITH_PYTHON OFF"

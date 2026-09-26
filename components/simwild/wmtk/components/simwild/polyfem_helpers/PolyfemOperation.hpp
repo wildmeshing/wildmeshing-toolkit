@@ -99,12 +99,30 @@ bool allow_out_of_iterations(const OrderedJson& doc);
 std::unique_ptr<PolyfemBackend> operation_backend(PreparedOperation& prepared);
 
 /**
- * @brief Write the solved mesh to `<output>.msh`, which is the last thing both operations do.
- *
- * Applied to the ORIGINAL mesh, which is what preserves the caller's full tag set on the output;
- * the node tags match between the original and the reduced mesh, so solution.txt indexes
- * consistently against either.
+ * @brief Throw unless `write_operation_result` can write a result for `input`: the file has to be
+ * in the layout wmtk::MshData writes, which is checked by rebuilding it with nothing moved and
+ * comparing (`require_rebuildable` in PolyfemOperation.cpp). Both operations call it before their
+ * first solve, so an input the result could not be written into is refused before any time is
+ * spent on it.
  */
-void write_operation_result(const PreparedOperation& prepared);
+void check_result_layout(const std::string& input);
+
+/**
+ * @brief Write the solved mesh to `<output>.msh`, which is the last thing both operations do.
+ * Mirrors the arithmetic of `polyfem_utils.step_write_deformed_msh`.
+ *
+ * The result is the caller's ORIGINAL mesh -- every physical group, including one of a lower
+ * dimension such as simwild's "EnvelopeSurface", in file order, with its cells in file order and
+ * its element and node tags -- with only the mesh nodes moved. It is rebuilt with wmtk::MshData
+ * (`load`, then per group `get_VF` and the matching `add_*`), which reproduces exactly the files
+ * written in its own layout (`check_result_layout`) and nothing else, and saved binary, which
+ * stores every coordinate exactly.
+ *
+ * `solution` is `SolveResult::solution` of the operation's last solve, one row per node of the
+ * file, in solver units. The rows of the mesh nodes (the first group's) are divided by the
+ * configuration's `scale` and then added, as the Python does, so both engines round at the same
+ * two places; the nodes of a lower-dimensional group keep their positions.
+ */
+void write_operation_result(const PreparedOperation& prepared, const Eigen::MatrixXd& solution);
 
 } // namespace wmtk::components::simwild::polyfem_helpers

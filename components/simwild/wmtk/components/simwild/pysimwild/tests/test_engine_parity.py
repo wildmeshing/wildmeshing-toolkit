@@ -817,48 +817,6 @@ def _assert_steered_on_the_logged_distance(root, trail):
 
 
 # --------------------------------------------------------------------------
-# The write-back on its own: one solution applied exactly
-# --------------------------------------------------------------------------
-
-@needs_polyfem
-@pytest.mark.parametrize("mesh_fixture, dim", [("boxes3d", 3), ("jagged2d", 2)])
-def test_deformed_msh_write_back_matches(request, tmp_path, mesh_fixture, dim):
-    """The deformed mesh is the input mesh with the solution added, exactly: from the solution on,
-    every step is deterministic, so the write-back is held to an exact value.
-
-    The solution is a real one: the C++ engine runs the smoothing operation, and its write-back
-    reads the solution.txt polyfem wrote, at 100 significant digits -- far past the 17 a double
-    needs, so the file carries every value exactly.
-    """
-    mesh = request.getfixturevalue(mesh_fixture)
-    scale = 1e-3
-    cpp_out = _run_cpp_engine(mesh, "laplacian_smoothing", tmp_path / "cpp",
-                              interfaces=[{"region": "tag_0", "filter": "ambient"}], scale=scale)
-    solution = tmp_path / "cpp" / "smooth_output" / "solution.txt"
-
-    original, cpp = _gmsh_reduced_mesh(mesh), _gmsh_reduced_mesh(cpp_out)
-    _assert_same_mesh_structure(original, cpp, "input and deformed meshes",
-                                sides=("the input", "the write-back"))
-
-    # What the write-back has to produce: the original coordinate plus the displacement in mesh
-    # units, `u / scale`, componentwise, with the components the solution does not carry (z in 2D)
-    # left untouched. The C++ writes every coordinate as the shortest decimal that reads back as
-    # the same double, so its file carries that value exactly. (gmsh's ASCII msh writer, which the
-    # Python engine used, prints "%.16g" and loses the last bits of about 40% of them -- measured:
-    # 122 of 300 pseudo-random values do not survive that round trip.)
-    # The fixtures number their nodes 1..n, which is the row order of solution.txt.
-    u = np.loadtxt(solution)[np.array(original["node_tags"]) - 1]
-    exact = original["coords"].copy()
-    exact[:, :dim] += u / scale
-    assert np.array_equal(cpp["coords"], exact), (
-        "the c++ coordinates are not original + u/scale; max relative difference {:.3e}".format(
-            np.max(np.abs(cpp["coords"] - exact) / np.maximum(np.abs(exact), 1.0))))
-    if dim == 2:
-        # The solution has two columns, so the third coordinate is carried over untouched.
-        assert np.array_equal(cpp["coords"][:, 2], np.zeros(len(cpp["coords"])))
-
-
-# --------------------------------------------------------------------------
 # End to end, with the real solver
 # --------------------------------------------------------------------------
 
