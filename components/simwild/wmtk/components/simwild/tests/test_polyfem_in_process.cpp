@@ -42,6 +42,7 @@ using wmtk::components::simwild::polyfem_helpers::prepare_laplacian_smoothing;
 using wmtk::components::simwild::polyfem_helpers::prepare_minimum_separation;
 using wmtk::components::simwild::polyfem_helpers::prepare_state;
 using wmtk::components::simwild::polyfem_helpers::PreparedOperation;
+using wmtk::components::simwild::polyfem_helpers::ReducedMsh;
 using wmtk::components::simwild::polyfem_helpers::run_polyfem_single;
 using wmtk::components::simwild::polyfem_helpers::SolveInputs;
 using wmtk::components::simwild::polyfem_helpers::split_lines;
@@ -544,24 +545,21 @@ void cube(const double x0, Eigen::MatrixXd& V, Eigen::MatrixXi& T)
         1, 5, 6, 8;
 }
 
-/// Two cubes with a `gap` between them along x, as one mesh with one group.
-mshio::MshSpec two_cubes(const double gap)
+/// Two cubes with a `gap` between them along x, as one reduced mesh whose cells are all body.
+ReducedMsh two_cubes(const double gap)
 {
-    std::vector<std::array<double, 3>> coords;
-    std::vector<std::vector<size_t>> cells;
-    for (const double x0 : {0.0, 1.0 + gap}) {
+    ReducedMsh out;
+    out.dim = 3;
+    out.vertices.resize(18, 3);
+    out.cells.resize(24, 4);
+    for (int k = 0; k < 2; ++k) {
         Eigen::MatrixXd V;
         Eigen::MatrixXi T;
-        cube(x0, V, T);
-        const size_t offset = coords.size();
-        for (int v = 0; v < V.rows(); ++v) coords.push_back({V(v, 0), V(v, 1), V(v, 2)});
-        for (int t = 0; t < T.rows(); ++t) {
-            std::vector<size_t> cell;
-            for (int k = 0; k < 4; ++k) cell.push_back(offset + size_t(T(t, k)) + 1);
-            cells.push_back(cell);
-        }
+        cube(k == 0 ? 0.0 : 1.0 + gap, V, T);
+        out.vertices.middleRows(9 * k, 9) = V;
+        out.cells.middleRows(12 * k, 12) = T.array() + 9 * k;
     }
-    return groups_msh(3, coords, {{"body", cells}});
+    return out;
 }
 
 /// A simulation JSON of the shape the operations build: AMIPS, the smooth contact formulation,

@@ -51,10 +51,8 @@ ReducedMesh reduce_mesh(
     out.content = polyfem_reduced_msh(input, ambient_like_tags);
     if (inputs_only) {
         write_polyfem_reduced_msh(out.path.string(), out.content);
-        out.info = get_mesh_info(out.path.string());
-    } else {
-        out.info = get_mesh_info(out.content);
     }
+    out.info = get_mesh_info(out.content);
     logger().info("Reduced material tags : {}  dim={}", out.info.tags, out.info.dim);
     return out;
 }

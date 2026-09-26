@@ -22,7 +22,6 @@
 #include <fstream>
 #include <mutex>
 #include <optional>
-#include <unordered_map>
 
 namespace wmtk::components::simwild::polyfem_helpers {
 
@@ -316,9 +315,13 @@ polyfem::mesh::CollisionProxyData collision_proxy(
 }
 
 /**
- * @brief The reduced mesh as `polyfem::mesh::Mesh::create(path)` reads it out of the file saved
- * from `spec`: `MshReader::load`'s vertices, cells and body ids, for the only cells the reduced
- * mesh has (linear triangles, or linear tetrahedra).
+ * @brief The reduced mesh as `polyfem::mesh::Mesh::create(path)` reads it out of the file
+ * `write_polyfem_reduced_msh` saves from `msh`: `MshReader::load`'s vertices, cells and body ids,
+ * for the only cells the reduced mesh has (linear triangles, or linear tetrahedra).
+ *
+ * The file's node tags are exactly 1..n, in row order, so MshReader puts every node at its row
+ * (tag - 1) and every cell's vertices at the rows `msh.cells` names. A cell's body id is the first
+ * physical group of its entity, and the file has one entity per group, carrying that group's tag.
  *
  * `Mesh::create(path)` then also attaches the higher-order nodes and the cell weights of the
  * file. That step is not repeated here, and the one trace it leaves is `Mesh::orders()`: all ones
@@ -326,69 +329,14 @@ polyfem::mesh::CollisionProxyData collision_proxy(
  * empty order list and a list of ones build the same basis, and the State comparison in
  * tests/test_polyfem_in_process.cpp finds no other difference.
  */
-std::unique_ptr<polyfem::mesh::Mesh> reduced_mesh(const mshio::MshSpec& spec)
+std::unique_ptr<polyfem::mesh::Mesh> reduced_mesh(const ReducedMsh& msh)
 {
-    const int n_vertices = int(spec.nodes.num_nodes);
-    const int max_tag = int(spec.nodes.max_node_tag);
-    int dim = -1;
-    for (const auto& block : spec.elements.entity_blocks) {
-        dim = std::max(dim, block.entity_dim);
-    }
-
-    // Node placement is MshReader's own rule: the gmsh tag minus one when the tags are exactly
-    // 1..n, otherwise the order of appearance, with the same warning.
-    if (n_vertices != max_tag) {
-        polyfem::logger().warn(
-            "MSH file contains more node tags than nodes, condensing nodes which will break input "
-            "node ordering.");
-    }
-    Eigen::MatrixXd vertices(n_vertices, dim);
-    std::vector<int> tag_to_index(size_t(max_tag) + 1, -1);
-    int index = 0;
-    for (const auto& block : spec.nodes.entity_blocks) {
-        for (size_t i = 0; i < block.num_nodes_in_block; ++i) {
-            const int node_id = n_vertices != max_tag ? index++ : int(block.tags[i]) - 1;
-            for (int d = 0; d < dim; ++d) vertices(node_id, d) = block.data[3 * i + size_t(d)];
-            tag_to_index[block.tags[i]] = node_id;
-        }
-    }
-
-    // Each entity's body id is its first physical group, 0 when it has none.
-    std::unordered_map<int, int> entity_to_body;
-    const auto map_entities = [&entity_to_body](const auto& entities) {
-        for (const auto& e : entities) {
-            entity_to_body[e.tag] =
-                e.physical_group_tags.empty() ? 0 : e.physical_group_tags.front();
-        }
-    };
-    if (dim == 2) {
-        map_entities(spec.entities.surfaces);
-    } else {
-        map_entities(spec.entities.volumes);
-    }
-
-    size_t n_cells = 0;
-    for (const auto& block : spec.elements.entity_blocks) {
-        if (block.entity_dim == dim) n_cells += block.num_elements_in_block;
-    }
-    const int cols = dim + 1;
-    Eigen::MatrixXi cells(Eigen::Index(n_cells), cols);
-    std::vector<int> body_ids(n_cells);
-    Eigen::Index c = 0;
-    for (const auto& block : spec.elements.entity_blocks) {
-        if (block.entity_dim != dim) continue;
-        const size_t stride = mshio::nodes_per_element(block.element_type) + 1;
-        const auto body = entity_to_body.find(block.entity_tag);
-        for (size_t j = 0; j < block.num_elements_in_block; ++j, ++c) {
-            for (int k = 0; k < cols; ++k) {
-                cells(c, k) = tag_to_index[block.data[j * stride + 1 + size_t(k)]];
-            }
-            body_ids[size_t(c)] = body != entity_to_body.end() ? body->second : 0;
-        }
-    }
-
-    std::unique_ptr<polyfem::mesh::Mesh> mesh =
-        polyfem::mesh::Mesh::create(vertices, cells, /*non_conforming=*/false);
+    std::vector<int> body_ids(size_t(msh.cells.rows()), ReducedMsh::body_tag);
+    std::fill_n(body_ids.begin(), msh.n_ambient, ReducedMsh::ambient_tag);
+    std::unique_ptr<polyfem::mesh::Mesh> mesh = polyfem::mesh::Mesh::create(
+        msh.vertices.leftCols(msh.dim),
+        msh.cells,
+        /*non_conforming=*/false);
     mesh->set_body_ids(body_ids);
     return mesh;
 }
@@ -409,10 +357,8 @@ std::unique_ptr<polyfem::mesh::Mesh> reduced_mesh(const mshio::MshSpec& spec)
  * build a mesh the file route does not. `advanced.refinement_location` is read only when n_refs
  * is positive, so it needs no check.
  */
-std::unique_ptr<polyfem::mesh::Mesh> fem_mesh(
-    const polyfem::Units& units,
-    const nlohmann::json& j_mesh,
-    const mshio::MshSpec& spec)
+std::unique_ptr<polyfem::mesh::Mesh>
+fem_mesh(const polyfem::Units& units, const nlohmann::json& j_mesh, const ReducedMsh& msh)
 {
     const auto refuse = [](const std::string& key) {
         log_and_throw_error(
@@ -446,7 +392,7 @@ std::unique_ptr<polyfem::mesh::Mesh> fem_mesh(
         refuse("volume_selection");
     }
 
-    std::unique_ptr<polyfem::mesh::Mesh> mesh = reduced_mesh(spec);
+    std::unique_ptr<polyfem::mesh::Mesh> mesh = reduced_mesh(msh);
 
     polyfem::RowVectorNd min, max;
     mesh->bounding_box(min, max);
@@ -675,7 +621,7 @@ void prepare_state(
     if (!geometry.is_array() || geometry.size() != 1) {
         log_and_throw_error("the simulation JSON must have exactly one geometry entry");
     }
-    const mshio::MshSpec& msh =
+    const ReducedMsh& msh =
         named_content(inputs.meshes, geometry[0].at("mesh"), "geometry[0].mesh");
 
     std::vector<polyfem::solver::ConstraintData> hard;

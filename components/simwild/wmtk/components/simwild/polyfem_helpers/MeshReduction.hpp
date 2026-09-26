@@ -2,7 +2,7 @@
 
 #include "TaggedMesh.hpp"
 
-#include <mshio/mshio.h>
+#include <wmtk/Types.hpp>
 
 #include <map>
 #include <set>
@@ -33,31 +33,60 @@ ReducedBody classify_reduced_cell(
     const std::vector<int64_t>& sorted_vertices);
 
 /**
+ * @brief The reduced mesh polyfem solves on: the content of `<stem>_polyfem.msh`, as arrays. Built
+ * once (`polyfem_reduced_msh`), and then written (`write_polyfem_reduced_msh`) in inputs_only mode
+ * or handed to polyfem in memory (PolyfemInProcess.cpp) otherwise; the material groups of the
+ * simulation JSON are read off it in both modes (`get_mesh_info`).
+ *
+ * Two physical groups, "ambient" with tag `ambient_tag` and "body" with tag `body_tag`: the first
+ * `n_ambient` rows of `cells` are ambient, the rest body. The file numbers its elements from 1 in
+ * this row order, and puts the ambient cells on entity 1 and the body cells on entity 2.
+ */
+struct ReducedMsh
+{
+    static constexpr int ambient_tag = 1;
+    static constexpr int body_tag = 2;
+
+    int dim = 3; ///< 2 (triangles) or 3 (tetrahedra)
+    /// Every node of the input, in ascending gmsh tag order, with all three coordinates the input
+    /// stores. The file numbers them 1..n in this row order, which is the input's own numbering
+    /// when its tags are 1..n.
+    MatrixXd vertices;
+    /// One row per cell: its dim + 1 rows of `vertices`, in the vertex order the input stores.
+    MatrixXi cells;
+    int64_t n_ambient = 0; ///< the number of ambient cells, which are the first rows of `cells`
+};
+
+/**
  * @brief Reduce a multi-tag mesh to the 2-body ("ambient"/"body") mesh polyfem solves on. Mirrors
  * `polyfem_utils._write_polyfem_reduced_msh` up to the write.
  *
  * WMTK's `write_msh_groups` writes one copy of a multi-tagged cell per tag; polyfem reads the
  * copies as distinct elements, double-counting AMIPS and corrupting assembly. Cells are therefore
  * deduped by their vertex SET (the first copy's vertex order is the one kept) and classified by
- * the union of the copies' tag names, into two physical groups: "ambient" with tag 1 and "body"
- * with tag 2, element ids numbered from 1, ambient first.
+ * the union of the copies' tag names, into the two groups of `ReducedMsh`, ambient first, each in
+ * the order the cells first appear.
  *
- * Every original node tag is kept and the nodes are written in ascending tag order, which is what
- * makes polyfem's `in_node_to_node` the identity (input vertex id i <-> gmsh tag i+1) for both the
- * original and the reduced mesh -- the collision artifacts index either one.
- *
- * The result is the file's content as mshio saves it, set up for BINARY msh 4.1: mshio's ASCII
- * writer prints coordinates through a default ostream, which keeps 6 significant digits and would
- * round every coordinate away. Binary stores the doubles themselves, so the reduced mesh carries
- * exactly the coordinates the input had, which is at least as faithful as the gmsh ASCII (%.16g)
- * the Python engine writes -- and it is what makes the file and this content the same mesh.
+ * Every node of the input is kept, in ascending tag order, which is what makes polyfem's
+ * `in_node_to_node` the identity (input vertex id i <-> gmsh tag i+1) for both the original and
+ * the reduced mesh -- the collision artifacts index either one.
  */
-mshio::MshSpec polyfem_reduced_msh(
+ReducedMsh polyfem_reduced_msh(
     const std::string& input_msh,
     const std::vector<std::string>& ambient_like_tags);
 
-/// Save the reduced mesh to `output_msh`.
-void write_polyfem_reduced_msh(const std::string& output_msh, const mshio::MshSpec& reduced);
+/**
+ * @brief Save the reduced mesh to `output_msh` with wmtk::MshData, as binary msh 4.1: "ambient"
+ * and "body", each a physical group with one entity of its own tag; every node in the ambient
+ * entity's node block, and an empty node block for the body entity.
+ *
+ * Binary, because MshData's ASCII writer (mshio's) prints coordinates through a default ostream,
+ * which keeps 6 significant digits and would round every coordinate away. Binary stores the doubles
+ * themselves, so the file carries exactly the coordinates the input had, which is at least as
+ * faithful as the gmsh ASCII (%.16g) the Python engine writes -- and it is what makes the file and
+ * the arrays the same mesh.
+ */
+void write_polyfem_reduced_msh(const std::string& output_msh, const ReducedMsh& reduced);
 
 /// What `polyfem_utils.get_mesh_info` returns, in the same order as its 5-tuple.
 struct MeshInfo
@@ -70,18 +99,17 @@ struct MeshInfo
 };
 
 /**
- * @brief Read a .msh's material physical groups. Mirrors `polyfem_utils.get_mesh_info`.
+ * @brief The material physical groups of the reduced mesh. Mirrors `polyfem_utils.get_mesh_info`
+ * on the file `write_polyfem_reduced_msh` saves.
  *
  * The volume is a RUNNING sum (not a pairwise one) over the elements in the order the file lists
- * them -- physical group by physical group, entity by entity, element by element -- each term an
- * absolute determinant over 3 edge vectors / 6 in 3D, or half an absolute cross product in 2D.
- * That sum divides every AMIPS weight in the polyfem JSON, so the order and the per-term
- * arithmetic are part of the contract; see `numpy_det3` for the 3D determinant.
+ * them -- physical group by physical group, entity by entity, element by element, which for the
+ * reduced mesh is the row order of `cells` -- each term an absolute determinant over 3 edge
+ * vectors / 6 in 3D, or half an absolute cross product in 2D. That sum divides every AMIPS weight
+ * in the polyfem JSON, so the order and the per-term arithmetic are part of the contract; see
+ * `numpy_det3` for the 3D determinant. Both groups are always listed, an empty one with no
+ * elements and a zero volume, as the file lists both.
  */
-MeshInfo get_mesh_info(const std::string& msh_path);
-
-/// `get_mesh_info` on the mesh a .msh would be saved from. `read_grouped` walks a loaded file and
-/// a spec in memory with the same code, so the volumes are summed in the same order either way.
-MeshInfo get_mesh_info(const mshio::MshSpec& spec);
+MeshInfo get_mesh_info(const ReducedMsh& reduced);
 
 } // namespace wmtk::components::simwild::polyfem_helpers

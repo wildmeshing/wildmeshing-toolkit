@@ -50,7 +50,7 @@ std::filesystem::path sim_dir(const std::string& output, const std::string& subd
 struct ReducedMesh
 {
     std::filesystem::path path;
-    mshio::MshSpec content;
+    ReducedMsh content;
     MeshInfo info;
 };
 
@@ -64,9 +64,9 @@ struct ReducedMesh
  * unaffected either way, because it works on the proxy mesh and not on body ids.
  *
  * The file is `<input stem>_polyfem.msh` in the simulation input directory, where the Python engine
- * put it next to the other generated inputs. inputs_only writes it and reads the groups back off
- * it, as the Python did. A normal run writes no file and reads the groups off the content, in the
- * same order: the per-group volume is a running sum that divides every AMIPS weight in the
+ * put it next to the other generated inputs; only inputs_only writes it. The groups are read off
+ * the content in both modes, in the order the file lists them, where the Python read them back off
+ * the file: the per-group volume is a running sum that divides every AMIPS weight in the
  * simulation JSON, so this is what keeps that JSON the same byte for byte in both modes (checked
  * in tests/test_polyfem_in_process.cpp).
  */

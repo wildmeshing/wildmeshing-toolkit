@@ -55,7 +55,7 @@ struct SolveResult
  */
 struct SolveInputs
 {
-    std::map<std::string, mshio::MshSpec> meshes;
+    std::map<std::string, ReducedMsh> meshes;
     std::map<std::string, ConstraintHdf5> constraints;
     std::map<std::string, CollisionObj> collision_meshes;
     std::map<std::string, LinearMapHdf5> linear_maps;

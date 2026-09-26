@@ -29,23 +29,21 @@ using TagNames = std::set<std::string>;
  * entity (ascending tag, as `gmsh.model.getEntitiesForPhysicalGroup` hands them back), element by
  * element.
  *
- * `mesh_core.TaggedMesh.__init__`, `polyfem_utils.get_mesh_info` and
- * `polyfem_utils._write_polyfem_reduced_msh` each open the file and walk it themselves, and the
- * three walk it in exactly this order; what differs between them is only what they record per
- * element, so the traversal is done once here and each mirror keeps its own recording step.
+ * `mesh_core.TaggedMesh.__init__` and `polyfem_utils._write_polyfem_reduced_msh` each open the
+ * file and walk it themselves, and the two walk it in exactly this order; what differs between
+ * them is only what they record per element, so the traversal is done once here and each mirror
+ * keeps its own recording step.
  */
 struct GroupedMsh
 {
     int dim = 3;
     std::vector<int64_t> node_tags; ///< file order
     std::vector<std::array<double, 3>> node_coords; ///< file order, always three components
-    /// One entry per (group, entity, element) in traversal order: the group's name and tag, the
-    /// element's own tag and its vertex tags in the order the file stores them.
+    /// One entry per (group, entity, element) in traversal order: the group's name and the
+    /// element's vertex tags in the order the file stores them.
     struct Item
     {
         std::string group_name;
-        int64_t group_tag = 0;
-        int64_t element_tag = 0;
         std::vector<int64_t> nodes;
     };
     std::vector<Item> items;

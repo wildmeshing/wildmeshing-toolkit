@@ -4,8 +4,7 @@
 #include "PythonFormat.hpp"
 
 #include <wmtk/utils/Logger.hpp>
-
-#include <mshio/mshio.h>
+#include <wmtk/utils/io.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -49,13 +48,11 @@ ReducedBody classify_reduced_cell(
     return ReducedBody::skip; // tagless cell
 }
 
-mshio::MshSpec polyfem_reduced_msh(
+ReducedMsh polyfem_reduced_msh(
     const std::string& input_msh,
     const std::vector<std::string>& ambient_like_tags)
 {
     const GroupedMsh in = read_grouped(input_msh);
-    const int prim_dim = in.dim;
-    const int elem_type = prim_dim == 3 ? 4 : 2;
 
     // Sorted by tag so the reduced mesh's storage order is monotonic; see the header.
     std::vector<size_t> order(in.node_tags.size());
@@ -64,8 +61,19 @@ mshio::MshSpec polyfem_reduced_msh(
         return in.node_tags[a] < in.node_tags[b];
     });
 
+    ReducedMsh out;
+    out.dim = in.dim;
+    out.vertices.resize(Eigen::Index(order.size()), 3);
+    std::map<int64_t, int> row_of_tag;
+    for (size_t r = 0; r < order.size(); ++r) {
+        for (int d = 0; d < 3; ++d) {
+            out.vertices(Eigen::Index(r), d) = in.node_coords[order[r]][size_t(d)];
+        }
+        row_of_tag[in.node_tags[order[r]]] = int(r);
+    }
+
     // Cells in first-appearance order, keyed by their vertex SET; the first copy's vertex ORDER is
-    // the one written, and every copy's group name joins the cell's tag set.
+    // the one kept, and every copy's group name joins the cell's tag set.
     std::map<std::vector<int64_t>, size_t> index_of;
     std::vector<std::vector<int64_t>> cell_nodes;
     std::vector<TagNames> cell_tags;
@@ -82,158 +90,119 @@ mshio::MshSpec polyfem_reduced_msh(
     std::set<std::string> ambient_like(ambient_like_tags.begin(), ambient_like_tags.end());
     ambient_like.insert("ambient");
 
-    std::vector<std::vector<int64_t>> ambient_prims;
-    std::vector<std::vector<int64_t>> body_prims;
+    std::vector<size_t> ambient_cells;
+    std::vector<size_t> body_cells;
     for (size_t c = 0; c < cell_nodes.size(); ++c) {
         switch (classify_reduced_cell(cell_tags[c], ambient_like, sorted_copy(cell_nodes[c]))) {
-        case ReducedBody::ambient: ambient_prims.push_back(cell_nodes[c]); break;
-        case ReducedBody::body: body_prims.push_back(cell_nodes[c]); break;
+        case ReducedBody::ambient: ambient_cells.push_back(c); break;
+        case ReducedBody::body: body_cells.push_back(c); break;
         case ReducedBody::skip: break;
         }
     }
 
-    // Two discrete entities, tags 1 and 2, one per physical group; the nodes all live on the
-    // ambient entity, as they do in the Python (entity ownership does not affect the element
-    // vertex references, which are node tags).
-    mshio::MshSpec spec;
-    spec.mesh_format.version = "4.1";
-    spec.mesh_format.file_type = 1; // binary: see the header
-    spec.mesh_format.data_size = sizeof(size_t);
-    spec.physical_groups.push_back({prim_dim, 1, "ambient"});
-    spec.physical_groups.push_back({prim_dim, 2, "body"});
-    if (prim_dim == 3) {
-        spec.entities.volumes.push_back({1, 0, 0, 0, 0, 0, 0, {1}, {}});
-        spec.entities.volumes.push_back({2, 0, 0, 0, 0, 0, 0, {2}, {}});
-    } else {
-        spec.entities.surfaces.push_back({1, 0, 0, 0, 0, 0, 0, {1}, {}});
-        spec.entities.surfaces.push_back({2, 0, 0, 0, 0, 0, 0, {2}, {}});
-    }
-
-    mshio::NodeBlock nodes;
-    nodes.entity_dim = prim_dim;
-    nodes.entity_tag = 1;
-    nodes.num_nodes_in_block = order.size();
-    nodes.tags.reserve(order.size());
-    nodes.data.reserve(3 * order.size());
-    for (const size_t i : order) {
-        nodes.tags.push_back(static_cast<size_t>(in.node_tags[i]));
-        nodes.data.push_back(in.node_coords[i][0]);
-        nodes.data.push_back(in.node_coords[i][1]);
-        nodes.data.push_back(in.node_coords[i][2]);
-    }
-    spec.nodes.num_entity_blocks = 1;
-    spec.nodes.num_nodes = order.size();
-    spec.nodes.min_node_tag = nodes.tags.empty() ? 0 : nodes.tags.front();
-    spec.nodes.max_node_tag = nodes.tags.empty() ? 0 : nodes.tags.back();
-    spec.nodes.entity_blocks.push_back(std::move(nodes));
-
-    size_t next_id = 1;
-    const auto add_block = [&](int entity_tag, const std::vector<std::vector<int64_t>>& prims) {
-        if (prims.empty()) return;
-        mshio::ElementBlock block;
-        block.entity_dim = prim_dim;
-        block.entity_tag = entity_tag;
-        block.element_type = elem_type;
-        block.num_elements_in_block = prims.size();
-        for (const auto& prim : prims) {
-            block.data.push_back(next_id++);
-            for (const int64_t v : prim) block.data.push_back(static_cast<size_t>(v));
+    out.n_ambient = int64_t(ambient_cells.size());
+    out.cells.resize(Eigen::Index(ambient_cells.size() + body_cells.size()), in.dim + 1);
+    Eigen::Index row = 0;
+    for (const auto* cells : {&ambient_cells, &body_cells}) {
+        for (const size_t c : *cells) {
+            for (int k = 0; k <= in.dim; ++k) {
+                out.cells(row, k) = row_of_tag.at(cell_nodes[c][size_t(k)]);
+            }
+            ++row;
         }
-        spec.elements.entity_blocks.push_back(std::move(block));
-    };
-    add_block(1, ambient_prims);
-    add_block(2, body_prims);
-    spec.elements.num_entity_blocks = spec.elements.entity_blocks.size();
-    spec.elements.num_elements = ambient_prims.size() + body_prims.size();
-    spec.elements.min_element_tag = 1;
-    spec.elements.max_element_tag = next_id - 1;
-    return spec;
+    }
+    return out;
 }
 
-void write_polyfem_reduced_msh(const std::string& output_msh, const mshio::MshSpec& reduced)
+void write_polyfem_reduced_msh(const std::string& output_msh, const ReducedMsh& reduced)
 {
-    mshio::save_msh(output_msh, reduced);
-    // The element blocks are one per non-empty group, entity 1 for ambient and 2 for body.
-    size_t n_ambient = 0;
-    size_t n_body = 0;
-    for (const auto& block : reduced.elements.entity_blocks) {
-        (block.entity_tag == 1 ? n_ambient : n_body) += block.num_elements_in_block;
+    const int64_t n_body = int64_t(reduced.cells.rows()) - reduced.n_ambient;
+    const auto vertex = [&reduced](const size_t i) {
+        return reduced.vertices.row(Eigen::Index(i));
+    };
+    const auto ambient_cell = [&reduced](const size_t i) {
+        return reduced.cells.row(Eigen::Index(i));
+    };
+    const auto body_cell = [&reduced](const size_t i) {
+        return reduced.cells.row(Eigen::Index(reduced.n_ambient) + Eigen::Index(i));
+    };
+
+    // Every node on the ambient entity. The body entity gets an empty node block, which MshData
+    // takes as "the element vertex ids are global", so both groups index the one node block.
+    wmtk::MshData msh;
+    if (reduced.dim == 3) {
+        msh.add_tet_vertices(size_t(reduced.vertices.rows()), vertex);
+        msh.add_tets(size_t(reduced.n_ambient), ambient_cell);
+        msh.add_physical_group("ambient");
+        msh.add_tet_vertices();
+        msh.add_tets(size_t(n_body), body_cell);
+        msh.add_physical_group("body");
+    } else {
+        msh.add_face_vertices(size_t(reduced.vertices.rows()), vertex);
+        msh.add_faces(size_t(reduced.n_ambient), ambient_cell);
+        msh.add_physical_group("ambient");
+        msh.add_face_vertices();
+        msh.add_faces(size_t(n_body), body_cell);
+        msh.add_physical_group("body");
     }
-    const bool is_3d = !reduced.entities.volumes.empty();
+    msh.save(output_msh, /*binary=*/true);
     logger().info(
         "  reduced  : {}  ({} ambient + {} body {})",
         output_msh,
-        n_ambient,
+        reduced.n_ambient,
         n_body,
-        is_3d ? "tets" : "triangles");
+        reduced.dim == 3 ? "tets" : "triangles");
 }
 
 namespace {
 
-MeshInfo mesh_info(const GroupedMsh& in)
+/// The running sum `get_mesh_info` makes over rows [first, end) of `reduced.cells`; see the header.
+double running_volume(const ReducedMsh& reduced, const Eigen::Index first, const Eigen::Index end)
 {
-    MeshInfo info;
-    info.dim = in.dim;
-    std::map<int64_t, size_t> row_of;
-    for (size_t i = 0; i < in.node_tags.size(); ++i) row_of[in.node_tags[i]] = i;
-
-    std::set<int64_t> tags;
-    for (const auto& [tag, name] : in.groups) {
-        if (!name.empty()) info.name_to_tag[name] = tag;
-        tags.insert(tag);
-
-        // Elements of the group, deduped by element tag and kept in traversal order: a group that
-        // spans several entities may list an element twice, and the Python's `seen` dict counts
-        // and integrates it once, at the position of its first appearance.
-        std::vector<const std::vector<int64_t>*> seen;
-        std::set<int64_t> seen_tags;
-        for (const auto& item : in.items) {
-            if (item.group_tag != tag) continue;
-            if (seen_tags.insert(item.element_tag).second) seen.push_back(&item.nodes);
+    double vol = 0.0;
+    for (Eigen::Index c = first; c < end; ++c) {
+        std::array<std::array<double, 3>, 4> v{};
+        for (int k = 0; k <= reduced.dim; ++k) {
+            for (int d = 0; d < 3; ++d) v[k][d] = reduced.vertices(reduced.cells(c, k), d);
         }
-
-        // Running (not pairwise) sum, in this order; see the header.
-        double vol = 0.0;
-        for (const auto* nodes : seen) {
-            std::array<std::array<double, 3>, 4> v{};
-            for (size_t k = 0; k < nodes->size(); ++k) {
-                v[k] = in.node_coords[row_of.at((*nodes)[k])];
+        if (reduced.dim == 3) {
+            double edges[3][3];
+            for (int e = 0; e < 3; ++e) {
+                for (int d = 0; d < 3; ++d) edges[e][d] = v[e + 1][d] - v[0][d];
             }
-            if (in.dim == 3) {
-                double edges[3][3];
-                for (int e = 0; e < 3; ++e) {
-                    for (int d = 0; d < 3; ++d) edges[e][d] = v[e + 1][d] - v[0][d];
-                }
-                vol += std::fabs(numpy_det3(edges)) / 6.0;
-            } else {
-                const double e1x = v[1][0] - v[0][0];
-                const double e1y = v[1][1] - v[0][1];
-                const double e2x = v[2][0] - v[0][0];
-                const double e2y = v[2][1] - v[0][1];
-                // Two rounded products, then a subtraction, then the halving: the Python is
-                // `0.5 * abs(e1[0] * e2[1] - e1[1] * e2[0])` on numpy scalars, which never fuses.
-                const double p1 = e1x * e2y;
-                const double p2 = e1y * e2x;
-                vol += 0.5 * std::fabs(p1 - p2);
-            }
+            vol += std::fabs(numpy_det3(edges)) / 6.0;
+        } else {
+            const double e1x = v[1][0] - v[0][0];
+            const double e1y = v[1][1] - v[0][1];
+            const double e2x = v[2][0] - v[0][0];
+            const double e2y = v[2][1] - v[0][1];
+            // Two rounded products, then a subtraction, then the halving: the Python is
+            // `0.5 * abs(e1[0] * e2[1] - e1[1] * e2[0])` on numpy scalars, which never fuses.
+            const double p1 = e1x * e2y;
+            const double p2 = e1y * e2x;
+            vol += 0.5 * std::fabs(p1 - p2);
         }
-        info.tag_to_count[tag] = static_cast<int64_t>(seen.size());
-        info.tag_to_volume[tag] = vol;
     }
-    info.tags.assign(tags.begin(), tags.end());
-    return info;
+    return vol;
 }
 
 } // namespace
 
-MeshInfo get_mesh_info(const std::string& msh_path)
+MeshInfo get_mesh_info(const ReducedMsh& reduced)
 {
-    return mesh_info(read_grouped(msh_path));
-}
-
-MeshInfo get_mesh_info(const mshio::MshSpec& spec)
-{
-    return mesh_info(read_grouped(spec));
+    constexpr int ambient = ReducedMsh::ambient_tag;
+    constexpr int body = ReducedMsh::body_tag;
+    const Eigen::Index n_ambient = Eigen::Index(reduced.n_ambient);
+    const Eigen::Index n_cells = reduced.cells.rows();
+    MeshInfo info;
+    info.tags = {ambient, body};
+    info.dim = reduced.dim;
+    info.name_to_tag = {{"ambient", ambient}, {"body", body}};
+    info.tag_to_count = {{ambient, n_ambient}, {body, n_cells - n_ambient}};
+    info.tag_to_volume = {
+        {ambient, running_volume(reduced, 0, n_ambient)},
+        {body, running_volume(reduced, n_ambient, n_cells)}};
+    return info;
 }
 
 } // namespace wmtk::components::simwild::polyfem_helpers

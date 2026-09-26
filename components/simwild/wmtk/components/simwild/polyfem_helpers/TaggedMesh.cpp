@@ -131,8 +131,6 @@ GroupedMsh read_grouped(const mshio::MshSpec& spec)
                     const size_t off = j * (npp + 1);
                     GroupedMsh::Item item;
                     item.group_name = ph->name;
-                    item.group_tag = ph->tag;
-                    item.element_tag = static_cast<int64_t>(block.data[off]);
                     item.nodes.reserve(npp);
                     for (size_t k = 0; k < npp; ++k) {
                         item.nodes.push_back(static_cast<int64_t>(block.data[off + 1 + k]));
