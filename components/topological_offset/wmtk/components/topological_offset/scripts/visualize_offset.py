@@ -1024,9 +1024,9 @@ def register_frame(prefix, points, dim, surf, err, mesh, sizing=None, diags=None
     # The front convergence diagnostics, on the offset surface, as heat maps. These are the two
     # halves of the convergence question side by side:
     #
-    #   "Newton step / bar"        what converged_single() actually tests at a vertex. <= 1 is
-    #                              "placed", and the loop may exit on it. Range fixed at 0..2 so
-    #                              the bar sits at the middle of the map.
+    #   "Newton step / bar"        the vertex measure the loop reports. <= 1 is "placed"; since
+    #                              2026-09-25 the loop exits on the face (2D: chord) measure, not
+    #                              on this. Range fixed at 0..2 so the bar sits at the middle.
     #   "residual / delta"         how far the vertex really is from the level set, which the
     #                              test never looks at. 0 is on it, 1 is a whole target distance
     #                              off. Range fixed at 0..1.

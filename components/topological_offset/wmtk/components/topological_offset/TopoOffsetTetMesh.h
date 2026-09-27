@@ -688,10 +688,11 @@ public:
     mutable char m_debug_last_phase = '?';
     /// See offset_gradient_tolerance(). Nothing sets it on the single-phase path; it stays 0.
     double m_gradient_reference = 0.;
-    /// The run's verdict: the front placed AND the final quality under stop_energy. Read by the
-    /// report and by throw_on_nonconvergence.
+    /// The run's verdict: the front resolved (EnergyCriterion::converged(): every offset face's
+    /// measure within the bar, nothing unmeasurable) AND the final quality under stop_energy.
+    /// Read by the report and by throw_on_nonconvergence.
     bool m_converged = false;
-    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is placed,
+    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is resolved,
     /// after the final pass when one ran. True when no pass was needed; false when the pass ended
     /// still over. m_quality_max_amips is the value it was judged on.
     bool m_quality_converged = true;
@@ -1296,8 +1297,9 @@ public:
      * @brief THE definition of "placed" for a vertex on the offset surface.
      *
      * Every decision in the component that asks "is the placement of this front vertex done"
-     * goes through here or through front_placed_by_ratio(): the loop's vertex test
-     * (EnergyCriterion::vertices_ok()), the corner qualification of the face-sag classification,
+     * goes through here or through front_placed_by_ratio(): the vertex measure the loop reports
+     * (EnergyCriterion::vertices_ok(), a diagnostic since 2026-09-25 -- the loop exits on the face
+     * measure), the corner qualification of the face-sag classification,
      * the collapse and swap guards' snapshot and the collapse guard's after-half, the
      * adaptive-smoothing stop, and the alignment-trap test. One notion, chosen by
      * front_conv_criterion, so a vertex cannot be placed for one of them and not for another.
@@ -1308,9 +1310,10 @@ public:
      * it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one a
      * hair outside the tube disqualified its whole face from ever being refined, with the face
      * then counted in neither `refinable` nor `n_at_floor` and so invisible to
-     * converged_single(). Measured in 2D on top_annots_uday: at turn 1, 50 of the 114 sagging
-     * chords were dropped that way, the worst of them sagging 74 tubes, because one end sat
-     * 1.02 tubes off the level set with a Newton step of 1e-9.     *
+     * the exit test of the time (converged_single(), removed 2026-09-25). Measured in 2D on
+     * top_annots_uday: at turn 1, 50 of the 114 sagging chords were dropped that way, the worst
+     * of them sagging 74 tubes, because one end sat 1.02 tubes off the level set with a Newton
+     * step of 1e-9.     *
      * front_conv_criterion "residual_error" makes that same residual_length() the measure for
      * every one of the callers above. That is not the defect coming back: the defect was the
      * SPLIT -- one test using the residual while the rest used stationarity -- not the use of the
@@ -1638,7 +1641,25 @@ public:
         double max_face_placed = 0.;
         Vector3d worst_placed_centroid = Vector3d::Zero();
         double tube = 0.;
+        /// Faces over the bar that the refinement does not take: no chord target below the
+        /// largest sizing scalar at their corners. Like every face over the bar they block the
+        /// exit. Two states share this count (see energy_criterion()): corners at the sizing
+        /// floor, which nothing can refine, and a longest edge still at least twice the target
+        /// length at the corners, which the split pass shortens. The first is n_corners_at_floor.
         size_t n_at_floor = 0;
+        double max_face_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector3d worst_at_floor_centroid = Vector3d::Zero();
+        double worst_at_floor_scalar = 0.; ///< the largest sizing scalar at the worst one's corners
+        /// Of n_at_floor, the faces whose largest corner scalar IS the floor: they cannot be
+        /// refined, so a run keeping them cannot converge. The loop warns with them every turn
+        /// they exist, and the verdict and the throw_on_nonconvergence message quote the same
+        /// sentence, sizing_floor_fact().
+        size_t n_corners_at_floor = 0;
+        double max_face_corners_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector3d worst_corners_at_floor_centroid = Vector3d::Zero();
+        /// The floor, max(min_sizing_scalar, min_edge_length / l), and which of the two it is.
+        double floor_scalar = 0.;
+        bool floor_from_min_edge_length = false;
         size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
         /// A face over the bar with all three corners placed: a, b are the ends of its LONGEST
         /// edge (the chord the target is derived from), c the third corner; len the longest
@@ -1653,13 +1674,32 @@ public:
             double measure, len;
         };
         std::vector<Refinable> refinable;
-        /// Every front vertex placed. Counted through front_vertex_placed() rather than
-        /// re-derived from max_vertex, so the loop's exit test and the per-vertex notion cannot
-        /// drift apart; max_vertex stays for the reporting.
+        /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
+        /// front_vertex_placed() rather than re-derived from max_vertex, so the reported count
+        /// and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests
+        /// it since 2026-09-25; see converged().
         bool vertices_ok() const { return n_unplaced == 0; }
         bool faces_ok() const { return max_face <= bar; }
-        bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
-        bool converged_single() const { return converged() && refinable.empty(); }
+        /// THE exit test, and the front half of the run's verdict: every offset face's measure
+        /// within the bar AND nothing unmeasurable. One quantity, the FACE measure
+        /// (face_conv_ratio()), now decides smoothing (it is the front smoothing energy,
+        /// StencilEnergy3D), refinement (which faces enter `refinable`) and termination -- the
+        /// decision of 2026-09-25. The vertex measure left the exit then and is reported only.
+        /// The stencil contains the corners, so a face within the bar bounds its corners' error
+        /// in the RMS sense over the stencil, not each corner separately.
+        ///
+        /// No refinable.empty() term: a refinable face is over the bar, so faces_ok() already
+        /// implies that nothing is refinable. Against the old exit (every vertex placed, nothing
+        /// unmeasurable, nothing refinable) two things change: a face over the bar that the
+        /// refinement does not take (n_at_floor) used to let the run end "converged" and now
+        /// blocks the exit, the loop warning when its corners are at the sizing floor; and a
+        /// front vertex over the bar no longer blocks it once every face it is a corner of is
+        /// within the bar.
+        bool converged() const { return faces_ok() && n_unmeasurable == 0; }
+        /// The n_at_floor faces as one sentence, for the turn's line (a warning when some have
+        /// their corners at the sizing floor), the verdict and the throw_on_nonconvergence
+        /// message alike, so all three state the same fact. Empty when n_at_floor is 0.
+        std::string sizing_floor_fact() const;
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_face) / bar : 0.; }
         /// Means over the measurable front vertices / offset faces; 0 when there are none.
         double avg_vertex() const { return n_vertices ? sum_vertex / double(n_vertices) : 0.; }

@@ -1499,13 +1499,14 @@ void TopoOffsetTriMesh::write_vtu(const std::string& path)
         Ltgt(k, 0) = m_params.l * S(k, 0);
     }
 
-    // Front convergence diagnostics, as point data: what the convergence test measures next to
+    // Front convergence diagnostics, as point data: the vertex measure the loop reports next to
     // what it does not, so the two can be compared at the same vertex.
     //
     //   front_conv_ratio      front_vertex_conv_ratio(): the remaining Newton step of the front
-    //                         objective along the move direction, over its bar. This is the ONLY
-    //                         per-vertex quantity converged_single() tests, so <= 1 reads as
-    //                         "placed" and the loop may exit on it.
+    //                         objective along the move direction, over its bar. <= 1 reads as
+    //                         "placed". The loop reports it and no longer exits on it: since
+    //                         2026-09-25 the exit tests the chord measure alone
+    //                         (EnergyCriterion::converged()).
     //   front_residual_length residual_length(): the vertex's actual distance to the level set,
     //                         in length units, comparable with target_distance. Never tested.
     //   front_grad_norm       |grad Phi| at the vertex. The objective's pull is built from this,

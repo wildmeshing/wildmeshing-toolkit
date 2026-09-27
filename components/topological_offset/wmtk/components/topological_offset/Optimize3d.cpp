@@ -2740,8 +2740,8 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     for (const auto& f : offset_surface_faces()) {
         const size_t va = f[0], vb = f[1], vc = f[2];
         if (!front(va) || !front(vb) || !front(vc)) continue;
-        // ONE call feeds both jobs: this number is the loop's face criterion (max_face /
-        // faces_ok()) AND what decides which faces the refinement is handed.
+        // ONE call feeds both jobs: this number is the loop's exit test (max_face / faces_ok(),
+        // see converged()) AND what decides which faces the refinement is handed.
         const double gn = face_conv_ratio(va, vb, vc); // the sag / the tube
         if (gn < 0.) {
             ++s.n_unmeasurable;
@@ -2804,7 +2804,28 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
                 if (sn < have) {
                     s.refinable.push_back({la, lb, lc, gn * s.tube, len});
                 } else {
+                    // Not handed to the refinement, for one of two reasons. Either the corners
+                    // are at the sizing floor (have <= s_floor): nothing can refine the face and
+                    // it blocks the exit for good. Or the chord target, which is at most half
+                    // the longest edge, is not below have x l: that edge is then at least twice
+                    // the largest target length at the corners, long enough for the split
+                    // pass's length gate, which shortens it with no lowering at all.
                     ++s.n_at_floor;
+                    s.floor_scalar = s_floor;
+                    s.floor_from_min_edge_length =
+                        m_offset_params.min_edge_length / l > m_offset_params.min_sizing_scalar;
+                    if (gn > s.max_face_at_floor) {
+                        s.max_face_at_floor = gn;
+                        s.worst_at_floor_centroid = centroid;
+                        s.worst_at_floor_scalar = have;
+                    }
+                    if (have <= s_floor) {
+                        ++s.n_corners_at_floor;
+                        if (gn > s.max_face_corners_at_floor) {
+                            s.max_face_corners_at_floor = gn;
+                            s.worst_corners_at_floor_centroid = centroid;
+                        }
+                    }
                 }
                 if (corners_placed && gn > s.max_face_placed) {
                     s.max_face_placed = gn;
@@ -2815,6 +2836,43 @@ TopoOffsetTetMesh::EnergyCriterion TopoOffsetTetMesh::energy_criterion()
     }
     m_phase = saved;
     return s;
+}
+
+std::string TopoOffsetTetMesh::EnergyCriterion::sizing_floor_fact() const
+{
+    if (n_at_floor == 0) return "";
+    const char* origin = floor_from_min_edge_length ? "min_edge_length / l" : "min_sizing_scalar";
+    if (n_corners_at_floor > 0) {
+        return fmt::format(
+            "{} offset face(s) over the bar have every corner at the sizing floor {:.4g} (from "
+            "{}), so they cannot be refined and the loop cannot converge on them: worst {:.4}x "
+            "the bar at centroid ({:.4}, {:.4}, {:.4}). Of the {} face(s) over the bar with no "
+            "chord target below the largest sizing scalar at their corners, the other {} have a "
+            "longest edge at least twice that target length, which the split pass shortens",
+            n_corners_at_floor,
+            floor_scalar,
+            origin,
+            max_face_corners_at_floor,
+            worst_corners_at_floor_centroid.x(),
+            worst_corners_at_floor_centroid.y(),
+            worst_corners_at_floor_centroid.z(),
+            n_at_floor,
+            n_at_floor - n_corners_at_floor);
+    }
+    return fmt::format(
+        "{} offset face(s) over the bar have no chord target below the largest sizing scalar at "
+        "their corners, and none has its corners at the sizing floor {:.4g} (from {}): each has "
+        "a longest edge at least twice the largest target length at its corners, which the "
+        "split pass shortens, so no refinement is needed; worst {:.4}x the bar at centroid "
+        "({:.4}, {:.4}, {:.4}), corner scalar {:.4g}",
+        n_at_floor,
+        floor_scalar,
+        origin,
+        max_face_at_floor,
+        worst_at_floor_centroid.x(),
+        worst_at_floor_centroid.y(),
+        worst_at_floor_centroid.z(),
+        worst_at_floor_scalar);
 }
 
 double TopoOffsetTetMesh::phase_b_front_gradient_linf()
@@ -4341,10 +4399,11 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
                                 : Vector3d::Zero();
         logger().info(
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-            "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})), faces max "
-            "{:.4}x (avg {:.4}x) (reported) | {} vertices, {} faces | faces over the bar: {}, "
-            "of which {} with all corners placed (worst {:.4}x, centroid ({:.4}, {:.4}, "
-            "{:.4})) | refinable faces {} (at the sizing floor {}) ========",
+            "max {:.4}x the bar (avg {:.4}x) (worst v{} at ({:.4}, {:.4}, {:.4})) (diagnostic), "
+            "faces max {:.4}x (avg {:.4}x), {} unmeasurable (the exit test) | {} vertices, {} "
+            "faces | faces over the bar: {}, of which {} with all corners placed (worst {:.4}x, "
+            "centroid ({:.4}, {:.4}, {:.4})) | refinable faces {} (at the sizing floor {}) "
+            "========",
             it + 1,
             budget,
             amips,
@@ -4357,6 +4416,7 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             wx.z(),
             ec.max_face,
             ec.avg_face(),
+            ec.n_unmeasurable,
             ec.n_vertices,
             ec.n_faces,
             ec.n_faces_over,
@@ -4367,6 +4427,22 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             ec.worst_placed_centroid.z(),
             ec.refinable.size(),
             ec.n_at_floor);
+        // Faces over the bar with every corner at the sizing floor block the exit (they are over
+        // the bar) and no refinement will ever take them, so a run that keeps them never
+        // converges: a warning, every turn they exist. The turn line's "at the sizing floor"
+        // count also holds faces whose corners are ABOVE the floor and whose longest edge the
+        // split pass will shorten -- on the deliverable cube at target_distance_rel 1e-2 /
+        // front_conv_rel 1e-4, every face it counted in turns 2, 4 and 5 (2, 2 and 16) was of
+        // that kind, with corner scalars down to 0.0625 against a floor of 0.002 -- so the same
+        // line says which, at info when none is at the floor. A turn with neither says nothing
+        // beyond its turn line.
+        if (ec.n_at_floor > 0) {
+            logger().log(
+                ec.n_corners_at_floor > 0 ? spdlog::level::warn : spdlog::level::info,
+                "\t[sizing floor] turn {}: {}",
+                it + 1,
+                ec.sizing_floor_fact());
+        }
         // Every place a proposed swap can be turned down, counted for this turn. See
         // TetOptimizerMesh::SwapReject: this is instrumentation for why an offset-surface flip
         // is never accepted, and the counters are reset each turn so the line is per-turn.
@@ -4442,18 +4518,21 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
         if (m_offset_params.debug_output) {
             write_optimization_debug_output(fmt::format("phase_{}S", it + 1));
         }
-        // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
-        // no face left to resolve -- then quality with the front frozen (below).
+        // Termination: every offset face's measure within the bar and nothing unmeasurable
+        // (EnergyCriterion::converged()) -- then quality with the front frozen (below). The face
+        // measure is the one quantity the smoothing minimises and the refinement reads; the
+        // vertex measure is reported on the turn line and in the verdict, and tested nowhere.
+        // Nothing refinable is implied, a refinable face being over the bar.
         //
         // The loop exits on the FIRST turn that meets the criterion. It used to additionally
         // demand that the previous turn lowered no sizing scalar -- one turn of hysteresis,
-        // which given that converged_single() requires an empty refinable set amounted to two
+        // which given that the exit required an empty refinable set amounted to two
         // consecutive turns without a lowering, the second of them converged. That was dropped
         // because it cost many turns waiting for two to line up, and TetWild's loop takes the
         // same choice: it breaks the moment its max energy is under stop_energy, that number
         // being a property of the mesh it is holding, where refinable is a request for work on
         // the next turn.
-        if (ec.converged_single()) {
+        if (ec.converged()) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the
@@ -4461,9 +4540,11 @@ void TopoOffsetTetMesh::optimize_offset_single_phase()
             m_quality_max_amips = amips;
             m_quality_converged = amips < bar;
             logger().info(
-                "Single phase: the front is placed after {} iteration(s) (phi {:.4}x); max AMIPS "
-                "{:.4} against stop {:.4}",
+                "Single phase: the front is resolved after {} iteration(s): every offset face "
+                "within the bar (faces max {:.4}x), nothing unmeasurable; front vertices max "
+                "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
                 it + 1,
+                ec.max_face / ec.bar,
                 ec.max_vertex / ec.bar,
                 amips,
                 bar);
@@ -4667,35 +4748,44 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     log_worst_dist_vertex();
 
     bool front_ok = false;
+    std::string floor_fact; // quoted again by throw_on_nonconvergence below
     {
         // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
-        // Two criteria, both required: the front placed, and the final quality under
-        // stop_energy (the finishing pass's verdict; see m_quality_converged).
-        front_ok = ec.converged_single();
+        // Two criteria, both required: the front resolved -- the loop's own exit test,
+        // EnergyCriterion::converged() -- and the final quality under stop_energy (the finishing
+        // pass's verdict; see m_quality_converged). The vertex numbers are printed as a
+        // diagnostic and decide nothing.
+        front_ok = ec.converged();
         m_converged = front_ok && m_quality_converged;
+        floor_fact = ec.sizing_floor_fact();
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front {} -- {} front vertices, max {:.4}x the bar (avg {:.4}x), {} faces "
-            "max {:.4}x (avg {:.4}x), {} unmeasurable | "
-            "faces to resolve {} (at the sizing floor {}) | front_conv {:.4} || "
-            "final quality {}: max AMIPS {:.4} vs stop_energy {}",
+            "{}{}: front {} -- tested (every face within the bar, nothing unmeasurable): {} "
+            "faces max {:.4}x the bar (avg {:.4}x), {} unmeasurable | diagnostic, not tested: {} "
+            "front vertices max {:.4}x the bar (avg {:.4}x), {} | faces to resolve {} (at the "
+            "sizing floor {}) | front_conv {:.4} || final quality {}: max AMIPS {:.4} vs "
+            "stop_energy {}{}{}",
             m_converged ? "Converged" : "Optimization did not converge",
             m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
-            front_ok ? "placed" : "NOT placed",
-            ec.n_vertices,
-            ec.max_vertex,
-            ec.avg_vertex(),
+            front_ok ? "resolved" : "NOT resolved",
             ec.n_faces,
             ec.max_face,
             ec.avg_face(),
             ec.n_unmeasurable,
+            ec.n_vertices,
+            ec.max_vertex,
+            ec.avg_vertex(),
+            ec.vertices_ok() ? std::string("all placed")
+                             : fmt::format("{} not placed", ec.n_unplaced),
             ec.refinable.size(),
             ec.n_at_floor,
             m_offset_params.front_conv,
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
-            m_params.stop_energy);
+            m_params.stop_energy,
+            floor_fact.empty() ? "" : " || ",
+            floor_fact);
     }
 
     // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
@@ -4738,15 +4828,17 @@ void TopoOffsetTetMesh::optimize_offset(const std::filesystem::path& output_file
     // still names which criterion missed before the throw.
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
         log_and_throw_error(
-            "Optimization did not converge and throw_on_nonconvergence is set: front {}, final "
-            "quality {} (max AMIPS {:.4} vs stop_energy {}). Ran {} of {} iterations; see the "
-            "warnings above.",
-            front_ok ? "placed" : "NOT placed",
+            "Optimization did not converge and throw_on_nonconvergence is set: front {} (every "
+            "face within the bar, nothing unmeasurable), final quality {} (max AMIPS {:.4} vs "
+            "stop_energy {}). Ran {} of {} iterations; see the warnings above.{}{}",
+            front_ok ? "resolved" : "NOT resolved",
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy,
             optimization_metrics.size(),
-            m_offset_params.max_iterations);
+            m_offset_params.max_iterations,
+            floor_fact.empty() ? "" : " ",
+            floor_fact);
     }
 }
 

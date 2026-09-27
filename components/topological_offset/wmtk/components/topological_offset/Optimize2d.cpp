@@ -2624,7 +2624,29 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
                 if (sn < have) {
                     s.refinable.push_back({va, vb, gn * s.tube, len});
                 } else {
+                    // Not handed to the refinement, for one of two reasons (the 3D twin's):
+                    // either the ends are at the sizing floor (have <= s_floor), and nothing can
+                    // refine the chord; or the chord target, at most half the chord, is not
+                    // below have x l, so the chord is at least twice the larger target length at
+                    // its ends and the split pass's length gate takes it.
                     ++s.n_at_floor;
+                    s.floor_scalar = s_floor;
+                    s.floor_from_min_edge_length =
+                        m_offset_params.min_edge_length / l > m_offset_params.min_sizing_scalar;
+                    const Vector2d mid =
+                        0.5 * (m_vertex_attribute[va].m_posf + m_vertex_attribute[vb].m_posf);
+                    if (gn > s.max_edge_at_floor) {
+                        s.max_edge_at_floor = gn;
+                        s.worst_at_floor_mid = mid;
+                        s.worst_at_floor_scalar = have;
+                    }
+                    if (have <= s_floor) {
+                        ++s.n_corners_at_floor;
+                        if (gn > s.max_edge_corners_at_floor) {
+                            s.max_edge_corners_at_floor = gn;
+                            s.worst_corners_at_floor_mid = mid;
+                        }
+                    }
                 }
                 if (gn > s.max_edge_placed) {
                     s.max_edge_placed = gn;
@@ -2636,6 +2658,40 @@ TopoOffsetTriMesh::EnergyCriterion TopoOffsetTriMesh::energy_criterion()
     }
     m_phase = saved;
     return s;
+}
+
+std::string TopoOffsetTriMesh::EnergyCriterion::sizing_floor_fact() const
+{
+    if (n_at_floor == 0) return "";
+    const char* origin = floor_from_min_edge_length ? "min_edge_length / l" : "min_sizing_scalar";
+    if (n_corners_at_floor > 0) {
+        return fmt::format(
+            "{} front chord(s) over the bar have both ends at the sizing floor {:.4g} (from {}), "
+            "so they cannot be refined and the loop cannot converge on them: worst {:.4}x the "
+            "bar at midpoint ({:.4}, {:.4}). Of the {} chord(s) over the bar with no chord target "
+            "below the larger sizing scalar at their ends, the other {} are at least twice that "
+            "target length, which the split pass shortens",
+            n_corners_at_floor,
+            floor_scalar,
+            origin,
+            max_edge_corners_at_floor,
+            worst_corners_at_floor_mid.x(),
+            worst_corners_at_floor_mid.y(),
+            n_at_floor,
+            n_at_floor - n_corners_at_floor);
+    }
+    return fmt::format(
+        "{} front chord(s) over the bar have no chord target below the larger sizing scalar at "
+        "their ends, and none has its ends at the sizing floor {:.4g} (from {}): each is at "
+        "least twice the larger target length at its ends, which the split pass shortens, so no "
+        "refinement is needed; worst {:.4}x the bar at midpoint ({:.4}, {:.4}), end scalar {:.4g}",
+        n_at_floor,
+        floor_scalar,
+        origin,
+        max_edge_at_floor,
+        worst_at_floor_mid.x(),
+        worst_at_floor_mid.y(),
+        worst_at_floor_scalar);
 }
 
 double TopoOffsetTriMesh::phase_b_front_gradient_linf()
@@ -4018,10 +4074,10 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                                 : Vector2d::Zero();
         logger().info(
             "======== single-phase turn {} / {}: max AMIPS {:.4} (stop {:.4}) | front vertices "
-            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})), edges max {:.4}x at the midpoint "
-            "(reported) | {} vertices, {} edges | edges over the tube: {}, of which {} with both "
-            "ends placed (worst {:.4}x, midpoint ({:.4}, {:.4})) | refinable edges {} "
-            "(at the sizing floor {}) ========",
+            "max {:.4}x the bar (worst v{} at ({:.4}, {:.4})) (diagnostic), edges max {:.4}x at "
+            "the midpoint, {} unmeasurable (the exit test) | {} vertices, {} edges | edges over "
+            "the tube: {}, of which {} with both ends placed (worst {:.4}x, midpoint ({:.4}, "
+            "{:.4})) | refinable edges {} (at the sizing floor {}) ========",
             it + 1,
             budget,
             amips,
@@ -4031,6 +4087,7 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             wx.x(),
             wx.y(),
             ec.max_edge,
+            ec.n_unmeasurable,
             ec.n_vertices,
             ec.n_edges,
             ec.n_edges_over,
@@ -4040,6 +4097,19 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             ec.worst_placed_mid.y(),
             ec.refinable.size(),
             ec.n_at_floor);
+        // Chords over the bar with both ends at the sizing floor block the exit (they are over
+        // the bar) and no refinement will ever take them, so a run that keeps them never
+        // converges: a warning, every turn they exist. The turn line's "at the sizing floor"
+        // count also holds chords whose ends are above the floor and which the split pass will
+        // shorten, so the same line says which, at info when none is at the floor. The 3D twin
+        // does the same for faces.
+        if (ec.n_at_floor > 0) {
+            logger().log(
+                ec.n_corners_at_floor > 0 ? spdlog::level::warn : spdlog::level::info,
+                "\t[sizing floor] turn {}: {}",
+                it + 1,
+                ec.sizing_floor_fact());
+        }
         logger().info(
             "\t[ops guard] turn {}: {} collapse(s) refused for raising the local sag of the "
             "offset surface ({} in the run so far)",
@@ -4073,9 +4143,17 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
                 ec.worst_placed_mid.y(),
                 n);
         }
-        // Termination: every front vertex's Newton step within the bar, none unmeasurable, and
-        // no chord left to resolve -- then quality with the front frozen (below).
-        if (ec.converged_single() && lowered_prev == 0) {
+        // Termination: every front chord's measure within the bar and nothing unmeasurable
+        // (EnergyCriterion::converged(), the 3D rule with the chord measure for the face
+        // measure), AND no sizing scalar lowered on the previous turn -- then quality with the
+        // front frozen (below). Nothing refinable is implied, a refinable chord being over the
+        // bar. The vertex measure is reported and tested nowhere; see converged() for what that
+        // means in 2D, where the chord measure does not sample the chord's ends.
+        //
+        // lowered_prev is 2D's own and stays: the lowering at the end of a turn is realized by
+        // the NEXT turn's split pass (see lowered_last_turn above), and 3D dropped the same
+        // grace turn for its cost in turns.
+        if (ec.converged() && lowered_prev == 0) {
             m_energy_verdict = ec;
             m_converged = true;
             // Provisional: the final pass below overwrites both when it runs. The verdict at the
@@ -4083,9 +4161,11 @@ void TopoOffsetTriMesh::optimize_offset_single_phase()
             m_quality_max_amips = amips;
             m_quality_converged = amips < bar;
             logger().info(
-                "Single phase: the front is placed after {} iteration(s) (phi {:.4}x); max AMIPS "
-                "{:.4} against stop {:.4}",
+                "Single phase: the front is resolved after {} iteration(s): every front chord "
+                "within the bar (edges max {:.4}x), nothing unmeasurable; front vertices max "
+                "{:.4}x (diagnostic); max AMIPS {:.4} against stop {:.4}",
                 it + 1,
+                ec.max_edge / ec.bar,
                 ec.max_vertex / ec.bar,
                 amips,
                 bar);
@@ -4310,32 +4390,43 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     log_worst_dist_vertex();
 
     bool front_ok = false;
+    std::string floor_fact; // quoted again by throw_on_nonconvergence below
     {
         // Measured at convergence when the loop converged (see m_energy_verdict), else now.
         const EnergyCriterion ec = m_energy_verdict ? *m_energy_verdict : energy_criterion();
-        // Two criteria, both required: the front placed, and the final quality under
-        // stop_energy (the finishing pass's verdict; see m_quality_converged).
-        front_ok = ec.converged_single();
+        // Two criteria, both required: the front resolved -- the loop's own exit test,
+        // EnergyCriterion::converged() -- and the final quality under stop_energy (the finishing
+        // pass's verdict; see m_quality_converged). The vertex numbers are printed as a
+        // diagnostic and decide nothing.
+        front_ok = ec.converged();
         m_converged = front_ok && m_quality_converged;
+        floor_fact = ec.sizing_floor_fact();
         logger().log(
             m_converged ? spdlog::level::info : spdlog::level::warn,
-            "{}{}: front {} -- {} front vertices, max {:.4}x the bar, {} unmeasurable | "
-            "chords to resolve {} (at the sizing floor {}) | front_conv {:.4}, "
-            "front_conv {:.4} || "
-            "final quality {}: max AMIPS {:.4} vs stop_energy {}",
+            "{}{}: front {} -- tested (every chord within the bar, nothing unmeasurable): {} "
+            "chords max {:.4}x the bar at the midpoint, {} unmeasurable | diagnostic, not "
+            "tested: {} front vertices max {:.4}x the bar, {} | chords to resolve {} (at the "
+            "sizing floor {}) | front_conv {:.4}, front_conv {:.4} || final quality {}: max "
+            "AMIPS {:.4} vs stop_energy {}{}{}",
             m_converged ? "Converged" : "Optimization did not converge",
             m_energy_verdict ? " (front measured at convergence, before the finishing pass)" : "",
-            front_ok ? "placed" : "NOT placed",
+            front_ok ? "resolved" : "NOT resolved",
+            ec.n_edges,
+            ec.max_edge,
+            ec.n_unmeasurable,
             ec.n_vertices,
             ec.max_vertex,
-            ec.n_unmeasurable,
+            ec.vertices_ok() ? std::string("all placed")
+                             : fmt::format("{} not placed", ec.n_unplaced),
             ec.refinable.size(),
             ec.n_at_floor,
             m_offset_params.front_conv,
             ec.tube,
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
-            m_params.stop_energy);
+            m_params.stop_energy,
+            floor_fact.empty() ? "" : " || ",
+            floor_fact);
     }
 
     // Collapsed foldovers on the offset surface, checked UNCONDITIONALLY -- a fold is a defect in
@@ -4378,15 +4469,17 @@ void TopoOffsetTriMesh::optimize_offset(const std::filesystem::path& output_file
     // still names which criterion missed before the throw.
     if (!m_converged && m_offset_params.throw_on_nonconvergence) {
         log_and_throw_error(
-            "Optimization did not converge and throw_on_nonconvergence is set: front {}, final "
-            "quality {} (max AMIPS {:.4} vs stop_energy {}). Ran {} of {} iterations; see the "
-            "warnings above.",
-            front_ok ? "placed" : "NOT placed",
+            "Optimization did not converge and throw_on_nonconvergence is set: front {} (every "
+            "chord within the bar, nothing unmeasurable), final quality {} (max AMIPS {:.4} vs "
+            "stop_energy {}). Ran {} of {} iterations; see the warnings above.{}{}",
+            front_ok ? "resolved" : "NOT resolved",
             m_quality_converged ? "ok" : "OVER",
             m_quality_max_amips,
             m_params.stop_energy,
             optimization_metrics.size(),
-            m_offset_params.max_iterations);
+            m_offset_params.max_iterations,
+            floor_fact.empty() ? "" : " ",
+            floor_fact);
     }
 
     // The tracked surfaces are deliberately NOT re-derived here. From the moment they are tagged

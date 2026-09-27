@@ -699,10 +699,11 @@ public:
     mutable char m_debug_last_phase = '?';
     /// See offset_gradient_tolerance(). Nothing sets it on the single-phase path; it stays 0.
     double m_gradient_reference = 0.;
-    /// The run's verdict: the front placed AND the final quality under stop_energy. Read by the
-    /// report and by throw_on_nonconvergence.
+    /// The run's verdict: the front resolved (EnergyCriterion::converged(): every front chord's
+    /// measure within the bar, nothing unmeasurable) AND the final quality under stop_energy.
+    /// Read by the report and by throw_on_nonconvergence.
     bool m_converged = false;
-    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is placed,
+    /// The finishing-pass half of the verdict: max AMIPS < stop_energy once the front is resolved,
     /// after the final pass when one ran. True when no pass was needed; false when the pass ended
     /// still over. m_quality_max_amips is the value it was judged on.
     bool m_quality_converged = true;
@@ -1368,8 +1369,9 @@ public:
      * @brief THE definition of "placed" for a vertex on the offset surface.
      *
      * Every decision in the component that asks "is the placement of this front vertex done"
-     * goes through here or through front_placed_by_ratio(): the loop's vertex test
-     * (EnergyCriterion::vertices_ok()), the endpoint qualification of the chord-sag
+     * goes through here or through front_placed_by_ratio(): the vertex measure the loop reports
+     * (EnergyCriterion::vertices_ok(), a diagnostic since 2026-09-25 -- the loop exits on the
+     * chord measure), the endpoint qualification of the chord-sag
      * classification, the collapse guard's snapshot and its after-half, the adaptive-smoothing
      * stop, and the alignment-trap test. One notion, chosen by front_conv_criterion, so a vertex
      * cannot be placed for one of them and not for another.
@@ -1380,7 +1382,7 @@ public:
      * where it matters -- a vertex whose Newton step has collapsed sits wherever it sits, and one
      * a hair outside the tube disqualified its whole chord from ever being refined, with the
      * chord then counted in neither `refinable` nor `n_at_floor` and so invisible to
-     * converged_single().     *
+     * the exit test of the time (converged_single(), removed 2026-09-25).     *
      * front_conv_criterion "residual_error" makes that same residual_length() the measure for every
      * one of the callers above. That is not the defect coming back: the defect was the SPLIT --
      * one test using distance while the rest used stationarity -- not the use of distance. Under
@@ -1766,7 +1768,26 @@ public:
         double max_edge_placed = 0.;
         Vector2d worst_placed_mid = Vector2d::Zero();
         double tube = 0.;
-        size_t n_at_floor = 0; ///< chords over the tube whose ends are already at the sizing floor
+        /// Chords over the bar with both ends placed that the refinement does not take: no chord
+        /// target below the larger sizing scalar at their ends. Like every chord over the bar
+        /// they block the exit. Two states share this count (see energy_criterion()): ends at
+        /// the sizing floor, which nothing can refine, and a chord still at least twice the
+        /// target length at its ends, which the split pass shortens. The first is
+        /// n_corners_at_floor.
+        size_t n_at_floor = 0;
+        double max_edge_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector2d worst_at_floor_mid = Vector2d::Zero();
+        double worst_at_floor_scalar = 0.; ///< the larger sizing scalar at the worst one's ends
+        /// Of n_at_floor, the chords whose larger end scalar IS the floor: they cannot be
+        /// refined, so a run keeping them cannot converge. The loop warns with them every turn
+        /// they exist, and the verdict and the throw_on_nonconvergence message quote the same
+        /// sentence, sizing_floor_fact(). Named as the 3D twin's.
+        size_t n_corners_at_floor = 0;
+        double max_edge_corners_at_floor = 0.; ///< the worst of them, as a ratio to the bar
+        Vector2d worst_corners_at_floor_mid = Vector2d::Zero();
+        /// The floor, max(min_sizing_scalar, min_edge_length / l), and which of the two it is.
+        double floor_scalar = 0.;
+        bool floor_from_min_edge_length = false;
         size_t n_unplaced = 0; ///< measurable front vertices that front_vertex_placed() refuses
         /// A front edge whose chord sags over the tube with both ends placed: a, b its
         /// ends; sag the midpoint sag as a length; len the edge's length.
@@ -1776,13 +1797,36 @@ public:
             double sag, len;
         };
         std::vector<Refinable> refinable;
-        /// Every front vertex placed. Counted through front_vertex_placed() rather than
-        /// re-derived from max_vertex, so the loop's exit test and the per-vertex notion cannot
-        /// drift apart; max_vertex stays for the reporting.
+        /// Every front vertex placed: the VERTEX measure, a DIAGNOSTIC only. Counted through
+        /// front_vertex_placed() rather than re-derived from max_vertex, so the reported count
+        /// and the per-vertex notion cannot drift apart. Nothing in the exit or the verdict tests
+        /// it since 2026-09-25; see converged().
         bool vertices_ok() const { return n_unplaced == 0; }
         bool edges_ok() const { return max_edge <= bar; }
-        bool converged() const { return vertices_ok() && n_unmeasurable == 0; }
-        bool converged_single() const { return converged() && refinable.empty(); }
+        /// THE exit test (with the loop's own one-turn grace after a lowering), and the front
+        /// half of the run's verdict: every front chord's measure within the bar AND nothing
+        /// unmeasurable -- the 3D rule of 2026-09-25, the chord measure (edge_conv_ratio()) in
+        /// place of the face measure. The vertex measure left the exit then and is reported only.
+        ///
+        /// Unlike the 3D face stencil, the chord measure is the SAG at the midpoint, the second
+        /// difference of the field along the chord: it does not sample the two ends, and a
+        /// displacement of both ends off the level set by the same amount cancels in it. So in
+        /// 2D nothing at the exit tests how far a front vertex is from the level set; the
+        /// verdict prints it, as the diagnostic max_vertex. Measured on two_circles (smooth
+        /// field, target_distance 0.15), 2026-09-25: the loop now exits at turn 13 with every
+        /// chord within the bar and 21 front vertices not placed, the worst, at (-0.0009, 0)
+        /// midway between the two circles, 39x the bar off the level set; under the vertex test
+        /// the same run never exited in its 40 turns.
+        ///
+        /// No refinable.empty() term: a refinable chord is over the bar, so edges_ok() already
+        /// implies that nothing is refinable. A chord over the bar that the refinement does not
+        /// take (n_at_floor) used to let the run end "converged" and now blocks the exit, the
+        /// loop warning when its ends are at the sizing floor.
+        bool converged() const { return edges_ok() && n_unmeasurable == 0; }
+        /// The n_at_floor chords as one sentence, for the turn's line (a warning when some have
+        /// their ends at the sizing floor), the verdict and the throw_on_nonconvergence message
+        /// alike, so all three state the same fact. Empty when n_at_floor is 0.
+        std::string sizing_floor_fact() const;
         double ratio() const { return bar > 0. ? std::max(max_vertex, max_edge) / bar : 0.; }
     };
     EnergyCriterion energy_criterion();

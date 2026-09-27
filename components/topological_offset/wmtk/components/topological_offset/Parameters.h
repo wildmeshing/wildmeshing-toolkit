@@ -63,8 +63,11 @@ struct Parameters : public wmtk::OptimizerParameters
     // THE ONE BAR. 3D measures a single quantity everywhere -- over a face's stencil, the RMS of
     // the field's relative error (Phi - c)/c, expressed as a length -- and compares it against
     // this. A vertex is placed when that same measure at the vertex alone is within it, which is
-    // the order-0 stencil, so the vertex test and the face test are one test at two sample
-    // counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23.
+    // the order-0 stencil, so the vertex measure and the face measure are one measure at two
+    // sample counts. Replaces vertex_conv / sag_conv, which split the two apart 2026-09-23. The
+    // loop exits on the face measure alone (every face within the bar, nothing unmeasurable);
+    // the vertex measure is a diagnostic since 2026-09-25. 2D exits on its chord measure, the
+    // midpoint sag, which unlike the 3D stencil does not sample the chord's two ends.
     double front_conv;
     double front_conv_rel;
 

@@ -1794,19 +1794,19 @@ void TopoOffsetTetMesh::write_vtu(const std::string& path)
     v_sizing.setZero();
     VectorXd v_target(vert_capacity());
     v_target.setZero();
-    // Front convergence diagnostics, as point data: what the convergence test measures next to
+    // Front convergence diagnostics, as point data: the vertex measure the loop reports next to
     // what it does not, so the two can be compared at the same vertex. Same three fields as 2D.
     //
     //   front_conv_ratio      front_vertex_conv_ratio(): the vertex's own relative error
     //                         |Phi - c| / c over the relative bar -- face_conv_ratio()'s measure
     //                         at the vertex alone; for the euclidean field |d - target_distance|
-    //                         / front_conv. This is the ONLY per-vertex quantity
-    //                         converged_single() tests, so <= 1 reads as "placed" and the loop
-    //                         may exit on it.
+    //                         / front_conv. <= 1 reads as "placed". The loop reports it and no
+    //                         longer exits on it: since 2026-09-25 the exit tests the face
+    //                         measure alone (EnergyCriterion::converged()).
     //   front_residual_rel    residual_length() over front_conv: the vertex's actual distance to
     //                         the level set, as a MULTIPLE OF THE BAR, so < 1 is converged. Never
-    //                         tested by the loop -- front_conv_ratio is what converged_single()
-    //                         reads -- but under offset_field "euclidean" the two are the same
+    //                         tested by the loop -- front_conv_ratio is the per-vertex measure it
+    //                         reports -- but under offset_field "euclidean" the two are the same
     //                         number, since there the residual is exactly |d - target_distance|.
     //                         They part company under "smooth", where residual_length() is a
     //                         barrier-value residual and front_conv_ratio is (Phi - c)/c.
