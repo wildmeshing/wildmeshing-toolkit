@@ -3,6 +3,7 @@
 #include "Hdf5Writers.hpp"
 #include "InterfaceSelection.hpp"
 #include "MeshReduction.hpp"
+#include "PolyfemJson.hpp"
 
 #include <polysolve/nonlinear/Criteria.hpp>
 
@@ -44,14 +45,16 @@ struct SolveResult
 };
 
 /**
- * @brief The content of every input file an operation's simulation JSON names, keyed by the path
- * the JSON names it by: `geometry[0].mesh` in `meshes`, each `constraints.hard[*]` and
+ * @brief The content of every input file an operation generates, keyed by its path: the ones its
+ * simulation JSON names -- `geometry[0].mesh` in `meshes`, each `constraints.hard[*]` and
  * `constraints.soft[*].data` in `constraints`, and `contact.collision_mesh.{mesh, linear_map,
- * collision_body_ids}` in the last three.
+ * collision_body_ids}` in the last three -- and in smoothing mode also the collision OBJ, which
+ * that JSON does not name. inputs_only writes each entry to its path; a solve reads only the
+ * entries the JSON names (`prepare_state`).
  *
- * Built once per operation, before its first solve, from the same arrays inputs_only writes to
- * those paths. The outer loops never change it: between solves they rewrite `contact.dhat`, the
- * barrier stiffness and the two warm-start paths, none of which names an input.
+ * Built once per operation, before its first solve. The outer loops never change it: between
+ * solves they rewrite `contact.dhat`, the barrier stiffness and the two warm-start paths, none of
+ * which names an input.
  */
 struct SolveInputs
 {
@@ -63,15 +66,15 @@ struct SolveInputs
 };
 
 /**
- * @brief The one and only way the outer loops reach polyfem: a simulation JSON goes in, the
- * solver's output, its active distance and its solution come back, and a copy of that output is
- * left in `log_path`.
+ * @brief The one and only way the outer loops reach polyfem: a simulation JSON goes in, and the
+ * solver's output, its active distance and its solution come back.
  *
- * The JSON is still the single description of what a solve reads, and the document on disk stays
- * the one the Python engine writes, file names included. What the backend does not do is read
- * those files: it holds their content (`SolveInputs`) and the warm start in memory, and hands both
- * to polyfem from there (see PolyfemInProcess.cpp). Nor does it let polyfem write the solution file
- * the JSON names: the solution comes back in `SolveResult::solution` instead.
+ * The JSON is still the single description of what a solve reads, and it is the document the
+ * Python engine wrote, file names included. What the backend does not do is read those files: it
+ * holds their content (`SolveInputs`) and the warm start in memory, and hands both to polyfem from
+ * there (see PolyfemInProcess.cpp). Nor does it let polyfem write the solution file the JSON names:
+ * the solution comes back in `SolveResult::solution` instead, and polyfem's output lines in
+ * `SolveResult::lines`.
  */
 class PolyfemBackend
 {
@@ -79,16 +82,23 @@ public:
     virtual ~PolyfemBackend() = default;
 
     /**
-     * @brief One solve. `json_path` is the simulation JSON, `out_dir` is what the executable takes
-     * as `-o`, and `log_path` receives polyfem's own output.
+     * @brief One solve of `sim_json`. `json_path` is the name the document goes by -- the
+     * executable's `-j`, against which polyfem resolves a relative path in it -- and `out_dir` is
+     * the executable's `-o`.
+     *
+     * No file the document names is read, and polyfem writes no file, with one exception: under
+     * `save_vtu` the document asks for paraview output, and polyfem creates `out_dir` and writes
+     * its frames there. Without it `out_dir` is not handed to polyfem at all, because polyfem
+     * creates the directory it is given. (polyfem still writes intersection.obj, into the working
+     * directory, when it refuses a start that has intersections -- a solve that fails.)
      *
      * `active_distance` is set when polyfem reported one and left empty when it did not, which is
      * how the loops tell "contact not triggered" from a measurement.
      */
     virtual SolveResult solve(
+        const OrderedJson& sim_json,
         const std::filesystem::path& json_path,
-        const std::filesystem::path& out_dir,
-        const std::filesystem::path& log_path) = 0;
+        const std::filesystem::path& out_dir) = 0;
 
     /// Forget every warm start. Called once before an outer loop starts and once after it ends --
     /// the two places the Python unlinks `curr_state.hdf5` and `prev_state.hdf5`.

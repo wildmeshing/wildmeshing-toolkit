@@ -17,8 +17,9 @@ namespace wmtk::components::simwild::polyfem_helpers {
  * SolveData.cpp): local2global (int32), A_triplets/{rows,cols} (int32), A_triplets/values
  * (float64), A_triplets/shape (int64) and b (float64, `b_rows` x `b_cols`).
  *
- * Built once and then either written (`write_constraint_hdf5`) or handed to polyfem in memory
- * (PolyfemInProcess.cpp), so the file and the in-memory constraint are the same arrays.
+ * Built once and then handed to polyfem in memory (PolyfemInProcess.cpp), or written by
+ * inputs_only (polyfem_operations.cpp), so the file and the in-memory constraint are the same
+ * arrays.
  */
 struct ConstraintHdf5
 {
@@ -89,9 +90,6 @@ ConstraintHdf5 pin_constraint(
     int dim,
     const std::optional<std::vector<int>>& axes);
 
-/// Write a constraint file, dataset for dataset what the Python's three constraint writers write.
-void write_constraint_hdf5(const std::string& path, const ConstraintHdf5& constraint);
-
 /// The identity displacement map proxy_vert[i] <- fe_node[node_ids[i]]: the weight_triplets group
 /// and its `shape` [n_proxy, total_n_nodes], which the file stores as an ATTRIBUTE of the group
 /// (not a dataset), per polyfem CollisionProxy.cpp.
@@ -105,8 +103,5 @@ struct LinearMapHdf5
 
 /// Mirrors `constraints.write_linear_map_hdf5` up to the write.
 LinearMapHdf5 linear_map(const std::vector<int64_t>& node_ids, int64_t total_n_nodes);
-
-/// Write the linear map file, dataset and attribute for what the Python writes.
-void write_linear_map_hdf5(const std::string& path, const LinearMapHdf5& map);
 
 } // namespace wmtk::components::simwild::polyfem_helpers

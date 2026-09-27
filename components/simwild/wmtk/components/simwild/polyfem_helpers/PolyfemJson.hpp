@@ -93,8 +93,4 @@ OrderedJson minimum_separation_cfg(const nlohmann::json& params, const OrderedJs
  */
 OrderedJson laplacian_smoothing_cfg(const nlohmann::json& params);
 
-/// Write the simulation JSON the way `json.dumps(doc, indent=4)` + `Path.write_text` does: four
-/// spaces of indent and NO trailing newline.
-void write_polyfem_json(const std::filesystem::path& path, const OrderedJson& doc);
-
 } // namespace wmtk::components::simwild::polyfem_helpers

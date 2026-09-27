@@ -34,9 +34,9 @@ ReducedBody classify_reduced_cell(
 
 /**
  * @brief The reduced mesh polyfem solves on: the content of `<stem>_polyfem.msh`, as arrays. Built
- * once (`polyfem_reduced_msh`), and then written (`write_polyfem_reduced_msh`) in inputs_only mode
- * or handed to polyfem in memory (PolyfemInProcess.cpp) otherwise; the material groups of the
- * simulation JSON are read off it in both modes (`get_mesh_info`).
+ * once (`polyfem_reduced_msh`), and then handed to polyfem in memory (PolyfemInProcess.cpp), or
+ * written by inputs_only (polyfem_operations.cpp); the material groups of the simulation JSON are
+ * read off it (`get_mesh_info`).
  *
  * Two physical groups, "ambient" with tag `ambient_tag` and "body" with tag `body_tag`: the first
  * `n_ambient` rows of `cells` are ambient, the rest body. The file numbers its elements from 1 in
@@ -76,19 +76,6 @@ ReducedMsh polyfem_reduced_msh(
     const TaggedMesh& mesh,
     const std::vector<std::string>& ambient_like_tags);
 
-/**
- * @brief Save the reduced mesh to `output_msh` with wmtk::MshData, as binary msh 4.1: "ambient"
- * and "body", each a physical group with one entity of its own tag; every node in the ambient
- * entity's node block, and an empty node block for the body entity.
- *
- * Binary, because MshData's ASCII writer (mshio's) prints coordinates through a default ostream,
- * which keeps 6 significant digits and would round every coordinate away. Binary stores the doubles
- * themselves, so the file carries exactly the coordinates the input had, which is at least as
- * faithful as the gmsh ASCII (%.16g) the Python engine writes -- and it is what makes the file and
- * the arrays the same mesh.
- */
-void write_polyfem_reduced_msh(const std::string& output_msh, const ReducedMsh& reduced);
-
 /// What `polyfem_utils.get_mesh_info` returns, in the same order as its 5-tuple.
 struct MeshInfo
 {
@@ -101,7 +88,7 @@ struct MeshInfo
 
 /**
  * @brief The material physical groups of the reduced mesh. Mirrors `polyfem_utils.get_mesh_info`
- * on the file `write_polyfem_reduced_msh` saves.
+ * on the file inputs_only saves.
  *
  * The volume is a RUNNING sum (not a pairwise one) over the elements in the order the file lists
  * them -- physical group by physical group, entity by entity, element by element, which for the

@@ -837,8 +837,9 @@ def _final_kappa(root):
     # commit that bisects the bracket, and a stop inside the tolerance band.
     ({"strategy": "dhat"}, "dhat"),
     # The stiffness loop: dhat pinned, every solve committed, the exponent refit from the last two
-    # deficits and the multiplier clamped.
-    ({"strategy": "stiffness"}, "stiffness"),
+    # deficits and the multiplier clamped. `write_simulation_json` leaves the last solve's
+    # simulation JSON on disk, which is where `_final_kappa` reads the final barrier stiffness.
+    ({"strategy": "stiffness", "write_simulation_json": True}, "stiffness"),
     # A hard-pinned region: the contact pushes only the unprotected side, and the extra
     # `constraints.hard` block has to reach polyfem identically from both engines.
     ({"strategy": "dhat", "protected_regions": ["tag_1"]}, "protected"),

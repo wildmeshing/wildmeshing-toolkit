@@ -1,33 +1,38 @@
 #pragma once
 
 #include "PolyfemOperation.hpp"
+#include "TaggedMesh.hpp"
 
 #include <nlohmann/json.hpp>
 
 namespace wmtk::components::simwild::polyfem_helpers {
 
 /**
- * @brief The simwild operation "minimum_separation": push collision bodies apart to a target
+ * @brief minimum_separation on `mesh`, in memory: push collision bodies apart to a target
  * separation with polyfem (AMIPS + fitting + Laplacian + GCP contact), with an outer loop per
  * `strategy`.
  *
- * `json_params` is a simwild job already verified against the simwild spec and with its defaults
- * injected, which is what `simwild()` hands over.
- * It is `prepare_minimum_separation` followed, unless `inputs_only` is set, by
- * `check_result_layout`, the outer loop on the in-process backend and the write-back of the
- * deformed mesh.
+ * `params` is a simwild job already verified against the simwild spec and with its defaults
+ * injected, which is what `simwild()` hands over. Its `input` and `output` only name the generated
+ * files (`minimum_separation_inputs`), and `inputs_only` is not read.
+ *
+ * It is `minimum_separation_inputs` followed by the outer loop on the in-process backend. No file
+ * is read or written -- under `save_vtu`, polyfem's paraview frames excepted (PolyfemBackend) --
+ * and `mesh` is not changed.
+ *
+ * @throws OperationFailed when a solve failed, carrying the report of every solve that ran
  */
-void minimum_separation(nlohmann::json json_params);
+OperationResult minimum_separation(const TaggedMesh& mesh, const nlohmann::json& params);
 
 /**
- * @brief Generate the simulation JSON and every input it names, up to the first solve.
+ * @brief The simulation JSON and every input it names, generated from `mesh` up to the first
+ * solve: what inputs_only writes, as the Python engine wrote it, and what the solve hands polyfem.
  *
- * The JSON is written in every mode, and so is interface_collision.obj. In inputs_only mode every
- * other input is written too, as the Python engine wrote it; otherwise none is, and their content
- * is returned in `inputs` for the backend. Separate from `minimum_separation` so that a test can
- * build a polyfem State from exactly what a solve receives.
+ * The files are named in `generated_dir(params, "sep_input")` and polyfem's output in
+ * `generated_dir(params, "sep_output")`; the reduced mesh is named after the input file. Nothing is
+ * read or written.
  */
-PreparedOperation prepare_minimum_separation(nlohmann::json params);
+GeneratedInputs minimum_separation_inputs(const TaggedMesh& mesh, const nlohmann::json& params);
 
 /**
  * @brief strategy="dhat": ramp dhat from the measured geometric gap until the bodies reach `sep`.
@@ -44,9 +49,12 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params);
  * it instead of jumping past a dhat already known to overshoot.
  *
  * `sep_json` is mutated exactly as the Python mutated its dict -- the dhat and the two state paths
- * -- and rewritten to `sep_json_path` before every solve, so what polyfem reads is the same file
- * on both engines. On return it holds the LAST attempted iteration, which is also the state the
- * Python left on disk.
+ * -- and handed to polyfem before every solve, so what polyfem reads is the document the Python
+ * rewrote `sep_json_path` with before that solve. On return it holds the LAST attempted iteration,
+ * which is also the document the Python left on disk.
+ *
+ * Every solve's report is appended to `solves` as it comes back, before it is checked, so a failed
+ * solve's report is there too.
  *
  * @return the solution of that same last solve, which is the one the Python applied to the mesh
  * (it read the solution.txt every solve overwrites): the probe's when the bodies were already
@@ -57,7 +65,8 @@ Eigen::MatrixXd run_polyfem_dhat(
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,
     const std::filesystem::path& sim_out_dir,
-    const OrderedJson& cfg);
+    const OrderedJson& cfg,
+    std::vector<SolveReport>& solves);
 
 /**
  * @brief strategy="stiffness": pin dhat at sep*(1+rtol) and raise the barrier stiffness until the
@@ -69,6 +78,8 @@ Eigen::MatrixXd run_polyfem_dhat(
  * theoretical exponent -1/2 and re-fitting it in log-log from the last two solves once they exist;
  * the multiplier is clamped to `max_stiffness_multiplier` per step to protect Newton conditioning.
  *
+ * `sep_json` and `solves` as in `run_polyfem_dhat`.
+ *
  * @return the solution of the last solve, as `run_polyfem_dhat` returns it.
  */
 Eigen::MatrixXd run_polyfem_stiffness(
@@ -76,6 +87,7 @@ Eigen::MatrixXd run_polyfem_stiffness(
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,
     const std::filesystem::path& sim_out_dir,
-    const OrderedJson& cfg);
+    const OrderedJson& cfg,
+    std::vector<SolveReport>& solves);
 
 } // namespace wmtk::components::simwild::polyfem_helpers

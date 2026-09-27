@@ -5,11 +5,6 @@
 
 #include <wmtk/utils/Logger.hpp>
 
-// h5pp comes in through polyfem::polyfem (polyfem -> paraviewo -> h5pp, with HDF5 on), the same
-// way polyfem itself reaches it (`#include <h5pp/h5pp.h>` in its sources), so the component's
-// CMakeLists needs no extra link target for it.
-#include <h5pp/h5pp.h>
-
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -269,19 +264,6 @@ ConstraintHdf5 pin_constraint(
         b_cols};
 }
 
-void write_constraint_hdf5(const std::string& path, const ConstraintHdf5& constraint)
-{
-    h5pp::File file(path, h5pp::FileAccess::REPLACE);
-    file.writeDataset(constraint.local2global, "local2global");
-    file.writeDataset(constraint.a.rows, "A_triplets/rows");
-    file.writeDataset(constraint.a.cols, "A_triplets/cols");
-    file.writeDataset(constraint.a.values, "A_triplets/values");
-    file.writeDataset(
-        std::vector<int64_t>{constraint.shape[0], constraint.shape[1]},
-        "A_triplets/shape");
-    file.writeDataset(constraint.b, "b", {constraint.b_rows, constraint.b_cols});
-}
-
 LinearMapHdf5 linear_map(const std::vector<int64_t>& node_ids, int64_t total_n_nodes)
 {
     const int64_t n = static_cast<int64_t>(node_ids.size());
@@ -294,21 +276,6 @@ LinearMapHdf5 linear_map(const std::vector<int64_t>& node_ids, int64_t total_n_n
     map.values.assign(static_cast<size_t>(n), 1.0);
     map.shape = {n, total_n_nodes};
     return map;
-}
-
-void write_linear_map_hdf5(const std::string& path, const LinearMapHdf5& map)
-{
-    h5pp::File file(path, h5pp::FileAccess::REPLACE);
-    file.writeDataset(map.rows, "weight_triplets/rows");
-    file.writeDataset(map.cols, "weight_triplets/cols");
-    file.writeDataset(map.values, "weight_triplets/values");
-    // An ATTRIBUTE on the group, not a dataset -- polyfem CollisionProxy.cpp reads it there.
-    file.writeAttribute(
-        std::vector<int64_t>{map.shape[0], map.shape[1]},
-        "weight_triplets",
-        "shape");
-
-    logger().info("  linear map : {}  (shape [{}, {}])", path, map.shape[0], map.shape[1]);
 }
 
 } // namespace wmtk::components::simwild::polyfem_helpers

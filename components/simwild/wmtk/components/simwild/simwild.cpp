@@ -23,8 +23,7 @@
 #include "simwild_spec.hpp"
 
 #ifdef WMTK_SIMWILD_WITH_POLYFEM
-#include "polyfem_helpers/LaplacianSmoothing.hpp"
-#include "polyfem_helpers/MinimumSeparation.hpp"
+#include "polyfem_operations.hpp"
 #endif
 
 namespace wmtk::components::simwild {
@@ -452,9 +451,9 @@ void simwild(nlohmann::json json_params)
     if (operation == "minimum_separation" || operation == "laplacian_smoothing") {
 #ifdef WMTK_SIMWILD_WITH_POLYFEM
         if (operation == "minimum_separation") {
-            polyfem_helpers::minimum_separation(json_params);
+            minimum_separation(json_params);
         } else {
-            polyfem_helpers::laplacian_smoothing(json_params);
+            laplacian_smoothing(json_params);
         }
         return;
 #else

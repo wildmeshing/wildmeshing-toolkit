@@ -35,19 +35,6 @@ int64_t max_iterations(const OrderedJson& cfg)
                            : it->get<int64_t>();
 }
 
-/// `for stale in sim_out_dir.glob("polyfem_*.log"): stale.unlink()` -- a shorter rerun must not
-/// leave the iteration logs of a longer one behind, which would be read as this run's.
-void remove_stale_iteration_logs(const std::filesystem::path& sim_out_dir)
-{
-    for (const auto& entry : std::filesystem::directory_iterator(sim_out_dir)) {
-        const std::string name = entry.path().filename().string();
-        if (name.rfind("polyfem_", 0) == 0 && name.size() > 12 &&
-            name.compare(name.size() - 4, 4, ".log") == 0) {
-            std::filesystem::remove(entry.path());
-        }
-    }
-}
-
 /// The Python's loop variable survives the `for` and is read afterwards; when `range()` was empty
 /// there is no such variable and the read is a NameError. Mirrored as a throw, with the same
 /// meaning: a run with no iterations at all is a configuration error.
@@ -90,10 +77,10 @@ WarmStartPaths open_warm_start(
 /**
  * @brief One solve of an outer loop, and nothing either loop decides.
  *
- * The committed warm start goes into the document exactly when there is one (so the file on disk
- * is the one the Python engine writes), the document is written to `sep_json_path`, polyfem runs
- * with its own per-iteration log, and its output is checked. Both Python loops do these four steps
- * identically; what they do with the answer is where they part.
+ * The committed warm start goes into the document exactly when there is one (so the document is
+ * the one the Python engine writes), polyfem runs on it, its report is kept as iteration `iter`,
+ * and its output is checked. Both Python loops do these steps identically; what they do with the
+ * answer is where they part.
  *
  * @param[out] solution this solve's solution. Both loops overwrite it on every solve, rolled back
  * or not, and return whatever it holds when they end: that is what the deformed mesh is made of.
@@ -107,17 +94,15 @@ std::optional<double> solve_iteration(
     const std::filesystem::path& sim_out_dir,
     const WarmStartPaths& state,
     const int64_t iter,
-    Eigen::MatrixXd& solution)
+    Eigen::MatrixXd& solution,
+    std::vector<SolveReport>& solves)
 {
     if (backend.has_warm_start()) {
         curr_json["input"]["data"]["state"] = state.prev.string();
     }
-    write_polyfem_json(sep_json_path, curr_json);
 
-    const SolveResult result = backend.solve(
-        sep_json_path,
-        sim_out_dir,
-        sim_out_dir / fmt::format("polyfem_iter_{}.log", iter));
+    const SolveResult result = backend.solve(curr_json, sep_json_path, sim_out_dir);
+    solves.push_back(solve_report(curr_json, result, iter));
     check_polyfem_success(
         result.returncode,
         result.statuses,
@@ -162,8 +147,7 @@ void log_if_out_of_iterations(
  * The Python's own check for unknown keys inside an entry is not mirrored: jse already rejects
  * them against the same spec, in strict mode, before this runs.
  *
- * Each file is written in inputs_only mode; otherwise its content goes into `memory` under the
- * same path instead.
+ * Each file's content goes into `files` under its path.
  *
  * @return the file paths, in the order the Python appends them to `pin_paths`; they go into the
  * simulation JSON as `constraints.hard`.
@@ -172,8 +156,7 @@ std::vector<std::string> protected_pins(
     const TaggedMesh& mesh,
     const nlohmann::json& protected_regions,
     const std::filesystem::path& sim_in_dir,
-    const bool inputs_only,
-    SolveInputs& memory)
+    SolveInputs& files)
 {
     if (protected_regions.empty()) {
         return {};
@@ -212,29 +195,21 @@ std::vector<std::string> protected_pins(
             suffix = "_";
             for (const int a : *axes) suffix += "xyz"[a];
         }
-        const std::filesystem::path pin_path =
-            sim_in_dir / ("protected_pin" + suffix + ".hdf5");
-        ConstraintHdf5 pin = pin_constraint(pin_ids, mesh.mesh_dim, axes);
-        pin_paths.push_back(std::filesystem::weakly_canonical(pin_path).string());
-        if (inputs_only) {
-            write_constraint_hdf5(pin_path.string(), pin);
-            logger().info(
-                "  pinned     : {}  ({} nodes, {})",
-                pin_path.string(),
-                pin_ids.size(),
-                axes.has_value() ? suffix.substr(1) : "all axes");
-        } else {
-            memory.constraints.emplace(pin_paths.back(), std::move(pin));
-        }
+        // The name as it stands, like every name in the simulation JSON (`generated_dir`).
+        pin_paths.push_back((sim_in_dir / ("protected_pin" + suffix + ".hdf5")).string());
+        logger().info(
+            "  pinned     : {} nodes, {}",
+            pin_ids.size(),
+            axes.has_value() ? suffix.substr(1) : "all axes");
+        files.constraints.emplace(pin_paths.back(), pin_constraint(pin_ids, mesh.mesh_dim, axes));
     }
     return pin_paths;
 }
 
 } // namespace
 
-PreparedOperation prepare_minimum_separation(nlohmann::json params)
+GeneratedInputs minimum_separation_inputs(const TaggedMesh& mesh, const nlohmann::json& params)
 {
-    params["input"] = operation_input_path(params);
     // Required by this operation and by no other, so the simwild spec cannot require them: it
     // declares them optional with the default "skip" (absent stays absent), and the check is here.
     for (const char* key : {"sep", "collision_pairs"}) {
@@ -242,15 +217,6 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params)
             log_and_throw_error("minimum_separation needs the parameter `{}`", key);
         }
     }
-
-    PreparedOperation out;
-    out.operation = "minimum_separation";
-    out.inputs_only = params["inputs_only"].get<bool>();
-    const bool inputs_only = out.inputs_only;
-    out.input = params["input"].get<std::string>();
-    out.output = params["output"].get<std::string>();
-    const std::string& input = out.input;
-    const std::string& output = out.output;
 
     // One pass gives both: the deduped sides the collision proxy is built from, and the
     // id-pair list that goes into contact.collision_pairs of the simulation JSON. It is also
@@ -260,17 +226,14 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params)
     normalize_collision_pairs(params["collision_pairs"], sides, pairs);
     const OrderedJson polyfem_pairs = pairs;
 
-    const std::filesystem::path sim_in_dir = sim_dir(output, "sep_input");
-    out.sim_out_dir = sim_dir(output, "sep_output");
-    logger().info("Input  : {}", input);
-    logger().info("Output : {}.msh", output);
-    logger().info("Reading {} ...", input);
-    const TaggedMesh mesh(input);
+    GeneratedInputs out;
+    const std::filesystem::path sim_in_dir = generated_dir(params, "sep_input");
+    out.sim_out_dir = generated_dir(params, "sep_output");
     // smooth_positions is false here and has no spec key: minimum_separation.run reads it
     // from cfg["smoothDisplacementsOrPositions"], whose OPT_DEFAULTS value is 0, and
     // simwild.py's minimum_separation engine never puts that key in cfg. Separation smooths
     // displacements (L u = 0), so the rest state stays an equilibrium of the penalty.
-    emit_interface_constraint(
+    add_interface_constraint(
         make_interface_constraint(
             mesh,
             sides,
@@ -280,11 +243,10 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params)
             /*smooth_positions=*/false),
         sim_in_dir,
         /*with_collision_proxy=*/true,
-        inputs_only,
-        out.inputs);
+        out.files);
 
     ReducedMesh reduced =
-        reduce_mesh(input, mesh, params["ambient_like_tags"], sim_in_dir, inputs_only);
+        reduce_mesh(operation_input(params), mesh, params["ambient_like_tags"], sim_in_dir);
 
     out.cfg = minimum_separation_cfg(params, polyfem_pairs);
     out.cfg["amips_weights"] = resolve_amips_weights(out.cfg);
@@ -294,56 +256,56 @@ PreparedOperation prepare_minimum_separation(nlohmann::json params)
         sim_in_dir,
         reduced.info,
         out.sim_out_dir / "solution.txt");
-    if (!inputs_only) {
-        out.inputs.meshes.emplace(
-            out.sim_json["geometry"][0]["mesh"].get<std::string>(),
-            std::move(reduced.content));
-    }
+    out.files.meshes.emplace(
+        out.sim_json["geometry"][0]["mesh"].get<std::string>(),
+        std::move(reduced.content));
 
     // The pins are made after the JSON and their paths are appended to it, as in run():
     // `constraints.hard` belongs to the operation, not to the shared builder.
     const std::vector<std::string> pin_paths =
-        protected_pins(mesh, params["protected_regions"], sim_in_dir, inputs_only, out.inputs);
+        protected_pins(mesh, params["protected_regions"], sim_in_dir, out.files);
     if (!params["protected_regions"].empty()) {
         out.sim_json["constraints"]["hard"] = pin_paths;
     }
     out.sim_json_path = sim_in_dir / "separation.json";
-    write_polyfem_json(out.sim_json_path, out.sim_json);
     return out;
 }
 
-void minimum_separation(nlohmann::json json_params)
+OperationResult minimum_separation(const TaggedMesh& mesh, const nlohmann::json& params)
 {
-    PreparedOperation prepared = prepare_minimum_separation(std::move(json_params));
-    if (prepared.inputs_only) {
-        return;
-    }
-    check_result_layout(prepared.input);
-    const std::unique_ptr<PolyfemBackend> backend = operation_backend(prepared);
+    GeneratedInputs inputs = minimum_separation_inputs(mesh, params);
+    const std::unique_ptr<PolyfemBackend> backend = in_process_backend(std::move(inputs.files));
 
-    // The outer loop rewrites separation.json before every solve, so what stays on disk
-    // afterwards is the last iteration's document -- the same file the Python leaves.
-    const std::string strategy = prepared.cfg["strategy"];
+    OperationResult out;
+    const std::string strategy = inputs.cfg["strategy"];
     Eigen::MatrixXd solution;
-    if (strategy == "dhat") {
-        solution = run_polyfem_dhat(
-            *backend,
-            prepared.sim_json,
-            prepared.sim_json_path,
-            prepared.sim_out_dir,
-            prepared.cfg);
-    } else {
-        // jse has already refused anything but "dhat" and "stiffness" against the same
-        // spec `run()` checks by hand, so there is no third branch to raise on.
-        solution = run_polyfem_stiffness(
-            *backend,
-            prepared.sim_json,
-            prepared.sim_json_path,
-            prepared.sim_out_dir,
-            prepared.cfg);
+    try {
+        if (strategy == "dhat") {
+            solution = run_polyfem_dhat(
+                *backend,
+                inputs.sim_json,
+                inputs.sim_json_path,
+                inputs.sim_out_dir,
+                inputs.cfg,
+                out.solves);
+        } else {
+            // jse has already refused anything but "dhat" and "stiffness" against the same
+            // spec `run()` checks by hand, so there is no third branch to raise on.
+            solution = run_polyfem_stiffness(
+                *backend,
+                inputs.sim_json,
+                inputs.sim_json_path,
+                inputs.sim_out_dir,
+                inputs.cfg,
+                out.solves);
+        }
+    } catch (const std::exception& e) {
+        throw OperationFailed(e.what(), std::move(out.solves));
     }
-
-    write_operation_result(prepared, solution);
+    // `u_mesh = u / scale`, the first of the two roundings the Python makes on the way to the
+    // deformed mesh; the add is the second (write_operation_result).
+    out.displacement = solution / inputs.cfg["scale"].get<double>();
+    return out;
 }
 
 Eigen::MatrixXd run_polyfem_dhat(
@@ -351,11 +313,9 @@ Eigen::MatrixXd run_polyfem_dhat(
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,
     const std::filesystem::path& sim_out_dir,
-    const OrderedJson& cfg)
+    const OrderedJson& cfg,
+    std::vector<SolveReport>& solves)
 {
-    std::filesystem::create_directories(sim_out_dir);
-    remove_stale_iteration_logs(sim_out_dir);
-
     double active_dist = -INF;
     const double sep = cfg.at("sep").get<double>();
     const double growth =
@@ -366,7 +326,7 @@ Eigen::MatrixXd run_polyfem_dhat(
     sep_json["contact"]["dhat"] = init_dhat;
 
     // The Python's `curr_json = sep_json.copy()` is SHALLOW, so its writes land in `sep_json` too;
-    // one mutable document gives the same sequence of files on disk.
+    // one mutable document gives the same sequence of documents.
     OrderedJson& curr_json = sep_json;
     const WarmStartPaths state = open_warm_start(backend, curr_json, sim_out_dir);
     double committed_dhat = init_dhat;
@@ -385,9 +345,8 @@ Eigen::MatrixXd run_polyfem_dhat(
         // gap instead of tripping the assert below.
         OrderedJson probe_json = sep_json;
         probe_json["solver"]["contact"]["barrier_stiffness"] = 0.0;
-        write_polyfem_json(sep_json_path, probe_json);
-        const SolveResult probe =
-            backend.solve(sep_json_path, sim_out_dir, sim_out_dir / "polyfem_probe.log");
+        const SolveResult probe = backend.solve(probe_json, sep_json_path, sim_out_dir);
+        solves.push_back(solve_report(probe_json, probe, std::nullopt));
         check_polyfem_success(
             probe.returncode,
             probe.statuses,
@@ -421,8 +380,15 @@ Eigen::MatrixXd run_polyfem_dhat(
     int64_t last_iter = -1;
     for (int64_t iter = 0; iter < n_iterations; ++iter) {
         last_iter = iter;
-        const std::optional<double> parsed =
-            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter, solution);
+        const std::optional<double> parsed = solve_iteration(
+            backend,
+            curr_json,
+            sep_json_path,
+            sim_out_dir,
+            state,
+            iter,
+            solution,
+            solves);
         if (!parsed.has_value()) {
             break;
         }
@@ -505,11 +471,9 @@ Eigen::MatrixXd run_polyfem_stiffness(
     OrderedJson& sep_json,
     const std::filesystem::path& sep_json_path,
     const std::filesystem::path& sim_out_dir,
-    const OrderedJson& cfg)
+    const OrderedJson& cfg,
+    std::vector<SolveReport>& solves)
 {
-    std::filesystem::create_directories(sim_out_dir);
-    remove_stale_iteration_logs(sim_out_dir);
-
     double active_dist = -INF;
     const double sep = cfg.at("sep").get<double>();
     const double rtol = get_number(cfg, "rtol", opt_defaults().at("rtol").get<double>());
@@ -533,11 +497,18 @@ Eigen::MatrixXd run_polyfem_stiffness(
     int64_t last_iter = -1;
     for (int64_t iter = 0; iter < n_iterations; ++iter) {
         last_iter = iter;
-        // This loop's own mutation, made before the document is written: `solve_iteration` writes
-        // it, so the barrier stiffness has to be in it by then.
+        // This loop's own mutation, made before the document is solved on: `solve_iteration`
+        // hands it to polyfem, so the barrier stiffness has to be in it by then.
         curr_json["solver"]["contact"]["barrier_stiffness"] = kappa;
-        const std::optional<double> parsed =
-            solve_iteration(backend, curr_json, sep_json_path, sim_out_dir, state, iter, solution);
+        const std::optional<double> parsed = solve_iteration(
+            backend,
+            curr_json,
+            sep_json_path,
+            sim_out_dir,
+            state,
+            iter,
+            solution,
+            solves);
         if (!parsed.has_value()) {
             break;
         }

@@ -1,12 +1,10 @@
 #include "InterfaceSelection.hpp"
 
 #include "Hdf5Writers.hpp"
-#include "PythonFormat.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
 #include <algorithm>
-#include <fstream>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -519,56 +517,6 @@ CollisionObj collision_mesh_obj(
         }
     }
     return obj;
-}
-
-void write_collision_mesh_obj(const std::string& path, const CollisionObj& obj)
-{
-    std::ofstream f(path, std::ios::binary); // binary: no CRLF translation, the bytes must match
-    if (!f) {
-        log_and_throw_error("Cannot open {} for writing", path);
-    }
-    f << "# Interface collision mesh\n";
-    for (const auto& [x, y, z] : obj.vertices) {
-        f << "v " << python_repr(x) << " " << python_repr(y) << " " << python_repr(z) << "\n";
-    }
-    // OBJ is 1-based
-    for (const auto& t : obj.faces) {
-        f << "f " << t[0] + 1 << " " << t[1] + 1 << " " << t[2] + 1 << "\n";
-    }
-    for (const auto& e : obj.edges) {
-        f << "l " << e[0] + 1 << " " << e[1] + 1 << "\n";
-    }
-    if (!obj.faces.empty()) {
-        logger().info(
-            "  collision  : {}  ({} verts, {} faces)",
-            path,
-            obj.vertices.size(),
-            obj.faces.size());
-    } else {
-        logger().info(
-            "  collision  : {}  ({} verts, {} edges)",
-            path,
-            obj.vertices.size(),
-            obj.edges.size());
-    }
-}
-
-void write_collision_body_ids_txt(
-    const std::string& path,
-    const std::vector<std::vector<int64_t>>& face_tags)
-{
-    std::ofstream f(path, std::ios::binary);
-    if (!f) {
-        log_and_throw_error("Cannot open {} for writing", path);
-    }
-    for (const auto& tags : face_tags) {
-        for (size_t i = 0; i < tags.size(); ++i) {
-            if (i != 0) f << " ";
-            f << tags[i];
-        }
-        f << "\n";
-    }
-    logger().info("  body IDs   : {}  ({} faces)", path, face_tags.size());
 }
 
 // ---------------------------------------------------------------------------

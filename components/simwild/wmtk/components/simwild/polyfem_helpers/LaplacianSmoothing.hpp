@@ -1,40 +1,45 @@
 #pragma once
 
 #include "PolyfemOperation.hpp"
+#include "TaggedMesh.hpp"
 
 #include <nlohmann/json.hpp>
 
 namespace wmtk::components::simwild::polyfem_helpers {
 
 /**
- * @brief The simwild operation "laplacian_smoothing": fair material interfaces with one polyfem
- * solve (AMIPS + fitting + Laplacian, no contact).
+ * @brief laplacian_smoothing on `mesh`, in memory: fair material interfaces with one polyfem solve
+ * (AMIPS + fitting + Laplacian, no contact).
  *
- * `json_params` is a simwild job already verified against the simwild spec and with its defaults
- * injected, which is what `simwild()` hands over.
- * It is `prepare_laplacian_smoothing` followed, unless `inputs_only` is set, by
- * `check_result_layout`, the single solve on the in-process backend and the write-back of the
- * deformed mesh.
+ * `params` is a simwild job already verified against the simwild spec and with its defaults
+ * injected, which is what `simwild()` hands over. Its `input` and `output` only name the generated
+ * files (`laplacian_smoothing_inputs`), and `inputs_only` is not read.
+ *
+ * It is `laplacian_smoothing_inputs` followed by the single solve on the in-process backend. No
+ * file is read or written -- under `save_vtu`, polyfem's paraview frames excepted
+ * (PolyfemBackend) -- and `mesh` is not changed.
+ *
+ * @throws OperationFailed when the solve failed, carrying its report
  */
-void laplacian_smoothing(nlohmann::json json_params);
+OperationResult laplacian_smoothing(const TaggedMesh& mesh, const nlohmann::json& params);
 
 /**
- * @brief Generate the simulation JSON and every input it names, up to the solve.
+ * @brief The simulation JSON and every input it names, generated from `mesh` up to the solve: what
+ * inputs_only writes, as the Python engine wrote it, and what the solve hands polyfem.
  *
- * The JSON is written in every mode, and so is interface_collision.obj. In inputs_only mode every
- * other input is written too, as the Python engine wrote it; otherwise none is, and their content
- * is returned in `inputs` for the backend. Separate from `laplacian_smoothing` so that a test can
- * build a polyfem State from exactly what a solve receives.
+ * The files are named in `generated_dir(params, "smooth_input")` and polyfem's output in
+ * `generated_dir(params, "smooth_output")`; the reduced mesh is named after the input file.
+ * Nothing is read or written.
  */
-PreparedOperation prepare_laplacian_smoothing(nlohmann::json params);
+GeneratedInputs laplacian_smoothing_inputs(const TaggedMesh& mesh, const nlohmann::json& params);
 
 /**
  * @brief One polyfem solve, no contact and no outer loop. Mirrors
  * `polyfem_utils.step_run_polyfem_single`, which is the whole of the smoothing engine's solve.
  *
- * Writes `sim_json` to `sim_json_path` and logs to `sim_out_dir/polyfem.log`. The Python's first
- * argument is the path of the binary; this takes the backend instead, which is the one place the
- * two engines are allowed to differ -- see PolyfemRunner.hpp on why the boundary exists.
+ * The Python's first argument is the path of the binary; this takes the backend instead, which is
+ * the one place the two engines are allowed to differ -- see PolyfemRunner.hpp on why the boundary
+ * exists. The solve's report is appended to `solves` before it is checked.
  *
  * @return the solve's solution.
  */
@@ -42,6 +47,7 @@ Eigen::MatrixXd run_polyfem_single(
     PolyfemBackend& backend,
     const OrderedJson& sim_json,
     const std::filesystem::path& sim_json_path,
-    const std::filesystem::path& sim_out_dir);
+    const std::filesystem::path& sim_out_dir,
+    std::vector<SolveReport>& solves);
 
 } // namespace wmtk::components::simwild::polyfem_helpers

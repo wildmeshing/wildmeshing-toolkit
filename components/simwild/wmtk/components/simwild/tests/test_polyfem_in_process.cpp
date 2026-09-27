@@ -5,6 +5,7 @@
 #include <wmtk/components/simwild/polyfem_helpers/MinimumSeparation.hpp>
 #include <wmtk/components/simwild/polyfem_helpers/PolyfemRunner.hpp>
 #include <wmtk/components/simwild/polyfem_helpers/TaggedMesh.hpp>
+#include <wmtk/components/simwild/polyfem_operations.hpp>
 #include <wmtk/components/simwild/simwild.hpp>
 #include <wmtk/utils/io.hpp>
 
@@ -36,20 +37,25 @@
 
 using wmtk::components::simwild::simwild;
 using wmtk::components::simwild::simwild_spec_for;
+using wmtk::components::simwild::write_operation_result;
+using wmtk::components::simwild::polyfem_helpers::CollisionObj;
+using wmtk::components::simwild::polyfem_helpers::GeneratedInputs;
 using wmtk::components::simwild::polyfem_helpers::in_process_backend;
-using wmtk::components::simwild::polyfem_helpers::operation_backend;
+using wmtk::components::simwild::polyfem_helpers::laplacian_smoothing_inputs;
+using wmtk::components::simwild::polyfem_helpers::minimum_separation_inputs;
+using wmtk::components::simwild::polyfem_helpers::OperationResult;
 using wmtk::components::simwild::polyfem_helpers::OrderedJson;
-using wmtk::components::simwild::polyfem_helpers::prepare_laplacian_smoothing;
-using wmtk::components::simwild::polyfem_helpers::prepare_minimum_separation;
+using wmtk::components::simwild::polyfem_helpers::PolyfemBackend;
 using wmtk::components::simwild::polyfem_helpers::prepare_state;
-using wmtk::components::simwild::polyfem_helpers::PreparedOperation;
 using wmtk::components::simwild::polyfem_helpers::ReducedMsh;
+using wmtk::components::simwild::polyfem_helpers::run_polyfem_dhat;
 using wmtk::components::simwild::polyfem_helpers::run_polyfem_single;
 using wmtk::components::simwild::polyfem_helpers::SolveInputs;
-using wmtk::components::simwild::polyfem_helpers::split_lines;
+using wmtk::components::simwild::polyfem_helpers::SolveReport;
+using wmtk::components::simwild::polyfem_helpers::SolveResult;
 using wmtk::components::simwild::polyfem_helpers::TaggedMesh;
 using wmtk::components::simwild::polyfem_helpers::TagNames;
-using wmtk::components::simwild::polyfem_helpers::write_operation_result;
+namespace polyfem_helpers = wmtk::components::simwild::polyfem_helpers;
 
 namespace fs = std::filesystem;
 
@@ -271,16 +277,25 @@ fs::path case_input(const std::string& name, const mshio::MshSpec& mesh)
 // The two ways of building a State
 // ---------------------------------------------------------------------------
 
-/// The simulation JSON of `prepared` as the backend loads it -- `root_path` defaulted to the file,
-/// the output directory set as `-o` sets it -- and single-threaded: polyfem's multithreaded
-/// assembly sums in scheduling order (measured: ~1e-11 apart between two runs on the same files),
-/// and the point here is exact equality.
-nlohmann::json solve_args(const PreparedOperation& prepared)
+/// A simulation JSON as polyfem is handed it -- the text of `sim_json`, with `root_path` defaulted
+/// to `sim_json_path` and, when there is an `out_dir`, the output directory set as `-o` sets it --
+/// and single-threaded: polyfem's multithreaded assembly sums in scheduling order (measured: ~1e-11
+/// apart between two runs on the same files), and the point here is exact equality.
+///
+/// The file route is the executable's, which is given `-o`, and it needs it: polyfem writes the
+/// step_0 frames as soon as the solve is set up, into the working directory when it has no output
+/// directory. The in-memory route is the backend's, which hands polyfem no output directory without
+/// paraview output, and `prepare_state` turns the frames off.
+nlohmann::json solve_args(
+    const std::string& sim_json,
+    const fs::path& sim_json_path,
+    const std::optional<fs::path>& out_dir)
 {
-    nlohmann::json args;
-    std::ifstream(prepared.sim_json_path) >> args;
-    args["root_path"] = prepared.sim_json_path.string();
-    args["output"]["directory"] = prepared.sim_out_dir.string();
+    nlohmann::json args = nlohmann::json::parse(sim_json);
+    args["root_path"] = sim_json_path.string();
+    if (out_dir.has_value()) {
+        args["output"]["directory"] = out_dir->string();
+    }
     args["solver"]["max_threads"] = 1;
     return args;
 }
@@ -445,10 +460,10 @@ std::pair<long, long> check_states_equal(Route& a, Route& b)
     return {allowed, pairs};
 }
 
-/// The operation's preparation up to its first solve, on `params` as `simwild()` hands them to the
-/// operation: verified against the simwild spec in strict mode, with its defaults injected (what
-/// `wmtk::utils::verify_and_setup_logger` does in `simwild()`, without the logger).
-PreparedOperation prepare_operation(nlohmann::json params)
+/// `params` as `simwild()` hands them to an operation: verified against the simwild spec in strict
+/// mode, with its defaults injected (what `wmtk::utils::verify_and_setup_logger` does in
+/// `simwild()`, without the logger).
+nlohmann::json validated(nlohmann::json params)
 {
     const nlohmann::json spec = simwild_spec_for(params);
     jse::JSE spec_engine;
@@ -456,17 +471,38 @@ PreparedOperation prepare_operation(nlohmann::json params)
     const bool valid = spec_engine.verify_json(params, spec);
     INFO(spec_engine.log2str());
     REQUIRE(valid);
-    params = spec_engine.inject_defaults(params, spec);
-    if (params["operation"] == "minimum_separation") {
-        return prepare_minimum_separation(std::move(params));
-    }
-    return prepare_laplacian_smoothing(std::move(params));
+    return spec_engine.inject_defaults(params, spec);
 }
 
-/// Run one operation on `mesh` twice -- inputs_only, which writes every input, and a normal run's
-/// preparation, which writes none but the JSON and the OBJ -- build a State from each (polyfem's
-/// file route, and `prepare_state` on the in-memory content), and require them to be the same.
-/// `edit` is applied to both simulation JSONs alike before either State is built.
+/// The operation's generated inputs, in memory, on `params` as `simwild()` hands them over.
+GeneratedInputs generate(const TaggedMesh& mesh, const nlohmann::json& params)
+{
+    const nlohmann::json checked = validated(params);
+    if (checked["operation"] == "minimum_separation") {
+        return minimum_separation_inputs(mesh, checked);
+    }
+    return laplacian_smoothing_inputs(mesh, checked);
+}
+
+/// Where inputs_only writes the simulation JSON for the output stem `output`.
+fs::path written_json(const nlohmann::json& params, const fs::path& output)
+{
+    return params["operation"] == "minimum_separation"
+               ? output.parent_path() / "sep_input" / "separation.json"
+               : output.parent_path() / "smooth_input" / "smoothing.json";
+}
+
+/// The directory that simulation JSON puts polyfem's output in.
+fs::path written_out_dir(const nlohmann::json& params, const fs::path& output)
+{
+    return output.parent_path() /
+           (params["operation"] == "minimum_separation" ? "sep_output" : "smooth_output");
+}
+
+/// Run one operation on `mesh` both ways -- inputs_only, which writes every input, and the
+/// in-memory generation a normal run solves on, which writes nothing -- build a State from each
+/// (polyfem's file route, and `prepare_state` on the in-memory content), and require them to be
+/// the same. `edit` is applied to both simulation JSONs alike before either State is built.
 ///
 /// @return the collision filter's (allowed, total) vertex pairs, or nothing when both routes
 /// threw, which they must do with the same message.
@@ -482,29 +518,26 @@ std::optional<std::pair<long, long>> check_routes_agree(
 
     params["output"] = (root / "files" / "out").string();
     params["inputs_only"] = true;
-    const PreparedOperation files = prepare_operation(params);
+    simwild(params);
+    const fs::path files_json = written_json(params, root / "files" / "out");
 
     params["output"] = (root / "memory" / "out").string();
     params["inputs_only"] = false;
-    const PreparedOperation memory = prepare_operation(params);
+    const GeneratedInputs memory = generate(TaggedMesh((root / "input.msh").string()), params);
+    // Nothing of the in-memory route is on disk.
+    REQUIRE_FALSE(fs::exists(root / "memory"));
 
-    // Nothing the in-memory route could read is on disk: its input directory holds the simulation
-    // JSON and the OBJ, and polyfem reads neither of those from there.
-    std::set<std::string> on_disk;
-    for (const auto& [file, bytes] : directory_contents(memory.sim_json_path.parent_path())) {
-        on_disk.insert(file);
-    }
-    REQUIRE(
-        on_disk ==
-        std::set<std::string>{memory.sim_json_path.filename().string(), "interface_collision.obj"});
-
-    nlohmann::json files_args = solve_args(files);
-    nlohmann::json memory_args = solve_args(memory);
+    nlohmann::json files_args = solve_args(
+        read_file(files_json),
+        files_json,
+        written_out_dir(params, root / "files" / "out"));
+    nlohmann::json memory_args =
+        solve_args(memory.sim_json.dump(4), memory.sim_json_path, std::nullopt);
     edit(files_args);
     edit(memory_args);
     Route from_files = build_route([&](polyfem::State& s) { state_from_files(s, files_args); });
     Route from_memory = build_route(
-        [&](polyfem::State& s) { prepare_state(s, memory_args, memory.inputs, nullptr); });
+        [&](polyfem::State& s) { prepare_state(s, memory_args, memory.files, nullptr); });
 
     REQUIRE(from_files.error == from_memory.error);
     if (from_files.error.has_value()) {
@@ -639,33 +672,25 @@ TEST_CASE(
 
     // Gap 0.1 in mesh units, scale 1, dhat 0.2: the two cubes are inside the barrier's support at
     // rest, so the contact form has a non-empty collision set from the first evaluation and every
-    // Newton step logs the line. The mesh the JSON names is never written: it is in memory only.
+    // Newton step logs the line. Neither the mesh the JSON names nor the JSON itself is ever
+    // written: both are in memory only.
     const std::string msh = (root / "two_cubes.msh").string();
     const fs::path json_path = root / "two_cubes.json";
-    {
-        std::ofstream(json_path) << two_cube_json(msh, out_dir, 1.0, 0.2).dump(4);
-    }
+    const OrderedJson doc = OrderedJson::parse(two_cube_json(msh, out_dir, 1.0, 0.2).dump());
     SolveInputs inputs;
     inputs.meshes.emplace(msh, two_cubes(0.1));
 
-    const fs::path log_path = out_dir / "polyfem.log";
     auto backend = in_process_backend(std::move(inputs));
-    const auto result = backend->solve(json_path, out_dir, log_path);
+    const auto result = backend->solve(doc, json_path, out_dir);
 
     REQUIRE(result.returncode == 0);
     REQUIRE(result.active_distance.has_value());
 
-    // What the Python engine reads out of the executable's output for the same solve.
+    // What the Python engine reads out of the executable's output for the same solve -- the
+    // output the operation writes to the solve's log file (polyfem_operations.cpp).
     const std::optional<double> logged = logged_active_distance(result.lines);
     REQUIRE(logged.has_value());
     CHECK(*result.active_distance == *logged);
-
-    // ... and the log file on disk carries that same output, which is what makes the file still
-    // worth keeping: it is the same text, not a summary of it.
-    const std::optional<double> from_file =
-        logged_active_distance(split_lines(read_file(log_path)));
-    REQUIRE(from_file.has_value());
-    CHECK(*from_file == *logged);
 }
 
 // A normal run hands polyfem its inputs in memory; inputs_only writes them to the files the
@@ -773,74 +798,216 @@ TEST_CASE(
     }
 }
 
-// A normal run writes no input file but the OBJ, which is output only (it shows which faces the
-// selection picked), and writes the same simulation JSON as inputs_only -- the reduced mesh's
-// volumes, which divide every AMIPS weight, now come from memory instead of from the .msh read
-// back, in the same order. The meshes are bent so that order could show.
+namespace {
+
+/// The in-process backend, keeping a copy of every simulation JSON it is handed.
+class RecordingBackend : public PolyfemBackend
+{
+public:
+    explicit RecordingBackend(SolveInputs inputs)
+        : m_backend(in_process_backend(std::move(inputs)))
+    {}
+
+    SolveResult solve(
+        const OrderedJson& sim_json,
+        const fs::path& json_path,
+        const fs::path& out_dir) override
+    {
+        documents.push_back(sim_json);
+        return m_backend->solve(sim_json, json_path, out_dir);
+    }
+    void reset_warm_start() override { m_backend->reset_warm_start(); }
+    void commit_warm_start() override { m_backend->commit_warm_start(); }
+    bool has_warm_start() const override { return m_backend->has_warm_start(); }
+
+    std::vector<OrderedJson> documents;
+
+private:
+    std::unique_ptr<PolyfemBackend> m_backend;
+};
+
+/// interface_collision.obj read back: every "v" line's three numbers with `strtod`, which reads
+/// the shortest decimal the file prints back as the same double, and the "f" and "l" lines 0-based.
+CollisionObj parse_obj(const std::string& text)
+{
+    CollisionObj obj;
+    std::istringstream lines(text);
+    std::string line;
+    while (std::getline(lines, line)) {
+        std::istringstream tokens(line);
+        std::string kind, a, b, c;
+        tokens >> kind >> a >> b >> c;
+        if (kind == "v") {
+            obj.vertices.push_back(
+                {std::strtod(a.c_str(), nullptr),
+                 std::strtod(b.c_str(), nullptr),
+                 std::strtod(c.c_str(), nullptr)});
+        } else if (kind == "f") {
+            obj.faces.push_back({std::stoll(a) - 1, std::stoll(b) - 1, std::stoll(c) - 1});
+        } else if (kind == "l") {
+            obj.edges.push_back({std::stoll(a) - 1, std::stoll(b) - 1});
+        }
+    }
+    return obj;
+}
+
+/// One operation on `mesh`, run by `simwild()` with inputs_only, then normally, then normally with
+/// `write_simulation_json`, all to the same output stem, and generated in memory in between.
+struct Runs
+{
+    std::map<std::string, std::string> written; ///< what inputs_only wrote, by file name
+    GeneratedInputs memory; ///< what the normal run generates and solves on
+    std::string last_json; ///< the one file `write_simulation_json` added
+};
+
+Runs run_all(
+    const std::string& name,
+    const mshio::MshSpec& mesh,
+    nlohmann::json params,
+    const std::string& sim_in,
+    const std::string& sim_out,
+    const std::set<std::string>& logs)
+{
+    const fs::path root = case_input(name, mesh);
+    params["application"] = "simwild";
+    params["input"] = nlohmann::json::array({(root / "input.msh").string()});
+    params["output"] = (root / "out").string();
+    params["inputs_only"] = true;
+    simwild(params);
+    Runs out;
+    out.written = directory_contents(root / sim_in);
+    fs::remove_all(root / sim_in);
+
+    // On `output` resolved, as the operation resolves it before handing it over, so that both
+    // name the same files.
+    params["output"] = (fs::canonical(root) / "out").string();
+    out.memory = generate(TaggedMesh((root / "input.msh").string()), params);
+
+    params["output"] = (root / "out").string();
+    params["inputs_only"] = false;
+    simwild(params);
+    // The input, the result and the solve logs, and nothing else.
+    std::set<std::string> left;
+    for (const auto& entry : fs::directory_iterator(root)) {
+        left.insert(entry.path().filename().string());
+    }
+    CHECK(left == std::set<std::string>{"input.msh", "out.msh", sim_out});
+    std::set<std::string> in_sim_out;
+    for (const auto& [file, bytes] : directory_contents(root / sim_out)) {
+        in_sim_out.insert(file);
+    }
+    CHECK(in_sim_out == logs);
+
+    // The flag adds the simulation JSON, alone, where inputs_only writes it.
+    params["write_simulation_json"] = true;
+    simwild(params);
+    left.clear();
+    for (const auto& entry : fs::directory_iterator(root)) {
+        left.insert(entry.path().filename().string());
+    }
+    CHECK(left == std::set<std::string>{"input.msh", "out.msh", sim_in, sim_out});
+    const auto added = directory_contents(root / sim_in);
+    REQUIRE(added.size() == 1);
+    CHECK(added.begin()->first == out.memory.sim_json_path.filename().string());
+    out.last_json = added.begin()->second;
+    return out;
+}
+
+void check_same_obj(const CollisionObj& a, const CollisionObj& b)
+{
+    CHECK(a.vertices == b.vertices);
+    CHECK(a.faces == b.faces);
+    CHECK(a.edges == b.edges);
+}
+
+} // namespace
+
+// A normal run writes the deformed mesh and each solve's polyfem log, and nothing else -- no
+// input file, not even the simulation JSON or the OBJ. What it solves on is what inputs_only
+// writes: the JSON and the OBJ it generates in memory are the written ones, byte for byte and value
+// for value, and the loop hands polyfem that JSON with only the loop's own keys changed -- the
+// reduced mesh's volumes, which divide every AMIPS weight, come from memory in both modes, in the
+// same order. The meshes are bent so that order could show. With `write_simulation_json` the run
+// also writes the document the loop handed polyfem last, and only that. Each case here solves
+// once, on a document no solver output reaches (the probe's, and smoothing's), so that document is
+// compared byte for byte.
 TEST_CASE(
-    "polyfem_helpers normal run writes only the JSON and the OBJ",
+    "polyfem_helpers a normal run writes only the result and the solve logs",
     "[components][polyfem_helpers]")
 {
-    // Both runs go to the same output stem, so the paths inside the two JSONs are the same too.
-    const auto run_both = [](const std::string& name,
-                             const mshio::MshSpec& mesh,
-                             nlohmann::json params,
-                             const std::string& sim_in) {
-        const fs::path root = case_input(name, mesh);
-        params["application"] = "simwild";
-        params["input"] = nlohmann::json::array({(root / "input.msh").string()});
-        params["output"] = (root / "out").string();
-        params["inputs_only"] = true;
-        simwild(params);
-        const auto inputs_only = directory_contents(root / sim_in);
-        fs::remove_all(root / sim_in);
-
-        params["inputs_only"] = false;
-        simwild(params);
-        REQUIRE(fs::is_regular_file(root / "out.msh")); // the solve ran and wrote its result
-        return std::make_pair(inputs_only, directory_contents(root / sim_in));
-    };
-
     SECTION("2D smoothing: the JSON byte for byte")
     {
-        const auto [inputs_only, normal] = run_both(
+        const Runs runs = run_all(
             "normal_smooth2d",
             jagged_2d(),
             {{"operation", "laplacian_smoothing"},
              {"interfaces", {{{"region", "tag_0"}, {"filter", "ambient"}}}}},
-            "smooth_input");
-        CHECK(inputs_only.size() == 5); // the JSON, the OBJ, two constraints, the reduced mesh
-        REQUIRE(normal.size() == 2);
-        CHECK(normal.at("interface_collision.obj") == inputs_only.at("interface_collision.obj"));
-        // The single solve writes the document again unchanged, so the file on disk is still the
-        // generated one.
-        CHECK(normal.at("smoothing.json") == inputs_only.at("smoothing.json"));
+            "smooth_input",
+            "smooth_output",
+            {"polyfem.log"});
+        // The JSON, the OBJ, two constraints, the reduced mesh.
+        CHECK(runs.written.size() == 5);
+        REQUIRE(runs.memory.files.collision_meshes.size() == 1);
+        check_same_obj(
+            runs.memory.files.collision_meshes.begin()->second,
+            parse_obj(runs.written.at("interface_collision.obj")));
+        CHECK(runs.memory.sim_json.dump(4) == runs.written.at("smoothing.json"));
+
+        // The single solve hands polyfem the generated document unchanged.
+        RecordingBackend backend(runs.memory.files);
+        std::vector<SolveReport> solves;
+        run_polyfem_single(
+            backend,
+            runs.memory.sim_json,
+            runs.memory.sim_json_path,
+            runs.memory.sim_out_dir,
+            solves);
+        REQUIRE(backend.documents.size() == 1);
+        CHECK(backend.documents.front().dump(4) == runs.written.at("smoothing.json"));
+        CHECK(runs.last_json == backend.documents.back().dump(4));
     }
     SECTION("3D separation with pins: the JSON byte for byte, but for the loop's own keys")
     {
         // sep 5e-4 against a gap of about 1.4e-3 at scale 1e-3: the probe finds the bodies already
         // separated, so one solve runs and the loop stops.
-        const auto [inputs_only, normal] = run_both(
+        const Runs runs = run_all(
             "normal_sep3d",
             boxes_3d(),
             {{"operation", "minimum_separation"},
              {"collision_pairs", both_skins()},
              {"sep", 5e-4},
              {"protected_regions", {"tag_0", {{"region", "tag_1"}, {"axes", "z"}}}}},
-            "sep_input");
+            "sep_input",
+            "sep_output",
+            {"polyfem_probe.log"});
         // The JSON, the OBJ, two constraints, the linear map, the body ids, the reduced mesh and
         // the two pin files.
-        CHECK(inputs_only.size() == 9);
-        REQUIRE(normal.size() == 2);
-        CHECK(normal.at("interface_collision.obj") == inputs_only.at("interface_collision.obj"));
+        CHECK(runs.written.size() == 9);
+        REQUIRE(runs.memory.files.collision_meshes.size() == 1);
+        check_same_obj(
+            runs.memory.files.collision_meshes.begin()->second,
+            parse_obj(runs.written.at("interface_collision.obj")));
+        const std::string& generated_text = runs.written.at("separation.json");
+        CHECK(runs.memory.sim_json.dump(4) == generated_text);
 
-        // The dhat loop rewrites the document before every solve: it sets contact.dhat and the
+        // The dhat loop changes the document before every solve: it sets contact.dhat and the
         // barrier stiffness, and adds the two warm-start paths. Those four keys are the loop's;
         // put back to the generated values, the rest has to be the generated document exactly.
-        const std::string& generated_text = inputs_only.at("separation.json");
+        RecordingBackend backend(runs.memory.files);
+        OrderedJson sep_json = runs.memory.sim_json;
+        std::vector<SolveReport> solves;
+        run_polyfem_dhat(
+            backend,
+            sep_json,
+            runs.memory.sim_json_path,
+            runs.memory.sim_out_dir,
+            runs.memory.cfg,
+            solves);
+        REQUIRE(backend.documents.size() == 1);
+        CHECK(runs.last_json == backend.documents.back().dump(4));
         const OrderedJson generated = OrderedJson::parse(generated_text);
-        OrderedJson last = OrderedJson::parse(normal.at("separation.json"));
-        CHECK(last != generated); // the loop did rewrite it
+        OrderedJson last = backend.documents.back();
+        CHECK(last != generated); // the loop did change it
         last["contact"]["dhat"] = generated["contact"]["dhat"];
         last["solver"]["contact"]["barrier_stiffness"] =
             generated["solver"]["contact"]["barrier_stiffness"];
@@ -851,31 +1018,28 @@ TEST_CASE(
     }
 }
 
-// The deformed mesh is the input mesh with the solution added, exactly: from the solution on,
-// every step is deterministic, so the write-back is held to an exact value. The solution is a real
-// one -- the smoothing operation's, handed from its solve to the writer as the operation hands it
-// -- and the meshes are bent, so no coordinate or displacement is exactly representable.
+// The deformed mesh is the input mesh with the displacement added, exactly: from the displacement
+// on, every step is deterministic, so the write-back is held to an exact value. The displacement is
+// a real one -- the smoothing operation's, handed from the operation to the writer as the operation
+// on files hands it -- and the meshes are bent, so no coordinate or displacement is exactly
+// representable.
 TEST_CASE(
-    "polyfem_helpers the deformed mesh is the input plus the solution",
+    "polyfem_helpers the deformed mesh is the input plus the displacement",
     "[components][polyfem_helpers]")
 {
     const auto check = [](const std::string& name, const mshio::MshSpec& mesh) {
         const fs::path root = case_input(name, mesh);
-        const double scale = 1e-3;
-        PreparedOperation prepared = prepare_operation(
-            {{"application", "simwild"},
-             {"operation", "laplacian_smoothing"},
-             {"input", nlohmann::json::array({(root / "input.msh").string()})},
-             {"output", (root / "out").string()},
-             {"interfaces", {{{"region", "tag_0"}, {"filter", "ambient"}}}},
-             {"scale", scale}});
-        const auto backend = operation_backend(prepared);
-        const Eigen::MatrixXd u = run_polyfem_single(
-            *backend,
-            prepared.sim_json,
-            prepared.sim_json_path,
-            prepared.sim_out_dir);
-        write_operation_result(prepared, u);
+        const OperationResult result = polyfem_helpers::laplacian_smoothing(
+            TaggedMesh((root / "input.msh").string()),
+            validated(
+                {{"application", "simwild"},
+                 {"operation", "laplacian_smoothing"},
+                 {"input", nlohmann::json::array({(root / "input.msh").string()})},
+                 {"output", (root / "out").string()},
+                 {"interfaces", {{{"region", "tag_0"}, {"filter", "ambient"}}}},
+                 {"scale", 1e-3}}));
+        const Eigen::MatrixXd& u = result.displacement;
+        write_operation_result((root / "input.msh").string(), (root / "out").string(), u);
 
         const mshio::MshSpec in = mshio::load_msh((root / "input.msh").string());
         const mshio::MshSpec out = mshio::load_msh((root / "out.msh").string());
@@ -904,13 +1068,13 @@ TEST_CASE(
             CHECK(a.data == e.data);
         }
 
-        // Each position is the input's plus u / scale, to the bit, on the components the solution
-        // carries; the third coordinate of a 2D mesh is the input's.
+        // Each position is the input's plus the displacement, to the bit, on the components the
+        // displacement carries; the third coordinate of a 2D mesh is the input's.
         size_t mismatches = 0;
         for (Eigen::Index i = 0; i < u.rows(); ++i) {
             for (int d = 0; d < 3; ++d) {
                 const double original = in_nodes.data[size_t(3 * i + d)];
-                const double expected = d < dim ? original + u(i, d) / scale : original;
+                const double expected = d < dim ? original + u(i, d) : original;
                 mismatches += out_nodes.data[size_t(3 * i + d)] != expected;
             }
         }
@@ -1026,22 +1190,20 @@ TEST_CASE(
         const Eigen::MatrixXd envelope = nodes.topRows(dim + 1);
         write_simwild_layout(root / "input.msh", dim, nodes, envelope);
 
-        PreparedOperation prepared;
-        prepared.input = (root / "input.msh").string();
-        prepared.cfg["scale"] = 1e-3;
+        const std::string input = (root / "input.msh").string();
         // One row per node of the file: the mesh nodes, then the envelope's dim + 1.
         const Eigen::Index rows = n + dim + 1;
 
-        prepared.output = (root / "zero").string();
-        write_operation_result(prepared, Eigen::MatrixXd::Zero(rows, dim));
+        write_operation_result(input, (root / "zero").string(), Eigen::MatrixXd::Zero(rows, dim));
         CHECK(read_file(root / "zero.msh") == read_file(root / "input.msh"));
 
+        // A solution in solver units at scale 1e-3, handed over in mesh units as an operation
+        // returns it.
         Eigen::MatrixXd u(rows, dim);
         for (Eigen::Index i = 0; i < rows; ++i) {
             for (Eigen::Index d = 0; d < dim; ++d) u(i, d) = 1e-4 * std::sin(double(7 * i + d));
         }
-        prepared.output = (root / "moved").string();
-        write_operation_result(prepared, u);
+        write_operation_result(input, (root / "moved").string(), u / 1e-3);
         Eigen::MatrixXd moved = nodes;
         moved.leftCols(dim) += u.topRows(n) / 1e-3;
         write_simwild_layout(root / "expected.msh", dim, moved, envelope);
@@ -1086,7 +1248,7 @@ TEST_CASE(
         Catch::Matchers::ContainsSubstring("reproduces only the layout MshData writes") &&
             Catch::Matchers::ContainsSubstring(
                 "rebuilding it with nothing moved does not give the same content"));
-    CHECK(directory_contents(root / "smooth_output").empty()); // no solve ran, not even its log
+    CHECK_FALSE(fs::exists(root / "smooth_output")); // no solve ran, not even its log
     CHECK_FALSE(fs::exists(root / "out.msh"));
 }
 
@@ -1172,4 +1334,160 @@ TEST_CASE(
     };
     SECTION("3D") { check("tagged_mesh3d", boxes_3d()); }
     SECTION("2D") { check("tagged_mesh2d", jagged_2d()); }
+}
+
+namespace {
+
+/// A fixture laid out by `groups_msh` -- node tag i + 1 at row i, one element block per group with
+/// cells, carrying the group's tag -- built from its arrays, not read from its file.
+TaggedMesh from_arrays(const mshio::MshSpec& fixture)
+{
+    const int dim = fixture.physical_groups.front().dim;
+    const auto& node_block = fixture.nodes.entity_blocks.front();
+    Eigen::MatrixXd vertices(Eigen::Index(node_block.num_nodes_in_block), dim);
+    for (Eigen::Index i = 0; i < vertices.rows(); ++i) {
+        for (int d = 0; d < dim; ++d) vertices(i, d) = node_block.data[size_t(3 * i + d)];
+    }
+    std::map<std::string, int64_t> group_tags;
+    std::map<int, std::string> name_of_tag;
+    for (const auto& group : fixture.physical_groups) {
+        group_tags[group.name] = group.tag;
+        name_of_tag[group.tag] = group.name;
+    }
+    size_t n_cells = 0;
+    for (const auto& block : fixture.elements.entity_blocks) n_cells += block.num_elements_in_block;
+    Eigen::MatrixXi cells(Eigen::Index(n_cells), dim + 1);
+    std::vector<TagNames> cell_tags;
+    const size_t stride = size_t(dim) + 2;
+    for (const auto& block : fixture.elements.entity_blocks) {
+        for (size_t j = 0; j < block.num_elements_in_block; ++j) {
+            for (int k = 0; k <= dim; ++k) {
+                cells(Eigen::Index(cell_tags.size()), k) =
+                    int(block.data[j * stride + 1 + size_t(k)]) - 1;
+            }
+            cell_tags.push_back({name_of_tag.at(block.entity_tag)});
+        }
+    }
+    return TaggedMesh(vertices, cells, cell_tags, group_tags);
+}
+
+/// The process's working directory set to `dir` while this lives, and restored after -- also when
+/// a failed REQUIRE throws out of the scope.
+class WorkingDirectory
+{
+public:
+    explicit WorkingDirectory(const fs::path& dir)
+        : m_previous(fs::current_path())
+    {
+        fs::current_path(dir);
+    }
+    ~WorkingDirectory() { fs::current_path(m_previous); }
+
+private:
+    fs::path m_previous;
+};
+
+/// A fresh, empty directory.
+fs::path empty_directory(const std::string& name)
+{
+    const fs::path dir = fs::temp_directory_path() / "wmtk_polyfem_helpers_memory_only" / name;
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    return dir;
+}
+
+} // namespace
+
+// The in-memory operations read no file and write none, and their displacement is the one the
+// operation on files applies.
+//
+// Each runs on a TaggedMesh built from arrays, from an empty working directory, with `input`
+// naming a file that does not exist and `output` a stem in a second empty directory. Both are
+// still empty afterwards: nothing was written where the operation on files writes (sep_input,
+// sep_output, the result), nor anywhere a relative name would put it.
+//
+// The same mesh written to a file and run through the operation on files then takes as many solves
+// and writes input + displacement to within the solver's own noise -- not to the bit, because two
+// solves of the same document are not the same to the bit here. polyfem picks Eigen::AccelerateLDLT
+// on this machine, whose result depends on where its buffers lie in memory. Measured on the 2D
+// smoothing case, one thread, the same document solved after six different sets of live
+// allocations: up to 8e-20 apart with AccelerateLDLT, 0 with Eigen::SimplicialLDLT; the separation
+// loop carries such a difference to 8e-11 on the 3D case (1.8e-10 on the 2D one with threads).
+// Hence the bound of the Python parity tests, 1e-9 relative (pysimwild tests/test_engine_parity.py,
+// RTOL_PYTHON_VS_CPP).
+TEST_CASE(
+    "polyfem_helpers the in-memory operations touch no file",
+    "[components][polyfem_helpers]")
+{
+    const auto check =
+        [](const std::string& name, const mshio::MshSpec& fixture, nlohmann::json params) {
+            params["application"] = "simwild";
+            const TaggedMesh mesh = from_arrays(fixture);
+            const fs::path cwd = empty_directory(name + "_cwd");
+            const fs::path out_root = empty_directory(name + "_out");
+            nlohmann::json in_memory = params;
+            in_memory["input"] = nlohmann::json::array({(out_root / "input.msh").string()});
+            in_memory["output"] = (out_root / "out").string();
+            in_memory = validated(in_memory);
+            OperationResult result;
+            {
+                const WorkingDirectory in(cwd);
+                result = in_memory["operation"] == "minimum_separation"
+                             ? polyfem_helpers::minimum_separation(mesh, in_memory)
+                             : polyfem_helpers::laplacian_smoothing(mesh, in_memory);
+            }
+            CHECK(fs::is_empty(cwd));
+            CHECK(fs::is_empty(out_root));
+            // Every solve's output came back with it instead.
+            REQUIRE_FALSE(result.solves.empty());
+            for (const SolveReport& solve : result.solves) {
+                CHECK_FALSE(solve.log.empty());
+            }
+
+            const fs::path root = case_input(name, fixture);
+            params["input"] = nlohmann::json::array({(root / "input.msh").string()});
+            params["output"] = (root / "out").string();
+            simwild(params);
+            const fs::path sim_out =
+                root / (params["operation"] == "minimum_separation" ? "sep_output"
+                                                                     : "smooth_output");
+            CHECK(directory_contents(sim_out).size() == result.solves.size());
+
+            const mshio::MshSpec in = mshio::load_msh((root / "input.msh").string());
+            const mshio::MshSpec out = mshio::load_msh((root / "out.msh").string());
+            const auto& in_nodes = in.nodes.entity_blocks.front();
+            const auto& out_nodes = out.nodes.entity_blocks.front();
+            const Eigen::MatrixXd& u = result.displacement;
+            REQUIRE(u.rows() == Eigen::Index(in_nodes.num_nodes_in_block));
+            REQUIRE(u.cols() == mesh.mesh_dim);
+            CHECK(u.cwiseAbs().maxCoeff() > 0.0); // the solve moved something
+            double worst = 0.0;
+            for (Eigen::Index i = 0; i < u.rows(); ++i) {
+                for (int d = 0; d < mesh.mesh_dim; ++d) {
+                    const double written = out_nodes.data[size_t(3 * i + d)];
+                    const double expected = in_nodes.data[size_t(3 * i + d)] + u(i, d);
+                    worst = std::max(
+                        worst,
+                        std::abs(written - expected) / std::max(std::abs(expected), 1.0));
+                }
+            }
+            INFO("written and in-memory coordinates differ by " << worst << " relative");
+            CHECK(worst <= 1e-9);
+        };
+
+    // The dhat ramp of the end-to-end parity case: a probe, an overshoot rolled back, a committed
+    // solve and the warm start it leaves.
+    const nlohmann::json separation = {
+        {"operation", "minimum_separation"},
+        {"collision_pairs", both_skins()},
+        {"sep", 1.5e-3},
+        {"rtol", 1e-1},
+        {"max_outer_iterations", 4}};
+    const nlohmann::json smoothing = {
+        {"operation", "laplacian_smoothing"},
+        {"interfaces", {{{"region", "tag_0"}, {"filter", "ambient"}}}}};
+    SECTION("3D separation") { check("memory_only_sep3d", boxes_3d(), separation); }
+    SECTION("2D separation") { check("memory_only_sep2d", squares_2d(), separation); }
+    SECTION("3D smoothing") { check("memory_only_smooth3d", boxes_3d(), smoothing); }
+    SECTION("2D smoothing") { check("memory_only_smooth2d", jagged_2d(), smoothing); }
 }

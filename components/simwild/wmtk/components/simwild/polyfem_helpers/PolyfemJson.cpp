@@ -5,7 +5,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 
 namespace wmtk::components::simwild::polyfem_helpers {
 
@@ -293,9 +292,10 @@ OrderedJson build_polyfem_json(
     const OrderedJson dim_flags(std::vector<bool>(info.dim, true));
 
     OrderedJson doc;
-    doc["geometry"] = OrderedJson::array({geometry_block(
-        std::filesystem::weakly_canonical(msh_path).string(),
-        scale)});
+    // Every path is used as it stands, here and below. The Python resolved them; here they are
+    // named from `output` (`generated_dir`), which the simwild operation resolves before it hands
+    // it over, and resolving them again would read the filesystem.
+    doc["geometry"] = OrderedJson::array({geometry_block(msh_path.string(), scale)});
     doc["materials"] = materials;
     doc["space"]["advanced"]["bc_method"] = "sample";
     if (truthy(get_or(cfg, "contact_enabled", opt.at("contact_enabled")))) {
@@ -355,7 +355,7 @@ OrderedJson build_polyfem_json(
     if (truthy(get_or(cfg, "save_vtu", opt.at("save_vtu")))) {
         output["paraview"] = deep_merge(paraview_defaults(), OrderedJson::object());
     }
-    output["data"]["solution"] = std::filesystem::weakly_canonical(sol_path).string();
+    output["data"]["solution"] = sol_path.string();
     output["data"]["advanced"]["reorder_nodes"] = true;
     doc["output"] = output;
 
@@ -370,7 +370,7 @@ OrderedJson build_polyfem_json(
 OrderedJson minimum_separation_cfg(const nlohmann::json& params, const OrderedJson& polyfem_pairs)
 {
     OrderedJson cfg;
-    cfg["input_msh"] = params["input"];
+    cfg["input_msh"] = params["input"].front(); // the one input file (`operation_input`)
     // run() overwrites cfg["collision_pairs"] with the id pairs _normalize_collision_pairs
     // returns, before anything reads it; only those reach the polyfem JSON.
     cfg["collision_pairs"] = polyfem_pairs;
@@ -417,7 +417,7 @@ OrderedJson minimum_separation_cfg(const nlohmann::json& params, const OrderedJs
 OrderedJson laplacian_smoothing_cfg(const nlohmann::json& params)
 {
     OrderedJson cfg;
-    cfg["input_msh"] = params["input"];
+    cfg["input_msh"] = params["input"].front(); // the one input file (`operation_input`)
     cfg["scale"] = params["scale"];
     cfg["useFitting"] = params["use_fitting"];
     cfg["useLaplacian"] = params["use_laplacian"];
@@ -451,15 +451,6 @@ OrderedJson laplacian_smoothing_cfg(const nlohmann::json& params)
         cfg["amips_body_weight"] = 1e-4;
     }
     return cfg;
-}
-
-void write_polyfem_json(const std::filesystem::path& path, const OrderedJson& doc)
-{
-    std::ofstream out(path);
-    if (!out.is_open()) {
-        log_and_throw_error("Unable to open {} for writing", path.string());
-    }
-    out << doc.dump(4);
 }
 
 } // namespace wmtk::components::simwild::polyfem_helpers

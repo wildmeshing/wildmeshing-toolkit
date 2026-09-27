@@ -52,9 +52,9 @@ target_link_libraries(wmtk_${COMPONENT_NAME} PUBLIC
 	jse::jse
 )
 
-# The polyfem-backed operations minimum_separation and laplacian_smoothing, and the helpers they are
-# built from; simwild.cpp dispatches to them. Built only with WMTK_WITH_POLYFEM (top-level
-# CMakeLists).
+# The polyfem-backed operations minimum_separation and laplacian_smoothing: the helpers they are
+# built from, which work in memory, and polyfem_operations, their file layer, which simwild.cpp
+# dispatches to. Built only with WMTK_WITH_POLYFEM (top-level CMakeLists).
 if(WMTK_WITH_POLYFEM)
 	set(POLYFEM_HELPERS_SRC_FILES
 		polyfem_helpers/PythonFormat.hpp
@@ -82,6 +82,8 @@ if(WMTK_WITH_POLYFEM)
 		polyfem_helpers/MinimumSeparation.cpp
 		polyfem_helpers/LaplacianSmoothing.hpp
 		polyfem_helpers/LaplacianSmoothing.cpp
+		polyfem_operations.hpp
+		polyfem_operations.cpp
 	)
 
 	target_sources(wmtk_${COMPONENT_NAME} PRIVATE ${POLYFEM_HELPERS_SRC_FILES})

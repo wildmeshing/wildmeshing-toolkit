@@ -9,21 +9,10 @@
 
 namespace wmtk::components::simwild::polyfem_helpers {
 
-PreparedOperation prepare_laplacian_smoothing(nlohmann::json params)
+GeneratedInputs laplacian_smoothing_inputs(const TaggedMesh& mesh, const nlohmann::json& params)
 {
-    params["input"] = operation_input_path(params);
-
-    PreparedOperation out;
-    out.operation = "laplacian_smoothing";
-    out.inputs_only = params["inputs_only"].get<bool>();
-    const bool inputs_only = out.inputs_only;
-    out.input = params["input"].get<std::string>();
-    out.output = params["output"].get<std::string>();
-    const std::string& input = out.input;
-    const std::string& output = out.output;
-
     // Smoothing mode: the simulation JSON has no contact block, so polyfem reads no collision
-    // proxy (see emit_interface_constraint).
+    // proxy (see add_interface_constraint).
     std::vector<Selection> interfaces;
     std::vector<int64_t> ids_per_input;
     assign_selection_ids(params["interfaces"], interfaces, ids_per_input);
@@ -55,16 +44,13 @@ PreparedOperation prepare_laplacian_smoothing(nlohmann::json params)
             std::sqrt(*selection.weight / weight_laplacian);
     }
 
-    const std::filesystem::path sim_in_dir = sim_dir(output, "smooth_input");
-    out.sim_out_dir = sim_dir(output, "smooth_output");
-    logger().info("Input  : {}", input);
-    logger().info("Output : {}.msh", output);
-    logger().info("Reading {} ...", input);
-    const TaggedMesh mesh(input);
+    GeneratedInputs out;
+    const std::filesystem::path sim_in_dir = generated_dir(params, "smooth_input");
+    out.sim_out_dir = generated_dir(params, "smooth_output");
     // Positions mode by default (laplacian_smoothing.run's own default, and the spec's):
     // in displacement mode the rest configuration is already a minimum and the solve
     // terminates with a zero gradient, so nothing moves.
-    emit_interface_constraint(
+    add_interface_constraint(
         make_interface_constraint(
             mesh,
             interfaces,
@@ -75,11 +61,10 @@ PreparedOperation prepare_laplacian_smoothing(nlohmann::json params)
             laplacian_row_factor_by_id),
         sim_in_dir,
         /*with_collision_proxy=*/false,
-        inputs_only,
-        out.inputs);
+        out.files);
 
     ReducedMesh reduced =
-        reduce_mesh(input, mesh, params["ambient_like_tags"], sim_in_dir, inputs_only);
+        reduce_mesh(operation_input(params), mesh, params["ambient_like_tags"], sim_in_dir);
 
     // The reduced mesh's two groups are "ambient" and "body", which is the scheme
     // build_polyfem_json looks weights up in, so the resolved pair replaces whatever the
@@ -92,48 +77,46 @@ PreparedOperation prepare_laplacian_smoothing(nlohmann::json params)
         sim_in_dir,
         reduced.info,
         out.sim_out_dir / "solution.txt");
-    if (!inputs_only) {
-        out.inputs.meshes.emplace(
-            out.sim_json["geometry"][0]["mesh"].get<std::string>(),
-            std::move(reduced.content));
-    }
+    out.files.meshes.emplace(
+        out.sim_json["geometry"][0]["mesh"].get<std::string>(),
+        std::move(reduced.content));
     out.sim_json_path = sim_in_dir / "smoothing.json";
-    write_polyfem_json(out.sim_json_path, out.sim_json);
     return out;
 }
 
-void laplacian_smoothing(nlohmann::json json_params)
+OperationResult laplacian_smoothing(const TaggedMesh& mesh, const nlohmann::json& params)
 {
-    PreparedOperation prepared = prepare_laplacian_smoothing(std::move(json_params));
-    if (prepared.inputs_only) {
-        return;
+    GeneratedInputs inputs = laplacian_smoothing_inputs(mesh, params);
+    const std::unique_ptr<PolyfemBackend> backend = in_process_backend(std::move(inputs.files));
+
+    OperationResult out;
+    Eigen::MatrixXd solution;
+    try {
+        // One solve, no contact and no outer loop.
+        solution = run_polyfem_single(
+            *backend,
+            inputs.sim_json,
+            inputs.sim_json_path,
+            inputs.sim_out_dir,
+            out.solves);
+    } catch (const std::exception& e) {
+        throw OperationFailed(e.what(), std::move(out.solves));
     }
-    check_result_layout(prepared.input);
-    const std::unique_ptr<PolyfemBackend> backend = operation_backend(prepared);
-
-    // One solve, no contact and no outer loop: `step_run_polyfem_single` writes the same
-    // JSON again itself, which is mirrored rather than skipped so the two engines touch the
-    // file the same number of times.
-    const Eigen::MatrixXd solution = run_polyfem_single(
-        *backend,
-        prepared.sim_json,
-        prepared.sim_json_path,
-        prepared.sim_out_dir);
-
-    write_operation_result(prepared, solution);
+    // `u_mesh = u / scale`, the first of the two roundings the Python makes on the way to the
+    // deformed mesh; the add is the second (write_operation_result).
+    out.displacement = solution / inputs.cfg["scale"].get<double>();
+    return out;
 }
 
 Eigen::MatrixXd run_polyfem_single(
     PolyfemBackend& backend,
     const OrderedJson& sim_json,
     const std::filesystem::path& sim_json_path,
-    const std::filesystem::path& sim_out_dir)
+    const std::filesystem::path& sim_out_dir,
+    std::vector<SolveReport>& solves)
 {
-    std::filesystem::create_directories(sim_out_dir);
-    write_polyfem_json(sim_json_path, sim_json);
-
-    const SolveResult result =
-        backend.solve(sim_json_path, sim_out_dir, sim_out_dir / "polyfem.log");
+    const SolveResult result = backend.solve(sim_json, sim_json_path, sim_out_dir);
+    solves.push_back(solve_report(sim_json, result, std::nullopt));
     check_polyfem_success(
         result.returncode,
         result.statuses,

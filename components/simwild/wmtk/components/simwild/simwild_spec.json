@@ -77,6 +77,7 @@
       "tag_priority",
       "tags_selection",
       "inputs_only",
+      "write_simulation_json",
       "collision_pairs",
       "sep",
       "interfaces",
@@ -157,7 +158,7 @@
       "minimum_separation",
       "laplacian_smoothing"
     ],
-    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required. The last two are the polyfem-backed operations and need the toolkit built with WMTK_WITH_POLYFEM: `minimum_separation` pushes collision bodies apart to a target separation with polyfem (AMIPS + fitting + Laplacian + GCP contact), with an outer loop per `strategy`; `laplacian_smoothing` fairs material interfaces with one polyfem solve (AMIPS + fitting + Laplacian, no contact). Both read the input .msh themselves and write the deformed mesh to <output>.msh, with the generated polyfem inputs in sep_input/sep_output or smooth_input/smooth_output beside it."
+    "doc": "Image simulation contains multiple operations for modifying the image. Depending on the operation, more parameters might be required. The last two are the polyfem-backed operations and need the toolkit built with WMTK_WITH_POLYFEM: `minimum_separation` pushes collision bodies apart to a target separation with polyfem (AMIPS + fitting + Laplacian + GCP contact), with an outer loop per `strategy`; `laplacian_smoothing` fairs material interfaces with one polyfem solve (AMIPS + fitting + Laplacian, no contact). Both read the input .msh themselves and write the deformed mesh to <output>.msh, with the log of every polyfem solve in sep_output or smooth_output beside it; the generated polyfem inputs are written (to sep_input or smooth_input) only with `inputs_only`, and the simulation JSON alone with `write_simulation_json`."
   },
   {
     "pointer": "/output",
@@ -685,7 +686,13 @@
     "pointer": "/inputs_only",
     "type": "bool",
     "default": false,
-    "doc": "minimum_separation / laplacian_smoothing: write the generated polyfem inputs to <directory of output>/sep_input or /smooth_input and return without solving. It exists so the generated inputs can be diffed byte for byte against the ones the Python engine wrote, which is how this port is checked. A normal run writes only the simulation JSON and interface_collision.obj there, and hands polyfem the other inputs in memory."
+    "doc": "minimum_separation / laplacian_smoothing: write the generated polyfem inputs to <directory of output>/sep_input or /smooth_input and return without solving. It exists so the generated inputs can be diffed byte for byte against the ones the Python engine wrote, which is how this port is checked. A normal run writes none of them: it hands polyfem every input in memory (see `write_simulation_json` for the one exception)."
+  },
+  {
+    "pointer": "/write_simulation_json",
+    "type": "bool",
+    "default": false,
+    "doc": "minimum_separation / laplacian_smoothing: in a normal run, also write the simulation JSON as polyfem received it on the LAST solve -- the last attempted one, failed or rolled back included -- to the path inputs_only writes it to, <directory of output>/sep_input/separation.json or /smooth_input/smoothing.json. A debugging aid, off by default; inputs_only is unaffected."
   },
   {
     "pointer": "/collision_pairs",

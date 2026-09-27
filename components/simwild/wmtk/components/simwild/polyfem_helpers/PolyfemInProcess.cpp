@@ -19,7 +19,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 #include <mutex>
 #include <optional>
 
@@ -84,8 +83,9 @@ Eigen::MatrixXd input_node_solution(const polyfem::State& state, const Eigen::Ma
 }
 
 /**
- * @brief The sink that turns polyfem's own log records into `polyfem_iter_<i>.log` (and into the
- * lines whose last "Finished:" line `check_polyfem_success` quotes when a solve failed).
+ * @brief The sink that turns polyfem's own log records into `SolveResult::lines`: the text of
+ * `polyfem_iter_<i>.log`, and the lines whose last "Finished:" line `check_polyfem_success` quotes
+ * when a solve failed.
  *
  * The Python engine copies the executable's stdout into that file. In process there is no child
  * stdout to copy, so the text is taken where it is produced: spdlog's default pattern formats each
@@ -95,24 +95,15 @@ Eigen::MatrixXd input_node_solution(const polyfem::State& state, const Eigen::Ma
  *
  * `stop()` exists because `State::init` REPLACES polyfem's global logger on every solve: a logger
  * this sink was attached to can outlive the solve if something still holds it, and after stop()
- * such a straggler writes nothing instead of writing into a closed file.
+ * such a straggler adds nothing to lines that were already handed back.
  */
 class LogCapture : public spdlog::sinks::base_sink<std::mutex>
 {
 public:
-    explicit LogCapture(const std::filesystem::path& log_path)
-        : m_file(log_path)
-    {
-        if (!m_file.is_open()) {
-            log_and_throw_error("Unable to open {} for writing", log_path.string());
-        }
-    }
-
     void stop()
     {
         std::lock_guard<std::mutex> lock(base_sink<std::mutex>::mutex_);
         m_stopped = true;
-        m_file.close();
     }
 
     /// The captured records, split on '\n' exactly as the Python splits the executable's output.
@@ -130,22 +121,14 @@ protected:
         }
         spdlog::memory_buf_t formatted;
         base_sink<std::mutex>::formatter_->format(msg, formatted);
-        const std::string text = strip_ansi(fmt::to_string(formatted));
-        m_file << text;
-        for (auto& line : split_lines(text)) {
+        for (auto& line : split_lines(strip_ansi(fmt::to_string(formatted)))) {
             m_lines.push_back(std::move(line));
         }
     }
 
-    void flush_() override
-    {
-        if (!m_stopped) {
-            m_file.flush();
-        }
-    }
+    void flush_() override {}
 
 private:
-    std::ofstream m_file;
     std::vector<std::string> m_lines;
     bool m_stopped = false;
 };
@@ -186,16 +169,19 @@ void detach_sink(spdlog::logger& logger, const spdlog::sink_ptr& sink)
     sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
 }
 
-/// `main.cpp`'s `load_json`: the document, with `root_path` defaulted to the file it came from so
-/// that relative paths inside it resolve the same way.
-nlohmann::json load_simulation_json(const std::filesystem::path& json_path)
+/**
+ * @brief `main.cpp`'s `load_json` on the document the executable was handed as the file
+ * `json_path`: its content, with `root_path` defaulted to that name so that relative paths inside
+ * it resolve the same way.
+ *
+ * The content goes through its text -- `dump(4)`, which is what inputs_only writes and what the
+ * executable parsed -- and not through a conversion of the ordered document, so that polyfem is
+ * handed exactly the values it read from the file: the parse reads a positive integer back
+ * unsigned, where a conversion would keep it signed.
+ */
+nlohmann::json simulation_args(const OrderedJson& sim_json, const std::filesystem::path& json_path)
 {
-    std::ifstream file(json_path);
-    if (!file.is_open()) {
-        log_and_throw_error("unable to open {} file", json_path.string());
-    }
-    nlohmann::json out;
-    file >> out;
+    nlohmann::json out = nlohmann::json::parse(sim_json.dump(4));
     if (!out.contains("root_path")) {
         out["root_path"] = json_path.string();
     }
@@ -316,8 +302,9 @@ polyfem::mesh::CollisionProxyData collision_proxy(
 
 /**
  * @brief The reduced mesh as `polyfem::mesh::Mesh::create(path)` reads it out of the file
- * `write_polyfem_reduced_msh` saves from `msh`: `MshReader::load`'s vertices, cells and body ids,
- * for the only cells the reduced mesh has (linear triangles, or linear tetrahedra).
+ * `write_polyfem_reduced_msh` (polyfem_operations.cpp) saves from `msh`: `MshReader::load`'s
+ * vertices, cells and body ids, for the only cells the reduced mesh has (linear triangles, or
+ * linear tetrahedra).
  *
  * The file's node tags are exactly 1..n, in row order, so MshReader puts every node at its row
  * (tag - 1) and every cell's vertices at the rows `msh.cells` names. A cell's body id is the first
@@ -442,15 +429,17 @@ std::optional<double> active_distance_from_contact_form(
  * @brief The in-process backend: `src/polyfem/main.cpp`'s `forward_simulation`, call for call, on
  * a State built here.
  *
- * The simulation JSON is byte for byte the one the Python engine hands the executable, and it is
- * still what says which inputs a solve reads, but no input is read from a file: the reduced mesh,
- * the soft constraints, the hard pins and the collision proxy with its linear map and body ids all
- * come out of `m_inputs`, under the paths the JSON names them by (`prepare_state`).
+ * The simulation JSON is byte for byte the one the Python engine hands the executable, handed
+ * over in memory, and it is still what says which inputs a solve reads, but no input is read from
+ * a file: the reduced mesh, the soft constraints, the hard pins and the collision proxy with its
+ * linear map and body ids all come out of `m_inputs`, under the paths the JSON names them by
+ * (`prepare_state`).
  *
  * Nor does the warm start go through a file: the JSON's `input/data/state` and
  * `output/data/state` are blanked in the in-memory copy of the arguments, and the three matrices
  * polyfem would have written to `curr_state.hdf5` are carried in `m_last` instead. The solution,
- * too, comes back in the result rather than in the `solution.txt` the JSON names.
+ * too, comes back in the result rather than in the `solution.txt` the JSON names, and polyfem's
+ * output in `SolveResult::lines` rather than in a log file.
  */
 class InProcessBackend : public PolyfemBackend
 {
@@ -460,11 +449,11 @@ public:
     {}
 
     SolveResult solve(
+        const OrderedJson& sim_json,
         const std::filesystem::path& json_path,
-        const std::filesystem::path& out_dir,
-        const std::filesystem::path& log_path) override
+        const std::filesystem::path& out_dir) override
     {
-        nlohmann::json args = load_simulation_json(json_path);
+        nlohmann::json args = simulation_args(sim_json, json_path);
 
         // The loop puts prev_state.hdf5 into the document exactly when it has committed a solve,
         // which is exactly when m_committed holds one; the file itself is never written or read.
@@ -487,15 +476,16 @@ public:
         }
 
         // `-o <out_dir>`, the one command-line argument the Python engine passes the executable
-        // besides `-j`, applied the way main.cpp applies it.
-        nlohmann::json patch = nlohmann::json::object();
-        patch["/output/directory"_json_pointer] = std::filesystem::absolute(out_dir).string();
-        args.merge_patch(patch);
-
-        if (!log_path.parent_path().empty()) {
-            std::filesystem::create_directories(log_path.parent_path());
+        // besides `-j`, applied the way main.cpp applies it -- and only when the document asks
+        // for paraview output, the one thing polyfem writes there (`prepare_state`): State::init
+        // creates the output directory it is given.
+        if (args.contains("output") && args["output"].contains("paraview")) {
+            nlohmann::json patch = nlohmann::json::object();
+            patch["/output/directory"_json_pointer] = std::filesystem::absolute(out_dir).string();
+            args.merge_patch(patch);
         }
-        auto capture = std::make_shared<LogCapture>(log_path);
+
+        auto capture = std::make_shared<LogCapture>();
         capture->set_level(document_log_level(args));
         // Attached BEFORE State::init, which logs (the linear-solver choice, among others) before
         // it installs its own logger, and again after, because init replaces the logger object.
@@ -510,7 +500,7 @@ public:
             // sees return code -6); in process there is no signal to report, so the failure is a
             // non-zero code and check_polyfem_success prints its banner as usual.
             // polyfem has already logged the message itself -- log_and_throw_error logs before it
-            // throws -- so it is in the captured lines and in the log file.
+            // throws -- so it is in the captured lines.
             logger().error("polyfem failed in process: {}", e.what());
             result.returncode = 1;
             m_last.reset();
@@ -518,7 +508,6 @@ public:
 
         detach_sink(polyfem::logger(), capture);
         detach_sink(ipc::logger(), capture);
-        capture->flush();
         result.lines = capture->lines();
         capture->stop();
         return result;

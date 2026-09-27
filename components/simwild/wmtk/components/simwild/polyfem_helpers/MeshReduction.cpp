@@ -4,7 +4,6 @@
 #include "PythonFormat.hpp"
 
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/io.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -88,46 +87,6 @@ ReducedMsh polyfem_reduced_msh(
         }
     }
     return out;
-}
-
-void write_polyfem_reduced_msh(const std::string& output_msh, const ReducedMsh& reduced)
-{
-    const int64_t n_body = int64_t(reduced.cells.rows()) - reduced.n_ambient;
-    const auto vertex = [&reduced](const size_t i) {
-        return reduced.vertices.row(Eigen::Index(i));
-    };
-    const auto ambient_cell = [&reduced](const size_t i) {
-        return reduced.cells.row(Eigen::Index(i));
-    };
-    const auto body_cell = [&reduced](const size_t i) {
-        return reduced.cells.row(Eigen::Index(reduced.n_ambient) + Eigen::Index(i));
-    };
-
-    // Every node on the ambient entity. The body entity gets an empty node block, which MshData
-    // takes as "the element vertex ids are global", so both groups index the one node block.
-    wmtk::MshData msh;
-    if (reduced.dim == 3) {
-        msh.add_tet_vertices(size_t(reduced.vertices.rows()), vertex);
-        msh.add_tets(size_t(reduced.n_ambient), ambient_cell);
-        msh.add_physical_group("ambient");
-        msh.add_tet_vertices();
-        msh.add_tets(size_t(n_body), body_cell);
-        msh.add_physical_group("body");
-    } else {
-        msh.add_face_vertices(size_t(reduced.vertices.rows()), vertex);
-        msh.add_faces(size_t(reduced.n_ambient), ambient_cell);
-        msh.add_physical_group("ambient");
-        msh.add_face_vertices();
-        msh.add_faces(size_t(n_body), body_cell);
-        msh.add_physical_group("body");
-    }
-    msh.save(output_msh, /*binary=*/true);
-    logger().info(
-        "  reduced  : {}  ({} ambient + {} body {})",
-        output_msh,
-        reduced.n_ambient,
-        n_body,
-        reduced.dim == 3 ? "tets" : "triangles");
 }
 
 namespace {
